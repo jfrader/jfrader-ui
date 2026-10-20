@@ -56,21 +56,50 @@ const meta = {
     docs: {
       source: {
         language: 'tsx',
-        code: `<BookingPill venue="The Glasshouse" startDate="2026-10-11"
-  times={['18:00', '18:30', '19:00', '19:30', '20:00']}
-  locale="en-GB" hourCycle="h23" onConfirm={reserveTable} />`,
+        code: `import { BookingPill, Surface, styled, type BookingPillProps } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: vars.space[6], display: 'grid', gap: vars.space[5] });
+const VenueLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
+
+export function Reservation({ onConfirm }: Pick<BookingPillProps, 'onConfirm'>) {
+  return <ReservationPanel>
+    <VenueLabel>Modern British · Garden dining</VenueLabel>
+    <BookingPill venue="The Glasshouse" startDate="2026-10-11"
+      times={['18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00']}
+      locale="en-GB" hourCycle="h23" onConfirm={onConfirm} />
+  </ReservationPanel>;
+}`,
       },
       description: {
         component:
           'Choose a party size, date and time, then review and confirm a venue booking.',
       },
-      usage: `### Values\nDraft, open and step support independent controlled/uncontrolled state. Edits request one whole draft; a party/date change clears an unavailable time in that request. Next validates the accepted draft. Availability changes never silently select a replacement.\n\n### Confirmation\nSupply onConfirm. Resolution shows the submitted snapshot; rejection leaves the review and an alert. Network cancellation, availability, venue timezone and DST validation belong to the application. Pending confirmation blocks close, back, reset and duplicate submission.\n\n### Keyboard\nThe inline group is not a dialog: Tab/Shift+Tab follow document order. Enter/Space activate native controls. Escape goes review → time → date → party → close; prevented events and pending confirmation suppress Escape. Calendar retains its grid keyboard map (day/week arrows, week Home/End, month PageUp/Down, Shift for year). TimePicker retains Select virtual focus and selection. Accepted navigation transfers focus only from the journey.\n\n### Customization\nslots/slotProps replace or style generated parts; calendarProps/timePickerProps customize the existing pickers without replacing their selection authority. Labels translates full phrases; locale formats dates, time and guest counts. MotionConfig respects reduced motion.`,
+      sections: [
+        { title: 'Booking journey', stories: ['Default', 'Date', 'Time', 'Review'] },
+        { title: 'Availability', stories: ['AllUnavailable', 'AvailabilityChange'] },
+      ],
+      usage: `### Booking details
+Edits request a whole draft. Changing party size or date clears a time that is no longer available. Next validates the accepted draft; availability changes never silently select a replacement.
+
+### Confirmation
+Connect confirmation to your reservation service. A resolved request shows the submitted snapshot; rejection leaves the review and an alert. The application owns network cancellation, availability, venue timezone and daylight-saving validation. Pending confirmation blocks close, back, reset and duplicate submission.
+
+### Keyboard
+This is an inline group, not a dialog. Tab and Shift+Tab follow document order; Enter and Space activate controls. Escape returns through review, time, date and party, then closes. Prevented events and pending confirmation suppress Escape.
+The calendar uses day/week arrows, Home/End for the week, PageUp/PageDown for the month and Shift for the year. The time picker uses Select keyboard navigation. Accepted navigation moves focus only when it was already inside the journey.
+
+### Language and motion
+Translate complete phrases and format dates, times and guest counts for the reader's locale. Reduced motion skips resizing animation.`,
     },
   },
 } satisfies Meta<typeof BookingPill>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Default: Story = {};
+export const Default: Story = {
+  name: 'Reserve a table',
+  parameters: { docs: { description: { story: 'Open the reservation pill and choose guests, a date and a time before confirming.' } } },
+};
 export const Party: Story = {
   args: { defaultOpen: true },
   play: async ({ canvas, userEvent, args }) => {
@@ -84,8 +113,47 @@ export const Party: Story = {
     await expect(canvas.getByText('3 guests')).toBeVisible();
   },
 };
-export const Date: Story = { args: { defaultOpen: true, defaultStep: 'date' } };
+export const Date: Story = {
+  name: 'Choose a date',
+  parameters: { docs: {
+    description: { story: 'Start at the calendar to choose a reservation date.' },
+    source: { language: 'tsx', code: `import { BookingPill, Surface, styled, type BookingPillProps } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: vars.space[6], display: 'grid', gap: vars.space[5] });
+const VenueLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
+
+export function Reservation({ onConfirm }: Pick<BookingPillProps, 'onConfirm'>) {
+  return <ReservationPanel>
+    <VenueLabel>Modern British · Garden dining</VenueLabel>
+    <BookingPill venue="The Glasshouse" startDate="2026-10-11"
+      times={['18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00']}
+      locale="en-GB" hourCycle="h23" defaultOpen defaultStep="date" onConfirm={onConfirm} />
+  </ReservationPanel>;
+}` },
+  } },
+  args: { defaultOpen: true, defaultStep: 'date' },
+};
 export const Time: Story = {
+  name: 'Choose a time',
+  parameters: { docs: {
+    description: { story: 'Choose a table time for two guests on the selected date.' },
+    source: { language: 'tsx', code: `import { BookingPill, Surface, styled, type BookingPillProps } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: vars.space[6], display: 'grid', gap: vars.space[5] });
+const VenueLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
+
+export function Reservation({ onConfirm }: Pick<BookingPillProps, 'onConfirm'>) {
+  return <ReservationPanel>
+    <VenueLabel>Modern British · Garden dining</VenueLabel>
+    <BookingPill venue="The Glasshouse" startDate="2026-10-11"
+      times={['18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00']}
+      locale="en-GB" hourCycle="h23" defaultOpen defaultStep="time"
+      defaultValue={{ partySize: 2, date: '2026-10-11', time: '19:00' }} onConfirm={onConfirm} />
+  </ReservationPanel>;
+}` },
+  } },
   args: { defaultOpen: true, defaultStep: 'time', defaultValue: draft },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('combobox'));
@@ -103,6 +171,25 @@ export const Time: Story = {
   },
 };
 export const Review: Story = {
+  name: 'Review the reservation',
+  parameters: { docs: {
+    description: { story: 'Check the party, date, time and room before submitting the booking.' },
+    source: { language: 'tsx', code: `import { BookingPill, Surface, styled, type BookingPillProps } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: vars.space[6], display: 'grid', gap: vars.space[5] });
+const VenueLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
+
+export function Reservation({ onConfirm }: Pick<BookingPillProps, 'onConfirm'>) {
+  return <ReservationPanel>
+    <VenueLabel>Modern British · Garden dining</VenueLabel>
+    <BookingPill venue="The Glasshouse" venueDetail="Garden room" startDate="2026-10-11"
+      times={['18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00']}
+      locale="en-GB" hourCycle="h23" defaultOpen defaultStep="review"
+      defaultValue={{ partySize: 2, date: '2026-10-11', time: '19:00' }} onConfirm={onConfirm} />
+  </ReservationPanel>;
+}` },
+  } },
   args: {
     defaultOpen: true,
     defaultStep: 'review',
@@ -168,7 +255,8 @@ export const ConfirmationRejection: Story = {
   },
 };
 export const AllUnavailable: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { BookingPill, Surface, styled, type BookingPillProps } from '@jfrader/ui';
+  name: 'No available times',
+  parameters: { docs: { description: { story: 'Show an empty time step when no reservation times are available.' }, source: { language: 'tsx', code: `import { BookingPill, Surface, styled, type BookingPillProps } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
 const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: vars.space[6], display: 'grid', gap: vars.space[5] });
@@ -282,6 +370,27 @@ export function Reservation({ onConfirm }: Pick<BookingPillProps, 'onConfirm'>) 
   },
 };
 export const AvailabilityChange: Story = {
+  name: 'Availability changes during review',
+  parameters: { docs: {
+    description: { story: 'Mark the chosen time unavailable and keep the draft visible while confirmation is blocked.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { BookingPill, Button, styled, type BookingPillProps } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Reservation = styled.div({ display: 'grid', gap: vars.space[4], maxInlineSize: '28rem' });
+
+export function LiveAvailability({ onConfirm }: Pick<BookingPillProps, 'onConfirm'>) {
+  const [available, setAvailable] = useState(true);
+  return <Reservation>
+    <BookingPill venue="The Glasshouse" startDate="2026-10-11"
+      times={['18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00']}
+      locale="en-GB" hourCycle="h23" defaultOpen defaultStep="review"
+      defaultValue={{ partySize: 2, date: '2026-10-11', time: '19:00' }}
+      isAvailable={() => available} onConfirm={onConfirm} />
+    <Button onClick={() => setAvailable(false)}>Mark time unavailable</Button>
+  </Reservation>;
+}` },
+  } },
   render: (args) => {
     const [available, setAvailable] = useState(true);
     return (
