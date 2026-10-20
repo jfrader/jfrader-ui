@@ -136,6 +136,7 @@ export interface TimelineProps
   now: number;
   /** Ids of events whose detail is open (controlled). */
   value?: readonly string[];
+  /** Set the initially open event ids when uncontrolled. Defaults to none. */
   defaultValue?: readonly string[];
   /** Requested open ids after a disclosure interaction. */
   onValueChange?: (ids: string[]) => void;
@@ -143,14 +144,19 @@ export interface TimelineProps
   locale?: Intl.LocalesArgument;
   /** IANA zone used for day grouping and every displayed date. */
   timeZone?: string;
+  /** Set the day-group heading level. Defaults to 3. */
   headingLevel?: TimelineHeadingLevel;
   /** Height limit for the timeline's scroller. Without it, the timeline grows with the page. */
   maxHeight?: CSSProperties['maxHeight'];
   /** Scroll to an event newer than any shown before. Never moves focus. */
   scrollToNew?: boolean;
+  /** Set event spacing and heading/trigger padding. Defaults to `md`. */
   size?: TimelineSize;
+  /** Override the region name, empty/invalid-time messages, and event-count labels. */
   labels?: Partial<TimelineLabels>;
+  /** Pass props and `sx` to the generated timeline parts. */
   slotProps?: TimelineSlotProps;
+  /** Replace the root, scroller, event rows, and their generated parts. */
   slots?: TimelineSlots;
   /** Shorthand for slots.root; slots.root takes precedence. */
   component?: TimelineSlots['root'];

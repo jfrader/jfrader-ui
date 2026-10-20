@@ -107,11 +107,15 @@ export interface CalendarRangeLabels {
 export interface CalendarBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
   /** Selected date, 'YYYY-MM-DD'. */
   value?: string;
+  /** Set the initially selected `YYYY-MM-DD` date when uncontrolled. */
   defaultValue?: string;
+  /** Receive a newly selected `YYYY-MM-DD` date; range mode uses `onDayActivate` instead. */
   onValueChange?: (value: string) => void;
   /** Displayed month, 'YYYY-MM'. Defaults to the month of the value, else the current month. */
   visibleMonth?: string;
+  /** Set the initial `YYYY-MM` month when uncontrolled, before the selected-date fallback. */
   defaultVisibleMonth?: string;
+  /** Receive a requested `YYYY-MM` month from navigation or keyboard movement. */
   onVisibleMonthChange?: (month: string) => void;
   /** Earliest selectable date, 'YYYY-MM-DD'. */
   min?: string;
@@ -138,6 +142,7 @@ export interface CalendarBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'd
 }
 
 export interface CalendarCompoundProps extends CalendarBaseProps {
+  /** Compose the header and grid directly; omit to render both automatically. */
   children?: ReactNode;
   component?: never;
   slots?: never;
@@ -157,6 +162,7 @@ export interface CalendarEasyProps extends CalendarBaseProps {
     /** Table element rendering the day grid and weekday headers. */
     grid?: ComponentType<ComponentPropsWithRef<'table'>>;
   };
+  /** Pass props and `sx` to the generated root, header, and day grid. */
   slotProps?: {
     /** Outer container element wrapping the calendar. */
     root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps & {  [attribute: `data-${string}`]: unknown };

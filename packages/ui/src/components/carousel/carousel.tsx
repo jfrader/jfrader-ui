@@ -143,12 +143,15 @@ export interface CarouselProps extends Omit<ComponentPropsWithRef<'section'>, 'd
   children: ReactNode;
   /** Active slide index (controlled). */
   value?: number;
+  /** Set the initial zero-based slide index when uncontrolled. Defaults to 0. */
   defaultValue?: number;
+  /** Receive the requested zero-based slide index after navigation or rotation. */
   onValueChange?: (index: number) => void;
   /** Inline size of each slide, clamped to the carousel's width. */
   slideSize?: CSSProperties['inlineSize'];
   /** Accessible slide name; `index` is zero-based. Defaults to `labels.slideCount`. */
   getSlideLabel?: (index: number, count: number) => string;
+  /** Select picker tabs on focus with `auto`, or on Enter/Space with `manual`. Defaults to `auto`. */
   activation?: CarouselActivation;
   /** Rotation delay in milliseconds. Without a positive finite value there is no rotation. */
   interval?: number;
@@ -158,13 +161,17 @@ export interface CarouselProps extends Omit<ComponentPropsWithRef<'section'>, 'd
   playingValue?: boolean;
   /** Seeds the uncontrolled playing state; takes precedence over `autoPlay`. */
   defaultPlayingValue?: boolean;
+  /** Receive requested rotation-state changes, including latched safety stops. */
   onPlayingValueChange?: (playing: boolean) => void;
+  /** Format slide numbers in default labels with this locale. */
   locale?: Intl.LocalesArgument;
+  /** Override the default English control names, empty message, and slide-count formatter. */
   labels?: Partial<CarouselLabels>;
   /** Blocks navigation and rotation; the active slide's content stays operable. */
   disabled?: boolean;
   /** Replacement components for interior parts. */
   slots?: CarouselSlots;
+  /** Pass props and `sx` to the generated slides, controls, and status regions. */
   slotProps?: CarouselSlotProps;
 }
 

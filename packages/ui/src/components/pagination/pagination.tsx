@@ -18,15 +18,21 @@ import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { defaultLocale, numberFormatter } from '../../utils/intl';
 
 export interface PaginationProps extends Omit<ComponentPropsWithRef<'nav'>, 'onChange'>, SxProps {
+  /** Control the one-based current page; clamped to the available page range. */
   page: number;
+  /** Set the number of pages; non-finite or negative values become 0 and fractions round down. */
   totalPages: number;
+  /** Receive a requested one-based page different from the current page. */
   onPageChange?: (page: number) => void;
   /** Pages shown on each side of the current page. */
   siblingCount?: number;
   /** Accessible name of the navigation landmark. */
   label?: string;
+  /** Name the previous-page button. Defaults to `Previous page`. */
   previousLabel?: string;
+  /** Name the next-page button. Defaults to `Next page`. */
   nextLabel?: string;
+  /** Format page numbers with this locale. Defaults to the environment locale. */
   locale?: string;
 }
 
