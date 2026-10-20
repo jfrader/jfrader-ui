@@ -1,6 +1,6 @@
-import { Component, useState, type ReactNode } from 'react';
+import { Component, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, fireEvent, waitFor } from 'storybook/test';
+import { expect, fn, fireEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -8,6 +8,48 @@ import { ThemeRoot } from '../theme-root';
 import { Slider, type SliderProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
+
+function ReplacementRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="replacement-root" />;
+}
+function SugarRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="sugar-root" />;
+}
+
+/** Replace the field element while keeping the track and keyboard control. */
+export const RootReplacement: Story = {
+  tags: ['!autodocs'],
+  args: {
+    component: SugarRoot,
+    slots: { root: ReplacementRoot },
+    ref: fn(),
+    className: 'consumer-root',
+    slotProps: { root: { ref: fn(), className: 'slot-root', title: 'Volume field', 'data-ui': 'custom' } },
+  },
+  play: async ({ canvasElement, args }) => {
+    const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(within(canvasElement).queryByTestId('sugar-root')).toBeNull();
+    await expect(root.tagName).toBe('DIV');
+    await expect(root).toHaveClass('consumer-root', 'slot-root');
+    await expect(root).toHaveAttribute('data-ui', 'slider custom');
+    await expect(root).toHaveAttribute('title', 'Volume field');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    const thumb = within(root).getByRole('slider', { name: 'Volume' });
+    await expect(thumb).toHaveAttribute('aria-valuenow', '40');
+    thumb.focus();
+    fireEvent.keyDown(thumb, { key: 'ArrowRight' });
+    await expect(thumb).toHaveAttribute('aria-valuenow', '41');
+  },
+};
+
+export const RootComponent: Story = {
+  tags: ['!autodocs'],
+  args: { component: SugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByTestId('sugar-root')).toHaveAttribute('data-ui', 'slider');
+  },
+};
 
 const LightThemeFrame = styled.div({ background: vars.color.bg, padding: vars.space[4] });
 

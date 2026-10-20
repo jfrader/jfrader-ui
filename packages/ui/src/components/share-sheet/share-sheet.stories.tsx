@@ -7,6 +7,46 @@ import { Button } from '../button';
 import { Select } from '../select';
 import { ShareSheet, type ShareSheetProps } from './index';
 
+function ReplacementRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="replacement-root" />;
+}
+function SugarRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="sugar-root" />;
+}
+
+/** Replace the outer widget without replacing its sharing panel. */
+export const RootReplacement: Story = {
+  tags: ['!autodocs'],
+  args: {
+    component: SugarRoot,
+    slots: { root: ReplacementRoot },
+    ref: fn(),
+    className: 'consumer-root',
+    slotProps: { root: { ref: fn(), className: 'slot-root', title: 'Share', 'data-ui': 'custom' } },
+  },
+  play: async ({ canvasElement, args }) => {
+    const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(within(canvasElement).queryByTestId('sugar-root')).toBeNull();
+    await expect(root.tagName).toBe('DIV');
+    await expect(root).toHaveClass('consumer-root', 'slot-root');
+    await expect(root).toHaveAttribute('data-ui', 'share-sheet custom');
+    await expect(root).toHaveAttribute('title', 'Share');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    await expect(within(root).getByRole('button', { name: 'Share' })).toHaveAttribute('aria-haspopup', 'dialog');
+  },
+};
+
+export const RootComponent: Story = {
+  tags: ['!autodocs'],
+  args: { component: SugarRoot, presentation: 'inline' },
+  play: async ({ canvasElement }) => {
+    const root = within(canvasElement).getByTestId('sugar-root');
+    await expect(root).toHaveAttribute('data-ui', 'share-sheet');
+    await expect(within(root).getByRole('button', { name: 'Copy link' })).toBeInTheDocument();
+  },
+};
+
 const PEOPLE = [
   { id: 'ada', name: 'Ada Lovelace' },
   { id: 'grace', name: 'Grace Hopper' },

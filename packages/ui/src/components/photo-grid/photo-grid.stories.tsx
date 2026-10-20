@@ -10,6 +10,45 @@ import { PhotoGrid, type PhotoGridPhoto } from './index';
 import { sceneSource } from '../scene';
 import { ChromeAction, type ChromeActionProps } from '../viewer-chrome/viewer-chrome';
 
+function ReplacementRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="replacement-root" />;
+}
+function SugarRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="sugar-root" />;
+}
+
+/** Replace the outer gallery while retaining its heading and stage. */
+export const RootReplacement: Story = {
+  tags: ['!autodocs'],
+  args: {
+    component: SugarRoot,
+    slots: { root: ReplacementRoot },
+    ref: fn(),
+    className: 'consumer-root',
+    slotProps: { root: { ref: fn(), className: 'slot-root', title: 'Gallery', 'data-ui': 'custom' } },
+  },
+  play: async ({ canvasElement, args }) => {
+    const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(within(canvasElement).queryByTestId('sugar-root')).toBeNull();
+    await expect(root.tagName).toBe('DIV');
+    await expect(root).toHaveClass('consumer-root', 'slot-root');
+    await expect(root).toHaveAttribute('data-ui', 'photo-grid custom');
+    await expect(root).toHaveAttribute('title', 'Gallery');
+    await expect(root).toHaveAttribute('role', 'region');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    await expect(within(root).getByRole('heading', { name: args.title })).toBeInTheDocument();
+  },
+};
+
+export const RootComponent: Story = {
+  tags: ['!autodocs'],
+  args: { component: SugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByTestId('sugar-root')).toHaveAttribute('data-ui', 'photo-grid');
+  },
+};
+
 function ReplacementPhotoContainer(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replaced="container" />;
 }
