@@ -114,21 +114,30 @@ const meta = {
         component:
           'Open a panel from the edge of the page to show settings, filters or details.',
       },
-      usage: `### Composition
-Pass triggerLabel, title, content and closeLabel for a standard drawer; description is optional. Do not combine these props with children. Use slotProps.trigger/content/panel/header/title/description/close/body for part props. For custom hierarchy, keep the compound parts.
+      sections: [
+        { title: 'Easy mode', stories: ['Default'] },
+        { title: 'Compound anatomy', stories: ['Compound'] },
+        { title: 'Placements', stories: ['InlineStart', 'InlineEnd', 'Top', 'Bottom'] },
+        { title: 'Sizes', stories: ['Small', 'Medium', 'Large'] },
+        { title: 'Controlled and cancel', stories: ['Controlled', 'CancelVeto'] },
+        { title: 'Draggable', stories: ['Draggable', 'DraggableBottom'] },
+        { title: 'Long forms', stories: ['LongForm'] },
+        { title: 'Nested overlays', stories: ['NestedPopover', 'NestedDialog'] },
+      ],
+      usage: `### When to use
+Use a drawer for a task, filter panel, or set of details that needs focus without leaving the page. For brief, non-modal content anchored to a trigger, use a Popover instead.
 
-- Modal only: the page behind is inert, Tab/Shift+Tab stay inside, and closing returns focus to the invoker. Escape, Close and backdrop clicks share the cancelable close request.
-- \`side\` accepts \`inline-start\`, \`inline-end\` (default), \`top\` or \`bottom\`. Inline sides follow text direction. \`size\` caps inline panels; top/bottom panels span the viewport and cap their height.
-- Body scrolls while Header and Footer stay visible.
-- \`draggable\` lets the header pull the panel toward its edge to dismiss. Close and Escape remain available.
-- The panel slides in and finishes sliding out before the dialog closes. Reduced motion disables dragging and opens/closes instantly.
-- Floating overlays need a \`ThemeRoot portalContainer\` host inside the drawer. A nested overlay handles Escape first.
-- Give Close visible text or a localized \`aria-label\`.
+### Constraints
+- Modal only: the rest of the page is inert, Tab and Shift+Tab stay inside, and closing returns focus to the invoker.
+- Inline panels cap their width and adapt to compact viewports; top and bottom panels span the viewport width.
+- The panel slides into place and finishes sliding out before the dialog closes. Reduced motion disables dragging and makes entry and exit instant.
+- Floating overlays need a portal container inside the drawer so they stay above the top layer.
 
-### Panel material
-Panel defaults to contrast; appearance="default" inherits the enclosing appearance. component is sugar for slots.root; only root is adopted, and slots.root wins. slotProps.root accepts div props and sx. Declare adapters outside render, render one div, forward every supplied prop/ref, and apply material before className. Changing the adapter type remounts children and resets focus and uncontrolled inputs.
-
-Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry → slot sx/classes → consumer classes → consumer sx. Content stays the native dialog shell. Panel's registered div keeps attached-edge corners, size caps and motion; its translate is host-owned. Select composed panels with [data-ui~="drawer-panel"].`,
+### Keyboard and accessibility
+- Tab and Shift+Tab cycle focus between interactive controls inside the drawer.
+- Escape, close buttons, and backdrop clicks request closure. If you veto closure, provide another way to finish the task.
+- Give the close button visible text or an aria-label.
+- Do not announce long or structured content as a single accessible description.`,
     },
   },
 } satisfies Meta<typeof Drawer>;
@@ -337,22 +346,31 @@ export const Default: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
   },
   parameters: {
     docs: {
+      description: {
+        story: 'Open a drawer using single-element presentation props.',
+      },
       source: {
         language: 'tsx',
-        code: `import { Checkbox, Drawer, TextField } from '@jfrader/ui';
+        code: `import { Checkbox, Drawer, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FieldStack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
 
 <Drawer
   triggerLabel="Open filters"
   title="Filters"
   description="Narrow the issue list by owner and status."
   content={
-    <>
+    <FieldStack>
       <TextField label="Owner" />
       <Checkbox label="Backlog" />
       <Checkbox label="In progress" />
       <Checkbox label="In review" />
       <Checkbox label="Done" />
-    </>
+    </FieldStack>
   }
   closeLabel="Close"
 />`,
@@ -389,7 +407,20 @@ export const Default: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
 
 export const Compound: Story = {
   name: 'Compound',
-  parameters: { docs: { source: { language: 'tsx', code: `import { Checkbox, Drawer, TextField } from '@jfrader/ui';
+  parameters: {
+    docs: {
+      description: {
+        story: 'Assemble a drawer with compound parts for custom header, body, and footer layout.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Checkbox, Drawer, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FieldStack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
 
 <Drawer>
   <Drawer.Trigger>Open filters</Drawer.Trigger>
@@ -401,13 +432,23 @@ export const Compound: Story = {
         <Drawer.Close>Close</Drawer.Close>
       </Drawer.Header>
       <Drawer.Body>
-        <TextField label="Owner" />
-        <Checkbox label="In progress" />
+        <FieldStack>
+          <TextField label="Owner" />
+          <Checkbox label="Backlog" />
+          <Checkbox label="In progress" />
+          <Checkbox label="In review" />
+          <Checkbox label="Done" />
+        </FieldStack>
       </Drawer.Body>
-      <Drawer.Footer><Drawer.Close>Done</Drawer.Close></Drawer.Footer>
+      <Drawer.Footer>
+        <Drawer.Close>Done</Drawer.Close>
+      </Drawer.Footer>
     </Drawer.Panel>
   </Drawer.Content>
-</Drawer>` } } },
+</Drawer>`,
+      },
+    },
+  },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -654,8 +695,22 @@ function easyModeTypeContracts() {
 void easyModeTypeContracts;
 
 export const InlineStart: Story = {
+  name: 'Inline start',
   args: { side: 'inline-start' },
-  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+  parameters: {
+    docs: {
+      description: {
+        story: 'Attach the panel to the inline-start edge of the viewport.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Checkbox, Drawer, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FieldStack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
 
 <Drawer side="inline-start">
   <Drawer.Trigger>Open filters</Drawer.Trigger>
@@ -663,13 +718,27 @@ export const InlineStart: Story = {
     <Drawer.Panel>
       <Drawer.Header>
         <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Description>Narrow the issue list by owner and status.</Drawer.Description>
         <Drawer.Close>Close</Drawer.Close>
       </Drawer.Header>
-      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
-      <Drawer.Footer><Drawer.Close>Done</Drawer.Close></Drawer.Footer>
+      <Drawer.Body>
+        <FieldStack>
+          <TextField label="Owner" />
+          <Checkbox label="Backlog" />
+          <Checkbox label="In progress" />
+          <Checkbox label="In review" />
+          <Checkbox label="Done" />
+        </FieldStack>
+      </Drawer.Body>
+      <Drawer.Footer>
+        <Drawer.Close>Done</Drawer.Close>
+      </Drawer.Footer>
     </Drawer.Panel>
   </Drawer.Content>
-</Drawer>` } } },
+</Drawer>`,
+      },
+    },
+  },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const { trigger, dialog, panel, canvas } = await openDrawer({ canvasElement, userEvent });
@@ -686,8 +755,22 @@ export const InlineStart: Story = {
 };
 
 export const InlineEnd: Story = {
+  name: 'Inline end',
   args: { side: 'inline-end' },
-  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+  parameters: {
+    docs: {
+      description: {
+        story: 'Attach the panel to the default inline-end edge of the viewport.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Checkbox, Drawer, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FieldStack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
 
 <Drawer side="inline-end">
   <Drawer.Trigger>Open filters</Drawer.Trigger>
@@ -695,13 +778,27 @@ export const InlineEnd: Story = {
     <Drawer.Panel>
       <Drawer.Header>
         <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Description>Narrow the issue list by owner and status.</Drawer.Description>
         <Drawer.Close>Close</Drawer.Close>
       </Drawer.Header>
-      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
-      <Drawer.Footer><Drawer.Close>Done</Drawer.Close></Drawer.Footer>
+      <Drawer.Body>
+        <FieldStack>
+          <TextField label="Owner" />
+          <Checkbox label="Backlog" />
+          <Checkbox label="In progress" />
+          <Checkbox label="In review" />
+          <Checkbox label="Done" />
+        </FieldStack>
+      </Drawer.Body>
+      <Drawer.Footer>
+        <Drawer.Close>Done</Drawer.Close>
+      </Drawer.Footer>
     </Drawer.Panel>
   </Drawer.Content>
-</Drawer>` } } },
+</Drawer>`,
+      },
+    },
+  },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const { trigger, dialog, panel, canvas } = await openDrawer({ canvasElement, userEvent });
@@ -717,8 +814,22 @@ export const InlineEnd: Story = {
 };
 
 export const Top: Story = {
+  name: 'Top',
   args: { side: 'top' },
-  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+  parameters: {
+    docs: {
+      description: {
+        story: 'Attach the panel to the top edge of the viewport spanning the full width.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Checkbox, Drawer, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FieldStack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
 
 <Drawer side="top">
   <Drawer.Trigger>Open filters</Drawer.Trigger>
@@ -726,13 +837,27 @@ export const Top: Story = {
     <Drawer.Panel>
       <Drawer.Header>
         <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Description>Narrow the issue list by owner and status.</Drawer.Description>
         <Drawer.Close>Close</Drawer.Close>
       </Drawer.Header>
-      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
-      <Drawer.Footer><Drawer.Close>Done</Drawer.Close></Drawer.Footer>
+      <Drawer.Body>
+        <FieldStack>
+          <TextField label="Owner" />
+          <Checkbox label="Backlog" />
+          <Checkbox label="In progress" />
+          <Checkbox label="In review" />
+          <Checkbox label="Done" />
+        </FieldStack>
+      </Drawer.Body>
+      <Drawer.Footer>
+        <Drawer.Close>Done</Drawer.Close>
+      </Drawer.Footer>
     </Drawer.Panel>
   </Drawer.Content>
-</Drawer>` } } },
+</Drawer>`,
+      },
+    },
+  },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, panel } = await openDrawer({ canvasElement, userEvent });
@@ -744,8 +869,22 @@ export const Top: Story = {
 };
 
 export const Bottom: Story = {
+  name: 'Bottom',
   args: { side: 'bottom' },
-  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+  parameters: {
+    docs: {
+      description: {
+        story: 'Attach the panel to the bottom edge of the viewport spanning the full width.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Checkbox, Drawer, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FieldStack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
 
 <Drawer side="bottom">
   <Drawer.Trigger>Open filters</Drawer.Trigger>
@@ -753,13 +892,27 @@ export const Bottom: Story = {
     <Drawer.Panel>
       <Drawer.Header>
         <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Description>Narrow the issue list by owner and status.</Drawer.Description>
         <Drawer.Close>Close</Drawer.Close>
       </Drawer.Header>
-      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
-      <Drawer.Footer><Drawer.Close>Done</Drawer.Close></Drawer.Footer>
+      <Drawer.Body>
+        <FieldStack>
+          <TextField label="Owner" />
+          <Checkbox label="Backlog" />
+          <Checkbox label="In progress" />
+          <Checkbox label="In review" />
+          <Checkbox label="Done" />
+        </FieldStack>
+      </Drawer.Body>
+      <Drawer.Footer>
+        <Drawer.Close>Done</Drawer.Close>
+      </Drawer.Footer>
     </Drawer.Panel>
   </Drawer.Content>
-</Drawer>` } } },
+</Drawer>`,
+      },
+    },
+  },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, panel } = await openDrawer({ canvasElement, userEvent });
@@ -899,8 +1052,22 @@ const sizeStory = (size: DrawerSize): Story => ({
 });
 
 export const Small: Story = {
+  name: 'Small',
   ...sizeStory('sm'),
-  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+  parameters: {
+    docs: {
+      description: {
+        story: 'Constrain the inline drawer panel to the small width cap.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Checkbox, Drawer, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FieldStack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
 
 <Drawer size="sm">
   <Drawer.Trigger>Open filters</Drawer.Trigger>
@@ -908,16 +1075,45 @@ export const Small: Story = {
     <Drawer.Panel>
       <Drawer.Header>
         <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Description>Narrow the issue list by owner and status.</Drawer.Description>
         <Drawer.Close>Close</Drawer.Close>
       </Drawer.Header>
-      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+      <Drawer.Body>
+        <FieldStack>
+          <TextField label="Owner" />
+          <Checkbox label="Backlog" />
+          <Checkbox label="In progress" />
+          <Checkbox label="In review" />
+          <Checkbox label="Done" />
+        </FieldStack>
+      </Drawer.Body>
+      <Drawer.Footer>
+        <Drawer.Close>Done</Drawer.Close>
+      </Drawer.Footer>
     </Drawer.Panel>
   </Drawer.Content>
-</Drawer>` } } },
+</Drawer>`,
+      },
+    },
+  },
 };
 export const Medium: Story = {
+  name: 'Medium',
   ...sizeStory('md'),
-  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+  parameters: {
+    docs: {
+      description: {
+        story: 'Constrain the inline drawer panel to the default medium width cap.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Checkbox, Drawer, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FieldStack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
 
 <Drawer size="md">
   <Drawer.Trigger>Open filters</Drawer.Trigger>
@@ -925,16 +1121,45 @@ export const Medium: Story = {
     <Drawer.Panel>
       <Drawer.Header>
         <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Description>Narrow the issue list by owner and status.</Drawer.Description>
         <Drawer.Close>Close</Drawer.Close>
       </Drawer.Header>
-      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+      <Drawer.Body>
+        <FieldStack>
+          <TextField label="Owner" />
+          <Checkbox label="Backlog" />
+          <Checkbox label="In progress" />
+          <Checkbox label="In review" />
+          <Checkbox label="Done" />
+        </FieldStack>
+      </Drawer.Body>
+      <Drawer.Footer>
+        <Drawer.Close>Done</Drawer.Close>
+      </Drawer.Footer>
     </Drawer.Panel>
   </Drawer.Content>
-</Drawer>` } } },
+</Drawer>`,
+      },
+    },
+  },
 };
 export const Large: Story = {
+  name: 'Large',
   ...sizeStory('lg'),
-  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+  parameters: {
+    docs: {
+      description: {
+        story: 'Constrain the inline drawer panel to the large width cap.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Checkbox, Drawer, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FieldStack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
 
 <Drawer size="lg">
   <Drawer.Trigger>Open filters</Drawer.Trigger>
@@ -942,12 +1167,27 @@ export const Large: Story = {
     <Drawer.Panel>
       <Drawer.Header>
         <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Description>Narrow the issue list by owner and status.</Drawer.Description>
         <Drawer.Close>Close</Drawer.Close>
       </Drawer.Header>
-      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+      <Drawer.Body>
+        <FieldStack>
+          <TextField label="Owner" />
+          <Checkbox label="Backlog" />
+          <Checkbox label="In progress" />
+          <Checkbox label="In review" />
+          <Checkbox label="Done" />
+        </FieldStack>
+      </Drawer.Body>
+      <Drawer.Footer>
+        <Drawer.Close>Done</Drawer.Close>
+      </Drawer.Footer>
     </Drawer.Panel>
   </Drawer.Content>
-</Drawer>` } } },
+</Drawer>`,
+      },
+    },
+  },
 };
 
 /** Drag along the header: one pointer, explicit coordinates, `pause` ms between moves. */
@@ -974,8 +1214,22 @@ async function expectHome(panel: HTMLElement) {
 }
 
 export const Draggable: Story = {
+  name: 'Draggable',
   args: { draggable: true },
-  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+  parameters: {
+    docs: {
+      description: {
+        story: 'Drag the header toward the edge to dismiss the drawer.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Checkbox, Drawer, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FieldStack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
 
 <Drawer draggable>
   <Drawer.Trigger>Open filters</Drawer.Trigger>
@@ -983,12 +1237,27 @@ export const Draggable: Story = {
     <Drawer.Panel>
       <Drawer.Header>
         <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Description>Narrow the issue list by owner and status.</Drawer.Description>
         <Drawer.Close>Close</Drawer.Close>
       </Drawer.Header>
-      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+      <Drawer.Body>
+        <FieldStack>
+          <TextField label="Owner" />
+          <Checkbox label="Backlog" />
+          <Checkbox label="In progress" />
+          <Checkbox label="In review" />
+          <Checkbox label="Done" />
+        </FieldStack>
+      </Drawer.Body>
+      <Drawer.Footer>
+        <Drawer.Close>Done</Drawer.Close>
+      </Drawer.Footer>
     </Drawer.Panel>
   </Drawer.Content>
-</Drawer>` } } },
+</Drawer>`,
+      },
+    },
+  },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const { dialog, panel, header, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
@@ -1058,8 +1327,22 @@ export const DraggableRejected: Story = {
 };
 
 export const DraggableBottom: Story = {
+  name: 'Draggable bottom',
   args: { draggable: true, side: 'bottom' },
-  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+  parameters: {
+    docs: {
+      description: {
+        story: 'Drag the header downward to dismiss a bottom-anchored drawer.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Checkbox, Drawer, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FieldStack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
 
 <Drawer draggable side="bottom">
   <Drawer.Trigger>Open filters</Drawer.Trigger>
@@ -1067,12 +1350,27 @@ export const DraggableBottom: Story = {
     <Drawer.Panel>
       <Drawer.Header>
         <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Description>Narrow the issue list by owner and status.</Drawer.Description>
         <Drawer.Close>Close</Drawer.Close>
       </Drawer.Header>
-      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+      <Drawer.Body>
+        <FieldStack>
+          <TextField label="Owner" />
+          <Checkbox label="Backlog" />
+          <Checkbox label="In progress" />
+          <Checkbox label="In review" />
+          <Checkbox label="Done" />
+        </FieldStack>
+      </Drawer.Body>
+      <Drawer.Footer>
+        <Drawer.Close>Done</Drawer.Close>
+      </Drawer.Footer>
     </Drawer.Panel>
   </Drawer.Content>
-</Drawer>` } } },
+</Drawer>`,
+      },
+    },
+  },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const { panel, header, trigger } = await openDrawer({ canvasElement, userEvent });
@@ -1101,36 +1399,47 @@ function LongFormBody() {
 LongFormBody.displayName = 'LongFormBody';
 
 export const LongForm: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+  name: 'Long form',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Scroll long body content while keeping the header and footer fixed in view.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Drawer, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FieldStack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
 
 <Drawer>
-  <Drawer.Trigger>Edit profile</Drawer.Trigger>
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
   <Drawer.Content>
     <Drawer.Panel>
       <Drawer.Header>
-        <Drawer.Title>Profile</Drawer.Title>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Description>Narrow the issue list by owner and status.</Drawer.Description>
         <Drawer.Close>Close</Drawer.Close>
       </Drawer.Header>
       <Drawer.Body>
-        <TextField label="First name" />
-        <TextField label="Last name" />
-        <TextField label="Email" type="email" />
-        <TextField label="Company" />
-        <TextField label="Job title" />
-        <TextField label="Department" />
-        <TextField label="Address" />
-        <TextField label="City" />
-        <TextField label="Region" />
-        <TextField label="Postal code" />
-        <TextField label="Country" />
-        <TextField label="Website" type="url" />
-        <TextField label="Portfolio" type="url" />
-        <TextField label="Biography" />
+        <FieldStack>
+          {Array.from({ length: 14 }, (_, index) => (
+            <TextField key={index} label={\`Field \${index + 1}\`} />
+          ))}
+        </FieldStack>
       </Drawer.Body>
-      <Drawer.Footer><Drawer.Close>Done</Drawer.Close></Drawer.Footer>
+      <Drawer.Footer>
+        <Drawer.Close>Done</Drawer.Close>
+      </Drawer.Footer>
     </Drawer.Panel>
   </Drawer.Content>
-</Drawer>` } } },
+</Drawer>`,
+      },
+    },
+  },
   render: (args) => <DrawerExample {...args} body={<LongFormBody />} />,
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, panel, body, header, footer, canvas } = await openDrawer({ canvasElement, userEvent });
@@ -1302,8 +1611,22 @@ export const OpenNoDescription: Story = {
 };
 
 export const Controlled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
-import { Drawer, TextField } from '@jfrader/ui';
+  name: 'Controlled',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Control the open state externally with open and onOpenChange.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Checkbox, Drawer, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FieldStack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
 
 function Filters() {
   const [open, setOpen] = useState(false);
@@ -1314,15 +1637,29 @@ function Filters() {
         <Drawer.Panel>
           <Drawer.Header>
             <Drawer.Title>Filters</Drawer.Title>
+            <Drawer.Description>Narrow the issue list by owner and status.</Drawer.Description>
             <Drawer.Close>Close</Drawer.Close>
           </Drawer.Header>
-          <Drawer.Body><TextField label="Owner" /></Drawer.Body>
-          <Drawer.Footer><Drawer.Close>Done</Drawer.Close></Drawer.Footer>
+          <Drawer.Body>
+            <FieldStack>
+              <TextField label="Owner" />
+              <Checkbox label="Backlog" />
+              <Checkbox label="In progress" />
+              <Checkbox label="In review" />
+              <Checkbox label="Done" />
+            </FieldStack>
+          </Drawer.Body>
+          <Drawer.Footer>
+            <Drawer.Close>Done</Drawer.Close>
+          </Drawer.Footer>
         </Drawer.Panel>
       </Drawer.Content>
     </Drawer>
   );
-}` } } },
+}`,
+      },
+    },
+  },
   render: (args) => <ControlledDrawer {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const { canvas, trigger, dialog } = await openDrawer({ canvasElement, userEvent });
@@ -1367,7 +1704,21 @@ export const ControlledReject: Story = {
 };
 
 export const CancelVeto: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+  name: 'Cancel veto',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Prevent closure on Escape, Close button, or backdrop click with onCancel.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Checkbox, Drawer, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FieldStack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
 
 <Drawer>
   <Drawer.Trigger>Open filters</Drawer.Trigger>
@@ -1375,12 +1726,27 @@ export const CancelVeto: Story = {
     <Drawer.Panel>
       <Drawer.Header>
         <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Description>Narrow the issue list by owner and status.</Drawer.Description>
         <Drawer.Close>Close</Drawer.Close>
       </Drawer.Header>
-      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+      <Drawer.Body>
+        <FieldStack>
+          <TextField label="Owner" />
+          <Checkbox label="Backlog" />
+          <Checkbox label="In progress" />
+          <Checkbox label="In review" />
+          <Checkbox label="Done" />
+        </FieldStack>
+      </Drawer.Body>
+      <Drawer.Footer>
+        <Drawer.Close>Done</Drawer.Close>
+      </Drawer.Footer>
     </Drawer.Panel>
   </Drawer.Content>
-</Drawer>` } } },
+</Drawer>`,
+      },
+    },
+  },
   render: (args) => <DrawerExample {...args} contentProps={{ onCancel: (event) => event.preventDefault() }} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const { dialog, canvas } = await openDrawer({ canvasElement, userEvent });
@@ -1850,7 +2216,15 @@ function NestedPopoverBody() {
 NestedPopoverBody.displayName = 'NestedPopoverBody';
 
 export const NestedPopover: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+  name: 'Nested popover',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Render a floating popover inside the drawer using ThemeRoot portalContainer.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
 import { Button, Drawer, Popover, ThemeRoot } from '@jfrader/ui';
 
 function OwnerFilters() {
@@ -1862,6 +2236,7 @@ function OwnerFilters() {
         <Drawer.Panel>
           <Drawer.Header>
             <Drawer.Title>Filters</Drawer.Title>
+            <Drawer.Description>Narrow the issue list by owner and status.</Drawer.Description>
             <Drawer.Close>Close</Drawer.Close>
           </Drawer.Header>
           <Drawer.Body>
@@ -1875,11 +2250,17 @@ function OwnerFilters() {
               <div ref={setHost} />
             </ThemeRoot>
           </Drawer.Body>
+          <Drawer.Footer>
+            <Drawer.Close>Done</Drawer.Close>
+          </Drawer.Footer>
         </Drawer.Panel>
       </Drawer.Content>
     </Drawer>
   );
-}` } } },
+}`,
+      },
+    },
+  },
   render: (args) => <DrawerExample {...args} body={<NestedPopoverBody />} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const { dialog, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
@@ -2157,7 +2538,15 @@ function NestedDialogBody() {
 NestedDialogBody.displayName = 'NestedDialogBody';
 
 export const NestedDialog: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Dialog, Drawer } from '@jfrader/ui';
+  name: 'Nested dialog',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Open a secondary confirmation dialog from inside the drawer.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Dialog, Drawer } from '@jfrader/ui';
 
 <Drawer>
   <Drawer.Trigger>Open filters</Drawer.Trigger>
@@ -2165,6 +2554,7 @@ export const NestedDialog: Story = {
     <Drawer.Panel>
       <Drawer.Header>
         <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Description>Narrow the issue list by owner and status.</Drawer.Description>
         <Drawer.Close>Close</Drawer.Close>
       </Drawer.Header>
       <Drawer.Body>
@@ -2176,9 +2566,15 @@ export const NestedDialog: Story = {
           </Dialog.Content>
         </Dialog>
       </Drawer.Body>
+      <Drawer.Footer>
+        <Drawer.Close>Done</Drawer.Close>
+      </Drawer.Footer>
     </Drawer.Panel>
   </Drawer.Content>
-</Drawer>` } } },
+</Drawer>`,
+      },
+    },
+  },
   render: (args) => <DrawerExample {...args} body={<NestedDialogBody />} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const { dialog, canvas } = await openDrawer({ canvasElement, userEvent });

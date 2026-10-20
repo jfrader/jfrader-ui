@@ -50,14 +50,6 @@ export const ShellAndPanelReplacements: StoryObj<typeof BottomSheet> = {
 };
 const TRIGGER = 'Open trip';
 
-const USAGE = `<BottomSheet
-  triggerLabel="Open trip"
-  title="Trip details"
-  description="Departure and arrival information."
-  content={<TripDetails />}
-  closeLabel="Close"
-/>`;
-
 const meta = {
   title: 'Surfaces/BottomSheet',
   component: BottomSheet,
@@ -65,30 +57,29 @@ const meta = {
   args: { onOpenChange: fn(), onValueChange: fn() },
   parameters: {
     docs: {
-      source: { code: USAGE },
       description: {
         component:
           'Open content from the bottom of the screen. Drag the handle or use the keyboard to change its height.',
       },
-      usage: `### Composition
-Pass triggerLabel, title, content and closeLabel for a standard bottom sheet; description is optional. Do not combine these props with children. Use slotProps for trigger, content, panel, header, handle, title, description, close and body props. For custom hierarchy, keep the compound parts.
+      sections: [
+        { title: 'Easy and compound', stories: ['Default', 'Compound'] },
+        { title: 'Keyboard', stories: ['KeyboardNavigation'] },
+        { title: 'Controlled and disabled', stories: ['Controlled', 'EasyModeDisabled'] },
+        { title: 'Native form', stories: ['NativeFormClose'] },
+        { title: 'Nested', stories: ['NestedOverlay'] },
+        { title: 'Drag', stories: ['DragToResize'] },
+      ],
+      usage: `### When to use
+Use a bottom sheet on mobile viewports or touch devices for secondary tasks, filters, or details that open from the bottom without leaving the current view.
 
-- The sheet is always modal. Its native dialog contains focus and blocks the background, even at peek height.
-- Detents are stable, ascending fractions. \`value/defaultValue/onValueChange\` manages their numeric index independently of open state. Remount to change detent values.
-- The panel rises to its detent on open and slides down before the dialog closes. Reduced motion skips spring travel on open, close, and accepted height changes.
-- Supply translated Handle/Close names. \`getValueText\` and \`locale\` customize height text; the default uses Intl percentages.
-- Floating children need a stable ThemeRoot \`portalContainer\` inside Content. Do not portal them to the body.
-- Mobile keyboard, touch, and screen-reader behavior still need manual verification.
+### Constraints
+The sheet is always modal; the background page remains inert even at peek heights. Height snaps to stable ascending detents between 0 and 1; remount the sheet to change detent values. The panel rises when opening and finishes sinking before the dialog closes. Reduced motion disables sliding and spring travel. Floating overlays inside the sheet must portal into a container inside the sheet rather than the document body.
 
 ### Keyboard
-- On Handle, Up/Down choose adjacent detents, Home/End choose tallest/smallest, and Enter/Space switch between the extremes.
-- Escape cancels a drag first; otherwise it dismisses only the topmost layer.
-- In Body, PageDown/Space expands before scrolling. Reverse reading keys scroll natively.
+Focusing the handle: Arrow Up and Down navigate between adjacent detents, Home and End jump to the highest and lowest detents, and Enter or Space toggles between extremes. In the scrollable body, PageDown and Space expand to the maximum height before scrolling down. Escape cancels an active drag gesture first; a subsequent Escape dismisses the sheet.
 
-### Panel material
-Panel inherits appearance; appearance="contrast" uses fixed charcoal and carries it to descendant portals. component is sugar for slots.root; only root is adopted, slots.root wins. slotProps.root accepts div props and sx. Declare adapters outside render, render one div, and forward every supplied prop and ref. Apply material before className. Changing the adapter type remounts children and resets focus and uncontrolled inputs.
-
-Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry → slot sx/classes → consumer classes → consumer sx. Host IDs, ref registration, transform and measured height stay authoritative. Select composed panels with [data-ui~="bottom-sheet-panel"].`,
+### Accessibility
+Provide an accessible name for the sheet heading, resize handle, and close button. If the sheet contains complex structured content, opt out of the automatic accessible description so assistive technology reads content in order rather than as a single description string.`,
     },
   },
 } satisfies Meta<typeof BottomSheet>;
@@ -298,7 +289,7 @@ function touch(
 }
 
 export const Default: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
-  name: 'Easy mode',
+  name: 'Trip itinerary',
   args: {
     triggerLabel: TRIGGER,
     title: TITLE,
@@ -314,13 +305,24 @@ export const Default: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
   },
   parameters: {
     docs: {
+      description: {
+        story:
+          'Open a trip itinerary from the bottom of the screen with generated title, description, and close button.',
+      },
       source: {
         language: 'tsx',
-        code: `<BottomSheet
+        code: `import { BottomSheet, Button } from '@jfrader/ui';
+
+<BottomSheet
   triggerLabel="Open trip"
   title="Trip details"
   description="Departure and arrival information."
-  content={<TripDetails />}
+  content={
+    <>
+      <p>Train 42 · Platform 3</p>
+      <Button>Save trip</Button>
+    </>
+  }
   closeLabel="Close"
 />`,
       },
@@ -355,7 +357,40 @@ export const Default: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
 };
 
 export const Compound: Story = {
-  name: 'Compound',
+  name: 'Compound anatomy',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Arrange the trigger, dialog shell, animated panel, header, handle, body, and footer with compound parts.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { BottomSheet, Button } from '@jfrader/ui';
+
+<BottomSheet>
+  <BottomSheet.Trigger>Open trip</BottomSheet.Trigger>
+  <BottomSheet.Content>
+    <BottomSheet.Panel>
+      <BottomSheet.Header>
+        <BottomSheet.Handle aria-label="Resize sheet" />
+        <BottomSheet.Title>Trip details</BottomSheet.Title>
+        <BottomSheet.Description>Departure and arrival information.</BottomSheet.Description>
+        <BottomSheet.Close>Close</BottomSheet.Close>
+      </BottomSheet.Header>
+      <BottomSheet.Body>
+        <p>Train 42 · Platform 3</p>
+        <Button>Save trip</Button>
+      </BottomSheet.Body>
+      <BottomSheet.Footer>
+        <span>Departure 09:30</span>
+      </BottomSheet.Footer>
+    </BottomSheet.Panel>
+  </BottomSheet.Content>
+</BottomSheet>`,
+      },
+    },
+  },
   render,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: TRIGGER }));
@@ -478,7 +513,7 @@ export const EasyModeControlled: StoryObj<(props: BottomSheetEasyProps) => React
 };
 
 export const EasyModeDisabled: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
-  name: 'Easy mode disabled',
+  name: 'Disabled trigger',
   args: {
     triggerLabel: TRIGGER,
     title: TITLE,
@@ -494,6 +529,35 @@ export const EasyModeDisabled: StoryObj<(props: BottomSheetEasyProps) => ReactNo
     slotProps: {
       trigger: {
         disabled: true,
+      },
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Disable the trigger button to prevent opening the bottom sheet.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { BottomSheet, Button } from '@jfrader/ui';
+
+<BottomSheet
+  triggerLabel="Open trip"
+  title="Trip details"
+  description="Departure and arrival information."
+  content={
+    <>
+      <p>Train 42 · Platform 3</p>
+      <Button>Save trip</Button>
+    </>
+  }
+  closeLabel="Close"
+  slotProps={{
+    trigger: {
+      disabled: true,
+    },
+  }}
+/>`,
       },
     },
   },
@@ -854,6 +918,52 @@ function ControlledExample(args: BottomSheetCompoundProps) {
   );
 }
 export const Controlled: Story = {
+  name: 'Controlled detent and open state',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Drive the sheet visibility and active detent index from external state.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { BottomSheet, Button } from '@jfrader/ui';
+
+function ControlledTripSheet() {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(0);
+
+  return (
+    <BottomSheet
+      open={open}
+      onOpenChange={setOpen}
+      value={value}
+      onValueChange={setValue}
+    >
+      <BottomSheet.Trigger>Open trip</BottomSheet.Trigger>
+      <BottomSheet.Content>
+        <BottomSheet.Panel>
+          <BottomSheet.Header>
+            <BottomSheet.Handle aria-label="Resize sheet" />
+            <BottomSheet.Title>Trip details</BottomSheet.Title>
+            <BottomSheet.Description>Departure and arrival information.</BottomSheet.Description>
+            <BottomSheet.Close>Close</BottomSheet.Close>
+          </BottomSheet.Header>
+          <BottomSheet.Body>
+            <p>Train 42 · Platform 3</p>
+            <Button>Save trip</Button>
+          </BottomSheet.Body>
+          <BottomSheet.Footer>
+            <span>Departure 09:30</span>
+          </BottomSheet.Footer>
+        </BottomSheet.Panel>
+      </BottomSheet.Content>
+    </BottomSheet>
+  );
+}`,
+      },
+    },
+  },
   render: ControlledExample,
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: TRIGGER }));
@@ -920,6 +1030,40 @@ export const ControlledRejectClose: Story = {
 };
 
 export const KeyboardNavigation: Story = {
+  name: 'Keyboard navigation',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Step between detents with ArrowUp, ArrowDown, Home, End, or Space, and close with Escape.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { BottomSheet, Button } from '@jfrader/ui';
+
+<BottomSheet>
+  <BottomSheet.Trigger>Open trip</BottomSheet.Trigger>
+  <BottomSheet.Content>
+    <BottomSheet.Panel>
+      <BottomSheet.Header>
+        <BottomSheet.Handle aria-label="Resize sheet" />
+        <BottomSheet.Title>Trip details</BottomSheet.Title>
+        <BottomSheet.Description>Departure and arrival information.</BottomSheet.Description>
+        <BottomSheet.Close>Close</BottomSheet.Close>
+      </BottomSheet.Header>
+      <BottomSheet.Body>
+        <p>Train 42 · Platform 3</p>
+        <Button>Save trip</Button>
+      </BottomSheet.Body>
+      <BottomSheet.Footer>
+        <span>Departure 09:30</span>
+      </BottomSheet.Footer>
+    </BottomSheet.Panel>
+  </BottomSheet.Content>
+</BottomSheet>`,
+      },
+    },
+  },
   render,
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     const trigger = canvas.getByRole('button', { name: TRIGGER });
@@ -1021,6 +1165,45 @@ export const DragSettleAndDismiss: Story = {
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
+};
+
+export const DragToResize: Story = {
+  name: 'Drag to resize and dismiss',
+  args: { detents: [0.3, 0.6, 0.9] },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Drag the header or handle to settle at adjacent detents or swipe down to dismiss.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { BottomSheet, Button } from '@jfrader/ui';
+
+<BottomSheet detents={[0.3, 0.6, 0.9]}>
+  <BottomSheet.Trigger>Open trip</BottomSheet.Trigger>
+  <BottomSheet.Content>
+    <BottomSheet.Panel>
+      <BottomSheet.Header>
+        <BottomSheet.Handle aria-label="Resize sheet" />
+        <BottomSheet.Title>Trip details</BottomSheet.Title>
+        <BottomSheet.Description>Departure and arrival information.</BottomSheet.Description>
+        <BottomSheet.Close>Close</BottomSheet.Close>
+      </BottomSheet.Header>
+      <BottomSheet.Body>
+        <p>Train 42 · Platform 3</p>
+        <Button>Save trip</Button>
+      </BottomSheet.Body>
+      <BottomSheet.Footer>
+        <span>Departure 09:30</span>
+      </BottomSheet.Footer>
+    </BottomSheet.Panel>
+  </BottomSheet.Content>
+</BottomSheet>`,
+      },
+    },
+  },
+  render,
 };
 export const GestureCancel: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
@@ -1152,6 +1335,41 @@ const nativeClosePlay: Story['play'] = async ({ canvas, canvasElement, args, use
   await expect(dialogIn(canvasElement).open).toBe(true);
 };
 export const NativeFormClose: Story = {
+  name: 'Native form submission',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Submit a method="dialog" form to close the sheet and return focus to the trigger.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { BottomSheet, Button } from '@jfrader/ui';
+
+<BottomSheet>
+  <BottomSheet.Trigger>Open trip</BottomSheet.Trigger>
+  <BottomSheet.Content>
+    <BottomSheet.Panel>
+      <BottomSheet.Header>
+        <BottomSheet.Handle aria-label="Resize sheet" />
+        <BottomSheet.Title>Trip details</BottomSheet.Title>
+        <BottomSheet.Description>Departure and arrival information.</BottomSheet.Description>
+        <BottomSheet.Close>Close</BottomSheet.Close>
+      </BottomSheet.Header>
+      <BottomSheet.Body>
+        <form method="dialog">
+          <Button type="submit">Complete</Button>
+        </form>
+      </BottomSheet.Body>
+      <BottomSheet.Footer>
+        <span>Departure 09:30</span>
+      </BottomSheet.Footer>
+    </BottomSheet.Panel>
+  </BottomSheet.Content>
+</BottomSheet>`,
+      },
+    },
+  },
   render: (args) => <NativeCloseExample {...args} mode="form" />,
   play: nativeClosePlay,
 };
@@ -1327,6 +1545,50 @@ function NestedExample(args: BottomSheetCompoundProps) {
   );
 }
 export const NestedOverlay: Story = {
+  name: 'Nested popover',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Host a popover inside the sheet so Escape dismisses the popover before closing the sheet.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { BottomSheet, Button, Popover, ThemeRoot } from '@jfrader/ui';
+
+function NestedSheetExample() {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+
+  return (
+    <BottomSheet>
+      <BottomSheet.Trigger>Open trip</BottomSheet.Trigger>
+      <BottomSheet.Content>
+        <div ref={setHost} />
+        <ThemeRoot portalContainer={host}>
+          <BottomSheet.Panel>
+            <BottomSheet.Header>
+              <BottomSheet.Handle aria-label="Resize sheet" />
+              <BottomSheet.Title>Trip details</BottomSheet.Title>
+              <BottomSheet.Close>Close</BottomSheet.Close>
+            </BottomSheet.Header>
+            <BottomSheet.Body>
+              <Popover>
+                <Popover.Trigger>Connection</Popover.Trigger>
+                <Popover.Content aria-label="Connection">
+                  <Button>Details</Button>
+                </Popover.Content>
+              </Popover>
+            </BottomSheet.Body>
+          </BottomSheet.Panel>
+        </ThemeRoot>
+      </BottomSheet.Content>
+    </BottomSheet>
+  );
+}`,
+      },
+    },
+  },
   render: NestedExample,
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: TRIGGER }));
