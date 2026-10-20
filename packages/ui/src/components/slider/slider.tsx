@@ -255,6 +255,7 @@ const tickStyle = css({
   position: 'absolute',
   insetBlockStart: '50%',
   transform: 'translate(-50%, -50%)',
+  '&:dir(rtl)': { transform: 'translate(50%, -50%)' },
   inlineSize: vars.space[1],
   blockSize: vars.space[2],
   border: `1px solid ${vars.color.borderControl}`,
