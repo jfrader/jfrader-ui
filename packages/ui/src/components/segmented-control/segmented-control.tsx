@@ -39,14 +39,23 @@ type SlotProps<Element extends 'div' | 'span'> = ComponentPropsWithRef<Element> 
 
 export interface SegmentedControlCompoundProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {
+  /** Controls which segment is selected. */
   value?: string;
+  /** Selects the initial segment when uncontrolled; omitted leaves all segments unselected. */
   defaultValue?: string;
+  /** Called with the requested segment value on activation or keyboard navigation. */
   onValueChange?: (value: string) => void;
+  /** Disables every segment. Defaults to `false`. */
   disabled?: boolean;
+  /** Sets segment height and text size. Defaults to `md`. */
   size?: SegmentedControlSize;
+  /** Sets the selected segment's background treatment. Defaults to `soft`. */
   variant?: SegmentedControlVariant;
+  /** Names the group for assistive technology, overriding `aria-label`. */
   label?: string;
+  /** Called with an enabled segment's value when it receives focus or pointer hover. */
   onOptionIntent?: (value: string) => void;
+  /** Passes props to the track and selected-segment indicator. */
   slotProps?: {
     /** Inner track container wrapping segment items and indicator. */
     track?: SlotProps<'div'>;
@@ -54,6 +63,7 @@ export interface SegmentedControlCompoundProps
     selection?: SlotProps<'span'>;
   };
   options?: never;
+  /** Replaces the track and selected-segment indicator. */
   slots?: Pick<SegmentedControlSlots, 'track' | 'selection'>;
   component?: never;
 }
@@ -84,16 +94,22 @@ export interface SegmentedControlSlotProps extends NonNullable<SegmentedControlC
   item?: Omit<SegmentedControlItemProps, 'value' | 'children' | 'disabled' | 'id' | 'accessory'>;
 }
 export interface SegmentedControlEasyProps extends Omit<SegmentedControlCompoundProps, 'children' | 'options' | 'slots' | 'slotProps' | 'component'> {
+  /** Renders segments in order using each option's value as its key. */
   options: readonly SegmentedControlOption[];
   children?: never;
+  /** Replaces the generated root, items, track or selection indicator. */
   slots?: SegmentedControlSlots;
+  /** Replaces the generated root; `slots.root` takes precedence. */
   component?: SegmentedControlSlots['root'];
+  /** Passes props to the generated root, items, track and selection indicator. */
   slotProps?: SegmentedControlSlotProps;
 }
 export type SegmentedControlProps = SegmentedControlCompoundProps | SegmentedControlEasyProps;
 
 export interface SegmentedControlItemProps extends Omit<ComponentPropsWithRef<'button'>, 'value'>, SxProps {
+  /** Identifies this segment for selection and change callbacks. */
   value: string;
+  /** Renders beside the label and supplies an accessible description. */
   accessory?: ReactNode;
 }
 
