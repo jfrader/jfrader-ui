@@ -13,6 +13,7 @@ import { CodeBlock, type CodeBlockProps, type CodeHighlightLines, type CodeHighl
 import { loadShikiHighlight } from './shiki';
 
 const Stack = styled.div({ display: 'grid', gap: vars.space[4] });
+const Frame = styled.div({ inlineSize: `min(48rem, calc(100vw - ${vars.space[8]}))`, maxInlineSize: '100%' });
 const ConstrainedFrame = styled.div({ maxInlineSize: '20rem' });
 
 const SOURCE = 'export const answer = 42;\nconsole.log(answer);\n';
@@ -163,6 +164,7 @@ const meta = {
   title: 'Data display/CodeBlock',
   component: CodeBlock,
   tags: ['autodocs'],
+  decorators: [Story => <Frame><Story /></Frame>],
   args: { code: SOURCE, filename: 'answer.ts', locale: 'en-GB', onOpenChange: fn() },
   parameters: {
     docs: {
@@ -401,13 +403,10 @@ export const LineNumbers: Story = {
 };
 export const LongLines: Story = {
   args: { code: `const long = '${'source '.repeat(100)}';`, lineNumbers: true },
-  render: (args) => (
-    <ConstrainedFrame>
-      <CodeBlock {...args} />
-    </ConstrainedFrame>
-  ),
   play: async ({ canvasElement }) => {
     const pre = source(canvasElement);
+    const document = canvasElement.ownerDocument.documentElement;
+    await expect(document.scrollWidth).toBeLessThanOrEqual(document.clientWidth);
     await expect(pre.scrollWidth).toBeGreaterThan(pre.clientWidth);
     await expect(getComputedStyle(pre).whiteSpace).toBe('pre');
     await expect(getComputedStyle(pre).overflowX).toBe('auto');

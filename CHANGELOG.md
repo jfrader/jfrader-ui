@@ -13,7 +13,7 @@
 - `Tabs` contains overflowing line tabs in a scrollable list, aligns icons with labels, keeps keyboard-focused tabs visible, and permits native touch scrolling when indicator dragging is off. `Tabs` panels and `Accordion` headers and panels wrap unbroken text within narrow containers.
 - `TimePicker` shows one disclosure arrow and wraps long field labels within narrow layouts; `DateRangePicker` keeps scrolling inside its popup when reaching the end of a long calendar panel.
 - `Toast` keeps long queues inside a scrollable viewport and aligns loading indicators with their messages. `ToastStack` wraps long toggle labels, preserves their focus rings and keeps taller collapsed cards below its toggle; both contain scrolling within notifications.
-- `FileDropzone` keeps inside file lists within the drop surface. `CodeBlock` preserves the copy button's target size beside long filenames and language labels.
+- `FileDropzone` keeps inside file lists within the drop surface. `CodeBlock` preserves the copy button's target size beside long filenames and language labels, and its examples fit phone screens.
 - `CommandPalette` fits phone screens without clipping and keeps its search field visible while results scroll in short viewports. `Popover` wraps long links inside its panel; both contain scrolling within their content.
 - `Menu` wraps unbroken action labels inside its popup and keeps separators visible in scrolling lists.
 - `TreeView` keeps deeply nested labels readable and keyboard targets usable in horizontally scrolling trees, and keeps selection visible in forced colors. `FilterToolbar` shows the configured empty message for each generated filter, and its narrow examples fit phone-width documentation previews.
