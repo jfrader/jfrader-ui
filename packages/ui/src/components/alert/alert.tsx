@@ -34,14 +34,21 @@ export interface AlertSlots {
 }
 
 export interface AlertProps extends Omit<ComponentPropsWithRef<'div'>, 'title' | 'role'>, SxProps {
+  /** Set the accent and announcement urgency. Defaults to `info`; only `danger` uses `alert`. */
   tone?: AlertTone;
   /** Announced tone word. Put visible meaning in the title text. */
   toneLabel?: string;
+  /** Show a heading above the message body. */
   title?: ReactNode;
+  /** Supply the alert message body. */
   children?: ReactNode;
+  /** Show a dismiss button that requests removal; the caller removes the alert. */
   onDismiss?: () => void;
+  /** Name the dismiss button. Defaults to `Dismiss`. */
   dismissLabel?: string;
+  /** Replace the root, title, message body, or dismiss button. */
   slots?: AlertSlots;
+  /** Pass styling props to the root, title, message body, and dismiss button. */
   slotProps?: {
     /** Outer container element holding the alert message and dismiss button. */
     root?: AlertPartProps;

@@ -4,11 +4,15 @@ import { focusRingInset } from '../../styling/focus-ring';
 import { modalBackdropMotion, modalSurfaceMotion, PALETTE_ENTER_SCALE } from '../../styling/overlay-motion';
 import { modalShellReset, raisedSurface } from '../../styling/surface';
 
+const availableBlockSize = `calc(100dvh - ${vars.space[12]} - ${vars.space[4]})`;
+
 export const dialogStyle = css(
   {
     ...modalShellReset,
     // Anchored to the top so the panel does not jump while the list height changes.
     marginBlockStart: vars.space[12],
+    maxBlockSize: availableBlockSize,
+    maxInlineSize: 'none',
   },
   modalBackdropMotion,
 );
@@ -20,6 +24,7 @@ export const panelStyle = css({
   borderRadius: vars.radius.lg,
   boxShadow: vars.shadow.floating,
   inlineSize: 'min(560px, calc(100vw - 32px))',
+  maxBlockSize: availableBlockSize,
   ...modalSurfaceMotion(PALETTE_ENTER_SCALE),
 });
 
@@ -27,6 +32,7 @@ export const inputStyle = css({
   boxSizing: 'border-box',
   inlineSize: '100%',
   blockSize: '48px',
+  flexShrink: 0,
   margin: 0,
   border: 0,
   borderBlockEnd: `1px solid ${vars.color.borderControl}`,
@@ -48,7 +54,9 @@ export const listStyle = css({
   display: 'flex',
   flexDirection: 'column',
   maxBlockSize: '320px',
+  minBlockSize: 0,
   overflow: 'auto',
+  overscrollBehavior: 'contain',
   padding: vars.space[1],
   '&[hidden]': {
     display: 'none',

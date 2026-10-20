@@ -27,11 +27,17 @@ export interface CheckboxPartProps {
 }
 
 export interface CheckboxProps extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'type'>, SxProps {
+  /** Show text alongside the control as its clickable label. */
   label?: ReactNode;
+  /** Show supporting text below the control and include it in the accessible description. */
   description?: ReactNode;
+  /** Show the mixed state until cleared by the caller. Defaults to false. */
   indeterminate?: boolean;
+  /** Set the box and label size. Defaults to `md`. */
   size?: CheckboxSize;
+  /** Receive the native checked state after `onChange` runs. */
   onCheckedChange?: (checked: boolean) => void;
+  /** Replace the generated control glyph, label, or description. */
   slots?: {
     /** Displays the checkbox state glyph. */
     control?: ComponentType<CheckboxPartProps>;
@@ -40,6 +46,7 @@ export interface CheckboxProps extends Omit<ComponentPropsWithRef<'input'>, 'siz
     /** Displays the checkbox description. */
     description?: ComponentType<CheckboxPartProps>;
   };
+  /** Pass styling props to the outer label and generated parts. */
   slotProps?: {
     /** Outer label wrapping the checkbox control, label, and description. Renders a `label` by default. */
     root?: CheckboxPartProps;

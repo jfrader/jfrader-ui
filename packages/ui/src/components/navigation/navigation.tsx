@@ -112,6 +112,7 @@ export interface NavigationBaseProps extends Omit<ComponentPropsWithRef<'nav'>, 
 }
 
 export interface NavigationCompoundProps extends NavigationBaseProps {
+  /** Compose groups and items directly instead of supplying `groups`. */
   children?: ReactNode;
   groups?: never;
   activeHref?: never;
@@ -128,14 +129,18 @@ export interface NavigationEasyProps extends NavigationBaseProps {
   /** Mark the item matching this href as active (aria-current="page"). */
   activeHref?: string;
   children?: never;
+  /** Replace the root `nav`; takes precedence over `slots.root`. */
   component?: NavigationSlots['root'];
+  /** Replace the generated root, groups, or items. */
   slots?: NavigationSlots;
+  /** Pass props and `sx` to the generated root, groups, and items. */
   slotProps?: NavigationSlotProps;
 }
 
 export type NavigationProps = NavigationCompoundProps | NavigationEasyProps;
 
 export interface NavigationGroupProps extends ComponentPropsWithRef<'section'>, SxProps {
+  /** Name the group heading or disclosure trigger; required when `collapsible` is true. */
   label?: ReactNode;
   /** Render as a native <details> disclosure; the label becomes its <summary>. */
   collapsible?: boolean;
@@ -149,9 +154,11 @@ export interface NavigationGroupProps extends ComponentPropsWithRef<'section'>, 
 
 // Renders an <a> or a <span>, so the ref is typed as the common HTMLElement.
 export interface NavigationItemProps extends AnchorHTMLAttributes<HTMLElement>, RefAttributes<HTMLElement>, SxProps {
+  /** Set the link destination; without it, render a non-link item. */
   href?: string;
   /** Marks the current page (aria-current="page"). */
   active?: boolean;
+  /** Remove the link destination and block activation. Defaults to false. */
   disabled?: boolean;
   /** Leading icon, hidden from assistive technology. */
   icon?: ReactNode;

@@ -138,7 +138,7 @@ const Frame = styled.div({ inlineSize: `min(42rem, calc(100vw - 2 * ${vars.space
 
 const FixtureButton = styled.button({ minBlockSize: vars.space[8], minInlineSize: vars.space[8], padding: vars.space[2], backgroundColor: vars.color.surface, color: vars.color.text, border: `1px solid ${vars.color.borderControl}`, borderRadius: vars.radius.sm });
 
-const Stack = styled.div({ display: 'grid', gap: vars.space[6] });
+const Stack = styled.div({ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: vars.space[6] });
 
 const NarrowFrame = styled.div({ inlineSize: '20rem', maxInlineSize: '100%', blockSize: '32rem' });
 
@@ -160,6 +160,7 @@ const meta = {
   },
   decorators: [(Story) => <Frame><Story /></Frame>],
   parameters: {
+    layout: 'padded',
     docs: {
       sections: [
         { title: 'Basic', stories: ['Default'] },
@@ -1904,6 +1905,29 @@ export const RefAndStyling: Story = {
   },
 };
 export const LightTheme: Story = { decorators: [withLightTheme] };
+export const LongPresence: Story = {
+  args: {
+    participants: [...PEOPLE, { id: 'long-name', name: 'LongParticipantName'.repeat(12) }],
+    typing: ['long-name'],
+  },
+  decorators: [(Story) => <NarrowFrame><Story /></NarrowFrame>],
+  play: async ({ canvasElement, canvas, userEvent }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="chat-thread"]')!;
+    const presence = root.querySelector<HTMLElement>(':scope > [aria-hidden="true"]')!;
+    await expect(presence.scrollWidth).toBeLessThanOrEqual(presence.clientWidth + 1);
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+    const field = canvas.getByRole('textbox');
+    field.focus();
+    await userEvent.tab();
+    await focusRing(canvas.getByRole('button', { name: 'Send' }));
+    await userEvent.tab();
+    const attach = canvas.getByRole('button', { name: 'Attach files' });
+    await focusRing(attach);
+    await expect(attach.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    await userEvent.tab({ shift: true });
+    await focusRing(canvas.getByRole('button', { name: 'Send' }));
+  },
+};
 export const RTL: Story = {
   parameters: {
     docs: {

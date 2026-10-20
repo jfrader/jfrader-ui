@@ -41,6 +41,7 @@ export interface GameMarksSlots {
 }
 
 export interface GameMarksProps extends Omit<GameCardRootProps, 'children'>, Omit<GameCardRootCustomization, 'slots'>, SxProps {
+  /** Shows the visible label that names the mark count. */
   label: string;
   /** Nonnegative safe integer. */
   count: number;
@@ -50,8 +51,11 @@ export interface GameMarksProps extends Omit<GameCardRootProps, 'children'>, Omi
   maxPerRow?: number;
   /** Rows keep marks separate; pile overlaps adjacent marks. Defaults to rows. */
   layout?: 'rows' | 'pile';
+  /** Formats the visible count. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Passes props and styles to the mark group and its parts. */
   slotProps?: GameMarksSlotProps;
+  /** Replaces the mark group and its parts. */
   slots?: GameMarksSlots;
 }
 const DEFAULT_MAX_PER_ROW = 5;

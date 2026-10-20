@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
+import { Button } from '../button';
 import {
   CommandPalette,
   type CommandPaletteCompoundProps,
@@ -328,7 +329,7 @@ function ControlledEasyFixture() {
   const [selected, setSelected] = useState<string>('none');
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)}>External open</button>
+      <Button onClick={() => setOpen(true)}>External open</Button>
       <CommandPalette
         open={open}
         onOpenChange={setOpen}
@@ -346,7 +347,7 @@ export const EasyModeControlled: StoryObj = {
   parameters: { docs: {
     description: { story: 'Open the palette from an external button and keep the selected command in state.' },
     source: { language: 'tsx', code: `import { useState } from 'react';
-import { CommandPalette } from '@jfrader/ui';
+import { Button, CommandPalette } from '@jfrader/ui';
 
 const commands = [
   { value: 'open-file', label: 'Open file', group: 'Files', id: 'cmd-1' },
@@ -359,7 +360,7 @@ function Commands() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState('none');
   return <>
-    <button type="button" onClick={() => setOpen(true)}>External open</button>
+    <Button onClick={() => setOpen(true)}>External open</Button>
     <CommandPalette label="Command palette" items={commands} open={open}
       onOpenChange={setOpen} onSelect={(item) => setSelected(item.value)} />
     <output aria-label="Selected command">{selected}</output>
@@ -370,6 +371,7 @@ function Commands() {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const opener = canvas.getByRole('button', { name: 'External open' });
+    await expect(opener.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
     await userEvent.click(opener);
     const dialog = await canvas.findByRole('dialog', { name: LABEL });
     await expect(dialog).toHaveAttribute('open');
@@ -717,9 +719,9 @@ function NativeCloseExample(props: CommandPaletteCompoundProps) {
         <CommandPalette.List>
           <CommandPalette.Item value="open-file">Open file</CommandPalette.Item>
         </CommandPalette.List>
-        <button type="button" onClick={() => dialogRef.current?.close()}>
+        <Button onClick={() => dialogRef.current?.close()}>
           Close natively
-        </button>
+        </Button>
       </CommandPalette.Content>
     </CommandPalette>
   );
@@ -735,7 +737,9 @@ export const RepairNativeClose: Story = {
     const canvas = within(canvasElement);
     const dialog = await canvas.findByRole('dialog', { name: LABEL });
     await expect(args.onOpenChange).toHaveBeenCalledTimes(0);
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Close natively' }));
+    const close = within(dialog).getByRole('button', { name: 'Close natively' });
+    await expect(close.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    await userEvent.click(close);
     await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
     await waitFor(() => expect(args.onOpenChange).toHaveBeenCalledTimes(1));
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);

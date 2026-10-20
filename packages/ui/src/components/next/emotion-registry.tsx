@@ -13,6 +13,7 @@ const DEFAULT_CACHE_KEY = 'css';
 export interface EmotionRegistryProps {
   /** Sets the Emotion class name prefix and `data-emotion` cache key. Defaults to `'css'`. */
   cacheKey?: string;
+  /** Render the app inside the shared Emotion cache and token theme provider. */
   children?: ReactNode;
 }
 

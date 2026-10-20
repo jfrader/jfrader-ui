@@ -78,11 +78,15 @@ const CIVIL_DATE_FORMAT_OPTIONS = {
 export interface DatePickerBaseProps {
   /** Selected date, 'YYYY-MM-DD'. */
   value?: string;
+  /** Set the initial uncontrolled date as `YYYY-MM-DD`. Omit for no selection. */
   defaultValue?: string;
   /** Deduplicated value-change request with the date as 'YYYY-MM-DD'; controlled values may reject it. */
   onValueChange?: (value: string) => void;
+  /** Control whether the calendar popup is open; `disabled` keeps it closed. */
   open?: boolean;
+  /** Open the uncontrolled calendar initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receive requests to open or close the calendar popup. */
   onOpenChange?: (open: boolean) => void;
   /** Earliest selectable date, 'YYYY-MM-DD'. */
   min?: string;
@@ -98,6 +102,7 @@ export interface DatePickerBaseProps {
   name?: string;
   /** Shown while no date is selected. Defaults to the locale's date field names in display order. */
   placeholder?: string;
+  /** Compose the date input and calendar popup. */
   children?: ReactNode;
 }
 
@@ -115,12 +120,16 @@ type DatePickerGeneratedPartProps<Props> = Omit<Props, 'children'> & { sx?: Inte
 export interface DatePickerEasyProps extends Omit<DatePickerBaseProps, 'children'> {
   /** Label the generated date field and its popup. */
   label: string;
+  /** Show supporting content below the generated date field. */
   description?: ReactNode;
+  /** Show an error below the generated field and mark it invalid. */
   error?: ReactNode;
+  /** Set the generated date field's size. Defaults to `md`. */
   size?: DatePickerInputProps['size'];
   children?: never;
   /** Replace the field presentation or popup div; forward all supplied props and ref. */
   slots?: DatePickerSlots;
+  /** Pass props and `sx` to the generated input and popup. */
   slotProps?: {
     /** Text field trigger displaying the selected date. Default: `TextField`. */
     input?: DatePickerGeneratedPartProps<DatePickerInputProps>;

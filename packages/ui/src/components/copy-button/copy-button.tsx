@@ -68,8 +68,11 @@ export interface CopyButtonProps
   iconOnly?: boolean;
   /** Icon for each state. A supplied key replaces the default; `null` removes it. */
   icons?: CopyButtonIcons;
+  /** Control the displayed copy state. */
   value?: CopyButtonValue;
+  /** Set the initial uncontrolled copy state. Defaults to `idle`. */
   defaultValue?: CopyButtonValue;
+  /** Receive requested copy states, including the timed reset to `idle`. */
   onValueChange?: (value: CopyButtonValue) => void;
   /** Called once per successful write with the text captured at activation. */
   onCopied?: (text: string) => void;
@@ -77,10 +80,15 @@ export interface CopyButtonProps
   onCopyError?: (error: unknown) => void;
   /** Milliseconds before `copied`/`error` request `idle`; 0 keeps the result label. */
   resetAfterMs?: number;
+  /** Set the button's fill and border treatment. Defaults to `outline`. */
   variant?: ButtonVariant;
+  /** Set the button colour treatment. Defaults to `neutral`. */
   tone?: ButtonTone;
+  /** Set the button and icon size. Defaults to `sm`. */
   size?: ButtonSize;
+  /** Pass props and `sx` to the icon, label and live status. */
   slotProps?: CopyButtonSlotProps;
+  /** Replace the icon, label or live-status element. */
   slots?: {
     /** Displays the copy state icons. */
     icon?: ComponentType<CopyButtonSlotPartProps>;

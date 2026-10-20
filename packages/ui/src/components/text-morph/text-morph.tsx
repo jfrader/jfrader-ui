@@ -41,7 +41,15 @@ export interface TextMorphSlotProps {
   glyph?: TextMorphPartProps;
   canvas?: TextMorphCanvasProps;
 }
-type Content = { children: string; value?: never } | { value: string | number; children?: never };
+type Content = {
+  /** Animate changes to this text. Use instead of `value`. */
+  children: string;
+  value?: never;
+} | {
+  /** Animate changes to text or a formatted number. Use instead of `children`. */
+  value: string | number;
+  children?: never;
+};
 export type TextMorphProps = Omit<ComponentPropsWithRef<'span'>, 'children'> &
   SxProps &
   Content & {
@@ -49,7 +57,9 @@ export type TextMorphProps = Omit<ComponentPropsWithRef<'span'>, 'children'> &
     variant?: TextMorphVariant;
     /** Use the same locale on the server and client. Also controls grapheme segmentation. */
     locale?: Intl.LocalesArgument;
+    /** Format numeric values with these Intl options. Ignored when `format` is supplied. */
     formatOptions?: Intl.NumberFormatOptions;
+    /** Format numeric values instead of Intl formatting; disables numeric digit-wheel matching. */
     format?: (value: number) => string;
     /** Slot landing duration in milliseconds, clamped to 0–2000. */
     durationMs?: number;
@@ -57,6 +67,7 @@ export type TextMorphProps = Omit<ComponentPropsWithRef<'span'>, 'children'> &
     staggerMs?: number;
     /** Additional digit-wheel turns, clamped to 0–3. */
     spins?: number;
+    /** Match rolling cells from this edge. Defaults to `end` for numbers and `start` for text. */
     align?: 'start' | 'end';
     /** Announce unsolicited changes. Leave off for labels inside controls. */
     announce?: boolean;
@@ -64,8 +75,11 @@ export type TextMorphProps = Omit<ComponentPropsWithRef<'span'>, 'children'> &
     paused?: boolean;
     /** Sand geometry and rendering budgets. */
     sand?: SandOptions;
+    /** Replace the outer span; `slots.root` takes precedence. */
     component?: ComponentType<TextMorphPartProps>;
+    /** Replace wrapper, text, glyph, frame or sand canvas elements. */
     slots?: TextMorphSlots;
+    /** Pass props and `sx` to the wrapper and animation parts. */
     slotProps?: TextMorphSlotProps;
   };
 const WIDTH_SPRING = { type: 'spring', stiffness: 320, damping: 36, mass: 1 } as const;

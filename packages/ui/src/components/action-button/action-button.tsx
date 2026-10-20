@@ -27,6 +27,7 @@ export type ActionButtonPartProps = ComponentPropsWithRef<'span'> & {
 };
 export type ActionButtonRootProps = ComponentPropsWithRef<'button'> & {
   sx?: Interpolation<Theme>;
+  /** Adds root identity tokens alongside `action-button`. */
   'data-ui'?: string;
 };
 export interface ActionButtonSlots {
@@ -74,6 +75,7 @@ export interface ActionButtonProps extends Omit<
     label?: ActionButtonPartProps;
     status?: ActionButtonPartProps;
   };
+  /** Adds root identity tokens alongside `action-button`. */
   'data-ui'?: string;
 }
 

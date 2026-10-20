@@ -9,7 +9,9 @@ import { WithSx, type SxProps } from '../../styling/sx';
 export type ContainerSize = 'sm' | 'md' | 'lg' | 'xl';
 
 export interface ContainerProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /** Set the maximum width: `sm` 640px, `md` 768px, `lg` 1024px, `xl` 1280px. Defaults to `lg`. */
   size?: ContainerSize;
+  /** Set padding on both inline edges from the layout spacing scale. Defaults to `md` (16px). */
   paddingInline?: LayoutSpace;
 }
 

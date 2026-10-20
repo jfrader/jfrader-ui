@@ -10,7 +10,10 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 export type CallOverlayTone = 'success' | 'danger' | 'neutral';
-export type CallOverlayRootProps = ComponentPropsWithRef<'div'> & { 'data-ui'?: string };
+export type CallOverlayRootProps = ComponentPropsWithRef<'div'> & {
+  /** Adds whitespace-separated identity tokens alongside `call-overlay`. */
+  'data-ui'?: string;
+};
 export interface CallOverlaySlots {
   root?: ComponentType<CallOverlayRootProps>;
 }
@@ -26,9 +29,13 @@ export interface CallOverlayProps extends CallOverlayRootProps, SxProps {
   defaultOpen?: boolean;
   /** Requests closure after the announcement animation finishes. */
   onOpenChange?: (open: boolean) => void;
+  /** Sets the announcement's text color. Defaults to `'neutral'`. */
   tone?: CallOverlayTone;
+  /** Replaces the root div. `slots.root` takes precedence. */
   component?: CallOverlaySlots['root'];
+  /** Replaces the announcement container. */
   slots?: CallOverlaySlots;
+  /** Passes props and styles to the announcement container. */
   slotProps?: CallOverlaySlotProps;
 }
 

@@ -109,6 +109,7 @@ export interface ResizablePanelsBaseProps
   onValueChange?: (shares: number[]) => void;
   /** Completed key press, reset or pointer release. */
   onValueCommit?: (shares: number[]) => void;
+  /** Prevents separator interaction. Defaults to `false`. */
   disabled?: boolean;
   /** Locale for the default separator value text. */
   locale?: Intl.LocalesArgument;
@@ -117,10 +118,12 @@ export interface ResizablePanelsBaseProps
 }
 
 export interface ResizablePanelsCompoundProps extends ResizablePanelsBaseProps {
+  /** Supplies `ResizablePanels.Panel` elements in layout order. */
   children?: ReactNode;
   panels?: never;
   label?: never;
   slots?: never;
+  /** Passes props and styles to the group, panels and separators. */
   slotProps?: ResizablePanelsSlotProps;
   component?: never;
 }
@@ -133,7 +136,9 @@ export interface ResizablePanelsEasyProps extends ResizablePanelsBaseProps {
   children?: never;
   /** Replace the root container. Exactly sugar for `slots.root`. */
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the group, panels and separators generated from `panels`. */
   slots?: ResizablePanelsSlots;
+  /** Passes props and styles to the group, panels and separators. */
   slotProps?: ResizablePanelsSlotProps;
 }
 

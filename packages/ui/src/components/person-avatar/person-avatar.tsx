@@ -46,14 +46,27 @@ interface PersonAvatarBaseProps extends Omit<ComponentPropsWithRef<'svg'>,
   size?: PersonAvatarSize;
   /** Accessible name. Omit for decorative artwork; an empty string forces decoration. */
   alt?: string;
+  /** Replaces the SVG root. `slots.root` takes precedence. */
   component?: PersonAvatarSlots['root'];
+  /** Replaces the SVG root with a custom component. */
   slots?: PersonAvatarSlots;
+  /** Passes props and styles to the SVG root. */
   slotProps?: { root?: PersonAvatarRootProps };
 }
 
 export type PersonAvatarProps = PersonAvatarBaseProps & (
-  | { fullKit: true; crop?: 'none' }
-  | { fullKit?: false; crop?: PersonAvatarCrop }
+  | {
+      /** Shows the full kit below the portrait. Ignored for staff attire. */
+      fullKit: true;
+      /** Keeps the full-kit artwork uncropped. Only `'none'` is allowed. */
+      crop?: 'none';
+    }
+  | {
+      /** Extends the portrait to show the full kit when `true`. Defaults to `false`. Ignored for staff attire. */
+      fullKit?: false;
+      /** Clips the portrait to a circle when `'circle'`. Defaults to `'none'`. */
+      crop?: PersonAvatarCrop;
+    }
 );
 
 const PERSON_AVATAR_FRAME = { portrait: '0 0 48 48', fullKit: '0 0 48 61' } as const;

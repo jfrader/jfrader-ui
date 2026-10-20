@@ -25,6 +25,7 @@ export interface DeckProviderProps {
   default?: string;
   /** Name of a face-down card, in your language. Inherited by FlipGameCard shorthand. */
   backLabel?: string;
+  /** Receives the registered decks, default deck and back label. */
   children: ReactNode;
 }
 

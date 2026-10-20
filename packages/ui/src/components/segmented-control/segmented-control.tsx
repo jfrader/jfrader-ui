@@ -96,6 +96,7 @@ export interface SegmentedControlSlotProps extends NonNullable<SegmentedControlC
 export interface SegmentedControlEasyProps extends Omit<SegmentedControlCompoundProps, 'children' | 'options' | 'slots' | 'slotProps' | 'component'> {
   /** Renders segments in order using each option's value as its key. */
   options: readonly SegmentedControlOption[];
+  /** Not accepted when `options` supplies the segments. */
   children?: never;
   /** Replaces the generated root, items, track or selection indicator. */
   slots?: SegmentedControlSlots;

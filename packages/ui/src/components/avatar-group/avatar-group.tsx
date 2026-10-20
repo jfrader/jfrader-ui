@@ -56,6 +56,7 @@ export interface AvatarGroupProps
   getOverflowLabel?: (hidden: number, formatted: string) => string;
   /** Formats the total count summary description. Defaults to English plural wording. */
   getSummaryLabel?: (total: number, formatted: string) => string;
+  /** Replace member wrappers, the overflow counter or the membership summary. */
   slots?: AvatarGroupSlots;
   /** Style overrides for internal parts. */
   slotProps?: {
