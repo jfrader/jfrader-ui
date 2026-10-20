@@ -10,6 +10,7 @@
 
 ### Fixed
 
+- `Calendar` keeps localized weekday headers and dates centered in equal columns, fits narrow containers, preserves navigation targets beside wrapping month labels, and shows the full selected range in forced colors.
 - `StretchRefresh` wraps long pull instructions and empty-state text inside narrow feeds; its examples fit phone screens.
 - `SortableDataTable` keeps keyboard-focused row controls below sticky headings when scrolling backward through tall tables.
 - `JsonViewer` wraps long keys and values within tree rows, keeps focused labels and disclosure arrows visible in deeply indented data, and hides inactive selection bars in forced colors.
