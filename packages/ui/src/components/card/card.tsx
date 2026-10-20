@@ -65,6 +65,7 @@ interface CardBaseProps
     SxProps,
     Omit<SurfaceRootCustomization, 'slots' | 'slotProps'> {
   'data-variant'?: string;
+  /** Choose a flat surface or a raised surface with a shadow. Defaults to `raised`. */
   variant?: CardVariant;
   /**
    * `contrast` uses the dark palette with a charcoal surface on any page theme.
@@ -74,7 +75,9 @@ interface CardBaseProps
   appearance?: SurfaceAppearance | 'glass' | 'holo';
   /** Enable mouse/pen tilt and moving light for holo only. Disabled by reduced motion. */
   holoTilt?: boolean;
+  /** Replace the surface root or the containers for the card's content and actions. */
   slots?: CardSlots;
+  /** Customize the root and interior parts, including generated content. */
   slotProps?: CardSlotProps;
 }
 
@@ -103,6 +106,7 @@ export type CardProps = CardCompoundProps | CardEasyProps;
 export type CardHeaderProps = ComponentPropsWithRef<'div'> & SxProps;
 
 export interface CardTitleProps extends ComponentPropsWithRef<'h3'>, SxProps {
+  /** Set the heading level to fit the surrounding page outline. Defaults to `3`. */
   level?: CardHeadingLevel;
 }
 
@@ -267,6 +271,7 @@ function CardRoot(allProps: CardProps) {
 
 CardRoot.displayName = 'Card';
 
+/** Group the card's heading and supporting description. */
 function CardHeader({ ref, className, sx, ...rest }: CardHeaderProps) {
   const { slots, slotProps } = useContext(CardSlotContext);
   const slot = slotProps?.header;
@@ -280,6 +285,7 @@ function CardHeader({ ref, className, sx, ...rest }: CardHeaderProps) {
 
 CardHeader.displayName = 'Card.Header';
 
+/** Name the card with a heading; renders an `h3` by default. */
 function CardTitle({ ref, level = 3, className, sx, ...rest }: CardTitleProps) {
   const { slots, slotProps } = useContext(CardSlotContext);
   const slot = slotProps?.title;
@@ -296,6 +302,7 @@ function CardTitle({ ref, level = 3, className, sx, ...rest }: CardTitleProps) {
 
 CardTitle.displayName = 'Card.Title';
 
+/** Show supporting text below the card heading. */
 function CardDescription({ ref, className, sx, ...rest }: CardDescriptionProps) {
   const { slots, slotProps } = useContext(CardSlotContext);
   const slot = slotProps?.description;
@@ -309,6 +316,7 @@ function CardDescription({ ref, className, sx, ...rest }: CardDescriptionProps) 
 
 CardDescription.displayName = 'Card.Description';
 
+/** Hold the card's main content, including lists or form controls. */
 function CardContent({ ref, className, sx, ...rest }: CardContentProps) {
   const { slots, slotProps } = useContext(CardSlotContext);
   const slot = slotProps?.content;
@@ -322,6 +330,7 @@ function CardContent({ ref, className, sx, ...rest }: CardContentProps) {
 
 CardContent.displayName = 'Card.Content';
 
+/** Separate actions from the body; a lone action aligns to the inline end. */
 function CardFooter({ ref, className, sx, ...rest }: CardFooterProps) {
   const { slots, slotProps } = useContext(CardSlotContext);
   const slot = slotProps?.footer;

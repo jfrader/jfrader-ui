@@ -51,26 +51,21 @@ const meta = {
   component: Card,
   parameters: { docs: {
     description: { component: 'Group content with a heading, description, and actions.' },
-    source: { code: '<Card title="Project" description="Quarterly roadmap" content="Three milestones remaining." footer={<Button>Open project</Button>} />' },
-    usage: `Pass content with optional title, description, and footer for the generated anatomy. Use children and compound parts for custom layouts. Existing slotProps style the generated parts too.
+    sections: [
+      { title: 'Basic', stories: ['EasyMode', 'Variants', 'Glass', 'Holo'] },
+      { title: 'Composition', stories: ['Basic', 'SingleAction'] },
+      { title: 'Content', stories: ['WithForm'] },
+      { title: 'Behaviour', stories: ['HoloTilt'] },
+      { title: 'Accessibility', stories: ['HeadingLevel'] },
+    ],
+    usage: `### When to use
+Group related information and actions in a page or grid. A card is not an interactive control; put actions in buttons or links inside it.
 
-### Root replacement
-Use component or slots.root to replace the panel material while keeping Card spacing and anatomy. They are equivalent; slots.root wins when both are supplied. Declare a div-rendering adapter outside render and forward its ref and all received props. Apply adapter styles before the supplied className. A changed component identity remounts the panel and resets focus and uncontrolled inputs.
+### Materials
+Keep a similar-tone backdrop behind translucent cards so text stays readable. Reduced transparency uses an opaque fill. Mouse and pen tilt does not change keyboard behaviour and is disabled by reduced motion.
 
-| Part | Replacement | Props |
-| --- | --- | --- |
-| root | component or slots.root | slotProps.root: div props and css |
-| header, title, description, content, footer | Matching slots key | slotProps: part props and css |
-
-Root slot props win ordinary conflicts, including children and callbacks. className combines, and style shallow-merges with slot values last. Style order: own → slotProps css → consumer sx. Select composed Card roots with [data-ui~="card"].
-
-### Appearance
-Omitted appearance and default inherit the enclosing appearance, including contrast. Contrast uses fixed charcoal on either page theme. Use ThemeRoot to change the named theme.
-
-Use appearance="glass" for a translucent blurred panel with an inner highlight.
-Use appearance="holo" for a translucent panel with a tinted gradient sheen.
-Glass and holo affect this Card only; nested surfaces and portals keep the enclosing palette, not the material. Keep a similar-tone backdrop behind translucent cards for readable text. Reduced transparency uses an opaque fill.
-Add holoTilt to a holo card for mouse/pen tilt and moving light. It is off by default, does not change keyboard behavior, and is disabled by reduced motion.`,
+### Accessibility
+Choose a heading level that fits the surrounding page. Cards add no landmark by default; give a card a named region only when it needs to be a navigation landmark. Tab moves between the controls inside, not the card itself.`,
   } },
   args: { variant: 'raised' },
   argTypes: {
@@ -90,6 +85,18 @@ export default meta;
 type Story = StoryObj<(props: CardCompoundProps) => ReactNode>;
 
 export const EasyMode: StoryObj<(props: CardEasyProps) => ReactNode> = {
+  name: 'Project summary',
+  parameters: { docs: {
+    description: { story: 'Group a project summary with an action to open it.' },
+    source: { language: 'tsx', code: `import { Button, Card } from '@jfrader/ui';
+
+<Card
+  title="Project"
+  description="Quarterly roadmap"
+  content="Three milestones remaining."
+  footer={<Button>Open project</Button>}
+/>` },
+  } },
   args: {
     title: 'Project',
     description: 'Quarterly roadmap',
@@ -168,13 +175,29 @@ function getCards(canvasElement: HTMLElement) {
 
 export const Basic: Story = {
   name: 'Compound anatomy',
-  parameters: { docs: { source: { code: `<Card>
+  parameters: { docs: {
+    description: { story: 'Compose a plan with its benefits and separate cancel and upgrade actions.' },
+    source: { language: 'tsx', code: `import { Button, Card, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const PlanList = styled.ul({ margin: 0, paddingInlineStart: vars.space[5] });
+
+<Card>
   <Card.Header>
     <Card.Title>Pro plan</Card.Title>
     <Card.Description>Billed monthly, renews on 1 November.</Card.Description>
   </Card.Header>
-  <Card.Content>Unlimited projects</Card.Content>
-  <Card.Footer><Button>Upgrade</Button></Card.Footer>
+  <Card.Content>
+    <PlanList>
+      <li>Unlimited projects</li>
+      <li>10 GB storage</li>
+      <li>Priority support</li>
+    </PlanList>
+  </Card.Content>
+  <Card.Footer>
+    <Button variant="outline">Cancel plan</Button>
+    <Button tone="accent">Upgrade</Button>
+  </Card.Footer>
 </Card>` } } },
   render: (args) => <PlanCard {...args} />,
   play: async ({ canvasElement }) => {
@@ -208,6 +231,16 @@ export const Basic: Story = {
 };
 
 export const SingleAction: Story = {
+  name: 'Single footer action',
+  parameters: { docs: {
+    description: { story: 'Place a lone save action at the end of the footer.' },
+    source: { language: 'tsx', code: `import { Button, Card } from '@jfrader/ui';
+
+<Card>
+  <Card.Header><Card.Title>Account</Card.Title></Card.Header>
+  <Card.Footer><Button tone="accent">Save</Button></Card.Footer>
+</Card>` },
+  } },
   render: (args) => (
     <Card {...args}>
       <Card.Header>
@@ -235,6 +268,16 @@ export const SingleAction: Story = {
 };
 
 export const HeadingLevel: Story = {
+  name: 'Heading level',
+  parameters: { docs: {
+    description: { story: 'Use a level-two heading for a card directly beneath the page heading.' },
+    source: { language: 'tsx', code: `import { Card } from '@jfrader/ui';
+
+<Card>
+  <Card.Header><Card.Title level={2}>Usage</Card.Title></Card.Header>
+  <Card.Content>4 of 10 projects used.</Card.Content>
+</Card>` },
+  } },
   render: (args) => (
     <Card {...args}>
       <Card.Header>
@@ -250,6 +293,36 @@ export const HeadingLevel: Story = {
 };
 
 export const Variants: Story = {
+  name: 'Flat and raised',
+  parameters: { docs: {
+    description: { story: 'Compare the same plan on flat and raised surfaces.' },
+    source: { language: 'tsx', code: `import { Button, Card, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const PlanList = styled.ul({ margin: 0, paddingInlineStart: vars.space[5] });
+
+<>
+  {(['flat', 'raised'] as const).map((variant) => (
+    <Card key={variant} variant={variant}>
+      <Card.Header>
+        <Card.Title>Pro plan</Card.Title>
+        <Card.Description>Billed monthly, renews on 1 November.</Card.Description>
+      </Card.Header>
+      <Card.Content>
+        <PlanList>
+          <li>Unlimited projects</li>
+          <li>10 GB storage</li>
+          <li>Priority support</li>
+        </PlanList>
+      </Card.Content>
+      <Card.Footer>
+        <Button variant="outline">Cancel plan</Button>
+        <Button tone="accent">Upgrade</Button>
+      </Card.Footer>
+    </Card>
+  ))}
+</>` },
+  } },
   render: (args) => (
     <>
       {VARIANTS.map((variant) => (
@@ -299,6 +372,37 @@ function InviteCard(props: CardCompoundProps) {
 InviteCard.displayName = 'InviteCard';
 
 export const WithForm: Story = {
+  name: 'Invite form',
+  parameters: { docs: {
+    description: { story: 'Submit or clear an invite form from actions in a named card region.' },
+    source: { language: 'tsx', code: `import { useId } from 'react';
+import { Button, Card, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const InviteForm = styled.form({ display: 'grid', gap: vars.space[3] });
+
+export function InviteTeammate() {
+  const titleId = useId();
+  const formId = useId();
+  return (
+    <Card role="region" aria-labelledby={titleId}>
+      <Card.Header>
+        <Card.Title id={titleId}>Invite a teammate</Card.Title>
+        <Card.Description>They get editor access to this workspace.</Card.Description>
+      </Card.Header>
+      <Card.Content>
+        <InviteForm id={formId} onSubmit={(event) => event.preventDefault()}>
+          <TextField label="Email" type="email" name="email" placeholder="ana@example.com" />
+        </InviteForm>
+      </Card.Content>
+      <Card.Footer>
+        <Button variant="outline" type="reset" form={formId}>Clear</Button>
+        <Button tone="accent" type="submit" form={formId}>Send invite</Button>
+      </Card.Footer>
+    </Card>
+  );
+}` },
+  } },
   render: (args) => <InviteCard {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -622,7 +726,12 @@ export const RootAdaptersLight: Story = { ...RootAdapters, decorators: [withLigh
 
 export const Glass: Story = {
   args: { appearance: 'glass' },
-  parameters: { docs: { source: { code: '<Card appearance="glass" title="Studio" description="Design workspace" content="Project notes and assets." />' } } },
+  parameters: { docs: {
+    description: { story: 'Show workspace notes on a translucent glass surface.' },
+    source: { language: 'tsx', code: `import { Card } from '@jfrader/ui';
+
+<Card appearance="glass" title="Studio" description="Design workspace" content="Project notes and assets." />` },
+  } },
   render: ({ children: _children, ...args }) => <Card {...args} title="Studio" description="Design workspace" content="Project notes and assets." />,
   play: async ({ canvasElement }) => {
     const card = getCards(canvasElement)[0]!;
@@ -681,7 +790,13 @@ export const ReducedTransparency: Story = {
 
 export const Holo: Story = {
   args: { appearance: 'holo' },
-  parameters: { docs: { source: { code: '<Card appearance="holo" title="Founding member" description="Studio membership" content="Member since 2026" />' } } },
+  name: 'Holographic material',
+  parameters: { docs: {
+    description: { story: 'Show a membership card with a tinted gradient sheen.' },
+    source: { language: 'tsx', code: `import { Card } from '@jfrader/ui';
+
+<Card appearance="holo" title="Founding member" description="Studio membership" content="Member since 2026" />` },
+  } },
   render: ({ children: _children, ...args }) => <Card {...args} title="Founding member" description="Studio membership" content="Member since 2026" />,
   play: async ({ canvasElement }) => {
     const card = getCards(canvasElement)[0]!;
@@ -692,11 +807,23 @@ export const Holo: Story = {
   },
 };
 
-export const HoloLight: Story = { ...Holo, decorators: [withLightTheme], globals: { theme: 'light' } };
+export const HoloLight: Story = { ...Holo, name: 'Holographic material — light theme', decorators: [withLightTheme], globals: { theme: 'light' } };
 
 export const HoloTilt: Story = {
   args: { appearance: 'holo', holoTilt: true },
-  parameters: { docs: { source: { code: '<Card appearance="holo" holoTilt title="Founding member" content="Member since 2026" footer={<Button>View membership</Button>} />' } } },
+  name: 'Pointer tilt',
+  parameters: { docs: {
+    description: { story: 'Move a mouse or pen over the membership card to tilt its surface and light.' },
+    source: { language: 'tsx', code: `import { Button, Card } from '@jfrader/ui';
+
+<Card
+  appearance="holo"
+  holoTilt
+  title="Founding member"
+  content="Member since 2026"
+  footer={<Button>View membership</Button>}
+/>` },
+  } },
   render: ({ children: _children, ...args }) => <Card {...args} title="Founding member" content="Member since 2026" footer={<Button>View membership</Button>} />,
   play: async ({ canvasElement, canvas, userEvent: user }) => {
     const card = getCards(canvasElement)[0]!;
@@ -722,6 +849,7 @@ export const HoloTilt: Story = {
 
 export const ReducedMotion: Story = {
   ...HoloTilt,
+  name: 'Reduced motion',
   decorators: [(Story) => <MotionConfig reducedMotion="always"><Story /></MotionConfig>],
   play: async ({ canvasElement }) => {
     const card = getCards(canvasElement)[0]!;

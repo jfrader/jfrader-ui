@@ -34,11 +34,17 @@ export interface ButtonRenderProps extends Omit<ButtonHTMLAttributes<HTMLElement
 }
 
 export interface ButtonProps extends Omit<ComponentPropsWithRef<'button'>, 'color'>, SxProps {
+  /** Choose the action's fill and border treatment. Defaults to `solid`. */
   variant?: ButtonVariant;
+  /** Set the action's semantic colour. Defaults to `neutral`. */
   tone?: ButtonTone;
+  /** Set the control height, padding, and text size. Defaults to `md`. */
   size?: ButtonSize;
+  /** Show a leading spinner, announce busy state, and block activation without removing focus. */
   loading?: boolean;
+  /** Place a decorative icon before the label; loading replaces it with the spinner. */
   startIcon?: ReactNode;
+  /** Place a decorative icon after the label. */
   endIcon?: ReactNode;
   /**
    * Replaces the native button. Spread all supplied props onto the element and attach the supplied
