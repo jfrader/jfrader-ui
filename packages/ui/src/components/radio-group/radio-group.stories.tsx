@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectAligned, expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { Button } from '../button';
 import { RadioGroup, type RadioGroupOrientation, type RadioGroupCompoundProps as RadioGroupProps, type RadioGroupEasyProps } from './index';
 
@@ -55,6 +56,7 @@ const Stack = styled.div({
   display: 'grid',
   gap: vars.space[6],
 });
+const NarrowChoices = styled.div({ inlineSize: 'min(100%, 18rem)' });
 
 const meta = {
   title: 'Inputs/RadioGroup',
@@ -573,5 +575,33 @@ export const Rtl: Story = {
     await userEvent.keyboard('{ArrowDown}');
     await expect(pro).toHaveFocus();
     await expect(pro).toBeChecked();
+  },
+};
+
+export const LongContent: EasyStory = {
+  render: () => (
+    <NarrowChoices>
+      <RadioGroup label="Delivery" orientation="horizontal" defaultValue="standard" options={[
+        { value: 'standard', label: 'Standard delivery with tracking and delivery confirmation', description: 'notifications@internationalcommunityannouncements.example.com' },
+        { value: 'express', label: 'Express delivery' },
+        { value: 'collection', label: 'Collection', disabled: true },
+      ]} />
+    </NarrowChoices>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    const group = canvas.getByRole('radiogroup');
+    const roots = canvas.getAllByRole('radio').map(input => input.closest('label')!);
+    await expectInside(group, group.parentElement!);
+    for (const root of roots) {
+      await expectInside(root, group);
+      await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+      await expect(root.firstElementChild!.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+    await expectAligned([canvas.getByText('Standard delivery with tracking and delivery confirmation'), canvas.getByText('notifications@internationalcommunityannouncements.example.com')], 'left');
+    await expectNoOverlap(roots[0]!, roots[1]!);
+    await expectNoOverlap(roots[1]!, roots[2]!);
+    await userEvent.tab();
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(canvas.getByRole('radio', { name: 'Express delivery' })).toBeChecked();
   },
 };

@@ -4,11 +4,14 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectAligned, expectInside } from '../../testing/geometry-assertions';
+import { styled } from '../../styling/styled';
 import { Button } from '../button';
 import { Checkbox, type CheckboxProps, type CheckboxSize } from './index';
 
 const SIZES = ['sm', 'md'] as const satisfies readonly CheckboxSize[];
 const BOX_SIZES = { sm: 16, md: 20 } as const;
+const NarrowChoices = styled.div({ display: 'grid', gap: vars.space[3], inlineSize: 'min(100%, 18rem)' });
 function SlotControl(props: ComponentPropsWithRef<'span'>) {
   return <span {...props} data-slot="checkbox-control" />;
 }
@@ -288,5 +291,32 @@ export const Rtl: Story = {
     await expect(computed.direction).toBe('rtl');
     await expect(computed.marginRight).not.toBe('0px');
     await expect(computed.marginLeft).toBe('0px');
+  },
+};
+
+export const LongContent: Story = {
+  render: () => (
+    <NarrowChoices>
+      <Checkbox size="sm" label="Receive product announcements and community updates by email" description="notifications@internationalcommunityannouncements.example.com" />
+      <Checkbox label="Accept terms" required aria-invalid="true" />
+      <Checkbox aria-label="Select item" />
+    </NarrowChoices>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    const controls = canvas.getAllByRole('checkbox');
+    for (const input of controls) {
+      const root = input.closest('label')!;
+      await expect(input.parentElement!.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+      await expect(root.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
+      await expectInside(root, root.parentElement!);
+      await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+    }
+    const input = controls[0]!;
+    const label = canvas.getByText('Receive product announcements and community updates by email');
+    await expectAligned([label, canvas.getByText('notifications@internationalcommunityannouncements.example.com')], 'left');
+    await userEvent.click(label);
+    await expect(input).toBeChecked();
+    await userEvent.keyboard('[Space]');
+    await expect(input).not.toBeChecked();
   },
 };
