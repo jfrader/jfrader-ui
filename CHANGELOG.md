@@ -6,6 +6,7 @@
 
 - `ContextMenu` keeps separators visible when long menus scroll.
 - `CardStack` wraps long empty-state labels inside narrow panels, and its documentation examples fit phone screens.
+- `ActivityRings` keeps focused amounts and labels inside the ring tracks at every size, and its documentation examples fit narrow previews. Long content truncates in the dial and remains available in the legend.
 - `JsonViewer` keeps selected counts and muted values readable on contrast panels, and wraps toolbar actions inside narrow containers.
 - `SignaturePad` keeps signer text at the end of its baseline after drawing and clearing, and wraps long guide text inside narrow pads.
 - `LightboxGallery` keeps long captions and viewer controls inside the dialog, reveals the selected thumbnail in LTR and RTL, and fits its documentation examples on narrow screens.
