@@ -68,16 +68,20 @@ const meta = {
         component:
           'Place related actions together, with an optional menu for more commands.',
       },
-      usage: `- Pass readonly items with label and native button props, or href for a link. Use the dotted parts for custom anatomy and overflow menus.
-- Use slotProps for generated root, item and link props. component replaces the root, as does slots.root. Item and link replacements compose the corresponding dotted part and forward received props/ref. Declare replacements outside render.
-- This is a named native group, not a toolbar or selection widget. Use ToggleGroup for persistent selection.
-- Use presentation="floating" for a pill tray or presentation="expanding" for icon actions with one revealed label. Placement belongs to your layout or Popover.
-- Expanding Items need a unique id, startIcon and a string child, label or aria-label. Other Items and links remain labelled. Set restValue to the resting action; value/defaultValue/onValueChange control label expansion, not selection. Invalid ids fall back to the resting or first enabled action without a callback. When none are enabled, all labels remain visible.
-- Pointer movement or focus reveals a label; leaving the group returns to the focused action or restValue. Touch activates on the first tap, just like a native button. Expansion never executes an action.
-- Use native onClick for work, loading for pending feedback, and reserveLabels for changing result text. Application code owns async completion and error handling.
-- Give at most one Item solid accent emphasis.
-- Icon-only actions need a translated label or ARIA name. Format numbers in Label with Intl.
-- The menu uses Menu keyboard controls. Accepted Escape or selection returns focus to the trigger; outside press and Tab-out do not.
+      sections: [
+        { title: 'Actions', stories: ['Default', 'Compound'] },
+        { title: 'Composition', stories: ['NativeFormActions', 'Link', 'WithMenu'] },
+        { title: 'Layout', stories: ['Vertical'] },
+      ],
+      usage: `### When to use
+Group related commands, not persistent choices. Use ToggleGroup for selection. Give the group an accessible name and name every icon-only action.
+
+### Expanding actions
+Each expanding action needs a unique identifier, an icon and a text label. Expansion reveals a label, not a selection: pointer movement or focus reveals it, and leaving returns to the focused or resting action. Touch activates on the first tap. Invalid identifiers fall back to the resting or first enabled action without a callback; when all actions are disabled, all labels stay visible.
+
+### Actions and menus
+Application code owns async completion and errors. Reserve room for changing result labels to avoid moving nearby actions. Give at most one action solid accent emphasis.
+Accepted Escape or menu selection returns focus to the trigger; outside press and Tab-out do not.
 
 ### Keyboard
 - Tab/Shift+Tab visit every enabled action.
@@ -114,7 +118,7 @@ type Story = StoryObj<
 >;
 
 export const Default: StoryObj<Omit<ButtonGroupEasyProps, 'component'>> = {
-  name: 'Easy mode',
+  name: 'Document actions',
   args: {
     label: 'Document actions',
     items: [
@@ -125,15 +129,18 @@ export const Default: StoryObj<Omit<ButtonGroupEasyProps, 'component'>> = {
   },
   parameters: {
     docs: {
+      description: { story: 'Group document commands and leave unavailable actions disabled.' },
       source: {
         language: 'tsx',
-        code: `const actions = [
+        code: `import { ButtonGroup } from '@jfrader/ui';
+
+export function DocumentActions({ share, archive }: { share: () => void; archive: () => void }) {
+  return <ButtonGroup label="Document actions" orientation="horizontal" variant="outline" tone="neutral" size="md" items={[
   { label: 'Share', onClick: share },
   { label: 'Duplicate', disabled: true },
   { label: 'Archive', onClick: archive },
-] satisfies readonly ButtonGroupItemRecord[];
-
-<ButtonGroup label="Document actions" items={actions} />`,
+  ]} />;
+}`,
       },
     },
   },
@@ -165,7 +172,17 @@ export const Default: StoryObj<Omit<ButtonGroupEasyProps, 'component'>> = {
 };
 
 export const Compound: Story = {
-  name: 'Compound',
+  name: 'Composed actions',
+  parameters: { docs: {
+    description: { story: 'Write each action as a child when composing the group yourself.' },
+    source: { language: 'tsx', code: `import { ButtonGroup } from '@jfrader/ui';
+
+<ButtonGroup aria-label="Document actions" orientation="horizontal" variant="outline" tone="neutral" size="md">
+  <ButtonGroup.Item>Share</ButtonGroup.Item>
+  <ButtonGroup.Item>Duplicate</ButtonGroup.Item>
+  <ButtonGroup.Item>Archive</ButtonGroup.Item>
+</ButtonGroup>` },
+  } },
   args: {
     'aria-label': 'Document actions',
   },
@@ -200,6 +217,7 @@ export const Compound: Story = {
 };
 
 export const NativeFormActions: StoryObj<Omit<ButtonGroupEasyProps, 'component'> & { onSave: () => void }> = {
+  name: 'Form actions',
   args: {
     label: 'Document actions',
     items: [
@@ -213,12 +231,18 @@ export const NativeFormActions: StoryObj<Omit<ButtonGroupEasyProps, 'component'>
       <ButtonGroup {...args} />
     </form>
   ),
-  parameters: { docs: { source: { code: `<form onSubmit={saveDocument}>
-  <ButtonGroup label="Document actions" items={[
+  parameters: { docs: {
+    description: { story: 'Submit a form from one action while keeping Cancel out of submission.' },
+    source: { language: 'tsx', code: `import { ButtonGroup } from '@jfrader/ui';
+
+export function DocumentForm({ saveDocument }: { saveDocument: () => void }) {
+  return <form onSubmit={(event) => { event.preventDefault(); saveDocument(); }}>
+  <ButtonGroup label="Document actions" orientation="horizontal" variant="outline" tone="neutral" size="md" items={[
     { label: 'Save', type: 'submit', name: 'action', value: 'save' },
     { label: 'Cancel', type: 'button' },
   ]} />
-</form>` } } },
+</form>;
+}` } } },
   play: async ({ canvas, userEvent, args }) => {
     const save = canvas.getByRole('button', { name: 'Save' });
     await expect(save).toHaveAttribute('type', 'submit');
@@ -364,7 +388,8 @@ export const LightTheme: Story = {
   globals: { theme: 'light' },
 };
 export const Vertical: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { ButtonGroup } from '@jfrader/ui';
+  name: 'Vertical actions',
+  parameters: { docs: { description: { story: 'Stack commands and move between them with Up and Down.' }, source: { language: 'tsx', code: `import { ButtonGroup } from '@jfrader/ui';
 
 <ButtonGroup aria-label="Document actions" orientation="vertical" variant="outline" tone="neutral" size="md">
   <ButtonGroup.Item>Share</ButtonGroup.Item>
@@ -541,6 +566,16 @@ export const ZoomValue: Story = {
   ),
 };
 export const Link: Story = {
+  name: 'Actions and navigation',
+  parameters: { docs: {
+    description: { story: 'Place a documentation link beside a button without changing native link activation.' },
+    source: { language: 'tsx', code: `import { ButtonGroup } from '@jfrader/ui';
+
+<ButtonGroup aria-label="Document actions" orientation="horizontal" variant="outline" tone="neutral" size="md">
+  <ButtonGroup.Item>Share</ButtonGroup.Item>
+  <ButtonGroup.Link href="#docs">Documentation</ButtonGroup.Link>
+</ButtonGroup>` },
+  } },
   args: { onClick: fn((event) => event.preventDefault()) },
   render: ({ onClick, ...args }) => (
     <ButtonGroup {...args}>
@@ -578,6 +613,28 @@ const MenuExample = (args: ButtonGroupProps) => (
 MenuExample.displayName = 'MenuExample';
 const menuRender: NonNullable<Story['render']> = (args) => <MenuExample {...args} />;
 export const WithMenu: Story = {
+  name: 'Overflow menu',
+  parameters: { docs: {
+    description: { story: 'Open More actions to reach secondary commands and a destructive action.' },
+    source: { language: 'tsx', code: `import { ButtonGroup, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const NextAction = styled.button({ minInlineSize: vars.space[8], minBlockSize: vars.space[8] });
+
+<>
+  <ButtonGroup aria-label="Document actions" orientation="horizontal" variant="outline" tone="neutral" size="md">
+    <ButtonGroup.Item>Share</ButtonGroup.Item>
+    <ButtonGroup.Trigger aria-label="More actions" />
+    <ButtonGroup.Content>
+      <ButtonGroup.MenuItem>Duplicate</ButtonGroup.MenuItem>
+      <ButtonGroup.MenuItem disabled>Move</ButtonGroup.MenuItem>
+      <ButtonGroup.Separator />
+      <ButtonGroup.MenuItem tone="danger">Delete</ButtonGroup.MenuItem>
+    </ButtonGroup.Content>
+  </ButtonGroup>
+  <NextAction>After</NextAction>
+</>` },
+  } },
   args: { onOpenChange: fn() },
   render: menuRender,
   play: async ({ args, canvas, canvasElement, userEvent }) => {

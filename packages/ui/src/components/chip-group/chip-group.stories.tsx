@@ -72,6 +72,11 @@ const meta = {
 ### Keyboard
 - Arrows move focus without changing selection; horizontal arrows follow text direction.
 - Home/End move to the first/last enabled item. Enter/Space toggle selection.`,
+      sections: [
+        { title: 'Selection', stories: ['Multiple', 'SingleClearable', 'SingleNonclearable'] },
+        { title: 'Overflow', stories: ['Overflow', 'SelectedBeyondCutoff'] },
+        { title: 'State', stories: ['ControlledSelection'] },
+      ],
       source: {
         code: '<ChipGroup label="Topics" options={[{ value: "design", label: "Design" }, { value: "code", label: "Code" }]} />',
       },
@@ -86,6 +91,15 @@ type Story = Omit<StoryObj<ChipGroupProps>, 'render' | 'play'> & {
 
 export const Default: Story = { render: (args) => <ChipGroup {...args} /> };
 export const SingleClearable: Story = {
+  name: 'One optional filter',
+  parameters: { docs: {
+    description: { story: 'Choose one topic, then press it again to clear the filter.' },
+    source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
+
+const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery'].map((label) => ({ value: label.toLowerCase(), label }));
+
+<ChipGroup label="Topics" options={options} type="single" defaultValue="design" />` },
+  } },
   args: { type: 'single', defaultValue: 'design', onValueChange: fn() },
   play: async ({ canvasElement, args, userEvent }) => {
     const canvas = within(canvasElement);
@@ -103,6 +117,15 @@ export const SingleClearable: Story = {
   },
 };
 export const SingleNonclearable: Story = {
+  name: 'One required filter',
+  parameters: { docs: {
+    description: { story: 'Keep one topic selected when the active chip is pressed again.' },
+    source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
+
+const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery'].map((label) => ({ value: label.toLowerCase(), label }));
+
+<ChipGroup label="Topics" options={options} type="single" defaultValue="design" allowEmpty={false} />` },
+  } },
   args: { type: 'single', defaultValue: 'design', allowEmpty: false, onValueChange: fn() },
   play: async ({ canvasElement, args, userEvent }) => {
     const design = within(canvasElement).getByRole('button', { name: 'Design' });
@@ -113,6 +136,15 @@ export const SingleNonclearable: Story = {
   },
 };
 export const Multiple: Story = {
+  name: 'Multiple filters',
+  parameters: { docs: {
+    description: { story: 'Toggle several topics independently, starting with Research selected.' },
+    source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
+
+const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery'].map((label) => ({ value: label.toLowerCase(), label }));
+
+<ChipGroup label="Topics" options={options} type="multiple" defaultValue={['research']} />` },
+  } },
   args: { type: 'multiple', defaultValue: ['research'], onValueChange: fn() },
   play: async ({ canvasElement, args, userEvent }) => {
     const canvas = within(canvasElement);
@@ -141,7 +173,8 @@ export const Sizes: Story = {
   },
 };
 export const Overflow: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
+  name: 'Collapsible filters',
+  parameters: { docs: { description: { story: 'Show two topics initially and expand the remaining filters on demand.' }, source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
 
 const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery'].map((label) => ({ value: label.toLowerCase(), label }));
 
@@ -168,7 +201,8 @@ const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery']
 
 <ChipGroup label="Topics" options={options} maxVisible={2} moreLabel={(count) => '+' + count + ' more'} lessLabel="Show less" defaultExpanded defaultValue={['delivery']} />` } } }, args: { ...OVERFLOW, defaultExpanded: true, defaultValue: ['delivery'] } };
 export const SelectedBeyondCutoff: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
+  name: 'Keep selected filters visible',
+  parameters: { docs: { description: { story: 'Keep Delivery visible while other topics remain collapsed.' }, source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
 
 const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery'].map((label) => ({ value: label.toLowerCase(), label }));
 
@@ -280,6 +314,22 @@ function Controlled(props: ChipGroupMultipleProps) {
   );
 }
 export const ControlledSelection: Story = {
+  name: 'Controlled filters',
+  parameters: { docs: {
+    description: { story: 'Store selected topics and expansion state in the parent.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { ChipGroup } from '@jfrader/ui';
+
+const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery'].map((label) => ({ value: label.toLowerCase(), label }));
+
+export function TopicFilters() {
+  const [value, setValue] = useState<readonly string[]>([]);
+  const [expanded, setExpanded] = useState(false);
+  return <ChipGroup label="Topics" options={options} type="multiple"
+    value={value} onValueChange={setValue}
+    expanded={expanded} onExpandedChange={setExpanded} />;
+}` },
+  } },
   args: { type: 'multiple', onValueChange: fn() },
   render: (args) => <Controlled {...(args as ChipGroupMultipleProps)} />,
   play: async ({ canvasElement, args, userEvent }) => {
