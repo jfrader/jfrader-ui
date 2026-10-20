@@ -42,16 +42,13 @@ const meta = {
     layout: 'padded',
     docs: {
       description: { component: 'Show grouped details and edit selected values in place with your own forms.' },
-      usage: `### Composition
-Pass \`sections\` to render grouped details from structured data. Each section record provides \`value\`, \`title\`, \`items\`, and optional \`headingLevel\`, \`open\`, \`defaultOpen\`, and \`onOpenChange\`. Each item record provides \`value\`, \`label\`, \`content\`, and optional \`renderEditor\`, \`open\`, \`defaultOpen\`, and \`onOpenChange\`.
-
-Do not combine \`sections\` with \`children\`. Use \`slotProps.root\`, \`slotProps.section\`, \`slotProps.list\`, and \`slotProps.item\` for part props, or \`slots\` to replace generated parts. \`component\` is sugar for \`slots.root\`. For custom hierarchy, keep the compound parts (\`EditableDetails.Section\`, \`EditableDetails.List\`, \`EditableDetails.Item\`).
-
-### Structure and editing
-- Use Lists for labelled values and Sections for groups of lists or nested sections. Rows use native description-list semantics.
-- Nesting indents each level and draws a guide rail. A section's rows align under its title.
-- Section disclosure and Item editing are independent. Each supports \`open\`, \`defaultOpen\` and \`onOpenChange\`.
-- Supply an editor through \`renderEditor\`. Your editor owns its draft, validation, confirmation, saving and errors. \`complete\` and \`cancel\` only request closure.
+      sections: [
+        { title: 'Editing details', stories: ['Default', 'Compound'] },
+        { title: 'Hierarchy', stories: ['NestedDepth'] },
+      ],
+      usage: `### Editing
+- Your editor owns its draft, validation, confirmation, saving and errors. Completing or cancelling only requests closure; neither saves data.
+- Section disclosure and item editing are independent.
 - Collapsing a section keeps mounted editors and drafts. Use \`visible\` to suppress portaled pickers or dialogs, and coordinate their focus before collapse.
 - Use InlineEdit when you only need to edit and save one string.
 
@@ -60,30 +57,6 @@ Do not combine \`sections\` with \`children\`. Use \`slotProps.root\`, \`slotPro
 - Attach \`initialFocusRef\` to the field that should receive focus after Edit. The labelled editor group is the fallback.
 - Do not nest a native form editor inside another form. Use form-associated controls or a non-form editor there.
 - Keep React Action drafts in controlled fields: React resets uncontrolled fields after an Action resolves, even when it returns a validation error.`,
-      source: {
-        language: 'tsx',
-        code: `const sections = [
-  {
-    value: 'project',
-    title: 'Project settings',
-    items: [
-      {
-        value: 'name',
-        label: 'Project name',
-        content: 'Apollo',
-        renderEditor: (editor) => <ProjectNameEditor {...editor} />,
-      },
-      {
-        value: 'budget',
-        label: 'Budget',
-        content: '$50,000',
-      },
-    ],
-  },
-];
-
-<EditableDetails sections={sections} />`,
-      },
     },
   },
 } satisfies Meta<StoryArgs>;
@@ -144,7 +117,35 @@ const EASY_SECTIONS: readonly EditableDetailsSectionRecord[] = [
 ];
 
 export const Default: EasyStory = {
-  name: 'Easy mode',
+  name: 'Edit grouped details',
+  parameters: { docs: {
+    description: { story: 'Open the name editor, edit a draft and complete or cancel it.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, EditableDetails, TextField, styled, type EditableDetailsEditorProps } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Editor = styled.div({ display: 'grid', gap: vars.space[3], minInlineSize: 0 });
+
+function NameEditor({ initialFocusRef, complete, cancel, visible }: EditableDetailsEditorProps) {
+  const [draft, setDraft] = useState('Apollo');
+  return <Editor>
+    <TextField label="Project name" ref={initialFocusRef} value={draft} onChange={(event) => setDraft(event.target.value)} />
+    <span>{visible ? 'Visible' : 'Hidden'}</span>
+    <Button onClick={complete}>Complete</Button>
+    <Button onClick={cancel}>Cancel</Button>
+  </Editor>;
+}
+
+<EditableDetails sections={[{
+  value: 'settings', title: 'Settings', defaultOpen: true, headingLevel: 2,
+  items: [
+    { value: 'name', label: 'Name', content: 'Apollo', renderEditor: (editor) => <NameEditor {...editor} /> },
+    { value: 'count', label: 'Active projects', content: 0 },
+    { value: 'visibility', label: 'Visibility', content: 'Private' },
+    { value: 'region', label: 'Region', content: 'Europe' },
+  ],
+}]} />` },
+  } },
   args: {
     sections: EASY_SECTIONS,
   },
@@ -340,7 +341,38 @@ function DetailsFixture() {
 }
 
 export const Compound: Story = {
-  name: 'Compound anatomy',
+  name: 'Compose nested details',
+  parameters: { docs: {
+    description: { story: 'Nest an editable project list inside a settings section.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, EditableDetails, TextField, styled, type EditableDetailsEditorProps } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Editor = styled.div({ display: 'grid', gap: vars.space[3], minInlineSize: 0 });
+
+function NameEditor({ initialFocusRef, complete, cancel, visible }: EditableDetailsEditorProps) {
+  const [draft, setDraft] = useState('Apollo');
+  return <Editor>
+    <TextField label="Project name" ref={initialFocusRef} value={draft} onChange={(event) => setDraft(event.target.value)} />
+    <span>{visible ? 'Visible' : 'Hidden'}</span>
+    <Button onClick={complete}>Complete</Button>
+    <Button onClick={cancel}>Cancel</Button>
+  </Editor>;
+}
+
+<EditableDetails>
+  <EditableDetails.Section title="Settings" defaultOpen headingLevel={2}>
+    <EditableDetails.Section title="Project" defaultOpen>
+      <EditableDetails.List>
+        <EditableDetails.Item label="Name" renderEditor={(editor) => <NameEditor {...editor} />}>Apollo</EditableDetails.Item>
+        <EditableDetails.Item label="Count">{0}</EditableDetails.Item>
+        <EditableDetails.Item label="Boolean">{false}</EditableDetails.Item>
+        <EditableDetails.Item label="Empty">{''}</EditableDetails.Item>
+      </EditableDetails.List>
+    </EditableDetails.Section>
+  </EditableDetails.Section>
+</EditableDetails>` },
+  } },
   render: () => <DetailsFixture />,
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -405,8 +437,30 @@ export const LongContent: Story = {
   },
 };
 
-/** Nest sections to group project, delivery and notification details. */
 export const NestedDepth: Story = {
+  name: 'Group nested settings',
+  parameters: { docs: { description: { story: 'Nest sections to group project, delivery and notification details.' }, source: { language: 'tsx', code: `import { EditableDetails } from '@jfrader/ui';
+
+<EditableDetails>
+  <EditableDetails.Section title="Project" defaultOpen headingLevel={2}>
+    <EditableDetails.List>
+      <EditableDetails.Item label="Name">Apollo</EditableDetails.Item>
+      <EditableDetails.Item label="Owner">Flight operations</EditableDetails.Item>
+    </EditableDetails.List>
+    <EditableDetails.Section title="Delivery" defaultOpen>
+      <EditableDetails.List>
+        <EditableDetails.Item label="Region">Europe</EditableDetails.Item>
+        <EditableDetails.Item label="Schedule">Weekly</EditableDetails.Item>
+      </EditableDetails.List>
+      <EditableDetails.Section title="Notifications" defaultOpen headingLevel={4}>
+        <EditableDetails.List>
+          <EditableDetails.Item label="Email">Enabled</EditableDetails.Item>
+          <EditableDetails.Item label="Digest">Monday</EditableDetails.Item>
+        </EditableDetails.List>
+      </EditableDetails.Section>
+    </EditableDetails.Section>
+  </EditableDetails.Section>
+</EditableDetails>` } } },
   render: () => <EditableDetails>
     <EditableDetails.Section title="Project" defaultOpen headingLevel={2}>
       <EditableDetails.List>

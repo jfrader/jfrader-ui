@@ -40,6 +40,10 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Fill a surface with a repeating SVG pattern.' },
+      sections: [
+        { title: 'Patterns', stories: ['Diagonal', 'Default', 'Tones'] },
+        { title: 'Card artwork', stories: ['FlippedCard'] },
+      ],
       source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
 import { GameCard } from '@jfrader/ui/game-card';
 import { vars } from '@jfrader/tokens/vars';
@@ -57,20 +61,17 @@ export function PatternExamples() {
     </>
   );
 }` },
-      usage: `## Tiles and inks
-- Give the SVG a width and height through its parent or \`sx\`. It fills its parent by default.
-- \`size\` sets the tile side to 8, 16 or 24 CSS pixels. \`scale\` multiplies that side; nonpositive or nonfinite values fall back to 1.
-- For general surfaces, use \`neutral\` (surfaceRaised/borderStrong), \`accent\` (accentSoft/accent), or style the root with \`sx\`. Reserve \`card\` (cardRed/cardFace) for card backs.
-- Use \`@jfrader/ui/pattern\` or the main package export. The React 19 \`ref\` reaches the SVG; \`sx\` styles that root.
+      usage: `### Sizing
+Give the enclosing surface an explicit size. Nonpositive or nonfinite tile scales fall back to 1. Reserve card ink for card backs.
 
-## Accessibility and environments
-- Patterns are always decorative (\`aria-hidden="true"\`, not focusable). Give the enclosing card or surface its own name when needed. There is no APG widget, state or keyboard command.
+### Accessibility and environments
+- Patterns are always decorative and not focusable. Give the enclosing card or surface its own name when needed.
 - Inherited direction and a root \`dir\` prop mirror diagonal and chevron patterns in RTL; other variants keep their orientation.
 - Forced colors suppresses the pattern with a transparent fill; the enclosing surface and its border remain visible. Do not use patterns to convey information.
 - Patterns have no motion. IDs come from React \`useId\`; give separate SSR roots distinct \`identifierPrefix\` values and reuse them during hydration.
 
-## Card artwork
-- Pass a Pattern as \`GameCard children\`, then pass that named card as \`FlipGameCard back\`. Artwork replaces either face without requiring a \`value\`. Never put secret card data in a flipped wrapper, whose two faces stay mounted.`,
+### Card artwork
+- Give a patterned card back its own accessible name. Never put secret card data in a flipped wrapper, whose two faces stay mounted.`,
     },
   },
 } satisfies Meta<typeof Pattern>;
@@ -79,8 +80,8 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Diagonal: Story = {
-  name: 'Diagonal',
-  parameters: { docs: { source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
+  name: 'Diagonal surface',
+  parameters: { docs: { description: { story: 'Fill a square surface with diagonal accent ink.' }, source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
@@ -97,8 +98,8 @@ const Sample = styled(Pattern)({ inlineSize: vars.size.gameCardLg, blockSize: va
 };
 
 export const Default: Story = {
-  name: 'Default',
-  parameters: { docs: { source: { language: 'tsx', code: `import { Pattern, type PatternVariant } from '@jfrader/ui/pattern';
+  name: 'Pattern gallery',
+  parameters: { docs: { description: { story: 'Compare six patterns at different surface and tile sizes.' }, source: { language: 'tsx', code: `import { Pattern, type PatternVariant } from '@jfrader/ui/pattern';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
@@ -150,7 +151,8 @@ export function PatternGallery() {
 export const GalleryLight: Story = { ...Default, name: 'Gallery light theme', decorators: [withLightTheme] };
 
 export const Tones: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
+  name: 'Surface inks',
+  parameters: { docs: { description: { story: 'Compare neutral, accent and card inks on the same pattern.' }, source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
@@ -164,7 +166,7 @@ const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[
   render: (args) => <Row>{(['neutral', 'accent', 'card'] as const).map((tone) =>
     <Sample {...args} key={tone} tone={tone} />)}</Row>,
 };
-export const TonesLight: Story = { ...Tones, decorators: [withLightTheme] };
+export const TonesLight: Story = { ...Tones, name: 'Surface inks in light theme', decorators: [withLightTheme] };
 
 export const TileScale: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
@@ -224,7 +226,8 @@ const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[
 };
 
 export const FlippedCard: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
+  name: 'Patterned card backs',
+  parameters: { docs: { description: { story: 'Add a decorative pattern to the named back of a game card.' }, source: { language: 'tsx', code: `import { Pattern } from '@jfrader/ui/pattern';
 import { GameCard } from '@jfrader/ui/game-card';
 import { FlipGameCard } from '@jfrader/ui/flip-game-card';
 import { vars } from '@jfrader/tokens/vars';
@@ -252,6 +255,7 @@ const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[
 
 export const ForcedColors: Story = {
   ...FlippedCard,
+  name: 'Card backs in forced colors',
   tags: ['!autodocs'],
   parameters: { docs: { description: { story: 'Forced colors hides the decorative ink; the card supplies its surface and border.' } } },
   play: async ({ canvasElement }) => {

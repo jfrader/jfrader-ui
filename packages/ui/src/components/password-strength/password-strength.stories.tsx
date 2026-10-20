@@ -63,16 +63,30 @@ const meta = {
       source: { code: usage, language: 'tsx' },
       description: {
         component:
-          'Enter a new password and check it against your application’s password policy. Use PasswordField for sign-in and confirmation.',
+          'Enter a new password and check it against your application’s password policy.',
       },
-      usage: `### Policy\nPass explicit, synchronous rules with unique IDs. The level measures the share of rules met, not entropy, dictionary resistance or breach exposure. Enforce the same policy on the server. Do not treat level 4 as proof of security.\n\n### Values and forms\nPassword and reveal support independent controlled and uncontrolled state. The second onValueChange argument describes the proposed password; a rejected controlled edit leaves the displayed score unchanged. Native form reset restores the initial uncontrolled value without callbacks. The ref targets the input.\n\n### Keyboard and accessibility\nNative editing and submission apply. Tab moves through input and reveal; Enter or Space toggles reveal once. The read-only meter and requirements are not tab stops. Requirements include Met/Not met text; the atomic status never contains the password.\n\n### Customization\nUse fieldSlots/fieldSlotProps for PasswordField anatomy, slots/slotProps for feedback. locale formats counts; messages translates complete phrases. Supply an explicit locale for matching server/client output. CSS transitions stop under reduced motion.`,
+      sections: [
+        { title: 'Password policy', stories: ['Default', 'TooShort', 'Strong'] },
+        { title: 'Validation', stories: ['Error'] },
+      ],
+      usage: `### Policy
+Use PasswordField for sign-in and confirmation. Rules must be synchronous and have unique IDs. The level measures the share of rules met, not entropy, dictionary resistance or breach exposure. Enforce the same policy on the server; level 4 is not proof of security.
+
+### Values and forms
+Rejecting a controlled edit leaves the displayed score unchanged. Native form reset restores the initial uncontrolled value without callbacks; controlled state remains parent-owned.
+
+### Keyboard and accessibility
+Native editing and submission apply. Tab moves through input and reveal; Enter or Space toggles reveal once. The read-only meter and requirements are not tab stops. Requirements include Met/Not met text; the atomic status never contains the password.
+
+### Localization
+Translate complete phrases and supply the same locale on the server and client. Transitions stop under reduced motion.`,
     },
   },
 } satisfies Meta<typeof PasswordStrength>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+export const Default: Story = { name: 'Check a new password', parameters: { docs: { description: { story: 'Type a password to update the meter and the remaining requirements.' }, source: { language: 'tsx', code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
 
 const policy: readonly PasswordRule[] = [
   {
@@ -103,8 +117,10 @@ const policy: readonly PasswordRule[] = [
 
 <PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="" />` } } }, args: { defaultValue: '' } };
 export const TooShort: Story = {
+  name: 'Minimum length',
   parameters: {
     docs: {
+      description: { story: 'Show the minimum-length warning even when other requirements are met.' },
       source: {
         language: 'tsx',
         code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
@@ -172,7 +188,7 @@ const policy: readonly PasswordRule[] = [
 ];
 
 <PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="A1!" />` } } }, args: { defaultValue: 'A1!' } };
-export const Strong: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+export const Strong: Story = { name: 'All requirements met', parameters: { docs: { description: { story: 'Show a password that meets every application rule.' }, source: { language: 'tsx', code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
 
 const policy: readonly PasswordRule[] = [
   {
@@ -188,8 +204,10 @@ const policy: readonly PasswordRule[] = [
 
 <PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="Abcdef1!" />` } } }, args: { defaultValue: 'Abcdef1!' } };
 export const Error: Story = {
+  name: 'Server validation',
   parameters: {
     docs: {
+      description: { story: 'Keep a server validation message beside the policy feedback.' },
       source: {
         language: 'tsx',
         code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
