@@ -7,6 +7,10 @@ import { preview } from 'vite';
 const cases = [
   { id: 'media-lightboxgallery--docs', primary: '[data-ui="lightbox-gallery"]', containPreview: true },
   { id: 'data-display-commentthread--docs', primary: '[data-ui="comment-thread"]', containPreview: true },
+  {
+    id: 'data-display-chatthread--docs', primary: '[data-ui="chat-thread"]', containPreview: 'all',
+    viewports: [{ width: 390, height: 844 }, { width: 768, height: 900 }, { width: 1440, height: 900 }],
+  },
   { id: 'surfaces-bottomsheet--docs', primary: '[data-ui="bottom-sheet-trigger"]' },
   { id: 'media-article--docs', primary: '[data-ui~="article"]' },
   { id: 'media-articlelist--docs', primary: '[data-ui~="article-list"]' },
@@ -59,8 +63,8 @@ try {
   const page = await browser.newPage();
   page.setDefaultTimeout(30_000);
 
-  for (const { id, primary, containPreview } of cases) {
-    for (const viewport of viewports) {
+  for (const { id, primary, containPreview, viewports: caseViewports = viewports } of cases) {
+    for (const viewport of caseViewports) {
       await page.setViewportSize(viewport);
       await page.goto(new URL(`iframe.html?id=${id}&viewMode=docs`, baseURL).href);
       await page.locator(primary).first().waitFor();
@@ -77,14 +81,24 @@ try {
       assert.ok(dimensions.scrollWidth <= dimensions.width,
         `${id} at ${viewport.width}px: expanded docs overflow (${dimensions.scrollWidth}px)`);
       if (containPreview) {
-        const contained = await page.locator(primary).first().evaluate((element) => {
-          const preview = element.closest('.docs-story');
-          if (!preview) return false;
-          const bounds = preview.getBoundingClientRect();
-          const content = element.getBoundingClientRect();
-          return content.left >= bounds.left - 1 && content.right <= bounds.right + 1;
-        });
-        assert.ok(contained, `${id} at ${viewport.width}px: primary example is clipped by its preview`);
+        if (containPreview === 'all') {
+          const previews = page.locator('.sbdocs-preview');
+          for (let index = 0; index < await previews.count(); index += 1) {
+            await previews.nth(index).scrollIntoViewIfNeeded();
+          }
+        }
+        const examples = page.locator(primary);
+        const count = containPreview === 'all' ? await examples.count() : 1;
+        for (let index = 0; index < count; index += 1) {
+          const contained = await examples.nth(index).evaluate((element) => {
+            const preview = element.closest('.docs-story');
+            if (!preview) return false;
+            const bounds = preview.getBoundingClientRect();
+            const content = element.getBoundingClientRect();
+            return content.left >= bounds.left - 1 && content.right <= bounds.right + 1;
+          });
+          assert.ok(contained, `${id} at ${viewport.width}px: example ${index + 1} is clipped by its preview`);
+        }
       }
       assert.equal(await summary.evaluate((element) => element === document.activeElement), true,
         `${id}: focus stays on the summary`);

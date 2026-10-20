@@ -38,14 +38,19 @@ const DEFAULT_OPEN_DELAY_MS = 300;
 const DEFAULT_CLOSE_DELAY_MS = 100;
 
 export interface TooltipBaseProps {
+  /** Control whether the tooltip is shown. */
   open?: boolean;
+  /** Show the tooltip initially when uncontrolled. Defaults to false. */
   defaultOpen?: boolean;
+  /** Receive visibility requests from hover, focus, and dismissal. */
   onOpenChange?: (open: boolean) => void;
+  /** Prefer this side of the trigger; may flip to fit the viewport. Defaults to `top`. */
   placement?: Placement;
   /** Hover delay before opening, in ms. Keyboard focus opens immediately. */
   openDelay?: number;
   /** Delay before closing after the pointer leaves trigger and content, in ms. */
   closeDelay?: number;
+  /** Compose `Tooltip.Trigger` and `Tooltip.Content` instead of using generated parts. */
   children?: ReactNode;
 }
 
@@ -71,6 +76,7 @@ export interface TooltipEasyProps extends Omit<TooltipBaseProps, 'children'> {
     /** Replaces the floating tooltip overlay container. */
     content?: ComponentType<ComponentPropsWithRef<'div'>>;
   };
+  /** Pass props and `sx` to the generated trigger and tooltip content. */
   slotProps?: {
     /** Button element that triggers the tooltip on hover or focus. */
     trigger?: TooltipGeneratedPartProps<TooltipTriggerProps>;

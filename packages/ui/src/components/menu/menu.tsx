@@ -73,9 +73,13 @@ import { useControlledState } from '../../utils/use-controlled-state';
 const TYPEAHEAD_RESET_MS = 500;
 
 interface MenuStateProps {
+  /** Control whether the menu popup is open. */
   open?: boolean;
+  /** Open the uncontrolled menu initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receive requests to open or close the menu. */
   onOpenChange?: (open: boolean) => void;
+  /** Position the popup relative to its trigger. Defaults to `bottom-start`; may flip to fit. */
   placement?: Placement;
 }
 
@@ -99,6 +103,7 @@ export type MenuAction = {
 };
 
 export interface MenuCompoundProps extends MenuStateProps, MenuAppearanceProps {
+  /** Compose the menu trigger, content, items and separators. */
   children?: ReactNode;
   items?: never;
   triggerLabel?: never;
@@ -113,8 +118,11 @@ export interface MenuEasyProps extends MenuStateProps, MenuAppearanceProps, Omit
   /** Render actions and separators in order. */
   items: readonly MenuAction[];
   children?: never;
+  /** Pass props and `sx` to generated menu parts. */
   slotProps?: MenuSlotProps;
+  /** Replace generated wrapper, trigger, popup or item elements. */
   slots?: MenuSlots;
+  /** Replace the outer wrapper; `slots.root` takes precedence. */
   component?: MenuSlots['root'];
 }
 
@@ -152,6 +160,7 @@ export interface MenuItemProps extends Omit<ComponentPropsWithRef<'button'>, 'on
   /** Called when the item is activated. The menu then closes unless a click handler called
    * `event.preventDefault()`. */
   onSelect?: () => void;
+  /** Prevent activation and skip this item during keyboard navigation. */
   disabled?: boolean;
 }
 export interface MenuSeparatorProps extends ComponentPropsWithRef<'div'>, SxProps {}
@@ -267,6 +276,7 @@ const itemStyle = css({
   display: 'flex',
   alignItems: 'center',
   inlineSize: '100%',
+  minInlineSize: 0,
   minBlockSize: '32px',
   flexShrink: 0,
   border: 0,
@@ -278,6 +288,7 @@ const itemStyle = css({
   fontSize: vars.textSize.sm,
   color: vars.color.text,
   textAlign: 'start',
+  overflowWrap: 'anywhere',
   cursor: 'pointer',
   transitionProperty: 'background-color',
   transitionDuration: vars.motion.duration.fast,
@@ -292,6 +303,7 @@ const itemStyle = css({
 
 const separatorStyle = css({
   blockSize: '1px',
+  flexShrink: 0,
   marginBlock: vars.space[1],
   backgroundColor: vars.color.border,
   [FORCED_COLORS]: {

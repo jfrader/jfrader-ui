@@ -1,5 +1,5 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
-import { useRef, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -12,6 +12,7 @@ import { Menu, type MenuCompoundProps, type MenuEasyProps } from './index';
 import { styled } from '../../index';
 
 const TRIGGER = 'Options';
+const LONG_LABEL = 'https://example.com/projects/averylongunbrokendocumentidentifierwithmanycharactersandnospaces';
 
 const onEdit = fn();
 const onDelete = fn();
@@ -554,9 +555,12 @@ export const ScrollableRtl: Story = {
       <Menu.Trigger dir="rtl">Options</Menu.Trigger>
       <Menu.Content dir="rtl">
         {Array.from({ length: 20 }, (_, index) => (
-          <Menu.Item key={index} disabled={index === 1}>
-            {`Project ${index + 1}: review the latest changes before publishing`}
-          </Menu.Item>
+          <Fragment key={index}>
+            {index > 0 && index % 5 === 0 && <Menu.Separator />}
+            <Menu.Item disabled={index === 1}>
+              {index === 0 ? LONG_LABEL : `Project ${index + 1}: review the latest changes before publishing`}
+            </Menu.Item>
+          </Fragment>
         ))}
       </Menu.Content>
     </Menu>
@@ -566,12 +570,21 @@ export const ScrollableRtl: Story = {
     await expect(getComputedStyle(menu).direction).toBe('rtl');
     await expect(menu.scrollHeight).toBeGreaterThan(menu.clientHeight);
     await expect(menu.getBoundingClientRect().height).toBeLessThanOrEqual(280);
+    await expect(menu.scrollWidth).toBeLessThanOrEqual(menu.clientWidth);
+    for (const separator of within(menu).getAllByRole('separator')) {
+      await expect(separator.getBoundingClientRect().height).toBeGreaterThanOrEqual(1);
+    }
     await userEvent.keyboard('{End}');
     const last = within(menu).getAllByRole('menuitem').at(-1)!;
     await waitFor(() => expect(last).toHaveFocus());
     await expect(last.getBoundingClientRect().bottom).toBeLessThanOrEqual(menu.getBoundingClientRect().bottom);
     await userEvent.keyboard('{Home}');
-    await expectFocused(canvasElement, 'Project 1: review the latest changes before publishing');
+    await expectFocused(canvasElement, LONG_LABEL);
+    const first = within(menu).getByRole('menuitem', { name: LONG_LABEL });
+    await expect(first.getBoundingClientRect().height).toBeGreaterThan(32);
+    for (const item of within(menu).getAllByRole('menuitem')) {
+      await expect(item.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
   },
 };
 

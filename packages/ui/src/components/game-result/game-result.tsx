@@ -75,7 +75,9 @@ export interface GameResultProps
   actions?: ReactNode;
   /** Consumer celebration effect (e.g. deterministic particles). Positioned to overlay. */
   celebration?: ReactNode;
+  /** Pass props to the result panel's root and content parts. */
   slotProps?: GameResultSlotProps;
+  /** Replace the result panel's root and content parts. */
   slots?: GameResultSlots;
 }
 

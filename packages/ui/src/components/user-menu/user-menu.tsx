@@ -308,6 +308,7 @@ export interface UserMenuIdentityProps extends ComponentPropsWithRef<'div'>, SxP
 export interface UserMenuItemProps extends Omit<ComponentPropsWithRef<'button'>, 'onSelect'>, SxProps {
   /** Called once on activation. The menu closes unless a click handler called `event.preventDefault()`. */
   onSelect?: () => void;
+  /** Prevents activation and skips the item during keyboard navigation. */
   disabled?: boolean;
   /** Sets the action's color emphasis. Defaults to `neutral`. */
   tone?: UserMenuItemTone;

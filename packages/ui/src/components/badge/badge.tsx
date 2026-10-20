@@ -27,18 +27,27 @@ export interface BadgeSlots {
 }
 
 export interface BadgeProps extends ComponentPropsWithRef<'span'>, SxProps {
+  /** Render the element the badge is positioned around. */
   children: ReactNode;
+  /** Show content in the marker. Empty content hides a standard badge. */
   badgeContent?: ReactNode;
   /** Numbers above `max` render as `max+`. */
   max?: number;
   /** Shows the marker when `badgeContent` is 0. */
   showZero?: boolean;
+  /** Hide the marker regardless of its content. Defaults to `false`. */
   invisible?: boolean;
+  /** Show a content marker or a content-free dot. Defaults to `standard`. */
   variant?: BadgeVariant;
+  /** Set the marker colour. Defaults to `accent`. */
   tone?: BadgeTone;
+  /** Place the marker at a logical corner. Defaults to top-end. */
   anchor?: BadgeAnchor;
+  /** Set standard marker corners to rounded or circular. Defaults to `rectangular`; dots stay round. */
   overlap?: BadgeOverlap;
+  /** Replace the wrapper or marker element. */
   slots?: BadgeSlots;
+  /** Pass props and `sx` to the wrapper and marker. */
   slotProps?: {
     /** Root container element wrapping the anchored child content. */
     root?: BadgePartProps;

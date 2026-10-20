@@ -3,7 +3,9 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 
 export interface DeckArtOptions {
+  /** Selects a named art set for descendant cards, overriding the parent selection. */
   artSet?: string;
+  /** Selects art sets by card art id. Entries override matching parent entries and `artSet`. */
   cardArtSets?: Readonly<Record<string, string>>;
 }
 
@@ -18,7 +20,10 @@ export function useDeckArt({ artSet, cardArtSets }: DeckArtOptions = {}): DeckAr
 }
 
 /** Share deck artwork choices with descendant cards. */
-export function DeckArtProvider({ children, ...options }: DeckArtOptions & { children: ReactNode }) {
+export function DeckArtProvider({ children, ...options }: DeckArtOptions & {
+  /** Receives the shared artwork selections. */
+  children: ReactNode;
+}) {
   const value = useDeckArt(options);
   return <ArtContext value={value}>{children}</ArtContext>;
 }

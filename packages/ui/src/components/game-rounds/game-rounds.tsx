@@ -43,11 +43,15 @@ export interface GameRoundsSlots {
 }
 
 export interface GameRoundsProps extends Omit<GameCardRootProps, 'children'>, Omit<GameCardRootCustomization, 'slots'>, SxProps {
+  /** Shows the visible label that names the round group. */
   label: string;
+  /** Defines round labels and outcomes in display order. */
   rounds: readonly GameRound[];
   /** Visible result names in your game's language. */
   outcomeLabels: Record<GameRoundOutcome, string>;
+  /** Passes props and styles to the round group and its parts. */
   slotProps?: GameRoundsSlotProps;
+  /** Replaces the round group and its parts. */
   slots?: GameRoundsSlots;
 }
 const rootStyle = css({ label: 'game-rounds', display: 'grid', gap: vars.space[2], color: vars.color.text, fontFamily: vars.font.sans,

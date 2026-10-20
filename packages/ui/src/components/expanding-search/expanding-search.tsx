@@ -85,20 +85,29 @@ export interface ExpandingSearchProps
     > {
   /** Accessible name of the collapsed button; also the input's fallback name. */
   triggerLabel: string;
+  /** Control whether the search field is expanded. */
   open?: boolean;
+  /** Expand the uncontrolled search initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receive requests to expand or collapse the search. */
   onOpenChange?: (open: boolean) => void;
+  /** Keep this logical edge fixed during expansion. Defaults to `end`. */
   anchor?: 'start' | 'end';
+  /** Set the expanded CSS inline size, capped by the available width. Defaults to eight `space[12]` tokens. */
   expandedWidth?: CSSProperties['inlineSize'];
+  /** Set the trigger and field size. Defaults to `md`. */
   size?: SearchFieldSize;
+  /** Disable the trigger and search input. */
   disabled?: boolean;
   /** Native attributes and events of the search input. */
   inputProps?: ExpandingSearchInputProps;
+  /** Access the search input rather than the wrapper. */
   inputRef?: Ref<HTMLInputElement>;
   /** Replace the wrapper div; `slots.root` takes precedence. */
   component?: ExpandingSearchSlots['root'];
   /** Replace generated parts with components that forward props and ref. */
   slots?: ExpandingSearchSlots;
+  /** Pass props and `sx` to the wrapper, trigger and field parts. */
   slotProps?: ExpandingSearchSlotProps;
 }
 

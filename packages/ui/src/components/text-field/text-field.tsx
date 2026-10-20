@@ -37,17 +37,23 @@ export type TextFieldSlots = FieldSlots<TextFieldAnatomy>;
 export type TextFieldSlotProps = FieldParts<TextFieldAnatomy>;
 
 export interface TextFieldProps extends Omit<ComponentPropsWithRef<'input'>, 'size'>, SxProps {
+  /** Name the input with an associated label. */
   label?: ReactNode;
   /** Label placement. `hidden` keeps the accessible name without taking layout space. */
   labelPlacement?: FieldLabelPlacement;
+  /** Show supporting text and include it in the input's accessible description. */
   description?: ReactNode;
+  /** Show a validation message and mark the input invalid. */
   error?: ReactNode;
+  /** Set the input height and text size. Defaults to `md`. */
   size?: TextFieldSize;
+  /** Receive the input text after the native `onChange` callback runs. */
   onValueChange?: (value: string) => void;
   /** Replace the wrapper div; `slots.root` takes precedence. */
   component?: TextFieldSlots['root'];
   /** Replace generated parts with components that forward props and ref. */
   slots?: TextFieldSlots;
+  /** Pass props and `sx` to the wrapper, label, input, description, and error. */
   slotProps?: TextFieldSlotProps;
 }
 

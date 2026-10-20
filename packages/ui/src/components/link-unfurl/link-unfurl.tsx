@@ -189,9 +189,11 @@ export interface LinkUnfurlProps
   locale?: Intl.LocalesArgument;
   /** Sets animation behavior. Defaults to `'auto'`, respecting reduced motion. `'none'` disables animation. */
   motion?: 'auto' | 'none';
+  /** Replaces the composer, preview and action elements. */
   slots?: LinkUnfurlSlots;
   /** Shorthand for slots.root; slots.root takes precedence. */
   component?: LinkUnfurlSlots['root'];
+  /** Passes props and styles to the composer, previews and actions. */
   slotProps?: LinkUnfurlSlotProps;
 }
 

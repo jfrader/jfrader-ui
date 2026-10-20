@@ -101,6 +101,7 @@ export interface SelectOption {
 export type SelectSize = 'sm' | 'md' | 'lg';
 
 export interface SelectTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
+  /** Native id of the trigger. */
   id?: string;
   /** Sets the trigger height and text size. Defaults to `md`. */
   size?: SelectSize;

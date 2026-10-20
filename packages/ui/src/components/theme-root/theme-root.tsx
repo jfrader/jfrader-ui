@@ -25,6 +25,7 @@ export interface ThemeRootProps extends ComponentPropsWithRef<'div'>, SxProps {
    * With `null`, overlays wait until the host element is set.
    */
   portalContainer?: HTMLElement | null;
+  /** Render content within this theme and token scope. */
   children?: ReactNode;
 }
 

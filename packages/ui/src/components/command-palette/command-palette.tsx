@@ -142,8 +142,11 @@ export interface CommandPaletteSlotProps {
 }
 
 export interface CommandPaletteBaseProps {
+  /** Control whether the command dialog is open. */
   open?: boolean;
+  /** Open the uncontrolled dialog initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receive requests to open or close the dialog. */
   onOpenChange?: (open: boolean) => void;
   /** Accessible name of the dialog, input and listbox. */
   label?: string;
@@ -156,6 +159,7 @@ export interface CommandPaletteBaseProps {
 }
 
 export interface CommandPaletteCompoundProps extends CommandPaletteBaseProps {
+  /** Compose the palette trigger, dialog and command list. */
   children?: ReactNode;
   items?: never;
   triggerLabel?: never;
@@ -176,6 +180,8 @@ export interface CommandPaletteEasyProps<T extends CommandPaletteItemRecord = Co
     SxProps {
 
   [attribute: `data-${string}`]: unknown;
+  /** Additional class names for the palette root. */
+  className?: string;
   /** Items to search and run. */
   items: readonly T[];
   /** Called when an item is selected. */
@@ -189,7 +195,9 @@ export interface CommandPaletteEasyProps<T extends CommandPaletteItemRecord = Co
   children?: never;
   /** Replace the root container. Exactly sugar for `slots.root`. */
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replace the generated wrapper, trigger or dialog parts. */
   slots?: CommandPaletteSlots;
+  /** Pass props and `sx` to the generated palette parts. */
   slotProps?: CommandPaletteSlotProps;
 }
 
@@ -205,12 +213,15 @@ export interface CommandPaletteInputProps
 export interface CommandPaletteListProps extends ComponentPropsWithRef<'div'>, SxProps {}
 export interface CommandPaletteEmptyProps extends ComponentPropsWithRef<'div'>, SxProps {}
 export interface CommandPaletteGroupProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
+  /** Name the group and show its heading above the commands. */
   label: ReactNode;
+  /** Render the commands belonging to this group. */
   children?: ReactNode;
 }
 export interface CommandPaletteItemProps extends Omit<ComponentPropsWithRef<'div'>, 'onSelect'>, SxProps {
   /** Unique within the palette. */
   value: string;
+  /** Run when this command is activated; the palette then closes. */
   onSelect?: () => void;
   /** Extra text the filter matches against (synonyms, aliases). */
   keywords?: string;

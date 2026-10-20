@@ -167,6 +167,7 @@ export interface DialogStackBaseProps {
 }
 
 export interface DialogStackCompoundProps extends DialogStackBaseProps {
+  /** Supplies stack triggers and panels in compound mode. */
   children?: ReactNode;
   pages?: never;
   triggerLabel?: never;
@@ -184,8 +185,11 @@ export interface DialogStackEasyProps extends DialogStackBaseProps {
   /** Page specifications for the stack. */
   pages: readonly DialogStackPageRecord[];
   children?: never;
+  /** Replaces the panels and controls generated from `pages`. */
   slots?: DialogStackSlots;
+  /** Passes props and styles to the generated panels and controls. Page overrides take precedence. */
   slotProps?: DialogStackSlotProps;
+  /** Replaces each panel's adopted div, not the dialog shell. `slots.root` takes precedence. */
   component?: DialogStackSlots['root'];
 }
 

@@ -71,6 +71,7 @@ export interface GameActionsSlotProps {
 export interface GameActionsProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children'>,
     SxProps {
+  /** Add space-separated root markers alongside `game-actions`. */
   'data-ui'?: string;
   /** Actions available in the toolbar. */
   actions: readonly GameActionItem[];

@@ -29,14 +29,19 @@ export interface TextRevealSlots {
 export interface TextRevealProps extends Omit<ComponentPropsWithRef<'span'>, 'children'>, SxProps {
   /** Literal text, including deliberate newlines. */
   text: string;
+  /** Set entrance blur strength; `soft` uses less blur. Defaults to `standard`. */
   variant?: TextRevealVariant;
   /** Initial delay in milliseconds, clamped to 0–1000. */
   delayMs?: number;
   /** Word segmentation locale; segmentation and entrance start after client mount. */
   locale?: Intl.LocalesArgument;
+  /** Add root markers alongside the built-in `text-reveal` marker. */
   'data-ui'?: string;
+  /** Replace the root `span`; `slots.root` takes precedence. */
   component?: TextRevealSlots['root'];
+  /** Replace the root, visual text wrapper, or individual word wrappers. */
   slots?: TextRevealSlots;
+  /** Pass props and `sx` to the root, visual text wrapper, and word wrappers. */
   slotProps?: { root?: TextRevealPartProps; visual?: TextRevealPartProps; word?: TextRevealPartProps };
 }
 

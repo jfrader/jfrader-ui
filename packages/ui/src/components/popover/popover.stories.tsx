@@ -389,6 +389,39 @@ export const LongContent: Story = {
   },
 };
 
+export const LongUnbrokenContent: Story = {
+  tags: ['!autodocs'],
+  render: () => (
+    <Popover defaultOpen triggerLabel={TRIGGER} label={HEADING}
+      content={<p>{`https://ui.jfrader.com/shared/${'roadmap'.repeat(40)}`}</p>} />
+  ),
+  play: async ({ canvasElement }) => {
+    const popover = await bodyOf(canvasElement).findByRole('dialog', { name: HEADING });
+    await waitFor(() => expect(popover.scrollWidth).toBeLessThanOrEqual(popover.clientWidth));
+    await expect(getComputedStyle(popover).overscrollBehaviorY).toBe('contain');
+  },
+};
+
+export const ViewportEdge: Story = {
+  tags: ['!autodocs'],
+  render: () => (
+    <Popover defaultOpen triggerLabel={TRIGGER} label={HEADING}
+      slotProps={{ trigger: { sx: { position: 'fixed', insetBlockEnd: vars.space[2], insetInlineEnd: vars.space[2] } } }}
+      content={<ShareLink />} />
+  ),
+  play: async ({ canvasElement }) => {
+    const popover = await bodyOf(canvasElement).findByRole('dialog', { name: HEADING });
+    const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
+    await waitFor(() => {
+      const panel = popover.getBoundingClientRect();
+      const anchor = trigger.getBoundingClientRect();
+      expect(panel.bottom).toBeLessThanOrEqual(anchor.top);
+      expect(panel.left).toBeGreaterThanOrEqual(0);
+      expect(panel.right).toBeLessThanOrEqual(canvasElement.ownerDocument.defaultView!.innerWidth);
+    });
+  },
+};
+
 export const Controlled: Story = {
   name: 'Controlled panel',
   parameters: { docs: {

@@ -7,6 +7,7 @@ import type { FlexProps } from '../flex';
 export type StackAlign = Exclude<FlexAlign, 'baseline'>;
 
 export interface StackProps extends Omit<FlexProps, 'direction' | 'inline' | 'align'> {
+  /** Align children across the inline axis. Defaults to stretching them to the stack's width. */
   align?: StackAlign;
 }
 

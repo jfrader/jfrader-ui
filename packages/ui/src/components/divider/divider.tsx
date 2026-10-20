@@ -21,11 +21,14 @@ type DividerBaseProps = Omit<HTMLAttributes<HTMLElement>, 'children' | 'role' | 
   SxProps;
 
 export interface DividerHorizontalProps extends DividerBaseProps {
+  /** Draw a horizontal separator. Defaults to `horizontal`. */
   orientation?: 'horizontal';
+  /** Place a label between the horizontal lines and use it as the separator's accessible name. */
   label?: ReactNode;
 }
 
 export interface DividerVerticalProps extends DividerBaseProps {
+  /** Draw a vertical separator that stretches to its parent's height. */
   orientation: 'vertical';
   label?: never;
 }

@@ -57,7 +57,9 @@ export interface GameCardProps
   label: string;
   /** What the card is. Omit it, or set `face="back"`, for a card that stays hidden. */
   value?: GameCardValue;
+  /** Selects a named art set, overriding `DeckArtProvider`. `face="print"` bypasses face artwork. */
   artSet?: string;
+  /** Selects art sets by card art id, overriding inherited entries and `artSet`. */
   cardArtSets?: Readonly<Record<string, string>>;
   slots?: GameCardSlots;
   /** Defaults to `print` with a value and `back` without one. `'emoji'` is accepted as a deprecated alias for `'print'`. */
@@ -72,6 +74,7 @@ export interface GameCardProps
   dimmed?: boolean;
   /** Your own art — an image, an SVG, anything. Replaces the emoji print or back pattern. */
   children?: ReactNode;
+  /** Passes props and styles to the card root, face and back layers. */
   slotProps?: {
     /** Outer card container wrapping the card face or back. Renders a `div` by default. */
     root?: GameCardRootSlotProps;

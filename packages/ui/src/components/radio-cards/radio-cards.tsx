@@ -89,6 +89,7 @@ export interface RadioCardsEasyProps extends Omit<RadioCardsCompoundProps, 'chil
   options: readonly RadioCardsOption[];
   /** Names the generated radio group. */
   label?: ReactNode;
+  /** Not accepted when `options` supplies the cards. */
   children?: never;
   /** Replaces the generated root, label, cards or error element. */
   slots?: RadioCardsSlots;

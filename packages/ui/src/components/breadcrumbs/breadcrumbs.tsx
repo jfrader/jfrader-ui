@@ -63,6 +63,7 @@ export interface BreadcrumbsSlotProps {
   separator?: Omit<ComponentPropsWithRef<'span'>, 'children' | 'aria-hidden'> & SxProps;
 }
 export interface BreadcrumbsCompoundProps extends BreadcrumbsBaseProps {
+  /** Compose `Breadcrumbs.Item` children instead of supplying `items`. */
   children?: ReactNode;
   items?: never;
   component?: never;
@@ -70,15 +71,20 @@ export interface BreadcrumbsCompoundProps extends BreadcrumbsBaseProps {
   slotProps?: never;
 }
 export interface BreadcrumbsEasyProps extends BreadcrumbsBaseProps {
+  /** Render trail entries in order, from ancestor to current page. */
   items: readonly BreadcrumbsEntry[];
   children?: never;
+  /** Replace the root `nav`; takes precedence over `slots.root`. */
   component?: BreadcrumbsSlots['root'];
+  /** Replace the generated root, items, or separators. */
   slots?: BreadcrumbsSlots;
+  /** Pass props and `sx` to the generated root, items, and separators. */
   slotProps?: BreadcrumbsSlotProps;
 }
 export type BreadcrumbsProps = BreadcrumbsCompoundProps | BreadcrumbsEasyProps;
 
 export interface BreadcrumbsItemProps extends ComponentPropsWithRef<'li'>, SxProps {
+  /** Set the destination URL; without it, render non-link text. */
   href?: string;
   /** Marks the current page. Defaults to the last item when no item sets it. */
   current?: boolean;

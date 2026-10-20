@@ -56,11 +56,15 @@ export interface GameScoreSlots {
 }
 
 export interface GameScoreProps extends Omit<GameCardRootProps, 'children'>, Omit<GameCardRootCustomization, 'slots'>, SxProps {
+  /** Shows the visible label that names the score group. */
   label: string;
+  /** Defines player names, scores and optional stages in display order. */
   rows: readonly GameScoreRow[];
   /** Number locale; defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Passes props and styles to the score group and its parts. */
   slotProps?: GameScoreSlotProps;
+  /** Replaces the score group and its parts. */
   slots?: GameScoreSlots;
 }
 const rootStyle = css({ label: 'game-score', display: 'grid', gap: vars.space[2], color: vars.color.text, fontFamily: vars.font.sans,
