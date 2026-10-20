@@ -33,7 +33,7 @@ const Frame = styled.div({
   maxInlineSize: '100%',
   padding: vars.space[4],
 });
-const NarrowFrame = styled.div({ inlineSize: '18rem' });
+const NarrowFrame = styled.div({ inlineSize: '18rem', maxInlineSize: '100%' });
 const CardRoot = styled.div({
   display: 'grid',
   alignContent: 'end',
@@ -2383,6 +2383,17 @@ const SUITES = [
     const lastBox = last.getBoundingClientRect();
     await expect(lastBox.right).toBeLessThanOrEqual(list.right + 1);
     await expect(lastBox.left).toBeGreaterThanOrEqual(list.left - 1);
+    const frame = canvas.getByRole('region').parentElement!.parentElement!;
+    const originalWidth = frame.style.inlineSize;
+    frame.style.inlineSize = '14rem';
+    try {
+      await waitFor(async () => {
+        const bounds = frame.getBoundingClientRect();
+        await expect(canvas.getByRole('region').getBoundingClientRect().right).toBeLessThanOrEqual(bounds.right + 1);
+      });
+    } finally {
+      frame.style.inlineSize = originalWidth;
+    }
   },
 };
 

@@ -298,6 +298,7 @@ const contentStyle = css({
     borderColor: vars.color.borderControl,
   },
   overflow: 'auto',
+  touchAction: 'pan-y',
   minBlockSize: 0,
   flex: '1 1 auto',
   overflowWrap: 'anywhere',
@@ -1065,7 +1066,7 @@ export function CardStack<T>({
               }}
               onLostPointerCapture={(event) => {
                 stageSlot?.onLostPointerCapture?.(event);
-                finish(event.pointerId, true);
+                if (event.target === event.currentTarget) finish(event.pointerId, true);
               }}
             >
               {remaining.slice(0, windowSize).map((entry, index) => (
