@@ -51,8 +51,11 @@ export interface SwipeAction {
 type Slot = { className?: string; sx?: Interpolation<Theme> };
 interface SwipeActionsBaseProps
   extends Omit<ComponentPropsWithRef<'ul'>, 'value' | 'defaultValue' | 'children'>, SxProps {
+  /** Controls the revealed row and side; `null` closes all rails. */
   value?: SwipeActionsValue;
+  /** Sets the initially revealed row and side. Defaults to `null`. */
   defaultValue?: SwipeActionsValue;
+  /** Called when a rail requests opening or closing, with `null` for closed. */
   onValueChange?: (value: SwipeActionsValue) => void;
 }
 export interface SwipeActionsRecord extends Omit<SwipeActionsRowProps, 'children' | 'content'> {
@@ -60,6 +63,7 @@ export interface SwipeActionsRecord extends Omit<SwipeActionsRowProps, 'children
   content: ReactNode;
 }
 export interface SwipeActionsCompoundProps extends SwipeActionsBaseProps {
+  /** Renders `SwipeActions.Row` children when `rows` is not supplied. */
   children?: ReactNode;
   rows?: never;
   slotProps?: never;
@@ -69,7 +73,9 @@ export interface SwipeActionsEasyProps extends SwipeActionsBaseProps {
   /** Render rows in order using their stable ids. */
   rows: readonly SwipeActionsRecord[];
   children?: never;
+  /** Passes props to the generated list and rows. */
   slotProps?: SwipeActionsSlotProps;
+  /** Replaces the generated list and row components. */
   slots?: SwipeActionsSlots;
 }
 export interface SwipeActionsSlots {
@@ -108,14 +114,23 @@ export interface SwipeActionsSlotProps {
 }
 export type SwipeActionsProps = SwipeActionsCompoundProps | SwipeActionsEasyProps;
 export interface SwipeActionsRowProps extends ComponentPropsWithRef<'li'>, SxProps {
+  /** Replaces the row's content, action and overflow-menu parts. */
   slots?: SwipeActionsRowSlots;
+  /** Identifies the row in `value` and sets its DOM id; keep it unique and stable. */
   id: string;
+  /** Sets the overflow trigger's title for this row. */
   label: string;
+  /** Names the overflow trigger for assistive technology. */
   actionsLabel: string;
+  /** Supplies actions revealed at the logical start and listed first in the menu. */
   leading?: readonly SwipeAction[];
+  /** Supplies actions revealed at the logical end and listed after `leading` in the menu. */
   trailing?: readonly SwipeAction[];
+  /** Lets a full swipe run the first enabled leading or last enabled trailing action. Defaults to `true`. */
   fullSwipe?: boolean;
+  /** Prevents swiping and running row actions. Defaults to `false`. */
   disabled?: boolean;
+  /** Passes props to the row's content, action and overflow-menu parts. */
   slotProps?: {
     [Part in keyof SwipeActionsRowSlots]?: ComponentProps<NonNullable<SwipeActionsRowSlots[Part]>>;
   };
