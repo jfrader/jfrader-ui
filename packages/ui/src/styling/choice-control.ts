@@ -9,6 +9,9 @@ import { css } from './css';
 export const choiceRootStyle = css({
   display: 'inline-flex',
   flexDirection: 'column',
+  minInlineSize: 0,
+  maxInlineSize: '100%',
+  overflowWrap: 'anywhere',
   gap: vars.space[1],
   cursor: 'pointer',
   'input:checked + span': { backgroundColor: vars.color.accent, borderColor: vars.color.accent },
@@ -31,6 +34,8 @@ export const choiceRowStyle = css({
   position: 'relative',
   display: 'inline-flex',
   alignItems: 'center',
+  minInlineSize: vars.space[8],
+  minBlockSize: vars.space[8],
   gap: vars.space[2],
 });
 
