@@ -124,18 +124,24 @@ export interface SplitButtonSlotProps {
 export interface SplitButtonBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'role' | 'onClick' | 'children'>, SxProps {
   /** Appearance of the Action; the Trigger uses the matching subdued fill. */
   variant?: ButtonVariant;
+  /** Set the primary action and trigger color tone. Defaults to `accent`. */
   tone?: ButtonTone;
+  /** Set both buttons' sizing. Defaults to `md`. */
   size?: ButtonSize;
   /** Disables Action, Trigger and items. Requests closure once if the menu is open. */
   disabled?: boolean;
+  /** Control whether the alternative-action menu is open. */
   open?: boolean;
+  /** Open the uncontrolled menu initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receive requests to open or close the menu. */
   onOpenChange?: (open: boolean) => void;
   /** Menu placement relative to the Trigger; `start`/`end` follow the group's direction. */
   placement?: Placement;
 }
 
 export interface SplitButtonCompoundProps extends SplitButtonBaseProps {
+  /** Compose the action, trigger, and menu using `SplitButton` parts. */
   children?: ReactNode;
   label?: never;
   onClick?: ComponentPropsWithRef<'div'>['onClick'];
@@ -156,8 +162,11 @@ export interface SplitButtonEasyProps extends SplitButtonBaseProps {
   /** Alternative actions and separators rendered in the dropdown menu. */
   items: readonly SplitButtonItemRecord[];
   children?: never;
+  /** Replace the wrapper `div`; takes precedence over `slots.root`. */
   component?: SplitButtonSlots['root'];
+  /** Replace generated parts with components that forward props and ref. */
   slots?: SplitButtonSlots;
+  /** Pass props and `sx` to generated buttons, menu parts, and wrapper. */
   slotProps?: SplitButtonSlotProps;
 }
 
@@ -177,6 +186,7 @@ export type SplitButtonTriggerProps = SplitButtonTriggerBaseProps &
 export interface SplitButtonContentProps extends Omit<MenuContentProps, 'role'> {}
 
 export interface SplitButtonItemProps extends MenuItemProps {
+  /** Set the menu item's color tone. Defaults to `neutral`. */
   tone?: SplitButtonItemTone;
 }
 
