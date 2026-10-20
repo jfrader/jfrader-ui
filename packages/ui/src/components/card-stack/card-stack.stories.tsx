@@ -44,11 +44,17 @@ const cities: readonly City[] = [
   },
 ];
 const Fixture = styled.div({
+  boxSizing: 'border-box',
   padding: vars.space[4],
   inlineSize: '36rem',
   maxInlineSize: '100%',
   display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr)',
   gap: vars.space[4],
+  '& > [data-story-theme-scope]': {
+    minInlineSize: 0,
+    gridTemplateColumns: 'inherit',
+  },
 });
 const NarrowFixture = styled.div({ inlineSize: '14rem', maxInlineSize: '100%' });
 const ShrinkWrap = styled.div({ display: 'inline-flex', maxInlineSize: '100%' });
@@ -67,6 +73,7 @@ const WalletPanel = styled(Surface)({
   maxInlineSize: '100%',
   padding: vars.space[6],
   display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr)',
   gap: vars.space[6],
 });
 const WalletLabel = styled.p({
@@ -124,6 +131,7 @@ const meta = {
     ),
   ],
   parameters: {
+    layout: 'padded',
     docs: {
       source: { code: SOURCE },
       description: {
@@ -236,6 +244,23 @@ async function focusRing(node: HTMLElement) {
     1.1,
   );
 }
+async function containedGeometry(root: Element) {
+  const stage = part(root, 'stage').getBoundingClientRect();
+  const controls = part(root, 'controls').getBoundingClientRect();
+  const viewport = root.ownerDocument.documentElement;
+  await expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth);
+  await expect(stage.left).toBeGreaterThanOrEqual(0);
+  await expect(stage.right).toBeLessThanOrEqual(viewport.clientWidth);
+  for (const card of root.querySelectorAll('[data-ui="card-stack-card"]')) {
+    await expect(card.getBoundingClientRect().bottom).toBeLessThanOrEqual(controls.top);
+  }
+  for (const button of root.querySelectorAll('button')) {
+    const box = button.getBoundingClientRect();
+    await expect(box.width).toBeGreaterThanOrEqual(24);
+    await expect(box.height).toBeGreaterThanOrEqual(32);
+    await expect(box.right).toBeLessThanOrEqual(viewport.clientWidth);
+  }
+}
 function pointer(stage: HTMLElement) {
   const captures = new Set<number>();
   spyOn(stage, 'setPointerCapture').mockImplementation((id) => {
@@ -272,6 +297,7 @@ function pointer(stage: HTMLElement) {
 
 export const Default: Story = {
   play: async ({ canvas, canvasElement }) => {
+    await containedGeometry(canvasElement);
     await expect(part(canvasElement, 'stage').parentElement).not.toHaveAttribute('data-variant');
     await expect(canvas.getByRole('group', { name: 'Cards' })).toHaveAttribute(
       'aria-roledescription',
@@ -364,6 +390,11 @@ export const Wallet: Story = {
     await settled(canvasElement);
     await expect(top(canvasElement)).toHaveTextContent('Oslo');
     await expect(canvas.getByRole('status')).toHaveTextContent('Oslo restored');
+    await containedGeometry(canvasElement);
+    const stack = part(canvasElement, 'stage').parentElement!;
+    await expect(stack.getBoundingClientRect().right).toBeLessThanOrEqual(
+      stack.parentElement!.getBoundingClientRect().right,
+    );
   },
 };
 export const WalletLight: Story = {
@@ -407,6 +438,13 @@ export const Sizes: Story = {
     </>
   ),
 };
+export const SingleCard: Story = {
+  args: { items: cities.slice(0, 1), visibleCount: 1 },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelectorAll('[data-ui="card-stack-card"]')).toHaveLength(1);
+    await containedGeometry(canvasElement);
+  },
+};
 export const CustomActions: Story = {
   args: {
     labels: { left: 'Skip for now', right: 'Add to shortlist' },
@@ -422,6 +460,18 @@ export const InitiallyEmpty: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
     await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
     await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+export const LongEmptyLabel: Story = {
+  args: {
+    items: [],
+    labels: { empty: 'No_destinations_available_in_the_current_travel_shortlist' },
+  },
+  decorators: [(Story) => <NarrowFixture><Story /></NarrowFixture>],
+  play: async ({ canvasElement }) => {
+    const empty = part(canvasElement, 'empty');
+    await expect(empty.scrollWidth).toBeLessThanOrEqual(empty.clientWidth);
+    await containedGeometry(canvasElement);
   },
 };
 const completedHistory: CardStackDecision[] = cities.map((city) => ({
@@ -761,12 +811,21 @@ export const LongContent: Story = {
       </>
     ),
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, canvas, userEvent }) => {
     const content = top(canvasElement).querySelector<HTMLElement>(
       '[data-ui="card-stack-content"]',
     )!;
     await expect(content.scrollHeight).toBeGreaterThan(content.clientHeight);
     await expect(getComputedStyle(content).overflowY).toBe('auto');
+    await userEvent.tab();
+    await userEvent.tab();
+    const button = canvas.getByRole('button', { name: 'Read more' });
+    await expect(button.ownerDocument.activeElement).toBe(button);
+    const box = button.getBoundingClientRect();
+    const bounds = content.getBoundingClientRect();
+    await expect(box.top).toBeGreaterThanOrEqual(bounds.top);
+    await expect(box.bottom).toBeLessThanOrEqual(bounds.bottom);
+    await containedGeometry(canvasElement);
   },
 };
 export const Narrow: Story = {
