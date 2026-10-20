@@ -783,6 +783,17 @@ export const ConsumerVeto: Story = {
   },
 };
 
+export const CompactChoices: Story = {
+  args: { size: 'sm', defaultValue: 'I' },
+  render: (args) => <Example {...args} options={['I', 'II', 'III']} />,
+  play: async ({ canvas }) => {
+    for (const item of canvas.getAllByRole('radio')) {
+      await expect(item.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
+      await expect(item.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+  },
+};
+
 export const LongLabelsOverflow: Story = {
   args: { defaultValue: 'Recent projects', style: { width: 280 } },
   render: (args) => <Example {...args} options={LONG_OPTIONS} />,

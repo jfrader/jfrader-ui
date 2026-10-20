@@ -584,8 +584,16 @@ export const IntlArabicNumerals: Story = {
   },
 };
 export const RTL: Story = {
-  args: { dir: 'rtl', defaultValue: 50 },
+  args: { dir: 'rtl', defaultValue: 50, marks: [0, 50, 100] },
   play: async ({ canvas, userEvent }) => {
+    const control = canvas.getByRole('slider').parentElement!;
+    const bounds = control.getBoundingClientRect();
+    const ticks = control.querySelectorAll<HTMLElement>(':scope > span[aria-hidden="true"]');
+    await expect(ticks).toHaveLength(3);
+    for (const [index, tick] of Array.from(ticks).entries()) {
+      const rect = tick.getBoundingClientRect();
+      await expect(Math.abs(rect.left + rect.width / 2 - (bounds.right - bounds.width * index / 2))).toBeLessThan(1);
+    }
     await userEvent.tab();
     await userEvent.keyboard('{ArrowRight}');
     await expect(canvas.getByRole('slider')).toHaveAttribute('aria-valuenow', '49');
