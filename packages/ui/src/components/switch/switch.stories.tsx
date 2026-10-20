@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { Button } from '../button';
 import { Switch, type SwitchProps, type SwitchSize } from './index';
 
 const SIZES = ['sm', 'md'] as const satisfies readonly SwitchSize[];
@@ -20,15 +21,21 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Turn a setting on or off.' },
-      usage: `### Values
-- Use \`defaultChecked\` for an uncontrolled initial state. If you pass \`checked\`, update it from \`onCheckedChange\`; the callback receives a boolean after \`onChange\`.
+      sections: [
+        { title: 'Basic', stories: ['Default', 'On'] },
+        { title: 'Labels and descriptions', stories: ['WithDescription'] },
+        { title: 'States', stories: ['Controlled', 'Disabled'] },
+        { title: 'Forms', stories: ['SettingsForm'] },
+        { title: 'Keyboard', stories: ['Keyboard'] },
+      ],
+      usage: `### When to use
+Use a switch for an on/off setting that takes effect immediately. Use a checkbox for consent or a choice that waits for form submission.
 
 ### Forms
-- Pass \`name\` and \`value\` to submit the native checkbox input's value when on. An off or disabled switch contributes no value.
-- If you omit \`label\`, supply \`aria-label\` or \`aria-labelledby\` to name the setting.
+Only enabled switches that are on contribute a value to native form submission.
 
-### Keyboard
-- Tab to the switch and press Space to toggle it. Set \`disabled\` to prevent changes and remove it from the tab order.`,
+### Keyboard and accessibility
+Give each switch an accessible name. Keep its label unchanged when the setting changes. Tab focuses enabled switches; Space toggles the focused setting. Disabled switches cannot change and are skipped by Tab.`,
     },
   },
   args: { label: 'Airplane mode', size: 'md' },
@@ -58,6 +65,10 @@ function ControlledSwitch(props: SwitchProps) {
 ControlledSwitch.displayName = 'ControlledSwitch';
 
 export const Default: Story = {
+  name: 'Airplane mode',
+  parameters: { docs: { description: { story: 'Turn airplane mode on or off.' }, source: { language: 'tsx', code: `import { Switch } from '@jfrader/ui';
+
+<Switch label="Airplane mode" size="md" />` } } },
   play: async ({ canvasElement }) => {
     const control = within(canvasElement).getByRole('switch', { name: 'Airplane mode' });
     await expect(control).not.toBeChecked();
@@ -65,6 +76,10 @@ export const Default: Story = {
 };
 
 export const On: Story = {
+  name: 'Initially on',
+  parameters: { docs: { description: { story: 'Start with the setting enabled.' }, source: { language: 'tsx', code: `import { Switch } from '@jfrader/ui';
+
+<Switch label="Airplane mode" defaultChecked />` } } },
   args: { defaultChecked: true },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('switch')).toBeChecked();
@@ -72,6 +87,10 @@ export const On: Story = {
 };
 
 export const WithDescription: Story = {
+  name: 'Label and description',
+  parameters: { docs: { description: { story: 'Explain which connections airplane mode turns off.' }, source: { language: 'tsx', code: `import { Switch } from '@jfrader/ui';
+
+<Switch label="Airplane mode" description="Turns off Wi-Fi and Bluetooth." />` } } },
   args: { description: 'Turns off Wi-Fi and Bluetooth.' },
   play: async ({ canvasElement }) => {
     const control = within(canvasElement).getByRole('switch', { name: 'Airplane mode' });
@@ -104,7 +123,8 @@ export const BooleanNodes: Story = {
 };
 
 export const Controlled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+  name: 'Controlled setting',
+  parameters: { docs: { description: { story: 'Keep the setting in application state.' }, source: { language: 'tsx', code: `import { useState } from 'react';
 import { Switch } from '@jfrader/ui';
 
 function AirplaneMode() {
@@ -127,6 +147,10 @@ function AirplaneMode() {
 };
 
 export const Keyboard: Story = {
+  name: 'Keyboard navigation',
+  parameters: { docs: { description: { story: 'Tab to the switch, then press Space to toggle it.' }, source: { language: 'tsx', code: `import { Switch } from '@jfrader/ui';
+
+<Switch label="Airplane mode" />` } } },
   args: { onCheckedChange: fn() },
   play: async ({ args, canvasElement }) => {
     const control = within(canvasElement).getByRole('switch');
@@ -144,12 +168,37 @@ export const Keyboard: Story = {
 };
 
 export const Disabled: Story = {
+  parameters: { docs: { description: { story: 'Show an unavailable setting without allowing changes.' }, source: { language: 'tsx', code: `import { Switch } from '@jfrader/ui';
+
+<Switch label="Airplane mode" disabled />` } } },
   args: { disabled: true, onCheckedChange: fn() },
   play: async ({ args, canvasElement }) => {
     const control = within(canvasElement).getByRole('switch');
     await expect(control).toBeDisabled();
     await userEvent.click(control);
     await expect(args.onCheckedChange).not.toHaveBeenCalled();
+  },
+};
+
+export const SettingsForm: Story = {
+  name: 'Setting in a form',
+  parameters: { docs: { description: { story: 'Include an enabled setting in native form data.' }, source: { language: 'tsx', code: `import { Button, Switch } from '@jfrader/ui';
+
+<form>
+  <Switch label="Airplane mode" name="airplaneMode" value="on" defaultChecked />
+  <Button type="submit">Save settings</Button>
+</form>` } } },
+  render: () => (
+    <form>
+      <Switch label="Airplane mode" name="airplaneMode" value="on" defaultChecked />
+      <Button type="submit">Save settings</Button>
+    </form>
+  ),
+  play: async ({ canvasElement }) => {
+    const form = canvasElement.querySelector('form')!;
+    await expect(new FormData(form).get('airplaneMode')).toBe('on');
+    await userEvent.click(within(canvasElement).getByRole('switch'));
+    await expect(new FormData(form).has('airplaneMode')).toBe(false);
   },
 };
 
