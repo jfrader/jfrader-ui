@@ -27,19 +27,23 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Open a menu and choose an action.' },
-      usage: `### Composition
-Pass triggerLabel and items for an action menu. Each record has type="item" with label, onSelect and optional disabled, or type="separator". Do not combine items with children. Use slotProps.root/trigger/content/item/separator for part props and slots for replacement adapters. component aliases slots.root; a root override adds a wrapper around the trigger. Use the compound parts for custom structure.
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'Customization', stories: ['SlotProps', 'Glass'] },
+        { title: 'State', stories: ['Controlled'] },
+        { title: 'Keyboard and focus', stories: ['Keyboard', 'Typeahead', 'OutsidePress', 'SelectPreventDefault', 'SelectMovesFocus'] },
+      ],
+      usage: `### When to use
+Use a menu for a short list of actions. Use a select for choosing a form value. Keep a similar-tone backdrop behind translucent menus so text remains readable; reduced transparency uses an opaque fill.
 
-Set appearance="glass" on Menu for a translucent popup; reduced transparency uses an opaque fill.
-Like Card, menu items use full-opacity text over the near-opaque surfaceGlass fill to retain text contrast.
-
-- Uses menu/menuitem semantics, labelled by the trigger. The trigger exposes aria-haspopup, aria-expanded and aria-controls.
+### Keyboard and accessibility
+- Give the menu button a clear action label.
 - Enter, Space or ArrowDown opens on the first enabled item; ArrowUp opens on the last. Pointer opening also focuses the first item.
-- Arrows wrap and skip disabled items; Home/End reach the ends. Typeahead resets after 500ms (the upstream default is 750ms).
-- Escape or selection returns focus to the trigger after an accepted close. Outside press and Tab out close without moving focus.
+- Arrows wrap and skip disabled items; Home/End reach the ends. Typeahead resets after 500ms.
+- Escape or selection returns focus to the trigger after an accepted close, unless the selected action already moved focus elsewhere. Outside press and Tab out close without moving focus.
 - Shift+Tab from the first item returns to the trigger and leaves the menu open; Tab re-enters it.
-- Skipping disabled items and leaving the menu open on Shift+Tab differ from APG. Disabled items stay visible. Revisit both behaviors with screen-reader feedback.
-- Focus management is non-modal with automatic returnFocus off. A click handler can preventDefault() to stop an item from closing the menu.`,
+- Skipping disabled items and leaving the menu open on Shift+Tab differ from APG. Disabled items stay visible.
+- Focus is not trapped. An action can keep the menu open by preventing its click's default behavior.`,
     },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive). Every other
@@ -134,6 +138,31 @@ export const ReplacementSlots: EasyStory = {
 /** Restyle the generated trigger and every action with slotProps. */
 // This story tests native props and css forwarded through the slot API.
 export const SlotProps: EasyStory = {
+  name: 'Part props and replacement',
+  parameters: { docs: {
+    description: { story: 'Replace the outer wrapper and customize the generated trigger and actions.' },
+    source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { Menu } from '@jfrader/ui';
+
+function MenuRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+
+<Menu
+  triggerLabel="Actions"
+  slots={{ root: MenuRoot }}
+  items={[
+    { type: 'item', label: 'Edit' },
+    { type: 'separator' },
+    { type: 'item', label: 'Delete' },
+  ]}
+  slotProps={{
+    root: { 'data-ui': 'menu custom' },
+    trigger: { css: { fontStyle: 'italic' } },
+    item: { className: 'custom-action' },
+  }}
+/>` },
+  } },
   args: {
     triggerLabel: 'Actions',
     component: UnusedMenuRoot,
@@ -167,14 +196,23 @@ export const Default: EasyStory = {
     onOpenChange: fn(),
     slotProps: { content: { className: 'easy-menu-content' } },
   },
-  parameters: { docs: { source: { language: 'tsx', code: `const actions = [
+  parameters: { docs: {
+    description: { story: 'Open Options to choose an action, with a disabled command and a separator.' },
+    source: { language: 'tsx', code: `import { Button, Menu, styled, type MenuAction } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', gap: vars.space[3] });
+const actions = [
   { type: 'item', label: 'Edit', onSelect: edit },
   { type: 'item', label: 'Duplicate', disabled: true },
   { type: 'separator' },
   { type: 'item', label: 'Delete', onSelect: remove },
 ] satisfies MenuAction[];
 
-<Menu triggerLabel="Actions" items={actions} />` } } },
+<Row>
+  <Menu triggerLabel="Options" items={actions} slotProps={{ content: { className: 'easy-menu-content' } }} />
+  <Button>After</Button>
+</Row>` } } },
   render: (args) => <Row><Menu {...args} /><Button>After</Button></Row>,
   play: async ({ canvasElement, args, userEvent }) => {
     onEdit.mockClear();
@@ -229,7 +267,16 @@ export const Glass: EasyStory = {
     triggerLabel: TRIGGER,
     items: [{ type: 'item', label: 'Edit' }, { type: 'item', label: 'Delete' }],
   },
-  parameters: { docs: { source: { language: 'tsx', code: '<Menu appearance="glass" triggerLabel="Options" items={[{ type: "item", label: "Edit" }, { type: "item", label: "Delete" }]} />' } } },
+  name: 'Glass material',
+  parameters: { docs: {
+    description: { story: 'Open a translucent menu with Edit and Delete actions.' },
+    source: { language: 'tsx', code: `import { Menu } from '@jfrader/ui';
+
+<Menu appearance="glass" triggerLabel="Options" items={[
+  { type: 'item', label: 'Edit' },
+  { type: 'item', label: 'Delete' },
+]} />` },
+  } },
   render: (args) => <Menu {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const trigger = await focusTrigger(canvasElement);
@@ -420,16 +467,26 @@ async function focusTrigger(canvasElement: HTMLElement) {
 }
 
 export const Compound: Story = {
-  name: 'Compound',
-  parameters: { docs: { source: { language: 'tsx', code: `<Menu>
-  <Menu.Trigger>Actions</Menu.Trigger>
+  name: 'Compound anatomy',
+  parameters: { docs: {
+    description: { story: 'Compose the trigger, actions, and separator explicitly.' },
+    source: { language: 'tsx', code: `import { Button, Menu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', gap: vars.space[3] });
+
+<Row>
+<Menu>
+  <Menu.Trigger>Options</Menu.Trigger>
   <Menu.Content>
     <Menu.Item onSelect={edit}>Edit</Menu.Item>
     <Menu.Item disabled>Duplicate</Menu.Item>
     <Menu.Separator />
     <Menu.Item onSelect={remove}>Delete</Menu.Item>
   </Menu.Content>
-</Menu>` } } },
+</Menu>
+<Button>After</Button>
+</Row>` } } },
   render: (args) => <MenuExample {...args} />,
   play: async ({ canvasElement }) => {
     onEdit.mockClear();
@@ -518,6 +575,33 @@ export const ScrollableRtl: Story = {
 };
 
 export const Controlled: Story = {
+  name: 'Controlled opening',
+  parameters: { docs: {
+    description: { story: 'Keep opening and dismissal in application state.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, Menu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', gap: vars.space[3] });
+
+function Actions() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Row>
+      <Menu open={open} onOpenChange={setOpen}>
+        <Menu.Trigger>Options</Menu.Trigger>
+        <Menu.Content>
+          <Menu.Item onSelect={edit}>Edit</Menu.Item>
+          <Menu.Item disabled>Duplicate</Menu.Item>
+          <Menu.Separator />
+          <Menu.Item onSelect={remove}>Delete</Menu.Item>
+        </Menu.Content>
+      </Menu>
+      <Button>After</Button>
+    </Row>
+  );
+}` },
+  } },
   args: { onOpenChange: fn() },
   render: (args) => <ControlledMenu {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -546,6 +630,27 @@ export const Controlled: Story = {
 };
 
 export const Keyboard: Story = {
+  name: 'Keyboard navigation',
+  parameters: { docs: {
+    description: { story: 'Open with Enter or an arrow key, then navigate past the disabled action.' },
+    source: { language: 'tsx', code: `import { Button, Menu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', gap: vars.space[3] });
+
+<Row>
+  <Menu>
+    <Menu.Trigger>Options</Menu.Trigger>
+    <Menu.Content>
+      <Menu.Item onSelect={edit}>Edit</Menu.Item>
+      <Menu.Item disabled>Duplicate</Menu.Item>
+      <Menu.Separator />
+      <Menu.Item onSelect={remove}>Delete</Menu.Item>
+    </Menu.Content>
+  </Menu>
+  <Button>After</Button>
+</Row>` },
+  } },
   render: (args) => <MenuExample {...args} />,
   play: async ({ canvasElement }) => {
     const { ownerDocument } = canvasElement;
@@ -612,6 +717,20 @@ export const ArrowUpOpensLast: Story = {
 };
 
 export const Typeahead: Story = {
+  parameters: { docs: {
+    description: { story: 'Type B or S in Settings to focus Billing or Security, skipping disabled Backup.' },
+    source: { language: 'tsx', code: `import { Menu } from '@jfrader/ui';
+
+<Menu>
+  <Menu.Trigger>Settings</Menu.Trigger>
+  <Menu.Content>
+    <Menu.Item>Account</Menu.Item>
+    <Menu.Item disabled>Backup</Menu.Item>
+    <Menu.Item>Billing</Menu.Item>
+    <Menu.Item>Security</Menu.Item>
+  </Menu.Content>
+</Menu>` },
+  } },
   render: (args) => (
     <Menu {...args}>
       <Menu.Trigger>Settings</Menu.Trigger>
@@ -683,6 +802,27 @@ export const TabMovesOn: Story = {
 };
 
 export const OutsidePress: Story = {
+  name: 'Outside press',
+  parameters: { docs: {
+    description: { story: 'Click After while the menu is open to dismiss it without returning focus to Options.' },
+    source: { language: 'tsx', code: `import { Button, Menu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', gap: vars.space[3] });
+
+<Row>
+  <Menu>
+    <Menu.Trigger>Options</Menu.Trigger>
+    <Menu.Content>
+      <Menu.Item onSelect={edit}>Edit</Menu.Item>
+      <Menu.Item disabled>Duplicate</Menu.Item>
+      <Menu.Separator />
+      <Menu.Item onSelect={remove}>Delete</Menu.Item>
+    </Menu.Content>
+  </Menu>
+  <Button>After</Button>
+</Row>` },
+  } },
   render: (args) => <MenuExample {...args} />,
   play: async ({ canvasElement }) => {
     const { ownerDocument } = canvasElement;
@@ -707,6 +847,19 @@ export const OutsidePress: Story = {
 };
 
 export const SelectPreventDefault: Story = {
+  name: 'Keep open after selection',
+  parameters: { docs: {
+    description: { story: 'Choose Edit to run the action without dismissing the menu.' },
+    source: { language: 'tsx', code: `import { Menu } from '@jfrader/ui';
+
+<Menu>
+  <Menu.Trigger>Options</Menu.Trigger>
+  <Menu.Content>
+    <Menu.Item onSelect={edit} onClick={(event) => event.preventDefault()}>Edit</Menu.Item>
+    <Menu.Item>Delete</Menu.Item>
+  </Menu.Content>
+</Menu>` },
+  } },
   render: (args) => (
     <Menu {...args}>
       <Menu.Trigger>{TRIGGER}</Menu.Trigger>
@@ -751,6 +904,30 @@ function RenameExample(props: MenuCompoundProps) {
 }
 
 export const SelectMovesFocus: Story = {
+  name: 'Move focus after selection',
+  parameters: { docs: {
+    description: { story: 'Choose Rename to focus the Name field instead of returning to the menu button.' },
+    source: { language: 'tsx', code: `import { useRef } from 'react';
+import { Menu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', gap: vars.space[3] });
+
+function Rename() {
+  const input = useRef<HTMLInputElement>(null);
+  return (
+    <Row>
+      <Menu>
+        <Menu.Trigger>Options</Menu.Trigger>
+        <Menu.Content>
+          <Menu.Item onSelect={() => { edit(); input.current?.focus(); }}>Rename</Menu.Item>
+        </Menu.Content>
+      </Menu>
+      <input ref={input} aria-label="Name" />
+    </Row>
+  );
+}` },
+  } },
   render: (args) => <RenameExample {...args} />,
   play: async ({ canvasElement }) => {
     onEdit.mockClear();

@@ -234,7 +234,28 @@ const meta = {
         component:
           'Open actions for an item with a context click, Shift+F10, the ContextMenu key, or a menu button.',
       },
-      usage: '- `Target` needs a label and keeps its children interactive. A click opens nothing unless `openOnClick` is set; use it only for objects without interactive children.\n- Add a visible `ContextMenu.Trigger` inside the Target for touch and pointer users.\n- Context clicks open at the pointer; keyboard requests open below the Target.\n- Arrows and typeahead skip disabled items, which stay visible as in Menu. Submenus are not supported.\n- Scrolling outside the menu or resizing the window closes it.',
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'Customization', stories: ['CustomSlots'] },
+        { title: 'Choices', stories: ['CheckboxItems'] },
+        { title: 'Opening and placement', stories: ['PointerAnchor', 'KeyboardAnchor', 'VisibleTrigger', 'ViewportCorners', 'RTL'] },
+        { title: 'Scrolling', stories: ['ManyItems', 'ScrollCloses'] },
+        { title: 'State', stories: ['ControlledAccept', 'RejectedOpen'] },
+      ],
+      usage: `### When to use
+Offer secondary actions for an object, such as a file or board. Keep primary actions visible, and provide a visible menu button for touch users. Submenus are not supported.
+
+### Opening and dismissal
+Context clicks open at the pointer; keyboard requests open below the object at its inline start. Ordinary clicks preserve the object's actions. Enable whole-object click opening only for objects without interactive children.
+
+Scrolling outside the menu or resizing the window requests closure; scrolling inside it does not. Controlled state may reject a request.
+
+### Keyboard and accessibility
+Give the context area an accessible name. Shift+F10 or the ContextMenu key opens its actions. On a menu button, Enter, Space, or ArrowDown opens the first enabled action; ArrowUp opens the last.
+
+Arrows wrap, Home/End reach the ends, and typeahead resets after 500ms. Disabled actions remain visible but are skipped, unlike the APG recommendation. Enter or Space activates an action; checkbox choices stay open unless configured to close.
+
+Accepted Escape or selection returns focus to the invoker unless the action already moved focus. Outside press and Tab out close without restoring focus. Shift+Tab from the first action returns to the invoker while keeping the menu open.`,
     },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive). Every other
@@ -285,7 +306,7 @@ export const Default: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
     const error = spyOn(console, 'error');
     return () => error.mockRestore();
   },
-  name: 'Easy mode',
+  name: 'File actions',
   args: {
     targetLabel: TARGET,
     content: (
@@ -310,9 +331,26 @@ export const Default: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
   },
   parameters: {
     docs: {
+      description: { story: 'Right-click report.pdf or press Shift+F10 to choose a file action.' },
       source: {
         language: 'tsx',
-        code: `const items: readonly ContextMenuAction[] = [
+        code: `import { Button, ContextMenu, styled, type ContextMenuAction } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FileTarget = styled(ContextMenu.Target)({
+  display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+  gap: vars.space[2], inlineSize: '16rem', maxInlineSize: '100%',
+  minBlockSize: '6rem', padding: vars.space[4], boxSizing: 'border-box',
+  border: \`1px dashed \${vars.color.borderControl}\`, borderRadius: vars.radius.md,
+  color: vars.color.text, fontFamily: vars.font.sans, fontSize: vars.textSize.sm,
+});
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[3] });
+function LinkIcon() {
+  return <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+  </svg>;
+}
+const items: readonly ContextMenuAction[] = [
   { type: 'item', label: 'Copy link', icon: <LinkIcon />, onSelect: copyLink },
   { type: 'item', label: 'Rename', onSelect: rename },
   { type: 'item', label: 'Move', disabled: true },
@@ -320,11 +358,15 @@ export const Default: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
   { type: 'item', label: 'Delete file', tone: 'danger', onSelect: removeFile },
 ];
 
+<Row>
 <ContextMenu
   targetLabel="report.pdf actions"
+  slots={{ target: FileTarget }}
   items={items}
-  content={<FilePreview />}
-/>`,
+  content={<><strong>report.pdf</strong><Button size="sm" variant="outline">Open</Button></>}
+/>
+<Button>After</Button>
+</Row>`,
       },
     },
   },
@@ -437,7 +479,48 @@ export const EasyDisabled: StoryObj<(props: ContextMenuEasyProps) => ReactNode> 
 
 export const CustomSlots: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
   ...Default,
-  name: 'Easy mode custom slotProps',
+  name: 'Part props',
+  parameters: { docs: {
+    description: { story: 'Apply classes to the context area, popup, actions, and separator.' },
+    source: { language: 'tsx', code: `import { Button, ContextMenu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FileTarget = styled(ContextMenu.Target)({
+  display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+  gap: vars.space[2], inlineSize: '16rem', maxInlineSize: '100%',
+  minBlockSize: '6rem', padding: vars.space[4], boxSizing: 'border-box',
+  border: \`1px dashed \${vars.color.borderControl}\`, borderRadius: vars.radius.md,
+  color: vars.color.text, fontFamily: vars.font.sans, fontSize: vars.textSize.sm,
+});
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[3] });
+function LinkIcon() {
+  return <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+  </svg>;
+}
+
+<Row>
+  <ContextMenu
+    targetLabel="report.pdf actions"
+    slots={{ target: FileTarget }}
+    content={<><strong>report.pdf</strong><Button size="sm" variant="outline">Open</Button></>}
+    items={[
+      { type: 'item', label: 'Copy link', icon: <LinkIcon />, onSelect: copyLink },
+      { type: 'item', label: 'Rename', onSelect: rename },
+      { type: 'item', label: 'Move', disabled: true },
+      { type: 'separator' },
+      { type: 'item', label: 'Delete file', tone: 'danger', onSelect: removeFile },
+    ]}
+    slotProps={{
+      target: { className: 'custom-target' },
+      content: { className: 'custom-content' },
+      item: { className: 'custom-item' },
+      separator: { className: 'custom-separator' },
+    }}
+  />
+  <Button>After</Button>
+</Row>` },
+  } },
   args: {
     ...Default.args,
     slotProps: {
@@ -469,16 +552,45 @@ export const CustomSlots: StoryObj<(props: ContextMenuEasyProps) => ReactNode> =
 };
 
 export const Compound: Story = {
+  name: 'Compound anatomy',
   parameters: {
     docs: {
+      description: { story: 'Compose the file target, actions, disabled item, and separator explicitly.' },
       source: {
-        code: `<ContextMenu>
-  <ContextMenu.Target aria-label="File actions"><FilePreview /></ContextMenu.Target>
+        language: 'tsx',
+        code: `import { Button, ContextMenu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FileTarget = styled(ContextMenu.Target)({
+  display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+  gap: vars.space[2], inlineSize: '16rem', maxInlineSize: '100%',
+  minBlockSize: '6rem', padding: vars.space[4], boxSizing: 'border-box',
+  border: \`1px dashed \${vars.color.borderControl}\`, borderRadius: vars.radius.md,
+  color: vars.color.text, fontFamily: vars.font.sans, fontSize: vars.textSize.sm,
+});
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[3] });
+function LinkIcon() {
+  return <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+  </svg>;
+}
+
+<Row>
+<ContextMenu>
+  <FileTarget aria-label="report.pdf actions">
+    <strong>report.pdf</strong>
+    <Button size="sm" variant="outline" onClick={openFile}>Open</Button>
+  </FileTarget>
   <ContextMenu.Content>
-    <ContextMenu.Item onSelect={copyLink}>Copy link</ContextMenu.Item>
+    <ContextMenu.Item icon={<LinkIcon />} onSelect={copyLink}>Copy link</ContextMenu.Item>
+    <ContextMenu.Item onSelect={rename}>Rename</ContextMenu.Item>
+    <ContextMenu.Item disabled>Move</ContextMenu.Item>
+    <ContextMenu.Separator />
     <ContextMenu.Item tone="danger" onSelect={removeFile}>Delete file</ContextMenu.Item>
   </ContextMenu.Content>
-</ContextMenu>`,
+</ContextMenu>
+<Button>After</Button>
+</Row>`,
       },
     },
   },
@@ -519,8 +631,10 @@ export const Compound: Story = {
 };
 
 export const PointerAnchor: Story = {
+  name: 'Pointer anchoring',
   parameters: {
     docs: {
+      description: { story: 'Right-click at different points on report.pdf to move the menu to the pointer.' },
       source: {
         language: 'tsx',
         code: `import { vars } from '@jfrader/tokens/vars';
@@ -625,8 +739,10 @@ const TargetBox = styled(ContextMenu.Target)({
 };
 
 export const KeyboardAnchor: Story = {
+  name: 'Keyboard anchoring',
   parameters: {
     docs: {
+      description: { story: 'Focus report.pdf and press Shift+F10 or the ContextMenu key to open below the target.' },
       source: {
         language: 'tsx',
         code: `import { vars } from '@jfrader/tokens/vars';
@@ -1043,6 +1159,37 @@ const TargetBox = styled(ContextMenu.Target)({
 };
 
 export const VisibleTrigger: Story = {
+  name: 'Visible menu button',
+  parameters: { docs: {
+    description: { story: 'Open More actions by click, tap, or keyboard without a context-click gesture.' },
+    source: { language: 'tsx', code: `import { Button, ContextMenu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FileTarget = styled(ContextMenu.Target)({
+  display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+  gap: vars.space[2], inlineSize: '16rem', maxInlineSize: '100%',
+  minBlockSize: '6rem', padding: vars.space[4], boxSizing: 'border-box',
+  border: \`1px dashed \${vars.color.borderControl}\`, borderRadius: vars.radius.md,
+  color: vars.color.text, fontFamily: vars.font.sans, fontSize: vars.textSize.sm,
+});
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[3] });
+
+<Row>
+  <ContextMenu>
+    <FileTarget aria-label="report.pdf actions">
+      <strong>report.pdf</strong>
+      <ContextMenu.Trigger>More actions</ContextMenu.Trigger>
+    </FileTarget>
+    <ContextMenu.Content>
+      <ContextMenu.Item onSelect={copyLink}>Copy link</ContextMenu.Item>
+      <ContextMenu.Item onSelect={rename}>Rename</ContextMenu.Item>
+      <ContextMenu.Item tone="danger" onSelect={removeFile}>Delete file</ContextMenu.Item>
+      <ContextMenu.Item disabled>Archive</ContextMenu.Item>
+    </ContextMenu.Content>
+  </ContextMenu>
+  <Button>After</Button>
+</Row>` },
+  } },
   render: ({ onCopy, onRename, onDelete, onOpenChild: _onOpenChild, ...args }) => (
     <Row>
       <ContextMenu {...args}>
@@ -1275,6 +1422,37 @@ ViewOptions.displayName = 'ViewOptions';
 const compactChange = fn();
 
 export const CheckboxItems: Story = {
+  name: 'Checkbox choices',
+  parameters: { docs: {
+    description: { story: 'Toggle board options without closing; Compact rows rejects changes and Pin board closes on selection.' },
+    source: { language: 'tsx', code: `import { ContextMenu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const BoardTarget = styled(ContextMenu.Target)({
+  display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+  gap: vars.space[2], inlineSize: '16rem', maxInlineSize: '100%',
+  minBlockSize: '6rem', padding: vars.space[4], boxSizing: 'border-box',
+  border: \`1px dashed \${vars.color.borderControl}\`, borderRadius: vars.radius.md,
+  color: vars.color.text, fontFamily: vars.font.sans, fontSize: vars.textSize.sm,
+});
+function LinkIcon() {
+  return <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+  </svg>;
+}
+
+<ContextMenu>
+  <BoardTarget aria-label="Board view options"><strong>Sprint board</strong></BoardTarget>
+  <ContextMenu.Content>
+    <ContextMenu.CheckboxItem defaultValue onValueChange={setShowAvatars}>Show avatars</ContextMenu.CheckboxItem>
+    <ContextMenu.CheckboxItem icon={<LinkIcon />} onValueChange={setShowLinks}>Show links</ContextMenu.CheckboxItem>
+    <ContextMenu.CheckboxItem value={false} onValueChange={requestCompact}>Compact rows</ContextMenu.CheckboxItem>
+    <ContextMenu.CheckboxItem disabled>Show archived</ContextMenu.CheckboxItem>
+    <ContextMenu.Separator />
+    <ContextMenu.CheckboxItem closeOnSelect onValueChange={setPinned}>Pin board</ContextMenu.CheckboxItem>
+  </ContextMenu.Content>
+</ContextMenu>` },
+  } },
   beforeEach: () => {
     const error = spyOn(console, 'error');
     return () => error.mockRestore();
@@ -1664,6 +1842,33 @@ export const LongLabels: Story = {
 };
 
 export const ManyItems: Story = {
+  name: 'Scrollable actions',
+  parameters: { docs: {
+    description: { story: 'Scroll through twenty folder actions or press End to reach the last one.' },
+    source: { language: 'tsx', code: `import { Fragment } from 'react';
+import { ContextMenu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FileTarget = styled(ContextMenu.Target)({
+  display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+  gap: vars.space[2], inlineSize: '16rem', maxInlineSize: '100%',
+  minBlockSize: '6rem', padding: vars.space[4], boxSizing: 'border-box',
+  border: \`1px dashed \${vars.color.borderControl}\`, borderRadius: vars.radius.md,
+  color: vars.color.text, fontFamily: vars.font.sans, fontSize: vars.textSize.sm,
+});
+
+<ContextMenu>
+  <FileTarget aria-label="report.pdf actions">report.pdf</FileTarget>
+  <ContextMenu.Content>
+    {Array.from({ length: 20 }, (_, index) => (
+      <Fragment key={index}>
+        {index > 0 && index % 5 === 0 && <ContextMenu.Separator />}
+        <ContextMenu.Item>{\`Move to folder \${index + 1}\`}</ContextMenu.Item>
+      </Fragment>
+    ))}
+  </ContextMenu.Content>
+</ContextMenu>` },
+  } },
   render: ({ onOpenChild: _onOpenChild, onCopy: _onCopy, onRename: _onRename, onDelete: _onDelete, ...args }) => (
     <ContextMenu {...args}>
       <TargetBox aria-label={TARGET} >
@@ -1699,8 +1904,10 @@ export const ManyItems: Story = {
 };
 
 export const ViewportCorners: Story = {
+  name: 'Viewport edges',
   parameters: {
     docs: {
+      description: { story: 'Open near a viewport edge to try collision-aware placement without changing the actions.' },
       source: {
         language: 'tsx',
         code: `import { vars } from '@jfrader/tokens/vars';
@@ -1820,8 +2027,10 @@ export const ScrollAndResize: Story = {
 };
 
 export const ScrollCloses: Story = {
+  name: 'Close on outside scroll',
   parameters: {
     docs: {
+      description: { story: 'Open the file menu, then scroll the page outside it to request dismissal.' },
       source: {
         language: 'tsx',
         code: `import { vars } from '@jfrader/tokens/vars';
@@ -2050,6 +2259,49 @@ function ControlledFileMenu(args: StoryArgs) {
 ControlledFileMenu.displayName = 'ControlledFileMenu';
 
 export const ControlledAccept: Story = {
+  name: 'Controlled opening',
+  parameters: { docs: {
+    description: { story: 'Accept opening and dismissal requests in application state.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, ContextMenu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FileTarget = styled(ContextMenu.Target)({
+  display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+  gap: vars.space[2], inlineSize: '16rem', maxInlineSize: '100%',
+  minBlockSize: '6rem', padding: vars.space[4], boxSizing: 'border-box',
+  border: \`1px dashed \${vars.color.borderControl}\`, borderRadius: vars.radius.md,
+  color: vars.color.text, fontFamily: vars.font.sans, fontSize: vars.textSize.sm,
+});
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[3] });
+function LinkIcon() {
+  return <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+  </svg>;
+}
+
+function FileActions() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Row>
+      <ContextMenu open={open} onOpenChange={setOpen}>
+        <FileTarget aria-label="report.pdf actions">
+          <strong>report.pdf</strong>
+          <Button size="sm" variant="outline" onClick={openFile}>Open</Button>
+        </FileTarget>
+        <ContextMenu.Content>
+          <ContextMenu.Item icon={<LinkIcon />} onSelect={copyLink}>Copy link</ContextMenu.Item>
+          <ContextMenu.Item onSelect={rename}>Rename</ContextMenu.Item>
+          <ContextMenu.Item disabled>Move</ContextMenu.Item>
+          <ContextMenu.Separator />
+          <ContextMenu.Item tone="danger" onSelect={removeFile}>Delete file</ContextMenu.Item>
+        </ContextMenu.Content>
+      </ContextMenu>
+      <Button>After</Button>
+    </Row>
+  );
+}` },
+  } },
   render: (args) => <ControlledFileMenu {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
@@ -2065,8 +2317,10 @@ export const ControlledAccept: Story = {
 };
 
 export const RejectedOpen: Story = {
+  name: 'Reject an open request',
   parameters: {
     docs: {
+      description: { story: 'Try to open report.pdf actions while the application keeps the menu closed.' },
       source: {
         language: 'tsx',
         code: `import { vars } from '@jfrader/tokens/vars';
@@ -2349,6 +2603,30 @@ export const ScopedPortal: Story = {
 };
 
 export const RTL: Story = {
+  name: 'Right-to-left anchoring',
+  parameters: { docs: {
+    description: { story: 'Open with Shift+F10 to anchor at the right edge of a Hebrew context area.' },
+    source: { language: 'tsx', code: `import { ContextMenu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FileTarget = styled(ContextMenu.Target)({
+  display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+  gap: vars.space[2], inlineSize: '16rem', maxInlineSize: '100%',
+  minBlockSize: '6rem', padding: vars.space[4], boxSizing: 'border-box',
+  border: \`1px dashed \${vars.color.borderControl}\`, borderRadius: vars.radius.md,
+  color: vars.color.text, fontFamily: vars.font.sans, fontSize: vars.textSize.sm,
+});
+
+<div dir="rtl" lang="he">
+  <ContextMenu>
+    <FileTarget aria-label="פעולות קובץ">report.pdf</FileTarget>
+    <ContextMenu.Content>
+      <ContextMenu.Item onSelect={copyLink}>העתקת קישור</ContextMenu.Item>
+      <ContextMenu.Item onSelect={rename}>שינוי שם</ContextMenu.Item>
+    </ContextMenu.Content>
+  </ContextMenu>
+</div>` },
+  } },
   render: ({ onCopy, onRename, onOpenChild: _onOpenChild, onDelete: _onDelete, ...args }) => (
     <div dir="rtl" lang="he">
       <ContextMenu {...args}>
