@@ -15,7 +15,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
-import { MotionConfig, motion, useReducedMotion, useSpring, type MotionValue } from 'motion/react';
+import { MotionConfig, motion, useSpring, type MotionValue } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
@@ -23,6 +23,7 @@ import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useLatestCallback } from '../../utils/use-latest-callback';
+import { useReducedMotion } from '../../utils/use-reduced-motion';
 import { isRenderable } from '../../utils/renderable';
 import { createDurationFormatters } from '../../utils/duration-format';
 import { Button, type ButtonProps } from '../button';

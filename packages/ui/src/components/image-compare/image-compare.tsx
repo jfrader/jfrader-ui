@@ -22,7 +22,7 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { animate, MotionConfig, useMotionValue, useReducedMotion } from 'motion/react';
+import { animate, MotionConfig, useMotionValue } from 'motion/react';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -30,6 +30,7 @@ import { motionDurationMs } from '../../styling/motion-timings';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { numberFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { useReducedMotion } from '../../utils/use-reduced-motion';
 import { Button, type ButtonProps } from '../button';
 
 export type ImageCompareOrientation = 'horizontal' | 'vertical';

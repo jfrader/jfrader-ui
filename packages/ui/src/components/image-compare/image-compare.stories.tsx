@@ -5,6 +5,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ImageCompare } from './index';
+import { Button } from '../button';
 import { sceneSource } from '../scene';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
@@ -29,14 +30,21 @@ const expectPx = (value: string, px: number) =>
   expect(Math.abs(Number.parseFloat(value) - px)).toBeLessThan(PX_TOLERANCE);
 
 const Frame = styled.div({
-  inlineSize: '36rem',
-  maxInlineSize: `calc(100vw - ${vars.space[8]})`,
+  inlineSize: `min(36rem, calc(100vw - ${vars.space[8]}))`,
+  minInlineSize: 0,
+  maxInlineSize: '100%',
   boxSizing: 'border-box',
   display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr)',
   gap: vars.space[6],
   padding: vars.space[4],
 });
 const NarrowFrame = styled.div({ inlineSize: '14rem', maxInlineSize: '100%' });
+const ResizableFrame = styled.div({
+  inlineSize: '32rem',
+  maxInlineSize: '100%',
+  '&[data-compact]': { inlineSize: '16rem' },
+});
 const Status = styled.div({
   display: 'grid',
   placeItems: 'center',
@@ -47,7 +55,7 @@ const Status = styled.div({
   background: vars.color.surface,
   fontSize: vars.textSize.sm,
 });
-const FixtureButton = styled.button({
+const FixtureButton = styled(Button)({
   minBlockSize: vars.space[8],
   minInlineSize: vars.space[8],
   paddingInline: vars.space[3],
@@ -1295,14 +1303,15 @@ export const ResizeDuringDrag: Story = {
         <FixtureButton type="button" onClick={() => setWide(false)}>
           Shrink
         </FixtureButton>
-        <div style={{ inlineSize: wide ? '32rem' : '16rem' }}>
+        <ResizableFrame data-compact={wide ? undefined : ''}>
           <ImageCompare {...args} />
-        </div>
+        </ResizableFrame>
       </>
     );
   },
   play: async ({ canvas, canvasElement, args }) => {
     const frame = part(canvasElement, 'image-compare-frame');
+    await expect(frame.getBoundingClientRect().right).toBeLessThanOrEqual(canvasElement.getBoundingClientRect().right);
     const pointer = pointerOn(frame);
     pointer.fire('pointerdown', 0.5);
     pointer.fire('pointermove', 0.25);

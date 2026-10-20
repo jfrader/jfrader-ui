@@ -30,6 +30,11 @@ const meta = {
   parameters: {
     docs: {
       source: { code: usage },
+      sections: [
+        { title: 'Basic', stories: ['DefaultIdle'] },
+        { title: 'Session states', stories: ['Listening', 'Thinking', 'Speaking', 'Connecting', 'Muted', 'PermissionError'] },
+        { title: 'Transcript', stories: ['UserTranscript', 'AssistantTranscript', 'CompletedTurn'] },
+      ],
       description: {
         component:
           'Consumer-owned voice session visualization. Native Start, Mute and End buttons use normal Tab order and Enter/Space activation; Escape does not end the session. Active and muted requests support controlled rejection. The consumer owns permissions, getUserMedia, AudioContext, streams, speech, networking, elapsed time and cleanup. This component never opens a microphone.',
@@ -97,7 +102,23 @@ const statePlay: Story['play'] = async ({ canvasElement, args }) => {
   await expect(canvas.getByText(label)).toBeVisible();
   await expect(canvasElement.querySelector('canvas')).toHaveAttribute('aria-hidden', 'true');
 };
-export const DefaultIdle: Story = { play: statePlay };
+export const DefaultIdle: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { VoiceOrb } from '@jfrader/ui';
+
+<VoiceOrb state="idle">
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Controls />
+</VoiceOrb>`,
+      },
+    },
+  },
+  play: statePlay,
+};
 export const Listening: Story = {
   parameters: {
     docs: {
@@ -340,6 +361,21 @@ const transcript = (
   complete = false,
   maxLines?: number,
 ): Story => ({
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { VoiceOrb } from '@jfrader/ui';
+
+<VoiceOrb state="idle">
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Transcript text={${JSON.stringify(text)}} speaker="${speaker}"${complete ? ' complete' : ''}${maxLines === undefined ? '' : ` maxLines={${maxLines}}`} />
+  <VoiceOrb.Controls />
+</VoiceOrb>`,
+      },
+    },
+  },
   render: (args) => (
     <VoiceOrb {...args}>
       <VoiceOrb.Visual />

@@ -10,8 +10,8 @@
 
 ### Fixed
 
-- `VoiceOrb` draws a softly lit sphere with flowing filaments and keeps its motion continuous through session and microphone changes.
-- `ImageCompare` keeps touch dragging active when pointer capture moves from the handle to the frame. Reveal, divider and handle animate together between values and follow dragging directly.
+- `VoiceOrb` draws a softly lit sphere with flowing filaments, keeps its motion continuous through session and microphone changes, and stops when reduced motion is enabled without reloading.
+- `ImageCompare` keeps touch dragging active when pointer capture moves from the handle to the frame. Reveal, divider and handle animate together between values, follow dragging directly, and honor live reduced-motion changes. Resizable examples fit phone screens.
 - `StretchRefresh` wraps long pull instructions and empty-state text inside narrow feeds; its examples fit phone screens.
 - `SortableDataTable` keeps keyboard-focused row controls below sticky headings when scrolling backward through tall tables.
 - `JsonViewer` wraps long keys and values within tree rows, keeps focused labels and disclosure arrows visible in deeply indented data, and hides inactive selection bars in forced colors.

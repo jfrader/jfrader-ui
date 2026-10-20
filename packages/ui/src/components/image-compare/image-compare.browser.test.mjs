@@ -1,42 +1,21 @@
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import { after, before, test } from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { createBrowserWorkbench } from '../../../../../apps/storybook/scripts/browser-workbench.mjs';
 
-const require = createRequire(new URL('../../../../../apps/storybook/package.json', import.meta.url));
-const { chromium } = require('playwright');
-let baseURL = process.env.STORYBOOK_URL;
 const frameSelector = '[data-ui="image-compare-frame"]';
 const viewport = { width: 390, height: 844 };
-let browser;
-let server;
+let workbench;
 
 before(async () => {
-  if (!baseURL) {
-    const { preview } = await import(require.resolve('vite'));
-    server = await preview({
-      configFile: false,
-      root: fileURLToPath(new URL('../../../../../apps/storybook', import.meta.url)),
-      build: { outDir: 'storybook-static' },
-      preview: { host: '127.0.0.1', port: 0, open: false },
-    });
-    baseURL = server.resolvedUrls.local[0].replace(/\/$/, '');
-  }
-  browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH });
+  workbench = await createBrowserWorkbench();
 });
-after(async () => {
-  try {
-    await browser?.close();
-  } finally {
-    await server?.close();
-  }
-});
+after(async () => workbench?.close());
 
 async function fixture(run, { args = '', reducedMotion = 'no-preference', direction = 'ltr' } = {}) {
-  const context = await browser.newContext({ hasTouch: true, viewport, reducedMotion });
+  const context = await workbench.browser.newContext({ hasTouch: true, viewport, reducedMotion });
   try {
     const page = await context.newPage();
-    await page.goto(`${baseURL}/iframe.html?id=media-imagecompare--dark&viewMode=story&args=${args}`);
+    await page.goto(`${workbench.baseURL}/iframe.html?id=media-imagecompare--dark&viewMode=story&args=${args}`);
     const slider = page.getByRole('slider');
     await slider.waitFor();
     await page.evaluate((dir) => { document.documentElement.dir = dir; }, direction);
@@ -168,4 +147,45 @@ test('controlled rejection never moves the reveal during native touch or keyboar
     assert.equal(await value(slider), 40);
     assert.equal(await frame.evaluate((element) => element.style.getPropertyValue('--image-compare-value')), '40%');
   }, { args: 'value:40' });
+});
+
+test('live reduced-motion preference changes settle and disable reveal animation', async () => {
+  await fixture(async ({ page, slider, frame }) => {
+    await slider.focus();
+    await slider.press('End');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.evaluate(() => new Promise(requestAnimationFrame));
+    await page.evaluate(() => new Promise(requestAnimationFrame));
+    assert.equal(await frame.evaluate((element) => element.style.getPropertyValue('--image-compare-value')), '100%');
+    await slider.press('Home');
+    assert.equal(await value(slider), 0);
+    assert.equal(await frame.evaluate((element) => element.style.getPropertyValue('--image-compare-value')), '0%');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.evaluate(() => new Promise(requestAnimationFrame));
+    await page.evaluate(() => new Promise(requestAnimationFrame));
+    await frame.evaluate((element) => {
+      window.revealSamples = [];
+      window.revealObserver = new MutationObserver(() => {
+        window.revealSamples.push(Number.parseFloat(element.style.getPropertyValue('--image-compare-value')));
+      });
+      window.revealObserver.observe(element, { attributes: true, attributeFilter: ['style'] });
+    });
+    await slider.press('End');
+    assert.equal(await value(slider), 100);
+    await page.waitForFunction(() => window.revealSamples.some((position) => position > 0 && position < 100));
+    await page.evaluate(() => window.revealObserver.disconnect());
+  });
+});
+
+test('comparison stays inside a narrow embedded preview', async () => {
+  await fixture(async ({ page, frame }) => {
+    const preview = page.locator('#storybook-root');
+    await preview.evaluate((element) => { element.style.inlineSize = '300px'; });
+    await page.evaluate(() => new Promise(requestAnimationFrame));
+    const bounds = await preview.boundingBox();
+    const comparison = await frame.boundingBox();
+    assert.ok(bounds && comparison);
+    assert.ok(comparison.x >= bounds.x);
+    assert.ok(comparison.x + comparison.width <= bounds.x + bounds.width);
+  });
 });
