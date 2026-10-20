@@ -59,11 +59,15 @@ import { useControlledState } from '../../utils/use-controlled-state';
 import { isRenderable } from '../../utils/renderable';
 
 interface DialogStateProps {
+  /** Control whether the dialog is open. */
   open?: boolean;
+  /** Open the uncontrolled dialog on mount; defaults to false. */
   defaultOpen?: boolean;
+  /** Receive open and close requests, including native form closure. */
   onOpenChange?: (open: boolean) => void;
 }
 
+/** Compose a modal dialog from its trigger and content parts. */
 export interface DialogCompoundProps extends DialogStateProps {
   children?: ReactNode;
   triggerLabel?: never;
@@ -76,6 +80,7 @@ export interface DialogCompoundProps extends DialogStateProps {
   component?: never;
 }
 
+/** Open a modal dialog with generated heading, content, and close controls. */
 export interface DialogEasyProps extends DialogStateProps, Omit<DialogPanelProps, 'children' | 'title' | 'content' | 'slots' | 'slotProps'> {
   /** Name the button that opens the dialog. */
   triggerLabel: ReactNode;
@@ -88,11 +93,15 @@ export interface DialogEasyProps extends DialogStateProps, Omit<DialogPanelProps
   /** Name the close button. */
   closeLabel: ReactNode;
   children?: never;
+  /** Replace generated elements while retaining their supplied props and refs. */
   slots?: DialogSlots;
+  /** Replace the panel root; `slots.root` takes precedence. */
   component?: DialogPanelProps['component'];
+  /** Pass props to the generated dialog elements. */
   slotProps?: DialogSlotProps;
 }
 
+/** Props for the generated elements in easy mode. */
 export interface DialogSlotProps {
   /** Customize the panel's adopted div, not the native dialog shell. */
   root?: NonNullable<DialogPanelProps['slotProps']>['root'];
@@ -100,9 +109,9 @@ export interface DialogSlotProps {
   trigger?: Omit<DialogTriggerProps, 'children'> & { css?: Interpolation<Theme> };
   /** Native `<dialog>` shell that manages backdrop and focus trapping. */
   content?: Omit<DialogContentProps, 'children'> & { css?: Interpolation<Theme> };
-  /** Adopted panel container that renders the dialog surface material. */
+  /** Adopted panel container that renders the dialog surface material; Dialog.Panel by default. */
   panel?: Omit<DialogPanelProps, 'children'>;
-  /** Container grouping the title, description, and close button. */
+  /** Container grouping the title and optional description. */
   header?: Omit<ComponentPropsWithRef<'div'>, 'children'> & { css?: Interpolation<Theme> };
   /** Accessible heading element naming the dialog. */
   title?: Omit<DialogTitleProps, 'children'> & { css?: Interpolation<Theme> };
@@ -112,6 +121,7 @@ export interface DialogSlotProps {
   close?: Omit<DialogCloseProps, 'children'> & { css?: Interpolation<Theme> };
 }
 
+/** Replacement elements for easy mode; forward all supplied props and refs. */
 export interface DialogSlots {
   /** Replaces the panel's adopted div; renders a `div` by default. */
   root?: NonNullable<DialogPanelProps['slots']>['root'];
@@ -119,7 +129,7 @@ export interface DialogSlots {
   content?: ComponentType<ComponentPropsWithRef<'dialog'>>;
   /** Replaces the panel div through the Surface root seam; slots.root wins. */
   panel?: NonNullable<DialogPanelProps['slots']>['root'];
-  /** Replaces the header container for title, description, and close button. */
+  /** Replaces the container grouping the title and optional description. */
   header?: ComponentType<ComponentPropsWithRef<'div'>>;
   /** Replaces the accessible heading element naming the dialog. */
   title?: ComponentType<DialogTitleProps>;
@@ -131,6 +141,7 @@ export interface DialogSlots {
   close?: ComponentType<DialogCloseProps>;
 }
 
+/** Choose generated content or compound children for a modal dialog. */
 export type DialogProps = DialogCompoundProps | DialogEasyProps;
 
 /** Props a part's `render` callback spreads onto the element it returns (e.g. a `Button`). */
@@ -139,6 +150,7 @@ export interface DialogPartRenderProps extends ButtonHTMLAttributes<HTMLButtonEl
   'data-ui': string;
 }
 
+/** Button that opens the dialog and exposes its expanded state. */
 export interface DialogTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
   /**
    * Replace the button. Spread all supplied props onto the element and attach the supplied ref,
@@ -154,16 +166,21 @@ export interface DialogTriggerProps extends ComponentPropsWithRef<'button'>, SxP
    */
   render?: (props: DialogPartRenderProps) => ReactNode;
 }
+/** Native dialog shell owning focus, backdrop dismissal, and size limits. */
 export interface DialogContentProps extends Omit<ComponentPropsWithRef<'dialog'>, 'open'>, SxProps {
   /** Set false to keep structured content out of the dialog's accessible description. */
   withDescription?: boolean;
 }
+/** Surface inside Content; use one direct Panel child, optionally inside fragments, without substantive siblings. */
 export interface DialogPanelProps extends DrawerPanelProps {
   /** Inherit appearance by default; `contrast` establishes fixed charcoal. */
   appearance?: DrawerPanelProps['appearance'];
 }
+/** Visible heading used as the dialog's accessible name. */
 export interface DialogTitleProps extends ComponentPropsWithRef<'h2'>, SxProps {}
+/** Text used as the dialog's accessible description unless Content disables it. */
 export interface DialogDescriptionProps extends ComponentPropsWithRef<'p'>, SxProps {}
+/** Button requesting closure through the shell's cancelable dismissal path. */
 export interface DialogCloseProps extends ComponentPropsWithRef<'button'>, SxProps {
   /**
    * Replace the button. Spread all supplied props onto the element and attach the supplied ref,
@@ -266,6 +283,7 @@ const closeStyle = css({
   },
 });
 
+/** Open a modal dialog with generated content or compound parts. */
 function DialogRoot(props: DialogProps) {
   const {
     open: openProp,
@@ -341,6 +359,7 @@ function DialogRoot(props: DialogProps) {
 
 DialogRoot.displayName = 'Dialog';
 
+/** Open the dialog from a button or a rendered control. */
 function DialogTrigger({ ref = null, onClick, render, className, sx, ...rest }: DialogTriggerProps) {
   const { open, setOpen } = useDialogContext('Trigger');
   const { 'data-ui': partMarker, ...attributes } = rest as typeof rest & { 'data-ui'?: string };
@@ -373,6 +392,7 @@ function DialogTrigger({ ref = null, onClick, render, className, sx, ...rest }: 
 
 DialogTrigger.displayName = 'Dialog.Trigger';
 
+/** Render the native modal shell with a default panel or one direct Dialog.Panel. */
 function DialogContent({ ref, className, sx, ...props }: DialogContentProps) {
   const {
     children,
@@ -450,6 +470,7 @@ function dialogPanelChildren(children: ReactNode) {
   return children;
 }
 
+/** Render the dialog's surface, padding, and motion inside Dialog.Content. */
 function DialogPanel(props: DialogPanelProps) {
   const context = useContext(DialogPanelContext);
   if (!context) throw new Error('Dialog.Panel must be rendered inside <Dialog.Content>.');
@@ -468,6 +489,7 @@ function DialogPanel(props: DialogPanelProps) {
 
 DialogPanel.displayName = 'Dialog.Panel';
 
+/** Name the dialog with a visible heading. */
 function DialogTitle({ ref, className, sx, ...props }: DialogTitleProps) {
   const { titleId, setHasTitle } = useDialogContext('Title');
 
@@ -485,6 +507,7 @@ function DialogTitle({ ref, className, sx, ...props }: DialogTitleProps) {
 
 DialogTitle.displayName = 'Dialog.Title';
 
+/** Describe the dialog below its heading. */
 function DialogDescription({ ref, className, sx, ...props }: DialogDescriptionProps) {
   const { descriptionId, setHasDescription } = useDialogContext('Description');
 
@@ -504,6 +527,7 @@ function DialogDescription({ ref, className, sx, ...props }: DialogDescriptionPr
 
 DialogDescription.displayName = 'Dialog.Description';
 
+/** Request closure; the shell's onCancel handler can veto it. */
 function DialogClose({ ref = null, onClick, render, className, sx, ...rest }: DialogCloseProps) {
   const { setOpen } = useDialogContext('Close');
   const requestClose = useContext(DialogRequestCloseContext);
@@ -536,6 +560,7 @@ function DialogClose({ ref = null, onClick, render, className, sx, ...rest }: Di
 
 DialogClose.displayName = 'Dialog.Close';
 
+/** Show a modal task or decision with generated content or compound parts. */
 export const Dialog = Object.assign(DialogRoot, {
   Trigger: DialogTrigger,
   Content: DialogContent,
