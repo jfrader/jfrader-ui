@@ -98,13 +98,75 @@ const statePlay: Story['play'] = async ({ canvasElement, args }) => {
   await expect(canvasElement.querySelector('canvas')).toHaveAttribute('aria-hidden', 'true');
 };
 export const DefaultIdle: Story = { play: statePlay };
-export const Listening: Story = { args: { state: 'listening', defaultActive: true }, play: statePlay };
-export const Thinking: Story = { args: { state: 'thinking', defaultActive: true }, play: statePlay };
+export const Listening: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { VoiceOrb } from '@jfrader/ui';
+
+<VoiceOrb state="listening" defaultActive>
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Controls />
+</VoiceOrb>`,
+      },
+    },
+  },
+  args: { state: 'listening', defaultActive: true },
+  play: statePlay,
+};
+export const Thinking: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { VoiceOrb } from '@jfrader/ui';
+
+<VoiceOrb state="thinking" defaultActive>
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Controls />
+</VoiceOrb>`,
+      },
+    },
+  },
+  args: { state: 'thinking', defaultActive: true },
+  play: statePlay,
+};
 export const Speaking: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { VoiceOrb } from '@jfrader/ui';
+
+<VoiceOrb state="speaking" defaultActive outputLevel={0.65}>
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Controls />
+</VoiceOrb>`,
+      },
+    },
+  },
   args: { state: 'speaking', defaultActive: true, outputLevel: 0.65 },
   play: statePlay,
 };
 export const Muted: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { VoiceOrb } from '@jfrader/ui';
+
+<VoiceOrb state="listening" defaultActive defaultMuted inputLevel={1}>
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Controls />
+</VoiceOrb>`,
+      },
+    },
+  },
   args: { state: 'listening', defaultActive: true, defaultMuted: true, inputLevel: 1 },
   play: async (context) => {
     await statePlay?.(context);
@@ -114,6 +176,20 @@ export const Muted: Story = {
   },
 };
 export const Connecting: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { VoiceOrb } from '@jfrader/ui';
+
+<VoiceOrb state="connecting" defaultActive>
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Controls />
+</VoiceOrb>`,
+      },
+    },
+  },
   args: { state: 'connecting', defaultActive: true },
   play: async (context) => {
     await statePlay?.(context);
@@ -127,6 +203,20 @@ export const Connecting: Story = {
   },
 };
 export const PermissionError: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { VoiceOrb } from '@jfrader/ui';
+
+<VoiceOrb state="error" error="Microphone permission denied.">
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Controls />
+</VoiceOrb>`,
+      },
+    },
+  },
   args: { state: 'error', error: 'Microphone permission denied.' },
   play: async (context) => {
     await statePlay?.(context);
@@ -136,6 +226,20 @@ export const PermissionError: Story = {
   },
 };
 export const LiveControls: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { VoiceOrb } from '@jfrader/ui';
+
+<VoiceOrb state="idle" defaultActive elapsed={3661} locale="en-US">
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Controls />
+</VoiceOrb>`,
+      },
+    },
+  },
   args: { defaultActive: true, elapsed: 3661, locale: 'en-US' },
   play: async ({ canvasElement }) => {
     const timer = within(canvasElement).getByRole('timer');
@@ -301,12 +405,42 @@ export const FalsyErrorStartLabel: Story = {
   },
 };
 export const Light: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ThemeRoot, VoiceOrb } from '@jfrader/ui';
+
+<ThemeRoot theme="light">
+  <VoiceOrb state="speaking" defaultActive outputLevel={0.5}>
+    <VoiceOrb.Visual />
+    <VoiceOrb.Status />
+    <VoiceOrb.Controls />
+  </VoiceOrb>
+</ThemeRoot>`,
+      },
+    },
+  },
   args: { state: 'speaking', defaultActive: true, outputLevel: 0.5 },
   globals: { theme: 'light' },
   decorators: [withLightTheme],
   play: statePlay,
 };
 export const RTL: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { VoiceOrb } from '@jfrader/ui';
+
+<VoiceOrb state="idle" dir="rtl" defaultActive locale="ar">
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Controls />
+</VoiceOrb>`,
+      },
+    },
+  },
   args: { dir: 'rtl', defaultActive: true, locale: 'ar' },
   play: async ({ canvasElement }) => {
     await expect(getComputedStyle(within(canvasElement).getByRole('group')).direction).toBe('rtl');
@@ -351,6 +485,25 @@ export const ForcedColors: Story = {
   play: statePlay,
 };
 export const ControlledRejected: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { VoiceOrb } from '@jfrader/ui';
+
+<VoiceOrb
+  state="idle"
+  active={false}
+  muted={false}
+  onActiveChange={() => {}}
+>
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Controls />
+</VoiceOrb>`,
+      },
+    },
+  },
   args: { active: false, muted: false },
   play: async ({ canvasElement, userEvent, args }) => {
     const start = within(canvasElement).getByRole('button', { name: 'Start voice session' });
@@ -367,6 +520,25 @@ export const ControlledRejected: Story = {
   },
 };
 export const ControlledMuteRejected: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { VoiceOrb } from '@jfrader/ui';
+
+<VoiceOrb
+  state="idle"
+  active
+  muted={false}
+  onMutedChange={() => {}}
+>
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Controls />
+</VoiceOrb>`,
+      },
+    },
+  },
   args: { active: true, muted: false },
   play: async ({ canvasElement, userEvent, args }) => {
     const mute = within(canvasElement).getByRole('button', { name: 'Mute microphone' });
@@ -468,6 +640,23 @@ export const NumericLevels: Story = {
 };
 const output = motionValue(0.25);
 export const MotionValueLevels: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { motionValue } from 'motion/react';
+import { VoiceOrb } from '@jfrader/ui';
+
+const outputLevel = motionValue(0.25);
+
+<VoiceOrb state="speaking" defaultActive outputLevel={outputLevel}>
+  <VoiceOrb.Visual />
+  <VoiceOrb.Status />
+  <VoiceOrb.Controls />
+</VoiceOrb>`,
+      },
+    },
+  },
   args: { state: 'speaking', defaultActive: true, outputLevel: output },
   play: async ({ canvasElement }) => {
     output.set(0.8);

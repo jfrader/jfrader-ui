@@ -295,7 +295,18 @@ export const DefaultGrid: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
-export const List: Story = { args: { layout: 'list' } };
+export const List: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
+
+<RadioCards defaultValue="standard" layout="list">
+  <RadioCards.Label>Shipping speed</RadioCards.Label>
+  <RadioCards.Description>Choose a delivery option.</RadioCards.Description>
+  <RadioCards.Item value="standard" label="Standard" description="4–6 business days" />
+  <RadioCards.Item value="express" label="Express" description="1–2 business days" disabledReason="Unavailable at this address" />
+  <RadioCards.Item value="pickup" label="Pickup" description="Collect at the store" />
+</RadioCards>` } } },
+  args: { layout: 'list' },
+};
 export const Sizes: Story = {
   render: (args) => (
     <Fixture>
@@ -346,6 +357,15 @@ export const DisabledReason: Story = {
   },
 };
 export const Disabled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
+
+<RadioCards defaultValue="standard" disabled>
+  <RadioCards.Label>Shipping speed</RadioCards.Label>
+  <RadioCards.Description>Choose a delivery option.</RadioCards.Description>
+  <RadioCards.Item value="standard" label="Standard" description="4–6 business days" />
+  <RadioCards.Item value="express" label="Express" description="1–2 business days" disabledReason="Unavailable at this address" />
+  <RadioCards.Item value="pickup" label="Pickup" description="Collect at the store" />
+</RadioCards>` } } },
   args: { disabled: true },
   play: async ({ canvas, userEvent, args }) => {
     for (const radio of canvas.getAllByRole('radio')) await expect(radio).toBeDisabled();
@@ -354,8 +374,28 @@ export const Disabled: Story = {
     await expect(canvas.getByRole('radio', { name: 'Standard' })).toBeChecked();
   },
 };
-export const Required: Story = { args: { required: true, defaultValue: undefined } };
+export const Required: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
+
+<RadioCards required>
+  <RadioCards.Label>Shipping speed</RadioCards.Label>
+  <RadioCards.Description>Choose a delivery option.</RadioCards.Description>
+  <RadioCards.Item value="standard" label="Standard" description="4–6 business days" />
+  <RadioCards.Item value="express" label="Express" description="1–2 business days" disabledReason="Unavailable at this address" />
+  <RadioCards.Item value="pickup" label="Pickup" description="Collect at the store" />
+</RadioCards>` } } },
+  args: { required: true, defaultValue: undefined },
+};
 export const InvalidError: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
+
+<RadioCards invalid error="Choose a delivery option.">
+  <RadioCards.Label>Shipping speed</RadioCards.Label>
+  <RadioCards.Description>Choose a delivery option.</RadioCards.Description>
+  <RadioCards.Item value="standard" label="Standard" description="4–6 business days" />
+  <RadioCards.Item value="express" label="Express" description="1–2 business days" disabledReason="Unavailable at this address" />
+  <RadioCards.Item value="pickup" label="Pickup" description="Collect at the store" />
+</RadioCards>` } } },
   args: { invalid: true, error: 'Choose a delivery option.', defaultValue: undefined },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('radiogroup')).toHaveAttribute('aria-invalid', 'true');
@@ -365,6 +405,15 @@ export const InvalidError: Story = {
   },
 };
 export const ConsumerInvalid: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
+
+<RadioCards defaultValue="standard" aria-invalid="grammar">
+  <RadioCards.Label>Shipping speed</RadioCards.Label>
+  <RadioCards.Description>Choose a delivery option.</RadioCards.Description>
+  <RadioCards.Item value="standard" label="Standard" description="4–6 business days" />
+  <RadioCards.Item value="express" label="Express" description="1–2 business days" disabledReason="Unavailable at this address" />
+  <RadioCards.Item value="pickup" label="Pickup" description="Collect at the store" />
+</RadioCards>` } } },
   args: { 'aria-invalid': 'grammar' },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('radiogroup')).toHaveAttribute('aria-invalid', 'grammar');
@@ -715,6 +764,15 @@ export const MultipleInstances: Story = {
   },
 };
 export const RTL: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
+
+<RadioCards defaultValue="standard" dir="rtl">
+  <RadioCards.Label>Shipping speed</RadioCards.Label>
+  <RadioCards.Description>Choose a delivery option.</RadioCards.Description>
+  <RadioCards.Item value="standard" label="Standard" description="4–6 business days" />
+  <RadioCards.Item value="express" label="Express" description="1–2 business days" disabledReason="Unavailable at this address" />
+  <RadioCards.Item value="pickup" label="Pickup" description="Collect at the store" />
+</RadioCards>` } } },
   args: { dir: 'rtl' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();

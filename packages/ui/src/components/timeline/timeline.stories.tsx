@@ -331,6 +331,57 @@ export const Sizes: Story = {
 };
 
 export const ActorAvatars: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
+
+const MINUTE = 60_000;
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const PORTRAIT_SRC = \`data:image/svg+xml,\${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><filter id="n"><feTurbulence baseFrequency="0.08" seed="7"/></filter><rect width="48" height="48" filter="url(#n)"/></svg>',
+)}\`;
+
+const checkIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M3 8.5l3 3 7-7" />
+  </svg>
+);
+
+const events: TimelineEvent[] = [
+  {
+    id: 'photo',
+    at: NOW - 3 * MINUTE,
+    actor: 'Ada Lovelace',
+    avatar: PORTRAIT_SRC,
+    icon: checkIcon,
+    title: 'Approved release',
+  },
+  {
+    id: 'initials',
+    at: NOW - 9 * MINUTE,
+    actor: 'Grace Hopper',
+    title: 'Requested changes',
+  },
+  {
+    id: 'system',
+    at: NOW - 20 * MINUTE,
+    title: 'Nightly backup finished',
+  },
+];
+
+<Timeline
+  events={events}
+  now={NOW}
+  timeZone="UTC"
+  locale="en-US"
+  aria-label="Deploy history"
+/>`,
+      },
+    },
+  },
   args: {
     events: [
       { id: 'photo', at: NOW - 3 * MINUTE, actor: 'Ada Lovelace', avatar: PORTRAIT_SRC, icon: checkIcon, title: 'Approved release' },
@@ -350,6 +401,59 @@ export const ActorAvatars: Story = {
 };
 
 export const SystemTones: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
+
+const MINUTE = 60_000;
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const checkIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M3 8.5l3 3 7-7" />
+  </svg>
+);
+
+const crossIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M4 4l8 8M12 4l-8 8" />
+  </svg>
+);
+
+const events: TimelineEvent[] = [
+  {
+    id: 'ok',
+    at: NOW - MINUTE,
+    title: 'Health check passed',
+    tone: 'success',
+    icon: checkIcon,
+  },
+  {
+    id: 'fail',
+    at: NOW - 2 * MINUTE,
+    title: 'Health check failed',
+    tone: 'danger',
+    icon: crossIcon,
+  },
+  {
+    id: 'info',
+    at: NOW - 3 * MINUTE,
+    title: 'Health check scheduled',
+  },
+];
+
+<Timeline
+  events={events}
+  now={NOW}
+  timeZone="UTC"
+  locale="en-US"
+  aria-label="Deploy history"
+/>`,
+      },
+    },
+  },
   args: {
     events: [
       { id: 'ok', at: NOW - MINUTE, title: 'Health check passed', tone: 'success', icon: checkIcon },
@@ -395,6 +499,84 @@ export const MixedDetails: Story = {
 };
 
 export const ExpandedDetails: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
+
+const MINUTE = 60_000;
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const checkIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M3 8.5l3 3 7-7" />
+  </svg>
+);
+
+const crossIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M4 4l8 8M12 4l-8 8" />
+  </svg>
+);
+
+const events: TimelineEvent[] = [
+  {
+    id: 'keys',
+    at: '2026-10-10T08:00:00Z',
+    actor: 'Grace Hopper',
+    title: 'Rotated API keys',
+    meta: '2 keys revoked',
+    detail: (
+      <label>
+        Rotation reason
+        <input defaultValue="Quarterly" />
+      </label>
+    ),
+  },
+  {
+    id: 'deploy',
+    at: NOW - 5 * MINUTE,
+    actor: 'Ada Lovelace',
+    title: 'Deployed web 4.2 to production',
+    meta: 'main · 9f2c1ab',
+    tone: 'success',
+    icon: checkIcon,
+    detail: <p>Three services updated with no errors.</p>,
+  },
+  {
+    id: 'project',
+    at: new Date('2026-10-08T09:00:00Z'),
+    actor: 'Ada Lovelace',
+    title: 'Created project',
+  },
+  {
+    id: 'build',
+    at: '2026-10-11T10:00:00Z',
+    title: 'Build failed on staging',
+    tone: 'danger',
+    icon: crossIcon,
+    detail: <p>The test step exited with code 1.</p>,
+  },
+  {
+    id: 'review',
+    at: '2026-10-10T10:00:00+02:00',
+    actor: 'Grace Hopper',
+    title: 'Opened pull request 118',
+  },
+];
+
+<Timeline
+  events={events}
+  defaultValue={['deploy', 'build', 'keys']}
+  now={NOW}
+  timeZone="UTC"
+  locale="en-US"
+  aria-label="Deploy history"
+/>`,
+      },
+    },
+  },
   args: { defaultValue: ['deploy', 'build', 'keys'] },
   play: async ({ canvasElement, args }) => {
     for (const id of ['deploy', 'build', 'keys']) {
@@ -492,6 +674,85 @@ export const Controlled: Story = {
 };
 
 export const RejectedControlled: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
+
+const MINUTE = 60_000;
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const checkIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M3 8.5l3 3 7-7" />
+  </svg>
+);
+
+const crossIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M4 4l8 8M12 4l-8 8" />
+  </svg>
+);
+
+const events: TimelineEvent[] = [
+  {
+    id: 'keys',
+    at: '2026-10-10T08:00:00Z',
+    actor: 'Grace Hopper',
+    title: 'Rotated API keys',
+    meta: '2 keys revoked',
+    detail: (
+      <label>
+        Rotation reason
+        <input defaultValue="Quarterly" />
+      </label>
+    ),
+  },
+  {
+    id: 'deploy',
+    at: NOW - 5 * MINUTE,
+    actor: 'Ada Lovelace',
+    title: 'Deployed web 4.2 to production',
+    meta: 'main · 9f2c1ab',
+    tone: 'success',
+    icon: checkIcon,
+    detail: <p>Three services updated with no errors.</p>,
+  },
+  {
+    id: 'project',
+    at: new Date('2026-10-08T09:00:00Z'),
+    actor: 'Ada Lovelace',
+    title: 'Created project',
+  },
+  {
+    id: 'build',
+    at: '2026-10-11T10:00:00Z',
+    title: 'Build failed on staging',
+    tone: 'danger',
+    icon: crossIcon,
+    detail: <p>The test step exited with code 1.</p>,
+  },
+  {
+    id: 'review',
+    at: '2026-10-10T10:00:00+02:00',
+    actor: 'Grace Hopper',
+    title: 'Opened pull request 118',
+  },
+];
+
+<Timeline
+  events={events}
+  value={[]}
+  onValueChange={() => {}}
+  now={NOW}
+  timeZone="UTC"
+  locale="en-US"
+  aria-label="Deploy history"
+/>`,
+      },
+    },
+  },
   args: { value: [] },
   play: async ({ canvasElement, userEvent, args }) => {
     const deploy = triggerOf(canvasElement, 'deploy');
@@ -614,6 +875,7 @@ const INVALID_EVENTS: TimelineEvent[] = [
 ];
 
 export const InvalidDates: Story = {
+  tags: ['!autodocs'],
   args: { events: INVALID_EVENTS },
   beforeEach: () => {
     const toISOString = spyOn(Date.prototype, 'toISOString');
@@ -632,6 +894,7 @@ export const InvalidDates: Story = {
 };
 
 export const InvalidInputs: Story = {
+  tags: ['!autodocs'],
   args: {
     now: Number.NaN,
     timeZone: 'Mars/Olympus_Mons',
@@ -735,6 +998,46 @@ const LONG_EVENTS: TimelineEvent[] = [
 ];
 
 export const LongContent: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { styled, Timeline, type TimelineEvent } from '@jfrader/ui';
+
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const Narrow = styled.div({ inlineSize: '16rem' });
+
+const events: TimelineEvent[] = [
+  {
+    id: 'long',
+    at: NOW - 3 * HOUR,
+    actor: 'Maximiliane Theodora von Hohenzollern-Sigmaringen',
+    title: 'Bereitstellungsüberwachungskonfigurationsänderungsprotokoll wurde aktualisiert und veröffentlicht',
+    meta: 'feature/infrastruktur-netzwerkrichtlinien-überarbeitung-und-dokumentation',
+    detail: <p>Siehe Änderungsprotokoll.</p>,
+  },
+  {
+    id: 'short',
+    at: NOW - 4 * HOUR,
+    title: 'Kurz',
+  },
+];
+
+<Narrow>
+  <Timeline
+    events={events}
+    locale="de-DE"
+    now={NOW}
+    timeZone="UTC"
+    aria-label="Deploy history"
+  />
+</Narrow>`,
+      },
+    },
+  },
   args: { events: LONG_EVENTS, locale: 'de-DE' },
   decorators: [
     (Story) => (
@@ -766,6 +1069,83 @@ export const LongContent: Story = {
 };
 
 export const Scrolling: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
+
+const MINUTE = 60_000;
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const checkIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M3 8.5l3 3 7-7" />
+  </svg>
+);
+
+const crossIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M4 4l8 8M12 4l-8 8" />
+  </svg>
+);
+
+const events: TimelineEvent[] = [
+  {
+    id: 'keys',
+    at: '2026-10-10T08:00:00Z',
+    actor: 'Grace Hopper',
+    title: 'Rotated API keys',
+    meta: '2 keys revoked',
+    detail: (
+      <label>
+        Rotation reason
+        <input defaultValue="Quarterly" />
+      </label>
+    ),
+  },
+  {
+    id: 'deploy',
+    at: NOW - 5 * MINUTE,
+    actor: 'Ada Lovelace',
+    title: 'Deployed web 4.2 to production',
+    meta: 'main · 9f2c1ab',
+    tone: 'success',
+    icon: checkIcon,
+    detail: <p>Three services updated with no errors.</p>,
+  },
+  {
+    id: 'project',
+    at: new Date('2026-10-08T09:00:00Z'),
+    actor: 'Ada Lovelace',
+    title: 'Created project',
+  },
+  {
+    id: 'build',
+    at: '2026-10-11T10:00:00Z',
+    title: 'Build failed on staging',
+    tone: 'danger',
+    icon: crossIcon,
+    detail: <p>The test step exited with code 1.</p>,
+  },
+  {
+    id: 'review',
+    at: '2026-10-10T10:00:00+02:00',
+    actor: 'Grace Hopper',
+    title: 'Opened pull request 118',
+  },
+];
+
+<Timeline
+  events={events}
+  maxHeight="14rem"
+  now={NOW}
+  timeZone="UTC"
+  locale="en-US"
+/>`,
+      },
+    },
+  },
   args: { maxHeight: '14rem', 'aria-label': undefined },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const scroller = part(canvasElement, 'scroller');
@@ -929,6 +1309,91 @@ export const SSRConsistency: Story = {
 };
 
 export const Localized: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
+
+const MINUTE = 60_000;
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const checkIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M3 8.5l3 3 7-7" />
+  </svg>
+);
+
+const crossIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M4 4l8 8M12 4l-8 8" />
+  </svg>
+);
+
+const events: TimelineEvent[] = [
+  {
+    id: 'keys',
+    at: '2026-10-10T08:00:00Z',
+    actor: 'Grace Hopper',
+    title: 'Rotated API keys',
+    meta: '2 keys revoked',
+    detail: (
+      <label>
+        Rotation reason
+        <input defaultValue="Quarterly" />
+      </label>
+    ),
+  },
+  {
+    id: 'deploy',
+    at: NOW - 5 * MINUTE,
+    actor: 'Ada Lovelace',
+    title: 'Deployed web 4.2 to production',
+    meta: 'main · 9f2c1ab',
+    tone: 'success',
+    icon: checkIcon,
+    detail: <p>Three services updated with no errors.</p>,
+  },
+  {
+    id: 'project',
+    at: new Date('2026-10-08T09:00:00Z'),
+    actor: 'Ada Lovelace',
+    title: 'Created project',
+  },
+  {
+    id: 'build',
+    at: '2026-10-11T10:00:00Z',
+    title: 'Build failed on staging',
+    tone: 'danger',
+    icon: crossIcon,
+    detail: <p>The test step exited with code 1.</p>,
+  },
+  {
+    id: 'review',
+    at: '2026-10-10T10:00:00+02:00',
+    actor: 'Grace Hopper',
+    title: 'Opened pull request 118',
+  },
+];
+
+<Timeline
+  events={events}
+  locale="es-ES"
+  now={NOW}
+  timeZone="UTC"
+  aria-label="Historial"
+  labels={{
+    region: 'Historial',
+    empty: 'Sin actividad',
+    invalidTime: 'Hora desconocida',
+    newEvents: (count) => \`\${new Intl.NumberFormat('es-ES').format(count)} nuevos\`,
+    dayCount: (count) =>
+      new Intl.PluralRules('es-ES').select(count) === 'one' ? '1 evento' : \`\${count} eventos\`,
+  }}
+/>`,
+      },
+    },
+  },
   args: {
     locale: 'es-ES',
     'aria-label': 'Historial',
@@ -1002,11 +1467,170 @@ export const RefForwarding: Story = {
 };
 
 export const LightTheme: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ThemeRoot, Timeline, type TimelineEvent } from '@jfrader/ui';
+
+const MINUTE = 60_000;
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const checkIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M3 8.5l3 3 7-7" />
+  </svg>
+);
+
+const crossIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M4 4l8 8M12 4l-8 8" />
+  </svg>
+);
+
+const events: TimelineEvent[] = [
+  {
+    id: 'keys',
+    at: '2026-10-10T08:00:00Z',
+    actor: 'Grace Hopper',
+    title: 'Rotated API keys',
+    meta: '2 keys revoked',
+    detail: (
+      <label>
+        Rotation reason
+        <input defaultValue="Quarterly" />
+      </label>
+    ),
+  },
+  {
+    id: 'deploy',
+    at: NOW - 5 * MINUTE,
+    actor: 'Ada Lovelace',
+    title: 'Deployed web 4.2 to production',
+    meta: 'main · 9f2c1ab',
+    tone: 'success',
+    icon: checkIcon,
+    detail: <p>Three services updated with no errors.</p>,
+  },
+  {
+    id: 'project',
+    at: new Date('2026-10-08T09:00:00Z'),
+    actor: 'Ada Lovelace',
+    title: 'Created project',
+  },
+  {
+    id: 'build',
+    at: '2026-10-11T10:00:00Z',
+    title: 'Build failed on staging',
+    tone: 'danger',
+    icon: crossIcon,
+    detail: <p>The test step exited with code 1.</p>,
+  },
+  {
+    id: 'review',
+    at: '2026-10-10T10:00:00+02:00',
+    actor: 'Grace Hopper',
+    title: 'Opened pull request 118',
+  },
+];
+
+<ThemeRoot theme="light">
+  <Timeline
+    events={events}
+    defaultValue={['deploy', 'keys']}
+    now={NOW}
+    timeZone="UTC"
+    locale="en-US"
+    aria-label="Deploy history"
+  />
+</ThemeRoot>`,
+      },
+    },
+  },
   args: { defaultValue: ['deploy', 'keys'] },
   decorators: [withLightTheme],
 };
 
 export const RTL: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
+
+const MINUTE = 60_000;
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const checkIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M3 8.5l3 3 7-7" />
+  </svg>
+);
+
+const crossIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M4 4l8 8M12 4l-8 8" />
+  </svg>
+);
+
+const events: TimelineEvent[] = [
+  {
+    id: 'keys',
+    at: '2026-10-10T08:00:00Z',
+    actor: 'Grace Hopper',
+    title: 'Rotated API keys',
+    meta: '2 keys revoked',
+    detail: (
+      <label>
+        Rotation reason
+        <input defaultValue="Quarterly" />
+      </label>
+    ),
+  },
+  {
+    id: 'deploy',
+    at: NOW - 5 * MINUTE,
+    actor: 'Ada Lovelace',
+    title: 'Deployed web 4.2 to production',
+    meta: 'main · 9f2c1ab',
+    tone: 'success',
+    icon: checkIcon,
+    detail: <p>Three services updated with no errors.</p>,
+  },
+  {
+    id: 'project',
+    at: new Date('2026-10-08T09:00:00Z'),
+    actor: 'Ada Lovelace',
+    title: 'Created project',
+  },
+  {
+    id: 'build',
+    at: '2026-10-11T10:00:00Z',
+    title: 'Build failed on staging',
+    tone: 'danger',
+    icon: crossIcon,
+    detail: <p>The test step exited with code 1.</p>,
+  },
+  {
+    id: 'review',
+    at: '2026-10-10T10:00:00+02:00',
+    actor: 'Grace Hopper',
+    title: 'Opened pull request 118',
+  },
+];
+
+<Timeline
+  events={events}
+  dir="rtl"
+  defaultValue={['deploy']}
+  now={NOW}
+  timeZone="UTC"
+  locale="en-US"
+  aria-label="Deploy history"
+/>`,
+      },
+    },
+  },
   args: { dir: 'rtl', defaultValue: ['deploy'] },
   play: async ({ canvasElement, userEvent }) => {
     await expect(itemIds(canvasElement)).toEqual(SORTED_IDS);
@@ -1030,6 +1654,70 @@ export const ReducedMotion: Story = {
   args: { defaultValue: ['deploy'] },
   parameters: {
     docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
+
+const MINUTE = 60_000;
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const checkIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M3 8.5l3 3 7-7" />
+  </svg>
+);
+
+const crossIcon = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <path d="M4 4l8 8M12 4l-8 8" />
+  </svg>
+);
+
+const events: TimelineEvent[] = [
+  {
+    id: 'keys',
+    at: '2026-10-10T08:00:00Z',
+    actor: 'Grace Hopper',
+    title: 'Rotated API keys',
+    meta: '2 keys revoked',
+    detail: (
+      <label>
+        Rotation reason
+        <input defaultValue="Quarterly" />
+      </label>
+    ),
+  },
+  {
+    id: 'deploy',
+    at: NOW - 5 * MINUTE,
+    actor: 'Ada Lovelace',
+    title: 'Deployed web 4.2 to production',
+    meta: 'main · 9f2c1ab',
+    tone: 'success',
+    icon: checkIcon,
+    detail: <p>Three services updated with no errors.</p>,
+  },
+  { id: 'project', at: new Date('2026-10-08T09:00:00Z'), actor: 'Ada Lovelace', title: 'Created project' },
+  {
+    id: 'build',
+    at: '2026-10-11T10:00:00Z',
+    title: 'Build failed on staging',
+    tone: 'danger',
+    icon: crossIcon,
+    detail: <p>The test step exited with code 1.</p>,
+  },
+  { id: 'review', at: '2026-10-10T10:00:00+02:00', actor: 'Grace Hopper', title: 'Opened pull request 118' },
+];
+
+<Timeline
+  events={events}
+  defaultValue={['deploy']}
+  now={NOW}
+  timeZone="UTC"
+  locale="en-US"
+  aria-label="Deploy history"
+/>`,
+      },
       description: {
         story:
           'Enable reduced motion to check rendering in the browser. This story checks CSS rules only.',

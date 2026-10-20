@@ -404,6 +404,18 @@ export const Keyboard: Story = {
   },
 };
 export const Uncontrolled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
+
+const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
+
+<ToggleSubscription locale="en-US">
+  <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
+  <ToggleSubscription.List>
+    <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
+    <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
+  </ToggleSubscription.List>
+  <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
+</ToggleSubscription>` } } },
   args: { defaultValue: undefined },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
@@ -421,6 +433,18 @@ export const Uncontrolled: Story = {
 };
 export const NativeActivation: Story = {
   ...Uncontrolled,
+  parameters: { docs: { source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
+
+const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
+
+<ToggleSubscription locale="en-US">
+  <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
+  <ToggleSubscription.List>
+    <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
+    <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
+  </ToggleSubscription.List>
+  <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
+</ToggleSubscription>` } } },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.keyboard(' ');
@@ -523,6 +547,18 @@ export const ControlledRejects: Story = {
   },
 };
 export const Disabled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
+
+const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
+
+<ToggleSubscription defaultValue="monthly" locale="en-US" disabled>
+  <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
+  <ToggleSubscription.List>
+    <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
+    <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
+  </ToggleSubscription.List>
+  <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
+</ToggleSubscription>` } } },
   args: { disabled: true },
   play: async ({ canvas, userEvent, args }) => {
     for (const item of canvas.getAllByRole('radio')) {
@@ -534,6 +570,18 @@ export const Disabled: Story = {
   },
 };
 export const UnknownPeriod: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
+
+const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
+
+<ToggleSubscription value="unknown" locale="en-US" onValueChange={() => {}}>
+  <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
+  <ToggleSubscription.List>
+    <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
+    <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
+  </ToggleSubscription.List>
+  <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
+</ToggleSubscription>` } } },
   args: { value: 'unknown' },
   play: async ({ canvas, userEvent, args }) => {
     await expect(canvas.getAllByRole('radio', { checked: false })).toHaveLength(2);
@@ -733,6 +781,18 @@ export const FalsyBadge: Story = {
   },
 };
 export const RTL: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
+
+const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
+
+<ToggleSubscription defaultValue="monthly" locale="en-US" dir="rtl">
+  <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
+  <ToggleSubscription.List>
+    <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
+    <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
+  </ToggleSubscription.List>
+  <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
+</ToggleSubscription>` } } },
   args: { dir: 'rtl' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
@@ -759,6 +819,18 @@ export const ForcedColors: Story = {
   args: { defaultValue: 'annual' },
   parameters: {
     docs: {
+      source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
+
+const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
+
+<ToggleSubscription defaultValue="annual" locale="en-US">
+  <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
+  <ToggleSubscription.List>
+    <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
+    <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
+  </ToggleSubscription.List>
+  <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
+</ToggleSubscription>` },
       description: {
         story:
           'Enable forced colors in the browser to check selection borders, savings borders, and the focus outline. This story does not set the preference.',
@@ -861,6 +933,24 @@ export const SlotsAndStyling: Story = {
 };
 
 export const RootRef: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useRef } from 'react';
+import { ToggleSubscription } from '@jfrader/ui';
+
+const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
+
+export function BillingPeriod() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  return (
+    <ToggleSubscription ref={rootRef} defaultValue="monthly" locale="en-US">
+      <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
+      <ToggleSubscription.List>
+        <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
+        <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
+      </ToggleSubscription.List>
+      <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
+    </ToggleSubscription>
+  );
+}` } } },
   args: { ref: fn() },
   play: async ({ canvasElement, args }) => {
     await expect(args.ref).toHaveBeenCalledWith(

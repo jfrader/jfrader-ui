@@ -223,6 +223,26 @@ export const RejectedSelection: Story = {
   },
 };
 export const RejectedExpansion: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { TreeView, type TreeNode } from '@jfrader/ui';
+
+const nodes: TreeNode[] = [
+  { id: 'remote', label: 'Remote', hasChildren: true },
+];
+
+<TreeView
+  label="Files"
+  nodes={nodes}
+  open={[]}
+  onOpenChange={() => {}}
+  loadChildren={async () => []}
+/>`,
+      },
+    },
+  },
   args: { nodes: lazyNode, open: [], loadChildren: fn(async () => []) },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(disclosure(canvas.getByRole('treeitem', { name: 'Remote' })));
@@ -233,6 +253,7 @@ export const RejectedExpansion: Story = {
   },
 };
 export const LazyLoading: Story = {
+  tags: ['!autodocs'],
   args: {
     nodes: lazyNode,
     defaultOpen: ['remote'],
@@ -246,6 +267,30 @@ export const LazyLoading: Story = {
 };
 const failure = new Error('Unavailable');
 export const LazyError: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { TreeView, type TreeNode } from '@jfrader/ui';
+
+const nodes: TreeNode[] = [
+  { id: 'remote', label: 'Remote', hasChildren: true },
+];
+
+<TreeView
+  label="Files"
+  nodes={nodes}
+  defaultOpen={['remote']}
+  loadChildren={async () => {
+    throw new Error('Unavailable');
+  }}
+  onLoadError={(error, node) => {
+    console.error(\`Failed to load \${node.label}:\`, error);
+  }}
+/>`,
+      },
+    },
+  },
   args: {
     nodes: lazyNode,
     defaultOpen: ['remote'],
@@ -541,6 +586,25 @@ export const ForcedColors: Story = {
 export const ReducedMotion: Story = {
   args: { defaultOpen: ['app'] } };
 export const EmptyLoadedChildren: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { TreeView, type TreeNode } from '@jfrader/ui';
+
+const nodes: TreeNode[] = [
+  { id: 'remote', label: 'Remote', hasChildren: true },
+];
+
+<TreeView
+  label="Files"
+  nodes={nodes}
+  defaultOpen={['remote']}
+  loadChildren={async () => []}
+/>`,
+      },
+    },
+  },
   args: {
     nodes: lazyNode,
     defaultOpen: ['remote'],
@@ -601,6 +665,47 @@ export const HiddenSelection: Story = {
   },
 };
 export const RefTargets: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useRef } from 'react';
+import { TreeView, type TreeNode } from '@jfrader/ui';
+
+const nodes: TreeNode[] = [
+  {
+    id: 'app',
+    label: 'Application',
+    children: [
+      { id: 'alpha', label: 'Alpha' },
+      { id: 'disabled', label: 'Archived', disabled: true },
+      {
+        id: 'assets',
+        label: 'Assets',
+        children: [{ id: 'image', label: 'Image' }],
+      },
+    ],
+  },
+  { id: 'beta', label: 'Beta' },
+  { id: 'écho', label: 'Écho' },
+];
+
+function TreeViewRefs() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const treeRef = useRef<HTMLUListElement>(null);
+
+  return (
+    <TreeView
+      label="Files"
+      nodes={nodes}
+      ref={containerRef}
+      treeRef={treeRef}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { ref: fn(), treeRef: fn() },
   play: async ({ canvas, canvasElement, args }) => {
     const wrapper = canvasElement.querySelector('[data-ui="tree-view"]');
