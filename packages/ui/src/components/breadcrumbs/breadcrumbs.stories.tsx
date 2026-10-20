@@ -28,17 +28,22 @@ const meta = {
   component: Breadcrumbs,
   parameters: { docs: {
     description: { component: 'Show where a page sits and link to the pages above it.' },
-    usage: `### Items
-- Pass \`items\` with \`label\` and optional \`href\`, \`current\` and \`key\`, or compose \`Breadcrumbs.Item\` with \`children\`. Do not combine the two modes.
-- If no item sets \`current={true}\`, the last item in DOM order is current unless it sets \`current={false}\`. Set \`current\` explicitly if you need \`aria-current\` in server-rendered markup.
-- An item with \`href\` renders a link, including the current item. Omit \`href\` to render text instead.
+    sections: [
+      { title: 'Basic', stories: ['Default'] },
+      { title: 'Links and current page', stories: ['ExplicitCurrent'] },
+      { title: 'Long labels', stories: ['LongLabels'] },
+      { title: 'Separators', stories: ['CustomSeparator'] },
+      { title: 'Composition', stories: ['Compound', 'DynamicItems'] },
+      { title: 'Keyboard', stories: ['WithHref'] },
+    ],
+    usage: `### When to use
+Show the current page’s place in a hierarchy and provide links to its ancestors. Use a separate navigation menu for unrelated destinations.
 
-### Keyboard
-- Press Tab to move through links in page order and Enter to follow one. Text items and separators are not tab stops.
+### Current page
+The last item becomes current unless another item is explicitly marked. Mark the current item explicitly when server-rendered markup must include its current-page announcement. The current page can remain a link or be plain text.
 
-### Customization
-- \`label\` defaults to "Breadcrumb" and \`separator\` defaults to "/". Set \`label\` to name the navigation landmark and \`separator\` to change the mark between items; separators are hidden from assistive technology.
-- In \`items\` mode, use \`slotProps\` for the root, items and separators. Use \`component\` or \`slots.root\` to replace the root. Forward every received prop and ref to the matching native element, and declare replacements outside render.`,
+### Keyboard and accessibility
+Tab and Shift+Tab move through links in page order; Enter follows a link. Text items and decorative separators are not tab stops. Give each breadcrumb landmark a distinct accessible name when a page has more than one trail.`,
   } },
 } satisfies Meta<BreadcrumbsCompoundProps>;
 
@@ -62,9 +67,12 @@ const getSeparators = (nav: HTMLElement) =>
 
 // The last level renders as plain text: it is the current page.
 export const Default: StoryObj<Omit<BreadcrumbsEasyProps, 'component'>> = {
+  name: 'Page hierarchy',
   args: { items: [ { key: 'home', label: 'Home', href: '/' }, { key: 'projects', label: 'Projects', href: '/projects' }, { key: 'current', label: 'jfrader-ui' } ] },
   render: (args) => <Breadcrumbs {...args} />,
-  parameters: { docs: { source: { language: 'tsx', code: `<Breadcrumbs items={[
+  parameters: { docs: { description: { story: 'Link to ancestor pages and show the current page as text.' }, source: { language: 'tsx', code: `import { Breadcrumbs } from '@jfrader/ui';
+
+<Breadcrumbs items={[
   { key: 'home', label: 'Home', href: '/' },
   { key: 'projects', label: 'Projects', href: '/projects' },
   { key: 'current', label: 'jfrader-ui' },
@@ -90,7 +98,10 @@ export const GeneratedPartProps: StoryObj<Omit<BreadcrumbsEasyProps, 'component'
 };
 
 export const Compound: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<Breadcrumbs>
+  name: 'Compose the trail',
+  parameters: { docs: { description: { story: 'Build the same page hierarchy from individual breadcrumb items.' }, source: { language: 'tsx', code: `import { Breadcrumbs } from '@jfrader/ui';
+
+<Breadcrumbs>
   <Breadcrumbs.Item href="/">Home</Breadcrumbs.Item>
   <Breadcrumbs.Item href="/projects">Projects</Breadcrumbs.Item>
   <Breadcrumbs.Item>jfrader-ui</Breadcrumbs.Item>
@@ -143,6 +154,17 @@ export const ReplacedParts: StoryObj<Omit<BreadcrumbsEasyProps, 'component'>> = 
 
 // Every level is a link; the current page stays a link with aria-current (APG).
 export const WithHref: Story = {
+  name: 'Tab through page links',
+  parameters: { docs: {
+    description: { story: 'Press Tab to visit each link, including the current page, and Enter to follow it.' },
+    source: { language: 'tsx', code: `import { Breadcrumbs } from '@jfrader/ui';
+
+<Breadcrumbs>
+  <Breadcrumbs.Item href="/">Home</Breadcrumbs.Item>
+  <Breadcrumbs.Item href="/projects">Projects</Breadcrumbs.Item>
+  <Breadcrumbs.Item href="/projects/jfrader-ui">jfrader-ui</Breadcrumbs.Item>
+</Breadcrumbs>` },
+  } },
   render: (args) => (
     <Breadcrumbs {...args}>
       {LEVELS.map((level) => (
@@ -173,6 +195,17 @@ export const WithHref: Story = {
 };
 
 export const CustomSeparator: Story = {
+  name: 'Chevron separators',
+  parameters: { docs: {
+    description: { story: 'Separate levels with a chevron without changing their accessible names.' },
+    source: { language: 'tsx', code: `import { Breadcrumbs } from '@jfrader/ui';
+
+<Breadcrumbs separator="›" label="Project trail">
+  <Breadcrumbs.Item href="/">Home</Breadcrumbs.Item>
+  <Breadcrumbs.Item href="/projects">Projects</Breadcrumbs.Item>
+  <Breadcrumbs.Item>jfrader-ui</Breadcrumbs.Item>
+</Breadcrumbs>` },
+  } },
   args: { separator: '›', label: 'Project trail' },
   render: (args) => (
     <Breadcrumbs {...args}>
@@ -193,6 +226,17 @@ export const CustomSeparator: Story = {
 
 // An explicit `current` wins over the automatic last-item default.
 export const ExplicitCurrent: Story = {
+  name: 'Choose the current level',
+  parameters: { docs: {
+    description: { story: 'Mark an ancestor as current instead of using the final item.' },
+    source: { language: 'tsx', code: `import { Breadcrumbs } from '@jfrader/ui';
+
+<Breadcrumbs>
+  <Breadcrumbs.Item href="/">Home</Breadcrumbs.Item>
+  <Breadcrumbs.Item href="/projects" current>Projects</Breadcrumbs.Item>
+  <Breadcrumbs.Item href="/projects/jfrader-ui">jfrader-ui</Breadcrumbs.Item>
+</Breadcrumbs>` },
+  } },
   render: (args) => (
     <Breadcrumbs {...args}>
       <Breadcrumbs.Item href={LEVELS[0].href}>{LEVELS[0].label}</Breadcrumbs.Item>
@@ -232,14 +276,38 @@ GrowingTrail.displayName = 'GrowingTrail';
 
 // aria-current follows the last item when items mount or unmount.
 export const DynamicItems: Story = {
+  name: 'Add or remove a level',
   parameters: {
     docs: {
+      description: { story: 'Toggle the final level and let the current-page marker follow the trail.' },
       source: {
-        code: `<Breadcrumbs>
-  {levels.slice(0, depth).map((level) => (
-    <Breadcrumbs.Item key={level.href} href={level.href}>{level.label}</Breadcrumbs.Item>
-  ))}
-</Breadcrumbs>`,
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Breadcrumbs, Button, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const TrailLayout = styled.div({ display: 'grid', justifyItems: 'start', gap: vars.space[4] });
+const pages = [
+  { label: 'Home', href: '/' },
+  { label: 'Projects', href: '/projects' },
+  { label: 'jfrader-ui', href: '/projects/jfrader-ui' },
+];
+
+export function ProjectTrail() {
+  const [depth, setDepth] = useState(2);
+  return (
+    <TrailLayout>
+      <Breadcrumbs>
+        {pages.slice(0, depth).map((page) => (
+          <Breadcrumbs.Item key={page.href} href={page.href}>{page.label}</Breadcrumbs.Item>
+        ))}
+      </Breadcrumbs>
+      <Button size="sm" onClick={() => setDepth((value) => value === pages.length ? 2 : value + 1)}>
+        Toggle level
+      </Button>
+    </TrailLayout>
+  );
+}`,
       },
     },
   },
@@ -349,4 +417,31 @@ export const NarrowTrail: Story = {
       await expect(getComputedStyle(link).outlineWidth).toBe('2px');
     }
   },
+};
+
+export const LongLabels: Story = {
+  name: 'Long labels in a narrow trail',
+  parameters: { docs: {
+    description: { story: 'Wrap an unbroken project name within a narrow navigation lane.' },
+    source: { language: 'tsx', code: `import { Breadcrumbs, styled } from '@jfrader/ui';
+
+const TrailLane = styled.div({ inlineSize: '180px' });
+
+<TrailLane>
+  <Breadcrumbs label="Location">
+    <Breadcrumbs.Item href="/">Home</Breadcrumbs.Item>
+    <Breadcrumbs.Item href="/projects">AnUnbrokenProjectLabelThatMustFitTheAvailableWidth</Breadcrumbs.Item>
+    <Breadcrumbs.Item>Current page</Breadcrumbs.Item>
+  </Breadcrumbs>
+</TrailLane>` },
+  } },
+  render: () => (
+    <NarrowFrame>
+      <Breadcrumbs label="Location">
+        <Breadcrumbs.Item href="/">Home</Breadcrumbs.Item>
+        <Breadcrumbs.Item href="/projects">AnUnbrokenProjectLabelThatMustFitTheAvailableWidth</Breadcrumbs.Item>
+        <Breadcrumbs.Item>Current page</Breadcrumbs.Item>
+      </Breadcrumbs>
+    </NarrowFrame>
+  ),
 };
