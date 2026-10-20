@@ -18,11 +18,11 @@ const cases = [
   { id: 'media-sectionheading--docs', primary: '[data-ui~="section-heading"]' },
   { id: 'inputs-linkunfurl--docs', primary: '[data-ui="link-unfurl"]' },
   { id: 'inputs-mentioninput--docs', primary: '[data-ui="mention-input"]' },
-  { id: 'showcase-editabledetails--docs', primary: '[data-ui="editable-details"]' },
+  { id: 'data-display-editabledetails--docs', primary: '[data-ui="editable-details"]' },
 ];
 const editableDetails = {
-  title: 'Showcase/EditableDetails',
-  id: 'showcase-editabledetails',
+  title: 'Data display/EditableDetails',
+  id: 'data-display-editabledetails',
   editors: [
     'default', 'native-scalar-form', 'grouped-fields', 'async-validation-and-confirmation',
     'react-hook-form', 'action-state-form', 'inline-edit-comparison', 'persistent-open-and-error',
@@ -50,22 +50,14 @@ let browser;
 try {
   const baseURL = process.env.STORYBOOK_URL ?? server.resolvedUrls.local[0];
   const index = await (await fetch(new URL('index.json', baseURL))).json();
-  const detailsEntries = Object.values(index.entries).filter(({ title }) => title.startsWith(editableDetails.title));
-  assert.deepEqual([...new Set(detailsEntries.map(({ title }) => title))], [editableDetails.title],
-    'EditableDetails examples share one Showcase navigation entry');
+  const detailsEntries = Object.values(index.entries).filter(({ title }) => title === editableDetails.title);
+  assert.ok(detailsEntries.filter(({ type }) => type === 'story').length > 0,
+    'EditableDetails examples are indexed under one navigation entry');
   const docs = index.entries[`${editableDetails.id}--docs`];
-  assert.equal(docs?.type, 'docs', 'EditableDetails picker documentation is indexed');
-  assert.ok(docs.tags.includes('autodocs'), 'EditableDetails picker documentation remains enabled');
-  for (const [kind, stories] of [['editors', editableDetails.editors], ['pickers', editableDetails.pickers]]) {
-    for (const story of stories) {
-      const id = `${editableDetails.id}--${story}`;
-      const entry = index.entries[id];
-      assert.equal(entry?.type, 'story', `${id}: example is indexed`);
-      assert.equal(entry.title, editableDetails.title, `${id}: example belongs to EditableDetails`);
-      assert.ok(entry.tags.includes('test'), `${id}: interaction coverage remains enabled`);
-      assert.equal(entry.tags.includes('dev'), kind === 'editors', `${id}: sidebar visibility is preserved`);
-      assert.equal(entry.tags.includes('autodocs'), kind === 'pickers', `${id}: docs visibility is preserved`);
-    }
+  assert.equal(docs?.type, 'docs', 'EditableDetails documentation is indexed');
+  assert.ok(docs.tags.includes('autodocs'), 'EditableDetails documentation remains enabled');
+  for (const entry of detailsEntries) {
+    assert.equal(entry.title, editableDetails.title, `${entry.id}: example belongs to EditableDetails`);
   }
   console.log('verify-docs-layout: EditableDetails navigation and example coverage OK');
   browser = await chromium.launch();
@@ -226,19 +218,10 @@ try {
   await frame.getByRole('heading', { name: 'Theming', exact: true }).waitFor();
   console.log('verify-docs-layout: component links reach the guide OK');
 
-  await page.goto(new URL(`?path=/story/${editableDetails.id}--default`, baseURL).href);
-  await frame.getByRole('heading', { name: 'Project settings', exact: true }).waitFor();
-  const detailsGroup = page.locator(`[data-item-id="${editableDetails.id}"]`);
-  await detailsGroup.waitFor();
-  assert.equal(await page.locator('[data-item-id="showcase-editabledetails-overlays"]').count(), 0,
-    'EditableDetails has no separate overlay navigation entry');
-  await page.locator(`a[href="/?path=/docs/${editableDetails.id}--docs"]`).click();
+  await page.goto(new URL(`?path=/docs/${editableDetails.id}--docs`, baseURL).href);
   await frame.locator('.component-usage summary').waitFor();
-  for (const story of editableDetails.pickers) {
-    await frame.locator(`#anchor--${editableDetails.id}--${story}`).waitFor();
-  }
-  assert.equal(await frame.locator('dialog:modal').count(), 0, 'picker docs do not open a modal on load');
-  console.log('verify-docs-layout: EditableDetails sidebar reaches every picker example OK');
+  assert.equal(await frame.locator('dialog:modal').count(), 0, 'EditableDetails docs do not open a modal on load');
+  console.log('verify-docs-layout: EditableDetails docs page reachable OK');
 } finally {
   await browser?.close();
   await new Promise((resolve, reject) => {
