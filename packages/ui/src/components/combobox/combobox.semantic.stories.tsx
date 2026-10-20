@@ -5,7 +5,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { Combobox, type ComboboxEasyProps, type ComboboxOption } from './index';
 
-const Frame = styled.div({ inlineSize: '24rem', maxInlineSize: '100%' });
+const Frame = styled.div({ inlineSize: `min(24rem, calc(100vw - ${vars.space[8]}))`, maxInlineSize: '100%' });
 const Result = styled.span({ display: 'grid', gap: vars.space[1], whiteSpace: 'normal', overflowWrap: 'anywhere' });
 const Detail = styled.span({ color: vars.color.textMuted, fontSize: vars.textSize.sm, fontFamily: vars.font.sans });
 const score = new Intl.NumberFormat('en', { style: 'percent', maximumFractionDigits: 0 });

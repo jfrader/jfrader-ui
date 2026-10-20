@@ -5,6 +5,7 @@
 ### Fixed
 
 - `MultiSelect` keeps selection counts readable in narrow fields and long option lists compact, scrollable and beside their trigger.
+- `Combobox` wraps long option names and scrolls its list within the available space without covering the input in short viewports.
 - `Select` wraps long option names inside its listbox and keeps space between the selected value and disclosure arrow.
 - `MentionInput` keeps suggestions beside the field when scrolling moves the caret out of view.
 - `TagInput` gives tag removal buttons a wider click target while retaining compact field heights.

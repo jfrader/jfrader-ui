@@ -81,6 +81,7 @@ const stackStyle = {
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '320px',
+  maxInlineSize: '100%',
 } satisfies CSSProperties;
 
 const meta: Meta<ComboboxCompoundProps> = {
@@ -1185,5 +1186,96 @@ export const LightTheme: Story = {
     await expectThemedSurface(listbox, 'light');
     await expect(input).toHaveAttribute('aria-invalid', 'true');
     await expect(input.getAttribute('aria-describedby')?.split(' ')).toHaveLength(2);
+  },
+};
+
+const LONG_LABEL = 'InternationalEnterpriseWorkspaceWithoutWordSeparators';
+const LONG_OPTIONS = Array.from({ length: 40 }, (_, index) => ({
+  value: String(index), label: `${LONG_LABEL} ${index}`,
+}));
+
+export const ViewportEdge: EasyStory = {
+  tags: ['!autodocs'],
+  args: { label: 'Workspace', options: LONG_OPTIONS },
+  render: (args) => (
+    <div style={{
+      position: 'fixed',
+      insetInlineEnd: vars.space[4],
+      insetBlockEnd: vars.space[8],
+      inlineSize: `min(320px, calc(100vw - ${vars.space[8]}))`,
+    }}>
+      <Combobox {...args} />
+    </div>
+  ),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const input = canvas.getByRole('combobox');
+    await userEvent.click(input);
+    await userEvent.keyboard('{ArrowDown}');
+    const list = await bodyOf(canvasElement).findByRole('listbox');
+    await waitFor(async () => {
+      const anchor = input.getBoundingClientRect();
+      const panel = list.getBoundingClientRect();
+      await expect(Math.abs(anchor.top - panel.bottom - 8)).toBeLessThanOrEqual(1);
+      await expect(panel.left).toBeGreaterThanOrEqual(8);
+      await expect(panel.right).toBeLessThanOrEqual(canvasElement.ownerDocument.documentElement.clientWidth - 8);
+      await expect(list.scrollWidth).toBeLessThanOrEqual(list.clientWidth);
+    });
+    await userEvent.keyboard('{End}');
+    await waitFor(async () => {
+      const active = canvasElement.ownerDocument.getElementById(input.getAttribute('aria-activedescendant')!)!;
+      await expect(active.getBoundingClientRect().bottom).toBeLessThanOrEqual(list.getBoundingClientRect().bottom);
+      await expect(active.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    });
+    await userEvent.keyboard('{Enter}');
+    await expect(input).toHaveValue(LONG_OPTIONS.at(-1)!.label);
+  },
+};
+
+export const FieldStates: EasyStory = {
+  tags: ['!autodocs'],
+  render: () => (
+    <div style={stackStyle}>
+      <Combobox label="Small" size="sm" options={FRUITS} />
+      <Combobox label="Large" size="lg" options={FRUITS} />
+      <Combobox label="Unavailable" disabled options={FRUITS} description="Contact the workspace owner." />
+      <Combobox label="Workspace" options={FRUITS} description="Choose where to publish." error="Choose a workspace to continue." />
+      <Combobox label="Free text" options={FRUITS} defaultInputValue="New workspace" />
+    </div>
+  ),
+  play: async ({ canvas }) => {
+    for (const input of canvas.getAllByRole('combobox')) {
+      await expect(input.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+    await expect(canvas.getByRole('combobox', { name: 'Unavailable' })).toBeDisabled();
+    await expect(canvas.getByRole('combobox', { name: 'Workspace' })).toHaveAccessibleDescription('Choose where to publish. Choose a workspace to continue.');
+    await expect(canvas.getByRole('combobox', { name: 'Free text' })).toHaveValue('New workspace');
+  },
+};
+
+export const Grouped: Story = {
+  tags: ['!autodocs'],
+  render: () => (
+    <div style={stackStyle}>
+      <Combobox defaultOpen>
+        <Combobox.Input label="Destination" />
+        <Combobox.List>
+          <div role="group" aria-label="Europe">
+            <Combobox.Item value="madrid">Madrid</Combobox.Item>
+            <Combobox.Item value="paris" disabled>Paris</Combobox.Item>
+          </div>
+          <div role="group" aria-label="Americas">
+            <Combobox.Item value="lima">Lima</Combobox.Item>
+            <Combobox.Item value="quito">Quito</Combobox.Item>
+          </div>
+          <Combobox.Empty />
+        </Combobox.List>
+      </Combobox>
+    </div>
+  ),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const input = canvas.getByRole('combobox');
+    await userEvent.click(input);
+    await userEvent.keyboard('{Home}{ArrowDown}');
+    await expect(input).toHaveAttribute('aria-activedescendant', bodyOf(canvasElement).getByRole('option', { name: 'Lima' }).id);
   },
 };
