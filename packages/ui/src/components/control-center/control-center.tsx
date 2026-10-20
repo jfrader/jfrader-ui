@@ -74,6 +74,7 @@ export interface ControlCenterSlotProps extends FieldParts<NativeAnatomy> {
   modes?: SlotProps<RadioGroupEasyProps>;
   channel?: SlotProps<SwitchProps>;
   person?: SlotProps<SwitchProps>;
+  /** Uses `Dialog.Content` by default. */
   detail?: SlotProps<DialogContentProps>;
 }
 export interface ControlCenterSlots extends FieldSlots<NativeAnatomy> {
@@ -85,6 +86,7 @@ export interface ControlCenterSlots extends FieldSlots<NativeAnatomy> {
   modes?: ComponentType<RadioGroupProps>;
   channel?: ComponentType<SwitchProps>;
   person?: ComponentType<SwitchProps>;
+  /** Uses `Dialog.Content` by default. */
   detail?: ComponentType<DialogContentProps>;
 }
 export interface ControlCenterProps

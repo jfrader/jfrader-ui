@@ -36,7 +36,31 @@ export interface PhoneInputMessages {
   valid: (name: string) => string;
   invalid: (name: string | null) => string;
 }
-type Part = 'root' | 'label' | 'control' | 'countryTrigger' | 'number' | 'search' | 'panel' | 'list' | 'option' | 'description' | 'error' | 'status';
+type Part =
+  | /** Renders a `div` by default. */
+    'root'
+  | /** Renders a `label` by default. */
+    'label'
+  | /** Renders a `div` by default. */
+    'control'
+  | /** Renders a `button` by default. */
+    'countryTrigger'
+  | /** Renders an `input` by default. */
+    'number'
+  | /** Renders an `input` by default. */
+    'search'
+  | /** Renders a `div` by default. */
+    'panel'
+  | /** Renders a `div` by default. */
+    'list'
+  | /** Renders a `div` by default. */
+    'option'
+  | /** Renders a `span` by default. */
+    'description'
+  | /** Renders a `span` by default. */
+    'error'
+  | /** Renders a `span` by default. */
+    'status';
 type FocusTarget = 'search' | 'number' | 'trigger' | null;
 export interface PhoneInputProps extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'type' | 'value' | 'defaultValue'>, SxProps {
   /** Store a `+`-prefixed candidate, including incomplete numbers. */

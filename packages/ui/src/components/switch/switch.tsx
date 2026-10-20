@@ -20,11 +20,11 @@ export interface SwitchPartProps extends ComponentPropsWithRef<'span'> {
 export interface SwitchSlots {
   /** Label wrapping the switch and its text. */
   root?: ComponentType<SwitchPartProps & ComponentPropsWithRef<'label'>>;
-  /** Text naming the switch. */
+  /** Text naming the switch. Renders a `span` by default. */
   label?: ComponentType<SwitchPartProps>;
-  /** Track displaying the switch state. */
+  /** Track displaying the switch state. Renders a `span` by default. */
   control?: ComponentType<SwitchPartProps>;
-  /** Helper text below the switch. */
+  /** Helper text below the switch. Renders a `span` by default. */
   description?: ComponentType<SwitchPartProps>;
 }
 
@@ -37,11 +37,11 @@ export interface SwitchProps extends Omit<ComponentPropsWithRef<'input'>, 'size'
   slotProps?: {
     /** Outer label wrapping the switch track, label, and description. */
     root?: SwitchPartProps & ComponentPropsWithRef<'label'>;
-    /** Text label displayed alongside the switch control. */
+    /** Text label displayed alongside the switch control. Renders a `span` by default. */
     label?: SwitchPartProps;
-    /** Visual track and sliding thumb representing the toggle switch. */
+    /** Visual track and sliding thumb representing the toggle switch. Renders a `span` by default. */
     control?: SwitchPartProps;
-    /** Helper description text displayed below the switch row. */
+    /** Helper description text displayed below the switch row. Renders a `span` by default. */
     description?: SwitchPartProps;
   };
 }

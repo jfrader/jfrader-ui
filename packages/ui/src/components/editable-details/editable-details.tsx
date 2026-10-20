@@ -126,7 +126,7 @@ export interface EditableDetailsEasyProps extends EditableDetailsBaseProps {
 
 export type EditableDetailsProps = EditableDetailsCompoundProps | EditableDetailsEasyProps;
 export interface EditableDetailsSectionSlots {
-  /** Groups the section disclosure trigger. */
+  /** Groups the section disclosure trigger. Renders an `h3` by default, or the heading set by `headingLevel`. */
   heading?: ComponentType<EditableDetailsPartProps>;
   /** Toggles the section disclosure. */
   trigger?: ComponentType<EditableDetailsPartProps>;
@@ -143,7 +143,7 @@ export interface EditableDetailsItemSlots {
   summary?: ComponentType<EditableDetailsPartProps>;
   /** Opens the detail editor. */
   edit?: ComponentType<EditableDetailsPartProps>;
-  /** Contains the active editor. */
+  /** Contains the active editor. Renders a `div` by default. */
   editor?: ComponentType<EditableDetailsPartProps>;
 }
 
@@ -156,7 +156,7 @@ export interface EditableDetailsSectionProps extends Omit<ComponentPropsWithRef<
   onOpenChange?: (open: boolean) => void;
   triggerRef?: Ref<HTMLButtonElement>;
   slotProps?: {
-    /** Heading element wrapping the disclosure trigger button. */
+    /** Heading element wrapping the disclosure trigger button. Renders an `h3` by default, or the heading set by `headingLevel`. */
     heading?: EditableDetailsPartProps;
     /** Button that toggles the section open and closed. */
     trigger?: EditableDetailsPartProps;
@@ -187,7 +187,7 @@ export interface EditableDetailsItemProps extends ComponentPropsWithRef<'div'>, 
     summary?: EditableDetailsPartProps;
     /** Button that switches the item into edit mode. */
     edit?: EditableDetailsPartProps;
-    /** Container holding the active editor form fields. */
+    /** Container holding the active editor form fields. Renders a `div` by default. */
     editor?: EditableDetailsPartProps;
   };
 }

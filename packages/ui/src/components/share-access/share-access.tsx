@@ -87,6 +87,7 @@ type ActionSlot = Omit<ButtonProps, 'sx'> & SxProps;
 type RoleSlot = Omit<SelectEasyProps, 'sx' | 'options'> & SxProps;
 export interface ShareAccessSlotProps {
   root?: NativeSlot<'section'>;
+  /** Uses `Combobox.Input` by default. */
   inviteField?: Omit<ComboboxInputProps, 'sx'> & SxProps;
   chipList?: NativeSlot<'ul'>;
   memberList?: NativeSlot<'ul'>;
@@ -106,6 +107,7 @@ export interface ShareAccessSlotProps {
 }
 export interface ShareAccessSlots {
   root?: ComponentType<ComponentPropsWithRef<'section'>>;
+  /** Uses `Combobox.Input` by default. */
   inviteField?: ComponentType<ComboboxInputProps>;
   chipList?: ComponentType<ComponentPropsWithRef<'ul'>>;
   memberList?: ComponentType<ComponentPropsWithRef<'ul'>>;

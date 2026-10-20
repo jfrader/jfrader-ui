@@ -43,8 +43,11 @@ export interface RadialMenuAction {
 type Part<P> = P & { sx?: Interpolation<Theme> };
 export interface RadialMenuSlots {
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Renders a `button` by default. */
   trigger?: ComponentType<MenuTriggerProps>;
+  /** Renders a `div` by default. */
   content?: ComponentType<MenuContentProps>;
+  /** Renders a `button` by default. */
   item?: ComponentType<MenuItemProps>;
   status?: ComponentType<ComponentPropsWithRef<'div'>>;
 }
@@ -72,8 +75,11 @@ export interface RadialMenuProps
   slots?: RadialMenuSlots;
   slotProps?: {
     root?: GeneratedRootSlotProps;
+    /** Renders a `button` by default. */
     trigger?: Part<MenuTriggerProps>;
+    /** Renders a `div` by default. */
     content?: Part<MenuContentProps>;
+    /** Renders a `button` by default. */
     item?: Part<MenuItemProps>;
     status?: Part<ComponentPropsWithRef<'div'>>;
   };

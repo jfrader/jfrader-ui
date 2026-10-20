@@ -135,17 +135,17 @@ export interface CommentThreadLabels extends ThreadReactionLabels {
 }
 
 type CommentThreadPart =
-  | /** Header container wrapping thread title and summary info. */
+  | /** Header container wrapping thread title and summary info. Uses `Card.Header` by default. */
     'header'
-  | /** Heading element displaying the comment thread title. */
+  | /** Heading element displaying the comment thread title. Uses `Card.Title` by default. */
     'title'
   | /** List element rendering root comments or nested replies. */
     'list'
   | /** List item element wrapping an individual comment. */
     'item'
-  | /** Article element containing comment author, body, and actions. */
+  | /** Article element containing comment author, body, and actions. Renders an `article` by default. */
     'article'
-  | /** Timestamp element displaying when the comment was posted. */
+  | /** Timestamp element displaying when the comment was posted. Renders a `time` by default, or a `span` for an invalid timestamp. */
     'time'
   | /** Text container displaying the rendered comment body. */
     'body'
@@ -153,7 +153,7 @@ type CommentThreadPart =
     'replies'
   | /** Action bar holding reply, edit, delete, and reaction controls. */
     'actions'
-  | /** Reaction button element displaying an emoji reaction count. */
+  | /** Container displaying emoji reaction counts. Renders a `div` by default. */
     'reaction'
   | /** Form container for composing a new comment or reply. */
     'composer'
@@ -228,17 +228,17 @@ export interface CommentThreadSlots {
     textarea?: ComponentType<ThreadTextareaProps>;
     /** Submits the comment. */
     send?: ComponentType<ThreadButtonProps>;
-    /** Holds the thread heading and actions. */
+    /** Holds the thread heading and actions. Uses `Card.Header` by default. */
     header?: ComponentType<CommentThreadPartProps>;
-    /** Displays the thread title. */
+    /** Displays the thread title. Uses `Card.Title` by default. */
     title?: ComponentType<CommentThreadPartProps>;
     /** Lists the root comments. */
     list?: ComponentType<CommentThreadPartProps>;
     /** Holds a comment and its replies. */
     item?: ComponentType<CommentThreadPartProps>;
-    /** Holds the comment author, body and actions. */
+    /** Holds the comment author, body and actions. Renders an `article` by default. */
     article?: ComponentType<CommentThreadPartProps>;
-    /** Displays the comment timestamp. */
+    /** Displays the comment timestamp. Renders a `time` by default, or a `span` for an invalid timestamp. */
     time?: ComponentType<CommentThreadPartProps>;
     /** Displays the comment text. */
     body?: ComponentType<CommentThreadPartProps>;
@@ -246,7 +246,7 @@ export interface CommentThreadSlots {
     replies?: ComponentType<CommentThreadPartProps>;
     /** Holds the comment actions. */
     actions?: ComponentType<CommentThreadPartProps>;
-    /** Holds the comment reactions. */
+    /** Holds the comment reactions. Renders a `div` by default. */
     reaction?: ComponentType<CommentThreadPartProps>;
     /** Displays the resolved thread summary. */
     resolved?: ComponentType<CommentThreadPartProps>;

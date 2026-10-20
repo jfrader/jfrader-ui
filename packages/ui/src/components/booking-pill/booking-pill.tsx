@@ -79,6 +79,7 @@ type Anatomy = {
   root: 'div';
   trigger: 'button';
   content: 'div';
+  /** Renders an `h3` by default. */
   title: 'h3';
   description: 'p';
   back: 'button';

@@ -8,7 +8,14 @@ import { articleHeadingFont, articleLabelStyle, articleLinkStyle, articleRule } 
 import { isRenderable } from '../../utils/renderable';
 import { PresentationSlot, type ArticleHeadingLevel, type PresentationHeadingProps, type PresentationParts, type PresentationSlots, type RenderArticleLink } from '../../utils/presentation-slot';
 
-type Anatomy = { root: 'header'; kicker: 'p'; heading: 'h2'; link: 'a'; accessory: 'div' };
+type Anatomy = {
+  /** Renders a `header` by default. */
+  root: 'header';
+  kicker: 'p';
+  heading: 'h2';
+  link: 'a';
+  accessory: 'div';
+};
 export type SectionHeadingSlots = Omit<PresentationSlots<Anatomy>, 'heading'> & { heading?: ComponentType<PresentationHeadingProps> };
 export type SectionHeadingSlotProps = PresentationParts<Anatomy>;
 export type SectionHeadingProps = Omit<ComponentPropsWithRef<'header'>, 'title' | 'children'> & SxProps & {

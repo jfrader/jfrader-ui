@@ -34,7 +34,7 @@ type Slot<E extends 'div' | 'header' | 'h2' | 'ul' | 'li'> = ComponentPropsWithR
 export interface StretchRefreshSlots {
   /** Header holding the title and refresh action. */
   header?: ComponentType<Slot<'header'>>;
-  /** Heading naming the feed. */
+  /** Heading naming the feed. Renders an `h2` by default, or the heading set by `headingLevel`. */
   title?: ComponentType<Slot<'h2'>>;
   /** Text below the feed title. */
   subtitle?: ComponentType<Slot<'div'>>;
@@ -56,7 +56,7 @@ export interface StretchRefreshSlots {
 export interface StretchRefreshSlotProps<T> {
   /** Header container element holding the title and refresh button. */
   header?: Slot<'header'>;
-  /** Heading element displaying the feed title. */
+  /** Heading element displaying the feed title. Renders an `h2` by default, or the heading set by `headingLevel`. */
   title?: Slot<'h2'>;
   /** Subtitle element displaying feed metadata or update time. */
   subtitle?: Slot<'div'>;

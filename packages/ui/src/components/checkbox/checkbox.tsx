@@ -41,7 +41,7 @@ export interface CheckboxProps extends Omit<ComponentPropsWithRef<'input'>, 'siz
     description?: ComponentType<CheckboxPartProps>;
   };
   slotProps?: {
-    /** Outer label wrapping the checkbox control, label, and description. */
+    /** Outer label wrapping the checkbox control, label, and description. Renders a `label` by default. */
     root?: CheckboxPartProps;
     /** Text label displayed alongside the checkbox. */
     label?: CheckboxPartProps;

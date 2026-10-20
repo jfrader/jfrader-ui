@@ -64,17 +64,28 @@ const defaultMessages: MoneyInputMessages = {
 
 export type MoneyInputSlotProps = Partial<
   Record<
-    | 'root'
-    | 'label'
-    | 'shell'
-    | 'control'
-    | 'currency'
-    | 'quickAdd'
-    | 'quickAddButton'
-    | 'range'
-    | 'description'
-    | 'error'
-    | 'status',
+    | /** Renders a `div` by default. */
+      'root'
+    | /** Renders a `label` by default. */
+      'label'
+    | /** Renders a `div` by default. */
+      'shell'
+    | /** Renders an `input` by default. */
+      'control'
+    | /** Renders a `span` by default. */
+      'currency'
+    | /** Renders a `div` by default. */
+      'quickAdd'
+    | /** Renders a `button` by default. */
+      'quickAddButton'
+    | /** Renders a `span` by default. */
+      'range'
+    | /** Renders a `span` by default. */
+      'description'
+    | /** Renders a `span` by default. */
+      'error'
+    | /** Renders a `span` by default. */
+      'status',
     FieldPartProps
   >
 >;
