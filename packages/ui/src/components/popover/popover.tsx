@@ -44,10 +44,15 @@ import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 export interface PopoverBaseProps {
+  /** Control whether the popover is open. */
   open?: boolean;
+  /** Open the uncontrolled popover initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receive requests to open or close the popover. */
   onOpenChange?: (open: boolean) => void;
+  /** Position the panel relative to its trigger. Defaults to `bottom`; may flip to fit. */
   placement?: Placement;
+  /** Compose the popover trigger and content. */
   children?: ReactNode;
 }
 
@@ -67,6 +72,7 @@ export interface PopoverEasyProps extends Omit<PopoverBaseProps, 'children'>, Om
   triggerLabel: ReactNode;
   /** Name the non-modal dialog. */
   label: string;
+  /** Render this content inside the generated popover panel. */
   content: ReactNode;
   children?: never;
   /** Replace native roots with components that forward all supplied props and ref. */
@@ -78,6 +84,7 @@ export interface PopoverEasyProps extends Omit<PopoverBaseProps, 'children'>, Om
     /** Replaces the floating popover overlay panel. */
     content?: ComponentType<ComponentPropsWithRef<'div'>>;
   };
+  /** Pass props and `sx` to the generated wrapper, trigger and panel. */
   slotProps?: {
     /** Outer wrapper element around the trigger and content. */
     root?: GeneratedRootSlotProps;
@@ -86,6 +93,7 @@ export interface PopoverEasyProps extends Omit<PopoverBaseProps, 'children'>, Om
     /** Floating popover overlay panel element. */
     content?: PopoverGeneratedPartProps<PopoverContentProps>;
   };
+  /** Replace the outer wrapper; `slots.root` takes precedence. */
   component?: NonNullable<PopoverEasyProps['slots']>['root'];
 }
 

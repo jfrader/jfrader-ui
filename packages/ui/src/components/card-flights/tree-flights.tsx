@@ -19,6 +19,7 @@ export interface CardFlightsProps {
   revision?: string | number;
   /** Seat key receiving the first card; defaults to the first registered table seat. */
   forehand?: string;
+  /** Render the card tree whose committed changes drive flights. */
   children: ReactNode;
   /** Reports activity to state owners above this component, including cancellation on unmount. */
   onBusyChange?: (busy: boolean) => void;
@@ -115,13 +116,32 @@ function targetKey(entry: TreeFlightNode) {
   return entry.role === 'play' ? `played:${entry.card.id}` : entry.role === 'hand' ? `hand:${entry.cardId}` : `seat:${entry.seatKey}:${entry.cardId}`;
 }
 
-type TargetIdentity = { cardId: string; kind: 'hand' | 'play'; seatKey?: string } | { kind: 'seat'; seatKey: string; index: number; cardId?: never };
+type TargetIdentity = {
+  /** Match this card's hand and played destinations by stable identity. */
+  cardId: string;
+  /** Register a hand destination or a played-card destination. */
+  kind: 'hand' | 'play';
+  /** Associate the card with a seat. Defaults to the surrounding GameTable seat when present. */
+  seatKey?: string;
+} | {
+  /** Register a hidden-card destination for a seat. */
+  kind: 'seat';
+  /** Identify the seat receiving this hidden card. */
+  seatKey: string;
+  /** Identify the hidden-card position within this seat. */
+  index: number;
+  cardId?: never;
+};
 interface FlightNodeCustomization extends GameCardRootCustomization {
+  /** Pass props and `sx` to the target or deck wrapper. */
   slotProps?: { root?: GameCardRootSlotProps };
 }
 export type CardFlightsTargetProps = Omit<ComponentPropsWithRef<'div'>, 'role'> & SxProps & FlightNodeCustomization & TargetIdentity & {
+  /** Override automatic flight faces: `up` shows the front, `down` the back, `reveal` flips back to front. */
   face?: 'up' | 'down' | 'reveal';
+  /** Supply the face-up flight artwork. Defaults to the target's children. */
   front?: ReactNode;
+  /** Supply the face-down flight artwork. */
   back?: ReactNode;
 };
 

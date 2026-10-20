@@ -53,21 +53,31 @@ export interface GameSeatSlots {
 export interface GameSeatProps extends Omit<GameCardRootProps, 'children'>, Omit<GameCardRootCustomization, 'slots'>, DeckArtOptions, SxProps {
   /** Player name, used to name this seat. */
   name: string;
+  /** Show player artwork inside the turn timer ring. */
   avatar?: ReactNode;
+  /** Show badges below the player name. */
   badges?: ReactNode;
+  /** Show a score below the badges. */
   points?: ReactNode;
+  /** Show a message below the player's hand. */
   chat?: ReactNode;
   /** Replace the hidden-hand shorthand with your own content. */
   hand?: ReactNode;
   /** Render a decorative GameHand.Hidden when `hand` is absent. */
   handCount?: number;
+  /** Show a countdown ring using the turn deadline and duration. */
   turn?: GameSeatTurn;
   /** Notify once at each remaining-time threshold: 50%, 25%, and zero. Increasing a live deadline emits `extended`. */
   onTurnMilestone?: (milestone: GameSeatTurnMilestone) => void;
+  /** Set the `data-turned` state. Defaults to whether `turn` is supplied. */
   turned?: boolean;
+  /** Outline the seat with a dashed border. Defaults to `false`. */
   offline?: boolean;
+  /** Mute the seat's text colour. Defaults to `false`. */
   dimmed?: boolean;
+  /** Pass props and `sx` to the seat's rendered parts. */
   slotProps?: GameSeatSlotProps;
+  /** Replace the card root or individual seat parts. */
   slots?: GameSeatSlots;
 }
 
