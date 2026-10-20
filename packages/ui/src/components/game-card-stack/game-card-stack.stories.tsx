@@ -73,37 +73,24 @@ const meta = {
   decorators: [(Story) => <CenteredStackFrame><Story /></CenteredStackFrame>],
   parameters: { layout: 'fullscreen', a11y: { test: 'error' }, docs: {
     description: { component: 'Keep played cards grouped by player. Open a pile to read its cards.' },
+    sections: [
+      { title: 'Inspection', stories: ['PlayedPiles', 'Controlled', 'RevealedHands'] },
+      { title: 'Placement', stories: ['Default', 'StandalonePile', 'FreePlacement'] },
+    ],
     source: {
       language: 'tsx',
       code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
 
 <GameCardStack piles={piles} onValueChange={handleInspectionChange} />`,
     },
-    usage: `## Setup
-- Import from \`@jfrader/ui/game-card-stack\`. GameCardStack is an opt-in subpath and is not re-exported by the package root.
+    usage: `### Layout
+Give the grid a definite width and height; fitting reserves room for inspected fans. Include empty piles to reserve positions. In free or mixed placement, your application must prevent collisions. Standalone piles fill their host and do not position themselves on a table.
 
-## Placement and cards
-- Render \`GameCardStack.Pile\` inside \`GameTable.Play\` to put each player's cards in front of their seat. The part fills its host in normal flow; it owns no table placement.
-- The root defaults to \`placement="grid"\`: give it a definite width and height. Measurement chooses rows and columns and shrinks cards to reserve inspected fans. Include empty piles to reserve positions.
-- \`placement="free"\` and a pile's \`geometry\` use caller-owned normalized vectors. A supplied geometry always opts a pile out of fitting. The caller owns collisions in mixed or free placement.
-- \`cardWidth\` overrides inherited \`--game-card-width\`, falling back to the medium card token. Grid fitting treats it as a preferred width. \`maxCards\` displays the newest cards and defaults to three; non-finite values use that default and finite values are rounded down and clamped to zero.
-- Supply a \`label\` on every pile and card, in your page's language. Each card has a unique play \`id\` and an optional face \`value\`. Supply \`backPattern\` for hidden Spanish-deck cards, which carry no face value.
-- \`data-played-key\` uses the card's \`id\` for flight destinations. Cards stack in array order; a card's optional \`order\` sets its closed-pile layer. Each pile's \`revealed\` keeps its cards spread without enlargement.
+### Cards
+Give every pile and card a name in the page's language and every play a unique identity. Only the newest cards up to the display limit are rendered. Do not send secret face values for hidden cards.
 
-## Card spacing
-- Closed cards use offsets of delta × 4px horizontally and |delta| × 1.5px vertically.
-- Open cards use offsets of delta × 0.52 card widths horizontally and −|delta| × 4px vertically.
-- Inspection enlarges cards by 1.45. Each card has stable jitter of at most 4px and a rotation offset of at most 6 degrees.
-
-## Inspection and keyboard
-- Each pile has a native disclosure button with \`aria-expanded\` and \`aria-controls\`.
-- Tab reaches each pile. Enter or Space toggles it.
-- Escape closes and returns focus after acceptance. A root \`onKeyDown\` can prevent dismissal.
-- \`defaultValue\` seeds uncontrolled inspection. \`value\` and \`onValueChange\` control it.
-- A player key opens that pile. \`null\` closes it. The root shares one inspected key. Standalone parts can share the same controlled state.
-- Automatically revealed cards stay spread after inspection closes.
-- Closed cards remain visible to assistive technology.
-- Reduced motion completes size changes and focus without waiting for animation.`,
+### Inspection and keyboard
+Tab reaches each pile's disclosure button. Enter or Space toggles inspection. Escape requests closure and returns focus after acceptance; a prevented key event cancels dismissal. Only one pile is inspected at a time. Revealed cards stay spread when inspection closes, and closed cards remain available to assistive technology. Reduced motion completes size and focus changes immediately.`,
   } },
 } satisfies Meta<typeof GameCardStack>;
 export default meta;
@@ -126,6 +113,7 @@ export const PlayedPiles: Story = {
   name: 'Played piles',
   parameters: {
     docs: {
+      description: { story: 'Open either pile to inspect its three played cards.' },
       source: {
         language: 'tsx',
         code: `import { GameCardStack, type GameCardStackPile } from '@jfrader/ui/game-card-stack';
@@ -296,6 +284,7 @@ export const RevealedHands: Story = {
   args: { piles: players(6, 3).map((pile) => ({ ...pile, revealed: true })) },
   parameters: {
     docs: {
+      description: { story: 'Keep cards spread even when no pile is inspected.' },
       source: {
         language: 'tsx',
         code: `import { GameCardStack, type GameCardStackPile } from '@jfrader/ui/game-card-stack';
@@ -338,6 +327,7 @@ export const Controlled: Story = {
   render: (args) => <ControlledFixture {...args} />,
   parameters: {
     docs: {
+      description: { story: 'Accept inspection changes in parent-owned state.' },
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
@@ -657,6 +647,7 @@ export const FreePlacement: Story = {
   },
   parameters: {
     docs: {
+      description: { story: 'Place two piles with application-owned geometry.' },
       source: {
         language: 'tsx',
         code: `import { GameCardStack, type GameCardStackPile } from '@jfrader/ui/game-card-stack';
@@ -695,6 +686,7 @@ export const StandalonePile: Story = {
   name: 'Standalone pile',
   parameters: {
     docs: {
+      description: { story: 'Inspect a single pile without a stack container.' },
       source: {
         language: 'tsx',
         code: `import { GameCardStack, type GameCardStackPile } from '@jfrader/ui/game-card-stack';
@@ -764,7 +756,7 @@ const spanishPiles: readonly GameCardStackPile[] = [
 
 /** Two-player truco with Spanish-deck cards and a pile in front of each seat. */
 export const Default: Story = {
-  name: 'Default',
+  name: 'Piles at table seats',
   render: () => <GameTable players={2}
     seats={[{ key: 'Ana', teamIdx: 0, isMe: true }, { key: 'Luis', teamIdx: 1 }]}
   >
