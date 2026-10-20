@@ -1,13 +1,15 @@
-import { withoutSx } from '../../styling/sx';
 'use client';
+
+import { withoutSx } from '../../styling/sx';
 
 import { useId, type ComponentPropsWithRef, type ComponentType, type Key, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import type { SxProps } from '../../styling/sx';
 import { FORCED_COLORS } from '../../styling/media';
-import { CardRoot, type GameCardRootProps, type GameCardRootCustomization, type GameCardRootSlotProps } from '../game-card/game-card-root';
+import { GamePanel, type GamePanelProps, type GamePanelCustomization, type GamePanelSlotProps } from '../game-panel/game-panel';
 import { cardPartIdentity } from '../game-card/card-parts';
+import { GameScoreTable } from './game-score-table';
 
 export interface GameScoreRow {
   key: Key;
@@ -23,7 +25,7 @@ export type GameScorePartProps<T extends 'div' | 'span' | 'dl' | 'dt' | 'dd'> = 
 
 export interface GameScoreSlotProps {
   /** Group wrapping the label and the score rows. */
-  root?: GameCardRootSlotProps;
+  root?: GamePanelSlotProps;
   /** Text naming the score list. */
   label?: GameScorePartProps<'span'>;
   /** Definition list holding every row. */
@@ -40,7 +42,7 @@ export interface GameScoreSlotProps {
 
 export interface GameScoreSlots {
   /** Group wrapping the label and the score rows. */
-  root?: ComponentType<GameCardRootProps>;
+  root?: ComponentType<GamePanelProps>;
   /** Text naming the score list. */
   label?: ComponentType<GameScorePartProps<'span'>>;
   /** Definition list holding every row. */
@@ -55,7 +57,7 @@ export interface GameScoreSlots {
   stage?: ComponentType<GameScorePartProps<'span'>>;
 }
 
-export interface GameScoreProps extends Omit<GameCardRootProps, 'children'>, Omit<GameCardRootCustomization, 'slots'>, SxProps {
+export interface GameScoreProps extends Omit<GamePanelProps, 'children'>, Omit<GamePanelCustomization, 'slots'>, SxProps {
   /** Shows the visible label that names the score group. */
   label: string;
   /** Defines player names, scores and optional stages in display order. */
@@ -95,7 +97,7 @@ export function GameScore({ label, rows, locale, slotProps, slots, component, ..
   const valueIdentity = cardPartIdentity('game-score-value', slotProps?.value?.['data-ui']);
   const stageIdentity = cardPartIdentity('game-score-stage', slotProps?.stage?.['data-ui']);
 
-  return <CardRoot {...props} component={component} slots={slots} marker="game-score" structure={rootStyle} rootSlot={slotProps?.root}
+  return <GamePanel {...props} component={component} slots={slots} marker="game-score" structure={rootStyle} rootSlot={slotProps?.root}
     attributes={{ role: 'group', 'aria-labelledby': [labelId, externalLabel].filter(Boolean).join(' ') }}>
     <Label {...withoutSx(slotProps?.label)} id={labelId} data-ui={labelIdentity} className={slotProps?.label?.className} css={slotProps?.label?.sx}>{label}</Label>
     <List {...withoutSx(slotProps?.list)} data-ui={listIdentity} className={slotProps?.list?.className} css={[listStyle, slotProps?.list?.sx]}>
@@ -116,6 +118,7 @@ export function GameScore({ label, rows, locale, slotProps, slots, component, ..
         </Row>
       ))}
     </List>
-  </CardRoot>;
+  </GamePanel>;
 }
 GameScore.displayName = 'GameScore';
+GameScore.Table = GameScoreTable;

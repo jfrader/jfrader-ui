@@ -7,7 +7,9 @@ import { GameRounds, type GameRoundsPartProps } from './index';
 const rounds = [
   { key: 'first', label: 'Opening', outcome: 'won' },
   { key: 'second', label: 'Middle', outcome: 'lost' },
-  { key: 'third', label: 'Final', outcome: 'pending' },
+  { key: 'third', label: 'Lead', outcome: 'pending', current: true, trump: '♠' },
+  { key: 'fourth', label: 'Next', outcome: 'pending' },
+  { key: 'fifth', label: 'Final', outcome: 'pending' },
 ] as const;
 const outcomeLabels = { won: 'Ganada', lost: 'Perdida', pending: 'Pendiente' };
 const source = `import { GameRounds } from '@jfrader/ui/game-rounds';
@@ -15,7 +17,9 @@ const source = `import { GameRounds } from '@jfrader/ui/game-rounds';
 <GameRounds label="Rounds" rounds={[
   { key: 'first', label: 'Opening', outcome: 'won' },
   { key: 'second', label: 'Middle', outcome: 'lost' },
-  { key: 'third', label: 'Final', outcome: 'pending' },
+  { key: 'third', label: 'Lead', outcome: 'pending', current: true, trump: '♠' },
+  { key: 'fourth', label: 'Next', outcome: 'pending' },
+  { key: 'fifth', label: 'Final', outcome: 'pending' },
 ]} outcomeLabels={{ won: 'Ganada', lost: 'Perdida', pending: 'Pendiente' }} />`;
 const meta = {
   title: 'Games/GameRounds', component: GameRounds, tags: ['autodocs'],
@@ -23,8 +27,7 @@ const meta = {
   parameters: { docs: {
     description: { component: 'Show each round and its result in play order.' },
     sections: [
-      { title: 'Round history', stories: ['Default', 'Empty'] },
-      { title: 'Composition', stories: ['RoundReplacement'] },
+      { title: 'Round leads', stories: ['Default'] },
     ],
     usage: `### Results
 Keep rounds in play order and give every result a nonempty name in your game's language. Result text accompanies each tone; pending rounds also have a dashed boundary. Your application owns game rules and result transitions.
@@ -40,13 +43,15 @@ type Story = StoryObj<typeof meta>;
 
 /** Display round history in play order with outcome tags. */
 export const Default: Story = {
-  name: 'Round outcomes',
+  name: 'Five-round lead strip',
   parameters: { docs: { description: { story: 'Read won, lost and pending rounds in play order.' } } },
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group', { name: 'Rounds' });
     const items = within(group).getAllByRole('listitem');
-    await expect(items.map((item) => item.getAttribute('data-outcome'))).toEqual(['won', 'lost', 'pending']);
-    await expect(items.map((item) => item.textContent)).toEqual(['OpeningGanada', 'MiddlePerdida', 'FinalPendiente']);
+    await expect(items.map((item) => item.getAttribute('data-outcome'))).toEqual(['won', 'lost', 'pending', 'pending', 'pending']);
+    await expect(items[0]).toHaveTextContent('1OpeningGanada');
+    await expect(items[2]).toHaveAttribute('aria-current', 'step');
+    await expect(items[2]).toHaveTextContent('3Lead♠Pendiente');
     await expect(getComputedStyle(items[2]!).borderTopStyle).toBe('dashed');
     await expect(within(group).getByRole('list')).toBeVisible();
   },
@@ -54,6 +59,7 @@ export const Default: Story = {
 
 /** Display round history in right-to-left reading order. */
 export const LightRtl: Story = {
+  tags: ['!autodocs'],
   name: 'Light and RTL',
   globals: { theme: 'light' }, args: { dir: 'rtl' },
   parameters: { docs: { source: { language: 'tsx', code: `import { GameRounds } from '@jfrader/ui/game-rounds';
@@ -68,12 +74,13 @@ export const LightRtl: Story = {
     await expect(getComputedStyle(group).direction).toBe('rtl');
     const items = within(group).getAllByRole('listitem');
     await expect(items[0]!.getBoundingClientRect().left).toBeGreaterThan(items[1]!.getBoundingClientRect().left);
-    await expect(items.map((item) => item.getAttribute('data-outcome'))).toEqual(['won', 'lost', 'pending']);
+    await expect(items.map((item) => item.getAttribute('data-outcome'))).toEqual(['won', 'lost', 'pending', 'pending', 'pending']);
   },
 };
 
 /** An empty round list without played rounds. */
 export const Empty: Story = {
+  tags: ['!autodocs'],
   name: 'No rounds',
   args: { rounds: [] },
   parameters: { docs: { description: { story: 'Keep the named round history before the first round is played.' }, source: { language: 'tsx', code: `import { GameRounds } from '@jfrader/ui/game-rounds';
@@ -92,6 +99,7 @@ function ReplacementRound(props: ComponentPropsWithRef<'li'> & GameRoundsPartPro
 
 /** Supply a custom round element for won and lost rounds. */
 export const RoundReplacement: Story = {
+  tags: ['!autodocs'],
   name: 'Custom round',
   parameters: { docs: { description: { story: 'Render each result through a custom round element.' }, source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { GameRounds, type GameRoundsPartProps } from '@jfrader/ui/game-rounds';

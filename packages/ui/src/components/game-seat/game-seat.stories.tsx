@@ -15,7 +15,7 @@ import type { GameSeatPartProps, GameSeatSlotProps } from './game-seat';
 
 const DURATION = 60000;
 const turn = { remainingMs: DURATION * 0.75, durationMs: DURATION };
-const ClockRow = styled.div({ display: 'flex', gap: vars.space[8] });
+const ClockRow = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[8] });
 const TurnExample = styled.div({ display: 'grid', justifyItems: 'start', gap: vars.space[4] });
 const TURN_MESSAGES = { ready: 'Ready', started: 'Your turn', half: 'Half time', quarter: 'Final quarter', ending: 'Turn ended', extended: 'Turn extended' };
 
@@ -27,16 +27,14 @@ const meta = {
     chat: <span aria-live="polite">Your turn · 45 seconds</span>,
   },
   parameters: { docs: {
-    description: { component: 'Show a player, their hand and the current turn. Supply avatars, badges, points and chat in your game’s language.' },
+    description: { component: 'Place a player’s identity, score and turn status at the table edge, or show their hand and chat in a standalone panel.' },
     sections: [
-      { title: 'Basic', stories: ['Default'] },
-      { title: 'Player and status', stories: ['TimerOnly', 'InjectedClock'] },
-      { title: 'Interactions', stories: ['TurnMilestoneNotifications'] },
-      { title: 'States', stories: ['Offline'] },
-      { title: 'Composition', stories: ['InteriorReplacements'] },
+      { title: 'At the table', stories: ['Default', 'Panel', 'Count'] },
     ],
     usage: `### When to use
 Show a player's identity and turn status on its own or inside a GameTable seat region. GameSeat does not position players around the board or enforce turn rules.
+
+The default chip reserves its avatar footprint. Its hidden-card fan is decorative, capped at three backs and absolutely positioned around the avatar. Changing handCount never resizes the chip. Use handDisplay="count" with formatHandCount for localized count text, or "none" to hide the shorthand. Custom hand content overrides handDisplay. Chat is shown only in variant="panel".
 
 ### Clock constraints
 
@@ -71,7 +69,59 @@ export const Default: Story = {
     await expect(canvasElement.querySelector('circle')).toHaveAttribute('stroke-dashoffset', '25');
   },
 };
+export const Panel: Story = {
+  name: 'Player panel', args: { variant: 'panel' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar } from '@jfrader/ui';
+import { GameSeat } from '@jfrader/ui/game-seat';
+
+<GameSeat variant="panel" name="Alex" avatar={<Avatar name="Alex" aria-hidden="true" />}
+  handCount={3} points={35} chat="Your turn" />` } } },
+};
+export const Count: Story = {
+  name: 'Compact hand count', args: { handDisplay: 'count', locale: 'en-US', formatHandCount: (_count, value) => `${value} cards` },
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameSeat } from '@jfrader/ui/game-seat';
+
+<GameSeat name="Alex" handCount={3} handDisplay="count" locale="en-US"
+  formatHandCount={(_count, value) => value + ' cards'} points={35} />` } } },
+  play: async ({ canvas }) => { await expect(canvas.getByText('3 cards')).toBeVisible(); },
+};
+export const Winner: Story = {
+  tags: ['!autodocs'], args: { state: 'winner', turn: undefined, badges: <Badge>Won the trick</Badge> },
+};
+export const Active: Story = {
+  tags: ['!autodocs'], args: { state: 'active', turned: true, badges: <Badge>Your turn</Badge> },
+};
+export const StableFootprint: Story = {
+  tags: ['!autodocs'],
+  play: async ({ canvasElement }) => {
+    const host = canvasElement.ownerDocument.createElement('div');
+    canvasElement.append(host);
+    const root = createRoot(host);
+    const ref = fn();
+    let previous: Element | null = null;
+    let bounds: DOMRect | undefined;
+    try {
+      for (const count of [0, 1, 3, 50, 0]) {
+        flushSync(() => root.render(<GameSeat ref={ref} name="Alex" avatar={<Avatar name="Alex" aria-hidden="true" />}
+          handCount={count} points={count} badges={count > 3 ? <Badge>Won the trick</Badge> : undefined} />));
+        const seat = host.querySelector('[data-ui~="game-seat"]')!;
+        const current = seat.getBoundingClientRect();
+        if (bounds) {
+          await expect(current.width).toBe(bounds.width);
+          await expect(current.height).toBe(bounds.height);
+          await expect(seat).toBe(previous);
+        }
+        bounds = current;
+        previous = seat;
+        await expect(host.querySelectorAll('[data-ui="game-hand-hidden-card"]')).toHaveLength(Math.min(count, 3));
+        await expect(host.querySelector('[data-ui="game-seat-chat"]')).toBeNull();
+        await expect(ref).toHaveBeenCalledWith(seat);
+      }
+    } finally { flushSync(() => root.unmount()); host.remove(); }
+  },
+};
 export const Light: Story = {
+  tags: ['!autodocs'],
   ...Default, name: 'Light theme', globals: { theme: 'light' },
   parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, Badge, ThemeRoot } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
@@ -84,6 +134,7 @@ import { GameSeat } from '@jfrader/ui/game-seat';
 </ThemeRoot>` } } },
 };
 export const Offline: Story = {
+  tags: ['!autodocs'],
   name: 'Offline player',
   args: { turn: undefined, offline: true, dimmed: true, badges: <Badge>Disconnected</Badge>, chat: undefined },
   parameters: { docs: { description: { story: 'Pair a dimmed player seat with a visible disconnected label.' }, source: { language: 'tsx', code: `import { Avatar, Badge } from '@jfrader/ui';
@@ -100,6 +151,7 @@ export const TurnedWithoutTimer: Story = {
   },
 };
 export const TimerOnly: Story = {
+  tags: ['!autodocs'],
   name: 'Turn timer only',
   args: { avatar: undefined },
   parameters: { docs: { description: { story: 'Keep the turn countdown ring when no avatar is supplied.' }, source: { language: 'tsx', code: `import { GameSeat } from '@jfrader/ui/game-seat';
@@ -118,6 +170,7 @@ function ReplacementDiv(props: GameSeatPartProps) { return <div {...props} data-
 function ReplacementName(props: NonNullable<GameSeatSlotProps['name']>) { return <span {...props} data-replacement="true" />; }
 function ReplacementTimer(props: NonNullable<GameSeatSlotProps['timer']>) { return <svg {...props} data-replacement="true" />; }
 export const InteriorReplacements: Story = {
+  tags: ['!autodocs'],
   name: 'Replace the seat interior',
   parameters: { docs: { description: { story: 'Replace the interior elements while retaining the player name and timer semantics.' }, source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { Avatar, Badge } from '@jfrader/ui';
@@ -136,6 +189,7 @@ function ReplacementTimer(props: ComponentPropsWithRef<'svg'>) { return <svg {..
     points: ReplacementDiv, hand: ReplacementDiv, timer: ReplacementTimer, chat: ReplacementDiv }}
   slotProps={{ avatar: { 'data-ui': 'consumer consumer game-seat-avatar' }, name: { 'data-ui': 'consumer consumer' } }}/>` } } },
   args: {
+    variant: 'panel',
     slots: { avatar: ReplacementDiv, name: ReplacementName, badges: ReplacementDiv, points: ReplacementDiv,
       hand: ReplacementDiv, timer: ReplacementTimer, chat: ReplacementDiv },
     slotProps: { avatar: { 'data-ui': 'consumer consumer game-seat-avatar' }, name: { 'data-ui': 'consumer consumer' } },
@@ -152,6 +206,7 @@ function ReplacementTimer(props: ComponentPropsWithRef<'svg'>) { return <svg {..
 
 /** Two explicit remaining-time values, with no internal clock or scheduled notifications. */
 export const InjectedClock: Story = {
+  tags: ['!autodocs'],
   name: 'Synchronized turn clocks',
   render: (args) => <ClockRow>
     <GameSeat {...args} name="Earlier" turn={turn} />
@@ -164,7 +219,7 @@ import { GameSeat } from '@jfrader/ui/game-seat';
 const durationMs = 60000;
 const turn = { remainingMs: durationMs * 0.75, durationMs };
 
-const ClockRow = styled.div({ display: 'flex', gap: vars.space[8] });
+const ClockRow = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[8] });
 
 const common = {
   avatar: <Avatar name="Alex" size="lg" aria-hidden="true" />,
@@ -181,6 +236,7 @@ const common = {
     const circles = canvasElement.querySelectorAll('circle');
     await expect(circles[0]).toHaveAttribute('stroke-dashoffset', '25');
     await expect(circles[1]).toHaveAttribute('stroke-dashoffset', '75');
+    await expect(getComputedStyle(circles[0]!.closest('[data-ui~="game-seat"]')!.parentElement!).flexWrap).toBe('wrap');
     const host = canvasElement.ownerDocument.createElement('div');
     canvasElement.append(host);
     const root = createRoot(host);
@@ -201,6 +257,7 @@ const common = {
   },
 };
 export const RtlAndReducedMotion: Story = {
+  tags: ['!autodocs'],
   name: 'RTL and reduced motion',
   args: { dir: 'rtl', hand: <GameHand.Hidden count={2} size="sm" label="Two hidden cards" playerKey="alex" /> },
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
@@ -273,12 +330,13 @@ function TurnNotifications() {
     <Button onClick={() => { setRemaining(DURATION); setMilestone('started'); }}>Start turn</Button>
     <Button onClick={() => setRemaining(DURATION / 2)}>Half time</Button>
     <Button onClick={() => setRemaining(0)}>End turn</Button>
-    <GameSeat name="Alex" handCount={3} turned={remainingMs !== undefined && remainingMs > 0}
+    <GameSeat variant="panel" name="Alex" handCount={3} turned={remainingMs !== undefined && remainingMs > 0}
       turn={remainingMs === undefined ? undefined : { remainingMs, durationMs: DURATION }}
       onTurnMilestone={setMilestone} chat={<span aria-live="polite">{TURN_MESSAGES[milestone]}</span>} />
   </TurnExample>;
 }
 export const TurnMilestoneNotifications: Story = {
+  tags: ['!autodocs'],
   name: 'Turn announcements',
   render: () => <TurnNotifications />,
   parameters: { docs: { description: { story: 'Start a turn and announce its milestones through a polite live region.' }, source: { language: 'tsx', code: `import { useState } from 'react';
@@ -297,7 +355,7 @@ function TurnNotifications() {
     <Button onClick={() => { setRemaining(DURATION); setMilestone('started'); }}>Start turn</Button>
     <Button onClick={() => setRemaining(DURATION / 2)}>Half time</Button>
     <Button onClick={() => setRemaining(0)}>End turn</Button>
-    <GameSeat name="Alex" handCount={3} turned={remainingMs !== undefined && remainingMs > 0}
+    <GameSeat variant="panel" name="Alex" handCount={3} turned={remainingMs !== undefined && remainingMs > 0}
       turn={remainingMs === undefined ? undefined : { remainingMs, durationMs: DURATION }}
       onTurnMilestone={setMilestone} chat={<span aria-live="polite">{TURN_MESSAGES[milestone]}</span>} />
   </TurnExample>;
@@ -318,6 +376,7 @@ function TurnNotifications() {
 function Replacement(props: GameCardRootProps) { return <div {...props} data-replacement="slot" />; }
 function UnusedReplacement(props: GameCardRootProps) { return <div {...props} data-replacement="component" />; }
 export const Slots: Story = {
+  tags: ['!autodocs'],
   name: 'Replace every part',
   parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { Avatar } from '@jfrader/ui';
@@ -338,6 +397,7 @@ function UnusedReplacement(props: ComponentPropsWithRef<'div'>) {
   slotProps={{ root: { className: 'slot-class', style: { fontWeight: 700 }, title: 'Slot title' },
     name: { id: 'consumer-seat-name', title: 'Player' }, chat: { 'aria-live': 'polite' } }} />` } } },
   args: {
+    variant: 'panel',
     component: UnusedReplacement, slots: { root: Replacement }, hand: null, badges: 0, points: 0, chat: 0,
     className: 'host-class', style: { fontWeight: 400 }, title: 'Host title',
     slotProps: { root: { className: 'slot-class', style: { fontWeight: 700 }, title: 'Slot title' },

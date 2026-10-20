@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useId, useRef, useState, type ComponentPropsWithRef } from 'react';
 import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { GameScore, type GameScorePartProps } from './index';
+import { GameScore, type GameScorePartProps, type GameScoreTableSlotProps } from './index';
 
 import { GameMarks } from '../game-marks';
 import { GameRounds } from '../game-rounds';
@@ -31,22 +31,98 @@ const meta = {
   title: 'Games/GameScore', component: GameScore, tags: ['autodocs'],
   args: { label: 'Score', rows, locale: 'de-DE' },
   parameters: { docs: {
-    description: { component: 'Show named scores and stage labels for players or teams.' },
+    description: { component: 'Compare players across rounds and totals, or show a compact list of scores.' },
     sections: [
-      { title: 'Scores', stories: ['Default', 'Empty'] },
-      { title: 'Composition', stories: ['MatchSummary', 'RowReplacement'] },
+      { title: 'Scoreboard', stories: ['Scoreboard'] },
+      { title: 'Compact totals', stories: ['Default'] },
     ],
     usage: `### Values
 Use the same locale on server and client for number formatting. Stage text is displayed as written. Your application owns scoring rules; updates do not run a count-up animation.
 
+GameScore.Table accepts players with scores keyed by round, explicit totals, and caller-owned leader flags. Supply localized column and state labels. Missing scores show the pending label; zero stays zero. Round labels may contain trump artwork. The table scrolls horizontally when its content exceeds the available width.
+
 ### Keyboard and accessibility
 
-The named group contains a native description list. It adds no keyboard commands or live announcements. Announce score changes in your application when needed.`,
+The compact group contains a native description list. The scoreboard uses a caption, column headers, and player row headers. Neither adds keyboard commands or live announcements. Announce score changes in your application when needed.`,
     source: { language: 'tsx', code: source },
   } },
 } satisfies Meta<typeof GameScore>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+const tableRounds = [
+  { key: 'one', label: '1', state: 'complete' },
+  { key: 'two', label: '2', state: 'complete' },
+  { key: 'three', label: '3', state: 'current' },
+  { key: 'four', label: '4', state: 'upcoming' },
+  { key: 'five', label: '5', state: 'upcoming' },
+] as const;
+const tablePlayers = [
+  { key: 'alex', label: 'Alex', scores: { one: 20, two: 15, three: 0 }, total: 35, isMe: true, leader: true },
+  { key: 'sam', label: 'Sam', scores: { one: 10, two: 20 }, total: 30 },
+];
+const tableLabels = { player: 'Player', total: 'Total', me: 'You', leader: 'Leader', current: 'Current', upcoming: 'Next', pending: '—' };
+
+/** Scores across five rounds with the current lead and local player. */
+export const Scoreboard: Story = {
+  name: 'Five-round scoreboard',
+  render: () => <GameScore.Table caption="Evening match" players={tablePlayers} rounds={tableRounds} labels={tableLabels} locale="en-US" />,
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameScore } from '@jfrader/ui/game-score';
+
+<GameScore.Table caption="Evening match" locale="en-US"
+  rounds={[
+    { key: 'one', label: '1', state: 'complete' },
+    { key: 'two', label: '2', state: 'current' },
+    { key: 'three', label: '3', state: 'upcoming' },
+    { key: 'four', label: '4', state: 'upcoming' },
+    { key: 'five', label: '5', state: 'upcoming' },
+  ]}
+  players={[
+    { key: 'alex', label: 'Alex', scores: { one: 20, two: 0 }, total: 20, isMe: true, leader: true },
+    { key: 'sam', label: 'Sam', scores: { one: 10 }, total: 10 },
+  ]}
+  labels={{ player: 'Player', total: 'Total', me: 'You', leader: 'Leader', current: 'Current', upcoming: 'Next', pending: '—' }} />` } } },
+  play: async ({ canvas }) => {
+    const table = canvas.getByRole('table', { name: 'Evening match' });
+    await expect(within(table).getAllByRole('columnheader')).toHaveLength(7);
+    await expect(within(table).getByRole('rowheader', { name: 'Alex You Leader' })).toBeVisible();
+    await expect(table.querySelector('[data-state="current"][data-ui="game-score-table-cell"]')).toHaveTextContent('0');
+    await expect(table.querySelectorAll('[data-ui="game-score-table-total"]')).toHaveLength(2);
+  },
+};
+
+export const ScoreboardRtl: Story = {
+  tags: ['!autodocs'], globals: { theme: 'light' },
+  render: () => <GameScore.Table dir="rtl" caption="Evening match" players={tablePlayers} rounds={tableRounds} labels={tableLabels} locale="ar-EG" />,
+  play: async ({ canvas }) => {
+    const table = canvas.getByRole('table');
+    await expect(getComputedStyle(table).direction).toBe('rtl');
+    await expect(table.querySelector('[data-ui="game-score-table-total"]')).toHaveTextContent(new Intl.NumberFormat('ar-EG').format(35));
+    const headers = within(table).getAllByRole('columnheader');
+    await expect(headers[0]!.getBoundingClientRect().x).toBeGreaterThan(headers[1]!.getBoundingClientRect().x);
+  },
+};
+function ReplacementTable(props: NonNullable<GameScoreTableSlotProps['table']>) { return <table {...props} data-replacement="table" />; }
+function ReplacementHead(props: NonNullable<GameScoreTableSlotProps['round']>) { return <th {...props} data-replacement="round" />; }
+function ReplacementCell(props: NonNullable<GameScoreTableSlotProps['cell']>) { return <td {...props} data-replacement="cell" />; }
+function ReplacementLeader(props: NonNullable<GameScoreTableSlotProps['leader']>) { return <span {...props} data-replacement="leader" />; }
+const tableRef = fn();
+export const ScoreboardSlots: Story = {
+  tags: ['!autodocs'],
+  render: () => <GameScore.Table caption="Custom scoreboard" players={tablePlayers} rounds={tableRounds} labels={tableLabels}
+    slots={{ root: Replacement, table: ReplacementTable, round: ReplacementHead, cell: ReplacementCell, total: ReplacementCell, leader: ReplacementLeader }}
+    slotProps={{ table: { ref: tableRef, className: 'custom-table', sx: { fontWeight: vars.fontWeight.medium } }, total: { 'data-ui': 'custom-total' } }} />,
+  play: async ({ canvas }) => {
+    const table = canvas.getByRole('table', { name: 'Custom scoreboard' });
+    await expect(table).toHaveAttribute('data-replacement', 'table');
+    await expect(table).toHaveClass('custom-table');
+    await expect(tableRef).toHaveBeenCalledWith(table);
+    await expect(table.querySelectorAll('[data-replacement="round"]')).toHaveLength(5);
+    await expect(table.querySelectorAll('[data-replacement="cell"]')).toHaveLength(12);
+    await expect(table.querySelector('[data-replacement="leader"]')).toHaveTextContent('Leader');
+    await expect(table.querySelector('[data-ui~="custom-total"]')).toHaveAttribute('data-ui', 'game-score-table-total custom-total');
+  },
+};
 
 /** Default score table with formatted numbers and match stage badges. */
 export const Default: Story = {
@@ -67,6 +143,7 @@ export const Default: Story = {
 
 /** Display scores in right-to-left layout with Arabic numeral formatting. */
 export const LightRtl: Story = {
+  tags: ['!autodocs'],
   name: 'Light and RTL',
   globals: { theme: 'light' }, args: { dir: 'rtl', locale: 'ar-EG', rows: [{ key: 'east', label: 'East', value: -1234.5 }] },
   parameters: { docs: { source: { language: 'tsx', code: `import { GameScore } from '@jfrader/ui/game-score';
@@ -83,6 +160,7 @@ export const LightRtl: Story = {
 
 /** An empty score table without rows. */
 export const Empty: Story = {
+  tags: ['!autodocs'],
   name: 'No rows',
   args: { rows: [] },
   parameters: { docs: { description: { story: 'Keep a named score group before any scores are available.' }, source: { language: 'tsx', code: `import { GameScore } from '@jfrader/ui/game-score';
@@ -97,6 +175,7 @@ export const Empty: Story = {
 
 /** Keep a team's score, awards and round history together. */
 export const MatchSummary: Story = {
+  tags: ['!autodocs'],
   name: 'Match summary',
   render: (args) => <Summary>
     <GameScore {...args} />
@@ -125,8 +204,8 @@ const Summary = styled.div({ display: 'grid', gap: vars.space[4] });
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(within(canvas.getByRole('group', { name: 'Score' })).getAllByRole('term')).toHaveLength(2);
-    await expect(canvas.getByRole('group', { name: 'North awards' }).querySelectorAll('[data-ui="game-marks-mark"]')).toHaveLength(3);
-    await expect(within(canvas.getByRole('group', { name: 'North rounds' })).getByRole('listitem')).toHaveTextContent('OpeningWon');
+    await expect(canvas.getByRole('group', { name: 'North awards' }).querySelectorAll('[data-filled="true"]')).toHaveLength(3);
+    await expect(within(canvas.getByRole('group', { name: 'North rounds' })).getByRole('listitem')).toHaveTextContent('1OpeningWon');
   },
 };
 
@@ -194,12 +273,12 @@ export const Contract: Story = {
     const marks = canvas.getByRole('group', { name: 'Marks contract Match' });
     const roundsGroup = canvas.getByRole('group', { name: 'Rounds contract Match' });
     await expect(score.querySelectorAll('.score-name')).toHaveLength(2);
-    await expect(marks.querySelectorAll('.award')).toHaveLength(6);
+    await expect(marks.querySelectorAll('.award')).toHaveLength(5);
     await expect(roundsGroup.querySelector('.round')).toHaveAttribute('data-outcome', 'pending');
     const art = marks.querySelectorAll('[data-ui="game-marks-mark"]');
     await expect(art[0]).toHaveTextContent('0');
     await expect(art[0]!.getBoundingClientRect().top).toBe(art[4]!.getBoundingClientRect().top);
-    await expect(art[5]!.getBoundingClientRect().top).toBeGreaterThan(art[0]!.getBoundingClientRect().top);
+    await expect(marks.querySelector('[data-ui="game-marks-overflow"]')).toHaveTextContent('+1');
     await userEvent.tab();
     const button = canvas.getByRole('button', { name: 'Update summary' });
     await expect(button).toBe(canvasElement.ownerDocument.activeElement);
@@ -209,9 +288,30 @@ export const Contract: Story = {
     await expect(within(score).getAllByRole('term')).toHaveLength(1);
     await expect(within(score).getByRole('term')).toHaveTextContent('0');
     await expect(within(score).getByRole('definition')).toHaveTextContent('42');
-    await expect(marks.querySelectorAll('.award')).toHaveLength(2);
+    await expect(marks.querySelectorAll('[data-filled="true"]')).toHaveLength(2);
     await expect(roundsGroup.querySelector('.round')).toHaveAttribute('data-outcome', 'won');
     await expect(within(roundsGroup).getByText('Victory')).toBeVisible();
+  },
+};
+
+function AriaFixture() {
+  const hostId = useId();
+  const slotId = useId();
+  return <Summary>
+    <span id={hostId}>Match</span><span id={slotId}>North</span>
+    <GameScore label="Score" rows={rows} aria-labelledby={hostId} aria-describedby={hostId}
+      slotProps={{ root: { 'aria-labelledby': slotId, 'aria-describedby': slotId } }} />
+  </Summary>;
+}
+export const AriaComposition: Story = {
+  tags: ['!autodocs'], render: () => <AriaFixture />,
+  play: async ({ canvas, canvasElement }) => {
+    const group = canvas.getByRole('group', { name: 'Score North Match' });
+    const ids = group.getAttribute('aria-labelledby')!.split(' ');
+    await expect(ids).toHaveLength(3);
+    await expect(new Set(ids).size).toBe(3);
+    const descriptions = group.getAttribute('aria-describedby')!.split(' ');
+    await expect(descriptions.map(id => canvasElement.ownerDocument.getElementById(id)?.textContent)).toEqual(['Match', 'North']);
   },
 };
 
@@ -221,6 +321,7 @@ function ReplacementRow(props: ComponentPropsWithRef<'div'> & GameScorePartProps
 
 /** Supply a custom score row for each player. */
 export const RowReplacement: Story = {
+  tags: ['!autodocs'],
   name: 'Custom row',
   parameters: { docs: { description: { story: 'Render score rows through a custom element.' }, source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { GameScore, type GameScorePartProps } from '@jfrader/ui/game-score';
