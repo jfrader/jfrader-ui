@@ -13,6 +13,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { styled, TextField, Textarea } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { SearchField, type SearchFieldProps } from './index';
+import { Button } from '../button';
 
 // Raw fixture buttons must pass the global target-size (WCAG 2.5.8) axe gate in every environment.
 const FixtureButton = styled.button({ minHeight: vars.space[6], minWidth: vars.space[6], paddingBlock: vars.space[1], paddingInline: `calc(${vars.space[5]} / 2)`, boxSizing: 'border-box' });
@@ -23,7 +24,6 @@ const heights = { sm: 32, md: 40, lg: 48 };
 const Stack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: 'min(100%, 320px)' });
 const Toolbar = styled.div({ display: 'flex', gap: vars.space[2], inlineSize: 'min(100%, 16rem)' });
 const ToolbarAction = styled(FixtureButton)({ flexShrink: 0 });
-const usage = '<SearchField label="Search members" value={query} onValueChange={setQuery} placeholder="Name or email" />';
 const meta = {
   title: 'Inputs/SearchField', component: SearchField, tags: ['autodocs'],
   args: { label: 'Search members', placeholder: 'Name or email' },
@@ -31,12 +31,21 @@ const meta = {
   decorators: [(Story) => <Stack><Story /></Stack>],
   parameters: { docs: {
     description: { component: 'Enter a search query and clear it with a button or Escape.' },
-    usage: `- The input is a native searchbox. The caller handles filtering, fetching and debounce.
-- Tab and Shift+Tab move between the input, clear button and page.
-- Enter or Space on clear empties the query and returns focus to the input.
-- Escape clears a nonempty editable query. When empty, Escape remains available to parent dismissals.
-- Enter in the input submits the form natively.`,
-    source: { code: usage },
+    sections: [
+      { title: 'Basic', stories: ['Default'] },
+      { title: 'Clearing', stories: ['Uncontrolled', 'NotClearable'] },
+      { title: 'Results and loading', stories: ['Results', 'Loading'] },
+      { title: 'Keyboard', stories: ['Keyboard'] },
+      { title: 'Sizes and states', stories: ['Sizes', 'Disabled', 'ReadOnly', 'Required', 'Error'] },
+      { title: 'Composition', stories: ['Controlled', 'CustomIcons'] },
+    ],
+    usage: `### When to use
+Use a search field to filter content or submit a query. Your application owns results, fetching and debounce; the field does not provide a results popup or combobox navigation. Keep results and loading status accessible outside the input.
+
+### Keyboard and accessibility
+Give the searchbox an accessible name. Tab and Shift+Tab move between the input, clear button and page. Enter or Space on clear empties the query and returns focus to the input.
+
+Escape clears a nonempty editable query, except during text composition or when a handler prevents it. When empty or not clearable, Escape remains available to parent dismissals. Enter in the input submits its form natively.`,
   } },
 } satisfies Meta<typeof SearchField>;
 export default meta;
@@ -80,6 +89,10 @@ async function expectInputFocus(input: HTMLElement) {
 }
 
 export const Default: Story = {
+  name: 'Member search',
+  parameters: { docs: { description: { story: 'Enter a name or email address to search for members.' }, source: { language: 'tsx', code: `import { SearchField } from '@jfrader/ui';
+
+<SearchField label="Search members" placeholder="Name or email" />` } } },
   play: async ({ canvas }) => {
     const input = canvas.getByRole('searchbox', { name: 'Search members' });
     await expect(input).toHaveAttribute('type', 'search');
@@ -87,6 +100,44 @@ export const Default: Story = {
     await expect(canvas.queryByRole('button')).toBeNull();
   },
 };
+function MemberResults() {
+  const [query, setQuery] = useState('Ada');
+  const members = ['Ada Lovelace', 'Grace Hopper'];
+  const results = members.filter((member) => member.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
+  return <>
+    <SearchField label="Search members" placeholder="Name or email" value={query} onValueChange={setQuery} />
+    <output aria-live="polite">{results.join(', ') || 'No members found.'}</output>
+  </>;
+}
+
+export const Results: Story = {
+  name: 'Filter members',
+  render: () => <MemberResults />,
+  parameters: { docs: { description: { story: 'Filter an application-owned member list and announce the matching names.' }, source: { language: 'tsx', code: `import { useState } from 'react';
+import { SearchField } from '@jfrader/ui';
+
+export function MemberSearch() {
+  const [query, setQuery] = useState('Ada');
+  const members = ['Ada Lovelace', 'Grace Hopper'];
+  const results = members.filter((member) => member.toLocaleLowerCase().includes(query.toLocaleLowerCase()));
+  return <>
+    <SearchField label="Search members" placeholder="Name or email" value={query} onValueChange={setQuery} />
+    <output aria-live="polite">{results.join(', ') || 'No members found.'}</output>
+  </>;
+}` } } },
+};
+
+export const Loading: Story = {
+  name: 'Loading results',
+  render: () => <><SearchField label="Search members" placeholder="Name or email" defaultValue="Ada" /><output aria-live="polite" aria-busy="true">Searching members…</output></>,
+  parameters: { docs: { description: { story: 'Keep the query editable while an application-owned status reports a pending search.' }, source: { language: 'tsx', code: `import { SearchField } from '@jfrader/ui';
+
+<>
+  <SearchField label="Search members" placeholder="Name or email" defaultValue="Ada" />
+  <output aria-live="polite" aria-busy="true">Searching members…</output>
+</>` } } },
+};
+
 export const Populated: Story = { args: { defaultValue: 'Ada' } };
 export const EmptyClearMessage: Story = {
   args: { defaultValue: 'Ada', messages: { clear: '' }, onValueChange: fn() },
@@ -101,6 +152,10 @@ export const EmptyClearMessage: Story = {
 };
 export const Description: Story = { args: { description: 'Search by name or email.' } };
 export const Error: Story = {
+  name: 'Validation error',
+  parameters: { docs: { description: { story: 'Explain why the current query cannot be searched.' }, source: { language: 'tsx', code: `import { SearchField } from '@jfrader/ui';
+
+<SearchField label="Search members" placeholder="Name or email" defaultValue="Ada" description="Search by name or email." error="Enter at least four characters." />` } } },
   args: { defaultValue: 'Ada', description: 'Search by name or email.', error: 'Enter at least four characters.' },
   play: async ({ canvas }) => {
     const input = canvas.getByRole('searchbox');
@@ -110,10 +165,20 @@ export const Error: Story = {
   },
 };
 export const Required: Story = {
+  parameters: { docs: { description: { story: 'Require a query before native form submission.' }, source: { language: 'tsx', code: `import { SearchField } from '@jfrader/ui';
+
+<SearchField label="Search members" placeholder="Name or email" required />` } } },
   args: { required: true },
   play: async ({ canvas }) => { await expect(canvas.getByRole('searchbox')).toBeRequired(); },
 };
 export const Sizes: Story = {
+  parameters: { docs: { description: { story: 'Compare search inputs and clear buttons at each size.' }, source: { language: 'tsx', code: `import { SearchField } from '@jfrader/ui';
+
+<>
+  <SearchField label="Search sm" size="sm" placeholder="Name or email" defaultValue="Ada" />
+  <SearchField label="Search md" size="md" placeholder="Name or email" defaultValue="Ada" />
+  <SearchField label="Search lg" size="lg" placeholder="Name or email" defaultValue="Ada" />
+</>` } } },
   render: (args) => <>{sizes.map((size) => <SearchField {...args} key={size} size={size} label={`Search ${size}`} defaultValue="Ada" />)}</>,
   play: async ({ canvas }) => {
     for (const [index, size] of sizes.entries()) {
@@ -125,6 +190,9 @@ export const Sizes: Story = {
   },
 };
 export const Disabled: Story = {
+  parameters: { docs: { description: { story: 'Disable both the query input and its clear button.' }, source: { language: 'tsx', code: `import { SearchField } from '@jfrader/ui';
+
+<SearchField label="Search members" placeholder="Name or email" defaultValue="Ada" disabled />` } } },
   args: { disabled: true, defaultValue: 'Ada', onValueChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
     await expect(canvas.getByRole('searchbox')).toBeDisabled();
@@ -135,6 +203,10 @@ export const Disabled: Story = {
   },
 };
 export const ReadOnly: Story = {
+  name: 'Read-only query',
+  parameters: { docs: { description: { story: 'Keep a query selectable without allowing edits or clearing.' }, source: { language: 'tsx', code: `import { SearchField } from '@jfrader/ui';
+
+<SearchField label="Search members" placeholder="Name or email" defaultValue="Ada" readOnly />` } } },
   args: { readOnly: true, defaultValue: 'Ada', onValueChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
@@ -149,6 +221,10 @@ export const ReadOnly: Story = {
   },
 };
 export const NotClearable: Story = {
+  name: 'Without clearing',
+  parameters: { docs: { description: { story: 'Keep normal text editing but omit the clear button and Escape clearing.' }, source: { language: 'tsx', code: `import { SearchField } from '@jfrader/ui';
+
+<SearchField label="Search members" placeholder="Name or email" defaultValue="Ada" clearable={false} />` } } },
   args: { clearable: false, defaultValue: 'Ada', onValueChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
@@ -163,6 +239,14 @@ export const NotClearable: Story = {
   },
 };
 export const Controlled: Story = {
+  name: 'Controlled query',
+  parameters: { docs: { description: { story: 'Store the query in React state as it changes.' }, source: { language: 'tsx', code: `import { useState } from 'react';
+import { SearchField } from '@jfrader/ui';
+
+export function MemberSearch() {
+  const [query, setQuery] = useState('');
+  return <SearchField label="Search members" placeholder="Name or email" value={query} onValueChange={setQuery} />;
+}` } } },
   args: { onChange: fn(), onValueChange: fn() }, render: (args) => <ControlledField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
@@ -177,6 +261,10 @@ export const Controlled: Story = {
   },
 };
 export const Uncontrolled: Story = {
+  name: 'Clear a query',
+  parameters: { docs: { description: { story: 'Clear the initial query and continue typing with focus returned to the input.' }, source: { language: 'tsx', code: `import { SearchField } from '@jfrader/ui';
+
+<SearchField label="Search members" placeholder="Name or email" defaultValue="Ada" />` } } },
   args: { defaultValue: 'Ada', onValueChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
@@ -229,8 +317,16 @@ export const DefaultDoesNotReseed: Story = {
   },
 };
 export const Keyboard: Story = {
+  name: 'Keyboard navigation',
+  parameters: { docs: { description: { story: 'Tab through the input and clear button, or press Escape to clear the query.' }, source: { language: 'tsx', code: `import { Button, SearchField } from '@jfrader/ui';
+
+<>
+  <Button type="button">Before</Button>
+  <SearchField label="Search members" placeholder="Name or email" defaultValue="Ada" />
+  <Button type="button">After</Button>
+</>` } } },
   args: { defaultValue: 'Ada', onValueChange: fn(), onChange: fn() },
-  render: (args) => <><FixtureButton type="button">Before</FixtureButton><SearchField {...args} /><FixtureButton type="button">After</FixtureButton></>,
+  render: (args) => <><Button type="button">Before</Button><SearchField {...args} /><Button type="button">After</Button></>,
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('searchbox');
     await userEvent.tab();
@@ -414,7 +510,8 @@ export const RTL: Story = {
 export const ForcedColors: Story = { args: { defaultValue: 'Ada' }, parameters: { docs: { description: { story: 'Enable forced colors in the browser (see docs/qa-gates.md). This check is manual.' } } } };
 export const ReducedMotion: Story = { args: { defaultValue: 'Ada' }, parameters: { docs: { description: { story: 'Enable prefers-reduced-motion: reduce in the browser (see docs/qa-gates.md). This check is manual.' } } } };
 export const CustomIcons: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { SearchField } from '@jfrader/ui';
+  name: 'Custom icons',
+  parameters: { docs: { description: { story: 'Replace the search and clear artwork while keeping the built-in controls.' }, source: { language: 'tsx', code: `import { SearchField } from '@jfrader/ui';
 
 <SearchField
   label="Search members"
