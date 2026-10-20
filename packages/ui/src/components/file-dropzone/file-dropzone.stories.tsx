@@ -92,6 +92,38 @@ export function ReceiptUpload({ upload }: { upload: FileDropzoneUpload }) {
   return <FileDropzone label="Add receipts" description="Drop files or browse."
     note="PDF and image attachments" messages={messages} onUpload={upload} />;
 }`;
+const progressSource = `${messagesSource}
+
+import type { FileDropzoneUpload } from '@jfrader/ui';
+
+export function ReceiptUpload({ uploadUrl }: { uploadUrl: string }) {
+  const upload: FileDropzoneUpload = (item, { signal, onProgress }) =>
+    new Promise<void>((resolve, reject) => {
+      if (!item.file) return reject(new Error('Choose a local file.'));
+      if (signal.aborted) return reject(signal.reason);
+      const request = new XMLHttpRequest();
+      const abort = () => request.abort();
+      const finish = (error?: Error) => {
+        signal.removeEventListener('abort', abort);
+        if (error) reject(error);
+        else resolve();
+      };
+      request.open('POST', uploadUrl);
+      request.upload.onprogress = event => {
+        if (event.lengthComputable) onProgress(event.loaded / event.total * 100);
+      };
+      request.onload = () => request.status >= 200 && request.status < 300
+        ? finish() : finish(new Error('Upload failed. Retry the file.'));
+      request.onerror = () => finish(new Error('Upload failed. Retry the file.'));
+      request.onabort = () => finish(new DOMException('Cancelled', 'AbortError'));
+      signal.addEventListener('abort', abort, { once: true });
+      const body = new FormData();
+      body.append('file', item.file);
+      request.send(body);
+    });
+  return <FileDropzone label="Add receipts" description="Drop files or browse."
+    note="PDF and image attachments" messages={messages} onUpload={upload} />;
+}`;
 const meta = {
   title: 'Inputs/FileDropzone',
   component: FileDropzone,
@@ -117,7 +149,28 @@ const meta = {
         component:
           'Choose, drop or paste files, then manage the selection and upload progress.',
       },
-      usage: '- The surface labels the native file input; it has no custom dropzone role or second picker button. Clicking the surface opens the picker.\n- Tab reaches the input, with a focus ring on the surface, then row actions. Enter/Space open the picker once. ArrowUp/Down preserve the row action without wrapping; Delete/Backspace remove. Escape passes through.\n- Paste accepts files only while focus is inside, excluding editable controls.\n- Upload requests and image previews start only for committed selections. Existing rows never auto-upload.\n- Submit `value` items, not `input.files`: dropped and accumulated files are absent from native FormData. Required validation checks the committed list. Validate uploads on the server.\n- Sizes use Intl with decimal 1000 scaling.\n- Test the OS picker, screen readers, mobile devices and media settings in browser/manual QA.',
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Drag and drop', stories: ['DropAndPaste', 'DragAnnouncement'] },
+        { title: 'File types and size limits', stories: ['AcceptedTypes', 'SizeLimit'] },
+        { title: 'Multiple files', stories: ['Multiple', 'CountLimit'] },
+        { title: 'Upload progress', stories: ['UploadIndeterminate', 'UploadProgress'] },
+        { title: 'Errors', stories: ['CustomValidation'] },
+        { title: 'Disabled and read-only', stories: ['Disabled', 'ReadOnly'] },
+        { title: 'Composition', stories: ['Controlled', 'ListInside', 'FormReset'] },
+      ],
+      usage: `### When to use
+Collect attachments through the file picker, drag and drop, or focused paste. Use a regular file input when a selection list and upload feedback are not needed.
+
+### Limits and uploads
+Validate files on the server as well as in the browser. File sizes use decimal 1000 scaling. Uploads and image previews start only after a selection is committed; existing rows never auto-upload.
+
+Submit the selected items, not input.files: dropped and accumulated files are absent from native FormData. Required validation checks the committed list. Paste accepts files only while focus is inside the dropzone, excluding editable controls.
+
+### Keyboard and accessibility
+Click the surface to open the native picker. Tab reaches the file input, with a focus ring around the surface, then the row actions. Enter/Space open the picker. ArrowUp/ArrowDown move between rows without wrapping and retain the action; Delete/Backspace remove a file. Escape passes through.
+
+Provide localized action labels, validation messages and announcements. Check the OS picker, dragging, screen readers and mobile selection in your application.`,
     },
   },
 } satisfies Meta<typeof FileDropzone>;
@@ -170,7 +223,8 @@ async function dispatchFiles(
 }
 
 export const Default: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: emptySource } } },
+  name: 'Add receipt attachments',
+  parameters: { docs: { description: { story: 'Browse for receipts or drop files onto the surface to build a selection.' }, source: { language: 'tsx', code: emptySource } } },
   play: async ({ canvasElement, userEvent, args }) => {
     const selected = file();
     await userEvent.upload(inputOf(canvasElement), selected);
@@ -268,7 +322,8 @@ export const Single: Story = {
   },
 };
 export const Multiple: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: emptySource } } },
+  name: 'Select multiple files',
+  parameters: { docs: { description: { story: 'Choose several receipts at once or add more files to the current selection.' }, source: { language: 'tsx', code: emptySource } } },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.upload(inputOf(canvasElement), [file('one.pdf'), file('two.pdf')]);
     await expect(within(canvasElement).getAllByRole('listitem')).toHaveLength(2);
@@ -276,9 +331,11 @@ export const Multiple: Story = {
   },
 };
 export const AcceptedTypes: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+  name: 'Accept images, PDFs and text',
+  parameters: { docs: { description: { story: 'Choose an image, PDF or plain-text file; other types are rejected.' }, source: { language: 'tsx', code: `${messagesSource}
 
-<FileDropzone label="Add receipts" messages={messages} accept="IMAGE/*, .PDF, text/plain" />` } } },
+<FileDropzone label="Add receipts" description="Drop files or browse."
+  note="PDF and image attachments" messages={messages} accept="IMAGE/*, .PDF, text/plain" />` } } },
   args: { accept: 'IMAGE/*, .PDF, text/plain' },
   play: async ({ canvasElement, userEvent, args }) => {
     const batch = [
@@ -302,9 +359,11 @@ export const AcceptedTypes: Story = {
   },
 };
 export const SizeLimit: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+  name: 'Reject oversized files',
+  parameters: { docs: { description: { story: 'Try a file above the three-byte limit to see size rejection feedback.' }, source: { language: 'tsx', code: `${messagesSource}
 
-<FileDropzone label="Add receipts" messages={messages} maxSize={3} />` } } },
+<FileDropzone label="Add receipts" description="Drop files or browse."
+  note="PDF and image attachments" messages={messages} maxSize={3} />` } } },
   args: { maxSize: 3 },
   play: async ({ canvasElement, userEvent, args }) => {
     const tooBig = file('large.pdf', 'four');
@@ -321,9 +380,11 @@ export const SizeLimit: Story = {
   },
 };
 export const CountLimit: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+  name: 'Limit the selection count',
+  parameters: { docs: { description: { story: 'Add one file beside an existing receipt; additional files exceed the two-file limit.' }, source: { language: 'tsx', code: `${messagesSource}
 
-<FileDropzone label="Add receipts" messages={messages} maxFiles={2}
+<FileDropzone label="Add receipts" description="Drop files or browse."
+  note="PDF and image attachments" messages={messages} maxFiles={2}
   defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />` } } },
   args: { maxFiles: 2, defaultValue: existing },
   play: async ({ canvasElement, userEvent, args }) => {
@@ -341,9 +402,11 @@ export const CountLimit: Story = {
   },
 };
 export const CustomValidation: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+  name: 'Reject files with an application rule',
+  parameters: { docs: { description: { story: 'Choose a file whose name starts with private to see an application validation message.' }, source: { language: 'tsx', code: `${messagesSource}
 
-<FileDropzone label="Add receipts" messages={messages}
+<FileDropzone label="Add receipts" description="Drop files or browse."
+  note="PDF and image attachments" messages={messages}
   validate={file => file.name.startsWith('private') ? 'Choose a public receipt.' : null} />` } } },
   args: {
     validate: file => (file.name.startsWith('private') ? 'Choose a public receipt.' : null),
@@ -372,6 +435,7 @@ export const Duplicates: Story = {
   },
 };
 export const DropAndPaste: Story = {
+  name: 'Drop or paste attachments',
   play: async ({ canvasElement, userEvent, args }) => {
     const root = rootOf(canvasElement);
     await dispatchFiles(root, 'dragenter', [file()]);
@@ -393,15 +457,17 @@ export const DropAndPaste: Story = {
       source: { language: 'tsx', code: emptySource },
       description: {
         story:
-          'Tests drag/drop and focused paste with DataTransfer events. Test OS dragging and picker dialogs separately in the browser.',
+          'Drop files onto the surface or focus the file input and paste copied files.',
       },
     },
   },
 };
 export const DragAnnouncement: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+  name: 'Announce the drop target',
+  parameters: { docs: { description: { story: 'Drag a file over the surface to hear and see the drop instruction.' }, source: { language: 'tsx', code: `${messagesSource}
 
-<FileDropzone label="Add receipts" messages={messages} dropLabel="Drop receipts here" />` } } },
+<FileDropzone label="Add receipts" description="Drop files or browse."
+  note="PDF and image attachments" messages={messages} dropLabel="Drop receipts here" />` } } },
   args: { dropLabel: 'Drop receipts here' },
   play: async ({ canvasElement, args }) => {
     const root = rootOf(canvasElement);
@@ -449,9 +515,11 @@ export const ExistingUploads: Story = {
   },
 };
 export const ListInside: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+  name: 'Keep the selection inside the surface',
+  parameters: { docs: { description: { story: 'Show an existing receipt and subsequent selections inside the drop surface.' }, source: { language: 'tsx', code: `${messagesSource}
 
-<FileDropzone label="Add receipts" messages={messages} listPlacement="inside"
+<FileDropzone label="Add receipts" description="Drop files or browse."
+  note="PDF and image attachments" messages={messages} listPlacement="inside"
   defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />` } } },
   args: { defaultValue: existing, listPlacement: 'inside' },
 };
@@ -564,7 +632,8 @@ export const LightTheme: Story = {
 
 const neverUpload: FileDropzoneUpload = () => new Promise(() => {});
 export const UploadIndeterminate: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: uploadSource } } },
+  name: 'Upload without a measured total',
+  parameters: { docs: { description: { story: 'Choose a file to show indeterminate progress while an upload is pending.' }, source: { language: 'tsx', code: uploadSource } } },
   args: { onUpload: fn(neverUpload) },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.upload(inputOf(canvasElement), file());
@@ -577,7 +646,8 @@ export const UploadIndeterminate: Story = {
   },
 };
 export const UploadProgress: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: uploadSource } } },
+  name: 'Report upload progress',
+  parameters: { docs: { description: { story: 'Choose a file to see measured progress; the upload handler reports percentages through onProgress.' }, source: { language: 'tsx', code: progressSource } } },
   args: {
     onUpload: fn(async (_item, { onProgress }) => {
       onProgress(45);
@@ -708,14 +778,16 @@ export const UploadAbort: Story = {
   },
 };
 export const Controlled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+  name: 'Keep selected files in application state',
+  parameters: { docs: { description: { story: 'Store the selected items in React state as files are added and removed.' }, source: { language: 'tsx', code: `${messagesSource}
 
 import { useState } from 'react';
 import type { FileDropzoneItem } from '@jfrader/ui';
 
 export function Receipts() {
   const [items, setItems] = useState<FileDropzoneItem[]>([]);
-  return <FileDropzone label="Add receipts" messages={messages}
+  return <FileDropzone label="Add receipts" description="Drop files or browse."
+    note="PDF and image attachments" messages={messages}
     value={items} onValueChange={setItems} />;
 }` } } },
   render: args => <ControlledExample {...args} />,
@@ -753,9 +825,11 @@ export const ControlledRemoveRejects: Story = {
   },
 };
 export const Disabled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+  name: 'Disabled selection',
+  parameters: { docs: { description: { story: 'Show an existing receipt while preventing file selection and removal.' }, source: { language: 'tsx', code: `${messagesSource}
 
-<FileDropzone label="Add receipts" messages={messages} disabled
+<FileDropzone label="Add receipts" description="Drop files or browse."
+  note="PDF and image attachments" messages={messages} disabled
   defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />` } } },
   args: { disabled: true, defaultValue: existing },
   play: async ({ canvasElement, args }) => {
@@ -765,9 +839,11 @@ export const Disabled: Story = {
   },
 };
 export const ReadOnly: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+  name: 'Read-only attachments',
+  parameters: { docs: { description: { story: 'Keep attached receipts available for inspection without accepting selection changes.' }, source: { language: 'tsx', code: `${messagesSource}
 
-<FileDropzone label="Add receipts" messages={messages} readOnly
+<FileDropzone label="Add receipts" description="Drop files or browse."
+  note="PDF and image attachments" messages={messages} readOnly
   defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />` } } },
   args: { readOnly: true, defaultValue: existing },
   play: async ({ canvasElement, userEvent, args }) => {
@@ -788,12 +864,14 @@ export const Required: Story = {
   },
 };
 export const FormReset: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
+  name: 'Reset an attachment form',
+  parameters: { docs: { description: { story: 'Add files, then reset the form to its original receipt selection.' }, source: { language: 'tsx', code: `${messagesSource}
 
 import { Button } from '@jfrader/ui';
 
 <form>
-  <FileDropzone label="Add receipts" messages={messages}
+  <FileDropzone label="Add receipts" description="Drop files or browse."
+    note="PDF and image attachments" messages={messages}
     defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />
   <Button type="reset">Reset</Button>
 </form>` } } },
@@ -816,9 +894,9 @@ export const PersistentSelected: Story = {
   args: { defaultValue: existing },
   parameters: { docs: { source: { language: 'tsx', code: selectedSource } } },
 };
-export const PersistentUploading: Story = { ...UploadProgress };
+export const PersistentUploading: Story = { ...UploadProgress, name: 'Persistent Uploading' };
 export const PersistentFailed: Story = { ...UploadFailed };
-export const PersistentRejections: Story = { ...SizeLimit };
+export const PersistentRejections: Story = { ...SizeLimit, name: 'Persistent Rejections' };
 export const Keyboard: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
 
@@ -1018,6 +1096,7 @@ export const ForcedColors: Story = {
 };
 export const ReducedMotion: Story = {
   ...UploadIndeterminate,
+  name: 'Reduced Motion',
   parameters: {
     docs: {
       source: { language: 'tsx', code: uploadSource },
