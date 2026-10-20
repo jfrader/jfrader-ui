@@ -73,32 +73,51 @@ export interface TimePickerProps
   extends
     Omit<ComponentPropsWithRef<'button'>, 'value' | 'defaultValue' | 'onChange' | 'size' | 'children'>,
     SxProps {
+  /** Controls the selected time in `HH:mm` format; an empty string clears it. */
   value?: string;
+  /** Sets the initial uncontrolled time in `HH:mm` format. Defaults to `09:00`. */
   defaultValue?: string;
+  /** Receives the selected time in `HH:mm` format. */
   onValueChange?: (time: string) => void;
+  /** Controls popup visibility; disabled and read-only fields stay closed. */
   open?: boolean;
+  /** Opens the uncontrolled popup initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receives requests to open or close the popup. */
   onOpenChange?: (open: boolean) => void;
+  /** Sets the interval between selectable times in minutes. Defaults to `15`. */
   minuteStep?: TimePickerMinuteStep;
   /** Add a draggable 24-hour face above the time options. Default: `list`. */
   presentation?: 'list' | 'dial';
+  /** Sets the earliest selectable time in `HH:mm` format, inclusive. Invalid or reversed bounds leave no options. */
   min?: string;
+  /** Sets the latest selectable time in `HH:mm` format, inclusive. Invalid or reversed bounds leave no options. */
   max?: string;
   /** Supply a locale so server and client text match. */
   locale?: string;
+  /** Chooses 12- or 24-hour display. Defaults to the locale's hour cycle. */
   hourCycle?: TimePickerHourCycle;
+  /** Names the time field. */
   label?: ReactNode;
   /** Label placement. `hidden` keeps the accessible name without taking layout space. */
   labelPlacement?: FieldLabelPlacement;
+  /** Displays supporting text below the control. */
   description?: ReactNode;
+  /** Displays a validation message and marks the field invalid. */
   error?: ReactNode;
+  /** Displays content in the control when no time is selected. */
   placeholder?: ReactNode;
+  /** Sets control spacing and text size. Defaults to `md`. */
   size?: TimePickerSize;
+  /** Prevents opening the popup or changing the time. Defaults to `false`. */
   readOnly?: boolean;
   /** Announces required state; the hidden form field does not enforce browser validation. */
   required?: boolean;
+  /** Replaces the clock glyph inside the control. */
   icon?: ReactNode;
+  /** Passes props and `sx` to the field's parts. */
   slotProps?: TimePickerSlotProps;
+  /** Replaces the elements rendering the field's parts. */
   slots?: TimePickerSlots;
 }
 

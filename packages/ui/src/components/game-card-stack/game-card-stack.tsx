@@ -45,12 +45,16 @@ export interface GameCardStackPile {
 }
 
 interface InspectionProps {
+  /** Selects deck artwork, overriding the inherited deck art set. */
   artSet?: string;
+  /** Overrides artwork by `cardArtId`, merged with inherited card art choices. */
   cardArtSets?: Readonly<Record<string, string>>;
+  /** Replaces the pile, inspection trigger and card wrapper elements. */
   slots?: Omit<GameCardStackSlots, 'root'>;
   'data-ui'?: string;
   /** Inspected player key; `null` closes inspection. */
   value?: string | null;
+  /** Sets the initially inspected player key. Defaults to `null` for no inspection. */
   defaultValue?: string | null;
   /** Controlled inspection waits for the caller to accept the request. */
   onValueChange?: (playerKey: string | null) => void;
@@ -60,14 +64,18 @@ interface InspectionProps {
   maxCards?: number;
   /** Preferred card width; defaults to the inherited width or the medium card token. */
   cardWidth?: string;
+  /** Overrides the deck's card-back artwork with a pattern. */
   backPattern?: GameCardProps['backPattern'];
+  /** Passes props and `sx` to the pile, inspection trigger and card wrappers. */
   slotProps?: Omit<GameCardStackSlotProps, 'root'>;
 }
 
 export interface GameCardStackProps extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps, InspectionProps {
+  /** Replaces the root, pile, inspection trigger and card wrapper elements. */
   slots?: GameCardStackSlots;
   /** Replace the root; slots.root takes precedence. */
   component?: ComponentType<GameCardRootProps>;
+  /** Passes props and `sx` to the root, piles, inspection triggers and card wrappers. */
   slotProps?: GameCardStackSlotProps;
   /** Include empty piles to reserve grid positions while cards arrive. */
   piles: readonly GameCardStackPile[];
@@ -76,9 +84,13 @@ export interface GameCardStackProps extends Omit<ComponentPropsWithRef<'div'>, '
 }
 
 export interface GameCardStackPileProps extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps, InspectionProps {
+  /** Identifies the player whose pile opens when `value` matches. */
   playerKey: string;
+  /** Supplies cards in play order; only the newest `maxCards` are rendered. */
   cards: readonly PlayedCard[];
+  /** Names the pile's inspection button for assistive technology. */
   label: string;
+  /** Keeps cards spread without opening inspection. Defaults to `false`. */
   revealed?: boolean;
 }
 

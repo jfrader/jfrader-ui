@@ -13,17 +13,36 @@ export type ArticleListItemVariant = 'headline-time' | 'headline-tag' | 'headlin
 export type ArticleListSize = 'sm' | 'md';
 type ItemAnatomy = { root: 'li'; meta: 'div'; time: 'time'; label: 'span'; headline: 'span'; link: 'a'; place: 'span' };
 type ItemSlots = Omit<PresentationSlots<ItemAnatomy>, 'headline'> & { headline?: ComponentType<ComponentPropsWithRef<'h2'> & { level?: ArticleHeadingLevel }> };
-type ItemLink = { renderLink: RenderArticleLink; slots?: Omit<ItemSlots, 'link'> & { link?: never } } | { renderLink?: never; slots?: ItemSlots };
+type ItemLink = {
+  /** Renders the headline link with its anchor props; cannot be combined with `slots.link`. */
+  renderLink: RenderArticleLink;
+  /** Replaces item elements other than the link supplied by `renderLink`. */
+  slots?: Omit<ItemSlots, 'link'> & { link?: never };
+} | {
+  renderLink?: never;
+  /** Replaces the elements rendering the item and its metadata. */
+  slots?: ItemSlots;
+};
 export type ArticleListItemProps = Omit<ComponentPropsWithRef<'li'>, 'children'> & SxProps & ItemLink & {
+  /** Displays the headline; an empty headline omits the item. */
   headline: ReactNode;
+  /** Links the headline to this destination. */
   href?: string;
+  /** Displays a time label with its machine-readable `dateTime`, except in tag and place variants. */
   time?: PrintedTime;
+  /** Displays a tag in `headline-tag`, `wire` and `stacked` variants. */
   label?: ReactNode;
+  /** Displays a location in the `headline-place` variant. */
   place?: ReactNode;
+  /** Renders the headline as a heading at this level; otherwise uses a `span`. */
   level?: ArticleHeadingLevel;
+  /** Chooses the metadata layout, overriding the list's variant. Defaults to `headline-time` outside a list. */
   variant?: ArticleListItemVariant;
+  /** Sets headline text size, overriding the list's size. Defaults to `sm` for `stacked`, otherwise `md`. */
   size?: ArticleListSize;
+  /** Replaces the item root; `slots.root` takes precedence. */
   component?: ItemSlots['root'];
+  /** Passes props and `sx` to the item and its metadata parts. */
   slotProps?: PresentationParts<ItemAnatomy>;
 };
 type WithEntryId<P> = P extends unknown ? Omit<P, 'id'> & { id: string } : never;
@@ -36,11 +55,24 @@ export interface ArticleListSlotProps {
   root?: PresentationParts<{ root: 'ul' }>['root'];
   item?: Partial<ArticleListItemProps>;
 }
-export type ArticleListProps = Omit<ComponentPropsWithRef<'ul'>, 'children'> & SxProps & ({ items: readonly ArticleListEntry[]; children?: never } | { items?: never; children?: ReactNode }) & {
+export type ArticleListProps = Omit<ComponentPropsWithRef<'ul'>, 'children'> & SxProps & ({
+  /** Supplies keyed article records instead of compound children. A list with no renderable headlines is omitted. */
+  items: readonly ArticleListEntry[];
+  children?: never;
+} | {
+  items?: never;
+  /** Composes article items instead of supplying `items`. */
+  children?: ReactNode;
+}) & {
+  /** Chooses the default item layout. Defaults to `headlines`. */
   variant?: ArticleListVariant;
+  /** Sets the default headline size for items; otherwise each variant chooses its size. */
   size?: ArticleListSize;
+  /** Replaces the list root; `slots.root` takes precedence. */
   component?: ArticleListSlots['root'];
+  /** Replaces the list root and default item root elements. */
   slots?: ArticleListSlots;
+  /** Passes props and `sx` to the list root and repeated items. */
   slotProps?: ArticleListSlotProps;
 };
 const ListContext = createContext<Pick<ArticleListProps, 'variant' | 'size' | 'slots' | 'slotProps'>>({});
