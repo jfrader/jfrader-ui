@@ -437,6 +437,7 @@ const contentStyle = css({
   boxShadow: vars.shadow.overlay,
   padding: vars.space[4],
   overflow: 'auto',
+  overscrollBehavior: 'contain',
   ...floatingSurfaceMotion,
   '&[data-layout="rail"]': {
     gridTemplateColumns: 'minmax(0, auto) minmax(0, 1fr)',
