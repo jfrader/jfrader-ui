@@ -72,13 +72,20 @@ const storyMediaPreferences: Readonly<Record<string, string | undefined>> = {
   'Action Reduced Motion': 'prefers-reduced-motion',
   'Action Button Reduced Motion': 'prefers-reduced-motion',
   'Wallet Reduced Motion': 'prefers-reduced-motion',
+  'Game Score Reduced Motion': 'prefers-reduced-motion',
+  'Game Rounds Reduced Motion': 'prefers-reduced-motion',
+  'Game Marks Reduced Motion': 'prefers-reduced-motion',
+  'Game Score Forced Colors': 'forced-colors',
+  'Game Rounds Forced Colors': 'forced-colors',
+  'Game Marks Forced Colors': 'forced-colors',
+  'Game Seat Forced Colors': 'forced-colors',
 };
 
 beforeEach(async ({ task }) => {
   const preference = storyMediaPreferences[task.name];
   if (!preference) return;
   await cdp().send('Emulation.setEmulatedMedia', {
-    features: [{ name: preference, value: 'reduce' }],
+    features: [{ name: preference, value: preference === 'forced-colors' ? 'active' : 'reduce' }],
   });
 });
 

@@ -88,6 +88,34 @@ export const Count: Story = {
 export const Winner: Story = {
   tags: ['!autodocs'], args: { state: 'winner', turn: undefined, badges: <Badge>Won the trick</Badge> },
 };
+export const WinnerWithTimer: Story = {
+  tags: ['!autodocs'], args: { state: 'winner', turn, badges: <Badge>Won the trick</Badge> },
+  play: async ({ canvas }) => {
+    const seat = canvas.getByRole('group', { name: 'Alex' });
+    await expect(seat).toHaveAttribute('data-state', 'winner');
+    const avatar = seat.querySelector('[data-ui="game-seat-avatar"]')!;
+    const timer = seat.querySelector('[data-ui="game-seat-timer"]')!;
+    await expect(getComputedStyle(timer).stroke).toBe(getComputedStyle(avatar).outlineColor);
+    await expect(timer.querySelector('circle')).toHaveAttribute('stroke-dashoffset', '25');
+  },
+};
+export const ForcedColors: Story = {
+  name: 'Game Seat Forced Colors', tags: ['!autodocs'],
+  args: { state: 'winner', turn, badges: <Badge>Won the trick</Badge> },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(window.matchMedia('(forced-colors: active)').matches).toBe(true);
+    const seat = canvas.getByRole('group', { name: 'Alex' });
+    await expect(seat).toHaveTextContent('Won the trick');
+    const avatar = seat.querySelector('[data-ui="game-seat-avatar"]')!;
+    const timer = seat.querySelector('[data-ui="game-seat-timer"]')!;
+    await expect(getComputedStyle(avatar).outlineStyle).toBe('double');
+    await expect(getComputedStyle(avatar).outlineWidth).toBe('3px');
+    await expect(getComputedStyle(timer).stroke).toBe(getComputedStyle(avatar).outlineColor);
+    await expect(timer).toHaveAttribute('aria-hidden', 'true');
+    await expect(canvasElement.querySelectorAll('[data-ui="game-hand-hidden-card"]')).toHaveLength(3);
+    await expect(canvasElement.getAnimations({ subtree: true })).toHaveLength(0);
+  },
+};
 export const Active: Story = {
   tags: ['!autodocs'], args: { state: 'active', turned: true, badges: <Badge>Your turn</Badge> },
 };

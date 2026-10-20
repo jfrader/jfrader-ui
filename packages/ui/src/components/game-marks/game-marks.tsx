@@ -101,7 +101,7 @@ export function GameMarks({ label, count, mark = '●', max = DEFAULT_MAX_PER_RO
       className={slotProps?.marks?.className}
       css={[marksStyle, slotProps?.marks?.sx]}>
       {Array.from({ length: max }, (_, index) => <Mark {...withoutSx(slotProps?.mark)} key={index} data-filled={index < count ? 'true' : 'false'} data-ui={markIdentity} className={slotProps?.mark?.className} css={[markStyle, slotProps?.mark?.sx]}>{index < count ? mark : null}</Mark>)}
-      {count > max && <span data-ui="game-marks-overflow">+{new Intl.NumberFormat(locale).format(count - max)}</span>}
+      {count > max && <bdi dir="auto" data-ui="game-marks-overflow">{new Intl.NumberFormat(locale, { signDisplay: 'always' }).format(count - max)}</bdi>}
     </Marks>
   </GamePanel>;
 }

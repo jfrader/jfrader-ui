@@ -61,7 +61,7 @@ export interface GameRoundsProps extends Omit<GamePanelProps, 'children'>, Omit<
 const rootStyle = css({ label: 'game-rounds', display: 'grid', gap: vars.space[2], color: vars.color.text, fontFamily: vars.font.sans, fontSize: vars.textSize.sm,
   [FORCED_COLORS]: { color: 'CanvasText' },
 });
-const listStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], padding: 0, margin: 0, listStyle: 'none',
+const listStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], padding: 0, margin: 0, listStyle: 'decimal',
   '[data-variant="strip"] > &': { display: 'grid', gridTemplateColumns: 'repeat(var(--game-rounds-count), minmax(0, 1fr))', gap: 0 },
 });
 const roundStyle = css({ display: 'grid', gap: vars.space[1], padding: vars.space[2], border: `1px solid ${vars.color.borderControl}`, borderRadius: vars.radius.sm,
@@ -93,7 +93,7 @@ export function GameRounds({ label, rounds, outcomeLabels, variant = 'strip', lo
   return <GamePanel {...props} component={component} slots={slots} marker="game-rounds" structure={rootStyle} rootSlot={slotProps?.root}
     attributes={{ role: 'group', 'data-variant': variant, 'aria-labelledby': [labelId, externalLabel].filter(Boolean).join(' ') }}>
     <Label {...withoutSx(slotProps?.label)} id={labelId} data-ui={labelIdentity} className={slotProps?.label?.className} css={slotProps?.label?.sx}>{label}</Label>
-    <List {...withoutSx(slotProps?.list)} role="list" data-ui={listIdentity} style={{ ...slotProps?.list?.style, '--game-rounds-count': Math.max(1, rounds.length) } as import('react').CSSProperties} className={slotProps?.list?.className} css={[listStyle, slotProps?.list?.sx]}>
+    <List {...withoutSx(slotProps?.list)} data-ui={listIdentity} style={{ ...slotProps?.list?.style, '--game-rounds-count': Math.max(1, rounds.length) } as import('react').CSSProperties} className={slotProps?.list?.className} css={[listStyle, slotProps?.list?.sx]}>
       {rounds.map((round, index) => (
         <Round
           {...withoutSx(slotProps?.round)}

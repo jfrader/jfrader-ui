@@ -53,7 +53,42 @@ export const Default: Story = {
     await expect(items[2]).toHaveAttribute('aria-current', 'step');
     await expect(items[2]).toHaveTextContent('3Lead♠Pendiente');
     await expect(getComputedStyle(items[2]!).borderTopStyle).toBe('dashed');
-    await expect(within(group).getByRole('list')).toBeVisible();
+    const list = within(group).getByRole('list');
+    await expect(list).toBeVisible();
+    await expect(list.tagName).toBe('OL');
+    await expect(list).not.toHaveAttribute('role');
+    await expect(getComputedStyle(list).listStyleType).toBe('decimal');
+  },
+};
+
+export const ForcedColors: Story = {
+  name: 'Game Rounds Forced Colors', tags: ['!autodocs'],
+  play: async ({ canvas }) => {
+    await expect(window.matchMedia('(forced-colors: active)').matches).toBe(true);
+    const group = canvas.getByRole('group', { name: 'Rounds' });
+    const items = within(group).getAllByRole('listitem');
+    await expect(items).toHaveLength(5);
+    await expect(items[2]).toHaveAttribute('aria-current', 'step');
+    await expect(getComputedStyle(items[2]!).outlineStyle).toBe('solid');
+    await expect(getComputedStyle(items[2]!).outlineWidth).toBe('2px');
+    for (const item of items) {
+      await expect(getComputedStyle(item).borderTopWidth).toBe('1px');
+      await expect(getComputedStyle(item).borderTopColor).toBe(getComputedStyle(group).color);
+    }
+    await expect(items[0]).toHaveTextContent('Ganada');
+    await expect(items[1]).toHaveTextContent('Perdida');
+    await expect(items[2]).toHaveTextContent('Pendiente');
+  },
+};
+export const ReducedMotion: Story = {
+  name: 'Game Rounds Reduced Motion', tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement }) => {
+    await expect(window.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true);
+    const list = canvas.getByRole('list');
+    await expect(within(list).getAllByRole('listitem')).toHaveLength(5);
+    await expect(list.querySelector('[aria-current="step"]')).toHaveTextContent('3Lead♠Pendiente');
+    await expect(getComputedStyle(list).transitionDuration).toBe('0s');
+    await expect(canvasElement.getAnimations({ subtree: true })).toHaveLength(0);
   },
 };
 

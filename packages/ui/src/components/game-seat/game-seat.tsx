@@ -116,7 +116,7 @@ const fanStyle = css({ position: 'absolute', insetInlineStart: '50%', insetBlock
 const timerStyle = css({
   position: 'absolute', inset: `calc(-1 * ${vars.space[1]})`,
   inlineSize: `calc(100% + 2 * ${vars.space[1]})`, blockSize: `calc(100% + 2 * ${vars.space[1]})`,
-  overflow: 'visible', pointerEvents: 'none', fill: 'none', stroke: vars.color.accent,
+  overflow: 'visible', pointerEvents: 'none', fill: 'none', stroke: `var(--seat-ring-color, ${vars.color.accent})`,
   transform: 'rotate(-90deg)',
   [FORCED_COLORS]: { stroke: 'Highlight' },
 });

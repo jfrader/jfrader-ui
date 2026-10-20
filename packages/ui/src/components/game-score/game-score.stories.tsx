@@ -124,6 +124,80 @@ export const ScoreboardSlots: Story = {
   },
 };
 
+export const ScoreboardDegenerate: Story = {
+  tags: ['!autodocs'],
+  render: () => <Summary>
+    <GameScore.Table caption="Empty scoreboard" players={[]} rounds={[]} labels={tableLabels} />
+    <GameScore.Table caption="Awaiting players" players={[]} rounds={tableRounds} labels={tableLabels} />
+    <GameScore.Table caption="Awaiting rounds" players={[{ key: 'sam', label: 'Sam', scores: {}, total: 0 }]} rounds={[]} labels={tableLabels} />
+    <GameScore.Table caption="Awaiting scores" players={[{ key: 'sam', label: 'Sam', scores: {}, total: 0 }]} rounds={tableRounds} labels={tableLabels} />
+  </Summary>,
+  play: async ({ canvas }) => {
+    for (const [name, columns, rows] of [
+      ['Empty scoreboard', 2, 0], ['Awaiting players', 7, 0], ['Awaiting rounds', 2, 1], ['Awaiting scores', 7, 1],
+    ] as const) {
+      const table = canvas.getByRole('table', { name });
+      await expect(table.tagName).toBe('TABLE');
+      await expect(table).toHaveAccessibleName(name);
+      await expect(table.querySelector('caption')).toHaveTextContent(name);
+      const headers = within(table).getAllByRole('columnheader');
+      await expect(headers).toHaveLength(columns);
+      for (const header of headers) {
+        await expect(header.tagName).toBe('TH');
+        await expect(header).toHaveAttribute('scope', 'col');
+      }
+      await expect(headers[0]).toHaveTextContent('Player');
+      await expect(headers.at(-1)).toHaveTextContent('Total');
+      await expect(within(table).queryAllByRole('rowheader')).toHaveLength(rows);
+      await expect(table.querySelector('tbody')!.children).toHaveLength(rows);
+      await expect(table).not.toHaveTextContent(/NaN|undefined/);
+    }
+    for (const name of ['Awaiting rounds', 'Awaiting scores']) {
+      const table = canvas.getByRole('table', { name });
+      await expect(within(table).getByRole('rowheader', { name: 'Sam' })).toHaveAttribute('scope', 'row');
+      await expect(table.querySelector('[data-ui="game-score-table-total"]')).toHaveTextContent('0');
+    }
+    const pending = canvas.getByRole('table', { name: 'Awaiting scores' }).querySelectorAll('[data-ui="game-score-table-cell"]');
+    await expect(pending).toHaveLength(5);
+    for (const cell of pending) await expect(cell).toHaveTextContent(tableLabels.pending);
+  },
+};
+
+function ScoreMediaFixture() {
+  return <Summary>
+    <GameScore label="Score" rows={rows} locale="de-DE" />
+    <GameScore.Table caption="Evening match" players={tablePlayers} rounds={tableRounds} labels={tableLabels} />
+  </Summary>;
+}
+export const ForcedColors: Story = {
+  name: 'Game Score Forced Colors', tags: ['!autodocs'], render: () => <ScoreMediaFixture />,
+  play: async ({ canvas, canvasElement }) => {
+    await expect(window.matchMedia('(forced-colors: active)').matches).toBe(true);
+    const group = canvas.getByRole('group', { name: 'Score' });
+    await expect(within(group).getAllByRole('definition')).toHaveLength(2);
+    const table = canvas.getByRole('table', { name: 'Evening match' });
+    await expect(within(table).getByRole('columnheader', { name: '3 Current' })).toBeVisible();
+    await expect(within(table).getByRole('rowheader', { name: 'Alex You Leader' })).toBeVisible();
+    for (const cell of table.querySelectorAll('[data-ui="game-score-table-cell"]')) {
+      await expect(getComputedStyle(cell).borderBottomStyle).toBe('solid');
+      await expect(getComputedStyle(cell).borderBottomWidth).toBe('1px');
+      await expect(getComputedStyle(cell).borderBottomColor).toBe(getComputedStyle(group).color);
+    }
+    await expect(canvasElement.getAnimations({ subtree: true })).toHaveLength(0);
+  },
+};
+export const ReducedMotion: Story = {
+  name: 'Game Score Reduced Motion', tags: ['!autodocs'], render: () => <ScoreMediaFixture />,
+  play: async ({ canvas, canvasElement }) => {
+    await expect(window.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true);
+    await expect(canvas.getByRole('group', { name: 'Score' })).toBeVisible();
+    const table = canvas.getByRole('table', { name: 'Evening match' });
+    await expect(table.querySelector('[data-ui="game-score-table-total"]')).toHaveTextContent('35');
+    await expect(getComputedStyle(table).transitionDuration).toBe('0s');
+    await expect(canvasElement.getAnimations({ subtree: true })).toHaveLength(0);
+  },
+};
+
 /** Default score table with formatted numbers and match stage badges. */
 export const Default: Story = {
   name: 'Formatted scores',

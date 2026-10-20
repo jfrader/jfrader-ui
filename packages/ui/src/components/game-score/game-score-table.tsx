@@ -60,6 +60,10 @@ const cellStyle = css({ padding: vars.space[2], textAlign: 'end', fontVariantNum
   '&[data-state="current"]': { backgroundColor: vars.color.accentSoft },
   '&[data-state="upcoming"]': { color: vars.color.textMuted },
   '[data-me="true"] > &': { fontWeight: vars.fontWeight.bold },
+  [FORCED_COLORS]: {
+    borderColor: 'CanvasText',
+    '&[data-state="current"], &[data-state="upcoming"]': { color: 'CanvasText', backgroundColor: 'Canvas' },
+  },
 });
 const nameStyle = css({ padding: vars.space[2], textAlign: 'start', borderBlockEnd: `1px solid ${vars.color.borderControl}`, whiteSpace: 'nowrap' });
 const totalStyle = css({ fontWeight: vars.fontWeight.bold, borderInlineStart: `1px solid ${vars.color.borderControl}` });
