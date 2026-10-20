@@ -23,7 +23,7 @@ function naturalSize(element: HTMLElement): BoardContentSize {
   };
 }
 
-function regionSize(region: HTMLElement): BoardContentSize {
+export function regionSize(region: HTMLElement): BoardContentSize {
   let minimumScale = 0;
   for (const control of region.querySelectorAll<HTMLElement>(CONTROL_SELECTOR)) {
     if (control.closest('[data-ui~="game-table-seat-chrome"]')) continue;

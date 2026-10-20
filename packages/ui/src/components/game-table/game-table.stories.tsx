@@ -23,6 +23,7 @@ import {
 import { REFERENCE_SLOT_KEYS } from './reference-fixtures';
 import { buildBoardLayoutModel } from './layout-model';
 import { fitBoardContent, GAME_TABLE_LIMITS, type BoardMeasurements } from './fit-layout';
+import { regionSize } from './use-board-measurements';
 import { validateSlots } from './table-slots';
 import { expectInside, expectNoOverlap, expectMirroredDirection } from '../../testing/geometry-assertions';
 
@@ -40,6 +41,8 @@ const FlightsViewport = styled(({ viewport: _viewport, ...props }: { viewport: V
 const ReplacementFrame = styled.div({ inlineSize: 1000, blockSize: 800 });
 const SeatCards = styled.div({ position: 'relative', display: 'flex', gap: vars.space[1] });
 const CardsRow = styled.div({ display: 'flex', gap: vars.space[1] });
+const DecorativeFan = styled.div({ position: 'absolute', inset: 0, pointerEvents: 'none' });
+const MeasuredCardControl = styled.button({ display: 'block', inlineSize: 'max-content', blockSize: 'max-content', padding: 0, border: 0, background: 'none' });
 const ResponsiveFrame = styled.div({ inlineSize: '100%', blockSize: 720 });
 const CompactFrame = styled.div({ inlineSize: '100%', blockSize: 320 });
 const SpacedCards = styled.div({ display: 'flex', gap: vars.space[2] });
@@ -685,6 +688,68 @@ export const PlaceCountCompatibility: Story = {
     for (const table of tables) {
       await expect(table).not.toHaveAttribute('players');
       await expect(table).not.toHaveAttribute('places');
+    }
+  },
+};
+
+function DecorativeFanFixture() {
+  const [decorated, setDecorated] = useState(false);
+  return <>
+    <Button onClick={() => setDecorated((value) => !value)}>Toggle decorative fan</Button>
+    <MatrixGrid>{[260, 390].map((width) => <ViewportFrame key={width} viewport={{ width, height: 480 }}>
+      <Table places={2} seats={seatsFor(2)}>
+        <Table.Seat>
+          <MeasuredCardControl type="button" aria-label="Inspect hand card"><GameCard size="md" label="Hand card" /></MeasuredCardControl>
+          {decorated && <DecorativeFan aria-hidden="true" data-decorative-fan="true">
+            <CardsRow>{[0, 1, 2].map((index) => <GameCard key={index} size="sm" label="Decorative card" />)}</CardsRow>
+          </DecorativeFan>}
+        </Table.Seat>
+        <Table.Play><GameCard size="md" label="Played card" value={{ deck: 'french', suit: 'spades', rank: 'A' }} /></Table.Play>
+        <Table.Center>Round 1</Table.Center>
+      </Table>
+    </ViewportFrame>)}</MatrixGrid>
+  </>;
+}
+
+export const DecorativeFanMeasurement: Story = {
+  tags: ['!autodocs'],
+  render: () => <DecorativeFanFixture />,
+  play: async ({ canvasElement, userEvent }) => {
+    const tables = [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]')];
+    await expect(tables).toHaveLength(2);
+    const snapshot = (table: HTMLElement) => {
+      const root = table.getBoundingClientRect();
+      const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
+      const shell = required(table.querySelector<HTMLElement>('[data-ui="game-table-shell"]') ?? undefined);
+      return {
+        fit: table.dataset.layoutFit, scale: table.style.getPropertyValue('--game-table-content-scale'),
+        reserveInline: shell.style.getPropertyValue('--game-table-reserve-inline'),
+        reserveBlock: shell.style.getPropertyValue('--game-table-reserve-block'),
+        surface: { x: surface.x - root.x, y: surface.y - root.y, width: surface.width, height: surface.height },
+        regions: [...table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"], [data-ui="game-table-play"]')].map((region) => ({
+          size: regionSize(region), style: region.getAttribute('style'),
+        })),
+      };
+    };
+    for (const table of tables) {
+      await expectSeatFraming(table, 2, 'decorative fan baseline', 'scaled');
+      for (const seat of table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]')) {
+        await expect(regionSize(seat).minimumScale).toBe(24 / 72);
+      }
+      for (const play of table.querySelectorAll<HTMLElement>('[data-ui="game-table-play"]')) {
+        await expect(regionSize(play).minimumScale).toBe(0);
+      }
+    }
+    const baseline = tables.map(snapshot);
+    const toggle = within(canvasElement).getByRole('button', { name: 'Toggle decorative fan' });
+    for (const expectedCards of [12, 0]) {
+      await userEvent.click(toggle);
+      await expect(canvasElement.querySelectorAll('[data-decorative-fan] [data-ui~="game-card"]')).toHaveLength(expectedCards);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      for (const [index, table] of tables.entries()) {
+        await expectSeatFraming(table, 2, 'decorative fan unchanged', 'scaled');
+        await expect(snapshot(table)).toEqual(required(baseline[index]));
+      }
     }
   },
 };
