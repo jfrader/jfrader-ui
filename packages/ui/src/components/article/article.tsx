@@ -167,7 +167,7 @@ const leadDekStyle = css({ fontSize: vars.editorial.dek });
 const columnsStyle = css({ [ARTICLE_DESKTOP]: { columnCount: 2, columnGap: vars.space[10] } });
 const ledeStyle = css({ fontSize: vars.editorial.lede, display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 'var(--article-lede-lines)', overflow: 'hidden' });
 const desktopLedeStyle = css({ display: 'none', [ARTICLE_DESKTOP]: { display: '-webkit-box' } });
-const mediaStyle = css({ margin: 0, minInlineSize: 0, '& > img, & > picture, & > video': { display: 'block', maxInlineSize: '100%', blockSize: 'auto' } });
+const mediaStyle = css({ margin: 0, minInlineSize: 0, '& > img, & > picture, & > picture > img, & > video': { display: 'block', maxInlineSize: '100%', blockSize: 'auto' } });
 const captionStyle = css({ marginBlockStart: vars.space[2], display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
 const ruleStyle = css({ inlineSize: vars.space[10], borderBlockStart: `${vars.editorial.rule.strong} solid ${articleRule}` });
 

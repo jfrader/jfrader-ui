@@ -11,6 +11,7 @@
 ### Fixed
 
 - `Slider` centers marks on its track in RTL. `SegmentedControl` and `ToggleGroup` keep compact choices at least 32px wide, and `ToggleGroup` contains long options in a scrollable group.
+- `Article` keeps responsive picture images inside their media figure in narrow layouts.
 - `PhoneInput` fits narrow fields, keeps calling codes left-to-right, and contains scrolling inside its country list. `MoneyInput` gives prominent amounts a taller control and keeps long asset codes, limits, and quick-add labels inside narrow fields.
 - `Checkbox` and `Switch` keep a 32px minimum click-target height, including without visible labels. All three choice controls wrap unbroken labels and descriptions within narrow layouts.
 - `MentionInput` contains scrolling inside suggestions and dims disabled text and tokens together with its boundary. `TagInput` keeps its draft inside very narrow fields and includes root padding in its field width.
