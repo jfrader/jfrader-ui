@@ -418,6 +418,24 @@ export const LongLines: Story = {
     await expect(pre.scrollLeft).toBeGreaterThan(0);
   },
 };
+export const LongMetadata: Story = {
+  args: {
+    filename: 'longfilename'.repeat(12),
+    language: 'longlanguage'.repeat(6),
+    code: `const long = '${'source '.repeat(100)}';`,
+    lineNumbers: true,
+  },
+  render: args => <ConstrainedFrame><CodeBlock {...args} /></ConstrainedFrame>,
+  play: async ({ canvas, canvasElement }) => {
+    const block = canvasElement.querySelector<HTMLElement>('[data-ui~="code-block"]')!;
+    const copy = canvas.getByRole('button', { name: 'Copy code' });
+    await expectInside(copy, block);
+    await expect(copy.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
+    await expect(copy.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    await expect(block.scrollWidth).toBeLessThanOrEqual(block.clientWidth);
+    await expect(source(canvasElement).scrollWidth).toBeGreaterThan(source(canvasElement).clientWidth);
+  },
+};
 export const TrailingNewline: Story = {
   args: { code: 'one\ntwo\n', lineNumbers: true },
   play: async ({ canvas, canvasElement }) => {

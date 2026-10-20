@@ -11,6 +11,7 @@ import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside } from '../../testing/geometry-assertions';
 import { Button, type ButtonProps } from '../button';
 import { Progress, type ProgressProps } from '../progress';
 import {
@@ -522,6 +523,23 @@ export const ListInside: Story = {
   note="PDF and image attachments" messages={messages} listPlacement="inside"
   defaultValue={[{ id: 'remote', name: 'invoice.pdf', size: 12500, uploaded: true }]} />` } } },
   args: { defaultValue: existing, listPlacement: 'inside' },
+  play: async ({ canvasElement }) => {
+    const target = rootOf(canvasElement).querySelector<HTMLElement>('[data-dragging]')!;
+    const list = target.querySelector('ul')!;
+    await expectInside(list, target);
+    for (const row of list.querySelectorAll('li')) await expectInside(row, list);
+    await expect(target.scrollWidth).toBeLessThanOrEqual(target.clientWidth);
+  },
+};
+export const NarrowInside: Story = {
+  ...ListInside,
+  args: {
+    ...ListInside.args,
+    size: 'lg',
+    dir: 'rtl',
+    defaultValue: [{ id: 'long', size: 12500, name: 'receipt-from-the-international-conference-and-customer-meeting-in-october.pdf' }],
+  },
+  decorators: [Story => <NarrowFrame><Story /></NarrowFrame>],
 };
 export const ListBelow: Story = {
   args: { defaultValue: existing },

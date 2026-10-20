@@ -230,6 +230,7 @@ const inputStyle = css({
 });
 const mutedStyle = css({ color: vars.color.textMuted });
 const listStyle = css({
+  boxSizing: 'border-box',
   display: 'grid',
   gap: vars.space[2],
   margin: 0,

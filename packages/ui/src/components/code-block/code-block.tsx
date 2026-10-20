@@ -182,7 +182,7 @@ const languageStyle = css({
   fontSize: vars.textSize.xs,
   overflowWrap: 'anywhere',
 });
-const copyStyle = css({ marginInlineStart: 'auto' });
+const copyStyle = css({ marginInlineStart: 'auto', flexShrink: 0 });
 const frameStyle = css({
   position: 'relative',
   display: 'flex',
