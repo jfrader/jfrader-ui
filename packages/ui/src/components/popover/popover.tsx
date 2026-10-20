@@ -131,6 +131,8 @@ const contentStyle = css({
   maxInlineSize: 'min(360px, calc(100vw - 32px))',
   fontSize: vars.textSize.sm,
   overflowY: 'auto',
+  overflowWrap: 'anywhere',
+  overscrollBehavior: 'contain',
 });
 
 function PopoverLayer({
