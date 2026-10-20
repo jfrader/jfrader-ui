@@ -552,7 +552,7 @@ function ComboboxOverlay({ nodeId, ...props }: ComboboxProps & { nodeId: string 
     );
 
     renderedContent = hasRootSlot ? (
-      <WithSx className={rootClassName} styles={rootSx} sx={rootSx}>
+      <WithSx className={rootClassName} styles={rootSx}>
         {(className) => (
           <RootPart
             {...rootRest}

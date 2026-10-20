@@ -491,7 +491,7 @@ function NavigationRoot({
                   active={group.active ?? group.items.some((item) => item.active ?? (activeHref !== undefined && item.href === activeHref))}
                   className={mergedGroupClassName}
                   style={mergedGroupStyle}
-                  css={[groupSlotSx, group.sx]}
+                  css={groupSlotSx}
                   sx={group.sx}
                 >
                   {group.items.map((item, itemIndex) => {
@@ -531,7 +531,7 @@ function NavigationRoot({
                         description={description}
                         className={mergedItemClassName}
                         style={mergedItemStyle}
-                        css={[itemSlotSx, itemCssProp]}
+                        css={itemSlotSx}
                         sx={itemCssProp}
                       >
                         {itemLabel}

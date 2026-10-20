@@ -604,7 +604,7 @@ function SelectOverlay({ nodeId, ...props }: SelectProps & { nodeId: string | un
     renderedContent = (
       <>
         {hasFieldAnatomy ? (
-          <WithSx className={rootClassName} styles={[fieldColumnStyle, rootSx]} sx={rootSx}>
+          <WithSx className={rootClassName} styles={[fieldColumnStyle, rootSx]}>
             {(className) => (
               <RootPart
                 {...rootRest}

@@ -62,7 +62,7 @@ Text has no APG widget pattern, keyboard commands or focus target. Use Button fo
 
 **Customization and limits**
 
-component is shorthand for slots.root; slots.root wins. Replace root, text, frame, glyph or canvas with adapters that forward props/ref and className. slotProps accepts native props and css; root sx applies last. In crossfade the glyph slot wraps the whole label; in slot it repeats across wheel cells. Semantics belong in wrappers, not replacement element tricks.
+component is shorthand for slots.root; slots.root wins. Replace root, text, frame, glyph or canvas with adapters that forward props/ref and className. slotProps accepts native props and sx; root sx applies last. In crossfade the glyph slot wraps the whole label; in slot it repeats across wheel cells. Semantics belong in wrappers, not replacement element tricks.
 
 Short, single-line text only. More than 80 graphemes uses whole-label decoration. Slot durationMs is clamped to 0–2000ms, staggerMs to 0–160ms with a 400ms total cap, and spins to 0–3. Numeric wheels retarget from their current fractional position. Use paused to stop decoration. Sand has fixed allocation and 900ms settling budgets; oversize text falls back to real text. No timers, paragraph animation, particle library or editable-text behavior.`,
       source: { code: "<TextMorph>{saved ? 'Saved' : 'Save'}</TextMorph>", language: 'tsx' },

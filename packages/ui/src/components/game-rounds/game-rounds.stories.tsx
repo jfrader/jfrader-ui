@@ -29,7 +29,7 @@ Pass rounds in display order with stable keys, labels and won, lost or pending o
 The named group contains an ordered list. There is no APG widget, focus target, keyboard binding, animation or live announcement. Choose announcements in your application. The list preserves input order in RTL.
 
 ### Customization
-Use slotProps for root, label, list, round and outcome. Repeated slots apply to every round; data-outcome remains authoritative. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div. Root slot conflicts win; className and style merge. css and sx apply after slot styles.`,
+Use slotProps for root, label, list, round and outcome; each accepts sx. Repeated slots apply to every round; data-outcome remains authoritative. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div. Root slot conflicts win; className and style merge. Consumer sx applies after slot sx.`,
     source: { language: 'tsx', code: source },
   } },
 } satisfies Meta<typeof GameRounds>;

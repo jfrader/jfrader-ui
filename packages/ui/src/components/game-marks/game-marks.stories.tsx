@@ -17,7 +17,7 @@ Supply decorative, noninteractive mark content without IDs: it is repeated count
 The named group shows a number formatted by Intl.NumberFormat. locale defaults to the runtime locale; use the same locale on server and client. Repeated art is hidden from assistive technology. No APG widget, focus target, keyboard bindings, motion or live announcements are added.
 
 ### Customization
-slotProps styles root, label, count, marks and each mark. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div. Root slot conflicts win; className and style merge. css and sx apply after slot styles.`,
+slotProps styles root, label, count, marks and each mark through sx. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div. Root slot conflicts win; className and style merge. Consumer sx applies after slot sx.`,
     source: { language: 'tsx', code: `import { GameMarks } from '@jfrader/ui/game-marks';
 
 <GameMarks label="Awards" count={7} maxPerRow={3} locale="en-US" mark={<span>◆</span>} />` },

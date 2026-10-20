@@ -921,7 +921,7 @@ export const SlotStyling: Story = {
   play: async ({ canvasElement }) => {
     const root = getRoot(canvasElement);
     const style = (element: HTMLElement) => getComputedStyle(element);
-    // Own styles → slotProps.root css → consumer sx.
+    // Own styles → slotProps.root sx → consumer sx.
     await expectPx(style(root).paddingTop, SX_PADDING);
     await expectPx(style(root).paddingLeft, SLOT_OVERRIDE);
     await expectPx(style(parts(root, 'list')[0]!).paddingTop, SLOT_OVERRIDE);

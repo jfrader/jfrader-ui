@@ -3,6 +3,27 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript-compiler';
 
+function styleReferences(node) {
+  if (!node) return [];
+  if (ts.isJsxExpression(node)) return styleReferences(node.expression);
+  if (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isSatisfiesExpression(node))
+    return styleReferences(node.expression);
+  if (ts.isArrayLiteralExpression(node)) return node.elements.flatMap(styleReferences);
+  if (ts.isConditionalExpression(node))
+    return [...styleReferences(node.whenTrue), ...styleReferences(node.whenFalse)];
+  if (ts.isBinaryExpression(node)) {
+    if (node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) return styleReferences(node.right);
+    if ([ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken].includes(node.operatorToken.kind))
+      return [...styleReferences(node.left), ...styleReferences(node.right)];
+  }
+  if (ts.isIdentifier(node)) return node.text === 'undefined' ? [] : [node.text];
+  if (ts.isPropertyAccessExpression(node))
+    return styleReferences(node.expression).map((base) => `${base}.${node.name.text}`);
+  if (ts.isElementAccessExpression(node) && ts.isStringLiteral(node.argumentExpression))
+    return styleReferences(node.expression).map((base) => `${base}.${node.argumentExpression.text}`);
+  return [];
+}
+
 export function checkStylingApi(source, filename = 'component.tsx', { snippet = false } = {}) {
   const file = ts.createSourceFile(filename, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const errors = [];
@@ -30,6 +51,15 @@ export function checkStylingApi(source, filename = 'component.tsx', { snippet = 
     ts.forEachChild(node, (child) => slot(child, seen));
   }
   function visit(node) {
+    if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
+      const attributes = node.attributes.properties.filter(ts.isJsxAttribute);
+      const sx = attributes.find((attribute) => name(attribute.name) === 'sx');
+      const consumer = new Set(styleReferences(sx?.initializer));
+      for (const attribute of attributes.filter((attribute) => ['styles', 'css'].includes(name(attribute.name)))) {
+        const duplicate = styleReferences(attribute.initializer).find((value) => consumer.has(value));
+        if (duplicate) report(attribute, `style value ${duplicate} is applied in both ${name(attribute.name)} and sx`);
+      }
+    }
     if (!snippet && ts.isIdentifier(node) && node.text === 'SlotCss')
       report(node, 'SlotCss is retired; use SxProps');
     if (!snippet && ts.isPropertySignature(node) && name(node.name) === 'css')
@@ -43,6 +73,23 @@ export function checkStylingApi(source, filename = 'component.tsx', { snippet = 
       if (ts.isTemplateExpression(value))
         code = value.head.text + value.templateSpans.map((span) => `placeholder${span.literal.text}`).join('');
       if (code) errors.push(...checkStylingApi(code, `${filename} source.code`, { snippet: true }));
+    }
+    if (!snippet && /\.stories\.tsx$/.test(filename) && (ts.isPropertyAssignment(node) || ts.isShorthandPropertyAssignment(node)) && ['usage', 'description'].includes(name(node.name))) {
+      let ancestor = node.parent;
+      while (ancestor && !(ts.isPropertyAssignment(ancestor) && name(ancestor.name) === 'docs')) ancestor = ancestor.parent;
+      function prose(value, seen = new Set()) {
+        if (ts.isIdentifier(value) && bindings.has(value.text)) {
+          if (!seen.has(value.text)) prose(bindings.get(value.text), new Set(seen).add(value.text));
+          return;
+        }
+        const text = ts.isStringLiteral(value) || ts.isNoSubstitutionTemplateLiteral(value) ? value.text
+          : ts.isTemplateExpression(value) ? value.head.text + value.templateSpans.map((span) => span.literal.text).join('') : undefined;
+        if (text !== undefined) {
+          if (/\bslotProps\b/.test(text) && /\bcss\b/.test(text))
+            report(value, 'published slotProps prose documents css; use sx');
+        } else ts.forEachChild(value, (child) => prose(child, seen));
+      }
+      if (ancestor) prose(ts.isShorthandPropertyAssignment(node) ? node.name : node.initializer);
     }
     ts.forEachChild(node, visit);
   }

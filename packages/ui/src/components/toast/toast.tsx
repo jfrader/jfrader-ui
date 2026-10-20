@@ -301,7 +301,6 @@ function AutomaticViewport(props: ToastProviderProps) {
     const Viewport = props.slots?.viewport ?? ToastViewport;
     return <Viewport {...withoutSx(props.viewportProps)} {...withoutSx(props.slotProps?.viewport)}
       className={[props.slotProps?.viewport?.className, props.viewportProps?.className].filter(Boolean).join(' ')}
-      css={[props.slotProps?.viewport?.sx, props.viewportProps?.sx]}
       sx={[props.slotProps?.viewport?.sx, props.viewportProps?.sx]}
       style={{ ...props.viewportProps?.style, ...props.slotProps?.viewport?.style }} />;
   }
@@ -309,7 +308,6 @@ function AutomaticViewport(props: ToastProviderProps) {
     const Stack = props.slots?.viewport ?? ToastStack;
     return <Stack {...withoutSx(props.viewportProps)} {...withoutSx(props.slotProps?.viewport)}
       className={[props.slotProps?.viewport?.className, props.viewportProps?.className].filter(Boolean).join(' ')}
-      css={[props.slotProps?.viewport?.sx, props.viewportProps?.sx]}
       sx={[props.slotProps?.viewport?.sx, props.viewportProps?.sx]}
       style={{ ...props.viewportProps?.style, ...props.slotProps?.viewport?.style }} />;
   }
@@ -494,7 +492,7 @@ function ToastViewport({ component, slots, slotProps, className, style,  sx, ...
   if (!enabled) return null;
   return (
     <ToastPortal>
-      <WithSx className={[slotClass, className].filter(Boolean).join(' ')} styles={[viewportStyle, slotSx, sx]} sx={sx}>
+      <WithSx className={[slotClass, className].filter(Boolean).join(' ')} styles={[viewportStyle, slotSx]} sx={sx}>
         {(className) => (
           <Root {...props} {...root} style={{ ...style, ...slotStyle }} data-ui="toast-viewport" className={className}>
             {toasts.map((record) => (

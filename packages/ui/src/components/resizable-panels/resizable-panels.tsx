@@ -916,7 +916,7 @@ function ResizablePanelsRoot(props: ResizablePanelsProps) {
     const collapsedSide = primaryCollapsed ? 'start' : secondaryCollapsed ? 'end' : undefined;
     const labelledBy = [slotRest['aria-labelledby'], primary.labelledBy].filter(Boolean).join(' ') || undefined;
     return (
-      <WithSx styles={[separatorStyle, slotSx]} className={slotClassName} sx={slotSx}>
+      <WithSx styles={[separatorStyle, slotSx]} className={slotClassName}>
         {(separatorClass) => (
           <SeparatorPart
             {...slotRest}

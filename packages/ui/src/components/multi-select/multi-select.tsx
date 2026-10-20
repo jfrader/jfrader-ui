@@ -566,7 +566,7 @@ function MultiSelectOverlay(props: MultiSelectProps) {
     renderedContent = (
       <>
         {hasFieldAnatomy ? (
-          <WithSx className={rootClassName} styles={[fieldColumnStyle, rootSx]} sx={rootSx}>
+          <WithSx className={rootClassName} styles={[fieldColumnStyle, rootSx]}>
             {(className) => (
               <RootPart
                 {...rootRest}

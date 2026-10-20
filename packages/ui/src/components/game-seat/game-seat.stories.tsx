@@ -44,7 +44,7 @@ onTurnMilestone schedules at most three one-shot deadlines, never an interval: h
 The seat is a named group, not an APG widget. It adds no keyboard bindings or focus target. The ring is decorative. Supply localized remaining-time text in chat or your own content; announce only turn changes or milestones, not ticks. Mark decorative avatars aria-hidden to avoid repeating the player name. turned, offline and dimmed are exposed as data attributes; supply visible state labels in your slots.
 
 ## Customization
-slotProps accepts native props and css for root, avatar, name, badges, points, hand, timer and chat. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div and are declared outside render. Root slot props win conflicts; className and style merge. Consumer css and sx apply after slot styles.`,
+slotProps accepts native props and sx for root, avatar, name, badges, points, hand, timer and chat. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div and are declared outside render. Root slot props win conflicts; className and style merge. Consumer sx applies after slot sx.`,
     source: { language: 'tsx', code: `import { Avatar, Badge } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
 

@@ -157,7 +157,7 @@ const meta = {
 - Use \`component\` or \`slots.root\` to replace the root. \`slots.root\` wins when both are supplied.
 - Declare replacements outside render, forward all props and ref to one div, and apply your material before the supplied \`className\`.
 - \`slotProps.root\` overrides root props. ClassName and style merge.
-- Style order is material → slot css → consumer sx.`,
+- Style order is material → slot sx → consumer sx.`,
     },
   },
 } satisfies Meta<typeof GameCard>;

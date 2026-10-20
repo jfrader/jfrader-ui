@@ -290,7 +290,7 @@ function BreadcrumbsItem({ ref, href, current, children, className, sx, ...rest 
     <WithSx className={className} styles={itemStyle} sx={sx}>
       {(className) => (
         <Root {...rest} ref={itemRef} data-ui="breadcrumbs-item" className={className}>
-          <WithSx className={separatorRest.className} styles={[separatorStyle, separatorSx]} sx={separatorSx}>
+          <WithSx className={separatorRest.className} styles={[separatorStyle, separatorSx]}>
             {(className) => (
               <Separator {...separatorRest} aria-hidden="true" data-ui="breadcrumbs-separator" className={className}>
                 {separator}

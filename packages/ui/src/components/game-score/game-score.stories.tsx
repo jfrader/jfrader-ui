@@ -39,7 +39,7 @@ Pass rows with stable keys, labels, numeric values and optional stage text. Valu
 The named group contains a native description list. It adds no focus target or keyboard bindings and does not announce updates. Choose a live region in your application when needed. No motion is used.
 
 ### Customization
-Use slotProps for root, label, list, row, name, value and stage. Repeated slots apply to every row. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div. Root slot conflicts win; className and style merge. css and sx apply after slot styles.`,
+Use slotProps for root, label, list, row, name, value and stage; each accepts sx. Repeated slots apply to every row. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div. Root slot conflicts win; className and style merge. Consumer sx applies after slot sx.`,
     source: { language: 'tsx', code: source },
   } },
 } satisfies Meta<typeof GameScore>;
