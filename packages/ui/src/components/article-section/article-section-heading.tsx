@@ -19,15 +19,32 @@ type Anatomy = {
 export type ArticleSectionHeadingSlots = Omit<PresentationSlots<Anatomy>, 'heading'> & { heading?: ComponentType<PresentationHeadingProps> };
 export type ArticleSectionHeadingSlotProps = PresentationParts<Anatomy>;
 export type ArticleSectionHeadingProps = Omit<ComponentPropsWithRef<'header'>, 'title' | 'children'> & SxProps & {
+  /** Sets the section heading content. Empty content renders nothing. */
   title: ReactNode;
+  /** Sets the title's heading level. Defaults to `2`. */
   level?: ArticleHeadingLevel;
+  /** Adds or removes the rule below the header. Defaults to `ruled`. */
   variant?: 'ruled' | 'plain';
+  /** Adds a topic label above the title. */
   kicker?: ReactNode;
+  /** Makes the title a link to this destination. */
   href?: string;
+  /** Adds content below the title, such as a section action. */
   accessory?: ReactNode;
+  /** Replaces the outer header element. `slots.root` takes precedence. */
   component?: ArticleSectionHeadingSlots['root'];
+  /** Applies props and styles to the named heading parts. */
   slotProps?: ArticleSectionHeadingSlotProps;
-} & ({ renderLink: RenderArticleLink; slots?: Omit<ArticleSectionHeadingSlots, 'link'> & { link?: never } } | { renderLink?: never; slots?: ArticleSectionHeadingSlots });
+} & ({
+  /** Renders the title link with a custom link renderer instead of `slots.link`. */
+  renderLink: RenderArticleLink;
+  /** Replaces the heading parts. Use `renderLink` to replace the title link in this mode. */
+  slots?: Omit<ArticleSectionHeadingSlots, 'link'> & { link?: never }
+} | {
+  renderLink?: never;
+  /** Replaces the header, kicker, title, link and accessory elements. */
+  slots?: ArticleSectionHeadingSlots
+});
 const rootStyle = css({ minInlineSize: 0, display: 'flex', flexDirection: 'column', alignItems: 'start', gap: vars.space[3], color: vars.color.text, overflowWrap: 'anywhere' });
 const ruledStyle = css({ paddingBlockEnd: vars.space[3], borderBlockEnd: `${vars.editorial.rule.strong} solid ${articleRule}` });
 const headingStyle = css({ margin: 0, fontFamily: articleHeadingFont, fontSize: vars.editorial.headline.secondary, fontWeight: vars.fontWeight.semibold, lineHeight: vars.lineHeight.tight, overflowWrap: 'anywhere', maxInlineSize: '100%' });

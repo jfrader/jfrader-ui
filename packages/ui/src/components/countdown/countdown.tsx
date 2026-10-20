@@ -44,15 +44,25 @@ export interface CountdownSlots {
 export interface CountdownProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   /** Exact instant: epoch milliseconds, Date, or an ISO date-time with Z or an explicit offset. */
   target: Date | number | string;
+  /** Chooses large time cells or a compact pill. Defaults to `display`. */
   variant?: CountdownVariant;
+  /** Selects time units in days-to-seconds order. Defaults to all units, including when empty. */
   units?: readonly CountdownUnit[];
+  /** Sets the heading above the timer. Defaults to "Time remaining". */
   label?: ReactNode;
+  /** Sets the locale for numbers and spoken duration text. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Sets visible unit-name length. Defaults to `long` for `display`, otherwise `narrow`. */
   unitDisplay?: 'long' | 'short' | 'narrow';
+  /** Replaces the time cells after completion. Defaults to "Live now". */
   completeLabel?: ReactNode;
+  /** Supplies completion text for assistive technology when `completeLabel` is not text. Defaults to "Complete". */
   completeText?: string;
+  /** Shows a placeholder before the first clock sample. Defaults to "—". */
   pendingLabel?: ReactNode;
+  /** Shows a fallback for an invalid target or clock sample. Defaults to "Unavailable". */
   invalidLabel?: ReactNode;
+  /** Supplies the accessible description for an invalid target or clock sample. Defaults to "Unavailable". */
   invalidText?: string;
   /** Clock source in epoch milliseconds. Background callbacks run when execution next becomes possible. */
   clock?: () => number;
@@ -60,9 +70,13 @@ export interface CountdownProps extends Omit<ComponentPropsWithRef<'div'>, 'chil
   initialNow?: number;
   /** Once per resolved target identity, including a target already elapsed at mount. */
   onComplete?: (targetEpochMs: number) => void;
+  /** Announces completion through a polite live region. Defaults to `false`. */
   announceCompletion?: boolean;
+  /** Adds a decorative icon beside the completion label. */
   completionIcon?: ReactNode;
+  /** Replaces the label, time cells and completion elements. */
   slots?: CountdownSlots;
+  /** Applies classes and `sx` styles to the named countdown parts. */
   slotProps?: Partial<
     Record<
       | /** Header label displayed above the countdown. */
