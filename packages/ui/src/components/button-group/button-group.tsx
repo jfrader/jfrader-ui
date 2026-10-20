@@ -53,10 +53,12 @@ export type ButtonGroupPresentation = 'joined' | 'floating' | 'expanding';
 
 export type ButtonGroupItemRecord =
   | Readonly<Omit<ButtonGroupItemProps, 'children' | 'label'> & {
+      /** Display the action text and use it as the collapsed label when it is a string. */
       label: ReactNode;
       href?: never;
     }>
   | Readonly<Omit<ButtonGroupLinkProps, 'children' | 'label'> & {
+      /** Display the link text and use it as the collapsed label when it is a string. */
       label: ReactNode;
     }>;
 
@@ -93,19 +95,30 @@ export interface ButtonGroupBaseProps extends Omit<ComponentPropsWithRef<'div'>,
   onValueChange?: (value: string) => void;
   /** Action id shown at rest; defaults to the first enabled icon-bearing action. */
   restValue?: string;
+  /** Set the shared button treatment. Defaults to `outline` when joined, otherwise `ghost`. */
   variant?: ButtonVariant;
+  /** Set the shared button color tone. Defaults to `neutral`. */
   tone?: ButtonTone;
+  /** Set the shared button dimensions. Defaults to `md`. */
   size?: ButtonSize;
+  /** Arrange actions horizontally or vertically. Defaults to `horizontal`. */
   orientation?: ButtonGroupOrientation;
+  /** Hide icon-bearing action labels when a horizontal joined group overflows. Defaults to `true`. */
   collapseLabels?: boolean;
+  /** Disable every action and the menu trigger. Defaults to `false`. */
   disabled?: boolean;
+  /** Control whether the group's menu is open. */
   open?: boolean;
+  /** Open the uncontrolled menu initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receive requests to open or close the menu. */
   onOpenChange?: (open: boolean) => void;
+  /** Position the menu relative to its trigger. Defaults to `bottom-start`. */
   placement?: Placement;
 }
 
 export interface ButtonGroupCompoundProps extends ButtonGroupBaseProps {
+  /** Compose the group's action, label, trigger, and menu parts. */
   children?: ReactNode;
   label?: never;
   items?: never;
@@ -120,26 +133,40 @@ export interface ButtonGroupEasyProps extends ButtonGroupBaseProps {
   /** Action items or links rendered in order. */
   items: readonly ButtonGroupItemRecord[];
   children?: never;
+  /** Replace the wrapper element; `slots.root` takes precedence. */
   component?: ButtonGroupSlots['root'];
+  /** Replace the generated root, action buttons, or links. */
   slots?: ButtonGroupSlots;
+  /** Pass props to the generated root, action buttons, or links. */
   slotProps?: ButtonGroupSlotProps;
 }
 
 export type ButtonGroupProps = ButtonGroupCompoundProps | ButtonGroupEasyProps;
 export interface ButtonGroupItemProps extends Omit<ButtonProps, 'render'> {
+  /** Hide the visible label and show it in a tooltip. Defaults to `false`. */
   iconOnly?: boolean;
+  /** Name the action for assistive technology and its collapsed-label tooltip. */
   label?: string;
+  /** Reserve label width for these alternate texts to prevent resizing. */
   reserveLabels?: readonly string[];
 }
 export interface ButtonGroupLinkProps extends Omit<ComponentPropsWithRef<'a'>, 'color'>, SxProps {
   href: string;
+  /** Prevent navigation and remove the link from keyboard focus, also inheriting group disablement. */
   disabled?: boolean;
+  /** Override the group's button treatment for this link. */
   variant?: ButtonVariant;
+  /** Override the group's color tone for this link. */
   tone?: ButtonTone;
+  /** Override the group's button dimensions for this link. */
   size?: ButtonSize;
+  /** Hide the visible label and show it in a tooltip. Defaults to `false`. */
   iconOnly?: boolean;
+  /** Name the link for assistive technology and its collapsed-label tooltip. */
   label?: string;
+  /** Display an icon before the link text. */
   startIcon?: ReactNode;
+  /** Reserve label width for these alternate texts to prevent resizing. */
   reserveLabels?: readonly string[];
 }
 export interface ButtonGroupLabelProps
@@ -148,6 +175,7 @@ export type ButtonGroupTriggerProps = Omit<ButtonGroupItemProps, 'loading' | 're
   ({ 'aria-label': string } | { 'aria-labelledby': string });
 export interface ButtonGroupContentProps extends Omit<MenuContentProps, 'role'> {}
 export interface ButtonGroupMenuItemProps extends MenuItemProps {
+  /** Set the menu action's semantic color tone. */
   tone?: MenuItemTone;
 }
 export interface ButtonGroupSeparatorProps extends MenuSeparatorProps {

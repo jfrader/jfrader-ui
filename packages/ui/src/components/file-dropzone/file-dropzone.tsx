@@ -105,37 +105,65 @@ export type FileDropzoneSlots = Omit<FieldSlots<FileDropzoneAnatomy>, 'action' |
 
 export interface FileDropzoneProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
+  /** Control the displayed file list. */
   value?: FileDropzoneItem[];
+  /** Seed the uncontrolled file list. Defaults to an empty list. */
   defaultValue?: FileDropzoneItem[];
+  /** Receive the next file list after additions or removals. */
   onValueChange?: (items: FileDropzoneItem[]) => void;
+  /** Receive rejected files with their validation codes and messages. */
   onReject?: (rejections: FileRejection[]) => void;
+  /** Filter picked, dropped, and pasted files by comma-separated extensions or MIME types. */
   accept?: string;
+  /** Allow adding several files at once. Defaults to `true`. */
   multiple?: boolean;
+  /** Limit the total file count. Defaults to 5 for omitted or invalid values. */
   maxFiles?: number;
+  /** Reject files larger than this many bytes. Omit for no size limit. */
   maxSize?: number;
+  /** Return a rejection message for a file, or `null` to accept it. */
   validate?: (file: File) => string | null;
+  /** Upload accepted files with an abort signal and progress reporting from 0 to 100. */
   onUpload?: FileDropzoneUpload;
+  /** Place the file list below or inside the drop target. Defaults to `below`. */
   listPlacement?: 'below' | 'inside';
+  /** Hide the description and show a file count at this positive threshold, except during dragging. */
   compactAt?: number;
+  /** Label the file input and display the selection prompt. */
   label?: ReactNode;
+  /** Show supporting text beneath the selection prompt. */
   description?: ReactNode;
+  /** Show an additional note within the drop target. */
   note?: ReactNode;
+  /** Show and announce this prompt while files are dragged over the target. */
   dropLabel?: ReactNode;
+  /** Show an error and mark the file input invalid. */
   error?: ReactNode;
+  /** Supply action labels, validation messages, and status announcements. */
   messages: FileDropzoneMessages;
+  /** Choose the locale used to format file sizes. */
   locale?: string;
+  /** Prevent file selection, removal, and retries. Defaults to `false`. */
   disabled?: boolean;
+  /** Keep files visible but prevent selection, removal, and retries. Defaults to `false`. */
   readOnly?: boolean;
+  /** Mark the native file input as required. Defaults to `false`. */
   required?: boolean;
+  /** Set the drop target's padding. Defaults to `md`. */
   size?: FileDropzoneSize;
+  /** Accept files pasted into the dropzone. Defaults to `true`. */
   paste?: boolean;
+  /** Render the fallback file icon when no usable preview is available. */
   renderFileIcon?: (item: FileDropzoneItem) => ReactNode;
+  /** Name the native file input for form submission. */
   name?: string;
+  /** Access the hidden native file input. */
   inputRef?: Ref<HTMLInputElement>;
   /** Replace the wrapper div; `slots.root` takes precedence. */
   component?: FileDropzoneSlots['root'];
   /** Replace generated parts with components that forward props and ref. */
   slots?: FileDropzoneSlots;
+  /** Pass props to the drop target, file rows, upload controls, and field parts. */
   slotProps?: FileDropzoneSlotProps;
 }
 
