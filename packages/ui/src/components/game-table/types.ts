@@ -32,6 +32,6 @@ export interface BoardLayoutModel {
   surface: BoardSurface;
   playerCount: number;
   seatConfig: BoardSeatGeometryConfig;
-  fit: 'measuring' | 'fitted' | 'insufficient-space';
+  fit: 'measuring' | 'fitted' | 'scaled' | 'insufficient-space';
   seatGeometries: BoardSeatGeometry[];
 }

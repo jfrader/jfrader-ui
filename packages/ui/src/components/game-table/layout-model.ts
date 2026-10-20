@@ -14,7 +14,7 @@ export const buildBoardLayoutModel = ({ surface, totalSeats, measurement }: {
     playRadiusX: fitted?.playRadiusX ?? 0, playRadiusY: fitted?.playRadiusY ?? 0,
     scale: fitted?.scale ?? 1, centerScale: fitted?.centerScale ?? 1, gap: fitted?.gap ?? 0 };
   let fit: BoardLayoutModel['fit'] = 'measuring';
-  if (fitted) fit = fitted.fits ? 'fitted' : 'insufficient-space';
+  if (fitted) fit = !fitted.fits ? 'insufficient-space' : fitted.scale < 1 ? 'scaled' : 'fitted';
   return {
     surface, playerCount, seatConfig, fit, seatGeometries,
   };

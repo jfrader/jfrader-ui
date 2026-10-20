@@ -31,20 +31,24 @@ type SeatInput<T extends SeatLike> =
     seats?: never;
   };
 
+type TablePlaceCount = {
+  /** Integer number of places >= 2, including empty seats. Takes precedence over `players`. */
+  places?: number;
+  /** @deprecated For one release. Use `places={4}` instead; `places` wins when both are passed. */
+  players?: number;
+} & ({ places: number } | { players: number });
+
 export type GameTableProps<T extends SeatLike = SeatLike> =
-  GameTablePartProps & SeatInput<T> & DeckArtOptions & {
-    /** Integer number of places >= 2, including empty seats. */
-    players: number;
+  GameTablePartProps & SeatInput<T> & DeckArtOptions & TablePlaceCount & {
     /** Number of round-robin teams for `seats`. Defaults to 2; use 1 for free-for-all. Prebuilt `seatSlots` keep their teams. */
     teamCount?: number;
     /** Match geometry or waiting-room geometry. Defaults to `match`. */
     surface?: BoardSurface;
     /** Content inside the felt, centred on its edge (default), or outside it. */
     seatPlacement?: 'inside' | 'edge' | 'outside';
-    /** Preferred block-axis space. Yields to zero before cards cross GAME_TABLE_LIMITS.minimumCardWidthPx.
-     * data-clearance="reduced" declares this concession. If floors still cannot fit,
-     * data-layout-fit="insufficient-space" declares possible overflow/collisions; floors are preserved.
-     * The floor covers normal-flow GameCard content in local CSS pixels, before external ancestor transforms.
+    /** Preferred block-axis space. Yields to zero if control floors cannot fit.
+     * `data-clearance="reduced"` declares this concession. Cards use preferred sizes and may scale below `sm`.
+     * `data-layout-fit="scaled"` declares reduced content; `insufficient-space` declares a control-floor failure.
      */
     clearance?: CSSProperties['paddingBlock'];
     /** Order for `seats`. Prebuilt `seatSlots` already carry their visual order. */
@@ -61,7 +65,6 @@ const rootStyle = css({
   inlineSize: '100%',
   blockSize: '100%',
   maxBlockSize: '100%',
-  overflow: 'hidden',
   minBlockSize: 0,
   color: vars.color.text,
   backgroundColor: vars.color.bg,
@@ -86,7 +89,6 @@ const shellStyle = css({
   boxSizing: 'border-box',
   paddingBlock: 'calc(var(--game-table-seat-clearance) + var(--game-table-reserve-block, 0px))',
   paddingInline: 'var(--game-table-reserve-inline, 0px)',
-  maxInlineSize: 'var(--game-table-shell-max-width)',
   marginInline: 'auto',
   alignItems: 'center',
   justifyContent: 'center',
@@ -95,9 +97,7 @@ const surfaceStyle = css({
   position: 'relative',
   boxSizing: 'border-box',
   inlineSize: 'var(--game-table-width)',
-  maxInlineSize: 'var(--game-table-max-width)',
   blockSize: 'var(--game-table-height)',
-  maxBlockSize: 'min(var(--game-table-max-height), 100%)',
   borderRadius: '50%',
   border: `var(--game-table-border) solid ${vars.color.border}`,
   outline: `var(--game-table-outline) solid ${vars.color.surfaceRaised}`,
@@ -166,8 +166,8 @@ const headerStyle = css({
   gap: 'var(--game-table-top-gap)', marginBlockEnd: 'var(--game-table-top-margin)',
   '[data-surface="lobby"] > &': { transform: 'translateY(calc(0px - var(--game-table-padding-top)))' },
 });
-const dockStyle = css({ marginBlockStart: 'var(--game-table-bottom-margin)', inlineSize: '100%', maxInlineSize: `calc(${vars.space[4]} * 58)`, marginInline: 'auto' });
-const footerStyle = css({ marginBlockStart: `calc(${vars.space[4]} * 0.8)`, inlineSize: '100%', maxInlineSize: `calc(${vars.space[4]} * 56)`, marginInline: 'auto' });
+const dockStyle = css({ marginBlockStart: 'var(--game-table-bottom-margin)', inlineSize: '100%', marginInline: 'auto' });
+const footerStyle = css({ marginBlockStart: `calc(${vars.space[4]} * 0.8)`, inlineSize: '100%', marginInline: 'auto' });
 const floatingStyle = css({
   position: 'absolute', inset: 0, zIndex: 4, pointerEvents: 'none',
   '& > *': { pointerEvents: 'auto' },
@@ -254,11 +254,11 @@ function collectRegions(children: ReactNode): ReactElement<GameTableSeatProps>[]
 }
 
 export function GameTable<T extends SeatLike>({
-  seats, seatSlots: suppliedSlots, players, teamCount = 2, surface = 'match', turnDirection, clearance = 0,
+  seats, seatSlots: suppliedSlots, places, players, teamCount = 2, surface = 'match', turnDirection, clearance = 0,
   children, seatPlacement = 'edge', style, artSet, cardArtSets, ...rest
 }: GameTableProps<T>) {
   const { surfaceRef, measurement } = useBoardMeasurements(rest.slots?.root ?? rest.component);
-  const seatCount = resolveSeatCount(players);
+  const seatCount = resolveSeatCount(places ?? players ?? NaN);
   const slots = useMemo(() => suppliedSlots ?? buildAlternatingSlots(seats ?? [], seatCount, resolveTableTurnDirection(turnDirection), teamCount),
     [suppliedSlots, seats, seatCount, turnDirection, teamCount]);
   const flightRegistry = useFlightRegistry();
@@ -271,7 +271,7 @@ export function GameTable<T extends SeatLike>({
     return () => { flightRegistry.tables.delete(node); flightRegistry.notify(); };
   }, [flightRegistry, surfaceRef, slots]);
   if (slots.length !== seatCount) {
-    throw new Error('GameTable requires one slot per place. Pass fewer seats to fill empty places, or exactly players seatSlots.');
+    throw new Error('GameTable requires one slot per place. Pass fewer seats to fill empty places, or exactly places seatSlots.');
   }
   validateSlots(slots);
   const regions = collectRegions(children);
@@ -285,7 +285,7 @@ export function GameTable<T extends SeatLike>({
     throw new Error(`GameTable has no slot named "${region.props.slotKey}".`);
   }
   const layout = buildBoardLayoutModel({
-    surface, totalSeats: players, measurement,
+    surface, totalSeats: seatCount, measurement,
   });
   const variables: TableVariables = {
     '--game-table-seat-clearance': typeof clearance === 'number' ? `${clearance}px` : clearance,

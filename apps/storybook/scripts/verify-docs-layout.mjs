@@ -11,6 +11,7 @@ const cases = [
     fontFamily: 'monospace',
     viewports: [{ width: 390, height: 844 }, { width: 768, height: 900 }, { width: 1440, height: 900 }],
   },
+  { id: 'games-gametable--docs', primary: '[data-ui~="game-table"]', containPreview: true },
   { id: 'games-gamehand--docs', primary: '[data-ui~="game-hand"]' },
   { id: 'games-gamecardstack--docs', primary: '[data-ui~="game-card-stack"]' },
   { id: 'games-gameseat--docs', primary: '[data-ui~="game-seat"]' },
@@ -63,6 +64,11 @@ let browser;
 try {
   const baseURL = process.env.STORYBOOK_URL ?? server.resolvedUrls.local[0];
   const index = await (await fetch(new URL('index.json', baseURL))).json();
+  const publishedTables = Object.values(index.entries)
+    .filter((entry) => entry.title === 'Games/GameTable' && entry.type === 'story' && entry.tags.includes('autodocs'))
+    .map((entry) => entry.id).sort();
+  assert.deepEqual(publishedTables, ['games-gametable--compact-four-plays', 'games-gametable--default'],
+    'GameTable keeps QA and matrix stories out of its docs page');
   const detailsEntries = Object.values(index.entries).filter(({ title }) => title === editableDetails.title);
   assert.ok(detailsEntries.filter(({ type }) => type === 'story').length > 0,
     'EditableDetails examples are indexed under one navigation entry');
@@ -78,7 +84,8 @@ try {
   page.setDefaultTimeout(30_000);
 
   for (const { id, primary, containPreview, verifyPreviewOverflow, fontFamily, viewports: caseViewports = viewports } of layoutCases) {
-    for (const viewport of caseViewports) {
+    const sizes = id === 'games-gametable--docs' ? [...caseViewports, { width: 768, height: 900 }] : caseViewports;
+    for (const viewport of sizes) {
       await page.setViewportSize(viewport);
       await page.goto(new URL(`iframe.html?id=${id}&viewMode=docs`, baseURL).href);
       await page.locator(primary).first().waitFor();
@@ -163,6 +170,24 @@ try {
           });
           assert.ok(contained, `${id} at ${viewport.width}px: example ${index + 1} is clipped by its preview`);
         }
+      }
+      if (id === 'games-gametable--docs') {
+        const tables = page.locator('[data-ui="game-table"]');
+        assert.equal(await tables.count(), 3, 'GameTable docs render the primary preview and only two published compositions');
+        await page.waitForFunction(() => [...document.querySelectorAll('[data-ui="game-table"]')]
+          .every((table) => ['fitted', 'scaled'].includes(table.dataset.layoutFit)));
+        const collisions = await tables.evaluateAll((elements) => elements.flatMap((table, tableIndex) => {
+          const regions = [...table.querySelectorAll('[data-ui="game-table-seat"], [data-ui="game-table-play"], [data-ui="game-table-center"]')];
+          const plays = table.querySelectorAll('[data-ui="game-table-play"]');
+          if (plays.length !== 4) return [`table ${tableIndex}: expected four plays`];
+          return regions.flatMap((region, index) => regions.slice(index + 1).flatMap((other) => {
+            const a = region.getBoundingClientRect();
+            const b = other.getBoundingClientRect();
+            return Math.min(Math.min(a.right, b.right) - Math.max(a.left, b.left),
+              Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)) > 0.1 ? [`table ${tableIndex}: regions overlap`] : [];
+          }));
+        }));
+        assert.deepEqual(collisions, [], `GameTable at ${viewport.width}px: regions remain separate`);
       }
       assert.equal(await summary.evaluate((element) => element === document.activeElement), true,
         `${id}: focus stays on the summary`);

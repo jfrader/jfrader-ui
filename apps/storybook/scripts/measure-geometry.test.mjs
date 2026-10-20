@@ -17,10 +17,10 @@ test('parses defaults, explicit contracts and URL parameters', () => {
   assert.equal(defaults.tolerance, 1);
   assert.deepEqual(defaults.axes, []);
   const options = parseOptions(['games-gametable--default', '--viewport', '390x844', '--dir', 'rtl',
-    '--mirror-axis', 'both', '--args', 'players:2', '--edge-distance=-10', '--base-url', 'http://localhost:1234/docs/']);
+    '--mirror-axis', 'both', '--args', 'places:2', '--edge-distance=-10', '--base-url', 'http://localhost:1234/docs/']);
   assert.deepEqual(options.axes, ['vertical', 'horizontal']);
   assert.equal(options.edgeDistance, -10);
-  assert.equal(new URL(options.url).searchParams.get('args'), 'players:2');
+  assert.equal(new URL(options.url).searchParams.get('args'), 'places:2');
   assert.equal(new URL(options.url).pathname, '/docs/iframe.html');
   assert.deepEqual(parseOptions(['--help']), { help: true });
 });

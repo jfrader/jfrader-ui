@@ -1,7 +1,7 @@
 export interface BoardContentSize { width: number; height: number; minimumScale?: number }
 
-/** Card width matches GameCard sm. Clearance is expendable; card/target floors are not. */
-export const GAME_TABLE_LIMITS = { minimumCardWidthPx: 32, minimumClearancePx: 0 } as const;
+/** Clearance is expendable. Only interactive controls impose a scale floor. */
+export const GAME_TABLE_LIMITS = { minimumClearancePx: 0 } as const;
 
 /** Local CSS pixels, before ancestor transforms and before the table's content scale. */
 export interface BoardMeasurements {
@@ -58,8 +58,7 @@ export function fitBoardContent(measurement: BoardMeasurements) {
     };
   });
 
-  // Each region has its own floor: lg seat cards can shrink while sm community
-  // cards remain at their minimum. A single global scale cannot honor both.
+  // Preferred content sizes yield independently to each region's control floor.
   const atScale = (preferredScale: number) => {
     const scaled = positions.map((seat) => {
       const scale = Math.max(preferredScale, seat.minimumScale);
