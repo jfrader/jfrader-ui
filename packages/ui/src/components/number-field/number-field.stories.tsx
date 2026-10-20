@@ -7,7 +7,8 @@ import { Button } from '../button';
 import { NumberField, NumberFieldConfigError, type NumberFieldProps } from './index';
 import { createNumberFieldValue } from './number-field-value';
 
-const Frame = styled.div({ display: 'grid', gap: vars.space[4], maxInlineSize: '100%' });
+const Frame = styled.div({ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: vars.space[4], maxInlineSize: '100%' });
+const IntrinsicFrame = styled(Frame)({ inlineSize: 'max-content' });
 const NarrowFrame = styled(Frame)({ inlineSize: `calc(${vars.space[8]} * 4)` });
 const Affix = styled.span({ color: vars.color.textMuted });
 
@@ -75,7 +76,7 @@ export const Default: Story = {
 };
 
 export const Sizes: Story = {
-  render: (args) => <Frame>{(['sm', 'md', 'lg'] as const).map((size) => <NumberField {...args} key={size} size={size} label={size} />)}</Frame>,
+  render: (args) => <IntrinsicFrame>{(['sm', 'md', 'lg'] as const).map((size) => <NumberField {...args} key={size} size={size} label={size} />)}</IntrinsicFrame>,
   play: async ({ canvasElement }) => {
     for (const [size, height, width] of [['sm', 32, 160], ['md', 40, 192], ['lg', 48, 224]] as const) {
       const input = within(canvasElement).getByRole('spinbutton', { name: size });
@@ -83,7 +84,7 @@ export const Sizes: Story = {
       await expect(input.closest('[data-ui="number-field"]')!.getBoundingClientRect().width).toBe(width);
     }
     for (const button of within(canvasElement).getAllByRole('button')) {
-      await expect(button.getBoundingClientRect().width).toBeGreaterThanOrEqual(24);
+      await expect(button.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
       await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(24);
     }
   },
@@ -468,8 +469,32 @@ export const Locales: Story = {
     }
   },
 };
-export const Narrow: Story = { render: (args) => <NarrowFrame><NumberField {...args} /></NarrowFrame> };
-export const LongLabels: Story = { args: { label: 'Number of places available for the afternoon workshop', incrementLabel: 'Add one workshop place', decrementLabel: 'Remove one workshop place' } };
+export const Narrow: Story = {
+  render: (args) => <NarrowFrame><NumberField {...args} /></NarrowFrame>,
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="number-field"]')!;
+    const frame = root.parentElement!;
+    await expect(root.getBoundingClientRect().width).toBeLessThanOrEqual(frame.getBoundingClientRect().width);
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
+    const input = within(root).getByRole('spinbutton').getBoundingClientRect();
+    for (const button of within(root).getAllByRole('button')) {
+      const rect = button.getBoundingClientRect();
+      await expect(Math.abs((rect.top + rect.bottom) / 2 - (input.top + input.bottom) / 2)).toBeLessThan(1);
+    }
+  },
+};
+export const LongLabels: Story = {
+  args: {
+    label: 'Number of places available for the afternoon workshop',
+    incrementLabel: 'Add one workshop place', decrementLabel: 'Remove one workshop place',
+    description: 'workshop_reservations_for_the_afternoon_session',
+    sx: { inlineSize: `calc(${vars.space[8]} * 4)` },
+  },
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="number-field"]')!;
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
+  },
+};
 export const LightTheme: Story = { globals: { theme: 'light' } };
 export const RTL: Story = { args: { dir: 'rtl', locale: 'ar-EG', label: 'Seats' } };
 export const ForcedColors: Story = { parameters: { docs: { description: { story: 'Enable your operating system’s forced-colors mode to inspect the control boundary and focus outlines.' } } } };
