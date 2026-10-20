@@ -73,6 +73,7 @@ export interface RadioGroupEasyProps extends Omit<RadioGroupCompoundProps, 'chil
   options: readonly RadioGroupOption[];
   /** Displays the group heading and supplies its accessible name. */
   label?: ReactNode;
+  /** Not accepted when `options` supplies the radio choices. */
   children?: never;
   /** Replaces the group container, heading and radio options. */
   slots?: RadioGroupSlots;

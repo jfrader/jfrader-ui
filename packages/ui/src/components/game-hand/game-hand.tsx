@@ -47,6 +47,7 @@ export interface GameHandProps extends Omit<ComponentPropsWithRef<'div'>, 'child
   cardArtSets?: Readonly<Record<string, string>>;
   /** Replace the root, fan, card buttons or confirmation button. */
   slots?: GameHandSlots;
+  /** Adds root identity tokens alongside `game-hand`. */
   'data-ui'?: string;
   /** Render these cards in fan order. */
   cards: readonly GameHandCard[];
@@ -190,6 +191,7 @@ export interface GameHandHiddenProps extends Omit<ComponentPropsWithRef<'div'>, 
   cardArtSets?: Readonly<Record<string, string>>;
   /** Replace the wrapper around each hidden card. */
   slots?: GameHandHiddenSlots;
+  /** Adds root identity tokens alongside `game-hand-hidden`. */
   'data-ui'?: string;
   /** Number of backs, rounded down and clamped to zero. */
   count: number;

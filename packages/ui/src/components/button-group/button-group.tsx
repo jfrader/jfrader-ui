@@ -151,6 +151,7 @@ export interface ButtonGroupItemProps extends Omit<ButtonProps, 'render'> {
   reserveLabels?: readonly string[];
 }
 export interface ButtonGroupLinkProps extends Omit<ComponentPropsWithRef<'a'>, 'color'>, SxProps {
+  /** Link destination. */
   href: string;
   /** Prevent navigation and remove the link from keyboard focus, also inheriting group disablement. */
   disabled?: boolean;

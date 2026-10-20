@@ -51,6 +51,7 @@ interface InspectionProps {
   cardArtSets?: Readonly<Record<string, string>>;
   /** Replaces the pile, inspection trigger and card wrapper elements. */
   slots?: Omit<GameCardStackSlots, 'root'>;
+  /** Adds root identity tokens alongside the stack or pile marker. */
   'data-ui'?: string;
   /** Inspected player key; `null` closes inspection. */
   value?: string | null;
