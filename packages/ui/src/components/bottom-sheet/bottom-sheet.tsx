@@ -304,6 +304,7 @@ const controlStyle = css({
   [FORCED_COLORS]: { borderColor: 'ButtonText' },
   [REDUCED_MOTION]: { transition: 'none' },
 });
+const closeStyle = css({ color: vars.color.text });
 const handleStyle = css({
   '&::after': {
     content: '""',
@@ -1258,7 +1259,7 @@ BottomSheetHandle.displayName = 'BottomSheet.Handle';
 function BottomSheetClose({ ref, sx, className, onClick, ...props }: BottomSheetCloseProps) {
   const context = useSheet('Close');
   return (
-    <WithSx className={className} styles={controlStyle} sx={sx}>
+    <WithSx className={className} styles={[controlStyle, closeStyle]} sx={sx}>
       {(className) => (
         <button
           type="button"
