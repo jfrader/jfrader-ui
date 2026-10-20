@@ -11,7 +11,7 @@
     "postinstall": "pnpm generate",
     "generate": "pnpm --filter @jfrader/tokens generate",
     "dev": "pnpm generate && pnpm --filter @jfrader/storybook dev",
-    "build": "pnpm generate && pnpm --filter @jfrader/storybook build && pnpm docs:build",
+    "build": "pnpm generate && pnpm docs:build",
     "og:image": "pnpm generate && pnpm --filter @jfrader/storybook og:image",
     "test": "pnpm generate && pnpm --filter @jfrader/storybook test",
     "typecheck": "pnpm generate && pnpm -r typecheck",
