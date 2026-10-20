@@ -1377,6 +1377,7 @@ export function Example() {
 };
 let rejectSend: (() => void) | undefined;
 export const PendingAndFailedSend: Story = {
+  tags: ['!autodocs'],
   args: { onSend: fn(() => new Promise<void>((_resolve, reject) => { rejectSend = () => reject(new Error('offline')); })) },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     const field = canvas.getByRole('textbox');
