@@ -34,12 +34,19 @@ type SlotProps<Element extends 'span' | 'del'> = ComponentPropsWithRef<Element> 
 
 export interface ToggleSubscriptionCompoundProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {
+  /** Controls the selected billing period. */
   value?: string;
+  /** Sets the initial uncontrolled billing period. No period is selected by default. */
   defaultValue?: string;
+  /** Receives the requested billing period. */
   onValueChange?: (value: string) => void;
+  /** Disables all billing-period choices. Defaults to `false`. */
   disabled?: boolean;
+  /** Sets the billing switch's visual size. Defaults to `md`. */
   size?: ToggleSubscriptionSize;
+  /** Sets the selection and badge color. Defaults to `success`. */
   tone?: ToggleSubscriptionTone;
+  /** Sets the default price-formatting locale. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
   options?: never;
   prices?: never;
@@ -88,12 +95,18 @@ export interface ToggleSubscriptionSlotProps {
   price?: Omit<ToggleSubscriptionPriceProps, keyof ToggleSubscriptionPriceDefinition>;
 }
 export interface ToggleSubscriptionEasyProps extends Omit<ToggleSubscriptionCompoundProps, 'children' | 'options' | 'prices' | 'label' | 'slots' | 'slotProps' | 'component'> {
+  /** Defines the billing periods rendered as selectable items. */
   options: readonly ToggleSubscriptionOption[];
+  /** Maps billing-period values to prices. Throws when the selected period has no price. */
   prices: Readonly<Record<string, ToggleSubscriptionPriceDefinition>>;
+  /** Shows a label naming the billing-period switch. */
   label?: ReactNode;
   children?: never;
+  /** Replaces the elements rendering the switch and price parts. */
   slots?: ToggleSubscriptionSlots;
+  /** Replaces the root element as a shorthand for `slots.root`. */
   component?: ToggleSubscriptionSlots['root'];
+  /** Passes props and `sx` to individual switch and price parts. */
   slotProps?: ToggleSubscriptionSlotProps;
 }
 export type ToggleSubscriptionProps = ToggleSubscriptionCompoundProps | ToggleSubscriptionEasyProps;
@@ -117,9 +130,13 @@ export interface ToggleSubscriptionPriceSlots {
   period?: ComponentType<SlotProps<'span'>>;
 }
 export interface ToggleSubscriptionItemProps extends Omit<SegmentedControlItemProps, 'accessory' | 'slots'> {
+  /** Replaces the label, badge and selection-indicator elements. */
   slots?: ToggleSubscriptionItemSlots;
+  /** Shows a badge beside the billing-period label. */
   badge?: ReactNode;
+  /** Replaces `badge` while this billing period is selected. */
   activeBadge?: ReactNode;
+  /** Passes props and `sx` to the label, badge and selection indicator. */
   slotProps?: {
     /** Text naming the billing period. */
     label?: SlotProps<'span'>;
@@ -131,14 +148,23 @@ export interface ToggleSubscriptionItemProps extends Omit<SegmentedControlItemPr
 }
 export interface ToggleSubscriptionPriceProps
   extends Omit<ComponentPropsWithRef<'span'>, 'children'>, SxProps {
+  /** Sets the current price in major currency units. Throws if not finite. */
   amount: number;
+  /** Sets the currency code used by `Intl.NumberFormat`, such as `USD`. */
   currency: string;
+  /** Overrides the root's price-formatting locale. */
   locale?: Intl.LocalesArgument;
+  /** Configures currency formatting without changing the currency or formatting style. */
   formatOptions?: Omit<Intl.NumberFormatOptions, 'style' | 'currency'>;
+  /** Shows a struck-through former price in major currency units when finite and greater than `amount`. */
   was?: number;
+  /** Adds billing-period text after the price. */
   period?: ReactNode;
+  /** Names the former price for assistive technology. Required when `was` is shown. */
   previousLabel?: string;
+  /** Replaces the current-price, former-price and billing-period elements. */
   slots?: ToggleSubscriptionPriceSlots;
+  /** Passes props and `sx` to the current-price, former-price and billing-period elements. */
   slotProps?: {
     /** Formatted price for the current period. */
     amount?: SlotProps<'span'>;
