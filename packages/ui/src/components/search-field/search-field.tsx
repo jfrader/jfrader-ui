@@ -46,23 +46,35 @@ export type SearchFieldSlots = FieldSlots<SearchFieldAnatomy>;
 
 export interface SearchFieldProps
   extends Omit<ComponentPropsWithRef<'input'>, 'type' | 'size' | 'value' | 'defaultValue' | 'children'>, SxProps {
+  /** Controls the search query. */
   value?: string;
+  /** Sets the initial uncontrolled query and form-reset value. Defaults to an empty string. */
   defaultValue?: string;
+  /** Reports query edits and clear requests, but not form resets. */
   onValueChange?: (value: string) => void;
+  /** Displays a label associated with the search input. */
   label?: ReactNode;
   /** Label placement. `hidden` keeps the accessible name without taking layout space. */
   labelPlacement?: FieldLabelPlacement;
+  /** Displays helper content below the input and links it as an accessible description. */
   description?: ReactNode;
+  /** Displays a validation message and marks the input invalid. */
   error?: ReactNode;
+  /** Sets the input height and text size. Defaults to `md`. */
   size?: SearchFieldSize;
+  /** Enables the clear button and Escape clearing. Defaults to `true`; disabled and read-only inputs cannot clear. */
   clearable?: boolean;
+  /** Overrides the clear button's accessible name, which defaults to "Clear search". */
   messages?: Partial<SearchFieldMessages>;
+  /** Replaces the leading search glyph; `null` leaves its reserved space empty. */
   searchIcon?: ReactNode;
+  /** Replaces the clear button's glyph. */
   clearIcon?: ReactNode;
   /** Replace the wrapper div; `slots.root` takes precedence. */
   component?: SearchFieldSlots['root'];
   /** Replace generated parts with components that forward props and ref. */
   slots?: SearchFieldSlots;
+  /** Passes props and `sx` to the field's named parts. */
   slotProps?: SearchFieldSlotProps;
 }
 
