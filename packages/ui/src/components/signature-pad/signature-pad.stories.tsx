@@ -6,6 +6,7 @@ import { css } from '../../styling/css';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectAligned, expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { Button } from '../button';
 import { Dialog } from '../dialog';
 import { TextField } from '../text-field';
@@ -320,6 +321,64 @@ export const Narrow: Story = {
       </NarrowFrame>
     ),
   ],
+};
+export const LongLabels: Story = {
+  ...Narrow,
+  args: {
+    label: 'Signature of the authorized account representative',
+    hint: 'Draw your signature here',
+    signer: 'AlexandraMontserratCarolinaFernanda',
+    download: true,
+    messages: {
+      ...messages,
+      colors: { black: 'Black signature ink', blue: 'Blue signature ink', violet: 'Violet signature ink' },
+      widths: { fine: 'Fine pen width', medium: 'Medium pen width', bold: 'Bold pen width' },
+      actions: {
+        ...messages.actions,
+        undo: 'Undo the last signature stroke',
+        redo: 'Restore the last signature stroke',
+        clear: 'Clear the entire signature',
+        replay: 'Replay the signature drawing',
+        png: 'Download the signature as PNG',
+        svg: 'Download the signature as SVG',
+      },
+    },
+    description: 'Use a pointer to sign, or type your full name in the alternative field.',
+    error: 'Please sign the document before continuing.',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = pad(canvasElement);
+    const guide = canvasElement.querySelector<HTMLElement>('[data-ui="signature-pad-guide"]')!;
+    const [hint, signer] = Array.from(guide.children);
+    await expectInside(guide, canvas);
+    await expectInside(hint!, guide);
+    await expectInside(signer!, guide);
+    await expectNoOverlap(hint!, signer!);
+    await expectAligned([hint!, signer!], 'bottom');
+    await expect(guide.scrollWidth).toBeLessThanOrEqual(guide.clientWidth);
+    const toolbar = canvasElement.querySelector<HTMLElement>('[data-ui="signature-pad-toolbar"]')!;
+    for (const control of toolbar.querySelectorAll('button, label')) {
+      await expectInside(control, toolbar);
+      await expect(control.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+  },
+};
+export const SignerAlignment: Story = {
+  args: { signer: 'Ada' },
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = pad(canvasElement);
+    const guide = canvasElement.querySelector<HTMLElement>('[data-ui="signature-pad-guide"]')!;
+    for (const dir of ['ltr', 'rtl']) {
+      canvas.closest<HTMLElement>('[data-ui="signature-pad"]')!.dir = dir;
+      const edge = dir === 'ltr' ? 'right' : 'left';
+      const signer = guide.lastElementChild!;
+      await expectAligned([signer, guide], edge);
+      await gesture(canvas, strokeEvents);
+      await expectAligned([guide.lastElementChild!, guide], edge);
+      await userEvent.click(within(canvasElement).getByRole('button', { name: 'Clear' }));
+      await expectAligned([guide.lastElementChild!, guide], edge);
+    }
+  },
 };
 export const TapDot: Story = {
   play: async ({ canvasElement, args }) => {
