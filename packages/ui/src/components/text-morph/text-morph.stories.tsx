@@ -42,29 +42,25 @@ const meta = {
   args: { children: 'Save' },
   parameters: {
     docs: {
+      sections: [
+        { title: 'Changing labels', stories: ['Default', 'Crossfade', 'SlotWords'] },
+        { title: 'Numbers', stories: ['Slot'] },
+        { title: 'Decorative headings', stories: ['Sand'] },
+      ],
       description: {
         component:
-          'Animate short labels with shared letters, rolling slots, or sand particles. Keep the surrounding button, heading or status in your own markup.',
+          'Animate changes to short labels, numbers, and decorative headings.',
       },
-      usage: `**Values**
+      usage: `### Content
+Use short, single-line text and keep the button, heading or status in surrounding markup. Update text in your app; this is not an editable field. Empty strings and zero are valid. Numeric formatting uses Intl.NumberFormat; use the same locale on the server and during hydration.
 
-Pass a string as children, or a string/number through value. Text is caller-owned: there is no editable state or defaultValue/onValueChange pair. Numbers use Intl.NumberFormat; pass the same locale during SSR and hydration. Empty strings and zero are valid.
+### Motion and limits
+Automatic matching preserves whole-label shaping when either label uses a joining script or RTL. More than 80 graphemes uses whole-label decoration. Numeric wheels retarget from their current position. Rolling transitions run for at most 2000ms, with at most 400ms of total stagger and three spins.
 
-**Variants**
+Sand is for decorative headings, not paragraphs. Its text remains visible and selectable beneath the grains. Pointer effects do not handle touch gestures. Sand settles within a 900ms budget; oversized text, canvas failure, reduced motion, forced colors and pausing leave static text.
 
-auto matches Latin graphemes and uses a whole-label crossfade when either the current or previous text needs joining-script shaping or RTL. A Latin label following shaped or RTL text may therefore crossfade as a whole label. glyph forces segmentation. crossfade preserves browser shaping. slot rolls localized numeric digits and replaces other graphemes vertically; RTL and complex strings keep whole-label shaping. SandText and SlotText are variants, not separate exports.
-
-Use variant="sand" for decorative short headings. The real text stays visible and selectable beneath the transient grains. sand configures intro, interactive, grainSize, interactionRadius, maxCells, maxPixelRatio and onRenderFallback. Pointer effects do not handle touch gestures. Reduced motion, forced colors, pause and canvas failure leave static text.
-
-**Keyboard and announcements**
-
-Text has no APG widget pattern, keyboard commands or focus target. Use Button for activation. All decoration is aria-hidden; the complete current label updates immediately. Set announce only for unsolicited updates, or supply aria-live on the root. A root live policy suppresses the inner live region. Empty button labels need another accessible name.
-
-**Customization and limits**
-
-component is shorthand for slots.root; slots.root wins. Replace root, text, frame, glyph or canvas with adapters that forward props/ref and className. slotProps accepts native props and sx; root sx applies last. In crossfade the glyph slot wraps the whole label; in slot it repeats across wheel cells. Semantics belong in wrappers, not replacement element tricks.
-
-Short, single-line text only. More than 80 graphemes uses whole-label decoration. Slot durationMs is clamped to 0–2000ms, staggerMs to 0–160ms with a 400ms total cap, and spins to 0–3. Numeric wheels retarget from their current fractional position. Use paused to stop decoration. Sand has fixed allocation and 900ms settling budgets; oversize text falls back to real text. No timers, paragraph animation, particle library or editable-text behavior.`,
+### Keyboard and announcements
+Text has no keyboard commands or focus target; use a button for activation. Assistive technology receives the complete current label immediately, without the decoration. Announce only unsolicited updates. An explicit live-region policy suppresses the inner announcement. Give empty buttons another accessible name.`,
       source: { code: "<TextMorph>{saved ? 'Saved' : 'Save'}</TextMorph>", language: 'tsx' },
     },
   },
@@ -147,12 +143,27 @@ function FamilyDemo() {
 
 /** Press Save to change the button's label. */
 export const Default: Story = {
+  name: 'Changing button label',
   args: { onClick: fn() },
   render: (args) => <LabelDemo {...args} />,
   parameters: {
     docs: {
+      description: { story: 'Press Save to change its label without replacing the button.' },
       source: {
-        code: "<Button onClick={save}><TextMorph>{saved ? 'Saved' : 'Save'}</TextMorph></Button>",
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Button, TextMorph, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
+
+export function SaveAction() {
+  const [saved, setSaved] = useState(false);
+  return <Row>
+    <Button onClick={() => setSaved(!saved)}><TextMorph>{saved ? 'Saved' : 'Save'}</TextMorph></Button>
+    <Button variant="outline">Next</Button>
+  </Row>;
+}`,
       },
     },
   },
@@ -240,17 +251,50 @@ export const Graphemes: Story = {
 
 /** Keep complete labels together during a fade. */
 export const Crossfade: Story = {
+  name: 'Fade between whole labels',
   render: () => <SwapDemo variant="crossfade" labels={['Open', 'Close']} />,
-  parameters: { docs: { source: { code: '<TextMorph variant="crossfade">{label}</TextMorph>' } } },
+  parameters: { docs: {
+    description: { story: 'Change text to fade between Open and Close as complete labels.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, TextMorph, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Column = styled.div({ display: 'flex', flexDirection: 'column', alignItems: 'start', gap: vars.space[4] });
+
+export function ToggleLabel() {
+  const [closed, setClosed] = useState(false);
+  return <Column>
+    <TextMorph variant="crossfade">{closed ? 'Close' : 'Open'}</TextMorph>
+    <Button onClick={() => setClosed(!closed)}>Change text</Button>
+  </Column>;
+}` },
+  } },
 };
 
 /** Currency formatting and rising or falling digit wheels. */
 export const Slot: Story = {
+  name: 'Rolling currency',
   render: () => <NumberDemo />,
   parameters: {
     docs: {
+      description: { story: 'Change the price to roll digits upward or downward with currency formatting.' },
       source: {
-        code: '<TextMorph variant="slot" value={price} locale="en-US" formatOptions={{ style: \'currency\', currency: \'USD\', maximumFractionDigits: 0 }} />',
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Button, TextMorph, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
+const prices = [99, 1000, 90, 0];
+
+export function Price() {
+  const [index, setIndex] = useState(0);
+  return <Row>
+    <TextMorph variant="slot" value={prices[index % prices.length]!} locale="en-US"
+      formatOptions={{ style: 'currency', currency: 'USD', maximumFractionDigits: 0 }} />
+    <Button onClick={() => setIndex(index + 1)}>Change price</Button>
+  </Row>;
+}`,
       },
     },
   },
@@ -273,8 +317,25 @@ export const Slot: Story = {
 
 /** Words use the same slot variant without an alphabet dataset. */
 export const SlotWords: Story = {
+  name: 'Rolling words',
   render: () => <SwapDemo variant="slot" labels={['Start', 'Ready', 'Go']} />,
-  parameters: { docs: { source: { code: '<TextMorph variant="slot">{label}</TextMorph>' } } },
+  parameters: { docs: {
+    description: { story: 'Cycle through Start, Ready, and Go with vertical letter transitions.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, TextMorph, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Column = styled.div({ display: 'flex', flexDirection: 'column', alignItems: 'start', gap: vars.space[4] });
+const labels = ['Start', 'Ready', 'Go'];
+
+export function StepLabel() {
+  const [index, setIndex] = useState(0);
+  return <Column>
+    <TextMorph variant="slot">{labels[index % labels.length]!}</TextMorph>
+    <Button onClick={() => setIndex(index + 1)}>Change text</Button>
+  </Column>;
+}` },
+  } },
 };
 
 /** Localized digits, grouping and separators come from Intl. */
@@ -323,13 +384,23 @@ export const CustomFormat: Story = {
 
 /** Sand grains follow the heading's resolved font and color. */
 export const Sand: Story = {
+  name: 'Sand heading',
   render: () => (
     <Headline>
       <TextMorph variant="sand">Dunes</TextMorph>
     </Headline>
   ),
   parameters: {
-    docs: { source: { code: '<h2><TextMorph variant="sand">Dunes</TextMorph></h2>' } },
+    docs: {
+      description: { story: 'Move a pointer across the heading to disturb the decorative grains.' },
+      source: { language: 'tsx', code: `import { TextMorph, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Heading = styled.h2({ margin: 0, fontFamily: vars.font.sans,
+  fontSize: vars.textSize['3xl'], fontWeight: vars.fontWeight.semibold });
+
+<Heading><TextMorph variant="sand">Dunes</TextMorph></Heading>` },
+    },
   },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('heading', { name: 'Dunes' })).toBeVisible();

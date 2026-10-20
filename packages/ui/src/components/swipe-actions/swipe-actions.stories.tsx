@@ -69,15 +69,20 @@ const meta = {
   args: { 'aria-label': 'Inbox', onValueChange: change },
   parameters: {
     docs: {
+      sections: [
+        { title: 'Row actions', stories: ['EasyMode', 'Default'] },
+        { title: 'Interaction', stories: ['KeepRow', 'ControlledRail'] },
+      ],
       source: { code: snippet },
       description: {
         component:
           'Swipe a row to reveal actions, or open its actions menu.',
       },
-      usage: `- Pass rows with stable id, label, actionsLabel, content, and leading/trailing action arrays. Use compound Row children for custom composition. Paginate long lists.
-- Customize generated rows through slotProps.row, including its existing interior slotProps. slotProps.root configures the list.
+      usage: `### Actions
+- Use stable row identities and paginate long lists.
 - Handle removal, confirmation, errors and undo in your app. Actions do not delete rows.
 - The actions button offers the same commands as swiping.
+- A full swipe can activate an action directly; ask for confirmation before destructive work.
 
 ### Keyboard
 - Enter, Space or ArrowDown opens the first menu item. ArrowUp opens the last.
@@ -112,9 +117,23 @@ const meta = {
 export default meta;
 type Story = StoryObj<SwipeActionsCompoundProps>;
 export const EasyMode: StoryObj<SwipeActionsEasyProps> = {
+  name: 'Inbox actions',
   args: { 'aria-label': 'Inbox', rows: [invoiceRow] },
   render: (args) => <SwipeActions {...args} />,
-  parameters: { docs: { source: { code: '<SwipeActions aria-label="Inbox" rows={[{ id: "invoice", label: "Invoice", actionsLabel: "Actions for Invoice", content: "Invoice from Morgan", trailing: [{ id: "archive", label: "Archive", onSelect: archive }] }]} />' } } },
+  parameters: { docs: {
+    description: { story: 'Swipe the invoice or open its menu to archive or delete it.' },
+    source: { language: 'tsx', code: `import { SwipeActions } from '@jfrader/ui';
+
+export function Inbox({ onAction }: { onAction: (action: 'archive' | 'delete') => void }) {
+  return <SwipeActions aria-label="Inbox" rows={[{
+    id: 'invoice', label: 'Invoice', actionsLabel: 'Actions for Invoice', content: 'Invoice from Morgan',
+    trailing: [
+      { id: 'archive', label: 'Archive', keepRow: true, onSelect: () => onAction('archive') },
+      { id: 'delete', label: 'Delete message', tone: 'danger', onSelect: () => onAction('delete') },
+    ],
+  }]} />;
+}` },
+  } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const trigger = canvas.getByRole('button', { name: 'Actions for Invoice' });
     trigger.focus();
@@ -250,12 +269,25 @@ async function reveal(row: HTMLElement, dx: number) {
 
 export const Default: Story = {
   name: 'Compound rows',
-  parameters: { docs: { source: { code: `<SwipeActions aria-label="Inbox">
-  <SwipeActions.Row id="invoice" label="Invoice" actionsLabel="Actions for Invoice"
-    trailing={[{ id: 'archive', label: 'Archive', onSelect: archive }]}>
-    Invoice from Morgan
-  </SwipeActions.Row>
-</SwipeActions>` } } },
+  parameters: { docs: {
+    description: { story: 'Compose a row with read actions on one side and archive or delete on the other.' },
+    source: { language: 'tsx', code: `import { SwipeActions, styled } from '@jfrader/ui';
+
+const Inbox = styled(SwipeActions)({ maxWidth: 480 });
+
+export function Messages({ onAction }: { onAction: (action: 'read' | 'archive' | 'delete') => void }) {
+  return <Inbox aria-label="Inbox">
+    <SwipeActions.Row id="invoice" label="Invoice" actionsLabel="Actions for Invoice"
+      leading={[{ id: 'read', label: 'Mark as read', tone: 'accent', onSelect: () => onAction('read') }]}
+      trailing={[
+        { id: 'archive', label: 'Archive', keepRow: true, onSelect: () => onAction('archive') },
+        { id: 'delete', label: 'Delete message', tone: 'danger', onSelect: () => onAction('delete') },
+      ]}>
+      Invoice from Morgan
+    </SwipeActions.Row>
+  </Inbox>;
+}` },
+  } },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('list', { name: 'Inbox' })).toBeInTheDocument();
     const trigger = canvas.getByRole('button', { name: 'Actions for Invoice' });
@@ -458,7 +490,8 @@ export const FullSwipe: Story = {
   },
 };
 export const KeepRow: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { SwipeActions, styled } from '@jfrader/ui';
+  name: 'Keep a row after an action',
+  parameters: { docs: { description: { story: 'Press Archive to close the revealed rail without removing the invoice.' }, source: { language: 'tsx', code: `import { SwipeActions, styled } from '@jfrader/ui';
 
 const Inbox = styled(SwipeActions)({ maxWidth: 480 });
 
@@ -603,6 +636,23 @@ function Controlled(props: SwipeActionsCompoundProps) {
   );
 }
 export const ControlledRail: Story = {
+  name: 'Control the revealed rail',
+  parameters: { docs: {
+    description: { story: 'Store the open rail in React state while disabling full-swipe activation.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { SwipeActions, type SwipeActionsValue } from '@jfrader/ui';
+
+export function Inbox({ onRead }: { onRead: () => void }) {
+  const [value, setValue] = useState<SwipeActionsValue>(null);
+  return <SwipeActions aria-label="Inbox" value={value} onValueChange={setValue}>
+    <SwipeActions.Row id="invoice" label="Invoice" actionsLabel="Actions for Invoice"
+      fullSwipe={false}
+      leading={[{ id: 'read', label: 'Mark as read', tone: 'accent', onSelect: onRead }]}>
+      Invoice
+    </SwipeActions.Row>
+  </SwipeActions>;
+}` },
+  } },
   render: (args) => <Controlled {...args} />,
   play: async ({ canvasElement, args }) => {
     await reveal(rowOf(canvasElement), 80);
