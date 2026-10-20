@@ -10,6 +10,7 @@
 
 ### Fixed
 
+- `InputGroup` wraps long addons without collapsing the editable control. `RadioCards` wraps long validation messages within narrow groups.
 - `Slider` centers marks on its track in RTL. `SegmentedControl` and `ToggleGroup` keep compact choices at least 32px wide, and `ToggleGroup` contains long options in a scrollable group.
 - `Article` keeps responsive picture images inside their media figure in narrow layouts.
 - `SearchField`, `PasswordField` and `NumberField` give small inline actions a 32px-wide target. `NumberField` wraps long messages without overflowing narrow fields.
