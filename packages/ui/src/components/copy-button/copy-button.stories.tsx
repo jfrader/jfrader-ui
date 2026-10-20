@@ -180,11 +180,12 @@ const meta = {
   component: CopyButton,
   parameters: { docs: {
     description: { component: 'Copy text to the clipboard and show whether it succeeded.' },
-    usage: `### Values
-- Pass \`text\` and all four labels: \`label\`, \`pendingLabel\`, \`copiedLabel\` and \`errorLabel\`. An empty \`text\` string is a valid clipboard payload.
-- The button starts at \`idle\`. Use \`defaultValue\` to seed its face, or pair \`value\` with \`onValueChange\` to control it. Controlling the face does not prevent a clipboard write; update \`value\` to display each requested state.
-- A write requests \`pending\`, then \`copied\` or \`error\`. After the result request, \`onCopied\` receives the text captured at activation or \`onCopyError\` receives the failure.
-- \`resetAfterMs\` defaults to 1900 milliseconds after a result commits. Set it to \`0\` to keep the result face. Negative or non-finite values also disable reset.
+    sections: [
+      { title: 'Copy text', stories: ['Default', 'IconOnly'] },
+      { title: 'State', stories: ['ControlledAccept', 'Disabled', 'AriaDisabled'] },
+    ],
+    usage: `### Clipboard writes
+An empty string is a valid clipboard payload. A write requests pending, then copied or error. Result callbacks run after the result request and receive the text captured at activation or the failure. Controlling the displayed state does not prevent a clipboard write; accept requested state changes to show progress and results.
 
 ### Keyboard and accessibility
 
@@ -195,10 +196,7 @@ const meta = {
 
 - If the Clipboard API is unavailable or the browser rejects the write, the button requests \`error\` and calls \`onCopyError\`. Provide an error label and a way for the reader to copy the text themselves.
 
-### Customization
-
-- \`variant\`, \`tone\` and \`size\` default to \`outline\`, \`neutral\` and \`sm\`. Set \`iconOnly\` to hide the visible label while keeping its accessible name and announcements.
-- Use \`icons\` to replace state glyphs; \`null\` removes a glyph. Use \`slotProps\` for the icon, label and status spans, and \`sx\` for the button.`,
+Provide labels for the action, pending, success and failure states. Keep error copy actionable.`,
   } },
   tags: ['autodocs'],
   args: {
@@ -229,11 +227,15 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  name: 'Copy an install command',
   parameters: {
     docs: {
+      description: { story: 'Copy the package install command and show clipboard feedback.' },
       source: {
         language: 'tsx',
-        code: `<CopyButton
+        code: `import { CopyButton } from '@jfrader/ui';
+
+<CopyButton
   text="pnpm add @jfrader/ui"
   label="Copy command"
   pendingLabel="Copying"
@@ -286,12 +288,17 @@ export const Sizes: Story = {
 };
 
 export const IconOnly: Story = {
+  name: 'Icon-only copy action',
   args: { iconOnly: true },
   parameters: {
     docs: {
+      description: { story: 'Hide the visible label while keeping an accessible name and result announcements.' },
       source: {
-        code: `<CopyButton
-  text={installCommand}
+        language: 'tsx',
+        code: `import { CopyButton } from '@jfrader/ui';
+
+<CopyButton
+  text="pnpm add @jfrader/ui"
   label="Copy command"
   pendingLabel="Copying"
   copiedLabel="Copied"
@@ -330,6 +337,14 @@ export const ScopedLightTheme: Story = {
 };
 
 export const Disabled: Story = {
+  name: 'Disabled copy action',
+  parameters: { docs: {
+    description: { story: 'Keep copying unavailable and remove the button from keyboard navigation.' },
+    source: { language: 'tsx', code: `import { CopyButton } from '@jfrader/ui';
+
+<CopyButton text="pnpm add @jfrader/ui" label="Copy command"
+  pendingLabel="Copying" copiedLabel="Copied" errorLabel="Could not copy" disabled />` },
+  } },
   args: { disabled: true, onClick: fn() },
   play: async ({ args, canvasElement }) => {
     const writeText = fn<WriteText>(async () => {});
@@ -346,6 +361,14 @@ export const Disabled: Story = {
 };
 
 export const AriaDisabled: Story = {
+  name: 'Focusable unavailable action',
+  parameters: { docs: {
+    description: { story: 'Keep the unavailable action focusable without starting a clipboard write.' },
+    source: { language: 'tsx', code: `import { CopyButton } from '@jfrader/ui';
+
+<CopyButton text="pnpm add @jfrader/ui" label="Copy command"
+  pendingLabel="Copying" copiedLabel="Copied" errorLabel="Could not copy" aria-disabled />` },
+  } },
   args: { 'aria-disabled': true, onClick: fn() },
   play: async ({ args, canvasElement }) => {
     const writeText = fn<WriteText>(async () => {});
@@ -505,6 +528,19 @@ export const SameTickDuplicates: Story = {
 };
 
 export const ControlledAccept: Story = {
+  name: 'Controlled copy feedback',
+  parameters: { docs: {
+    description: { story: 'Accept clipboard state changes in the parent and return to idle after the result.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { CopyButton, type CopyButtonValue } from '@jfrader/ui';
+
+export function CopyCommand() {
+  const [value, setValue] = useState<CopyButtonValue>('idle');
+  return <CopyButton text="pnpm add @jfrader/ui" label="Copy command"
+    pendingLabel="Copying" copiedLabel="Copied" errorLabel="Could not copy"
+    value={value} onValueChange={setValue} resetAfterMs={300} />;
+}` },
+  } },
   args: { resetAfterMs: SHORT_RESET_MS },
   render: (args) => <ControlledCopyButton {...args} />,
   play: async ({ args, canvasElement }) => {

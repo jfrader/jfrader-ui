@@ -82,22 +82,51 @@ const meta = {
   ],
   parameters: {
     docs: {
-      source: { code: SOURCE },
       description: {
-        component: 'Compare two images by dragging a divider to reveal more of either image.',
+        component: 'Compare two images by dragging a divider to reveal differences.',
       },
-      usage: `Images share the same alignment and crop. The divider follows the APG slider pattern.
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Orientation', stories: ['Vertical'] },
+        { title: 'Captions', stories: ['CustomLabels'] },
+        { title: 'State', stories: ['Controlled', 'Disabled'] },
+        { title: 'Controls', stories: ['WithoutReset'] },
+      ],
+      usage: `### When to use
+Compare two images that share identical dimensions, framing, and alignment, such as color grading, photo restoration, or visual diffs.
 
-\`value\` is the percentage of the Before image that is visible. Horizontal comparisons reveal from inline-start; vertical comparisons reveal from the top. At 0, only After is visible. At 100, only Before is visible.
+### Values and constraints
 
-The slider reports the accepted value. After a drag, the divider settles back to that value.
+The slider value represents the visible percentage of the Before image. Horizontal comparisons reveal from inline-start; vertical comparisons reveal from the top. At 0 only the After image is shown, and at 100 only the Before image is shown.
 
-- Arrows move one \`step\`; horizontal Left/Right follow physical direction in RTL, and Up always increases. Shift+arrows and PageUp/PageDown move \`largeStep\`; Home/End go to 0/100. Center divider and double-clicking the handle request 50.
-- Tap the frame to jump or drag anywhere on it. Touch dragging starts along the reveal axis, so a vertical swipe over a horizontal comparison scrolls the page.
-- Both images stay mounted. Give each a meaningful, different \`alt\`; do not put interactive content inside them. Captions are decorative and describe the slider.
-- Name the slider with \`label\` or \`slotProps.handle\` ARIA. A root \`aria-label\` names only the wrapper.
-- Localize captions, \`label\`, \`valueText\` and \`resetLabel\`. Percentages use \`Intl.NumberFormat\`.
-- Test touch screen-reader operation on a device.`,
+Both images stay mounted. Give each meaningful, distinct alternative text and keep interactive content out of the images. Captions are decorative and describe the slider.
+
+Tap the frame to jump or drag anywhere on it. Double-clicking the handle or pressing the reset button requests 50%. The slider reports the accepted position; after a drag, the divider settles back to that value. Touch dragging starts along the reveal axis, allowing orthogonal scrolling past the component.
+
+### Keyboard and accessibility
+
+The divider follows the WAI-ARIA slider pattern. Arrows move one step; Shift+Arrow and Page Up/Page Down move a large step. Home jumps to 0% and End to 100%. Left and Right follow physical screen direction in RTL; Up always increases.
+
+Name the slider, not just its wrapper. Localize its name, captions, value text and reset action; percentages use Intl.NumberFormat. Test touch screen-reader operation on a device.`,
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+export function Example() {
+  return (
+    <ImageCompare
+      before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+      after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+      label="Landscape grading comparison"
+      locale="en-GB"
+    />
+  );
+}`,
+      },
     },
   },
 } satisfies Meta<typeof ImageCompare>;
@@ -106,7 +135,7 @@ type Story = StoryObj<typeof ImageCompare>;
 
 const part = (root: Element, name: string) => root.querySelector<HTMLElement>(`[data-ui="${name}"]`)!;
 
-/** Which layer is visible (hit-testable through the clip) at `ratio` along the reveal axis. */
+/** Which layer is visible (hit-testable through the clip) at \`ratio\` along the reveal axis. */
 function layerAt(root: Element, ratio: number, vertical = false) {
   const box = part(root, 'image-compare-frame').getBoundingClientRect();
   const x = vertical ? box.left + box.width * 0.8 : box.left + box.width * ratio;
@@ -176,6 +205,33 @@ function pointerOn(frame: HTMLElement, pointerType = 'mouse') {
 }
 
 export const Default: Story = {
+  name: 'Horizontal comparison',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Drag the divider or use arrow keys to compare two images side by side.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+export function Example() {
+  return (
+    <ImageCompare
+      before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+      after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+      label="Landscape grading comparison"
+      locale="en-GB"
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement }) => {
     const slider = canvas.getByRole('slider', { name: 'Landscape grading comparison' });
     await expect(slider).toHaveAttribute('aria-valuemin', '0');
@@ -316,9 +372,13 @@ export const FadingCaptions: Story = {
 };
 
 export const Vertical: Story = {
+  name: 'Vertical comparison',
   args: { orientation: 'vertical', defaultValue: 30 },
   parameters: {
     docs: {
+      description: {
+        story: 'Compare images along a vertical axis with top-to-bottom reveal.',
+      },
       source: {
         language: 'tsx',
         code: `import { ImageCompare } from '@jfrader/ui';
@@ -385,6 +445,7 @@ const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade
 };
 
 export const CustomLabels: Story = {
+  name: 'Custom labels',
   args: {
     labels: ['Original', 'Graded'],
     valueText: (_value, percent) => `${percent} original visible`,
@@ -392,6 +453,9 @@ export const CustomLabels: Story = {
   },
   parameters: {
     docs: {
+      description: {
+        story: 'Provide custom corner caption labels and localized value text for screen readers.',
+      },
       source: {
         language: 'tsx',
         code: `import { ImageCompare } from '@jfrader/ui';
@@ -494,6 +558,41 @@ const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade
 };
 
 export const Controlled: Story = {
+  name: 'Controlled position',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Control the reveal percentage externally with state and receive value updates.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+export function ControlledComparison() {
+  const [value, setValue] = useState(20);
+
+  return (
+    <>
+      <ImageCompare
+        before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+        after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+        label="Landscape grading comparison"
+        locale="en-GB"
+        value={value}
+        onValueChange={setValue}
+      />
+      <output>{value}</output>
+    </>
+  );
+}`,
+      },
+    },
+  },
   render: (args) => {
     const [value, setValue] = useState(20);
     return (
@@ -706,9 +805,13 @@ const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade
 };
 
 export const Disabled: Story = {
+  name: 'Disabled',
   args: { disabled: true, defaultValue: 30 },
   parameters: {
     docs: {
+      description: {
+        story: 'Disable divider movement and reset interactions.',
+      },
       source: {
         language: 'tsx',
         code: `import { ImageCompare } from '@jfrader/ui';
@@ -1781,9 +1884,13 @@ const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade
 };
 
 export const WithoutReset: Story = {
+  name: 'Without reset button',
   args: { showReset: false },
   parameters: {
     docs: {
+      description: {
+        story: 'Omit the center reset button when a dedicated reset action is not needed.',
+      },
       source: {
         language: 'tsx',
         code: `import { ImageCompare } from '@jfrader/ui';

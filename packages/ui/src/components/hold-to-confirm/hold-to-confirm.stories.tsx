@@ -68,23 +68,84 @@ const meta = {
   },
   parameters: {
     docs: {
-      source: { code: usage },
       description: {
         component:
-          'Hold a button until the timer finishes to confirm an action.',
+          'Require a continuous press or key hold to confirm high-impact actions.',
       },
-      usage: '- Hold Space, Enter or the primary pointer continuously. Releasing early, Escape, Tab, blur or pointer cancellation cancels the attempt.\n- After completion, the button stays focusable with `aria-disabled`.\n- Provide a confirmation Button in a Dialog as an untimed alternative.\n- `onConfirm` reports the interaction, not an async result. Reset controlled `value` to `false` if the request fails.\n- Set `variant="morph"` for a pill-shaped face that resizes on completion. It retains the same hold contract and native button; reduced motion skips the size animation. ConfirmMorph is this presentation, not a second confirmation primitive.',
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Tones', stories: ['Danger', 'Accent'] },
+        { title: 'State', stories: ['ControlledAccept', 'InitiallyConfirmed', 'Disabled'] },
+      ],
+      usage: `### When to use
+Use a hold-to-confirm button for high-consequence or destructive actions where an accidental click would cause disruption. Provide a dialog-based confirmation as an untimed alternative for users who cannot sustain continuous holds.
+
+### Values and constraints
+
+Hold Space, Enter, or the primary pointer continuously until the timer completes. Releasing early, pressing Escape or Tab, losing focus, or pointer cancellation cancels the attempt.
+
+After confirmation, the button remains focusable with \`aria-disabled="true"\`. The \`onConfirm\` callback fires when the hold completes; if a subsequent asynchronous network request fails, set controlled \`value\` back to \`false\`.
+
+### Keyboard and accessibility
+
+Focus the button with Tab and begin holding with Space or Enter. A description states the hold duration; a polite status announces accepted completion. A controlled parent must accept confirmation on the first render after completion for that announcement to run.
+
+### Motion
+
+The morph presentation resizes the pill after completion without changing the hold interaction or native button. Reduced motion skips the size animation.`,
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+<HoldToConfirm
+  label="Hold to revoke"
+  confirmedLabel="Revoked"
+  confirmationAnnouncement="Key revoked"
+  getHoldDescription={describeHold}
+  tone="danger"
+  onConfirm={revokeKey}
+/>`,
+      },
     },
   },
 } satisfies Meta<typeof HoldToConfirm>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  name: 'Continuous hold',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Hold the button continuously with Space, Enter, or a pointer to confirm.',
+      },
+      source: {
+        language: 'tsx',
+        code: `${holdSnippetBase}
+
+export function RevokeKey({ revokeKey }: { revokeKey: () => void }) {
+  return (
+    <HoldToConfirm
+      label="Hold to revoke"
+      confirmedLabel="Revoked"
+      confirmationAnnouncement="Key revoked"
+      getHoldDescription={describeHold}
+      onConfirm={revokeKey}
+    />
+  );
+}`,
+      },
+    },
+  },
+};
 export const Accent: Story = {
+  name: 'Accent tone',
   args: { tone: 'accent' },
   parameters: {
     docs: {
+      description: {
+        story: 'Highlight primary or high-priority confirmation actions.',
+      },
       source: {
         language: 'tsx',
         code: `${holdSnippetBase}
@@ -110,9 +171,13 @@ export function RevokeKeyButton({
   },
 };
 export const Danger: Story = {
+  name: 'Destructive tone',
   args: { tone: 'danger' },
   parameters: {
     docs: {
+      description: {
+        story: 'Signal destructive or irreversible operations such as revoking credentials.',
+      },
       source: {
         language: 'tsx',
         code: `${holdSnippetBase}
@@ -259,9 +324,13 @@ export function RevokeKeyButton({
   },
 };
 export const Disabled: Story = {
+  name: 'Disabled',
   args: { disabled: true },
   parameters: {
     docs: {
+      description: {
+        story: 'Prevent interaction entirely when prerequisites are not met.',
+      },
       source: {
         language: 'tsx',
         code: `${holdSnippetBase}
@@ -292,9 +361,13 @@ export function RevokeKeyButton({
   },
 };
 export const InitiallyConfirmed: Story = {
+  name: 'Already confirmed',
   args: { defaultValue: true },
   parameters: {
     docs: {
+      description: {
+        story: 'Render the confirmed state initially with disabled interaction.',
+      },
       source: {
         language: 'tsx',
         code: `${holdSnippetBase}
@@ -465,6 +538,48 @@ function ControlledFixture(args: HoldToConfirmProps) {
   );
 }
 export const ControlledAccept: Story = {
+  name: 'Controlled state',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Control confirmation state from a parent component and support resetting.',
+      },
+      source: {
+        language: 'tsx',
+code: `import { useState } from 'react';
+import { HoldToConfirm, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Actions = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[4], alignItems: 'center' });
+const ResetButton = styled.button({ minBlockSize: vars.space[8], paddingInline: vars.space[3] });
+
+const describeHold = (duration: string) =>
+  \`Hold Space, Enter, or the primary pointer for \${duration}.\`;
+
+export function ControlledConfirmation({ revokeKey }: { revokeKey: () => void }) {
+  const [confirmed, setConfirmed] = useState(false);
+
+  return (
+    <Actions>
+      <HoldToConfirm
+        label="Hold to revoke"
+        confirmedLabel="Revoked"
+        confirmationAnnouncement="Key revoked"
+        getHoldDescription={describeHold}
+        value={confirmed}
+        onValueChange={setConfirmed}
+        duration={240}
+        onConfirm={revokeKey}
+      />
+      <ResetButton type="button" onClick={() => setConfirmed(false)}>
+        Reset
+      </ResetButton>
+    </Actions>
+  );
+}`,
+      },
+    },
+  },
   args: { duration: TEST_DURATION },
   render: (args) => <ControlledFixture {...args} />,
   play: Confirmed.play,

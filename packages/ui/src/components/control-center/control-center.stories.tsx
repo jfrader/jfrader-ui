@@ -88,23 +88,295 @@ const meta = {
     docs: {
       description: {
         component:
-          'Change focus, notification, presenting, volume and text-scale settings. Open Focus settings to draft a session, then press Start or Update.',
+          'Adjust focus modes, notification channels, volume, and display scale from a central panel.',
       },
-      usage:
-        '### State\nUse `value` and `onValueChange` to persist the complete settings object. These are settings only: the component does not change system volume, fonts, notification permissions or browser presentation.\n\nFocus details are drafts. Close or Escape discards edits; Start and Update request one value and leave the dialog open. A rejected controlled request leaves the committed tile and status unchanged. Session expiry does not write settings.\n\n### Keyboard\nTiles use Enter and Space. Details use Dialog focus containment, Escape and focus return. Modes use RadioGroup arrows. Slider arrows, PageUp/PageDown and Home/End use the configured bounds; horizontal direction follows RTL. Duration uses Slider rather than a circular gesture dial.\n\n### Customization\n`component` aliases `slots.root`. Native parts: root, grid, status, actions. Adopted parts: tile/detailTrigger ([Button](?path=/docs/actions-button--docs)), meter/dial ([Slider](?path=/docs/inputs-slider--docs)), modes ([RadioGroup](?path=/docs/inputs-radiogroup--docs)), channel/person ([Switch](?path=/docs/inputs-switch--docs)), detail ([Dialog.Content](?path=/docs/surfaces-dialog--docs)). Replacements for adopted parts forward props/ref to the original primitive; replacing them with bare elements loses behavior. Slot props retain primitive APIs without `sx`; use their `css` lane, and root `sx` for final styling.',
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Configuration', stories: ['People', 'NoChannels', 'ZeroVolume'] },
+        { title: 'State', stories: ['Disabled'] },
+      ],
+      usage: `### When to use
+Provide quick access to workspace preferences such as focus sessions, notification routing, alert volume, and display scaling.
+
+### Values and constraints
+
+Persist settings with \`value\` and \`onValueChange\`. The component manages preference state only; it does not change browser zoom, operating system volume, or platform notification permissions directly.
+
+Focus session edits inside the details dialog are drafts. Close or Escape discards edits; Start and Update request one value and leave the dialog open. A rejected controlled request leaves the committed tile and status unchanged. Session expiry does not write settings.
+
+### Keyboard and accessibility
+
+Press Enter or Space to toggle tiles or open detail dialogs. Detail dialogs contain focus and restore focus to the trigger on close. Use arrows to choose focus modes and adjust sliders, including duration. Slider arrows, Home, End, Page Up and Page Down use the configured bounds; horizontal direction follows RTL.`,
       source: {
         language: 'tsx',
-        code: '<ControlCenter label="Quick settings" labels={labels} focusModes={focusModes} channels={channels} locale="en" timeZone="UTC" onValueChange={saveSettings} />',
+        code: `import { ControlCenter, Surface, styled, type ControlCenterLabels } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SettingsPanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: \`calc(\${vars.space[8]} * 18)\`,
+  maxInlineSize: '100%',
+  padding: vars.space[6],
+  display: 'grid',
+  gap: vars.space[5],
+});
+
+const PanelLabel = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.lg,
+  fontWeight: vars.fontWeight.semibold,
+  color: vars.color.text,
+});
+
+const SettingsRows = styled.div({
+  '&&': {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gap: vars.space[3],
+  },
+  '& > :last-child': { gridColumn: '1 / -1' },
+});
+
+const labels: ControlCenterLabels = {
+  focus: 'Focus',
+  notifications: 'Notifications',
+  presenting: 'Presenting',
+  focusDetails: 'Focus settings',
+  notificationDetails: 'Notification channels',
+  focusDescription: 'Choose a mode and duration.',
+  notificationDescription: 'Choose notification channels.',
+  modes: 'Mode',
+  duration: 'Duration',
+  volume: 'Alert volume',
+  textSize: 'Text scale',
+  start: 'Start',
+  update: 'Update',
+  close: 'Close',
+  inactive: 'No focus session',
+  until: (time) => \`Focus until \${time}\`,
+  minutes: (value) =>
+    new Intl.NumberFormat('en', { style: 'unit', unit: 'minute' }).format(value),
+};
+
+const focusModes = [
+  { value: 'work', label: 'Work', description: 'Allow priority contacts.', defaultMinutes: 25 },
+  { value: 'reading', label: 'Reading', description: 'Silence distractions.', defaultMinutes: 45 },
+];
+
+const channels = [
+  { value: 'chat', label: 'Chat', defaultChecked: true },
+  { value: 'email', label: 'Email' },
+];
+
+export function QuickSettings() {
+  return (
+    <SettingsPanel>
+      <PanelLabel>Workspace settings</PanelLabel>
+      <ControlCenter
+        label="Quick settings"
+        labels={labels}
+        focusModes={focusModes}
+        channels={channels}
+        locale="en"
+        timeZone="UTC"
+        slots={{ grid: SettingsRows }}
+        slotProps={{ modes: { orientation: 'horizontal' } }}
+        onValueChange={(value) => console.log(value)}
+      />
+    </SettingsPanel>
+  );
+}`,
       },
     },
   },
 } satisfies Meta<typeof ControlCenter>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Default: Story = {};
+export const Default: Story = {
+  name: 'Quick settings',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Manage focus sessions, notification channels, volume, and text scale.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { ControlCenter, Surface, styled, type ControlCenterLabels } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SettingsPanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: \`calc(\${vars.space[8]} * 18)\`,
+  maxInlineSize: '100%',
+  padding: vars.space[6],
+  display: 'grid',
+  gap: vars.space[5],
+});
+
+const PanelLabel = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.lg,
+  fontWeight: vars.fontWeight.semibold,
+  color: vars.color.text,
+});
+
+const SettingsRows = styled.div({
+  '&&': {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gap: vars.space[3],
+  },
+  '& > :last-child': { gridColumn: '1 / -1' },
+});
+
+const labels: ControlCenterLabels = {
+  focus: 'Focus',
+  notifications: 'Notifications',
+  presenting: 'Presenting',
+  focusDetails: 'Focus settings',
+  notificationDetails: 'Notification channels',
+  focusDescription: 'Choose a mode and duration.',
+  notificationDescription: 'Choose notification channels.',
+  modes: 'Mode',
+  duration: 'Duration',
+  volume: 'Alert volume',
+  textSize: 'Text scale',
+  start: 'Start',
+  update: 'Update',
+  close: 'Close',
+  inactive: 'No focus session',
+  until: (time) => \`Focus until \${time}\`,
+  minutes: (value) =>
+    new Intl.NumberFormat('en', { style: 'unit', unit: 'minute' }).format(value),
+};
+
+const focusModes = [
+  { value: 'work', label: 'Work', description: 'Allow priority contacts.', defaultMinutes: 25 },
+  { value: 'reading', label: 'Reading', description: 'Silence distractions.', defaultMinutes: 45 },
+];
+
+const channels = [
+  { value: 'chat', label: 'Chat', defaultChecked: true },
+  { value: 'email', label: 'Email' },
+];
+
+export function QuickSettings() {
+  return (
+    <SettingsPanel>
+      <PanelLabel>Workspace settings</PanelLabel>
+      <ControlCenter
+        label="Quick settings"
+        labels={labels}
+        focusModes={focusModes}
+        channels={channels}
+        locale="en"
+        timeZone="UTC"
+        slots={{ grid: SettingsRows }}
+        slotProps={{ modes: { orientation: 'horizontal' } }}
+        onValueChange={(value) => console.log(value)}
+      />
+    </SettingsPanel>
+  );
+}`,
+      },
+    },
+  },
+};
 export const Light: Story = { globals: { theme: 'light' } };
 export const RTL: Story = { parameters: { docs: { source: { language: 'tsx', code: "import { ControlCenter, type ControlCenterLabels } from '@jfrader/ui';\n\nconst labels: ControlCenterLabels = {\n  focus: 'Focus',\n  notifications: 'Notifications',\n  presenting: 'Presenting',\n  focusDetails: 'Focus settings',\n  notificationDetails: 'Notification channels',\n  focusDescription: 'Choose a mode and duration.',\n  notificationDescription: 'Choose notification channels.',\n  modes: 'Mode',\n  duration: 'Duration',\n  volume: 'Alert volume',\n  textSize: 'Text scale',\n  start: 'Start',\n  update: 'Update',\n  close: 'Close',\n  inactive: 'No focus session',\n  until: (time) => `Focus until ${time}`,\n  minutes: (value) => new Intl.NumberFormat('en', { style: 'unit', unit: 'minute' }).format(value),\n};\n\nconst focusModes = [\n  { value: 'work', label: 'Work', description: 'Allow priority contacts.', defaultMinutes: 25 },\n  { value: 'reading', label: 'Reading', description: 'Silence distractions.', defaultMinutes: 45 },\n];\n\nconst channels = [\n  { value: 'chat', label: 'Chat', defaultChecked: true },\n  { value: 'email', label: 'Email' },\n];\n\n<ControlCenter\n  label=\"Quick settings\"\n  labels={labels}\n  focusModes={focusModes}\n  channels={channels}\n  locale=\"en\"\n  timeZone=\"UTC\"\n  dir=\"rtl\"\n/>" } } }, args: { dir: 'rtl' } };
-export const Disabled: Story = { parameters: { docs: { source: { language: 'tsx', code: "import { ControlCenter, type ControlCenterLabels } from '@jfrader/ui';\n\nconst labels: ControlCenterLabels = {\n  focus: 'Focus',\n  notifications: 'Notifications',\n  presenting: 'Presenting',\n  focusDetails: 'Focus settings',\n  notificationDetails: 'Notification channels',\n  focusDescription: 'Choose a mode and duration.',\n  notificationDescription: 'Choose notification channels.',\n  modes: 'Mode',\n  duration: 'Duration',\n  volume: 'Alert volume',\n  textSize: 'Text scale',\n  start: 'Start',\n  update: 'Update',\n  close: 'Close',\n  inactive: 'No focus session',\n  until: (time) => `Focus until ${time}`,\n  minutes: (value) => new Intl.NumberFormat('en', { style: 'unit', unit: 'minute' }).format(value),\n};\n\nconst focusModes = [\n  { value: 'work', label: 'Work', description: 'Allow priority contacts.', defaultMinutes: 25 },\n  { value: 'reading', label: 'Reading', description: 'Silence distractions.', defaultMinutes: 45 },\n];\n\nconst channels = [\n  { value: 'chat', label: 'Chat', defaultChecked: true },\n  { value: 'email', label: 'Email' },\n];\n\n<ControlCenter\n  label=\"Quick settings\"\n  labels={labels}\n  focusModes={focusModes}\n  channels={channels}\n  locale=\"en\"\n  timeZone=\"UTC\"\n  disabled\n/>" } } }, args: { disabled: true } };
+export const Disabled: Story = {
+  name: 'Disabled',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Disable all tiles, detail triggers, and sliders.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { ControlCenter, Surface, styled, type ControlCenterLabels } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SettingsPanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: \`calc(\${vars.space[8]} * 18)\`,
+  maxInlineSize: '100%',
+  padding: vars.space[6],
+  display: 'grid',
+  gap: vars.space[5],
+});
+
+const PanelLabel = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.lg,
+  fontWeight: vars.fontWeight.semibold,
+  color: vars.color.text,
+});
+
+const SettingsRows = styled.div({
+  '&&': {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gap: vars.space[3],
+  },
+  '& > :last-child': { gridColumn: '1 / -1' },
+});
+
+const labels: ControlCenterLabels = {
+  focus: 'Focus',
+  notifications: 'Notifications',
+  presenting: 'Presenting',
+  focusDetails: 'Focus settings',
+  notificationDetails: 'Notification channels',
+  focusDescription: 'Choose a mode and duration.',
+  notificationDescription: 'Choose notification channels.',
+  modes: 'Mode',
+  duration: 'Duration',
+  volume: 'Alert volume',
+  textSize: 'Text scale',
+  start: 'Start',
+  update: 'Update',
+  close: 'Close',
+  inactive: 'No focus session',
+  until: (time) => \`Focus until \${time}\`,
+  minutes: (value) => new Intl.NumberFormat('en', { style: 'unit', unit: 'minute' }).format(value),
+};
+
+const focusModes = [
+  { value: 'work', label: 'Work', description: 'Allow priority contacts.', defaultMinutes: 25 },
+  { value: 'reading', label: 'Reading', description: 'Silence distractions.', defaultMinutes: 45 },
+];
+
+const channels = [
+  { value: 'chat', label: 'Chat', defaultChecked: true },
+  { value: 'email', label: 'Email' },
+];
+
+export function DisabledExample() {
+  return (
+    <SettingsPanel>
+      <PanelLabel>Workspace settings</PanelLabel>
+      <ControlCenter
+        label="Quick settings"
+        labels={labels}
+        focusModes={focusModes}
+        channels={channels}
+        locale="en"
+        timeZone="UTC"
+        disabled
+        slots={{ grid: SettingsRows }}
+        slotProps={{ modes: { orientation: 'horizontal' } }}
+      />
+    </SettingsPanel>
+  );
+}`,
+      },
+    },
+  },
+  args: { disabled: true },
+};
 export const NoModes: Story = {
   parameters: {
     docs: {
@@ -153,13 +425,128 @@ const channels = [
     await expect(canvas.getByRole('button', { name: 'Focus' })).toBeDisabled();
   },
 };
-export const NoChannels: Story = { parameters: { docs: { source: { language: 'tsx', code: "import { ControlCenter, type ControlCenterLabels } from '@jfrader/ui';\n\nconst labels: ControlCenterLabels = {\n  focus: 'Focus',\n  notifications: 'Notifications',\n  presenting: 'Presenting',\n  focusDetails: 'Focus settings',\n  notificationDetails: 'Notification channels',\n  focusDescription: 'Choose a mode and duration.',\n  notificationDescription: 'Choose notification channels.',\n  modes: 'Mode',\n  duration: 'Duration',\n  volume: 'Alert volume',\n  textSize: 'Text scale',\n  start: 'Start',\n  update: 'Update',\n  close: 'Close',\n  inactive: 'No focus session',\n  until: (time) => `Focus until ${time}`,\n  minutes: (value) => new Intl.NumberFormat('en', { style: 'unit', unit: 'minute' }).format(value),\n};\n\nconst focusModes = [\n  { value: 'work', label: 'Work', description: 'Allow priority contacts.', defaultMinutes: 25 },\n  { value: 'reading', label: 'Reading', description: 'Silence distractions.', defaultMinutes: 45 },\n];\n\n<ControlCenter\n  label=\"Quick settings\"\n  labels={labels}\n  focusModes={focusModes}\n  channels={[]}\n  locale=\"en\"\n  timeZone=\"UTC\"\n/>" } } }, args: { channels: [] } };
-export const People: Story = {
+export const NoChannels: Story = {
+  name: 'Without notification channels',
   parameters: {
     docs: {
+      description: {
+        story: 'Omit notification channels to show only mode tiles and sliders.',
+      },
       source: {
         language: 'tsx',
-        code: `import { ControlCenter, type ControlCenterLabels } from '@jfrader/ui';
+        code: `import { ControlCenter, Surface, styled, type ControlCenterLabels } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SettingsPanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: \`calc(\${vars.space[8]} * 18)\`,
+  maxInlineSize: '100%',
+  padding: vars.space[6],
+  display: 'grid',
+  gap: vars.space[5],
+});
+
+const PanelLabel = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.lg,
+  fontWeight: vars.fontWeight.semibold,
+  color: vars.color.text,
+});
+
+const SettingsRows = styled.div({
+  '&&': {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gap: vars.space[3],
+  },
+  '& > :last-child': { gridColumn: '1 / -1' },
+});
+
+const labels: ControlCenterLabels = {
+  focus: 'Focus',
+  notifications: 'Notifications',
+  presenting: 'Presenting',
+  focusDetails: 'Focus settings',
+  notificationDetails: 'Notification channels',
+  focusDescription: 'Choose a mode and duration.',
+  notificationDescription: 'Choose notification channels.',
+  modes: 'Mode',
+  duration: 'Duration',
+  volume: 'Alert volume',
+  textSize: 'Text scale',
+  start: 'Start',
+  update: 'Update',
+  close: 'Close',
+  inactive: 'No focus session',
+  until: (time) => \`Focus until \${time}\`,
+  minutes: (value) => new Intl.NumberFormat('en', { style: 'unit', unit: 'minute' }).format(value),
+};
+
+const focusModes = [
+  { value: 'work', label: 'Work', description: 'Allow priority contacts.', defaultMinutes: 25 },
+  { value: 'reading', label: 'Reading', description: 'Silence distractions.', defaultMinutes: 45 },
+];
+
+export function NoChannelsExample() {
+  return (
+    <SettingsPanel>
+      <PanelLabel>Workspace settings</PanelLabel>
+      <ControlCenter
+        label="Quick settings"
+        labels={labels}
+        focusModes={focusModes}
+        channels={[]}
+        locale="en"
+        timeZone="UTC"
+        slots={{ grid: SettingsRows }}
+        slotProps={{ modes: { orientation: 'horizontal' } }}
+      />
+    </SettingsPanel>
+  );
+}`,
+      },
+    },
+  },
+  args: { channels: [] },
+};
+export const People: Story = {
+  name: 'Allowed contacts',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Include specific contacts who can break through an active focus session.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { ControlCenter, Surface, styled, type ControlCenterLabels } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SettingsPanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: \`calc(\${vars.space[8]} * 18)\`,
+  maxInlineSize: '100%',
+  padding: vars.space[6],
+  display: 'grid',
+  gap: vars.space[5],
+});
+
+const PanelLabel = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.lg,
+  fontWeight: vars.fontWeight.semibold,
+  color: vars.color.text,
+});
+
+const SettingsRows = styled.div({
+  '&&': {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gap: vars.space[3],
+  },
+  '& > :last-child': { gridColumn: '1 / -1' },
+});
 
 const labels: ControlCenterLabels = {
   focus: 'Focus',
@@ -196,15 +583,24 @@ const people = [
   { value: 'sam', name: 'Sam' },
 ];
 
-<ControlCenter
-  label="Quick settings"
-  labels={labels}
-  focusModes={focusModes}
-  channels={channels}
-  people={people}
-  locale="en"
-  timeZone="UTC"
-/>`,
+export function AllowedContactsExample() {
+  return (
+    <SettingsPanel>
+      <PanelLabel>Workspace settings</PanelLabel>
+      <ControlCenter
+        label="Quick settings"
+        labels={labels}
+        focusModes={focusModes}
+        channels={channels}
+        people={people}
+        locale="en"
+        timeZone="UTC"
+        slots={{ grid: SettingsRows }}
+        slotProps={{ modes: { orientation: 'horizontal' } }}
+      />
+    </SettingsPanel>
+  );
+}`,
       },
     },
   },
@@ -229,11 +625,42 @@ export const PeopleDetail: Story = {
   },
 };
 export const ZeroVolume: Story = {
+  name: 'Initial levels',
   parameters: {
     docs: {
+      description: {
+        story: 'Set custom initial levels for alert volume and display text scale.',
+      },
       source: {
         language: 'tsx',
-        code: `import { ControlCenter, type ControlCenterLabels } from '@jfrader/ui';
+        code: `import { ControlCenter, Surface, styled, type ControlCenterLabels } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SettingsPanel = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: \`calc(\${vars.space[8]} * 18)\`,
+  maxInlineSize: '100%',
+  padding: vars.space[6],
+  display: 'grid',
+  gap: vars.space[5],
+});
+
+const PanelLabel = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.lg,
+  fontWeight: vars.fontWeight.semibold,
+  color: vars.color.text,
+});
+
+const SettingsRows = styled.div({
+  '&&': {
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gap: vars.space[3],
+  },
+  '& > :last-child': { gridColumn: '1 / -1' },
+});
 
 const labels: ControlCenterLabels = {
   focus: 'Focus',
@@ -265,15 +692,24 @@ const channels = [
   { value: 'email', label: 'Email' },
 ];
 
-<ControlCenter
-  label="Quick settings"
-  labels={labels}
-  focusModes={focusModes}
-  channels={channels}
-  defaultValue={{ volume: 0, textSize: 130 }}
-  locale="en"
-  timeZone="UTC"
-/>`,
+export function InitialLevelsExample() {
+  return (
+    <SettingsPanel>
+      <PanelLabel>Workspace settings</PanelLabel>
+      <ControlCenter
+        label="Quick settings"
+        labels={labels}
+        focusModes={focusModes}
+        channels={channels}
+        defaultValue={{ volume: 0, textSize: 130 }}
+        locale="en"
+        timeZone="UTC"
+        slots={{ grid: SettingsRows }}
+        slotProps={{ modes: { orientation: 'horizontal' } }}
+      />
+    </SettingsPanel>
+  );
+}`,
       },
     },
   },

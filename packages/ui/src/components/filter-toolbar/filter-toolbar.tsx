@@ -88,6 +88,7 @@ export type FilterToolbarOption = FilterToolbarSelectOption | FilterToolbarMulti
 
 export interface FilterToolbarControlsProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
+  /** Renders filter controls, optionally using the current filters, disabled state and change callback. */
   children?: ReactNode | ((state: FilterControlsState) => ReactNode);
 }
 
@@ -116,23 +117,34 @@ export interface FilterToolbarActiveFiltersSlots {
 
 export interface FilterToolbarActiveFiltersProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
+  /** Shows content when no filters are active. */
   empty?: ReactNode;
+  /** Passes props to the chip list, labels and remove buttons. */
   slotProps?: FilterToolbarActiveFiltersSlotProps;
+  /** Replaces the chip list, labels and remove buttons. */
   slots?: FilterToolbarActiveFiltersSlots;
 }
 
 export interface FilterToolbarClearProps extends Omit<ButtonProps, 'children' | 'onClick' | 'render'> {
+  /** Replaces the clear button label. Defaults to `messages.clear`. */
   children?: ReactNode;
+  /** Runs before clearing filters. Call `preventDefault()` to cancel clearing. */
   onClick?: MouseEventHandler<HTMLButtonElement>;
 }
 
 export interface FilterToolbarResultCountProps
   extends Omit<ComponentPropsWithRef<'p'>, 'children'>, SxProps {
+  /** Sets the result count. Null, negative, fractional or nonfinite values show `unknownLabel`. */
   count: number | null;
+  /** Sets number formatting locales for the result count. */
   locale?: Intl.LocalesArgument;
+  /** Builds count text from the raw and localized count. Defaults to English result labels. */
   formatCount?: (count: number, formatted: string) => string;
+  /** Shows `loadingLabel` instead of the count and marks the status busy. Defaults to `false`. */
   loading?: boolean;
+  /** Replaces the loading announcement. Defaults to `Loading results`. */
   loadingLabel?: string;
+  /** Replaces the unavailable-count announcement. Defaults to `Results unavailable`. */
   unknownLabel?: string;
 }
 
@@ -192,17 +204,25 @@ export interface FilterToolbarSlotProps {
 
 export interface FilterToolbarBaseProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {
+  /** Controls the active filters shown as chips. */
   value?: readonly FilterValue[];
+  /** Sets initial active filters when uncontrolled. Defaults to an empty list. */
   defaultValue?: readonly FilterValue[];
+  /** Receives active filters after selection, removal or clearing. */
   onValueChange?: (filters: readonly FilterValue[]) => void;
+  /** Disables generated controls and filter removal. Defaults to `false`. */
   disabled?: boolean;
+  /** Names the toolbar group unless an ARIA name is supplied. Defaults to `Filters`. */
   label?: string;
+  /** Overrides filter removal labels and the clear button text. */
   messages?: Partial<FilterToolbarMessages>;
+  /** Replaces the root container. `slots.root` takes precedence in generated mode. */
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
   [attribute: `data-${string}`]: unknown;
 }
 
 export interface FilterToolbarCompoundProps extends FilterToolbarBaseProps {
+  /** Composes toolbar parts manually instead of generating them from `filters`. */
   children?: ReactNode;
   filters?: never;
   resultCount?: never;
@@ -212,9 +232,13 @@ export interface FilterToolbarCompoundProps extends FilterToolbarBaseProps {
 
 export interface FilterToolbarEasyProps extends FilterToolbarBaseProps {
   children?: never;
+  /** Generates select controls, active chips and the clear action from filter definitions. */
   filters: readonly FilterToolbarDefinition[];
+  /** Adds a result count. Use `null` for unavailable results. Falls back to `slotProps.resultCount.count`. */
   resultCount?: number | null;
+  /** Replaces generated toolbar parts and controls. */
   slots?: FilterToolbarSlots;
+  /** Passes props to generated toolbar parts and controls. */
   slotProps?: FilterToolbarSlotProps;
 }
 
