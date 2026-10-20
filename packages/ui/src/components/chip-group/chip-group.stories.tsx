@@ -141,6 +141,11 @@ export const Sizes: Story = {
   },
 };
 export const Overflow: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
+
+const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery'].map((label) => ({ value: label.toLowerCase(), label }));
+
+<ChipGroup label="Topics" options={options} maxVisible={2} moreLabel={(count) => '+' + count + ' more'} lessLabel="Show less" />` } } },
   args: { ...OVERFLOW, onExpandedChange: fn() },
   play: async ({ canvasElement, args, userEvent }) => {
     const canvas = within(canvasElement);
@@ -157,8 +162,17 @@ export const Overflow: Story = {
     await expect(args.onExpandedChange).toHaveBeenCalledTimes(2);
   },
 };
-export const Expanded: Story = { args: { ...OVERFLOW, defaultExpanded: true, defaultValue: ['delivery'] } };
+export const Expanded: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
+
+const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery'].map((label) => ({ value: label.toLowerCase(), label }));
+
+<ChipGroup label="Topics" options={options} maxVisible={2} moreLabel={(count) => '+' + count + ' more'} lessLabel="Show less" defaultExpanded defaultValue={['delivery']} />` } } }, args: { ...OVERFLOW, defaultExpanded: true, defaultValue: ['delivery'] } };
 export const SelectedBeyondCutoff: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
+
+const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery'].map((label) => ({ value: label.toLowerCase(), label }));
+
+<ChipGroup label="Topics" options={options} maxVisible={2} moreLabel={(count) => '+' + count + ' more'} lessLabel="Show less" defaultValue={['delivery']} />` } } },
   args: { ...OVERFLOW, defaultValue: ['delivery'], onValueChange: fn() },
   play: async ({ canvasElement, args, userEvent }) => {
     const canvas = within(canvasElement);
@@ -176,6 +190,11 @@ export const SelectedBeyondCutoff: Story = {
   },
 };
 export const AllPinnedNoOverflow: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
+
+const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery'].map((label) => ({ value: label.toLowerCase(), label }));
+
+<ChipGroup label="Topics" options={options} maxVisible={2} moreLabel={(count) => '+' + count + ' more'} lessLabel="Show less" defaultValue={['research', 'writing', 'testing', 'delivery']} />` } } },
   args: { ...OVERFLOW, defaultValue: OPTIONS.slice(OVERFLOW.maxVisible).map((option) => option.value) },
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -207,6 +226,11 @@ export const WrappedLongLabels: Story = {
   },
 };
 export const DisabledGroup: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
+
+const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery'].map((label) => ({ value: label.toLowerCase(), label }));
+
+<ChipGroup label="Topics" options={options} maxVisible={2} moreLabel={(count) => '+' + count + ' more'} lessLabel="Show less" disabled defaultValue={['design']} />` } } },
   args: { ...OVERFLOW, disabled: true, defaultValue: ['design'], onValueChange: fn(), onExpandedChange: fn() },
   play: async ({ canvasElement, args, userEvent }) => {
     for (const button of within(canvasElement).getAllByRole('button')) {
@@ -280,6 +304,11 @@ export const ControlledExpansion: Story = {
   },
 };
 export const ControlledRejected: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
+
+const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery'].map((label) => ({ value: label.toLowerCase(), label }));
+
+<ChipGroup label="Topics" options={options} maxVisible={2} moreLabel={(count) => '+' + count + ' more'} lessLabel="Show less" value={[]} expanded={false} onValueChange={() => {}} onExpandedChange={() => {}} />` } } },
   args: { ...OVERFLOW, value: [], expanded: false, onValueChange: fn(), onExpandedChange: fn() },
   play: async ({ canvasElement, args, userEvent }) => {
     const canvas = within(canvasElement);
@@ -318,6 +347,11 @@ export const AllDisabled: Story = {
   },
 };
 export const NativeCancellation: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
+
+const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery'].map((label) => ({ value: label.toLowerCase(), label }));
+
+<ChipGroup label="Topics" options={options} maxVisible={2} moreLabel={(count) => '+' + count + ' more'} lessLabel="Show less" onKeyDown={(event) => event.preventDefault()} slotProps={{ chip: { onClick: (event) => event.preventDefault() }, overflow: { onClick: (event) => event.preventDefault() } }} />` } } },
   args: {
     ...OVERFLOW,
     onValueChange: fn(),
@@ -508,6 +542,11 @@ export const AriaMerge: Story = {
   },
 };
 export const FalsyLabel: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
+
+const options = [false, null, 0, ''].map((label, index) => ({ value: String(index), label }));
+
+<ChipGroup label="Topics" options={options} slotProps={{ chip: (option) => ({ 'aria-label': 'Option ' + option.value }) }} />` } } },
   args: {
     options: [false, null, 0, ''].map((label, index) => ({ value: String(index), label })),
     slotProps: { chip: (option) => ({ 'aria-label': option.label === 0 ? 'Option 0' : `Option ${option.value}` }) },
@@ -545,6 +584,11 @@ export const CollapseFocusRecovery: Story = {
   },
 };
 export const RapidToggle: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
+
+const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery'].map((label) => ({ value: label.toLowerCase(), label }));
+
+<ChipGroup label="Topics" options={options} maxVisible={2} moreLabel={(count) => '+' + count + ' more'} lessLabel="Show less" />` } } },
   args: { ...OVERFLOW, onExpandedChange: fn() },
   play: async ({ canvasElement, args, userEvent }) => {
     const canvas = within(canvasElement);
@@ -616,6 +660,11 @@ export const ReducedMotion: Story = {
   args: { ...OVERFLOW, defaultValue: ['design'] },
   parameters: {
     docs: {
+      source: { language: 'tsx', code: `import { ChipGroup } from '@jfrader/ui';
+
+const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery'].map((label) => ({ value: label.toLowerCase(), label }));
+
+<ChipGroup label="Topics" options={options} maxVisible={2} moreLabel={(count) => '+' + count + ' more'} lessLabel="Show less" defaultValue={['design']} />` },
       description: {
         story: 'Enable reduced motion in the browser to check this example. The play does not set media preferences.',
       },

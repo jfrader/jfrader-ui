@@ -80,6 +80,14 @@ function CustomSourceFrame(props: ComponentPropsWithRef<'div'>) {
 }
 
 export const SourceFrameReplacement: StoryObj<typeof CodeBlock> = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { CodeBlock } from '@jfrader/ui';
+
+function SourceFrame(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+
+<CodeBlock code={'export const answer = 42;\\nconsole.log(answer);\\n'} filename="answer.ts" locale="en-GB" slots={{ sourceFrame: SourceFrame }} slotProps={{ sourceFrame: { className: 'source-frame-slot' } }} />` } } },
   args: { code: SOURCE, slots: { sourceFrame: CustomSourceFrame }, slotProps: { sourceFrame: { className: 'source-frame-slot' } } },
   play: async ({ canvasElement }) => {
     const frame = within(canvasElement).getByTestId('custom-source-frame');
@@ -369,6 +377,11 @@ export const CopyDisabled: Story = { args: { copyButtonProps: { disabled: true }
 export const CopyPending: Story = { args: { copyButtonProps: { value: 'pending' } } };
 export const CopyFailure: Story = { args: { copyButtonProps: { value: 'error', resetAfterMs: 0 } } };
 export const ExactSourceCopy: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+
+const source = '\\tconst title = "café ✓ 𝔘 שלום";\\r\\n  console.log(title);\\r\\n';
+
+<CodeBlock code={source} filename="answer.ts" locale="en-GB" maxLines={1} lineNumbers copyButtonProps={{ resetAfterMs: 0 }} />` } } },
   args: {
     code: MIXED_SOURCE,
     maxLines: 1,
@@ -390,6 +403,11 @@ export const ExactSourceCopy: Story = {
   },
 };
 export const CopyRetry: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+
+const source = 'export const answer = 42;\\nconsole.log(answer);\\n';
+
+<CodeBlock code={source} filename="answer.ts" locale="en-GB" copyButtonProps={{ resetAfterMs: 0 }} />` } } },
   args: { copyButtonProps: { onCopyError: fn(), onCopied: fn(), resetAfterMs: 0 } },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     const error = new Error('Clipboard unavailable');
@@ -409,6 +427,11 @@ export const CopyRetry: Story = {
   },
 };
 export const MissingClipboard: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+
+const source = 'export const answer = 42;\\nconsole.log(answer);\\n';
+
+<CodeBlock code={source} filename="answer.ts" locale="en-GB" copyButtonProps={{ resetAfterMs: 0 }} />` } } },
   args: { copyButtonProps: { onCopyError: fn(), resetAfterMs: 0 } },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await withClipboard(canvasElement, null, async () => {
@@ -589,6 +612,11 @@ export const ReducedMotion: Story = {
   },
 };
 export const KeyboardCopyScrollToggle: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+
+const source = 'export const answer = 42;\\nconsole.log(answer);\\n\\nexport function double(value: number) {\\n\\treturn value * 2;\\n}\\n';
+
+<CodeBlock code={source} filename="answer.ts" locale="en-GB" maxLines={2} lineNumbers copyButtonProps={{ resetAfterMs: 0 }} />` } } },
   args: { ...Collapsed.args, copyButtonProps: { onCopied: fn(), resetAfterMs: 0 } },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     const writeText = fn(async (_text: string) => {});
@@ -646,6 +674,12 @@ function deferredLoader() {
 }
 
 export const Highlighted: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
+
+const source = "// Resolve the user's preferred theme.\\nexport type Theme = 'dark' | 'light';\\n\\nexport function preferredTheme(media: MediaQueryList): Theme {\\n  const stored = localStorage.getItem('theme');\\n  if (stored === 'dark' || stored === 'light') return stored;\\n  return media.matches ? 'dark' : 'light';\\n}\\n";
+
+<CodeBlock code={source} filename="theme.ts" locale="en-GB" language="TypeScript" lineNumbers highlight={loadShikiHighlight} />` } } },
   args: {
     code: SAMPLES.TypeScript,
     filename: 'theme.ts',
@@ -662,12 +696,24 @@ export const Highlighted: Story = {
   },
 };
 export const HighlightedLight: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
+
+const source = "// Resolve the user's preferred theme.\\nexport type Theme = 'dark' | 'light';\\n\\nexport function preferredTheme(media: MediaQueryList): Theme {\\n  const stored = localStorage.getItem('theme');\\n  if (stored === 'dark' || stored === 'light') return stored;\\n  return media.matches ? 'dark' : 'light';\\n}\\n";
+
+<CodeBlock code={source} filename="theme.ts" locale="en-GB" language="TypeScript" lineNumbers highlight={loadShikiHighlight} />` } } },
   args: Highlighted.args,
   globals: { theme: 'light' },
   decorators: [withLightTheme],
   play: Highlighted.play,
 };
 export const HighlightedJsx: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
+
+const source = '<button type="button" onClick={() => handleClick(id)}>\\n  {label}\\n</button>\\n';
+
+<CodeBlock code={source} filename="button.jsx" locale="en-GB" language="jsx" lineNumbers highlight={loadShikiHighlight} />` } } },
   args: {
     code: SAMPLES.JSX,
     filename: SAMPLE_FILENAMES.JSX,
@@ -693,12 +739,24 @@ export const HighlightedJsx: Story = {
   },
 };
 export const HighlightedJsxLight: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
+
+const source = '<button type="button" onClick={() => handleClick(id)}>\\n  {label}\\n</button>\\n';
+
+<CodeBlock code={source} filename="button.jsx" locale="en-GB" language="jsx" lineNumbers highlight={loadShikiHighlight} />` } } },
   args: HighlightedJsx.args,
   globals: { theme: 'light' },
   decorators: [withLightTheme],
   play: HighlightedJsx.play,
 };
 export const HighlightedTsx: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
+
+const source = 'interface Props {\\n  count: number;\\n}\\n\\nexport const Counter = ({ count }: Props) => (\\n  <span className="count">{count}</span>\\n);\\n';
+
+<CodeBlock code={source} filename="counter.tsx" locale="en-GB" language="tsx" lineNumbers highlight={loadShikiHighlight} />` } } },
   args: {
     code: SAMPLES.TSX,
     filename: SAMPLE_FILENAMES.TSX,
@@ -724,6 +782,12 @@ export const HighlightedTsx: Story = {
   },
 };
 export const HighlightedTsxLight: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
+
+const source = 'interface Props {\\n  count: number;\\n}\\n\\nexport const Counter = ({ count }: Props) => (\\n  <span className="count">{count}</span>\\n);\\n';
+
+<CodeBlock code={source} filename="counter.tsx" locale="en-GB" language="tsx" lineNumbers highlight={loadShikiHighlight} />` } } },
   args: HighlightedTsx.args,
   globals: { theme: 'light' },
   decorators: [withLightTheme],
@@ -751,6 +815,12 @@ export const HighlightedLanguages: Story = {
   },
 };
 export const HighlightedCollapsed: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
+
+const source = "// Resolve the user's preferred theme.\\nexport type Theme = 'dark' | 'light';\\n\\nexport function preferredTheme(media: MediaQueryList): Theme {\\n  const stored = localStorage.getItem('theme');\\n  if (stored === 'dark' || stored === 'light') return stored;\\n  return media.matches ? 'dark' : 'light';\\n}\\n";
+
+<CodeBlock code={source} filename="theme.ts" locale="en-GB" language="TypeScript" lineNumbers maxLines={4} highlight={loadShikiHighlight} />` } } },
   args: { ...Highlighted.args, maxLines: 4 },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     const root = canvasElement.querySelector('section')!;
@@ -763,6 +833,12 @@ export const HighlightedCollapsed: Story = {
   },
 };
 export const HighlightUnknownLanguage: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
+
+const source = 'export const answer = 42;\\nconsole.log(answer);\\n';
+
+<CodeBlock code={source} filename="answer.ts" locale="en-GB" language="COBOL" highlight={loadShikiHighlight} />` } } },
   args: { language: 'COBOL', highlight: fn(loadShikiHighlight) },
   play: async ({ args, canvasElement }) => {
     await waitFor(() => expect(args.highlight).toHaveBeenCalledTimes(1));
@@ -829,6 +905,13 @@ export const HighlightPending: Story = {
   },
 };
 export const HighlightTokenMismatch: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+<CodeBlock code={'one\\r\\ntwo\\nthree'} filename="answer.ts" locale="en-GB" lineNumbers highlight={() => [
+  [{ content: 'one', color: vars.color.syntaxKeyword, fontStyle: 'italic' }],
+  [{ content: 'TWO', color: vars.color.syntaxString }],
+]} />` } } },
   args: {
     code: 'one\r\ntwo\nthree',
     lineNumbers: true,

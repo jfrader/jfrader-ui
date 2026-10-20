@@ -103,16 +103,111 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 export const Light: Story = { globals: { theme: 'light' } };
-export const RTL: Story = { args: { dir: 'rtl' } };
-export const Disabled: Story = { args: { disabled: true } };
+export const RTL: Story = { parameters: { docs: { source: { language: 'tsx', code: "import { ControlCenter, type ControlCenterLabels } from '@jfrader/ui';\n\nconst labels: ControlCenterLabels = {\n  focus: 'Focus',\n  notifications: 'Notifications',\n  presenting: 'Presenting',\n  focusDetails: 'Focus settings',\n  notificationDetails: 'Notification channels',\n  focusDescription: 'Choose a mode and duration.',\n  notificationDescription: 'Choose notification channels.',\n  modes: 'Mode',\n  duration: 'Duration',\n  volume: 'Alert volume',\n  textSize: 'Text scale',\n  start: 'Start',\n  update: 'Update',\n  close: 'Close',\n  inactive: 'No focus session',\n  until: (time) => `Focus until ${time}`,\n  minutes: (value) => new Intl.NumberFormat('en', { style: 'unit', unit: 'minute' }).format(value),\n};\n\nconst focusModes = [\n  { value: 'work', label: 'Work', description: 'Allow priority contacts.', defaultMinutes: 25 },\n  { value: 'reading', label: 'Reading', description: 'Silence distractions.', defaultMinutes: 45 },\n];\n\nconst channels = [\n  { value: 'chat', label: 'Chat', defaultChecked: true },\n  { value: 'email', label: 'Email' },\n];\n\n<ControlCenter\n  label=\"Quick settings\"\n  labels={labels}\n  focusModes={focusModes}\n  channels={channels}\n  locale=\"en\"\n  timeZone=\"UTC\"\n  dir=\"rtl\"\n/>" } } }, args: { dir: 'rtl' } };
+export const Disabled: Story = { parameters: { docs: { source: { language: 'tsx', code: "import { ControlCenter, type ControlCenterLabels } from '@jfrader/ui';\n\nconst labels: ControlCenterLabels = {\n  focus: 'Focus',\n  notifications: 'Notifications',\n  presenting: 'Presenting',\n  focusDetails: 'Focus settings',\n  notificationDetails: 'Notification channels',\n  focusDescription: 'Choose a mode and duration.',\n  notificationDescription: 'Choose notification channels.',\n  modes: 'Mode',\n  duration: 'Duration',\n  volume: 'Alert volume',\n  textSize: 'Text scale',\n  start: 'Start',\n  update: 'Update',\n  close: 'Close',\n  inactive: 'No focus session',\n  until: (time) => `Focus until ${time}`,\n  minutes: (value) => new Intl.NumberFormat('en', { style: 'unit', unit: 'minute' }).format(value),\n};\n\nconst focusModes = [\n  { value: 'work', label: 'Work', description: 'Allow priority contacts.', defaultMinutes: 25 },\n  { value: 'reading', label: 'Reading', description: 'Silence distractions.', defaultMinutes: 45 },\n];\n\nconst channels = [\n  { value: 'chat', label: 'Chat', defaultChecked: true },\n  { value: 'email', label: 'Email' },\n];\n\n<ControlCenter\n  label=\"Quick settings\"\n  labels={labels}\n  focusModes={focusModes}\n  channels={channels}\n  locale=\"en\"\n  timeZone=\"UTC\"\n  disabled\n/>" } } }, args: { disabled: true } };
 export const NoModes: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ControlCenter, type ControlCenterLabels } from '@jfrader/ui';
+
+const labels: ControlCenterLabels = {
+  focus: 'Focus',
+  notifications: 'Notifications',
+  presenting: 'Presenting',
+  focusDetails: 'Focus settings',
+  notificationDetails: 'Notification channels',
+  focusDescription: 'Choose a mode and duration.',
+  notificationDescription: 'Choose notification channels.',
+  modes: 'Mode',
+  duration: 'Duration',
+  volume: 'Alert volume',
+  textSize: 'Text scale',
+  start: 'Start',
+  update: 'Update',
+  close: 'Close',
+  inactive: 'No focus session',
+  until: (time) => \`Focus until \${time}\`,
+  minutes: (value) => new Intl.NumberFormat('en', { style: 'unit', unit: 'minute' }).format(value),
+};
+
+const channels = [
+  { value: 'chat', label: 'Chat', defaultChecked: true },
+  { value: 'email', label: 'Email' },
+];
+
+<ControlCenter
+  label="Quick settings"
+  labels={labels}
+  focusModes={[]}
+  channels={channels}
+  locale="en"
+  timeZone="UTC"
+/>`,
+      },
+    },
+  },
   args: { focusModes: [] },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('button', { name: 'Focus' })).toBeDisabled();
   },
 };
-export const NoChannels: Story = { args: { channels: [] } };
+export const NoChannels: Story = { parameters: { docs: { source: { language: 'tsx', code: "import { ControlCenter, type ControlCenterLabels } from '@jfrader/ui';\n\nconst labels: ControlCenterLabels = {\n  focus: 'Focus',\n  notifications: 'Notifications',\n  presenting: 'Presenting',\n  focusDetails: 'Focus settings',\n  notificationDetails: 'Notification channels',\n  focusDescription: 'Choose a mode and duration.',\n  notificationDescription: 'Choose notification channels.',\n  modes: 'Mode',\n  duration: 'Duration',\n  volume: 'Alert volume',\n  textSize: 'Text scale',\n  start: 'Start',\n  update: 'Update',\n  close: 'Close',\n  inactive: 'No focus session',\n  until: (time) => `Focus until ${time}`,\n  minutes: (value) => new Intl.NumberFormat('en', { style: 'unit', unit: 'minute' }).format(value),\n};\n\nconst focusModes = [\n  { value: 'work', label: 'Work', description: 'Allow priority contacts.', defaultMinutes: 25 },\n  { value: 'reading', label: 'Reading', description: 'Silence distractions.', defaultMinutes: 45 },\n];\n\n<ControlCenter\n  label=\"Quick settings\"\n  labels={labels}\n  focusModes={focusModes}\n  channels={[]}\n  locale=\"en\"\n  timeZone=\"UTC\"\n/>" } } }, args: { channels: [] } };
 export const People: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ControlCenter, type ControlCenterLabels } from '@jfrader/ui';
+
+const labels: ControlCenterLabels = {
+  focus: 'Focus',
+  notifications: 'Notifications',
+  presenting: 'Presenting',
+  focusDetails: 'Focus settings',
+  notificationDetails: 'Notification channels',
+  focusDescription: 'Choose a mode and duration.',
+  notificationDescription: 'Choose notification channels.',
+  modes: 'Mode',
+  duration: 'Duration',
+  volume: 'Alert volume',
+  textSize: 'Text scale',
+  start: 'Start',
+  update: 'Update',
+  close: 'Close',
+  inactive: 'No focus session',
+  until: (time) => \`Focus until \${time}\`,
+  minutes: (value) => new Intl.NumberFormat('en', { style: 'unit', unit: 'minute' }).format(value),
+};
+
+const focusModes = [
+  { value: 'work', label: 'Work', description: 'Allow priority contacts.', defaultMinutes: 25 },
+  { value: 'reading', label: 'Reading', description: 'Silence distractions.', defaultMinutes: 45 },
+];
+
+const channels = [
+  { value: 'chat', label: 'Chat', defaultChecked: true },
+  { value: 'email', label: 'Email' },
+];
+
+const people = [
+  { value: 'alex', name: 'Alex' },
+  { value: 'sam', name: 'Sam' },
+];
+
+<ControlCenter
+  label="Quick settings"
+  labels={labels}
+  focusModes={focusModes}
+  channels={channels}
+  people={people}
+  locale="en"
+  timeZone="UTC"
+/>`,
+      },
+    },
+  },
   args: {
     people: [
       { value: 'alex', name: 'Alex' },
@@ -134,6 +229,54 @@ export const PeopleDetail: Story = {
   },
 };
 export const ZeroVolume: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ControlCenter, type ControlCenterLabels } from '@jfrader/ui';
+
+const labels: ControlCenterLabels = {
+  focus: 'Focus',
+  notifications: 'Notifications',
+  presenting: 'Presenting',
+  focusDetails: 'Focus settings',
+  notificationDetails: 'Notification channels',
+  focusDescription: 'Choose a mode and duration.',
+  notificationDescription: 'Choose notification channels.',
+  modes: 'Mode',
+  duration: 'Duration',
+  volume: 'Alert volume',
+  textSize: 'Text scale',
+  start: 'Start',
+  update: 'Update',
+  close: 'Close',
+  inactive: 'No focus session',
+  until: (time) => \`Focus until \${time}\`,
+  minutes: (value) => new Intl.NumberFormat('en', { style: 'unit', unit: 'minute' }).format(value),
+};
+
+const focusModes = [
+  { value: 'work', label: 'Work', description: 'Allow priority contacts.', defaultMinutes: 25 },
+  { value: 'reading', label: 'Reading', description: 'Silence distractions.', defaultMinutes: 45 },
+];
+
+const channels = [
+  { value: 'chat', label: 'Chat', defaultChecked: true },
+  { value: 'email', label: 'Email' },
+];
+
+<ControlCenter
+  label="Quick settings"
+  labels={labels}
+  focusModes={focusModes}
+  channels={channels}
+  defaultValue={{ volume: 0, textSize: 130 }}
+  locale="en"
+  timeZone="UTC"
+/>`,
+      },
+    },
+  },
   args: { defaultValue: { volume: 0, textSize: 130 } },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('slider', { name: 'Alert volume' })).toHaveAttribute(
@@ -193,6 +336,72 @@ export const DraftApplyAndDiscard: Story = {
   },
 };
 export const ControlledRejects: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { ControlCenter, type ControlCenterLabels, type ControlCenterValue } from '@jfrader/ui';
+
+const labels: ControlCenterLabels = {
+  focus: 'Focus',
+  notifications: 'Notifications',
+  presenting: 'Presenting',
+  focusDetails: 'Focus settings',
+  notificationDetails: 'Notification channels',
+  focusDescription: 'Choose a mode and duration.',
+  notificationDescription: 'Choose notification channels.',
+  modes: 'Mode',
+  duration: 'Duration',
+  volume: 'Alert volume',
+  textSize: 'Text scale',
+  start: 'Start',
+  update: 'Update',
+  close: 'Close',
+  inactive: 'No focus session',
+  until: (time) => \`Focus until \${time}\`,
+  minutes: (value) => new Intl.NumberFormat('en', { style: 'unit', unit: 'minute' }).format(value),
+};
+
+const focusModes = [
+  { value: 'work', label: 'Work', description: 'Allow priority contacts.', defaultMinutes: 25 },
+  { value: 'reading', label: 'Reading', description: 'Silence distractions.', defaultMinutes: 45 },
+];
+
+const channels = [
+  { value: 'chat', label: 'Chat', defaultChecked: true },
+  { value: 'email', label: 'Email' },
+];
+
+export function ControlledControlCenter() {
+  const [value] = useState<ControlCenterValue>({
+    focus: null,
+    notifications: false,
+    presenting: false,
+    channels: { chat: false, email: false },
+    volume: 0,
+    textSize: 100,
+  });
+  const [open] = useState(false);
+
+  return (
+    <ControlCenter
+      label="Quick settings"
+      labels={labels}
+      focusModes={focusModes}
+      channels={channels}
+      locale="en"
+      timeZone="UTC"
+      value={value}
+      open={open}
+      onValueChange={() => {}}
+      onOpenChange={() => {}}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     value: {
       focus: null,
@@ -258,6 +467,69 @@ export const ControlledDraftRejects: Story = {
 };
 
 export const ControlledMeterRejects: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { ControlCenter, type ControlCenterLabels, type ControlCenterValue } from '@jfrader/ui';
+
+const labels: ControlCenterLabels = {
+  focus: 'Focus',
+  notifications: 'Notifications',
+  presenting: 'Presenting',
+  focusDetails: 'Focus settings',
+  notificationDetails: 'Notification channels',
+  focusDescription: 'Choose a mode and duration.',
+  notificationDescription: 'Choose notification channels.',
+  modes: 'Mode',
+  duration: 'Duration',
+  volume: 'Alert volume',
+  textSize: 'Text scale',
+  start: 'Start',
+  update: 'Update',
+  close: 'Close',
+  inactive: 'No focus session',
+  until: (time) => \`Focus until \${time}\`,
+  minutes: (value) => new Intl.NumberFormat('en', { style: 'unit', unit: 'minute' }).format(value),
+};
+
+const focusModes = [
+  { value: 'work', label: 'Work', description: 'Allow priority contacts.', defaultMinutes: 25 },
+  { value: 'reading', label: 'Reading', description: 'Silence distractions.', defaultMinutes: 45 },
+];
+
+const channels = [
+  { value: 'chat', label: 'Chat', defaultChecked: true },
+  { value: 'email', label: 'Email' },
+];
+
+export function ControlledMeterControlCenter() {
+  const [value] = useState<ControlCenterValue>({
+    focus: null,
+    notifications: true,
+    presenting: false,
+    channels: {},
+    volume: 0,
+    textSize: 100,
+  });
+
+  return (
+    <ControlCenter
+      label="Quick settings"
+      labels={labels}
+      focusModes={focusModes}
+      channels={channels}
+      locale="en"
+      timeZone="UTC"
+      value={value}
+      onValueChange={() => {}}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     value: {
       focus: null,
