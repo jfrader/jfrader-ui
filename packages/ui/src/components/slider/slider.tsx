@@ -99,46 +99,79 @@ interface SliderCommonProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
   /** Shorthand for slots.root. */
   component?: SliderSlots['root'];
+  /** Names the slider with a visible label. */
   label: ReactNode;
+  /** Shows supporting text associated with the thumbs. */
   description?: ReactNode;
+  /** Shows error text associated with the thumbs. */
   error?: ReactNode;
+  /** Marks the thumbs invalid. Defaults to `false`. */
   invalid?: boolean;
+  /** Prevents pointer and keyboard value changes. Defaults to `false`. */
   disabled?: boolean;
+  /** Sets the lowest selectable value. Defaults to 0. */
   min?: number;
+  /** Sets the highest selectable value. Defaults to 100. */
   max?: number;
+  /** Sets the positive increment between values. Defaults to 1. */
   step?: number;
+  /** Sets the Page Up/Down increment, rounded to a positive multiple of `step`. Defaults to one tenth of the range. */
   largeStep?: number;
+  /** Adds selectable labeled positions along the track. */
   marks?: readonly SliderMark[];
+  /** Sets the locale used to format values. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Configures number formatting for displayed and accessible values. */
   formatOptions?: Intl.NumberFormatOptions;
+  /** Overrides value text using the configured number formatter. */
   formatValue?: (value: number, formatter: Intl.NumberFormat) => string;
+  /** Shows the value readout beside the label. Defaults to `true`; thumb bubbles remain available. */
   showValue?: boolean;
+  /** Adds content before the slider control. */
   start?: ReactNode;
+  /** Adds content after the slider control. */
   end?: ReactNode;
+  /** Sets the slider's visual size. Defaults to `md`. */
   size?: SliderSize;
+  /** Passes props and `sx` to individual slider parts. */
   slotProps?: SliderSlotProps;
+  /** Replaces the elements rendering individual slider parts. */
   slots?: SliderSlots;
 }
 export type SliderProps = SliderCommonProps &
   (
     | {
+        /** Selects one value with a single thumb. This is the default mode. */
         type?: 'single';
+        /** Controls the selected value. */
         value?: number;
+        /** Sets the initial uncontrolled value. Defaults to `min`. */
         defaultValue?: number;
+        /** Receives requested values during interaction. */
         onValueChange?: (value: number) => void;
+        /** Receives the final value after a changed drag, keyboard step or mark selection. */
         onValueCommit?: (value: number) => void;
+        /** Submits the value through a hidden form input. */
         name?: string;
         thumbLabels?: never;
         minStepsBetweenThumbs?: never;
       }
     | {
+        /** Selects lower and upper values with two thumbs. */
         type: 'range';
+        /** Controls the lower and upper selected values. */
         value?: readonly [number, number];
+        /** Sets the initial uncontrolled bounds. Defaults to `[min, max]`. */
         defaultValue?: readonly [number, number];
+        /** Receives requested bounds during interaction. */
         onValueChange?: (value: readonly [number, number]) => void;
+        /** Receives the final bounds after a changed drag, keyboard step or mark selection. */
         onValueCommit?: (value: readonly [number, number]) => void;
+        /** Names the hidden form inputs with a shared name or one name per bound. */
         name?: string | readonly [string, string];
+        /** Names the lower and upper thumbs for assistive technology. */
         thumbLabels: readonly [string, string];
+        /** Sets the minimum gap between thumbs in multiples of `step`. Defaults to 0. */
         minStepsBetweenThumbs?: number;
       }
   );
