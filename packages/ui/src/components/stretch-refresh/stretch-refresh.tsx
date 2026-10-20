@@ -25,12 +25,12 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button, type ButtonProps } from '../button';
 
-type Slot<E extends 'div' | 'header' | 'h2' | 'ul' | 'li'> = ComponentPropsWithRef<E> & { css?: Interpolation<Theme> };
+type Slot<E extends 'div' | 'header' | 'h2' | 'ul' | 'li'> = ComponentPropsWithRef<E> & { sx?: Interpolation<Theme> };
 export interface StretchRefreshSlots {
   /** Header holding the title and refresh action. */
   header?: ComponentType<Slot<'header'>>;
@@ -69,7 +69,7 @@ export interface StretchRefreshSlotProps<T> {
   /** Visual pull indicator displaying stretch progress and spinner. */
   indicator?: Omit<Slot<'div'>, 'aria-hidden'>;
   /** Manual refresh trigger button; renders `Button`. */
-  refreshButton?: Omit<ButtonProps, 'children' | 'type' | 'disabled' | 'loading' | 'render' | 'sx'> & { css?: Interpolation<Theme> };
+  refreshButton?: Omit<ButtonProps, 'children' | 'type' | 'disabled' | 'loading' | 'render' | 'sx'> & { sx?: Interpolation<Theme> };
   /** Status element announcing pull and refresh state. */
   status?: Omit<Slot<'div'>, 'role' | 'aria-atomic'>;
   /** Empty state container element shown when no items exist. */
@@ -517,27 +517,27 @@ export function StretchRefresh<T>({
             }}
           >
             <Header
-              {...slotProps?.header}
+              {...withoutSx(slotProps?.header)}
               role={slotProps?.header?.role ?? 'presentation'}
-              css={[headerStyle, slotProps?.header?.css]}
+              css={[headerStyle, slotProps?.header?.sx]}
             >
               <Heading
-                {...slotProps?.title}
+                {...withoutSx(slotProps?.title)}
                 id={titleId}
-                css={[headingStyle, slotProps?.title?.css]}
+                css={[headingStyle, slotProps?.title?.sx]}
               >
                 {title}
               </Heading>
               <RefreshButton
                 variant="outline"
                 size="sm"
-                {...slotProps?.refreshButton}
+                {...withoutSx(slotProps?.refreshButton)}
                 type="button"
                 disabled={disabled}
                 aria-disabled={
                   busy || inFlight.current || slotProps?.refreshButton?.['aria-disabled']
                 }
-                css={[buttonStyle, slotProps?.refreshButton?.css]}
+                css={[buttonStyle, slotProps?.refreshButton?.sx]}
                 onClick={(event) => {
                   slotProps?.refreshButton?.onClick?.(event);
                   if (!event.defaultPrevented) request();
@@ -547,17 +547,17 @@ export function StretchRefresh<T>({
               </RefreshButton>
               {subtitlePresent && (
                 <Subtitle
-                  {...slotProps?.subtitle}
+                  {...withoutSx(slotProps?.subtitle)}
                   id={subtitleId}
                   data-ui="stretch-refresh-subtitle"
-                  css={[subtitleStyle, slotProps?.subtitle?.css]}
+                  css={[subtitleStyle, slotProps?.subtitle?.sx]}
                 >
                   {subtitle}
                 </Subtitle>
               )}
             </Header>
             <Feed
-              {...feedSlot}
+              {...withoutSx(feedSlot)}
               ref={mergedFeedRef}
               role="region"
               tabIndex={feedSlot?.tabIndex ?? 0}
@@ -568,7 +568,7 @@ export function StretchRefresh<T>({
                 feedSlot?.['aria-describedby'],
                 subtitlePresent ? subtitleId : undefined,
               )}
-              css={[feedStyle, feedSlot?.css]}
+              css={[feedStyle, feedSlot?.sx]}
               onPointerDown={(event) => {
                 feedSlot?.onPointerDown?.(event);
                 down(event);
@@ -592,10 +592,10 @@ export function StretchRefresh<T>({
               }}
             >
               <Indicator
-                {...slotProps?.indicator}
+                {...withoutSx(slotProps?.indicator)}
                 aria-hidden="true"
                 data-ui="stretch-refresh-indicator"
-                css={[indicatorStyle, slotProps?.indicator?.css]}
+                css={[indicatorStyle, slotProps?.indicator?.sx]}
               >
                 {indicatorText}
                 <motion.span
@@ -606,10 +606,10 @@ export function StretchRefresh<T>({
               </Indicator>
               <motion.div style={{ y }}>
                 <List
-                  {...slotProps?.list}
+                  {...withoutSx(slotProps?.list)}
                   aria-busy={busy}
                   data-ui="stretch-refresh-list"
-                  css={[listStyle, slotProps?.list?.css]}
+                  css={[listStyle, slotProps?.list?.sx]}
                 >
                   {items.map((item, index) => {
                     const itemSlot =
@@ -617,7 +617,7 @@ export function StretchRefresh<T>({
                         ? slotProps.item(item, index)
                         : slotProps?.item;
                     return (
-                      <Item {...itemSlot} key={getKey(item)} css={[itemStyle, itemSlot?.css]}>
+                      <Item {...withoutSx(itemSlot)} key={getKey(item)} css={[itemStyle, itemSlot?.sx]}>
                         {renderItem(item, index)}
                       </Item>
                     );
@@ -625,9 +625,9 @@ export function StretchRefresh<T>({
                 </List>
                 {items.length === 0 && isRenderable(emptyContent) && emptyContent !== '' && (
                   <Empty
-                    {...slotProps?.empty}
+                    {...withoutSx(slotProps?.empty)}
                     data-ui="stretch-refresh-empty"
-                    css={[emptyStyle, slotProps?.empty?.css]}
+                    css={[emptyStyle, slotProps?.empty?.sx]}
                   >
                     {emptyContent}
                   </Empty>
@@ -635,12 +635,12 @@ export function StretchRefresh<T>({
               </motion.div>
             </Feed>
             <Status
-              {...slotProps?.status}
+              {...withoutSx(slotProps?.status)}
               id={slotProps?.status?.id ?? `${id}-status`}
               role="status"
               aria-atomic="true"
               data-ui="stretch-refresh-status"
-              css={[statusStyle, slotProps?.status?.css]}
+              css={[statusStyle, slotProps?.status?.sx]}
             >
               <motion.span style={{ opacity }}>{status}</motion.span>
             </Status>

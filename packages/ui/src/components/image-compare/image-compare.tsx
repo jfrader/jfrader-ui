@@ -27,14 +27,14 @@ import { css, type Interpolation, type SerializedStyles, type Theme } from '../.
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { motionDurationMs } from '../../styling/motion-timings';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { numberFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button, type ButtonProps } from '../button';
 
 export type ImageCompareOrientation = 'horizontal' | 'vertical';
 
-type StyleSlot = { css?: Interpolation<Theme> };
+type StyleSlot = { sx?: Interpolation<Theme> };
 type PartSlot = Omit<ComponentPropsWithRef<'div'>, 'children'> & StyleSlot;
 type CaptionSlot = Omit<ComponentPropsWithRef<'span'>, 'children' | 'id' | 'aria-hidden'> & StyleSlot;
 type HandleSlot = Omit<
@@ -750,11 +750,11 @@ export function ImageCompare({
             }}
           >
             <Frame
-              {...frameSlot}
+              {...withoutSx(frameSlot)}
               ref={mergedFrameRef}
               data-ui="image-compare-frame"
               data-disabled={disabled || undefined}
-              css={[frameStyle, frameOrientationStyles[orientation], frameSlot?.css]}
+              css={[frameStyle, frameOrientationStyles[orientation], frameSlot?.sx]}
               style={frameStyleVars}
               onPointerDown={(event) => {
                 frameSlot?.onPointerDown?.(event);
@@ -781,46 +781,46 @@ export function ImageCompare({
                 event.preventDefault();
               }}
             >
-              <After {...slotProps?.after} data-ui="image-compare-after" css={[layerStyle, slotProps?.after?.css]}>
+              <After {...withoutSx(slotProps?.after)} data-ui="image-compare-after" css={[layerStyle, slotProps?.after?.sx]}>
                 {after}
               </After>
               {afterCaptionId && (
                 <AfterLabel
-                  {...slotProps?.afterLabel}
+                  {...withoutSx(slotProps?.afterLabel)}
                   id={afterCaptionId}
                   aria-hidden="true"
                   data-ui="image-compare-after-label"
-                  css={[captionStyle, afterCaptionStyles[orientation], slotProps?.afterLabel?.css]}
+                  css={[captionStyle, afterCaptionStyles[orientation], slotProps?.afterLabel?.sx]}
                 >
                   {captions[1]}
                 </AfterLabel>
               )}
               <Before
-                {...slotProps?.before}
+                {...withoutSx(slotProps?.before)}
                 data-ui="image-compare-before"
-                css={[layerStyle, beforeOrientationStyles[orientation], slotProps?.before?.css]}
+                css={[layerStyle, beforeOrientationStyles[orientation], slotProps?.before?.sx]}
               >
                 {before}
               </Before>
               {beforeCaptionId && (
                 <BeforeLabel
-                  {...slotProps?.beforeLabel}
+                  {...withoutSx(slotProps?.beforeLabel)}
                   id={beforeCaptionId}
                   aria-hidden="true"
                   data-ui="image-compare-before-label"
-                  css={[captionStyle, beforeCaptionStyle, slotProps?.beforeLabel?.css]}
+                  css={[captionStyle, beforeCaptionStyle, slotProps?.beforeLabel?.sx]}
                 >
                   {captions[0]}
                 </BeforeLabel>
               )}
               <Divider
-                {...slotProps?.divider}
+                {...withoutSx(slotProps?.divider)}
                 aria-hidden="true"
                 data-ui="image-compare-divider"
-                css={[dividerStyle, dividerOrientationStyles[orientation], slotProps?.divider?.css]}
+                css={[dividerStyle, dividerOrientationStyles[orientation], slotProps?.divider?.sx]}
               />
               <Handle
-                {...handleSlot}
+                {...withoutSx(handleSlot)}
                 ref={mergedHandleRef}
                 role="slider"
                 tabIndex={0}
@@ -834,7 +834,7 @@ export function ImageCompare({
                 aria-valuetext={valueText(value, formatted)}
                 aria-label={handleSlot?.['aria-label'] ?? label}
                 aria-describedby={ids(handleSlot?.['aria-describedby'], beforeCaptionId, afterCaptionId)}
-                css={[handleStyle, handleOrientationStyles[orientation], handleSlot?.css]}
+                css={[handleStyle, handleOrientationStyles[orientation], handleSlot?.sx]}
                 onDoubleClick={(event) => {
                   handleSlot?.onDoubleClick?.(event);
                   if (!event.defaultPrevented) reset();
@@ -858,10 +858,10 @@ export function ImageCompare({
               <ResetButton
                 size="sm"
                 variant="outline"
-                {...resetSlot}
+                {...withoutSx(resetSlot)}
                 type="button"
                 disabled={disabled}
-                css={[resetStyle, resetSlot?.css]}
+                css={[resetStyle, resetSlot?.sx]}
                 onClick={(event) => {
                   resetSlot?.onClick?.(event);
                   if (!event.defaultPrevented) reset();

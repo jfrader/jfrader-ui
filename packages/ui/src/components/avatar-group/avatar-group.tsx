@@ -27,7 +27,7 @@ export interface AvatarGroupMember {
 
 export interface AvatarGroupPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface AvatarGroupSlots {
@@ -70,7 +70,7 @@ export interface AvatarGroupProps
   avatarProps?: AvatarGroupMember['avatarProps'];
 }
 
-function mergeAvatarPart<P extends { className?: string; style?: ComponentPropsWithRef<'span'>['style']; css?: Interpolation<Theme> }>(
+function mergeAvatarPart<P extends { className?: string; style?: ComponentPropsWithRef<'span'>['style']; sx?: Interpolation<Theme> }>(
   shared: P | undefined, member: P | undefined,
 ) {
   return {
@@ -78,7 +78,7 @@ function mergeAvatarPart<P extends { className?: string; style?: ComponentPropsW
     ...member,
     className: [shared?.className, member?.className].filter(Boolean).join(' ') || undefined,
     style: { ...shared?.style, ...member?.style },
-    css: [shared?.css, member?.css],
+    sx: [shared?.sx, member?.sx],
   };
 }
 
@@ -269,7 +269,7 @@ export function AvatarGroup({
               key={member.id}
               data-ui="avatar-group-member"
               className={slotProps?.member?.className}
-              css={[memberStyle, slotProps?.member?.css]}
+              css={[memberStyle, slotProps?.member?.sx]}
             >
               <MemberAvatar
                 size={size}
@@ -284,7 +284,7 @@ export function AvatarGroup({
               role="img"
               aria-label={overflowLabel}
               className={slotProps?.overflow?.className}
-              css={[overflowBaseStyle, overflowSizeStyles[size], slotProps?.overflow?.css]}
+              css={[overflowBaseStyle, overflowSizeStyles[size], slotProps?.overflow?.sx]}
             >
               <span aria-hidden="true">+{formattedHidden}</span>
             </Overflow>
@@ -293,7 +293,7 @@ export function AvatarGroup({
             id={summaryId}
             data-ui="avatar-group-summary"
             className={slotProps?.summary?.className}
-            css={[visuallyHiddenStyle, slotProps?.summary?.css]}
+            css={[visuallyHiddenStyle, slotProps?.summary?.sx]}
           >
             {summaryLabel}
           </Summary>

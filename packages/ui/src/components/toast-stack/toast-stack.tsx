@@ -13,9 +13,9 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { Button, type ButtonProps } from '../button';
 import { ToastItem, ToastPortal, useToastQueueContext, useToastRenderer, type ToastPartProps } from '../toast/toast';
 import { TOAST_VIEWPORT_INLINE_SIZE } from '../toast/toast-layout';
@@ -49,7 +49,7 @@ export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'chi
     /** Container element holding the list of stacked toast items. */
     list?: ToastPartProps;
     /** Button element expanding or collapsing the stacked toasts. */
-    toggle?: ButtonProps & { css?: Interpolation<Theme> };
+    toggle?: ButtonProps;
     /** Container element wrapping an individual toast notification. */
     item?: ToastPartProps;
   };
@@ -139,7 +139,7 @@ function ToastStackContent({
   const Toggle = slots?.toggle ?? Button;
   const Item = slots?.item ?? 'div';
   const {
-    className: rootClass, style: rootSlotStyle, css: rootCss, sx: rootSx,
+    className: rootClass, style: rootSlotStyle, sx: rootSx,
     onKeyDown: slotKeyDown, onKeyDownCapture: slotKeyDownCapture, ...rootProps
   } = slotProps?.root ?? {};
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -249,7 +249,7 @@ function ToastStackContent({
     };
   }, [height, newestId, expanded, focused]);
   return (
-    <WithSx className={[rootClass, className].filter(Boolean).join(' ')} styles={[rootStyle, rootCss, rootSx]} sx={sx}>
+    <WithSx className={[rootClass, className].filter(Boolean).join(' ')} styles={[rootStyle, rootSx]} sx={sx}>
       {(className) => (
         <Root
           {...props}
@@ -288,7 +288,7 @@ function ToastStackContent({
         >
           {variant === 'stacked' && open.length > 1 && (
             <Toggle
-              {...slotProps?.toggle}
+              {...withoutSx(slotProps?.toggle)}
               variant="outline"
               size="sm"
               data-ui="toast-stack-toggle"
@@ -296,7 +296,7 @@ function ToastStackContent({
               aria-controls={listId}
               aria-label={expanded ? collapseLabel : expandLabel}
               className={slotProps?.toggle?.className}
-              css={[toggleStyle, slotProps?.toggle?.css]}
+              css={[toggleStyle, slotProps?.toggle?.sx]}
               style={slotProps?.toggle?.style}
               onClick={() => setLatched((value) => !value)}
             >
@@ -305,13 +305,13 @@ function ToastStackContent({
             </Toggle>
           )}
           <List
-            {...slotProps?.list}
+            {...withoutSx(slotProps?.list)}
             id={listId}
             ref={mergedListRef}
             data-ui="toast-stack-list"
             data-expanded={expanded}
             className={slotProps?.list?.className}
-            css={[listStyle, slotProps?.list?.css]}
+            css={[listStyle, slotProps?.list?.sx]}
             style={{ ...slotProps?.list?.style, '--toast-stack-height': height } as CSSProperties}
           >
             {records.map((record) => {

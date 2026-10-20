@@ -26,7 +26,7 @@ import {
 } from 'react';
 import { useMergeRefs, type Placement } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, keyframes, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { css, keyframes, type SerializedStyles } from '../../styling/css';
 import { listboxSurfaceStyle } from '../../styling/listbox-style';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
@@ -103,7 +103,7 @@ export interface SplitButtonSlotProps {
   /** Container element wrapping the primary action and menu trigger. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children'> &
     SxProps & {
-      css?: Interpolation<Theme>;
+
       [attribute: `data-${string}`]: unknown;
     };
   /** Primary action button on the split button. Default: `SplitButton.Action`. */
@@ -383,7 +383,6 @@ function SplitButtonRoot({
   const {
     className: rootSlotClassName,
     style: rootSlotStyle,
-    css: rootSlotCss,
     sx: rootSlotSx,
     ref: rootSlotRef,
     'data-ui': rootSlotDataUi,
@@ -402,7 +401,7 @@ function SplitButtonRoot({
   return (
     <Menu open={open} onOpenChange={handleOpenChange} placement={placement}>
       <SplitButtonContext.Provider value={context}>
-        <WithSx className={mergedClassName} styles={[rootStyle, rootSlotCss, rootSlotSx]} sx={sx}>
+        <WithSx className={mergedClassName} styles={[rootStyle, rootSlotSx]} sx={sx}>
           {(resolvedClassName) => (
             <Root
               {...rest}

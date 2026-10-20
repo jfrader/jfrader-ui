@@ -50,7 +50,6 @@ import {
 
 import { WithSx, type SxProps } from '../../styling/sx';
 import { dateTimeFormatter } from '../../utils/intl';
-import type { Interpolation, Theme } from '../../styling/css';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useLatestCallback } from '../../utils/use-latest-callback';
 import {
@@ -160,11 +159,11 @@ export interface CalendarEasyProps extends CalendarBaseProps {
   };
   slotProps?: {
     /** Outer container element wrapping the calendar. */
-    root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps & { css?: Interpolation<Theme>; [attribute: `data-${string}`]: unknown };
+    root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps & {  [attribute: `data-${string}`]: unknown };
     /** Header container holding the month title and navigation buttons. */
-    header?: CalendarHeaderProps & { css?: Interpolation<Theme> };
+    header?: CalendarHeaderProps;
     /** Table element rendering the day grid and weekday headers. */
-    grid?: Omit<CalendarGridProps, 'children'> & { css?: Interpolation<Theme> };
+    grid?: Omit<CalendarGridProps, 'children'>;
   };
 }
 
@@ -248,7 +247,7 @@ function CalendarRoot({
   ...rest
 }: CalendarProps) {
   const Root = slots?.root ?? component ?? 'div';
-  const { className: slotClassName, style: slotStyle, sx: slotSx, css: slotCss, ...slotRootProps } = slotProps?.root ?? {};
+  const { className: slotClassName, style: slotStyle, sx: slotSx, ...slotRootProps } = slotProps?.root ?? {};
   const rootProps = { ...rest, ref, ...slotRootProps };
   const baseId = useId();
   const labelId = `${baseId}-label`;
@@ -341,7 +340,7 @@ function CalendarRoot({
     <CalendarContext.Provider value={context}>
       <WithSx
         className={[slotClassName, className].filter(Boolean).join(' ') || undefined}
-        styles={[rootStyle, slotCss, slotSx]}
+        styles={[rootStyle, slotSx]}
         sx={sx}
       >
         {(className) => (

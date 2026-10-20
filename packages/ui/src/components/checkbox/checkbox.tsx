@@ -16,14 +16,14 @@ import { vars } from '@jfrader/tokens/vars';
 import { choiceInputStyle, choiceRootStateStyle, choiceRootStyle, choiceRowStyle } from '../../styling/choice-control';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 
 export type CheckboxSize = 'sm' | 'md';
 
 export interface CheckboxPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface CheckboxProps extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'type'>, SxProps {
@@ -158,7 +158,7 @@ export function Checkbox({
   return (
     <WithSx
       className={rootClassName}
-      styles={[choiceRootStyle, glyphStateStyle, choiceRootStateStyle, slotProps?.root?.css]}
+      styles={[choiceRootStyle, glyphStateStyle, choiceRootStateStyle, slotProps?.root?.sx]}
       sx={sx}
     >
       {(className) => (
@@ -175,20 +175,20 @@ export function Checkbox({
               css={choiceInputStyle}
             />
             <Control
-              {...slotProps?.control}
+              {...withoutSx(slotProps?.control)}
               aria-hidden="true"
               data-ui="checkbox-control"
               className={slotProps?.control?.className}
-              css={[boxStyle, boxSizeStyles[size], slotProps?.control?.css]}
+              css={[boxStyle, boxSizeStyles[size], slotProps?.control?.sx]}
             >
               <CheckGlyph indeterminate={indeterminate} />
             </Control>
             {hasLabel && (
               <Label
-                {...slotProps?.label}
+                {...withoutSx(slotProps?.label)}
                 id={labelId}
                 className={slotProps?.label?.className}
-                css={[labelSizeStyles[size], slotProps?.label?.css]}
+                css={[labelSizeStyles[size], slotProps?.label?.sx]}
               >
                 {label}
               </Label>
@@ -196,10 +196,10 @@ export function Checkbox({
           </span>
           {hasDescription && (
             <Description
-              {...slotProps?.description}
+              {...withoutSx(slotProps?.description)}
               id={descriptionId}
               className={slotProps?.description?.className}
-              css={[descriptionStyle, descriptionSizeStyles[size], slotProps?.description?.css]}
+              css={[descriptionStyle, descriptionSizeStyles[size], slotProps?.description?.sx]}
             >
               {description}
             </Description>

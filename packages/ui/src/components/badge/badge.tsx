@@ -16,7 +16,7 @@ export type BadgeAnchor = { vertical?: 'top' | 'bottom'; horizontal?: 'start' | 
 
 export interface BadgePartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface BadgeSlots {
@@ -186,7 +186,7 @@ export function Badge({
   const BadgeMarker = slots?.badge ?? 'span';
 
   return (
-    <WithSx className={rootClassName} styles={[rootStyle, slotProps?.root?.css]} sx={sx}>
+    <WithSx className={rootClassName} styles={[rootStyle, slotProps?.root?.sx]} sx={sx}>
       {(className) => (
         <Root {...rest} ref={ref} data-ui="badge" className={className}>
           {children}
@@ -203,7 +203,7 @@ export function Badge({
                 !isDot && overlapStyles[overlap],
                 anchorStyles[anchorKey],
                 toneStyles[tone],
-                slotProps?.badge?.css,
+                slotProps?.badge?.sx,
               ]}
             >
               {isDot ? null : content}

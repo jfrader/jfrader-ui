@@ -19,7 +19,7 @@ export type AlertTone = 'info' | 'success' | 'warning' | 'danger';
 
 export interface AlertPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface AlertSlots {
@@ -168,7 +168,7 @@ export function Alert({
   return (
     <WithSx
       className={[className, slotProps?.root?.className].filter(Boolean).join(' ') || undefined}
-      styles={[rootStyle, toneStyles[tone], dismissible && dismissibleStyle, slotProps?.root?.css]}
+      styles={[rootStyle, toneStyles[tone], dismissible && dismissibleStyle, slotProps?.root?.sx]}
       sx={sx}
     >
       {(className) => (
@@ -176,12 +176,12 @@ export function Alert({
           <div role={tone === 'danger' ? 'alert' : 'status'} aria-atomic="true" css={messageStyle}>
             <span css={visuallyHiddenStyle}>{toneLabel}</span>
             {isRenderable(title) && (
-              <Title className={slotProps?.title?.className} css={[titleStyle, slotProps?.title?.css]}>
+              <Title className={slotProps?.title?.className} css={[titleStyle, slotProps?.title?.sx]}>
                 {title}
               </Title>
             )}
             {isRenderable(children) && (
-              <Body className={slotProps?.body?.className} css={[bodyStyle, slotProps?.body?.css]}>
+              <Body className={slotProps?.body?.className} css={[bodyStyle, slotProps?.body?.sx]}>
                 {children}
               </Body>
             )}
@@ -193,7 +193,7 @@ export function Alert({
               aria-label={dismissLabel}
               onClick={() => onDismiss?.()}
               className={slotProps?.dismiss?.className}
-              css={[dismissStyle, slotProps?.dismiss?.css]}
+              css={[dismissStyle, slotProps?.dismiss?.sx]}
             >
               <span aria-hidden>×</span>
             </Dismiss>

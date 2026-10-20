@@ -18,7 +18,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { motionDurationMs } from '../../styling/motion-timings';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -56,7 +56,7 @@ export interface UsageMeterLabels {
   of?: string;
 }
 export type UsageMeterPartProps<T extends 'div' | 'span' | 'p' | 'ul' | 'button' = 'span'> = ComponentPropsWithRef<T> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 export interface UsageMeterSlots {
   /** Container holding the meter and legend. */
@@ -356,7 +356,7 @@ function MeterSpan({
   component: Component = 'span',
   ...props
 }: ComponentPropsWithRef<'span'> & { nativeProps?: UsageMeterPartProps; component?: UsageMeterSlots['segment'] | 'span' }) {
-  const { css: _css, className, style, ...native } = nativeProps ?? {};
+  const { sx: _css, className, style, ...native } = nativeProps ?? {};
   const ref = useMergeRefs([native.ref, props.ref]);
   return (
     <Component
@@ -621,9 +621,10 @@ export function UsageMeter({
   const Overage = slots?.overage ?? 'span';
   const Limit = slots?.limit ?? 'span';
   const Legend = slots?.legend ?? 'ul';
-  const Item = slots?.item ?? (interactive ? 'button' : 'span');
+  const InteractiveItem = slots?.item ?? 'button';
+  const Item = slots?.item ?? 'span';
   const root = slotProps?.root;
-  const { css: rootCss, className: rootClassName, ...rootNative } = root ?? {};
+  const { sx: rootCss, className: rootClassName, ...rootNative } = root ?? {};
   const track = slotProps?.track;
   const mergedRootRef = useMergeRefs([ref, root?.ref]);
   const mergedTrackRef = useMergeRefs([viewRef, track?.ref]);
@@ -651,10 +652,10 @@ export function UsageMeter({
             <div css={headerStyle}>
               {hasLabel && (
                 <Title
-                  {...slotProps?.title}
+                  {...withoutSx(slotProps?.title)}
                   id={titleId}
                   data-ui="usage-meter-title"
-                  css={[titleStyle, slotProps?.title?.css]}
+                  css={[titleStyle, slotProps?.title?.sx]}
                 >
                   {label}
                 </Title>
@@ -665,7 +666,7 @@ export function UsageMeter({
                 id={statusId}
                 data-ui="usage-meter-status"
                 data-state={state}
-                css={[statusStyle, slotProps?.status?.css]}
+                css={[statusStyle, slotProps?.status?.sx]}
               >
                 <span aria-hidden="true">
                   {isRenderable(icon) && icon !== '' ? icon : STATE_GLYPHS[state]}
@@ -673,7 +674,7 @@ export function UsageMeter({
                 <span>{statusText}</span>
               </AnimatedSpan>
             </div>
-            <Total {...slotProps?.total} data-ui="usage-meter-total" css={[totalStyle, slotProps?.total?.css]}>
+            <Total {...withoutSx(slotProps?.total)} data-ui="usage-meter-total" css={[totalStyle, slotProps?.total?.sx]}>
               {valid ? (
                 <RollingTotal
                   text={summary.formattedTotal}
@@ -701,7 +702,7 @@ export function UsageMeter({
               )}
             </Total>
             <Track
-              {...track}
+              {...withoutSx(track)}
               ref={mergedTrackRef}
               data-ui="usage-meter-track"
               data-state={state}
@@ -720,7 +721,7 @@ export function UsageMeter({
               aria-valuemax={valid ? limit : undefined}
               aria-valuenow={valid ? Math.min(total, limit) : undefined}
               aria-valuetext={valid ? (track?.['aria-valuetext'] ?? valueText) : undefined}
-              css={[trackStyle, track?.css]}
+              css={[trackStyle, track?.sx]}
             >
               {valid &&
                 sanitized.map((segment, index) => {
@@ -787,7 +788,7 @@ export function UsageMeter({
                           '--usage-tone': segmentColor(segment, index),
                         } as CSSProperties
                       }
-                      css={[geometryStyle, segmentStyle, slotProps?.segment?.css]}
+                      css={[geometryStyle, segmentStyle, slotProps?.segment?.sx]}
                     />
                   );
                 })}
@@ -846,7 +847,7 @@ export function UsageMeter({
                       ...slotProps?.overage?.style,
                       ...geometry(limit / span, summary.over / span),
                     }}
-                    css={[geometryStyle, overageStyle, slotProps?.overage?.css]}
+                    css={[geometryStyle, overageStyle, slotProps?.overage?.sx]}
                   />
                   <AnimatedSpan
                     component={Limit}
@@ -863,16 +864,16 @@ export function UsageMeter({
                       ...slotProps?.limit?.style,
                       ...geometry(limit / span, 0),
                     }}
-                    css={[limitStyle, slotProps?.limit?.css]}
+                    css={[limitStyle, slotProps?.limit?.sx]}
                   />
                 </>
               )}
             </Track>
             <Legend
-              {...slotProps?.legend}
+              {...withoutSx(slotProps?.legend)}
               data-ui="usage-meter-legend"
               aria-label={slotProps?.legend?.['aria-label'] ?? labels.legend}
-              css={[legendStyle, slotProps?.legend?.css]}
+              css={[legendStyle, slotProps?.legend?.sx]}
             >
               {items.map((item, index) => {
                 const key = itemKey(item);
@@ -906,15 +907,15 @@ export function UsageMeter({
                 return (
                   <li key={key}>
                     {interactive ? (
-                      <Item
-                        {...slotProps?.item}
+                      <InteractiveItem
+                        {...withoutSx(slotProps?.item)}
                         type="button"
                         data-ui="usage-meter-item"
                         data-highlighted={sameSelection(highlight, item)}
                         aria-pressed={selected}
                         aria-label={slotProps?.item?.['aria-label'] ?? getItemLabel?.(item, summary)}
                         tabIndex={key === tabKey ? 0 : -1}
-                        css={[itemStyle, slotProps?.item?.css]}
+                        css={[itemStyle, slotProps?.item?.sx]}
                         ref={(node) => {
                           if (!node) return;
                           buttons.current.set(key, node);
@@ -988,11 +989,11 @@ export function UsageMeter({
                         }}
                       >
                         {contents}
-                      </Item>
+                      </InteractiveItem>
                     ) : (
                       <Item
                         data-ui="usage-meter-item"
-                        css={[itemStyle, slotProps?.item?.css]}
+                        css={[itemStyle, slotProps?.item?.sx]}
                         className={slotProps?.item?.className}
                       >
                         {contents}

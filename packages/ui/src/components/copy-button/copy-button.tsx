@@ -39,7 +39,7 @@ export type CopyButtonValue = 'idle' | 'pending' | 'copied' | 'error';
 export type CopyButtonIcons = Partial<Record<CopyButtonValue, ReactNode>>;
 
 export interface CopyButtonSlotPartProps extends ComponentPropsWithoutRef<'span'> {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface CopyButtonSlotProps {
@@ -331,9 +331,9 @@ export function CopyButton({
   };
   const faceIcons = FACES.map((face) => (icons?.[face] !== undefined ? icons[face] : DEFAULT_ICONS[face]));
   const hasIcons = faceIcons.some(isRenderable);
-  const { css: iconSlotCss, ...iconSlotProps } = slotProps?.icon ?? {};
-  const { css: labelSlotCss, ...labelSlotProps } = slotProps?.label ?? {};
-  const { css: statusSlotCss, ...statusSlotProps } = slotProps?.status ?? {};
+  const { sx: iconSlotCss, ...iconSlotProps } = slotProps?.icon ?? {};
+  const { sx: labelSlotCss, ...labelSlotProps } = slotProps?.label ?? {};
+  const { sx: statusSlotCss, ...statusSlotProps } = slotProps?.status ?? {};
   const Icon = slots?.icon ?? 'span';
   const Label = slots?.label ?? 'span';
   const Status = slots?.status ?? 'span';

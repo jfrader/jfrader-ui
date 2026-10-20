@@ -38,7 +38,7 @@ import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
-import { WithSx, type SlotCss, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { ThemeBoundary, useThemeScope } from '../../styling/theme-scope';
 import { isRenderable } from '../../utils/renderable';
 import { Button } from '../button';
@@ -102,18 +102,18 @@ export type ToastProviderProps = ToastProviderBaseProps &
       }
     | {
         viewport: 'stack';
-        viewportProps?: ToastStackProps & SlotCss;
+        viewportProps?: ToastStackProps & SxProps;
         slots?: ToastSlots<ToastStackProps>;
         slotProps?: {
           /** Stacked viewport container element rendering active toasts. */
-          viewport?: ToastStackProps & SlotCss;
+          viewport?: ToastStackProps & SxProps;
         };
       }
   );
 
 export interface ToastPartProps extends ComponentPropsWithRef<'div'> {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
   style?: CSSProperties;
 }
 export interface ToastViewportSlots {
@@ -299,17 +299,17 @@ export function useToastRenderer(part: string) {
 function AutomaticViewport(props: ToastProviderProps) {
   if (props.viewport === 'default') {
     const Viewport = props.slots?.viewport ?? ToastViewport;
-    return <Viewport {...props.viewportProps} {...props.slotProps?.viewport}
+    return <Viewport {...withoutSx(props.viewportProps)} {...withoutSx(props.slotProps?.viewport)}
       className={[props.slotProps?.viewport?.className, props.viewportProps?.className].filter(Boolean).join(' ')}
-      css={[props.slotProps?.viewport?.css, props.viewportProps?.css]}
+      css={[props.slotProps?.viewport?.sx, props.viewportProps?.sx]}
       sx={[props.slotProps?.viewport?.sx, props.viewportProps?.sx]}
       style={{ ...props.viewportProps?.style, ...props.slotProps?.viewport?.style }} />;
   }
   if (props.viewport === 'stack') {
     const Stack = props.slots?.viewport ?? ToastStack;
-    return <Stack {...props.viewportProps} {...props.slotProps?.viewport}
+    return <Stack {...withoutSx(props.viewportProps)} {...withoutSx(props.slotProps?.viewport)}
       className={[props.slotProps?.viewport?.className, props.viewportProps?.className].filter(Boolean).join(' ')}
-      css={[props.slotProps?.viewport?.css, props.viewportProps?.css]}
+      css={[props.slotProps?.viewport?.sx, props.viewportProps?.sx]}
       sx={[props.slotProps?.viewport?.sx, props.viewportProps?.sx]}
       style={{ ...props.viewportProps?.style, ...props.slotProps?.viewport?.style }} />;
   }
@@ -484,17 +484,17 @@ function ToastProvider(props: ToastProviderProps) {
 
 ToastProvider.displayName = 'Toast.Provider';
 
-function ToastViewport({ component, slots, slotProps, className, style, css: consumerCss, sx, ...props }: ToastViewportProps) {
+function ToastViewport({ component, slots, slotProps, className, style,  sx, ...props }: ToastViewportProps) {
   const { toasts, registerRenderer } = useToastQueueContext('Viewport');
   const enabled = useToastRenderer('Viewport');
   useEffect(() => enabled ? registerRenderer() : undefined, [enabled, registerRenderer]);
-  const { className: slotClass, style: slotStyle, css: slotCss, sx: slotSx, ...root } = slotProps?.root ?? {};
+  const { className: slotClass, style: slotStyle, sx: slotSx, ...root } = slotProps?.root ?? {};
   const Root = slots?.root ?? component ?? 'div';
   const Item = slots?.item ?? 'div';
   if (!enabled) return null;
   return (
     <ToastPortal>
-      <WithSx className={[slotClass, className].filter(Boolean).join(' ')} styles={[viewportStyle, slotCss, slotSx, consumerCss]} sx={sx}>
+      <WithSx className={[slotClass, className].filter(Boolean).join(' ')} styles={[viewportStyle, slotSx, sx]} sx={sx}>
         {(className) => (
           <Root {...props} {...root} style={{ ...style, ...slotStyle }} data-ui="toast-viewport" className={className}>
             {toasts.map((record) => (
@@ -638,7 +638,7 @@ export function ToastItem({
 
   return (
     <Root
-      {...partProps}
+      {...withoutSx(partProps)}
       ref={mergedRootRef}
       inert={state === 'closing' || !exposed}
       aria-hidden={state === 'closing' || !exposed ? true : undefined}
@@ -674,7 +674,7 @@ export function ToastItem({
         partProps?.onBlur?.(event);
         handleBlur(event);
       }}
-      css={[toastStyle, toneStyles[tone], partProps?.css]}
+      css={[toastStyle, toneStyles[tone], partProps?.sx]}
     >
       <div role={tone === 'danger' ? 'alert' : 'status'} aria-atomic="true" css={bodyStyle}>
         {populated && (

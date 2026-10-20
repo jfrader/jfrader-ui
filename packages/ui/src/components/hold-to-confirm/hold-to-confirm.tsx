@@ -9,7 +9,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { motionDurationMs } from '../../styling/motion-timings';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { numberFormatter } from '../../utils/intl';
 import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
@@ -23,7 +23,7 @@ export type HoldToConfirmSize = 'sm' | 'md' | 'lg';
 export type HoldToConfirmVariant = 'default' | 'morph';
 export interface HoldToConfirmPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 export interface HoldToConfirmSlots {
   /** Replaces the native button. */
@@ -409,21 +409,21 @@ function HoldToConfirmRoot({
       <>
         {isRenderable(visibleIcon) && (
           <FaceIcon
-            {...iconProps}
+            {...withoutSx(iconProps)}
             key={`icon-${confirmed}`}
             aria-hidden="true"
             className={iconProps?.className}
-            css={[iconWrapperStyle, swapStyle, iconProps?.css]}
+            css={[iconWrapperStyle, swapStyle, iconProps?.sx]}
           >
             {visibleIcon}
           </FaceIcon>
         )}
         {isRenderable(visibleLabel) && (
           <FaceLabel
-            {...labelProps}
+            {...withoutSx(labelProps)}
             key={`label-${confirmed}`}
             className={labelProps?.className}
-            css={[swapStyle, labelProps?.css]}
+            css={[swapStyle, labelProps?.sx]}
           >
             {visibleLabel}
           </FaceLabel>
@@ -441,7 +441,7 @@ function HoldToConfirmRoot({
 
   return (
     <>
-      <WithSx className={className} styles={[rootStyle, sizeStyles[size], toneStyles[tone], variant === 'morph' && morphStyle, slotProps?.root?.css]} sx={sx}>
+      <WithSx className={className} styles={[rootStyle, sizeStyles[size], toneStyles[tone], variant === 'morph' && morphStyle, slotProps?.root?.sx]} sx={sx}>
         {(rootClassName) => (
           <MotionButton
             rootComponent={slots?.root ?? component}
@@ -525,15 +525,15 @@ function HoldToConfirmRoot({
                 event.preventDefault();
             }}
           >
-            <Face {...slotProps?.face} className={slotProps?.face?.className} css={[faceStyle, slotProps?.face?.css]}>
+            <Face {...withoutSx(slotProps?.face)} className={slotProps?.face?.className} css={[faceStyle, slotProps?.face?.sx]}>
               {renderFace(false)}
             </Face>
             <Fill
-              {...slotProps?.fill}
+              {...withoutSx(slotProps?.fill)}
               data-ui="hold-to-confirm-fill"
               aria-hidden="true"
               className={slotProps?.fill?.className}
-              css={[faceStyle, fillStyle, slotProps?.fill?.css]}
+              css={[faceStyle, fillStyle, slotProps?.fill?.sx]}
             >
               {renderFace(true)}
             </Fill>
@@ -541,22 +541,22 @@ function HoldToConfirmRoot({
         )}
       </WithSx>
       <Hint
-        {...slotProps?.hint}
+        {...withoutSx(slotProps?.hint)}
         id={hintId}
         data-holding={holding || undefined}
         className={slotProps?.hint?.className}
-        css={[hintStyle, slotProps?.hint?.css]}
+        css={[hintStyle, slotProps?.hint?.sx]}
       >
         {getHoldDescription(formatted)}
       </Hint>
       <Status
-        {...slotProps?.status}
+        {...withoutSx(slotProps?.status)}
         role="status"
         aria-live="polite"
         aria-atomic="true"
         data-ui="hold-to-confirm-status"
         className={slotProps?.status?.className}
-        css={[visuallyHiddenStyle, slotProps?.status?.css]}
+        css={[visuallyHiddenStyle, slotProps?.status?.sx]}
       >
         {announcement}
       </Status>
@@ -567,7 +567,7 @@ function HoldToConfirmRoot({
 export function HoldToConfirm({ ref, className, style, ...props }: HoldToConfirmProps) {
   const root = props.slotProps?.root;
   const rootRef = useMergeRefs([ref, root?.ref]);
-  const { css: _css, ...rootProps } = root ?? {};
+  const { sx: _css, ...rootProps } = root ?? {};
   return (
     <MotionConfig reducedMotion="user">
       <HoldToConfirmRoot {...props} {...rootProps} ref={rootRef}

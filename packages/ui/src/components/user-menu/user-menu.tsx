@@ -53,7 +53,7 @@ import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { listboxSurfaceStyle } from '../../styling/listbox-style';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useScrollLock } from '../../overlay/use-scroll-lock';
@@ -115,7 +115,7 @@ export interface UserMenuUser {
 
 export interface UserMenuPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export type UserMenuItemAction = {
@@ -1202,33 +1202,33 @@ function UserMenuSurface({
               >
                 {sheet && (
                   <Handle
-                    {...slotProps?.handle}
+                    {...withoutSx(slotProps?.handle)}
                     {...handleGesture}
                     aria-hidden="true"
                     data-ui="user-menu-handle"
                     className={slotProps?.handle?.className}
-                    css={[handleStyle, slotProps?.handle?.css]}
+                    css={[handleStyle, slotProps?.handle?.sx]}
                   />
                 )}
                 <div css={headerStyle}>
                   <div ref={setIdentitySlot} css={identitySlotStyle} />
                   {sheet && (
                     <Close
-                      {...slotProps?.close}
+                      {...withoutSx(slotProps?.close)}
                       type="button"
                       ref={closeRef}
                       aria-label={closeLabel}
                       data-ui="user-menu-close"
                       onClick={() => requestClose(true)}
                       className={slotProps?.close?.className}
-                      css={[closeStyle, slotProps?.close?.css]}
+                      css={[closeStyle, slotProps?.close?.sx]}
                     >
                       {closeGlyph}
                     </Close>
                   )}
                 </div>
                 <Menu
-                  {...slotProps?.menu}
+                  {...withoutSx(slotProps?.menu)}
                   {...menuNaming}
                   ref={menuRef}
                   id={menuId}
@@ -1237,7 +1237,7 @@ function UserMenuSurface({
                   tabIndex={-1}
                   data-ui="user-menu-list"
                   className={slotProps?.menu?.className}
-                  css={[menuStyle, slotProps?.menu?.css]}
+                  css={[menuStyle, slotProps?.menu?.sx]}
                 >
                   <IdentitySlotContext.Provider value={identitySlot}>
                     <MenuCollection family={FAMILY}>{children}</MenuCollection>
@@ -1385,11 +1385,11 @@ function ChoiceGroup<V extends string>({
           className={className}
         >
           <Label
-            {...slotProps?.label}
+            {...withoutSx(slotProps?.label)}
             id={labelId}
             data-ui="user-menu-group-label"
             className={slotProps?.label?.className}
-            css={[groupLabelStyle, slotProps?.label?.css]}
+            css={[groupLabelStyle, slotProps?.label?.sx]}
           >
             {labels.group}
           </Label>
@@ -1407,7 +1407,7 @@ function ChoiceGroup<V extends string>({
                 family={FAMILY}
                 marker="user-menu-option"
                 className={slotProps?.option?.className}
-                styles={[menuItemStyles, optionStyle, slotProps?.option?.css]}
+                styles={[menuItemStyles, optionStyle, slotProps?.option?.sx]}
                 render={Option ? (props) => <Option {...props} /> : undefined}
               >
                 {labels[option]}

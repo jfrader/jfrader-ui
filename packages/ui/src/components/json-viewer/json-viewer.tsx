@@ -47,7 +47,7 @@ export interface JsonViewerLabels {
 }
 export interface JsonViewerPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 export type JsonViewerSlotProps = Partial<
   Record<
@@ -958,7 +958,7 @@ export function JsonViewer({
         <Row
           data-ui="json-viewer-row"
           className={slotProps?.row?.className}
-          css={[rowStyle, slotProps?.row?.css]}
+          css={[rowStyle, slotProps?.row?.sx]}
           style={{ '--json-depth': row.level - 1 } as CSSProperties}
         >
           <span
@@ -980,7 +980,7 @@ export function JsonViewer({
                   <Value
                     data-ui="json-viewer-type"
                     className={slotProps?.value?.className}
-                    css={[chipStyle, slotProps?.value?.css]}
+                    css={[chipStyle, slotProps?.value?.sx]}
                   >
                     {labels.count(node!.children.length, node!.type)}
                   </Value>
@@ -989,7 +989,7 @@ export function JsonViewer({
                     data-ui="json-viewer-value"
                     data-type={node!.type}
                     className={slotProps?.value?.className}
-                    css={[valueStyle, slotProps?.value?.css]}
+                    css={[valueStyle, slotProps?.value?.sx]}
                   >
                     {node!.type === 'string'
                       ? highlight(String(node!.value), true)
@@ -1007,7 +1007,7 @@ export function JsonViewer({
             role="group"
             data-ui="json-viewer-group"
             className={slotProps?.group?.className}
-            css={[groupStyle, slotProps?.group?.css]}
+            css={[groupStyle, slotProps?.group?.sx]}
             style={{ '--json-depth': row.level - 1 } as CSSProperties}
           >
             {children.map((child) => rendered.get(child.path))}
@@ -1024,7 +1024,7 @@ export function JsonViewer({
       aria-label={label}
       title={label}
       className={slotProps?.action?.className}
-      css={[actionStyle, slotProps?.action?.css]}
+      css={[actionStyle, slotProps?.action?.sx]}
       disabled={disabled}
       onClick={run}
       render={(props) => <button {...props} type="button" disabled={disabled} />}
@@ -1087,7 +1087,7 @@ export function JsonViewer({
               <Toolbar
                 data-ui="json-viewer-toolbar"
                 className={slotProps?.toolbar?.className}
-                css={[toolbarStyle, slotProps?.toolbar?.css]}
+                css={[toolbarStyle, slotProps?.toolbar?.sx]}
               >
                 {searchable && (
                   <span css={searchWrapStyle}>
@@ -1103,8 +1103,8 @@ export function JsonViewer({
                       onValueChange={requestQuery}
                       size="sm"
                       className={slotProps?.search?.className}
-                      sx={[searchStyle, slotProps?.search?.css]}
-                      slotProps={{ control: { css: searchControlStyle } }}
+                      sx={[searchStyle, slotProps?.search?.sx]}
+                      slotProps={{ control: { sx: searchControlStyle } }}
                     />
                   </span>
                 )}
@@ -1160,7 +1160,7 @@ export function JsonViewer({
                 aria-labelledby={labelledBy}
                 aria-describedby={describedBy}
                 className={slotProps?.tree?.className}
-                css={[treeStyle, slotProps?.tree?.css]}
+                css={[treeStyle, slotProps?.tree?.sx]}
               >
                 {rendered.get(rootName)}
               </Tree>
@@ -1168,7 +1168,7 @@ export function JsonViewer({
                 <PathBar
                   data-ui="json-viewer-path-bar"
                   className={slotProps?.pathBar?.className}
-                  css={[pathStyle, slotProps?.pathBar?.css]}
+                  css={[pathStyle, slotProps?.pathBar?.sx]}
                 >
                   <span css={pathHeaderStyle}>
                     <code data-ui="json-viewer-path" css={pathCodeStyle}>
@@ -1191,7 +1191,7 @@ export function JsonViewer({
             aria-atomic="true"
             data-ui="json-viewer-status"
             className={slotProps?.status?.className}
-            css={[statusStyle, slotProps?.status?.css]}
+            css={[statusStyle, slotProps?.status?.sx]}
           >
             {status}
           </Status>

@@ -16,7 +16,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { moveRovingFocus, queryOwnedItems, type OwnedItemsQuery } from '../../utils/roving-focus';
@@ -32,7 +32,7 @@ type StyledSlot<T extends 'div' | 'span' | 'button'> = Omit<
   ComponentPropsWithRef<T>,
   'children' | 'role' | 'tabIndex' | 'disabled' | 'aria-disabled' | 'aria-pressed' | 'aria-expanded' | 'aria-controls'
 > & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 
 export interface ChipGroupSlotProps {
@@ -295,7 +295,7 @@ export function ChipGroup({
               frameProps={slotProps?.frame}
               signature={JSON.stringify([expanded, selected])}
             >
-              <Row {...slotProps?.row} ref={rowRef} id={rowId} css={[rowStyle, slotProps?.row?.css]}>
+              <Row {...withoutSx(slotProps?.row)} ref={rowRef} id={rowId} css={[rowStyle, slotProps?.row?.sx]}>
                 {visible.map((option, index) => {
                   const chip = typeof slotProps?.chip === 'function' ? slotProps.chip(option) : slotProps?.chip;
                   const pressed = selected.includes(option.value);
@@ -316,14 +316,14 @@ export function ChipGroup({
                       style={{ animationDelay: `${Math.min(index * REVEAL_STEP_MS, MAX_REVEAL_STAGGER_MS)}ms` }}
                     >
                       <Chip
-                        {...chip}
+                        {...withoutSx(chip)}
                         type="button"
                         disabled={disabled || option.disabled}
                         aria-pressed={pressed}
                         data-ui="chip-group-chip"
                         data-value={option.value}
                         tabIndex={!disabled && !option.disabled && !overflowStop && tabValue === option.value ? 0 : -1}
-                        css={[chipStyle, sizeStyles[size], chip?.css]}
+                        css={[chipStyle, sizeStyles[size], chip?.sx]}
                         onFocus={(event) => {
                           chip?.onFocus?.(event);
                           lastFocused.current = event.currentTarget;
@@ -353,7 +353,7 @@ export function ChipGroup({
                       >
                         <Check pressed={pressed} slot={slotProps?.check} component={slots?.check} />
                         {isRenderable(option.label) && (
-                          <Label {...slotProps?.label} css={[labelStyle, slotProps?.label?.css]}>
+                          <Label {...withoutSx(slotProps?.label)} css={[labelStyle, slotProps?.label?.sx]}>
                             {option.label}
                           </Label>
                         )}
@@ -364,14 +364,14 @@ export function ChipGroup({
                 {hasOverflow && (
                   <motion.div layout="position" transition={LAYOUT_SPRING} css={itemFrameStyle}>
                     <Overflow
-                      {...slotProps?.overflow}
+                      {...withoutSx(slotProps?.overflow)}
                       type="button"
                       disabled={disabled}
                       aria-expanded={expanded}
                       aria-controls={rowId}
                       data-ui="chip-group-overflow"
                       tabIndex={overflowStop ? 0 : -1}
-                      css={[chipStyle, sizeStyles[size], slotProps?.overflow?.css]}
+                      css={[chipStyle, sizeStyles[size], slotProps?.overflow?.sx]}
                       onFocus={(event) => {
                         slotProps?.overflow?.onFocus?.(event);
                         lastFocused.current = event.currentTarget;
@@ -406,7 +406,7 @@ function Check({ pressed, slot, component }: {
 }) {
   const Component = component ?? 'span';
   return (
-    <Component {...slot} aria-hidden="true" css={[checkStyle, slot?.css]}>
+    <Component {...withoutSx(slot)} aria-hidden="true" css={[checkStyle, slot?.sx]}>
       <motion.span
         css={checkStyle}
         layout
@@ -477,7 +477,7 @@ function HeightFrame({
     };
   }, [signature, reduced, frameRef, rowRef]);
   return (
-    <Component {...frameProps} ref={frameRef} css={frameProps?.css}>
+    <Component {...withoutSx(frameProps)} ref={frameRef} css={frameProps?.sx}>
       {children}
     </Component>
   );

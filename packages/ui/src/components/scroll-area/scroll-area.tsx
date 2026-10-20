@@ -15,7 +15,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { useLatestCallback } from '../../utils/use-latest-callback';
 
 export interface ScrollAreaEdges {
@@ -24,7 +24,7 @@ export interface ScrollAreaEdges {
   left: boolean;
   right: boolean;
 }
-type Slot = ComponentPropsWithRef<'div'> & { css?: Interpolation<Theme> };
+type Slot = ComponentPropsWithRef<'div'> & { sx?: Interpolation<Theme> };
 export interface ScrollAreaSlotProps {
   /** Scrollable viewport container holding the scrollable content. */
   viewport?: Slot;
@@ -450,7 +450,7 @@ export function ScrollArea({
 
   const {
     ref: _viewportRef,
-    css: viewportCss,
+    sx: viewportCss,
     className: viewportClass,
     style: viewportInline,
     onScroll: viewportScroll,
@@ -525,7 +525,7 @@ export function ScrollArea({
           </Viewport>
           {(['block', 'inline'] as const).map((axis) => (
             <Track
-              {...track}
+              {...withoutSx(track)}
               key={axis}
               ref={(node) => {
                 if (node) tracks.current[axis] = node;
@@ -535,7 +535,7 @@ export function ScrollArea({
                   cleanup();
                 };
               }}
-              css={[trackStyle, track?.css]}
+              css={[trackStyle, track?.sx]}
               style={{ ...track?.style, ...trackGeometry[axis] }}
               data-ui="scroll-area-track"
               data-axis={axis}
@@ -564,7 +564,7 @@ export function ScrollArea({
               }}
             >
               <Thumb
-                {...thumb}
+                {...withoutSx(thumb)}
                 ref={(node) => {
                   if (node) thumbs.current[axis] = node;
                   const cleanup = attachRef(thumb?.ref, node);
@@ -573,7 +573,7 @@ export function ScrollArea({
                     cleanup();
                   };
                 }}
-                css={[thumbStyle, thumb?.css]}
+                css={[thumbStyle, thumb?.sx]}
                 style={{ ...thumb?.style, ...thumbGeometry[axis] }}
                 data-ui="scroll-area-thumb"
                 data-axis={axis}

@@ -17,7 +17,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -91,7 +91,7 @@ export interface FilterToolbarControlsProps
   children?: ReactNode | ((state: FilterControlsState) => ReactNode);
 }
 
-type StyleSlot = { className?: string; css?: Interpolation<Theme> };
+type StyleSlot = { className?: string; sx?: Interpolation<Theme> };
 export interface FilterToolbarActiveFiltersSlotProps {
   /** List container element for active filter chips. */
   list?: StyleSlot;
@@ -157,7 +157,7 @@ export type FilterToolbarSelectSlotProps = Partial<Omit<SelectEasyProps, 'option
   SxProps & {
     className?: string;
     style?: CSSProperties;
-    css?: Interpolation<Theme>;
+
     [attribute: `data-${string}`]: unknown;
   };
 
@@ -165,7 +165,7 @@ export type FilterToolbarMultiSelectSlotProps = Partial<Omit<MultiSelectEasyProp
   SxProps & {
     className?: string;
     style?: CSSProperties;
-    css?: Interpolation<Theme>;
+
     [attribute: `data-${string}`]: unknown;
   };
 
@@ -173,7 +173,7 @@ export interface FilterToolbarSlotProps {
   /** Root toolbar container element. */
   root?: ComponentPropsWithRef<'div'> &
     SxProps & {
-      css?: Interpolation<Theme>;
+
       [attribute: `data-${string}`]: unknown;
     };
   /** Container grouping the filter controls. */
@@ -417,7 +417,7 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
   const value = useMemo(() => normalize(stored), [stored]);
   const rootRef = useRef<HTMLDivElement>(null);
   const {
-    className: slotClassName, style: slotStyle, css: slotCss, sx: slotSx,
+    className: slotClassName, style: slotStyle, sx: slotSx,
     ref: slotRef, 'data-ui': slotDataUi, ...slotRest
   } = slotProps?.root ?? {};
   const mergedRef = useMergeRefs([rootRef, slotRef ?? ref]);
@@ -514,7 +514,6 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
         const selectedVal = selectedFilter?.value ?? '';
         const {
           className: selectClass,
-          css: selectCss,
           sx: selectSx,
           style: selectStyle,
           slotProps: customSelectSlotProps,
@@ -555,7 +554,6 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
               ...customSelectSlotProps,
               root: {
                 className: selectClass,
-                css: selectCss,
                 sx: selectSx,
                 style: selectStyle,
                 ...customSelectSlotProps?.root,
@@ -577,7 +575,6 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
         }
         const {
           className: multiClass,
-          css: multiCss,
           sx: multiSx,
           style: multiStyle,
           slotProps: customMultiSlotProps,
@@ -617,7 +614,6 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
               ...customMultiSlotProps,
               root: {
                 className: multiClass,
-                css: multiCss,
                 sx: multiSx,
                 style: multiStyle,
                 ...customMultiSlotProps?.root,
@@ -651,7 +647,7 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
 
   return (
     <Context.Provider value={context}>
-      <WithSx className={tokens(slotClassName, className)} styles={[rootStyle, slotCss, slotSx]} sx={consumerSx}>
+      <WithSx className={tokens(slotClassName, className)} styles={[rootStyle, slotSx]} sx={consumerSx}>
         {(className) => (
           <RootPart
             {...host}
@@ -704,15 +700,15 @@ function ActiveFilters({ empty, slotProps, slots, className, sx, ...rest }: Filt
       {(className) => (
         <div {...rest} data-ui="filter-toolbar-active-filters" className={className}>
           {value.length > 0 ? (
-            <List {...slotProps?.list} className={slotProps?.list?.className} css={[rowStyle, listStyle, slotProps?.list?.css]}>
+            <List {...withoutSx(slotProps?.list)} className={slotProps?.list?.className} css={[rowStyle, listStyle, slotProps?.list?.sx]}>
               {value.map((filter) => (
                 <Chip
-                  {...slotProps?.chip}
+                  {...withoutSx(slotProps?.chip)}
                   key={filter.id}
                   className={slotProps?.chip?.className}
-                  css={[chipStyle, slotProps?.chip?.css]}
+                  css={[chipStyle, slotProps?.chip?.sx]}
                 >
-                  <Label {...slotProps?.label} className={slotProps?.label?.className} css={[labelStyle, slotProps?.label?.css]}>
+                  <Label {...withoutSx(slotProps?.label)} className={slotProps?.label?.className} css={[labelStyle, slotProps?.label?.sx]}>
                     <span css={fieldStyle}>{filter.label}: </span>
                     <span css={valueStyle}>{filter.valueLabel ?? filter.value}</span>
                   </Label>
@@ -725,7 +721,7 @@ function ActiveFilters({ empty, slotProps, slots, className, sx, ...rest }: Filt
                     data-ui="filter-toolbar-remove"
                     data-filter-id={filter.id}
                     className={slotProps?.remove?.className}
-                    css={[removeStyle, slotProps?.remove?.css]}
+                    sx={[removeStyle, slotProps?.remove?.sx]}
                     onClick={(event) => remove(filter, event.currentTarget)}
                     render={(props) => (
                       <Remove {...props} type="button" disabled={disabled}>

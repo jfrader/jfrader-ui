@@ -42,7 +42,7 @@ export interface OrbitLogo {
   connected?: boolean;
   href?: string;
 }
-type Part<P> = P & { css?: Interpolation<Theme> };
+type Part<P> = P & { sx?: Interpolation<Theme> };
 type DivProps = ComponentPropsWithRef<'div'>;
 type ButtonProps = ComponentPropsWithRef<'button'>;
 export interface LogoOrbitSlots {
@@ -483,25 +483,25 @@ function LogoOrbitBody({
   const CloseButton = slots?.closeButton ?? 'button';
   const Status = slots?.status ?? 'div';
   const {
-    css: stageCss,
+    sx: stageCss,
     ref: stageRef,
     ...stageProps
   } = slotProps?.stage ?? {};
-  const { css: centerCss, ...centerProps } = slotProps?.center ?? {};
-  const { css: filtersCss, ...filtersProps } = slotProps?.filters ?? {};
-  const { css: filterCss, ...filterProps } = slotProps?.filterButton ?? {};
-  const { css: pauseCss, ...pauseProps } = slotProps?.pauseButton ?? {};
-  const { css: listCss, ...listProps } = slotProps?.list ?? {};
-  const { css: itemCss, ...itemProps } = slotProps?.item ?? {};
-  const { css: logoCss, ...logoProps } = slotProps?.logoButton ?? {};
-  const { css: detailCss, ...detailProps } = slotProps?.detail ?? {};
-  const { css: connectCss, ...connectProps } = slotProps?.connectButton ?? {};
-  const { css: docsCss, ...docsProps } = slotProps?.docsLink ?? {};
-  const { css: previousCss, ...previousProps } =
+  const { sx: centerCss, ...centerProps } = slotProps?.center ?? {};
+  const { sx: filtersCss, ...filtersProps } = slotProps?.filters ?? {};
+  const { sx: filterCss, ...filterProps } = slotProps?.filterButton ?? {};
+  const { sx: pauseCss, ...pauseProps } = slotProps?.pauseButton ?? {};
+  const { sx: listCss, ...listProps } = slotProps?.list ?? {};
+  const { sx: itemCss, ...itemProps } = slotProps?.item ?? {};
+  const { sx: logoCss, ...logoProps } = slotProps?.logoButton ?? {};
+  const { sx: detailCss, ...detailProps } = slotProps?.detail ?? {};
+  const { sx: connectCss, ...connectProps } = slotProps?.connectButton ?? {};
+  const { sx: docsCss, ...docsProps } = slotProps?.docsLink ?? {};
+  const { sx: previousCss, ...previousProps } =
     slotProps?.previousButton ?? {};
-  const { css: nextCss, ...nextProps } = slotProps?.nextButton ?? {};
-  const { css: closeCss, ...closeProps } = slotProps?.closeButton ?? {};
-  const { css: statusCss, ...statusProps } = slotProps?.status ?? {};
+  const { sx: nextCss, ...nextProps } = slotProps?.nextButton ?? {};
+  const { sx: closeCss, ...closeProps } = slotProps?.closeButton ?? {};
+  const { sx: statusCss, ...statusProps } = slotProps?.status ?? {};
   const moveSelection = (step: number) => {
     const index = matches.findIndex((item) => item.id === detail?.id);
     const next = matches[(index + step + matches.length) % matches.length];

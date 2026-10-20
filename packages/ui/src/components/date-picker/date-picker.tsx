@@ -110,7 +110,7 @@ export interface DatePickerCompoundProps extends DatePickerBaseProps {
   slotProps?: never;
 }
 
-type DatePickerGeneratedPartProps<Props> = Omit<Props, 'children'> & { css?: Interpolation<Theme> };
+type DatePickerGeneratedPartProps<Props> = Omit<Props, 'children'> & { sx?: Interpolation<Theme> };
 
 export interface DatePickerEasyProps extends Omit<DatePickerBaseProps, 'children'> {
   /** Label the generated date field and its popup. */
@@ -496,7 +496,7 @@ function DatePickerInput({
       ref={mergedRef}
       id={id}
       label={hasLabel ? <span id={labelId}>{label}</span> : label}
-      slotProps={{ ...slotProps, control: { ...slotProps?.control, css: [inputStyle, slotProps?.control?.css] } }}
+      slotProps={{ ...slotProps, control: { ...slotProps?.control, sx: [inputStyle, slotProps?.control?.sx] } }}
       value={displayValue}
       placeholder={placeholder}
       disabled={disabled}

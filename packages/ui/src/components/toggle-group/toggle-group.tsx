@@ -73,7 +73,7 @@ export interface ToggleGroupSlots {
 export interface ToggleGroupSlotProps {
   /** Container wrapping the group and its items. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
-    css?: Interpolation<Theme>;
+
     [attribute: `data-${string}`]: unknown;
   };
   /** Button toggling one option. */
@@ -200,7 +200,7 @@ const itemStyle = css({
 
 function ToggleGroupRoot({
   rootElement: Root = 'div',
-  rootCss,
+  slotStyles,
   ref,
   type = 'single',
   value: valueProp,
@@ -215,7 +215,7 @@ function ToggleGroupRoot({
   className,
   sx,
   ...rest
-}: ToggleGroupCompoundProps & { rootElement?: 'div' | ToggleGroupSlots['root']; rootCss?: Interpolation<Theme> }) {
+}: ToggleGroupCompoundProps & { rootElement?: 'div' | ToggleGroupSlots['root']; slotStyles?: Interpolation<Theme> }) {
   // `toggle` only emits the shape that matches `type`, so either callback accepts it.
   const [value, setValue] = useControlledState<ToggleGroupValue>(
     valueProp,
@@ -264,7 +264,7 @@ function ToggleGroupRoot({
 
   return (
     <ToggleGroupContext.Provider value={context}>
-      <WithSx className={className} styles={[rootStyle, rootOrientationStyles[orientation], rootCss]} sx={sx}>
+      <WithSx className={className} styles={[rootStyle, rootOrientationStyles[orientation], slotStyles]} sx={sx}>
         {(className) => (
           <Root
             {...rest}
@@ -340,17 +340,17 @@ ToggleGroupItem.displayName = 'ToggleGroup.Item';
 function ToggleGroupComponent(props: ToggleGroupProps) {
   if (props.options === undefined) return <ToggleGroupRoot {...props} />;
   const { options, component, slots, slotProps, ...rest } = props;
-  const { css: rootCss, className, style, sx, ...rootProps } = slotProps?.root ?? {};
+  const { className, style, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
   const Item = slots?.item ?? ToggleGroupItem;
   return (
     <ToggleGroupRoot
       {...rest}
       {...rootProps}
       rootElement={slots?.root ?? component}
-      rootCss={rootCss}
+      slotStyles={slotSx}
       className={[className, rest.className].filter(Boolean).join(' ') || undefined}
       style={{ ...rest.style, ...style }}
-      sx={[sx, rest.sx]}
+      sx={rest.sx}
     >
       {options.map(({ label, ...option }) => (
         <Item {...slotProps?.item} {...option} key={option.value}>

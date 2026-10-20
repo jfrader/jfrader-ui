@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 // Syntax highlighting is opt-in through `highlight`, a loader that returns tokenized lines. This
@@ -22,7 +23,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import type { SlotCss, SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
 import type { PresentationProps } from '../../utils/presentation-slot';
 import { SurfaceRoot } from '../surface/surface-root';
 import type { SurfaceAppearance } from '../../styling/surface';
@@ -34,10 +35,9 @@ import { CopyButton, type CopyButtonProps } from '../copy-button';
 /** Tab width for source text; kept as a named constant so it changes in one place. */
 const TAB_SIZE = 2;
 
-
 export interface CodeBlockSlotPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface CodeBlockSlotProps {
@@ -98,7 +98,7 @@ export interface CodeBlockProps extends Omit<ComponentPropsWithRef<'section'>, '
   getExpandLabel?: (count: number, formatted: string) => string;
   collapseLabel?: string;
   copyable?: boolean;
-  copyButtonProps?: Partial<Omit<CopyButtonProps, 'text' | 'ref'>> & SlotCss;
+  copyButtonProps?: Partial<Omit<CopyButtonProps, 'text' | 'ref'>> & SxProps;
   preRef?: Ref<HTMLPreElement>;
   /** Syntax highlighting loader, read when `code` or `language` changes. */
   highlight?: CodeHighlightLoader;
@@ -388,26 +388,26 @@ export function CodeBlock({
           aria-labelledby={labelledBy ? `${labelledBy} ${labelId}` : ariaLabel !== undefined ? undefined : labelId}
         >
           <Header
-            {...slotProps?.header}
+            {...withoutSx(slotProps?.header)}
             data-ui="code-block-header"
             className={slotProps?.header?.className}
-            css={[headerStyle, slotProps?.header?.css]}
+            css={[headerStyle, slotProps?.header?.sx]}
           >
             <Label
-              {...slotProps?.label}
+              {...withoutSx(slotProps?.label)}
               id={labelId}
               data-ui="code-block-label"
               className={slotProps?.label?.className}
-              css={[labelStyle, slotProps?.label?.css]}
+              css={[labelStyle, slotProps?.label?.sx]}
             >
               {filename || label}
             </Label>
             {language !== undefined && language !== '' && (
               <Language
-                {...slotProps?.language}
+                {...withoutSx(slotProps?.language)}
                 data-ui="code-block-language"
                 className={slotProps?.language?.className}
-                css={[languageStyle, slotProps?.language?.css]}
+                css={[languageStyle, slotProps?.language?.sx]}
               >
                 {language}
               </Language>
@@ -421,31 +421,31 @@ export function CodeBlock({
                 variant="ghost"
                 iconOnly
                 {...copyButtonProps}
-                css={[copyStyle, copyButtonProps?.css]}
+                sx={[copyStyle, copyButtonProps?.sx]}
                 text={code}
               />
             )}
           </Header>
           <SourceFrame
-            {...slotProps?.sourceFrame}
+            {...withoutSx(slotProps?.sourceFrame)}
             data-ui="code-block-source-frame"
             data-state={collapsible ? (effectiveOpen ? 'expanded' : 'collapsed') : undefined}
             className={slotProps?.sourceFrame?.className}
-            css={[frameStyle, slotProps?.sourceFrame?.css]}
+            css={[frameStyle, slotProps?.sourceFrame?.sx]}
           >
             {lineNumbers && visibleLines.length > 0 && (
               <Gutter
-                {...slotProps?.gutter}
+                {...withoutSx(slotProps?.gutter)}
                 aria-hidden="true"
                 data-ui="code-block-gutter"
                 className={slotProps?.gutter?.className}
-                css={[sourceTypography, gutterStyle, slotProps?.gutter?.css]}
+                css={[sourceTypography, gutterStyle, slotProps?.gutter?.sx]}
               >
                 {visibleLines.map((_, index) => formatter.format(index + 1)).join('\n')}
               </Gutter>
             )}
             <Pre
-              {...slotProps?.pre}
+              {...withoutSx(slotProps?.pre)}
               id={sourceId}
               ref={preRef}
               role="group"
@@ -454,13 +454,13 @@ export function CodeBlock({
               aria-label={sourceLabel}
               data-ui="code-block-pre"
               className={slotProps?.pre?.className}
-              css={[sourceTypography, preStyle, slotProps?.pre?.css]}
+              css={[sourceTypography, preStyle, slotProps?.pre?.sx]}
             >
               <Code
-                {...slotProps?.code}
+                {...withoutSx(slotProps?.code)}
                 data-ui="code-block-code"
                 className={slotProps?.code?.className}
-                css={[codeStyle, slotProps?.code?.css]}
+                css={[codeStyle, slotProps?.code?.sx]}
               >
                 {highlightedLines
                   ? visibleLines.map((line, index) => (
@@ -474,7 +474,7 @@ export function CodeBlock({
           </SourceFrame>
           {collapsible && (
             <Toggle
-              {...slotProps?.toggle}
+              {...withoutSx(slotProps?.toggle)}
               ref={toggleRef}
               variant="ghost"
               tone="neutral"
@@ -484,7 +484,7 @@ export function CodeBlock({
               aria-controls={sourceId}
               data-ui="code-block-toggle"
               className={slotProps?.toggle?.className}
-              css={[toggleStyle, slotProps?.toggle?.css]}
+              css={[toggleStyle, slotProps?.toggle?.sx]}
               render={(buttonProps) => <button {...buttonProps} type="button" />}
               onClick={() => requestOpen(!expanded)}
             >

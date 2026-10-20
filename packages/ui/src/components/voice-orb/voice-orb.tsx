@@ -18,7 +18,7 @@ import { useMergeRefs } from '@floating-ui/react';
 import { MotionConfig, motion, useReducedMotion, useSpring, type MotionValue } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
-import { WithSx, type SlotCss, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -56,7 +56,7 @@ export interface VoiceOrbProps extends ComponentPropsWithRef<'div'>, SxProps {
   locale?: Intl.LocalesArgument;
 }
 type NativeSlot<T extends 'canvas' | 'span'> = ComponentPropsWithRef<T> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 export interface VoiceOrbVisualProps extends ComponentPropsWithRef<'div'>, SxProps {
   size?: VoiceOrbSize;
@@ -83,9 +83,9 @@ export interface VoiceOrbControlsProps extends ComponentPropsWithRef<'div'>, SxP
     timer?: ComponentType<NativeSlot<'span'>>;
   };
   slotProps?: {
-    start?: Omit<ButtonProps, 'sx'> & SlotCss;
-    mute?: Omit<ButtonProps, 'sx'> & SlotCss;
-    end?: Omit<ButtonProps, 'sx'> & SlotCss;
+    start?: Omit<ButtonProps, 'sx'> & SxProps;
+    mute?: Omit<ButtonProps, 'sx'> & SxProps;
+    end?: Omit<ButtonProps, 'sx'> & SxProps;
     timer?: NativeSlot<'span'>;
   };
 }
@@ -507,10 +507,10 @@ function VoiceOrbVisual({
           }
         >
           <Canvas
-            {...slotProps?.canvas}
+            {...withoutSx(slotProps?.canvas)}
             ref={mergedRef}
             aria-hidden="true"
-            css={[canvasStyle, slotProps?.canvas?.css]}
+            css={[canvasStyle, slotProps?.canvas?.sx]}
           />
         </div>
       )}
@@ -642,9 +642,9 @@ function VoiceOrbControls({
               <>
                 <Mute
                   variant="outline"
-                  {...slotProps?.mute}
+                  {...withoutSx(slotProps?.mute)}
                   ref={muteMerged}
-                  css={[controlStyle, slotProps?.mute?.css]}
+                  css={[controlStyle, slotProps?.mute?.sx]}
                   aria-label={slotProps?.mute?.['aria-label'] ?? context.labels.mute}
                   aria-pressed={context.muted}
                   aria-disabled={context.state === 'connecting' || slotProps?.mute?.['aria-disabled']}
@@ -656,18 +656,18 @@ function VoiceOrbControls({
                   {context.labels.mute}
                 </Mute>
                 <Timer
-                  {...slotProps?.timer}
+                  {...withoutSx(slotProps?.timer)}
                   role="timer"
                   aria-live="off"
                   aria-label={slotProps?.timer?.['aria-label'] ?? formatters.spoken(seconds)}
-                  css={[timerStyle, slotProps?.timer?.css]}
+                  css={[timerStyle, slotProps?.timer?.sx]}
                 >
                   {formatters.digital(seconds)}
                 </Timer>
                 <End
                   variant="outline"
-                  {...slotProps?.end}
-                  css={[controlStyle, slotProps?.end?.css]}
+                  {...withoutSx(slotProps?.end)}
+                  css={[controlStyle, slotProps?.end?.sx]}
                   onClick={(event) => {
                     slotProps?.end?.onClick?.(event);
                     if (!event.defaultPrevented) context.end();
@@ -679,9 +679,9 @@ function VoiceOrbControls({
             ) : (
               <Start
                 variant="outline"
-                {...slotProps?.start}
+                {...withoutSx(slotProps?.start)}
                 ref={startMerged}
-                css={[controlStyle, slotProps?.start?.css]}
+                css={[controlStyle, slotProps?.start?.sx]}
                 aria-label={
                   slotProps?.start?.['aria-label'] ??
                   (!isRenderable(startLabel) || startLabel === '' ? context.labels.start : undefined)

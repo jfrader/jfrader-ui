@@ -41,7 +41,7 @@ import {
   useMergeRefs,
   type UseInteractionsReturn,
 } from '@floating-ui/react';
-import { type Interpolation, type Theme } from '../../styling/css';
+import { type Theme } from '../../styling/css';
 import { listboxItemStateStyle, listboxItemStyle } from '../../styling/listbox-style';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
@@ -122,7 +122,7 @@ export interface CommandPaletteSlotProps {
   /** Root wrapper element around the trigger and dialog. */
   root?: ComponentPropsWithRef<'div'> &
     SxProps & {
-      css?: Interpolation<Theme>;
+
       [attribute: `data-${string}`]: unknown;
     };
   /** Button that opens the command palette. */
@@ -174,7 +174,7 @@ export interface CommandPaletteEasyProps<T extends CommandPaletteItemRecord = Co
   extends CommandPaletteBaseProps,
     Omit<ComponentPropsWithRef<'div'>, keyof CommandPaletteBaseProps | 'children' | 'onSelect'>,
     SxProps {
-  css?: Interpolation<Theme>;
+
   [attribute: `data-${string}`]: unknown;
   /** Items to search and run. */
   items: readonly T[];
@@ -430,7 +430,6 @@ function CommandPaletteOverlay<T extends CommandPaletteItemRecord = CommandPalet
       component,
       className,
       sx,
-      css: consumerCss,
       style,
       open: _open,
       defaultOpen: _defaultOpen,
@@ -461,7 +460,6 @@ function CommandPaletteOverlay<T extends CommandPaletteItemRecord = CommandPalet
     const rootSlot = slotProps?.root;
     const {
       className: rootSlotClassName,
-      css: rootSlotCss,
       sx: rootSlotSx,
       style: rootSlotStyle,
       'data-ui': rootSlotDataUi,
@@ -525,9 +523,9 @@ function CommandPaletteOverlay<T extends CommandPaletteItemRecord = CommandPalet
     );
 
     renderedContent = (
-      <WithSx styles={[rootSlotCss, rootSlotSx]} className={rootSlotClassName}>
+      <WithSx styles={[rootSlotSx]} className={rootSlotClassName}>
         {(slotClasses) => (
-          <WithSx styles={consumerCss} className={className} sx={sx}>
+          <WithSx className={className} sx={sx}>
             {(consumerClasses) => (
               <WithSx styles={[]} className={[slotClasses, consumerClasses].filter(Boolean).join(' ')}>
                 {(classes) => (

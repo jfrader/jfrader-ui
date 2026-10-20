@@ -65,7 +65,7 @@ interface ReelProps {
 }
 function GlyphCell({ text, Glyph, glyphProps }: Pick<ReelProps, 'text' | 'Glyph' | 'glyphProps'>) {
   return (
-    <WithSx className={glyphProps?.className} styles={glyphProps?.css}>
+    <WithSx className={glyphProps?.className} styles={glyphProps?.sx}>
       {(className) => (
         <Glyph {...glyphProps} className={className} data-ui="text-morph-glyph">
           {text}

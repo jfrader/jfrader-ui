@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 import { useId, type ComponentPropsWithRef, type ComponentType, type Key, type ReactNode } from 'react';
@@ -17,7 +18,7 @@ export interface GameScoreRow {
 }
 export type GameScorePartProps<T extends 'div' | 'span' | 'dl' | 'dt' | 'dd'> = ComponentPropsWithRef<T> & {
   'data-ui'?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 
 export interface GameScoreSlotProps {
@@ -92,21 +93,21 @@ export function GameScore({ label, rows, locale, slotProps, slots, component, ..
 
   return <CardRoot {...props} component={component} slots={slots} marker="game-score" structure={rootStyle} rootSlot={slotProps?.root}
     attributes={{ role: 'group', 'aria-labelledby': [labelId, externalLabel].filter(Boolean).join(' ') }}>
-    <Label {...slotProps?.label} id={labelId} data-ui={labelIdentity} className={slotProps?.label?.className} css={slotProps?.label?.css}>{label}</Label>
-    <List {...slotProps?.list} data-ui={listIdentity} className={slotProps?.list?.className} css={[listStyle, slotProps?.list?.css]}>
+    <Label {...withoutSx(slotProps?.label)} id={labelId} data-ui={labelIdentity} className={slotProps?.label?.className} css={slotProps?.label?.sx}>{label}</Label>
+    <List {...withoutSx(slotProps?.list)} data-ui={listIdentity} className={slotProps?.list?.className} css={[listStyle, slotProps?.list?.sx]}>
       {rows.map((row) => (
         <Row
-          {...slotProps?.row}
+          {...withoutSx(slotProps?.row)}
           key={row.key}
           data-stage={row.stage}
           data-ui={rowIdentity}
           className={slotProps?.row?.className}
-          css={[rowStyle, slotProps?.row?.css]}
+          css={[rowStyle, slotProps?.row?.sx]}
         >
-          <Name {...slotProps?.name} data-ui={nameIdentity} className={slotProps?.name?.className} css={slotProps?.name?.css}>{row.label}</Name>
-          <Value {...slotProps?.value} data-ui={valueIdentity} className={slotProps?.value?.className} css={[valueStyle, slotProps?.value?.css]}>
+          <Name {...withoutSx(slotProps?.name)} data-ui={nameIdentity} className={slotProps?.name?.className} css={slotProps?.name?.sx}>{row.label}</Name>
+          <Value {...withoutSx(slotProps?.value)} data-ui={valueIdentity} className={slotProps?.value?.className} css={[valueStyle, slotProps?.value?.sx]}>
             {formatter.format(row.value)}
-            {row.stage !== undefined && <Stage {...slotProps?.stage} data-ui={stageIdentity} className={slotProps?.stage?.className} css={[stageStyle, slotProps?.stage?.css]}>{row.stage}</Stage>}
+            {row.stage !== undefined && <Stage {...withoutSx(slotProps?.stage)} data-ui={stageIdentity} className={slotProps?.stage?.className} css={[stageStyle, slotProps?.stage?.sx]}>{row.stage}</Stage>}
           </Value>
         </Row>
       ))}

@@ -56,7 +56,7 @@ export interface TooltipCompoundProps extends TooltipBaseProps {
   slotProps?: never;
 }
 
-type TooltipGeneratedPartProps<Props> = Omit<Props, 'children'> & { css?: Interpolation<Theme> };
+type TooltipGeneratedPartProps<Props> = Omit<Props, 'children'> & { sx?: Interpolation<Theme> };
 
 export interface TooltipEasyProps extends Omit<TooltipBaseProps, 'children'> {
   /** Name the generated trigger button. */

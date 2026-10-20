@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 // Semantics: one `role="img"` root per card, named by `label`; the rank mark, the suit glyph and the
@@ -36,7 +37,7 @@ export const CARD_BACK_PATTERNS = {
 
 export interface GameCardPartProps extends HTMLAttributes<HTMLElement> {
   'data-ui'?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface GameCardSlots {
@@ -219,11 +220,11 @@ export function ResolvedGameCard({
     >
       {isRenderable(children) ? (
         <Art
-          {...artProps}
+          {...withoutSx(artProps)}
           data-ui={cardPartIdentity('game-card-art', artProps?.['data-ui'])}
           aria-hidden="true"
           className={artProps?.className}
-          css={[layerStyle, artStyle, hidden && backMaterialStyle, artProps?.css]}
+          css={[layerStyle, artStyle, hidden && backMaterialStyle, artProps?.sx]}
         >
           {children}
         </Art>
@@ -251,11 +252,11 @@ function CardBack({ deck, backPattern, artSet, slots, slotProps }: CardBackProps
   if (backPattern !== undefined) {
     return (
       <Back
-        {...slotProps?.back}
+        {...withoutSx(slotProps?.back)}
         data-ui={cardPartIdentity('game-card-back', slotProps?.back?.['data-ui'])}
         aria-hidden="true"
         className={slotProps?.back?.className}
-        css={[layerStyle, backMaterialStyle, slotProps?.back?.css]}
+        css={[layerStyle, backMaterialStyle, slotProps?.back?.sx]}
       >
         <Pattern variant={backPattern} tone="card" />
       </Back>
@@ -271,11 +272,11 @@ function CardBack({ deck, backPattern, artSet, slots, slotProps }: CardBackProps
     const patternTone = (deckBack as { pattern: PatternVariant; tone?: PatternTone }).tone ?? 'card';
     return (
       <Back
-        {...slotProps?.back}
+        {...withoutSx(slotProps?.back)}
         data-ui={cardPartIdentity('game-card-back', slotProps?.back?.['data-ui'])}
         aria-hidden="true"
         className={slotProps?.back?.className}
-        css={[layerStyle, backMaterialStyle, slotProps?.back?.css]}
+        css={[layerStyle, backMaterialStyle, slotProps?.back?.sx]}
       >
         <Pattern variant={patternVariant} tone={patternTone} />
       </Back>
@@ -285,11 +286,11 @@ function CardBack({ deck, backPattern, artSet, slots, slotProps }: CardBackProps
   if (isRenderable(deckBack)) {
     return (
       <Back
-        {...slotProps?.back}
+        {...withoutSx(slotProps?.back)}
         data-ui={cardPartIdentity('game-card-back', slotProps?.back?.['data-ui'])}
         aria-hidden="true"
         className={slotProps?.back?.className}
-        css={[layerStyle, artStyle, backMaterialStyle, slotProps?.back?.css]}
+        css={[layerStyle, artStyle, backMaterialStyle, slotProps?.back?.sx]}
       >
         {deckBack}
       </Back>
@@ -298,11 +299,11 @@ function CardBack({ deck, backPattern, artSet, slots, slotProps }: CardBackProps
 
   return (
     <Back
-      {...slotProps?.back}
+      {...withoutSx(slotProps?.back)}
       data-ui={cardPartIdentity('game-card-back', slotProps?.back?.['data-ui'])}
       aria-hidden="true"
       className={slotProps?.back?.className}
-      css={[layerStyle, backMaterialStyle, slotProps?.back?.css]}
+      css={[layerStyle, backMaterialStyle, slotProps?.back?.sx]}
     >
       <Pattern variant="checks" tone="card" />
     </Back>
@@ -327,11 +328,11 @@ function CardFront({ deck, value, rankLabel, artSet, printed = false, slots, slo
   if (isRenderable(customFace)) {
     return (
       <Face
-        {...slotProps?.face}
+        {...withoutSx(slotProps?.face)}
         data-ui={cardPartIdentity('game-card-art', slotProps?.face?.['data-ui'])}
         aria-hidden="true"
         className={slotProps?.face?.className}
-        css={[layerStyle, artStyle, slotProps?.face?.css]}
+        css={[layerStyle, artStyle, slotProps?.face?.sx]}
       >
         {customFace}
       </Face>
@@ -375,11 +376,11 @@ function PrintedFace({ deck, value, rankLabel, slots, slotProps }: PrintedFacePr
 
   return (
     <Face
-      {...slotProps?.face}
+      {...withoutSx(slotProps?.face)}
       data-ui={cardPartIdentity('game-card-print', slotProps?.face?.['data-ui'])}
       aria-hidden="true"
       className={slotProps?.face?.className}
-      css={[layerStyle, printStyle, ink !== undefined && suitInkStyles[ink], slotProps?.face?.css]}
+      css={[layerStyle, printStyle, ink !== undefined && suitInkStyles[ink], slotProps?.face?.sx]}
     >
       {hasGlyph && <span css={[watermarkStyle, watermarkTopStyle]}>{suitGlyph}</span>}
       <span css={markStyle}>

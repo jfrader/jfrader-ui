@@ -20,7 +20,7 @@ export interface SurfacePartProps extends ComponentPropsWithRef<'div'> {
   [attribute: `data-${string}`]: string | number | boolean | undefined;
 }
 
-export type SurfaceRootSlotProps = Partial<SurfacePartProps> & { css?: Interpolation<Theme> };
+export type SurfaceRootSlotProps = Partial<SurfacePartProps> & { sx?: Interpolation<Theme> };
 
 export interface SurfaceRootCustomization {
   /** Replace the root. Exactly sugar for `slots.root`; declare the component outside render. */

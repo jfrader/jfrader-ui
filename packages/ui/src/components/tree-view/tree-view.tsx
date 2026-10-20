@@ -20,7 +20,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -39,7 +39,7 @@ export interface TreeViewMessages {
 }
 export interface TreeViewPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 export interface TreeViewSlotProps {
   /** Root list containing the tree nodes. */
@@ -483,28 +483,28 @@ export function TreeView({
       return (
         <li key={node.id} role="none">
           <Row
-            {...slotProps?.row}
+            {...withoutSx(slotProps?.row)}
             data-ui="tree-view-row"
             className={slotProps?.row?.className}
-            css={[rowStyle, slotProps?.row?.css]}
+            css={[rowStyle, slotProps?.row?.sx]}
             style={{ ...slotProps?.row?.style, '--tree-level': entry.level - 1 } as CSSProperties}
           >
             <Disclosure
-              {...slotProps?.disclosure}
+              {...withoutSx(slotProps?.disclosure)}
               data-ui="tree-view-disclosure"
               aria-hidden="true"
               data-branch={entry.branch}
               data-open={opened}
               className={slotProps?.disclosure?.className}
-              css={[disclosureStyle, slotProps?.disclosure?.css]}
+              css={[disclosureStyle, slotProps?.disclosure?.sx]}
             />
             {isRenderable(node.icon) && (
               <Icon
-                {...slotProps?.icon}
+                {...withoutSx(slotProps?.icon)}
                 data-ui="tree-view-icon"
                 aria-hidden="true"
                 className={slotProps?.icon?.className}
-                css={[iconStyle, slotProps?.icon?.css]}
+                css={[iconStyle, slotProps?.icon?.sx]}
               >
                 {node.icon}
               </Icon>
@@ -539,11 +539,11 @@ export function TreeView({
               }}
             >
               <Label
-                {...slotProps?.label}
+                {...withoutSx(slotProps?.label)}
                 id={labelId}
                 data-ui="tree-view-label"
                 className={slotProps?.label?.className}
-                css={[labelStyle, slotProps?.label?.css]}
+                css={[labelStyle, slotProps?.label?.sx]}
               >
                 {node.label}
               </Label>
@@ -551,12 +551,12 @@ export function TreeView({
           </Row>
           {opened && entry.children && entry.children.length > 0 && (
             <Group
-              {...slotProps?.group}
+              {...withoutSx(slotProps?.group)}
               id={`${nodeId(node.id)}-group`}
               role="group"
               data-ui="tree-view-group"
               className={slotProps?.group?.className}
-              css={[groupStyle, slotProps?.group?.css]}
+              css={[groupStyle, slotProps?.group?.sx]}
               style={{ ...slotProps?.group?.style, '--tree-level': entry.level } as CSSProperties}
             >
               {renderNodes(entry.children)}
@@ -601,12 +601,12 @@ export function TreeView({
           }}
         >
           <Tree
-            {...slotProps?.tree}
+            {...withoutSx(slotProps?.tree)}
             role="tree"
             data-ui="tree-view-tree"
             ref={mergedTreeRef}
             className={slotProps?.tree?.className}
-            css={[treeStyle, slotProps?.tree?.css]}
+            css={[treeStyle, slotProps?.tree?.sx]}
             tabIndex={enabled.length ? undefined : 0}
             aria-label={ariaLabel ?? (labelledBy ? undefined : label)}
             aria-labelledby={labelledBy}
@@ -624,13 +624,13 @@ export function TreeView({
             </p>
           )}
           <Status
-            {...slotProps?.status}
+            {...withoutSx(slotProps?.status)}
             role="status"
             aria-live="polite"
             aria-atomic="true"
             data-ui="tree-view-status"
             className={slotProps?.status?.className}
-            css={[statusStyle, slotProps?.status?.css]}
+            css={[statusStyle, slotProps?.status?.sx]}
           >
             {visible
               .filter((entry) => openSet.has(entry.node.id))

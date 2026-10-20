@@ -72,7 +72,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { floatingSurfaceMotion } from '../../styling/overlay-motion';
 import { raisedSurface } from '../../styling/surface';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { useExitPresence } from '../../overlay/exit-motion';
 import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
@@ -249,7 +249,7 @@ export interface DateRangePickerTriggerProps
 
 export interface DateRangePickerSlotProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface DateRangePickerContentProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
@@ -1129,12 +1129,12 @@ function DateRangePickerPanel({
             >
               {presetItems.length > 0 && (
                 <Presets
-                  {...slotProps?.presets}
+                  {...withoutSx(slotProps?.presets)}
                   role="group"
                   aria-label={messages.presets}
                   data-ui="date-range-picker-presets"
                   className={slotProps?.presets?.className}
-                  css={[presetsStyle, slotProps?.presets?.css]}
+                  css={[presetsStyle, slotProps?.presets?.sx]}
                   onKeyDown={(event) =>
                     moveRovingFocus(event, event.currentTarget, layout === 'rail' ? 'vertical' : 'horizontal', PRESET_QUERY)
                   }
@@ -1159,10 +1159,10 @@ function DateRangePickerPanel({
                 </Presets>
               )}
               <Calendars
-                {...slotProps?.calendars}
+                {...withoutSx(slotProps?.calendars)}
                 data-ui="date-range-picker-calendars"
                 className={slotProps?.calendars?.className}
-                css={[calendarsStyle, slotProps?.calendars?.css]}
+                css={[calendarsStyle, slotProps?.calendars?.sx]}
               >
                 {visibleMonths.map((month, index) => (
                   <Calendar
@@ -1189,13 +1189,13 @@ function DateRangePickerPanel({
               </Calendars>
               <div data-ui="date-range-picker-footer" css={footerStyle}>
                 <Summary
-                  {...slotProps?.summary}
+                  {...withoutSx(slotProps?.summary)}
                   id={summaryId}
                   dir="auto"
                   role="status"
                   data-ui="date-range-picker-summary"
                   className={slotProps?.summary?.className}
-                  css={[summaryStyle, slotProps?.summary?.css]}
+                  css={[summaryStyle, slotProps?.summary?.sx]}
                 >
                   {summarized
                     ? messages.summary({
@@ -1206,10 +1206,10 @@ function DateRangePickerPanel({
                     : messages.empty}
                 </Summary>
                 <Actions
-                  {...slotProps?.actions}
+                  {...withoutSx(slotProps?.actions)}
                   data-ui="date-range-picker-actions"
                   className={slotProps?.actions?.className}
-                  css={[actionsStyle, slotProps?.actions?.css]}
+                  css={[actionsStyle, slotProps?.actions?.sx]}
                 >
                   <Button variant="ghost" size="sm" onClick={cancel}>
                     {messages.cancel}

@@ -45,7 +45,7 @@ import {
 } from 'react';
 import { animate, useReducedMotion, type AnimationPlaybackControls } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
@@ -86,7 +86,7 @@ export interface ResizablePanelsSlotProps {
   /** Root group container element wrapping the resizable panels. */
   root?: ComponentPropsWithRef<'div'> &
     SxProps & {
-      css?: Interpolation<Theme>;
+
       [attribute: `data-${string}`]: unknown;
     };
   /** Container element representing an individual panel. */
@@ -94,7 +94,7 @@ export interface ResizablePanelsSlotProps {
     [attribute: `data-${string}`]: unknown;
   };
   /** Interactive separator handle element between panels. */
-  separator?: ResizablePanelsSeparatorProps & { css?: Interpolation<Theme> };
+  separator?: ResizablePanelsSeparatorProps;
 }
 
 export interface ResizablePanelsBaseProps
@@ -895,7 +895,6 @@ function ResizablePanelsRoot(props: ResizablePanelsProps) {
     const slot = slotProps?.separator;
     const {
       className: slotClassName,
-      css: slotCss,
       sx: slotSx,
       style: slotStyle,
       'data-ui': slotDataUi,
@@ -917,7 +916,7 @@ function ResizablePanelsRoot(props: ResizablePanelsProps) {
     const collapsedSide = primaryCollapsed ? 'start' : secondaryCollapsed ? 'end' : undefined;
     const labelledBy = [slotRest['aria-labelledby'], primary.labelledBy].filter(Boolean).join(' ') || undefined;
     return (
-      <WithSx styles={[separatorStyle, slotCss]} className={slotClassName} sx={slotSx}>
+      <WithSx styles={[separatorStyle, slotSx]} className={slotClassName} sx={slotSx}>
         {(separatorClass) => (
           <SeparatorPart
             {...slotRest}
@@ -987,7 +986,6 @@ function ResizablePanelsRoot(props: ResizablePanelsProps) {
   const rootSlot = slotProps?.root;
   const {
     className: rootSlotClassName,
-    css: rootSlotCss,
     sx: rootSlotSx,
     style: rootSlotStyle,
     'data-ui': rootSlotDataUi,
@@ -998,7 +996,7 @@ function ResizablePanelsRoot(props: ResizablePanelsProps) {
   const effectiveLabel = rootSlotAriaLabel ?? rest['aria-label'] ?? label;
 
   return (
-    <WithSx styles={[rootStyle, rootSlotCss, rootSlotSx]} className={rootSlotClassName}>
+    <WithSx styles={[rootStyle, rootSlotSx]} className={rootSlotClassName}>
       {(slotClasses) => (
         <WithSx styles={[]} className={className} sx={sx}>
           {(consumerClasses) => (

@@ -24,7 +24,7 @@ import {
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { useMergeRefs } from '@floating-ui/react';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css } from '../../styling/css';
 import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -78,15 +78,15 @@ export interface AccordionSlots {
 export interface AccordionSlotProps {
   /** Container element wrapping all accordion items. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps & {
-    css?: Interpolation<Theme>;
+
     [attribute: `data-${string}`]: unknown;
   };
   /** Collapsible section item enclosing a trigger and panel. Default: `Accordion.Item`. */
-  item?: Omit<AccordionItemProps, 'children' | 'value' | 'disabled'> & { css?: Interpolation<Theme> };
+  item?: Omit<AccordionItemProps, 'children' | 'value' | 'disabled'>;
   /** Header button that toggles expansion of the section. Default: `Accordion.Trigger`. */
-  trigger?: Omit<AccordionTriggerProps, 'children'> & { css?: Interpolation<Theme> };
+  trigger?: Omit<AccordionTriggerProps, 'children'>;
   /** Expandable container holding the section content. Default: `Accordion.Panel`. */
-  panel?: Omit<AccordionPanelProps, 'children'> & { css?: Interpolation<Theme> };
+  panel?: Omit<AccordionPanelProps, 'children'>;
 }
 
 type AccordionStateProps = Omit<AccordionSingleProps, 'children'> | Omit<AccordionMultipleProps, 'children'>;
@@ -257,7 +257,7 @@ function AccordionRoot({
   ...rest
 }: AccordionProps) {
   const Root = component ?? slots?.root ?? 'div';
-  const { className: slotClassName, style: slotStyle, css: slotCss, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
+  const { className: slotClassName, style: slotStyle, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
   const marker = typeof rootProps['data-ui'] === 'string' ? rootProps['data-ui'] : '';
   const rootDataUi = [...new Set(['accordion', ...marker.split(/\s+/)])].filter(Boolean).join(' ');
   const mergedRef = useMergeRefs([ref, rootProps.ref]);
@@ -292,7 +292,7 @@ function AccordionRoot({
 
   return (
     <AccordionContext.Provider value={context}>
-      <WithSx className={[slotClassName, className].filter(Boolean).join(' ')} styles={[slotCss, slotSx]} sx={sx}>
+      <WithSx className={[slotClassName, className].filter(Boolean).join(' ')} styles={[slotSx]} sx={sx}>
         {(className) => (
           <Root
             {...rest}

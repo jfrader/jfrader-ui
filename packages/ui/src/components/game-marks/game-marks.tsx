@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 import { useId, type ComponentPropsWithRef, type ComponentType, type CSSProperties, type ReactNode } from 'react';
@@ -10,7 +11,7 @@ import { cardPartIdentity } from '../game-card/card-parts';
 
 export type GameMarksPartProps = ComponentPropsWithRef<'span'> & {
   'data-ui'?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 
 export interface GameMarksSlotProps {
@@ -82,13 +83,13 @@ export function GameMarks({ label, count, mark, maxPerRow = DEFAULT_MAX_PER_ROW,
 
   return <CardRoot {...props} component={component} slots={slots} marker="game-marks" structure={rootStyle} rootSlot={slotProps?.root}
     attributes={{ role: 'group', 'aria-labelledby': [labelId, externalLabel].filter(Boolean).join(' '), 'data-layout': layout }}>
-    <Label {...slotProps?.label} id={labelId} data-ui={labelIdentity} className={slotProps?.label?.className} css={slotProps?.label?.css}>{label}</Label>
-    <Count {...slotProps?.count} data-ui={countIdentity} className={slotProps?.count?.className} css={slotProps?.count?.css}>{new Intl.NumberFormat(locale).format(count)}</Count>
-    <Marks {...slotProps?.marks} aria-hidden="true" data-layout={layout} data-ui={marksIdentity}
+    <Label {...withoutSx(slotProps?.label)} id={labelId} data-ui={labelIdentity} className={slotProps?.label?.className} css={slotProps?.label?.sx}>{label}</Label>
+    <Count {...withoutSx(slotProps?.count)} data-ui={countIdentity} className={slotProps?.count?.className} css={slotProps?.count?.sx}>{new Intl.NumberFormat(locale).format(count)}</Count>
+    <Marks {...withoutSx(slotProps?.marks)} aria-hidden="true" data-layout={layout} data-ui={marksIdentity}
       style={{ ...slotProps?.marks?.style, '--game-marks-columns': Math.max(1, Math.min(count, maxPerRow)) } as CSSProperties}
       className={slotProps?.marks?.className}
-      css={[marksStyle, slotProps?.marks?.css]}>
-      {Array.from({ length: count }, (_, index) => <Mark {...slotProps?.mark} key={index} data-ui={markIdentity} className={slotProps?.mark?.className} css={[markStyle, slotProps?.mark?.css]}>{mark}</Mark>)}
+      css={[marksStyle, slotProps?.marks?.sx]}>
+      {Array.from({ length: count }, (_, index) => <Mark {...withoutSx(slotProps?.mark)} key={index} data-ui={markIdentity} className={slotProps?.mark?.className} css={[markStyle, slotProps?.mark?.sx]}>{mark}</Mark>)}
     </Marks>
   </CardRoot>;
 }

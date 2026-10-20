@@ -18,15 +18,15 @@ import {
 } from 'motion/react';
 import { useMergeRefs } from '@floating-ui/react';
 import { css } from '../../styling/css';
-import { WithSx, type SlotCss, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { Sand, type SandOptions } from './sand';
 import { Reel } from './reel';
 
 export type TextMorphVariant = 'auto' | 'glyph' | 'crossfade' | 'slot' | 'sand';
-export type TextMorphPartProps = ComponentPropsWithRef<'span'> & SlotCss & { 'data-ui'?: string };
-export type TextMorphCanvasProps = ComponentPropsWithRef<'canvas'> & SlotCss;
+export type TextMorphPartProps = ComponentPropsWithRef<'span'> & SxProps & { 'data-ui'?: string };
+export type TextMorphCanvasProps = ComponentPropsWithRef<'canvas'> & SxProps;
 export interface TextMorphSlots {
   root?: ComponentType<TextMorphPartProps>;
   text?: ComponentType<TextMorphPartProps>;
@@ -251,7 +251,7 @@ function Decoration({
     };
   }, [text, locale, direction, width]);
   return (
-    <WithSx className={slotProps?.frame?.className} styles={[frameStyle, slotProps?.frame?.css]}>
+    <WithSx className={slotProps?.frame?.className} styles={[frameStyle, slotProps?.frame?.sx]}>
       {(className) => (
         <Frame
           {...slotProps?.frame}
@@ -266,8 +266,8 @@ function Decoration({
                   cell.static ? (
                     <Glyph
                       key={cell.key}
-                      {...slotProps?.glyph}
-                      css={slotProps?.glyph?.css}
+                      {...withoutSx(slotProps?.glyph)}
+                      css={slotProps?.glyph?.sx}
                       data-ui="text-morph-glyph"
                     >
                       {cell.text}
@@ -305,11 +305,11 @@ function Decoration({
                     >
                       <WithSx
                         className={slotProps?.glyph?.className}
-                        styles={slotProps?.glyph?.css}
+                        styles={slotProps?.glyph?.sx}
                       >
                         {(className) => (
                           <Glyph
-                            {...slotProps?.glyph}
+                            {...withoutSx(slotProps?.glyph)}
                             className={className}
                             data-ui="text-morph-glyph"
                           >
@@ -433,12 +433,12 @@ function TextMorphRoot({
   return (
     <WithSx
       className={[className, slotProps?.root?.className].filter(Boolean).join(' ')}
-      styles={[rootStyle, slotProps?.root?.css]}
+      styles={[rootStyle, slotProps?.root?.sx]}
       sx={sx}
     >
       {(resolvedClassName) => (
         <Root
-          {...rootProps}
+          {...withoutSx(rootProps)}
           ref={mergedRef}
           className={resolvedClassName}
           style={{ ...style, ...slotProps?.root?.style }}
@@ -447,8 +447,8 @@ function TextMorphRoot({
           data-animated={animated}
         >
           <Text
-            {...slotProps?.text}
-            css={[textStyle, slotProps?.text?.css]}
+            {...withoutSx(slotProps?.text)}
+            css={[textStyle, slotProps?.text?.sx]}
             data-ui="text-morph-text"
             aria-live={announce && !rootLive ? 'polite' : undefined}
             aria-atomic={announce && !rootLive ? true : undefined}

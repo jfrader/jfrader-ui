@@ -1,11 +1,11 @@
 import type { ComponentPropsWithRef, ComponentType, ElementType } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import type { Interpolation, Theme } from '../../styling/css';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 
 export type FieldElement = 'div' | 'span' | 'label' | 'input' | 'textarea' | 'button' | 'ul' | 'li' | 'img' | 'section' | 'figure' | 'figcaption' | 'ol' | 'h3' | 'p';
 export type FieldElementProps<Element extends FieldElement> = ComponentPropsWithRef<Element> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
   [attribute: `data-${string}`]: unknown;
 };
 export type FieldSlots<Anatomy extends Record<string, FieldElement>> = {
@@ -74,9 +74,9 @@ export function FieldSlot<Element extends FieldElement>({
     });
   }
   return (
-    <WithSx className={className} styles={[styles, part?.css]} sx={sx}>
+    <WithSx className={className} styles={[styles, part?.sx]} sx={sx}>
       {(resolvedClassName) => (
-        <Component {...merged} css={undefined} ref={ref} style={style} className={resolvedClassName} />
+        <Component {...withoutSx(merged)} sx={undefined} css={undefined} ref={ref} style={style} className={resolvedClassName} />
       )}
     </WithSx>
   );

@@ -33,7 +33,7 @@ export interface AttachmentListLabels {
   showAttachments: (count: number) => string;
 }
 
-type PartProps = { className?: string; css?: Interpolation<Theme> };
+type PartProps = { className?: string; sx?: Interpolation<Theme> };
 
 export interface AttachmentListSlots {
   /** Replaces the outer ul. */
@@ -112,7 +112,7 @@ export function AttachmentListView({
   attachments, locale, labels: labelProps, previewCount = DEFAULT_PREVIEW_COUNT,
   owner, partProps, component, slots, slotProps, className, sx, ...rootProps
 }: AttachmentListViewProps) {
-  const { css: _partCss, ...partRootProps } = partProps ?? {};
+  const { sx: _partCss, ...partRootProps } = partProps ?? {};
   const Item = slots?.item ?? 'li';
   const Link = slots?.link ?? 'a';
   const ExpandButton = slots?.expandButton ?? Button;
@@ -133,7 +133,7 @@ export function AttachmentListView({
     <>
       <PresentationSlot element="ul" component={slots?.root ?? component} slotProps={slotProps?.root}
         inheritedSlotProps={partRootProps}
-        styles={[attachmentsStyle, !owner && typographyStyle, partProps?.css]} sx={sx}
+        styles={[attachmentsStyle, !owner && typographyStyle, partProps?.sx]} sx={sx}
         role="list" aria-label={labels.attachments} {...rootProps}
         marker={owner ? `${owner}-attachments` : 'attachment-list'} className={className}>
             {shown.map((attachment) => {
@@ -152,12 +152,12 @@ export function AttachmentListView({
                 </>
               );
               return (
-                <Item key={attachment.id} data-ui="attachment-list-item" className={slotProps?.item?.className} css={[fileStyle, slotProps?.item?.css]}>
+                <Item key={attachment.id} data-ui="attachment-list-item" className={slotProps?.item?.className} css={[fileStyle, slotProps?.item?.sx]}>
                   {url ? (
                     <Link href={url} download={attachment.download === false ? undefined : attachment.download ?? attachment.name}
                       target={attachment.target} rel={attachment.target === '_blank' ? 'noopener noreferrer' : undefined}
                       data-ui="attachment-list-link"
-                      className={slotProps?.link?.className} css={[linkStyle, slotProps?.link?.css]}>{content}</Link>
+                      className={slotProps?.link?.className} css={[linkStyle, slotProps?.link?.sx]}>{content}</Link>
                   ) : content}
                 </Item>
               );

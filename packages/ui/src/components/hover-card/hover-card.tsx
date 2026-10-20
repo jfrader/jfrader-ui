@@ -50,7 +50,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
 import { raisedSurface } from '../../styling/surface';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
@@ -165,7 +165,7 @@ export interface HoverCardStat {
 export type HoverCardProfilePartProps<Element extends 'div' | 'dl' | 'span' = 'div'> = Omit<
   ComponentPropsWithRef<Element>,
   'children'
-> & { css?: Interpolation<Theme> };
+> & { sx?: Interpolation<Theme> };
 
 export interface HoverCardProfileProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   /** Visible full identity; also the avatar's initials source. */
@@ -689,21 +689,21 @@ function HoverCardProfile({
         <div {...rest} ref={ref} data-ui="hover-card-profile" className={className}>
           <div css={headerStyle}>
             {/* Decorative: the visible name beside it is the one identity announcement. */}
-            <AvatarPart {...slotProps?.avatar} aria-hidden="true" css={[avatarStyle, slotProps?.avatar?.css]}>
+            <AvatarPart {...withoutSx(slotProps?.avatar)} aria-hidden="true" css={[avatarStyle, slotProps?.avatar?.sx]}>
               {isRenderable(avatar) ? avatar : <Avatar name={name} src={src} size="lg" />}
             </AvatarPart>
-            <Identity {...slotProps?.identity} css={[identityStyle, slotProps?.identity?.css]}>
+            <Identity {...withoutSx(slotProps?.identity)} css={[identityStyle, slotProps?.identity?.sx]}>
               <div css={nameStyle}>{name}</div>
               {isRenderable(subtitle) && <div css={mutedStyle}>{subtitle}</div>}
             </Identity>
           </div>
           {isRenderable(bio) && (
-            <Bio {...slotProps?.bio} css={[mutedStyle, slotProps?.bio?.css]}>
+            <Bio {...withoutSx(slotProps?.bio)} css={[mutedStyle, slotProps?.bio?.sx]}>
               {bio}
             </Bio>
           )}
           {stats.length > 0 && (
-            <Stats {...slotProps?.stats} css={[statsStyle, slotProps?.stats?.css]}>
+            <Stats {...withoutSx(slotProps?.stats)} css={[statsStyle, slotProps?.stats?.sx]}>
               {stats.map((stat) => (
                 <div key={stat.id} css={statStyle}>
                   <dt css={statLabelStyle}>{stat.label}</dt>
@@ -715,7 +715,7 @@ function HoverCardProfile({
             </Stats>
           )}
           {isRenderable(meta) && (
-            <Meta {...slotProps?.meta} css={[metaStyle, slotProps?.meta?.css]}>
+            <Meta {...withoutSx(slotProps?.meta)} css={[metaStyle, slotProps?.meta?.sx]}>
               {meta}
             </Meta>
           )}

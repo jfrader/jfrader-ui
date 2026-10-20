@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 import { useId, type ComponentPropsWithRef, type ComponentType, type Key, type ReactNode } from 'react';
@@ -12,7 +13,7 @@ export type GameRoundOutcome = 'won' | 'lost' | 'pending';
 export interface GameRound { key: Key; label: ReactNode; outcome: GameRoundOutcome }
 export type GameRoundsPartProps<T extends 'span' | 'ol' | 'li'> = ComponentPropsWithRef<T> & {
   'data-ui'?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 
 export interface GameRoundsSlotProps {
@@ -77,23 +78,23 @@ export function GameRounds({ label, rounds, outcomeLabels, slotProps, slots, com
 
   return <CardRoot {...props} component={component} slots={slots} marker="game-rounds" structure={rootStyle} rootSlot={slotProps?.root}
     attributes={{ role: 'group', 'aria-labelledby': [labelId, externalLabel].filter(Boolean).join(' ') }}>
-    <Label {...slotProps?.label} id={labelId} data-ui={labelIdentity} className={slotProps?.label?.className} css={slotProps?.label?.css}>{label}</Label>
-    <List {...slotProps?.list} role="list" data-ui={listIdentity} className={slotProps?.list?.className} css={[listStyle, slotProps?.list?.css]}>
+    <Label {...withoutSx(slotProps?.label)} id={labelId} data-ui={labelIdentity} className={slotProps?.label?.className} css={slotProps?.label?.sx}>{label}</Label>
+    <List {...withoutSx(slotProps?.list)} role="list" data-ui={listIdentity} className={slotProps?.list?.className} css={[listStyle, slotProps?.list?.sx]}>
       {rounds.map((round) => (
         <Round
-          {...slotProps?.round}
+          {...withoutSx(slotProps?.round)}
           key={round.key}
           data-outcome={round.outcome}
           data-ui={roundIdentity}
           className={slotProps?.round?.className}
-          css={[roundStyle, slotProps?.round?.css]}
+          css={[roundStyle, slotProps?.round?.sx]}
         >
           <span>{round.label}</span>
           <Outcome
-            {...slotProps?.outcome}
+            {...withoutSx(slotProps?.outcome)}
             data-ui={outcomeIdentity}
             className={slotProps?.outcome?.className}
-            css={slotProps?.outcome?.css}
+            css={slotProps?.outcome?.sx}
           >
             {outcomeLabels[round.outcome]}
           </Outcome>

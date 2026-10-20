@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 // Presentational end-of-match panel. Exposes `outcome` (`'won' | 'lost' | 'draw'`) as data.
@@ -19,7 +20,7 @@ export type GameResultOutcome = 'won' | 'lost' | 'draw';
 
 export interface GameResultPartProps extends ComponentPropsWithRef<'div'> {
   'data-ui'?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface GameResultSlotProps {
@@ -235,60 +236,60 @@ export function GameResult({
       />
       {hasEyebrow && (
         <Eyebrow
-          {...slotProps?.eyebrow}
+          {...withoutSx(slotProps?.eyebrow)}
           data-ui={eyebrowIdentity}
           className={slotProps?.eyebrow?.className}
-          css={[eyebrowStyle, slotProps?.eyebrow?.css]}
+          css={[eyebrowStyle, slotProps?.eyebrow?.sx]}
         >
           {eyebrow}
         </Eyebrow>
       )}
       {hasTitle && (
         <Title
-          {...slotProps?.title}
+          {...withoutSx(slotProps?.title)}
           data-ui={titleIdentity}
           className={slotProps?.title?.className}
-          css={[titleStyle, slotProps?.title?.css]}
+          css={[titleStyle, slotProps?.title?.sx]}
         >
           {title}
         </Title>
       )}
       {hasSummary && (
         <Summary
-          {...slotProps?.summary}
+          {...withoutSx(slotProps?.summary)}
           data-ui={summaryIdentity}
           className={slotProps?.summary?.className}
-          css={[summaryStyle, slotProps?.summary?.css]}
+          css={[summaryStyle, slotProps?.summary?.sx]}
         >
           {summary}
         </Summary>
       )}
       {hasReward && (
         <Reward
-          {...slotProps?.reward}
+          {...withoutSx(slotProps?.reward)}
           data-ui={rewardIdentity}
           className={slotProps?.reward?.className}
-          css={[rewardStyle, slotProps?.reward?.css]}
+          css={[rewardStyle, slotProps?.reward?.sx]}
         >
           {reward}
         </Reward>
       )}
       {hasActions && (
         <Actions
-          {...slotProps?.actions}
+          {...withoutSx(slotProps?.actions)}
           data-ui={actionsIdentity}
           className={slotProps?.actions?.className}
-          css={[actionsStyle, slotProps?.actions?.css]}
+          css={[actionsStyle, slotProps?.actions?.sx]}
         >
           {actions}
         </Actions>
       )}
       {hasCelebration && (
         <Celebration
-          {...slotProps?.celebration}
+          {...withoutSx(slotProps?.celebration)}
           data-ui={celebrationIdentity}
           className={slotProps?.celebration?.className}
-          css={[celebrationStyle, slotProps?.celebration?.css]}
+          css={[celebrationStyle, slotProps?.celebration?.sx]}
         >
           {celebration}
         </Celebration>

@@ -28,7 +28,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { translucentSurfaceStyle } from '../../styling/surface';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -68,11 +68,11 @@ export interface CardStackGestureOptions {
 type Slot = Omit<
   ComponentPropsWithRef<'div'>,
   'children' | 'ref' | 'role' | 'tabIndex' | 'inert'
-> & { css?: Interpolation<Theme> };
+> & { sx?: Interpolation<Theme> };
 type ButtonSlot = Omit<
   ComponentPropsWithRef<'button'>,
   'children' | 'ref' | 'type' | 'disabled' | 'aria-disabled'
-> & { css?: Interpolation<Theme> };
+> & { sx?: Interpolation<Theme> };
 export interface CardStackSlotProps {
   /** Focusable stage receiving keyboard and pointer gestures. */
   stage?: Slot & Pick<ComponentPropsWithRef<'div'>, 'ref'>;
@@ -522,8 +522,8 @@ function Layer<T>({
       }}
     >
       <CardSurface
-        {...slot}
-        css={[cardStyle, variant === 'wallet' && walletCardStyle, paddingStyles[size], slot?.css]}
+        {...withoutSx(slot)}
+        css={[cardStyle, variant === 'wallet' && walletCardStyle, paddingStyles[size], slot?.sx]}
         role={active ? 'group' : undefined}
         aria-label={slot?.['aria-label']}
         aria-labelledby={ids(slot?.['aria-labelledby'], nameId)}
@@ -532,8 +532,8 @@ function Layer<T>({
           {label}
         </span>
         <Content
-          {...slotProps.content}
-          css={[contentStyle, slotProps.content?.css]}
+          {...withoutSx(slotProps.content)}
+          css={[contentStyle, slotProps.content?.sx]}
           data-ui="card-stack-content"
         >
           {renderCard(item)}
@@ -551,7 +551,7 @@ function Layer<T>({
                 stampStyle,
                 stampSides[side],
                 variant === 'wallet' && walletStampStyle,
-                (side === 'left' ? slotProps.leftStamp : slotProps.rightStamp)?.css,
+                (side === 'left' ? slotProps.leftStamp : slotProps.rightStamp)?.sx,
               ]}
               style={{ opacity: side === 'left' ? leftOpacity : rightOpacity }}
             >
@@ -952,7 +952,7 @@ export function CardStack<T>({
     }[kind];
     return (
       <Action
-        {...slot}
+        {...withoutSx(slot)}
         key={kind}
         type="button"
         variant="outline"
@@ -961,7 +961,7 @@ export function CardStack<T>({
         data-has-icon={(isRenderable(icon) && icon !== '') || undefined}
         data-ui={empty ? 'card-stack-empty-reset' : `card-stack-${kind}-button`}
         render={(buttonProps) => <button {...buttonProps} />}
-        css={[actionStyle, kind === 'undo' && undoStyle, slot?.css]}
+        css={[actionStyle, kind === 'undo' && undoStyle, slot?.sx]}
         aria-disabled={blocked || undefined}
         onClick={(event) => {
           slot?.onClick?.(event);
@@ -1002,9 +1002,9 @@ export function CardStack<T>({
             }}
           >
             <Stage
-              {...stageSlot}
+              {...withoutSx(stageSlot)}
               ref={stageRef}
-              css={[stageStyle, stageSlot?.css]}
+              css={[stageStyle, stageSlot?.sx]}
               style={
                 {
                   '--card-stack-peek': `${reduced ? 0 : (windowSize - 1) * GEOMETRY.peek}px`,
@@ -1090,8 +1090,8 @@ export function CardStack<T>({
               )}
               {!active && (
                 <Empty
-                  {...slotProps.empty}
-                  css={[emptyStyle, slotProps.empty?.css]}
+                  {...withoutSx(slotProps.empty)}
+                  css={[emptyStyle, slotProps.empty?.sx]}
                   data-ui="card-stack-empty"
                 >
                   {renderEmpty ? (
@@ -1106,27 +1106,27 @@ export function CardStack<T>({
               )}
             </Stage>
             <Controls
-              {...slotProps.controls}
+              {...withoutSx(slotProps.controls)}
               data-ui="card-stack-controls"
-              css={[controlsStyle, slotProps.controls?.css]}
+              css={[controlsStyle, slotProps.controls?.sx]}
             >
               {(['left', 'undo', 'right', 'reset'] as const).map((kind) => action(kind))}
             </Controls>
             <Hint
-              {...slotProps.hint}
+              {...withoutSx(slotProps.hint)}
               id={`${id}-hint`}
               data-ui="card-stack-hint"
-              css={[hiddenStyle, slotProps.hint?.css]}
+              css={[hiddenStyle, slotProps.hint?.sx]}
             >
               {labels.hint(labels.left, labels.right)}
             </Hint>
             <Status
-              {...slotProps.status}
+              {...withoutSx(slotProps.status)}
               role="status"
               aria-live="polite"
               aria-atomic="true"
               data-ui="card-stack-status"
-              css={[hiddenStyle, slotProps.status?.css]}
+              css={[hiddenStyle, slotProps.status?.sx]}
             >
               {status}
             </Status>

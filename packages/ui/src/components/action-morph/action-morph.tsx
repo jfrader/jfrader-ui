@@ -80,7 +80,7 @@ export interface ActionMorphMessages {
   announceSuccess: (label: string) => string;
 }
 type NativePart<T extends 'div' | 'form' | 'span' | 'h3' | 'button'> = ComponentPropsWithRef<T> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
   'data-ui'?: string;
 };
 export interface ActionMorphFieldProps
@@ -94,11 +94,11 @@ export interface ActionMorphFieldProps
   onChange?: ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
   onKeyDown?: KeyboardEventHandler<HTMLInputElement | HTMLTextAreaElement>;
   multiline?: boolean;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 export interface ActionMorphSlotProps {
   root?: NativePart<'div'>;
-  trigger?: ButtonProps & { css?: Interpolation<Theme> };
+  trigger?: ButtonProps;
   surface?: NativePart<'div'>;
   title?: NativePart<'h3'>;
   menuList?: NativePart<'div'>;
@@ -106,10 +106,10 @@ export interface ActionMorphSlotProps {
   form?: NativePart<'form'>;
   field?: ActionMorphFieldProps;
   choices?: Omit<RadioGroupCompoundProps, 'sx'> & {
-    css?: Interpolation<Theme>;
+    sx?: Interpolation<Theme>;
   };
-  backButton?: ButtonProps & { css?: Interpolation<Theme> };
-  submitButton?: ButtonProps & { css?: Interpolation<Theme> };
+  backButton?: ButtonProps;
+  submitButton?: ButtonProps;
   error?: NativePart<'span'>;
   status?: NativePart<'span'>;
 }
@@ -320,7 +320,7 @@ function ActionMorphControl({
     typeahead,
   ]);
   const {
-    css: rootCss,
+    sx: rootCss,
     className: rootClass,
     style: rootInline,
     ref: rootRef,
@@ -329,25 +329,25 @@ function ActionMorphControl({
   const mergedRef = useMergeRefs([ref, rootRef]);
   const {
     ref: triggerRef,
-    css: triggerCss,
+    sx: triggerCss,
     size: triggerSize,
     tone: triggerTone,
     variant: triggerVariant,
     ...triggerProps
   } = slotProps?.trigger ?? {};
   const mergedTriggerRef = useMergeRefs([refs.setReference, triggerRef]);
-  const { ref: surfaceRef, css: surfaceCss, ...surfaceProps } = slotProps?.surface ?? {};
+  const { ref: surfaceRef, sx: surfaceCss, ...surfaceProps } = slotProps?.surface ?? {};
   const mergedSurfaceRef = useMergeRefs([refs.setFloating, surfaceRef]);
   const mergedBackRef = useMergeRefs([confirmationRef, slotProps?.backButton?.ref]);
-  const { css: titleCss, ...titleProps } = slotProps?.title ?? {};
-  const { css: listCss, ...listProps } = slotProps?.menuList ?? {};
-  const { css: itemCss, ref: itemRef, ...itemProps } = slotProps?.item ?? {};
-  const { css: formCss, ...formProps } = slotProps?.form ?? {};
-  const { css: fieldCss, ref: externalFieldRef, ...fieldProps } = slotProps?.field ?? {};
+  const { sx: titleCss, ...titleProps } = slotProps?.title ?? {};
+  const { sx: listCss, ...listProps } = slotProps?.menuList ?? {};
+  const { sx: itemCss, ref: itemRef, ...itemProps } = slotProps?.item ?? {};
+  const { sx: formCss, ...formProps } = slotProps?.form ?? {};
+  const { sx: fieldCss, ref: externalFieldRef, ...fieldProps } = slotProps?.field ?? {};
   const mergedFieldRef = useMergeRefs([fieldRef, externalFieldRef]);
-  const { css: choicesCss, ...choicesProps } = slotProps?.choices ?? {};
-  const { css: errorCss, ...errorProps } = slotProps?.error ?? {};
-  const { css: statusCss, ...statusProps } = slotProps?.status ?? {};
+  const { sx: choicesCss, ...choicesProps } = slotProps?.choices ?? {};
+  const { sx: errorCss, ...errorProps } = slotProps?.error ?? {};
+  const { sx: statusCss, ...statusProps } = slotProps?.status ?? {};
   const Root = slots?.root ?? component ?? 'div';
   const Trigger = slots?.trigger ?? ActionControlButton;
   const Surface = useMemo(() => motion.create(slots?.surface ?? 'div'), [slots?.surface]);

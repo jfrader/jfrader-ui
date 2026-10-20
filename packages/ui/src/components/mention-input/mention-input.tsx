@@ -764,7 +764,7 @@ export function MentionInput({
       dir={dir}
       className={className}
       sx={sx}
-      part={{ ...slotProps?.root, css: [rootLayoutStyle, slotProps?.root?.css] }}
+      part={{ ...slotProps?.root, sx: [rootLayoutStyle, slotProps?.root?.sx] }}
     >
       <FieldLabel
         component={slots?.label}

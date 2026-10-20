@@ -15,7 +15,7 @@ export interface CallOverlaySlots {
   root?: ComponentType<CallOverlayRootProps>;
 }
 export interface CallOverlaySlotProps {
-  root?: CallOverlayRootProps & { css?: Interpolation<Theme> };
+  root?: CallOverlayRootProps & { sx?: Interpolation<Theme> };
 }
 export interface CallOverlayProps extends CallOverlayRootProps, SxProps {
   /** Announcement content. Children take precedence over label. */
@@ -71,7 +71,7 @@ export function CallOverlay({
   }, [open, setOpen]);
   const reduced = useReducedMotion();
   const Root = slots?.root ?? component ?? 'div';
-  const { css: slotCss, className: slotClassName, style: slotStyle, ref: slotRef, ...rootProps } = slotProps?.root ?? {};
+  const { sx: slotCss, className: slotClassName, style: slotStyle, ref: slotRef, ...rootProps } = slotProps?.root ?? {};
   const mergedRef = useMergeRefs([ref, slotRef]);
   const marker = [...new Set(['call-overlay', rest['data-ui'], rootProps['data-ui']]
     .flatMap((value) => value?.split(/\s+/).filter(Boolean) ?? []))].join(' ');

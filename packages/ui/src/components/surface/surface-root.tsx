@@ -105,7 +105,7 @@ export function SurfaceRoot<T extends SurfaceElement = 'div'>({
   const parent = useThemeScope();
   const ownTheme = surfaceTheme(appearance);
   const slot = slotProps?.root;
-  const { css: slotCss, className: slotClassName, style: slotStyle, ...slotRest } = slot ?? {};
+  const { sx: slotCss, className: slotClassName, style: slotStyle, ...slotRest } = slot ?? {};
   const merged = { ...host, ...slotRest };
   for (const key of ['aria-labelledby', 'aria-describedby'] as const) {
     merged[key] = tokens(host[key], slot?.[key]) || undefined;

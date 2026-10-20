@@ -11,11 +11,11 @@ import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 
 export type TextShimmerTone = 'neutral' | 'accent';
 export type TextShimmerPartProps = ComponentPropsWithRef<'span'> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
   'data-ui'?: string;
 };
 export interface TextShimmerSlots {
@@ -100,7 +100,7 @@ export function TextShimmer({
   const [visible, setVisible] = useState(true);
   const [pageVisible, setPageVisible] = useState(true);
   const {
-    css: rootCss,
+    sx: rootCss,
     className: slotClassName,
     style: slotStyle,
     ref: slotRef,
@@ -164,7 +164,7 @@ export function TextShimmer({
           aria-busy={rootProps['aria-busy'] ?? rest['aria-busy'] ?? (active ? true : undefined)}
         >
           <Text
-            {...slotProps?.text}
+            {...withoutSx(slotProps?.text)}
             key={String(active)}
             data-ui={[
               ...new Set([
@@ -175,7 +175,7 @@ export function TextShimmer({
             data-active={active}
             data-continuous={budget === 0}
             data-paused={paused || !visible || !pageVisible}
-            css={[textStyle, slotProps?.text?.css]}
+            css={[textStyle, slotProps?.text?.sx]}
             style={
               {
                 ...slotProps?.text?.style,

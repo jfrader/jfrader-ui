@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
@@ -281,8 +282,8 @@ export function PhoneInput({
   return (
     <FieldRoot data-ui="phone-input" ref={rootRef} dir={dir} part={slotProps?.root} className={className} sx={sx} onBlur={validateExit}>
       <FieldLabel id={labelId} htmlFor={field.id} required={required} hidden={hideLabel} part={slotProps?.label}>{label}</FieldLabel>
-      <div {...slotProps?.control} ref={shellRef} data-ui="phone-input-control" data-disabled={disabled ? '' : undefined} data-invalid={field.ariaInvalid === true ? '' : undefined} css={[inputControlStyle, shellStyle, sizes[size], slotProps?.control?.css]}>
-        <button {...getReferenceProps({ onClick: () => open ? changeOpen(false) : openPicker() })} {...slotProps?.countryTrigger}
+      <div {...withoutSx(slotProps?.control)} ref={shellRef} data-ui="phone-input-control" data-disabled={disabled ? '' : undefined} data-invalid={field.ariaInvalid === true ? '' : undefined} css={[inputControlStyle, shellStyle, sizes[size], slotProps?.control?.sx]}>
+        <button {...getReferenceProps({ onClick: () => open ? changeOpen(false) : openPicker() })} {...withoutSx(slotProps?.countryTrigger)}
           onKeyDown={(event) => {
             if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); openPicker('', event.key === 'ArrowUp'); }
             else if (event.key.length === 1 && /\p{L}/u.test(event.key) && !event.altKey && !event.ctrlKey && !event.metaKey && !event.nativeEvent.isComposing) { event.preventDefault(); openPicker(event.key); }
@@ -290,15 +291,15 @@ export function PhoneInput({
           aria-activedescendant={undefined}
           aria-label={messages.countryButton(countryLabel, currentCountry ? `+${getCountryCallingCode(currentCountry)}` : '')}
           aria-haspopup="listbox" aria-expanded={!!open && !disabled} aria-controls={open && !disabled ? listId : undefined}
-          css={[buttonStyle, triggerStyle, slotProps?.countryTrigger?.css]}>
+          css={[buttonStyle, triggerStyle, slotProps?.countryTrigger?.sx]}>
           {currentCountry && renderCountryIcon && <span aria-hidden>{renderCountryIcon(currentCountry)}</span>}
           <span css={countryTextStyle}>{countryLabel}</span>
           {currentCountry && <span aria-hidden dir="ltr">{` +${getCountryCallingCode(currentCountry)}`}</span>}
         </button>
-        <input {...slotProps?.number} {...native} ref={mergedInputRef} id={field.id} type="tel" inputMode="tel" dir="ltr" form={form}
+        <input {...withoutSx(slotProps?.number)} {...native} ref={mergedInputRef} id={field.id} type="tel" inputMode="tel" dir="ltr" form={form}
           disabled={disabled} readOnly={readOnly} required={required} value={details.formatted}
           aria-describedby={field.describedBy} aria-labelledby={[labelledBy, isRenderable(label) && labelId].filter(Boolean).join(' ') || undefined} aria-invalid={field.ariaInvalid}
-          css={[numberStyle, slotProps?.number?.css]}
+          css={[numberStyle, slotProps?.number?.sx]}
           onBlur={onBlur}
           onChange={(event) => {
             onChange?.(event);
@@ -327,13 +328,13 @@ export function PhoneInput({
       <FieldDescription id={field.descriptionId} part={slotProps?.description}>{description}</FieldDescription>
       <FieldError id={field.errorId} part={slotProps?.error}>{displayedError}</FieldError>
       <input type="hidden" name={name} form={form} value={currentValue} disabled={disabled} />
-      <span {...slotProps?.status} role="status" aria-live="polite" aria-atomic="true" css={[visuallyHiddenStyle, slotProps?.status?.css]}>{status}</span>
+      <span {...withoutSx(slotProps?.status)} role="status" aria-live="polite" aria-atomic="true" css={[visuallyHiddenStyle, slotProps?.status?.sx]}>{status}</span>
       {open && !disabled && <OverlayPortal>
         <FloatingFocusManager context={floating.context} modal={false} initialFocus={-1} returnFocus={false} closeOnFocusOut>
-          <div {...getFloatingProps({ onBlur: validateExit })} {...slotProps?.panel} role="dialog" aria-label={messages.countriesLabel} aria-orientation={undefined} aria-activedescendant={undefined} ref={floating.refs.setFloating} data-ui="phone-input-panel" dir={dir} style={floating.floatingStyles} css={[listboxSurfaceStyle, panelStyle, slotProps?.panel?.css]}>
+          <div {...getFloatingProps({ onBlur: validateExit })} {...withoutSx(slotProps?.panel)} role="dialog" aria-label={messages.countriesLabel} aria-orientation={undefined} aria-activedescendant={undefined} ref={floating.refs.setFloating} data-ui="phone-input-panel" dir={dir} style={floating.floatingStyles} css={[listboxSurfaceStyle, panelStyle, slotProps?.panel?.sx]}>
             <div css={searchRowStyle}>
-              <input {...slotProps?.search} ref={(element) => { searchRef.current = element; if (element && focusIntent?.target === 'search' && open) { element.focus(); setFocusIntent(null); } }} role="combobox" aria-label={messages.searchLabel} placeholder={messages.searchPlaceholder} aria-autocomplete="list" aria-expanded="true" aria-controls={listId} aria-activedescendant={activeCountry ? optionId(activeCountry) : undefined}
-                value={query} css={[inputControlStyle, searchStyle, slotProps?.search?.css]}
+              <input {...withoutSx(slotProps?.search)} ref={(element) => { searchRef.current = element; if (element && focusIntent?.target === 'search' && open) { element.focus(); setFocusIntent(null); } }} role="combobox" aria-label={messages.searchLabel} placeholder={messages.searchPlaceholder} aria-autocomplete="list" aria-expanded="true" aria-controls={listId} aria-activedescendant={activeCountry ? optionId(activeCountry) : undefined}
+                value={query} css={[inputControlStyle, searchStyle, slotProps?.search?.sx]}
                 onChange={(event) => { setQuery(event.currentTarget.value); setActiveIndex(0); }}
                 onKeyDown={(event) => {
                   if (event.nativeEvent.isComposing || event.altKey || event.ctrlKey || event.metaKey) return;
@@ -345,13 +346,13 @@ export function PhoneInput({
               {query && <button type="button" tabIndex={-1} aria-label={messages.clearSearchLabel} css={buttonStyle} onClick={() => { setQuery(''); setActiveIndex(0); searchRef.current?.focus(); }}>×</button>}
               <button type="button" tabIndex={-1} aria-label={messages.closeLabel} css={buttonStyle} onClick={() => changeOpen(false, 'trigger')}>×</button>
             </div>
-            <div {...slotProps?.list} id={listId} role="listbox" aria-label={messages.countriesLabel} css={[listStyle, slotProps?.list?.css]}>
+            <div {...withoutSx(slotProps?.list)} id={listId} role="listbox" aria-label={messages.countriesLabel} css={[listStyle, slotProps?.list?.sx]}>
               {([{ codes: preferred, heading: messages.suggestedLabel }, { codes: remaining, heading: messages.allCountriesLabel }]).map(({ codes: group, heading }, groupIndex) => {
                 return group.length > 0 && <div role="group" aria-labelledby={`${uid}-group-${groupIndex}`} key={groupIndex}>
                   <div id={`${uid}-group-${groupIndex}`} css={headingStyle}>{heading}</div>
                   {group.map((code) => {
                     const index = rows.indexOf(code);
-                    return <div {...getItemProps({ onClick: () => selectCountry(code), onMouseMove: () => setActiveIndex(index) })} {...slotProps?.option} onMouseDown={(event) => event.preventDefault()} ref={(element) => { listRef.current[index] = element; }} key={code} id={optionId(code)} role="option" aria-selected={code === currentCountry} data-active={code === activeCountry ? '' : undefined} css={[listboxItemStyle, listboxItemStateStyle, listboxOptionStyle, optionStyle, slotProps?.option?.css]}>
+                    return <div {...getItemProps({ onClick: () => selectCountry(code), onMouseMove: () => setActiveIndex(index) })} {...withoutSx(slotProps?.option)} onMouseDown={(event) => event.preventDefault()} ref={(element) => { listRef.current[index] = element; }} key={code} id={optionId(code)} role="option" aria-selected={code === currentCountry} data-active={code === activeCountry ? '' : undefined} css={[listboxItemStyle, listboxItemStateStyle, listboxOptionStyle, optionStyle, slotProps?.option?.sx]}>
                       <span>{countryName(code)}</span><span>+{getCountryCallingCode(code)}{code === currentCountry ? ' ✓' : ''}</span>
                     </div>;
                   })}

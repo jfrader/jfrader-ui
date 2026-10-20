@@ -7,7 +7,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { GameCard, type GameCardPartProps, type GameCardProps } from '../game-card';
 import { CARD_FRAME } from '../game-card/card-frame';
@@ -235,7 +235,7 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, 
   const cards = allCards.slice(0, cardLimit(maxCards));
   const registrationRef = useCardRegistrationRefs('played', cards.map((card) => card.id));
   const spread = inspecting || revealed;
-  const { css: pileCss, className: pileClassName, style: pileInlineStyle, ...pileProps } = slotProps?.pile ?? {};
+  const { sx: pileCss, className: pileClassName, style: pileInlineStyle, ...pileProps } = slotProps?.pile ?? {};
   return <MotionConfig reducedMotion="user"><WithSx className={[pileClassName, className].filter(Boolean).join(' ')}
     styles={[pileStyle, pileCss]} sx={sx}>{(rootClass) => (
     <Pile {...rest} {...pileProps} ref={ref} data-ui={cardPartIdentity('game-card-stack-pile', `${rest['data-ui'] ?? ''} ${pileProps['data-ui'] ?? ''}`)} data-player-key={playerKey}
@@ -253,7 +253,7 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, 
         inspect(null);
       }}>
       {cards.length > 0 && <>
-        <Trigger {...slotProps?.trigger} type="button" data-ui={cardPartIdentity('game-card-stack-trigger', slotProps?.trigger?.['data-ui'])} className={slotProps?.trigger?.className} css={[triggerStyle, slotProps?.trigger?.css]}
+        <Trigger {...withoutSx(slotProps?.trigger)} type="button" data-ui={cardPartIdentity('game-card-stack-trigger', slotProps?.trigger?.['data-ui'])} className={slotProps?.trigger?.className} css={[triggerStyle, slotProps?.trigger?.sx]}
           ref={triggerRef} onClick={(event) => { slotProps?.trigger?.onClick?.(event); if (!event.defaultPrevented) inspect(inspecting ? null : playerKey); }} aria-label={label}
           aria-expanded={inspecting} aria-controls={cardsId} />
         <div id={cardsId} css={cardsStyle}>
@@ -262,10 +262,10 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, 
             const jitter = getStableJitter({ seed: key, spread: config.maxJitterPx });
             const offset = getPileOffset({ index, total: cards.length, open: spread, openSpreadRatio: PLAYED_PILE.openSpreadRatio });
             const rotation = getStableRotation({ seed: inspecting ? `${key}:inspected` : key, maxRotationOffsetDeg: config.maxRotationOffsetDeg });
-            return <Card {...slotProps?.card} key={key} data-ui={cardPartIdentity('game-card-stack-card', slotProps?.card?.['data-ui'])} data-played-key={key}
+            return <Card {...withoutSx(slotProps?.card)} key={key} data-ui={cardPartIdentity('game-card-stack-card', slotProps?.card?.['data-ui'])} data-played-key={key}
               ref={registrationRef(key)}
               data-reduced-motion={mounted && !!reducedMotion || undefined} className={slotProps?.card?.className}
-              css={[cardStyle, slotProps?.card?.css]} style={{
+              css={[cardStyle, slotProps?.card?.sx]} style={{
                 '--card-x': `calc(${jitter.x}px + ${spread ? `${visibleCardWidth} * ${offset.xCardWidths}` : `${offset.xPx}px`})`,
                 '--card-y': `${jitter.y + offset.y}px`, '--card-rotation': `calc(${rotation}deg + var(--pile-base-rotation, 0deg))`,
                 '--card-shadow': spread ? vars.shadow.floating : index === cards.length - 1 ? vars.shadow.raised : 'none',

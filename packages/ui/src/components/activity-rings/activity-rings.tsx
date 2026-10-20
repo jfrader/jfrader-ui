@@ -17,7 +17,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { motionDurationMs } from '../../styling/motion-timings';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { dateTimeFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -76,7 +76,7 @@ export interface ActivityRingsLabels {
 }
 type PartElement = 'svg' | 'ul' | 'button' | 'div' | 'fieldset' | 'label' | 'p';
 export type ActivityRingsPartProps<T extends PartElement> = Omit<ComponentPropsWithoutRef<T>, 'children'> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 type DataSource =
   | {
@@ -869,12 +869,12 @@ export function ActivityRings({
               {rings.length > 0 && (
                 <div css={dialStyle}>
                   <Rings
-                    {...ringsSlot}
+                    {...withoutSx(ringsSlot)}
                     data-ui="activity-rings-rings"
                     viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
                     aria-hidden="true"
                     focusable="false"
-                    css={[svgStyle, ringsSlot?.css]}
+                    css={[svgStyle, ringsSlot?.sx]}
                   >
                     <g transform={`rotate(-90 ${CENTER} ${CENTER})`}>
                       {rings.map((ring, index) => (
@@ -927,7 +927,7 @@ export function ActivityRings({
                 </div>
               )}
               <div css={bodyStyle}>
-                <Summary {...summarySlot} data-ui="activity-rings-summary" css={[summaryStyle, summarySlot?.css]}>
+                <Summary {...withoutSx(summarySlot)} data-ui="activity-rings-summary" css={[summaryStyle, summarySlot?.sx]}>
                   {day && <>{dayName(day)} · </>}
                   {summaryText}
                   {completion !== null && (
@@ -939,10 +939,10 @@ export function ActivityRings({
                 </Summary>
                 {rings.length > 0 && (
                   <Legend
-                    {...legendSlot}
+                    {...withoutSx(legendSlot)}
                     data-ui="activity-rings-legend"
                     aria-label={legendSlot?.['aria-label'] ?? labels.legend}
-                    css={[legendStyle, hideLegend && visuallyHiddenStyle, legendSlot?.css]}
+                    css={[legendStyle, hideLegend && visuallyHiddenStyle, legendSlot?.sx]}
                   >
                     {rings.map((ring, index) => {
                       const { metric, usage, status } = ring;
@@ -1011,13 +1011,13 @@ export function ActivityRings({
                         <li key={metric.id}>
                           {metricButtonSlot ? (
                             <MetricButton
-                              {...metricButtonSlot}
+                              {...withoutSx(metricButtonSlot)}
                               type="button"
                               data-ui="activity-rings-metric"
                               data-status={status}
                               aria-pressed={pressed}
                               data-preview={active === metric.id}
-                              css={[metricStyle, metricButtonSlot.css]}
+                              css={[metricStyle, metricButtonSlot.sx]}
                               onMouseEnter={(event) => {
                                 metricButtonSlot.onMouseEnter?.(event);
                                 if (!event.defaultPrevented) setHovered(metric.id);
@@ -1047,10 +1047,10 @@ export function ActivityRings({
                             </MetricButton>
                           ) : (
                             <MetricRow
-                              {...metricRowSlot}
+                              {...withoutSx(metricRowSlot)}
                               data-ui="activity-rings-metric"
                               data-status={status}
-                              css={[metricStyle, metricRowSlot?.css]}
+                              css={[metricStyle, metricRowSlot?.sx]}
                             >
                               {contents}
                             </MetricRow>
@@ -1064,9 +1064,9 @@ export function ActivityRings({
             </div>
             {hasDays && (
               <DayPicker
-                {...pickerSlot}
+                {...withoutSx(pickerSlot)}
                 data-ui="activity-rings-days"
-                css={[dayPickerStyle, pickerSlot?.css]}
+                css={[dayPickerStyle, pickerSlot?.sx]}
                 onKeyDown={onDayKeyDown}
               >
                 <legend css={visuallyHiddenStyle}>{labels.days}</legend>
@@ -1074,10 +1074,10 @@ export function ActivityRings({
                   const civil = isIsoDate(item.date) ? dateFromIso(item.date) : null;
                   return (
                     <DayLabel
-                      {...dayLabelSlot}
+                      {...withoutSx(dayLabelSlot)}
                       key={item.id}
                       data-ui="activity-rings-day"
-                      css={[dayLabelStyle, dayLabelSlot?.css]}
+                      css={[dayLabelStyle, dayLabelSlot?.sx]}
                     >
                       <input
                         ref={(node) => {

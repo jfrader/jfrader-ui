@@ -45,7 +45,7 @@ import { MODAL_ENTER_SCALE, modalBackdropMotion, modalPanelMotion } from '../../
 import { modalShellReset } from '../../styling/surface';
 import type { DrawerPanelProps } from '../drawer';
 import { SurfaceRoot } from '../surface/surface-root';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { styledDialogTransition } from '../../overlay/exit-motion';
 import {
@@ -106,19 +106,19 @@ export interface DialogSlotProps {
   /** Customize the panel's adopted div, not the native dialog shell. */
   root?: NonNullable<DialogPanelProps['slotProps']>['root'];
   /** Button that opens the dialog. */
-  trigger?: Omit<DialogTriggerProps, 'children'> & { css?: Interpolation<Theme> };
+  trigger?: Omit<DialogTriggerProps, 'children'>;
   /** Native `<dialog>` shell that manages backdrop and focus trapping. */
-  content?: Omit<DialogContentProps, 'children'> & { css?: Interpolation<Theme> };
+  content?: Omit<DialogContentProps, 'children'>;
   /** Adopted panel container that renders the dialog surface material; Dialog.Panel by default. */
   panel?: Omit<DialogPanelProps, 'children'>;
   /** Container grouping the title and optional description. */
-  header?: Omit<ComponentPropsWithRef<'div'>, 'children'> & { css?: Interpolation<Theme> };
+  header?: Omit<ComponentPropsWithRef<'div'>, 'children'> & { sx?: Interpolation<Theme> };
   /** Accessible heading element naming the dialog. */
-  title?: Omit<DialogTitleProps, 'children'> & { css?: Interpolation<Theme> };
+  title?: Omit<DialogTitleProps, 'children'>;
   /** Accessible text element describing the dialog purpose. */
-  description?: Omit<DialogDescriptionProps, 'children'> & { css?: Interpolation<Theme> };
+  description?: Omit<DialogDescriptionProps, 'children'>;
   /** Button that dismisses the dialog. */
-  close?: Omit<DialogCloseProps, 'children'> & { css?: Interpolation<Theme> };
+  close?: Omit<DialogCloseProps, 'children'>;
 }
 
 /** Replacement elements for easy mode; forward all supplied props and refs. */
@@ -343,10 +343,14 @@ function DialogRoot(props: DialogProps) {
               slots={{ ...slotProps?.panel?.slots, root: slots?.root ?? slots?.panel ?? slotProps?.panel?.slots?.root }}
               slotProps={{ root: slotProps?.root ?? slotProps?.panel?.slotProps?.root }}
             >
-              <Header {...slotProps?.header} data-ui="dialog-header">
-                <Title {...slotProps?.title}>{title}</Title>
-                {isRenderable(description) && <Description {...slotProps?.description}>{description}</Description>}
-              </Header>
+              <WithSx className={slotProps?.header?.className} sx={slotProps?.header?.sx}>
+                {(className) => (
+                  <Header {...withoutSx(slotProps?.header)} data-ui="dialog-header" className={className}>
+                    <Title {...slotProps?.title}>{title}</Title>
+                    {isRenderable(description) && <Description {...slotProps?.description}>{description}</Description>}
+                  </Header>
+                )}
+              </WithSx>
               {content}
               <Close {...slotProps?.close}>{closeLabel}</Close>
             </DialogPanel>

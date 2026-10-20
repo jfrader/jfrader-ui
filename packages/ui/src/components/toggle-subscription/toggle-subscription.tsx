@@ -21,7 +21,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { SegmentedControl, type SegmentedControlItemProps } from '../segmented-control';
@@ -29,7 +29,7 @@ import { SegmentedControl, type SegmentedControlItemProps } from '../segmented-c
 export type ToggleSubscriptionSize = 'md' | 'lg';
 export type ToggleSubscriptionTone = 'neutral' | 'accent' | 'success';
 type SlotProps<Element extends 'span' | 'del'> = ComponentPropsWithRef<Element> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 
 export interface ToggleSubscriptionCompoundProps
@@ -75,7 +75,7 @@ export interface ToggleSubscriptionSlots {
 export interface ToggleSubscriptionSlotProps {
   /** Container wrapping the label and the period list. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
-    css?: Interpolation<Theme>;
+
     [attribute: `data-${string}`]: unknown;
   };
   /** Text naming the switch. */
@@ -257,7 +257,7 @@ const MotionPriceSurface = motion.create(PriceSurface);
 
 function ToggleSubscriptionRoot({
   rootElement: Root = 'div',
-  rootCss,
+  slotStyles,
   ref,
   value: valueProp,
   defaultValue,
@@ -270,7 +270,7 @@ function ToggleSubscriptionRoot({
   sx,
   children,
   ...rest
-}: ToggleSubscriptionCompoundProps & { rootElement?: 'div' | ToggleSubscriptionSlots['root']; rootCss?: Interpolation<Theme> }) {
+}: ToggleSubscriptionCompoundProps & { rootElement?: 'div' | ToggleSubscriptionSlots['root']; slotStyles?: Interpolation<Theme> }) {
   const [value, requestChange] = useControlledState(valueProp, defaultValue, onValueChange);
   const [labels, setLabels] = useState<string[]>([]);
   const [selections, setSelections] = useState<ReadonlyMap<string, SelectionPart>>(new Map());
@@ -294,7 +294,7 @@ function ToggleSubscriptionRoot({
   return (
     <Context.Provider value={context}>
       <MotionConfig reducedMotion="user">
-        <WithSx className={className} styles={[rootStyle, rootCss]} sx={sx}>
+        <WithSx className={className} styles={[rootStyle, slotStyles]} sx={sx}>
           {(className) => (
             <Root {...rest} ref={ref} className={className} data-ui="toggle-subscription">
               {children}
@@ -358,7 +358,7 @@ function ToggleSubscriptionList({ ref, className, sx, children, ...rest }: Toggl
             slotProps={{
               selection: {
                 ...selection,
-                css: [selectionToneStyles[context.tone], forcedSelectionStyle, selection?.css],
+                sx: [selectionToneStyles[context.tone], forcedSelectionStyle, selection?.sx],
               },
             }}
             aria-labelledby={
@@ -414,9 +414,9 @@ function ToggleSubscriptionItem({
             accessory={
               hasBadge ? (
                 <Badge
-                  {...slotProps?.badge}
+                  {...withoutSx(slotProps?.badge)}
                   data-ui="toggle-subscription-badge"
-                  css={[badgeStyle, toneStyles[context.tone], slotProps?.badge?.css]}
+                  css={[badgeStyle, toneStyles[context.tone], slotProps?.badge?.sx]}
                 >
                   {isRenderable(badge) && badge !== '' && (
                     <span aria-hidden="true" css={[badgeCellStyle, sizerStyle]}>
@@ -435,9 +435,9 @@ function ToggleSubscriptionItem({
           >
             {isRenderable(children) && children !== '' && (
               <Label
-                {...slotProps?.label}
+                {...withoutSx(slotProps?.label)}
                 data-ui="toggle-subscription-item-label"
-                css={slotProps?.label?.css}
+                css={slotProps?.label?.sx}
               >
                 {children}
               </Label>
@@ -502,9 +502,9 @@ function ToggleSubscriptionPrice({
           transition={PRICE_SPRING}
         >
           <Amount
-            {...slotProps?.amount}
+            {...withoutSx(slotProps?.amount)}
             data-ui="toggle-subscription-amount"
-            css={[amountStyle, slotProps?.amount?.css]}
+            css={[amountStyle, slotProps?.amount?.sx]}
           >
             <span css={visuallyHiddenStyle}>{formatted}</span>
             <motion.span aria-hidden="true" css={visualStyle} transition={PRICE_SPRING}>
@@ -524,9 +524,9 @@ function ToggleSubscriptionPrice({
           </Amount>
           {hasPrevious && (
             <Previous
-              {...slotProps?.previous}
+              {...withoutSx(slotProps?.previous)}
               data-ui="toggle-subscription-previous"
-              css={[previousStyle, slotProps?.previous?.css]}
+              css={[previousStyle, slotProps?.previous?.sx]}
             >
               <span css={visuallyHiddenStyle}>{previousLabel}</span>
               {formatter.format(was)}
@@ -534,9 +534,9 @@ function ToggleSubscriptionPrice({
           )}
           {isRenderable(period) && period !== '' && (
             <Period
-              {...slotProps?.period}
+              {...withoutSx(slotProps?.period)}
               data-ui="toggle-subscription-period"
-              css={[periodStyle, slotProps?.period?.css]}
+              css={[periodStyle, slotProps?.period?.sx]}
             >
               {period}
             </Period>
@@ -565,7 +565,7 @@ function ToggleSubscriptionEasyPrice({
 function ToggleSubscriptionComponent(props: ToggleSubscriptionProps) {
   if (props.options === undefined) return <ToggleSubscriptionRoot {...props} />;
   const { options, prices, label, component, slots, slotProps, ...rest } = props;
-  const { css: rootCss, className, style, sx, ...rootProps } = slotProps?.root ?? {};
+  const { className, style, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
   const Label = slots?.label ?? ToggleSubscriptionLabel;
   const List = slots?.list ?? ToggleSubscriptionList;
   const Item = slots?.item ?? ToggleSubscriptionItem;
@@ -574,10 +574,10 @@ function ToggleSubscriptionComponent(props: ToggleSubscriptionProps) {
       {...rest}
       {...rootProps}
       rootElement={slots?.root ?? component}
-      rootCss={rootCss}
+      slotStyles={slotSx}
       className={[className, rest.className].filter(Boolean).join(' ') || undefined}
       style={{ ...rest.style, ...style }}
-      sx={[sx, rest.sx]}
+      sx={rest.sx}
     >
       {isRenderable(label) && <Label {...slotProps?.label}>{label}</Label>}
       <List {...slotProps?.list}>

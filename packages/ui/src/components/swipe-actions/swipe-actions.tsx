@@ -31,7 +31,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Menu, type MenuTriggerProps, type MenuContentProps, type MenuItemProps } from '../menu';
@@ -48,7 +48,7 @@ export interface SwipeAction {
   /** Caller metadata indicating the row should stay. Commands close the rail but never delete data. */
   keepRow?: boolean;
 }
-type Slot = { className?: string; css?: Interpolation<Theme> };
+type Slot = { className?: string; sx?: Interpolation<Theme> };
 interface SwipeActionsBaseProps
   extends Omit<ComponentPropsWithRef<'ul'>, 'value' | 'defaultValue' | 'children'>, SxProps {
   value?: SwipeActionsValue;
@@ -100,7 +100,7 @@ export interface SwipeActionsSlotProps {
   /** Outer list container element (`ul`) holding swipeable rows. */
   root?: Omit<ComponentPropsWithRef<'ul'>, 'children' | 'value' | 'defaultValue'> &
     SxProps & {
-      css?: Interpolation<Theme>;
+
       [attribute: `data-${string}`]: unknown;
     };
   /** Swipeable row item element (`li`) inside the list. */
@@ -233,7 +233,7 @@ function RowElement({
 }
 const MotionRow = motion.create(RowElement);
 function ContentElement({ component: Component = 'div', nativeProps, ...props }: ComponentPropsWithRef<'div'> & { component?: SwipeActionsRowSlots['content'] | 'div'; nativeProps?: ComponentPropsWithRef<'div'> & Slot }) {
-  const { css: _css, ...native } = nativeProps ?? {};
+  const { sx: _css, ...native } = nativeProps ?? {};
   const ref = useMergeRefs([native.ref, props.ref]);
   return <Component {...native} {...props} ref={ref} style={{ ...native.style, ...props.style }} />;
 }
@@ -256,13 +256,13 @@ const SwipeContext = createContext<Context | null>(null);
 function SwipeActionsRoot({ rows: records, slotProps, slots, children, ...props }: SwipeActionsProps) {
   const Root = slots?.root ?? 'ul';
   const Row = slots?.row ?? SwipeActionsRow;
-  const { css: slotCss, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
+  const {  sx: slotSx, ...rootProps } = slotProps?.root ?? {};
   return (
     <SwipeActionsList
       rootElement={Root}
       {...props}
       {...rootProps}
-      slotCss={[slotCss, slotSx]}
+      slotSx={[slotSx]}
       sx={props.sx}
       className={[props.className, rootProps.className].filter(Boolean).join(' ') || undefined}
       style={{ ...props.style, ...rootProps.style }}
@@ -285,10 +285,10 @@ function SwipeActionsList({
   onValueChange,
   children,
   onKeyDown,
-  slotCss,
+  slotSx,
   rootElement: Root = 'ul',
   ...props
-}: SwipeActionsBaseProps & { children?: ReactNode; slotCss?: Interpolation<Theme>; rootElement?: SwipeActionsSlots['root'] | 'ul' }) {
+}: SwipeActionsBaseProps & { children?: ReactNode; slotSx?: Interpolation<Theme>; rootElement?: SwipeActionsSlots['root'] | 'ul' }) {
   const [value = null, change] = useControlledState(valueProp, defaultValue, onValueChange);
   const list = useRef<HTMLUListElement>(null);
   const rows = useRef(new Map<string, RegisteredRow>()).current;
@@ -345,7 +345,7 @@ function SwipeActionsList({
   return (
     <MotionConfig reducedMotion="user">
       <SwipeContext.Provider value={context}>
-        <WithSx className={className} styles={[listStyle, slotCss]} sx={sx}>
+        <WithSx className={className} styles={[listStyle, slotSx]} sx={sx}>
           {(className) => (
             <Root
               {...props}
@@ -588,20 +588,20 @@ function SwipeActionsRow({
     <>
       {isRenderable(action.icon) && action.icon !== '' && (
         <ActionIcon
-          {...slotProps?.actionIcon}
+          {...withoutSx(slotProps?.actionIcon)}
           aria-hidden
           data-ui="swipe-actions-action-icon"
           className={slotProps?.actionIcon?.className}
-          css={[iconStyle, slotProps?.actionIcon?.css]}
+          css={[iconStyle, slotProps?.actionIcon?.sx]}
         >
           {action.icon}
         </ActionIcon>
       )}
       <ActionLabel
-        {...slotProps?.actionLabel}
+        {...withoutSx(slotProps?.actionLabel)}
         data-ui="swipe-actions-action-label"
         className={slotProps?.actionLabel?.className}
-        css={slotProps?.actionLabel?.css}
+        css={slotProps?.actionLabel?.sx}
       >
         {action.label}
       </ActionLabel>
@@ -734,14 +734,14 @@ function SwipeActionsRow({
                 >
                   {actions[side].map((action) => (
                     <Action
-                      {...slotProps?.action}
+                      {...withoutSx(slotProps?.action)}
                       key={action.id}
                       type="button"
                       tabIndex={-1}
                       disabled={disabled || action.disabled || openSide !== side || !present}
                       data-ui="swipe-actions-action"
                       className={slotProps?.action?.className}
-                      css={[actionStyle, tones[action.tone ?? 'neutral'], slotProps?.action?.css]}
+                      css={[actionStyle, tones[action.tone ?? 'neutral'], slotProps?.action?.sx]}
                       onPointerDown={(event) => event.preventDefault()}
                       onClick={() => dispatch(action)}
                     >
@@ -756,14 +756,14 @@ function SwipeActionsRow({
             nativeProps={slotProps?.content}
             data-ui="swipe-actions-content"
             className={slotProps?.content?.className}
-            css={[contentStyle, slotProps?.content?.css]}
+            css={[contentStyle, slotProps?.content?.sx]}
             style={{ x }}
           >
             <Body
-              {...slotProps?.body}
+              {...withoutSx(slotProps?.body)}
               data-ui="swipe-actions-body"
               className={slotProps?.body?.className}
-              css={[bodyStyle, slotProps?.body?.css]}
+              css={[bodyStyle, slotProps?.body?.sx]}
             >
               {children}
             </Body>
@@ -775,33 +775,33 @@ function SwipeActionsRow({
               }}
             >
               <Trigger
-                {...slotProps?.trigger}
+                {...withoutSx(slotProps?.trigger)}
                 ref={trigger}
                 disabled={disabled || (!leading.length && !trailing.length)}
                 aria-label={actionsLabel}
                 title={label}
                 className={slotProps?.trigger?.className}
-                css={[triggerStyle, slotProps?.trigger?.css]}
+                css={[triggerStyle, slotProps?.trigger?.sx]}
               >
                 ⋯
               </Trigger>
               <MenuContent
-                {...slotProps?.menu}
+                {...withoutSx(slotProps?.menu)}
                 ref={(node) => {
                   menu.current = node;
                   const row = rows.get(id);
                   if (row) row.menu = node;
                 }}
                 className={slotProps?.menu?.className}
-                css={slotProps?.menu?.css}
+                css={slotProps?.menu?.sx}
               >
                 {[...leading, ...trailing].map((action) => (
                   <MenuItem
-                    {...slotProps?.menuItem}
+                    {...withoutSx(slotProps?.menuItem)}
                     key={action.id}
                     disabled={disabled || action.disabled}
                     className={slotProps?.menuItem?.className}
-                    css={slotProps?.menuItem?.css}
+                    css={slotProps?.menuItem?.sx}
                     onSelect={() => dispatch(action)}
                   >
                     {renderLabel(action)}

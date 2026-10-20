@@ -20,7 +20,7 @@ import { useMergeRefs } from '@floating-ui/react';
 import { MotionConfig, animate, useMotionValue, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { base } from '@jfrader/tokens';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { raisedSurface } from '../../styling/surface';
 import { disclosureCaret } from '../../styling/disclosure-caret';
@@ -55,17 +55,17 @@ export interface ExpandableCardSlots {
 export interface ExpandableCardSlotProps {
   /** Root card container element. */
   root?: Omit<ComponentPropsWithRef<'article'>, 'children'> & SxProps & {
-    css?: Interpolation<Theme>;
+
     [attribute: `data-${string}`]: unknown;
   };
   /** Interactive header button that toggles expansion. */
-  trigger?: Omit<ExpandableCardTriggerProps, 'children'> & { css?: Interpolation<Theme> };
+  trigger?: Omit<ExpandableCardTriggerProps, 'children'>;
   /** Card heading title element. */
-  title?: Omit<ExpandableCardTitleProps, 'children'> & { css?: Interpolation<Theme> };
+  title?: Omit<ExpandableCardTitleProps, 'children'>;
   /** Card subheading description element. */
-  description?: Omit<ExpandableCardDescriptionProps, 'children'> & { css?: Interpolation<Theme> };
+  description?: Omit<ExpandableCardDescriptionProps, 'children'>;
   /** Expandable body panel containing card details. */
-  content?: Omit<ExpandableCardContentProps, 'children'> & { css?: Interpolation<Theme> };
+  content?: Omit<ExpandableCardContentProps, 'children'>;
 }
 export interface ExpandableCardCompoundProps extends ExpandableCardBaseProps {
   children?: ReactNode;
@@ -235,7 +235,7 @@ function ExpandableCardRoot(props: ExpandableCardProps) {
   } = props;
   const easy = 'content' in props;
   const Root = component ?? slots?.root ?? 'article';
-  const { className: slotClassName, style: slotStyle, css: slotCss, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
+  const { className: slotClassName, style: slotStyle, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
   const marker = typeof rootProps['data-ui'] === 'string' ? rootProps['data-ui'] : '';
   const rootDataUi = [...new Set(['expandable-card', ...marker.split(/\s+/)])].filter(Boolean).join(' ');
   const [state, request] = useControlledState(openProp, defaultOpen, onOpenChange);
@@ -318,7 +318,7 @@ function ExpandableCardRoot(props: ExpandableCardProps) {
     <MotionConfig reducedMotion="user">
       <Context.Provider value={context}>
         <div ref={trackRef} css={trackStyle}>
-          <WithSx className={[slotClassName, className].filter(Boolean).join(' ')} styles={[rootStyle, slotCss, slotSx]} sx={sx}>
+          <WithSx className={[slotClassName, className].filter(Boolean).join(' ')} styles={[rootStyle, slotSx]} sx={sx}>
             {(className) => (
               <Root
                 {...rest}

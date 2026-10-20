@@ -17,7 +17,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -49,7 +49,7 @@ export interface AnnouncementBarLabels {
 type Slot<E extends 'section' | 'div' | 'span' | 'button' | 'a'> = Omit<
   ComponentPropsWithRef<E>,
   'ref' | 'children' | 'dangerouslySetInnerHTML'
-> & { css?: Interpolation<Theme> };
+> & { sx?: Interpolation<Theme> };
 export interface AnnouncementBarProps
   extends Omit<ComponentPropsWithRef<'section'>, 'children' | 'dangerouslySetInnerHTML'>, SxProps {
   messages: readonly Announcement[];
@@ -414,7 +414,7 @@ export function AnnouncementBar({
 
   if (!messages.length || (!open && !present)) return null;
   const announcement = messages[index]!;
-  const { css: _rootCss, ...rootProps } = slotProps?.root ?? {};
+  const { sx: _rootCss, ...rootProps } = slotProps?.root ?? {};
   const number = numberFormatter(locale);
   const position =
     getMessageLabel?.(index, messages.length) ??
@@ -442,7 +442,7 @@ export function AnnouncementBar({
         type="button"
         render={(buttonProps) => <Control {...buttonProps} data-ui={`announcement-bar-${part}`} />}
         size="sm"
-        css={[controlStyle, props?.css]}
+        sx={[controlStyle, props?.sx]}
         aria-label={props?.['aria-label'] ?? name}
         aria-controls={part === 'previous' || part === 'next' ? contentId : undefined}
         aria-pressed={undefined}
@@ -462,7 +462,7 @@ export function AnnouncementBar({
         rootStyle,
         toneStyles[tone],
         variant === 'inverted' && invertedStyle,
-        slotProps?.root?.css,
+        slotProps?.root?.sx,
       ]}
       sx={sx}
     >
@@ -558,10 +558,10 @@ export function AnnouncementBar({
                   )}
               </div>
               <Content
-                {...slotProps?.content}
+                {...withoutSx(slotProps?.content)}
                 id={contentId}
                 data-ui="announcement-bar-content"
-                css={[contentStyle, slotProps?.content?.css]}
+                css={[contentStyle, slotProps?.content?.sx]}
                 aria-live="off"
               >
                 <div
@@ -573,9 +573,9 @@ export function AnnouncementBar({
                 >
                   {hasContent(announcement.message) && (
                     <Message
-                      {...slotProps?.message}
+                      {...withoutSx(slotProps?.message)}
                       data-ui="announcement-bar-message"
-                      css={[messageStyle, slotProps?.message?.css]}
+                      css={[messageStyle, slotProps?.message?.sx]}
                       aria-live={running ? 'off' : live}
                       aria-atomic="true"
                     >
@@ -584,8 +584,8 @@ export function AnnouncementBar({
                   )}
                   {open && announcement.countdown && (
                     <Timer
-                      {...slotProps?.countdown}
-                      css={slotProps?.countdown?.css}
+                      {...withoutSx(slotProps?.countdown)}
+                      css={slotProps?.countdown?.sx}
                       {...announcement.countdown}
                       variant="compact"
                       locale={locale}
@@ -603,10 +603,10 @@ export function AnnouncementBar({
                     hasContent(announcement.action.label) &&
                     (announcement.action.href !== undefined ? (
                       <ActionLink
-                        {...slotProps?.action}
+                        {...withoutSx(slotProps?.action)}
                         href={announcement.action.href}
                         data-ui="announcement-bar-action"
-                        css={[actionStyle, slotProps?.action?.css]}
+                        css={[actionStyle, slotProps?.action?.sx]}
                         onClick={clickAction}
                       >
                         {announcement.action.label}
@@ -618,7 +618,7 @@ export function AnnouncementBar({
                         render={(buttonProps) => (
                           <ActionButton {...buttonProps} data-ui="announcement-bar-action" />
                         )}
-                        css={[controlStyle, slotProps?.action?.css]}
+                        sx={[controlStyle, slotProps?.action?.sx]}
                         onClick={clickAction}
                       >
                         {announcement.action.label}

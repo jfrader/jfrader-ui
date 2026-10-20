@@ -18,7 +18,7 @@ export type SpinnerSize = 'sm' | 'md' | 'lg' | 'xl';
 export type SpinnerVariant = 'ring' | 'dots' | 'bars' | 'square';
 export type SpinnerValue = 'loading' | 'success' | 'error';
 export type SpinnerPartProps = ComponentPropsWithRef<'span'> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
   'data-ui'?: string;
 };
 export interface SpinnerSlots {
@@ -220,7 +220,7 @@ export function Spinner({
   const [pageVisible, setPageVisible] = useState(true);
   const element = useRef<HTMLSpanElement>(null);
   const {
-    css: rootCss,
+    sx: rootCss,
     className: rootClass,
     style: rootInline,
     ref: rootRef,
@@ -230,8 +230,8 @@ export function Spinner({
   const Root = slots?.root ?? component ?? 'span';
   const Indicator = slots?.indicator ?? 'span';
   const Status = slots?.status ?? 'span';
-  const { css: indicatorCss, ...indicatorProps } = slotProps?.indicator ?? {};
-  const { css: statusCss, ...statusProps } = slotProps?.status ?? {};
+  const { sx: indicatorCss, ...indicatorProps } = slotProps?.indicator ?? {};
+  const { sx: statusCss, ...statusProps } = slotProps?.status ?? {};
   const morph = value !== undefined || defaultValue !== 'loading' || variant !== 'ring';
   useEffect(() => {
     const node = element.current;

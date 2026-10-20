@@ -4,7 +4,7 @@ import type { ComponentPropsWithRef, ComponentType, CSSProperties } from 'react'
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
 import { useDeckArt } from '../deck/art-context';
@@ -136,16 +136,16 @@ export function GameHand({
   return (
     <CardRoot {...rest} ref={ref} marker="game-hand" component={component} slots={slots}
       rootSlot={slotProps?.root} className={className} structure={[rootStyle, gameCardSizeStyles[size]]} sx={sx}>
-      <Fan {...slotProps?.fan} data-ui={cardPartIdentity('game-hand-fan', slotProps?.fan?.['data-ui'])} className={slotProps?.fan?.className} css={[fanStyle, slotProps?.fan?.css]}>
+      <Fan {...withoutSx(slotProps?.fan)} data-ui={cardPartIdentity('game-hand-fan', slotProps?.fan?.['data-ui'])} className={slotProps?.fan?.className} css={[fanStyle, slotProps?.fan?.sx]}>
         {cards.map((card, index) => {
           const angle = rotations[index] ?? 0;
           return (
             // CardFlights measures this wrapper using the shared card id.
-            <Card {...slotProps?.card} key={card.id} type="button" data-ui={cardPartIdentity('game-hand-card', slotProps?.card?.['data-ui'])} data-hand-card={card.id}
+            <Card {...withoutSx(slotProps?.card)} key={card.id} type="button" data-ui={cardPartIdentity('game-hand-card', slotProps?.card?.['data-ui'])} data-hand-card={card.id}
               ref={registrationRef(card.id)}
               aria-pressed={selectedId === card.id} aria-disabled={disabled || undefined}
               onClick={(event) => { slotProps?.card?.onClick?.(event); if (!event.defaultPrevented && !disabled) select(selectedId === card.id ? null : card.id); }}
-              className={slotProps?.card?.className} css={[cardStyle, slotProps?.card?.css]}
+              className={slotProps?.card?.className} css={[cardStyle, slotProps?.card?.sx]}
               style={{ '--hand-angle': `${angle}deg`, '--hand-drop': `${angle ? HAND_FAN_DROP_PX : 0}px`, ...slotProps?.card?.style } as CSSProperties}>
               <GameCard value={card.value} label={card.label} size={size} dimmed={disabled} artSet={artSet} cardArtSets={cardArtSets} />
             </Card>
@@ -154,7 +154,7 @@ export function GameHand({
       </Fan>
       <Button {...slotProps?.confirm} type="button" data-ui={cardPartIdentity('game-hand-confirm', slotProps?.confirm?.['data-ui'])} aria-disabled={disabled || !selectedCard || !onPlayIntent}
         render={(props) => <Confirm {...props} />}
-        className={slotProps?.confirm?.className} css={slotProps?.confirm?.css}
+        className={slotProps?.confirm?.className} sx={slotProps?.confirm?.sx}
         onClick={(event) => { slotProps?.confirm?.onClick?.(event); if (!event.defaultPrevented && !disabled && selectedCard) onPlayIntent?.(selectedCard); }}>
         {playLabel}
       </Button>
@@ -225,10 +225,10 @@ function GameHandHidden({
             transformOrigin: anchor?.origin, ...style }}>
           {layout.cards.map((card, index) => (
             // CardFlights pairs the player key and zero-based index on the measured wrapper.
-            <Card {...slotProps?.card} key={`hidden-${index}`} data-ui={cardPartIdentity('game-hand-hidden-card', slotProps?.card?.['data-ui'])} data-seat-hidden-card={playerKey}
+            <Card {...withoutSx(slotProps?.card)} key={`hidden-${index}`} data-ui={cardPartIdentity('game-hand-hidden-card', slotProps?.card?.['data-ui'])} data-seat-hidden-card={playerKey}
                ref={registrationRef(String(index))}
               data-seat-hidden-card-index={playerKey === undefined ? undefined : index} aria-hidden="true"
-              className={slotProps?.card?.className} css={[hiddenCardStyle, slotProps?.card?.css]}
+              className={slotProps?.card?.className} css={[hiddenCardStyle, slotProps?.card?.sx]}
                style={{ '--hidden-x': `${card.x}px`, '--hidden-y': `${card.y}px`, '--hidden-angle': `${card.rotateDeg}deg`, zIndex: card.zIndex, ...slotProps?.card?.style } as CSSProperties}>
                <GameCard label={label} size={size} artSet={artSet} cardArtSets={cardArtSets} />
              </Card>

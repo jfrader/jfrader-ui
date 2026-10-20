@@ -25,7 +25,7 @@ import {
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { useMergeRefs } from '@floating-ui/react';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
@@ -54,13 +54,13 @@ export interface BreadcrumbsSlots {
 export interface BreadcrumbsSlotProps {
   /** Nav landmark wrapping the breadcrumbs trail. */
   root?: Omit<ComponentPropsWithRef<'nav'>, 'children'> & SxProps & {
-    css?: Interpolation<Theme>;
+
     [attribute: `data-${string}`]: unknown;
   };
   /** List item representing a single trail entry. Default: `Breadcrumbs.Item`. */
-  item?: Omit<BreadcrumbsItemProps, 'children' | 'href' | 'current'> & { css?: Interpolation<Theme> };
+  item?: Omit<BreadcrumbsItemProps, 'children' | 'href' | 'current'>;
   /** Decorative separator element rendered between trail entries. */
-  separator?: Omit<ComponentPropsWithRef<'span'>, 'children' | 'aria-hidden'> & SxProps & { css?: Interpolation<Theme> };
+  separator?: Omit<ComponentPropsWithRef<'span'>, 'children' | 'aria-hidden'> & SxProps;
 }
 export interface BreadcrumbsCompoundProps extends BreadcrumbsBaseProps {
   children?: ReactNode;
@@ -189,7 +189,7 @@ function BreadcrumbsRoot({
   ...rest
 }: BreadcrumbsProps) {
   const Root = component ?? slots?.root ?? 'nav';
-  const { className: slotClassName, style: slotStyle, css: slotCss, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
+  const { className: slotClassName, style: slotStyle, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
   const marker = typeof rootProps['data-ui'] === 'string' ? rootProps['data-ui'] : '';
   const rootDataUi = [...new Set(['breadcrumbs', ...marker.split(/\s+/)])].filter(Boolean).join(' ');
   const mergedRef = useMergeRefs([ref, rootProps.ref]);
@@ -237,7 +237,7 @@ function BreadcrumbsRoot({
 
   return (
     <BreadcrumbsContext.Provider value={context}>
-      <WithSx className={[slotClassName, className].filter(Boolean).join(' ')} styles={[slotCss, slotSx]} sx={sx}>
+      <WithSx className={[slotClassName, className].filter(Boolean).join(' ')} styles={[slotSx]} sx={sx}>
         {(className) => (
           <Root
             {...rest}
@@ -270,7 +270,7 @@ function BreadcrumbsItem({ ref, href, current, children, className, sx, ...rest 
   const { separator, separatorProps, separatorComponent, itemComponent, autoCurrentId, register, unregister } = useBreadcrumbsContext('Item');
   const Root = itemComponent ?? 'li';
   const Separator = separatorComponent ?? 'span';
-  const { css: separatorCss, sx: separatorSx, ...separatorRest } = separatorProps ?? {};
+  const {  sx: separatorSx, ...separatorRest } = separatorProps ?? {};
   const id = useId();
   const itemRef = useRef<HTMLLIElement>(null);
   useImperativeHandle(ref, () => itemRef.current as HTMLLIElement, []);
@@ -290,7 +290,7 @@ function BreadcrumbsItem({ ref, href, current, children, className, sx, ...rest 
     <WithSx className={className} styles={itemStyle} sx={sx}>
       {(className) => (
         <Root {...rest} ref={itemRef} data-ui="breadcrumbs-item" className={className}>
-          <WithSx className={separatorRest.className} styles={[separatorStyle, separatorCss]} sx={separatorSx}>
+          <WithSx className={separatorRest.className} styles={[separatorStyle, separatorSx]} sx={separatorSx}>
             {(className) => (
               <Separator {...separatorRest} aria-hidden="true" data-ui="breadcrumbs-separator" className={className}>
                 {separator}

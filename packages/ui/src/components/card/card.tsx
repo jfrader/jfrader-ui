@@ -27,7 +27,7 @@ export type CardHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
 export interface CardPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface CardSlotProps {
@@ -122,7 +122,7 @@ function joinClassNames(...names: (string | undefined)[]) {
   return names.filter(Boolean).join(' ') || undefined;
 }
 
-// Precedence: base → variant → slotProps.root.css → consumer css → consumer sx.
+// Precedence: base → variant → slotProps.root.sx → consumer sx.
 const rootStyle = css({
   minInlineSize: 0,
   paddingBlock: vars.space[4],
@@ -277,7 +277,7 @@ function CardHeader({ ref, className, sx, ...rest }: CardHeaderProps) {
   const slot = slotProps?.header;
   const Header = slots?.header ?? 'div';
   return (
-    <WithSx className={joinClassNames(slot?.className, className)} styles={[headerStyle, slot?.css]} sx={sx}>
+    <WithSx className={joinClassNames(slot?.className, className)} styles={[headerStyle, slot?.sx]} sx={sx}>
       {(className) => <Header {...rest} ref={ref} data-ui="card-header" className={className} />}
     </WithSx>
   );
@@ -294,7 +294,7 @@ function CardTitle({ ref, level = 3, className, sx, ...rest }: CardTitleProps) {
   const Heading = slots?.title ?? (`h${level}` as const);
   const props = slots?.title ? { ...rest, level } : rest;
   return (
-    <WithSx className={joinClassNames(slot?.className, className)} styles={[titleStyle, slot?.css]} sx={sx}>
+    <WithSx className={joinClassNames(slot?.className, className)} styles={[titleStyle, slot?.sx]} sx={sx}>
       {(className) => <Heading {...props} ref={ref} data-ui="card-title" className={className} />}
     </WithSx>
   );
@@ -308,7 +308,7 @@ function CardDescription({ ref, className, sx, ...rest }: CardDescriptionProps) 
   const slot = slotProps?.description;
   const Description = slots?.description ?? 'p';
   return (
-    <WithSx className={joinClassNames(slot?.className, className)} styles={[descriptionStyle, slot?.css]} sx={sx}>
+    <WithSx className={joinClassNames(slot?.className, className)} styles={[descriptionStyle, slot?.sx]} sx={sx}>
       {(className) => <Description {...rest} ref={ref} data-ui="card-description" className={className} />}
     </WithSx>
   );
@@ -322,7 +322,7 @@ function CardContent({ ref, className, sx, ...rest }: CardContentProps) {
   const slot = slotProps?.content;
   const Content = slots?.content ?? 'div';
   return (
-    <WithSx className={joinClassNames(slot?.className, className)} styles={[contentStyle, slot?.css]} sx={sx}>
+    <WithSx className={joinClassNames(slot?.className, className)} styles={[contentStyle, slot?.sx]} sx={sx}>
       {(className) => <Content {...rest} ref={ref} data-ui="card-content" className={className} />}
     </WithSx>
   );
@@ -336,7 +336,7 @@ function CardFooter({ ref, className, sx, ...rest }: CardFooterProps) {
   const slot = slotProps?.footer;
   const Footer = slots?.footer ?? 'div';
   return (
-    <WithSx className={joinClassNames(slot?.className, className)} styles={[footerStyle, slot?.css]} sx={sx}>
+    <WithSx className={joinClassNames(slot?.className, className)} styles={[footerStyle, slot?.sx]} sx={sx}>
       {(className) => <Footer {...rest} ref={ref} data-ui="card-footer" className={className} />}
     </WithSx>
   );

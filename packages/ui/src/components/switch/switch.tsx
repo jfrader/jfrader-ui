@@ -7,14 +7,14 @@ import { vars } from '@jfrader/tokens/vars';
 import { choiceInputStyle, choiceRootStateStyle, choiceRootStyle, choiceRowStyle } from '../../styling/choice-control';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 
 export type SwitchSize = 'sm' | 'md';
 
 export interface SwitchPartProps extends ComponentPropsWithRef<'span'> {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface SwitchSlots {
@@ -168,11 +168,11 @@ export function Switch({
   return (
     <WithSx
       className={rootClassName}
-      styles={[choiceRootStyle, choiceRootStateStyle, checkedThumbStyles[size], slotProps?.root?.css]}
+      styles={[choiceRootStyle, choiceRootStateStyle, checkedThumbStyles[size], slotProps?.root?.sx]}
       sx={sx}
     >
       {(className) => (
-        <Root {...slotProps?.root} css={undefined} data-ui="switch" dir={dir ?? slotProps?.root?.dir} className={className}>
+        <Root {...withoutSx(slotProps?.root)} css={undefined} data-ui="switch" dir={dir ?? slotProps?.root?.dir} className={className}>
           <span css={choiceRowStyle}>
             <input
               {...rest}
@@ -185,17 +185,17 @@ export function Switch({
               css={choiceInputStyle}
             />
             <Control
-              {...slotProps?.control}
+              {...withoutSx(slotProps?.control)}
               aria-hidden="true"
               className={slotProps?.control?.className}
-              css={[trackStyle, trackSizeStyles[size], slotProps?.control?.css]}
+              css={[trackStyle, trackSizeStyles[size], slotProps?.control?.sx]}
             />
             {hasLabel && (
               <Label
-                {...slotProps?.label}
+                {...withoutSx(slotProps?.label)}
                 id={labelId}
                 className={slotProps?.label?.className}
-                css={[labelSizeStyles[size], slotProps?.label?.css]}
+                css={[labelSizeStyles[size], slotProps?.label?.sx]}
               >
                 {label}
               </Label>
@@ -203,10 +203,10 @@ export function Switch({
           </span>
           {hasDescription && (
             <Description
-              {...slotProps?.description}
+              {...withoutSx(slotProps?.description)}
               id={descriptionId}
               className={slotProps?.description?.className}
-              css={[descriptionStyle, descriptionSizeStyles[size], slotProps?.description?.css]}
+              css={[descriptionStyle, descriptionSizeStyles[size], slotProps?.description?.sx]}
             >
               {description}
             </Description>

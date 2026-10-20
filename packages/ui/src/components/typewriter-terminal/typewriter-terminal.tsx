@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 import { numberFormatter } from '../../utils/intl';
 
@@ -20,7 +21,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import type { SlotCss, SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
 import type { PresentationProps } from '../../utils/presentation-slot';
 import { SurfaceRoot } from '../surface/surface-root';
 import type { SurfaceAppearance } from '../../styling/surface';
@@ -71,7 +72,7 @@ export interface TypewriterTerminalLabels {
   completed: string;
 }
 type Slot<E extends keyof JSX.IntrinsicElements> = ComponentPropsWithRef<E> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 export interface TypewriterTerminalSlotProps {
   /** Props for the outer figure. */
@@ -87,11 +88,11 @@ export interface TypewriterTerminalSlotProps {
   /** Slider range input element seeking across animation steps. */
   scrubber?: Slot<'input'>;
   /** Button element toggling playback between pause and play. */
-  playButton?: ButtonProps & SlotCss;
+  playButton?: ButtonProps & SxProps;
   /** Button element restarting the terminal animation. */
-  replayButton?: ButtonProps & SlotCss;
+  replayButton?: ButtonProps & SxProps;
   /** Button element copying the terminal session transcript. */
-  copyButton?: ButtonProps & SlotCss;
+  copyButton?: ButtonProps & SxProps;
   /** Figcaption element describing the terminal figure. */
   caption?: Slot<'figcaption'>;
   /** Live region element announcing terminal playback updates. */
@@ -727,12 +728,12 @@ export function TypewriterTerminal({
             aria-describedby={joined(describedBy, captionPresent ? captionId : undefined)}
             style={{ ...style, '--terminal-rows': normalizedRows } as CSSProperties}
           >
-            <Header {...slotProps?.header} role="group" css={[headerStyle, slotProps?.header?.css]}>
+            <Header {...withoutSx(slotProps?.header)} role="group" css={[headerStyle, slotProps?.header?.sx]}>
               <span>{title}</span>
               {copyable && (
                 <CopyButton
-                  {...slotProps?.copyButton}
-                  css={[buttonStyle, slotProps?.copyButton?.css]}
+                  {...withoutSx(slotProps?.copyButton)}
+                  css={[buttonStyle, slotProps?.copyButton?.sx]}
                   variant="ghost"
                   aria-disabled={copying || slotProps?.copyButton?.['aria-disabled']}
                   onClick={(event) => {
@@ -745,9 +746,9 @@ export function TypewriterTerminal({
               )}
             </Header>
             <Screen
-              {...slotProps?.screen}
+              {...withoutSx(slotProps?.screen)}
               ref={mergedScreenRef}
-              css={[screenStyle, slotProps?.screen?.css]}
+              css={[screenStyle, slotProps?.screen?.sx]}
               data-ui="typewriter-terminal-screen"
               aria-hidden="true"
               inert
@@ -798,10 +799,10 @@ export function TypewriterTerminal({
                   );
                 })}
             </Screen>
-            <Controls {...slotProps?.controls} css={[controlsStyle, slotProps?.controls?.css]}>
+            <Controls {...withoutSx(slotProps?.controls)} css={[controlsStyle, slotProps?.controls?.sx]}>
               <PlayButton
-                {...slotProps?.playButton}
-                css={[buttonStyle, slotProps?.playButton?.css]}
+                {...withoutSx(slotProps?.playButton)}
+                css={[buttonStyle, slotProps?.playButton?.sx]}
                 variant="outline"
                 disabled={session.duration === 0 || slotProps?.playButton?.disabled}
                 onClick={(event) => {
@@ -812,8 +813,8 @@ export function TypewriterTerminal({
                 {isPaused ? labels.play : labels.pause}
               </PlayButton>
               <ReplayButton
-                {...slotProps?.replayButton}
-                css={[buttonStyle, slotProps?.replayButton?.css]}
+                {...withoutSx(slotProps?.replayButton)}
+                css={[buttonStyle, slotProps?.replayButton?.sx]}
                 variant="ghost"
                 disabled={session.duration === 0 || slotProps?.replayButton?.disabled}
                 onClick={(event) => {
@@ -830,8 +831,8 @@ export function TypewriterTerminal({
               </ReplayButton>
               <div css={rangeWrapStyle}>
                 <Scrubber
-                  {...slotProps?.scrubber}
-                  css={[rangeStyle, slotProps?.scrubber?.css]}
+                  {...withoutSx(slotProps?.scrubber)}
+                  css={[rangeStyle, slotProps?.scrubber?.sx]}
                   type="range"
                   min={0}
                   max={session.duration}
@@ -883,8 +884,8 @@ export function TypewriterTerminal({
               </span>
             </Controls>
             <Transcript
-              {...slotProps?.transcript}
-              css={[transcriptStyle, slotProps?.transcript?.css]}
+              {...withoutSx(slotProps?.transcript)}
+              css={[transcriptStyle, slotProps?.transcript?.sx]}
               data-ui="typewriter-terminal-transcript"
               aria-hidden={undefined}
               inert={false}
@@ -922,8 +923,8 @@ export function TypewriterTerminal({
               ))}
             </Transcript>
             <Status
-              {...slotProps?.status}
-              css={[statusStyle, slotProps?.status?.css]}
+              {...withoutSx(slotProps?.status)}
+              css={[statusStyle, slotProps?.status?.sx]}
               role="status"
               aria-live="polite"
               aria-atomic="true"
@@ -932,9 +933,9 @@ export function TypewriterTerminal({
             </Status>
             {captionPresent && (
               <Caption
-                {...slotProps?.caption}
+                {...withoutSx(slotProps?.caption)}
                 id={captionId}
-                css={[captionStyle, slotProps?.caption?.css]}
+                css={[captionStyle, slotProps?.caption?.sx]}
               >
                 {caption}
               </Caption>

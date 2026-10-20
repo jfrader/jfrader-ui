@@ -7,7 +7,7 @@
 import { useState, type ComponentPropsWithRef, type ComponentType } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { getInitials } from '../../utils/initials';
 import { isRenderable } from '../../utils/renderable';
@@ -17,7 +17,7 @@ export type AvatarStatus = 'online' | 'away' | 'busy' | 'offline';
 
 export interface AvatarPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface AvatarSlots {
@@ -212,7 +212,7 @@ export function Avatar({
         <span {...rest} ref={ref} data-ui="avatar" role="img" aria-label={label} className={className}>
           {showImage ? (
             <Image
-              {...slotProps?.image}
+              {...withoutSx(slotProps?.image)}
               src={src}
               alt=""
               role={undefined}
@@ -227,18 +227,18 @@ export function Avatar({
               }}
               data-ui="avatar-image"
               className={slotProps?.image?.className}
-              css={[imageStyle, slotProps?.image?.css]}
+              css={[imageStyle, slotProps?.image?.sx]}
             />
           ) : (
-            <Fallback {...slotProps?.fallback} role={undefined} aria-label={undefined} aria-labelledby={undefined}
+            <Fallback {...withoutSx(slotProps?.fallback)} role={undefined} aria-label={undefined} aria-labelledby={undefined}
               dangerouslySetInnerHTML={undefined} aria-hidden="true" data-ui="avatar-fallback"
-              className={slotProps?.fallback?.className} css={[fallbackStyle, slotProps?.fallback?.css]}>
+              className={slotProps?.fallback?.className} css={[fallbackStyle, slotProps?.fallback?.sx]}>
               {isRenderable(children) ? children : getInitials(name, MAX_INITIALS)}
             </Fallback>
           )}
           {status !== undefined && (
             <Status
-              {...slotProps?.status}
+              {...withoutSx(slotProps?.status)}
               role={undefined}
               aria-label={undefined}
               aria-labelledby={undefined}
@@ -249,7 +249,7 @@ export function Avatar({
               data-status={status}
               data-pulse={pulse && status === 'online' ? '' : undefined}
               className={slotProps?.status?.className}
-              css={[statusStyle, statusToneStyles[status], statusForcedColorsStyle, statusPulseStyle, slotProps?.status?.css]}
+              css={[statusStyle, statusToneStyles[status], statusForcedColorsStyle, statusPulseStyle, slotProps?.status?.sx]}
             />
           )}
         </span>

@@ -12,8 +12,10 @@ export interface SxProps {
   sx?: Interpolation<Theme>;
 }
 
-export interface SlotCss {
-  css?: Interpolation<Theme>;
+export function withoutSx<Props extends SxProps>(props: Props | undefined): Omit<Props, 'sx'> | undefined {
+  if (!props) return undefined;
+  const { sx: _sx, ...attributes } = props;
+  return attributes;
 }
 
 interface ClassNameProps {

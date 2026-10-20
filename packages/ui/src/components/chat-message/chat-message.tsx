@@ -11,7 +11,7 @@ import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
-import { type SxProps } from '../../styling/sx';
+import { withoutSx, type SxProps } from '../../styling/sx';
 import { partId } from '../../utils/part-id';
 import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -304,7 +304,6 @@ export function defaultChatMessageLabels(format: ThreadFormatters): ChatMessageL
   };
 }
 
-
 function ChatMessageArticle({ rootComponent, rootSlotProps, rootSx, rootMarker, ...props }: ComponentPropsWithRef<'article'> & {
   rootComponent?: ChatMessageSlots['root'];
   rootSlotProps?: ChatMessageSlotProps['root'];
@@ -476,16 +475,16 @@ export function ChatMessageView({
         'data-size': size,
         style: { ...restProps.style, ...slotProps?.article?.style },
         className: [className, slotProps?.article?.className].filter(Boolean).join(' ') || undefined,
-        css: [messageShellStyle, owner === 'chat-message' && [typographyStyle, threadSizeStyles[size]], isOwn && ownShellStyle, slotProps?.article?.css],
+        sx: [messageShellStyle, owner === 'chat-message' && [typographyStyle, threadSizeStyles[size]], isOwn && ownShellStyle, slotProps?.article?.sx],
       }}
       slots={{ time: slotProps?.time, avatar: slotProps?.avatar }}
       components={{ article: ChatMessageArticle, time: slots?.time, avatar: slots?.avatar }}
     >
       <Bubble
-        {...slotProps?.bubble}
+        {...withoutSx(slotProps?.bubble)}
         data-part={`${owner}-bubble`}
         className={slotProps?.bubble?.className}
-        css={[bubbleStyle, isOwn && ownBubbleStyle, slotProps?.bubble?.css]}
+        css={[bubbleStyle, isOwn && ownBubbleStyle, slotProps?.bubble?.sx]}
       >
         {bodyContent}
         {effectiveAttachments?.length ? (
@@ -511,10 +510,10 @@ export function ChatMessageView({
         overlay
       />
       <Receipt
-        {...slotProps?.receipt}
+        {...withoutSx(slotProps?.receipt)}
         className={slotProps?.receipt?.className}
         data-ui={`${owner}-receipt`}
-        css={[receiptStyle, rowStyle, slotProps?.receipt?.css]}
+        css={[receiptStyle, rowStyle, slotProps?.receipt?.sx]}
       >
         {status ? (
           <span key={status} data-state={status} css={[status !== 'failed' && fadeStyle, status === 'failed' && errorStyle]}>{labels[status]}</span>

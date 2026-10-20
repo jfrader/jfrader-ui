@@ -19,7 +19,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { choiceInputStyle, choiceRootStateStyle, choiceRootStyle, choiceRowStyle } from '../../styling/choice-control';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -54,11 +54,11 @@ export interface RadioGroupSlots {
 export interface RadioGroupSlotProps {
   /** Container element wrapping the radio group. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
-    css?: Interpolation<Theme>;
+
     [attribute: `data-${string}`]: unknown;
   };
   /** Header label naming the radio group. */
-  label?: Omit<ComponentPropsWithRef<'span'>, 'children'> & { css?: Interpolation<Theme> };
+  label?: Omit<ComponentPropsWithRef<'span'>, 'children'> & { sx?: Interpolation<Theme> };
   /** Radio button option within the group. Default: `RadioGroup.Radio`. */
   radio?: Omit<RadioGroupRadioProps, 'value' | 'label' | 'description' | 'disabled' | 'id' | 'children'>;
 }
@@ -74,11 +74,11 @@ export type RadioGroupProps = RadioGroupCompoundProps | RadioGroupEasyProps;
 
 export interface RadioGroupRadioPartProps extends ComponentPropsWithRef<'span'> {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 export interface RadioGroupRadioSlots {
   /** Outer label wrapping the radio and text. */
-  root?: ComponentType<ComponentPropsWithRef<'label'> & { css?: Interpolation<Theme> }>;
+  root?: ComponentType<ComponentPropsWithRef<'label'> & { sx?: Interpolation<Theme> }>;
   /** Text naming the radio option. */
   label?: ComponentType<RadioGroupRadioPartProps>;
   /** Circle displaying the selection state. */
@@ -96,7 +96,7 @@ export interface RadioGroupRadioProps
   slots?: RadioGroupRadioSlots;
   slotProps?: {
     /** Outer label wrapping the radio control and text. */
-    root?: ComponentPropsWithRef<'label'> & { css?: Interpolation<Theme> };
+    root?: ComponentPropsWithRef<'label'> & { sx?: Interpolation<Theme> };
     /** Text label displayed alongside the radio button. */
     label?: RadioGroupRadioPartProps;
     /** Visual circular indicator displaying the radio dot. */
@@ -194,7 +194,7 @@ const descriptionStyle = css({
 
 function RadioGroupRoot({
   rootElement: Root = 'div',
-  rootCss,
+  slotStyles,
   ref,
   value: valueProp,
   defaultValue,
@@ -205,7 +205,7 @@ function RadioGroupRoot({
   className,
   sx,
   ...rest
-}: RadioGroupCompoundProps & { rootElement?: 'div' | RadioGroupSlots['root']; rootCss?: Interpolation<Theme> }) {
+}: RadioGroupCompoundProps & { rootElement?: 'div' | RadioGroupSlots['root']; slotStyles?: Interpolation<Theme> }) {
   const generatedName = useId();
   const name = nameProp ?? generatedName;
   const [value, setValue] = useControlledState<string>(valueProp, defaultValue, onValueChange);
@@ -214,7 +214,7 @@ function RadioGroupRoot({
 
   return (
     <RadioGroupContext.Provider value={context}>
-      <WithSx className={className} styles={[rootStyles[orientation], rootCss]} sx={sx}>
+      <WithSx className={className} styles={[rootStyles[orientation], slotStyles]} sx={sx}>
         {(className) => (
           <Root
             {...rest}
@@ -276,11 +276,11 @@ function RadioGroupRadio({
   return (
     <WithSx
       className={rootClassName}
-      styles={[choiceRootStyle, dotStateStyle, choiceRootStateStyle, slotProps?.root?.css]}
+      styles={[choiceRootStyle, dotStateStyle, choiceRootStateStyle, slotProps?.root?.sx]}
       sx={sx}
     >
       {(className) => (
-        <Root {...slotProps?.root} css={undefined} data-ui="radio-group-radio" dir={dir} className={className}>
+        <Root {...withoutSx(slotProps?.root)} css={undefined} data-ui="radio-group-radio" dir={dir} className={className}>
           <span css={[choiceRowStyle, rowFloorStyle]}>
             <input
               {...rest}
@@ -297,23 +297,23 @@ function RadioGroupRadio({
               css={choiceInputStyle}
             />
             <Control
-              {...slotProps?.control}
+              {...withoutSx(slotProps?.control)}
               aria-hidden="true"
               className={slotProps?.control?.className}
-              css={[circleStyle, slotProps?.control?.css]}
+              css={[circleStyle, slotProps?.control?.sx]}
             />
             {hasLabel && (
-              <Label {...slotProps?.label} id={labelId} className={slotProps?.label?.className} css={[labelStyle, slotProps?.label?.css]}>
+              <Label {...withoutSx(slotProps?.label)} id={labelId} className={slotProps?.label?.className} css={[labelStyle, slotProps?.label?.sx]}>
                 {label}
               </Label>
             )}
           </span>
           {hasDescription && (
             <Description
-              {...slotProps?.description}
+              {...withoutSx(slotProps?.description)}
               id={descriptionId}
               className={slotProps?.description?.className}
-              css={[descriptionStyle, slotProps?.description?.css]}
+              css={[descriptionStyle, slotProps?.description?.sx]}
             >
               {description}
             </Description>
@@ -330,7 +330,7 @@ function RadioGroupComponent(props: RadioGroupProps) {
   const labelId = useId();
   if (props.options === undefined) return <RadioGroupRoot {...props} />;
   const { options, label, component, slots, slotProps, ...rest } = props;
-  const { css: rootCss, className, style, sx, ...rootProps } = slotProps?.root ?? {};
+  const { className, style, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
   const Label = slots?.label ?? 'span';
   const Radio = slots?.radio ?? RadioGroupRadio;
   const hasLabel = isRenderable(label);
@@ -340,14 +340,14 @@ function RadioGroupComponent(props: RadioGroupProps) {
       {...rest}
       {...rootProps}
       rootElement={slots?.root ?? component}
-      rootCss={rootCss}
+      slotStyles={slotSx}
       className={[className, rest.className].filter(Boolean).join(' ') || undefined}
       style={{ ...rest.style, ...style }}
-      sx={[sx, rest.sx]}
+      sx={rest.sx}
       aria-labelledby={[rootProps['aria-labelledby'] ?? rest['aria-labelledby'], hasLabel && resolvedLabelId].filter(Boolean).join(' ') || undefined}
     >
       {hasLabel && (
-        <Label {...slotProps?.label} id={resolvedLabelId} css={[groupLabelStyle, slotProps?.label?.css]}>
+        <Label {...withoutSx(slotProps?.label)} id={resolvedLabelId} css={[groupLabelStyle, slotProps?.label?.sx]}>
           {label}
         </Label>
       )}

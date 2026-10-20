@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 // Semantics: a named `section` (region) around a Card surface. Comments are native lists
@@ -917,7 +918,7 @@ export function CommentThread({
 
     return (
       <Item
-        {...slotProps?.item}
+        {...withoutSx(slotProps?.item)}
         key={id}
         data-ui={`${UI}-item`}
         data-comment-id={id}
@@ -925,7 +926,7 @@ export function CommentThread({
         data-deleted={deleted ? '' : undefined}
         data-new={entering.has(id) ? '' : undefined}
         className={slotProps?.item?.className}
-        css={[itemStyle, slotProps?.item?.css]}
+        css={[itemStyle, slotProps?.item?.sx]}
       >
         <ThreadMessageView
           ui={UI}
@@ -939,7 +940,7 @@ export function CommentThread({
           size={size}
           baseId={baseId}
           messageId={id}
-          slots={{ article: slotProps?.article, time: { ...slotProps?.time, css: [timeStyle, slotProps?.time?.css] } }}
+          slots={{ article: slotProps?.article, time: { ...slotProps?.time, sx: [timeStyle, slotProps?.time?.sx] } }}
           components={{ article: slots?.article, time: slots?.time }}
         >
           {editing ? (
@@ -960,11 +961,11 @@ export function CommentThread({
             />
           ) : (
             <Body
-              {...slotProps?.body}
+              {...withoutSx(slotProps?.body)}
               data-ui={`${UI}-body`}
               data-deleted={deleted ? '' : undefined}
               className={slotProps?.body?.className}
-              css={[bodyStyle, slotProps?.body?.css]}
+              css={[bodyStyle, slotProps?.body?.sx]}
             >
               {deleted ? labels.deletedText : comment.body}
             </Body>
@@ -1024,11 +1025,11 @@ export function CommentThread({
             </div>
           ) : (
             <Actions
-              {...slotProps?.actions}
+              {...withoutSx(slotProps?.actions)}
               key="actions"
               data-ui={`${UI}-actions`}
               className={slotProps?.actions?.className}
-              css={[actionsStyle, slotProps?.actions?.css]}
+              css={[actionsStyle, slotProps?.actions?.sx]}
             >
               <Button
                 variant="ghost"
@@ -1108,14 +1109,14 @@ export function CommentThread({
               {open ? labels.hideReplies : labels.showReplies(replies.length)}
             </Button>
             <Replies
-              {...slotProps?.replies}
+              {...withoutSx(slotProps?.replies)}
               role="list"
               id={repliesId}
               hidden={!open}
               data-ui={`${UI}-replies`}
               data-capped={depth + 1 > MAX_INDENT_DEPTH ? '' : undefined}
               className={slotProps?.replies?.className}
-              css={[repliesStyle, slotProps?.replies?.css]}
+              css={[repliesStyle, slotProps?.replies?.sx]}
             >
               {replies.map((reply) => renderComment(reply, depth + 1, lineage))}
             </Replies>
@@ -1147,15 +1148,15 @@ export function CommentThread({
           className={className}
         >
           <Card>
-            <Header {...slotProps?.header} className={slotProps?.header?.className} css={[headerStyle, slotProps?.header?.css]}>
+            <Header {...withoutSx(slotProps?.header)} className={slotProps?.header?.className} css={[headerStyle, slotProps?.header?.sx]}>
               <div css={headingGroupStyle}>
                 {hasTitle ? (
                   <Title
-                    {...slotProps?.title}
+                    {...withoutSx(slotProps?.title)}
                     id={titleId}
                     level={headingLevel}
                     className={slotProps?.title?.className}
-                    css={[titleStyle, slotProps?.title?.css]}
+                    css={[titleStyle, slotProps?.title?.sx]}
                   >
                     {title}
                   </Title>
@@ -1185,11 +1186,11 @@ export function CommentThread({
                   </p>
                 ) : (
                   <List
-                    {...slotProps?.list}
+                    {...withoutSx(slotProps?.list)}
                     role="list"
                     data-ui={`${UI}-list`}
                     className={slotProps?.list?.className}
-                    css={[listStyle, slotProps?.list?.css]}
+                    css={[listStyle, slotProps?.list?.sx]}
                   >
                     {tree.map((comment) => renderComment(comment, 0, new Set()))}
                   </List>
@@ -1197,10 +1198,10 @@ export function CommentThread({
               </div>
               {resolved ? (
                 <Resolved
-                  {...slotProps?.resolved}
+                  {...withoutSx(slotProps?.resolved)}
                   data-ui={`${UI}-resolved`}
                   className={slotProps?.resolved?.className}
-                  css={[resolvedStyle, slotProps?.resolved?.css]}
+                  css={[resolvedStyle, slotProps?.resolved?.sx]}
                 >
                   <p css={resolvedTextStyle}>
                     <span css={resolvedChipStyle}>
@@ -1249,12 +1250,12 @@ export function CommentThread({
             )}
           </Card>
           <Status
-            {...slotProps?.status}
+            {...withoutSx(slotProps?.status)}
             role="status"
             aria-atomic="true"
             data-ui={`${UI}-status`}
             className={slotProps?.status?.className}
-            css={[visuallyHiddenStyle, slotProps?.status?.css]}
+            css={[visuallyHiddenStyle, slotProps?.status?.sx]}
           >
             {announcement.text ? <span key={announcement.key}>{announcement.text}</span> : null}
           </Status>
