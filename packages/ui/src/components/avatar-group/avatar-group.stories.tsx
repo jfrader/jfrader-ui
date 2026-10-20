@@ -1,4 +1,4 @@
-import { StrictMode, useId, useState, type ComponentPropsWithRef } from 'react';
+import { StrictMode, useId, useRef, useState, type ComponentPropsWithRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
@@ -18,12 +18,14 @@ import { Flex } from '../flex';
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly AvatarSize[];
 
 export const Default: Story = {
+  name: 'Team members',
   parameters: {
     docs: {
-      description: { story: 'Mix procedural Scene images, PersonAvatar portraits and initials. Keep each portrait seed tied to its member id.' },
+      description: { story: 'Mix image URLs, generated portraits and initials in a compact team row.' },
       source: {
         language: 'tsx',
-        code: `import { AvatarGroup, PersonAvatar, sceneSource } from '@jfrader/ui';
+        code: `import { AvatarGroup, PersonAvatar } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
 
 <AvatarGroup
   members={[
@@ -139,7 +141,7 @@ import { sceneSource } from '@jfrader/ui/scene';
 
 const PHOTO_SRC = sceneSource('avatar-ada');
 
-const SAMPLE_MEMBERS: readonly AvatarGroupMember[] = [
+const members: readonly AvatarGroupMember[] = [
   { id: 'ada', name: 'Ada Lovelace', src: PHOTO_SRC },
   {
     id: 'grace',
@@ -155,7 +157,7 @@ const SAMPLE_MEMBERS: readonly AvatarGroupMember[] = [
 ];
 
 export function Example() {
-  return <AvatarGroup members={SAMPLE_MEMBERS} max={4} size="md" label="Team members" />;
+  return <AvatarGroup members={members} max={4} size="md" label="Team members" />;
 }`,
       },
     },
@@ -257,13 +259,23 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Show people together, with a count for those who do not fit.' },
-      usage: `### Members
-- Pass \`members\` in display order with a unique \`id\` for each person. \`max\` defaults to 4 people, with an additional overflow count. Set \`max={0}\` to show only the count.
-- \`max\` does not respond to available width. Set it yourself for your layout. Fractions round down, negative values become 0, and non-finite values fall back to 4.
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Overflow', stories: ['Overflow', 'MaxZero'] },
+        { title: 'Sizes', stories: ['Sizes'] },
+        { title: 'Mixed people', stories: ['Portraits'] },
+        { title: 'Composition and refs', stories: ['MemberRefs'] },
+      ],
+      usage: `### When to use
+Show collaborators or participants in a compact row. Keep a separate member list when people need to inspect or act on everyone.
 
-### Labels
-- The group and overflow are not controls. If you need to open a member list, provide a separate button.
-- For another language, set \`label\`, \`getOverflowLabel\` and \`getSummaryLabel\`. \`locale\` formats numbers only. Set it explicitly for server rendering.`,
+### Layout
+Keep members in display order with stable, unique ids. The visible member limit does not respond to available width; choose it for the surrounding layout.
+
+### Accessibility
+The group and overflow are not controls or keyboard targets. Provide a separate button to open the complete member list. Keep portrait artwork decorative inside each named Avatar.
+
+Localize the group name, overflow label and total summary together. Number formatting does not translate these labels; choose an explicit locale for server rendering.`,
     },
   },
   tags: ['autodocs'],
@@ -283,7 +295,80 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+export const Portraits: Story = {
+  name: 'Portraits and initials',
+  parameters: { docs: {
+    description: { story: 'Keep generated portraits decorative inside each member identity.' },
+    source: { language: 'tsx', code: `import { AvatarGroup, PersonAvatar } from '@jfrader/ui';
+
+<AvatarGroup label="Reviewers" members={[
+  { id: 'alex', name: 'Alex', avatarProps: {
+    children: <PersonAvatar seed="alex" alt="" size="full" crop="circle" />,
+  } },
+  { id: 'blair', name: 'Blair', status: 'away', avatarProps: {
+    children: <PersonAvatar seed="blair" attire="staff" alt="" size="full" crop="circle" />,
+  } },
+  { id: 'casey', name: 'Casey' },
+]} />` },
+  } },
+  render: () => <AvatarGroup label="Reviewers" members={[
+    { id: 'alex', name: 'Alex', avatarProps: {
+      children: <PersonAvatar seed="alex" alt="" size="full" crop="circle" />,
+    } },
+    { id: 'blair', name: 'Blair', status: 'away', avatarProps: {
+      children: <PersonAvatar seed="blair" attire="staff" alt="" size="full" crop="circle" />,
+    } },
+    { id: 'casey', name: 'Casey' },
+  ]} />,
+};
+
+export const MemberRefs: Story = {
+  name: 'Shared and member refs',
+  parameters: { docs: {
+    description: { story: 'Attach shared and member-specific refs to the same fallback element.' },
+    source: { language: 'tsx', code: `import { useRef } from 'react';
+import { AvatarGroup, PersonAvatar } from '@jfrader/ui';
+
+export function Reviewers() {
+  const sharedFallback = useRef<HTMLSpanElement>(null);
+  const alexFallback = useRef<HTMLSpanElement>(null);
+  return <AvatarGroup label="Reviewers"
+    avatarProps={{ slotProps: { fallback: { ref: sharedFallback } } }}
+    members={[{ id: 'alex', name: 'Alex', avatarProps: {
+      children: <PersonAvatar seed="alex" alt="" size="full" crop="circle" />,
+      slotProps: { fallback: { ref: alexFallback } },
+    } }]} />;
+}` },
+  } },
+  render: () => <MemberRefsExample />,
+};
+
+function MemberRefsExample() {
+  const sharedFallback = useRef<HTMLSpanElement>(null);
+  const alexFallback = useRef<HTMLSpanElement>(null);
+  return <AvatarGroup label="Reviewers"
+    avatarProps={{ slotProps: { fallback: { ref: sharedFallback } } }}
+    members={[{ id: 'alex', name: 'Alex', avatarProps: {
+      children: <PersonAvatar seed="alex" alt="" size="full" crop="circle" />,
+      slotProps: { fallback: { ref: alexFallback } },
+    } }]} />;
+}
+
 export const Sizes: Story = {
+  name: 'Group sizes',
+  parameters: { docs: {
+    description: { story: 'Compare member and overflow frames at each supported size.' },
+    source: { language: 'tsx', code: `import { AvatarGroup, Stack } from '@jfrader/ui';
+
+<Stack>
+  {(['sm', 'md', 'lg'] as const).map(size => (
+    <AvatarGroup key={size} size={size} max={1} label={\`Size \${size}\`} members={[
+      { id: 'ada', name: 'Ada Lovelace' },
+      { id: 'grace', name: 'Grace Hopper' },
+    ]} />
+  ))}
+</Stack>` },
+  } },
   render: (args) => (
     <Stack>
       {SIZES.map((size) => (
@@ -369,8 +454,10 @@ export const AllStatuses: Story = {
 };
 
 export const Overflow: Story = {
+  name: 'Hidden member count',
   parameters: {
     docs: {
+      description: { story: 'Limit the visible people and show how many members remain.' },
       source: {
         language: 'tsx',
         code: `import { AvatarGroup, type AvatarGroupMember, PersonAvatar } from '@jfrader/ui';
@@ -378,7 +465,7 @@ import { sceneSource } from '@jfrader/ui/scene';
 
 const PHOTO_SRC = sceneSource('avatar-ada');
 
-const SAMPLE_MEMBERS: readonly AvatarGroupMember[] = [
+const members: readonly AvatarGroupMember[] = [
   { id: 'ada', name: 'Ada Lovelace', src: PHOTO_SRC },
   {
     id: 'grace',
@@ -394,7 +481,7 @@ const SAMPLE_MEMBERS: readonly AvatarGroupMember[] = [
 ];
 
 export function Example() {
-  return <AvatarGroup members={SAMPLE_MEMBERS} max={2} size="md" label="Team members" />;
+  return <AvatarGroup members={members} max={2} size="md" label="Team members" />;
 }`,
       },
     },
@@ -418,6 +505,17 @@ export function Example() {
 };
 
 export const MaxZero: Story = {
+  name: 'Count only',
+  parameters: { docs: {
+    description: { story: 'Show the total overflow count without individual portraits.' },
+    source: { language: 'tsx', code: `import { AvatarGroup } from '@jfrader/ui';
+
+<AvatarGroup label="Team members" max={0} members={[
+  { id: 'ada', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'margaret', name: 'Margaret Hamilton' },
+]} />` },
+  } },
   args: {
     max: 0,
     members: [
