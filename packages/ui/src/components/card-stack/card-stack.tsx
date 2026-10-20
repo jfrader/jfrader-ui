@@ -337,6 +337,8 @@ const emptyStyle = css({
   borderRadius: vars.radius.lg,
   padding: vars.space[5],
   textAlign: 'center',
+  overflowWrap: 'anywhere',
+  minInlineSize: 0,
   background: vars.color.surface,
 });
 
