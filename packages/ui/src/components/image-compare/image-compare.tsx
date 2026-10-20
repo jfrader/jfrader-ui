@@ -22,7 +22,7 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { animate, MotionConfig, useMotionValue, useReducedMotion } from 'motion/react';
+import { animate, MotionConfig, useMotionValue } from 'motion/react';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -30,6 +30,7 @@ import { motionDurationMs } from '../../styling/motion-timings';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { numberFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { useReducedMotion } from '../../utils/use-reduced-motion';
 import { Button, type ButtonProps } from '../button';
 
 export type ImageCompareOrientation = 'horizontal' | 'vertical';
@@ -98,24 +99,37 @@ export interface ImageCompareProps
   after: ReactNode;
   /** Percentage of Before visible (controlled). */
   value?: number;
+  /** Sets the initial percentage of Before visible, clamped to 0–100. Defaults to `50`. */
   defaultValue?: number;
+  /** Requests a new percentage of Before visible during interaction. */
   onValueChange?: (value: number) => void;
   /** Completed interaction: pointer release, key press, tap, reset. Reports the request, not acceptance. */
   onValueCommit?: (value: number) => void;
+  /** Sets the reveal axis. Defaults to `horizontal`, measured from inline-start. */
   orientation?: ImageCompareOrientation;
+  /** Sets the arrow-key increment in percentage points. Defaults to `1` for omitted or invalid values. */
   step?: number;
+  /** Sets the Page Up/Down and Shift+arrow increment in percentage points. Defaults to `10` for omitted or invalid values. */
   largeStep?: number;
   /** Visible captions for Before and After; `false` hides both. */
   labels?: readonly [string, string] | false;
   /** Accessible name of the slider. */
   label?: string;
+  /** Formats the slider's accessible value text from the percentage and its localized percent string. */
   valueText?: (value: number, formattedPercent: string) => string;
+  /** Sets the locale for the accessible percentage. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Sets the image frame's width-to-height ratio. Defaults to `3 / 2`. */
   aspectRatio?: CSSProperties['aspectRatio'];
+  /** Prevents pointer, keyboard and reset interactions. Defaults to `false`. */
   disabled?: boolean;
+  /** Shows the button that centers the divider at 50%. Defaults to `true`. */
   showReset?: boolean;
+  /** Sets the reset button text. Defaults to "Center divider". */
   resetLabel?: string;
+  /** Replaces the frame, image layers, captions, divider, handle and reset button. */
   slots?: ImageCompareSlots;
+  /** Applies props and styles to the named comparison parts. */
   slotProps?: ImageCompareSlotProps;
 }
 
@@ -489,9 +503,10 @@ export function ImageCompare({
   useLayoutEffect(() => {
     if ((valueProp !== undefined || !gesture.current) && acceptedValue.get() !== value) {
       acceptedValue.set(value);
-      position.jump(value);
+      if (reducedMotion || gesture.current) position.jump(value);
+      else animate(position, value, SETTLE_SPRING);
     }
-  }, [value, valueProp, acceptedValue, position]);
+  }, [value, valueProp, acceptedValue, position, reducedMotion]);
 
   useEffect(() => {
     const target = horizontal ? 0 : 90;
@@ -532,7 +547,8 @@ export function ImageCompare({
     if (next === acceptedValue.get()) return false;
     if (valueProp === undefined) {
       acceptedValue.set(next);
-      position.jump(next);
+      if (reducedMotion || gesture.current) position.jump(next);
+      else animate(position, next, SETTLE_SPRING);
       if (gesture.current?.dragging) onValueChange?.(next);
       else requestChange(next);
     } else requestChange(next);
@@ -609,6 +625,7 @@ export function ImageCompare({
     if (!onHandle && interactive && event.currentTarget.contains(interactive)) return;
     const frame = event.currentTarget;
     const doc = frame.ownerDocument;
+    position.stop();
     // Before capture, a release or cancel outside the frame never reaches it; abandon the gesture there.
     const endOutside = (outside: globalThis.PointerEvent) => {
       if (outside.pointerId === gesture.current?.pointerId && !frame.contains(outside.target as Node)) finish(false);
@@ -620,7 +637,7 @@ export function ImageCompare({
       mouse: event.pointerType === 'mouse',
       originX: event.clientX,
       originY: event.clientY,
-      offset: onHandle ? mainAxis(event) - clientAt(acceptedValue.get()) : 0,
+      offset: onHandle ? mainAxis(event) - clientAt(position.get()) : 0,
       onHandle,
       dragging: false,
       initial: acceptedValue.get(),
@@ -726,12 +743,13 @@ export function ImageCompare({
   const ResetButton = slots?.resetButton ?? Button;
   const handleSlot = slotProps?.handle;
   const resetSlot = slotProps?.resetButton;
+  const renderedValue = valueProp === undefined ? acceptedValue.get() : value;
   const frameStyleVars = {
     ...frameSlot?.style,
     aspectRatio,
-    [VALUE_VAR]: `${value}%`,
+    [VALUE_VAR]: `${position.get()}%`,
   } as CSSProperties;
-  const formatted = percentFormat.format(value / MAX);
+  const formatted = percentFormat.format(renderedValue / MAX);
 
   return (
     <MotionConfig reducedMotion="user">
@@ -774,7 +792,7 @@ export function ImageCompare({
               }}
               onLostPointerCapture={(event) => {
                 frameSlot?.onLostPointerCapture?.(event);
-                handlePointerAbort(event);
+                if (event.target === event.currentTarget) handlePointerAbort(event);
               }}
               onDragStart={(event) => {
                 frameSlot?.onDragStart?.(event);
@@ -830,8 +848,8 @@ export function ImageCompare({
                 aria-disabled={disabled || undefined}
                 aria-valuemin={MIN}
                 aria-valuemax={MAX}
-                aria-valuenow={value}
-                aria-valuetext={valueText(value, formatted)}
+                aria-valuenow={renderedValue}
+                aria-valuetext={valueText(renderedValue, formatted)}
                 aria-label={handleSlot?.['aria-label'] ?? label}
                 aria-describedby={ids(handleSlot?.['aria-describedby'], beforeCaptionId, afterCaptionId)}
                 css={[handleStyle, handleOrientationStyles[orientation], handleSlot?.sx]}

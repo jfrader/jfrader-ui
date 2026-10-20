@@ -4,14 +4,14 @@
 
 ### Changed
 
-- Library scroll regions use theme-aware native scrollbar colors, retaining browser controls and system colors in forced-colors mode. Host-page scrollbars are unchanged.
 - Breaking pre-1.0 article API cleanup: use `Article` with `Article.Body`, `Article.Kicker`, `Article.Meta` and `Article.Sources` instead of the separate article components. `ArticleList` stays standalone. `ArticleSection` composes ordered articles into mixed editorial layouts, and `SectionHeading` moves to `ArticleSection.Heading`.
 - `CardFlights` now animates the rendered board tree, with `Deck`, custom `Target` destinations, `deal`/`revision`, automatic hand locking and `onBusyChange`. The provider, explicit deal/play hooks, measurement helpers and flight-spec exports are deprecated until the next major release; replace them with `CardFlights` and `useCardFlightStatus`. Piles now retain the newest `maxCards` cards.
 - Breaking pre-1.0 API cleanup: every `slotProps` part accepts `sx` instead of `css`, preserving own styles → slot `sx` → consumer `sx` precedence. Emotion's `css` remains internal.
 
 ### Fixed
 
-- `Dialog` no longer flashes a vertical scrollbar during opening or closing motion; long content remains scrollable, and replacement panels keep their padding inside the shell.
+- `VoiceOrb` keeps a violet shell with subtle cyan Listening, indigo Thinking and rose Speaking clouds. State changes crossfade and gather or release the cloud; Speaking reshapes the volume while Idle stays calm. Motion remains continuous and honors live reduced-motion changes.
+- `ImageCompare` keeps touch dragging active when pointer capture moves from the handle to the frame. Reveal, divider and handle animate together between values, follow dragging directly, and honor live reduced-motion changes. Resizable examples fit phone screens.
 - `DataFlow` wraps long playback labels inside narrow panels and keeps connections attached when individual nodes resize.
 - `Calendar` keeps localized weekday headers and dates centered in equal columns, fits narrow containers, preserves navigation targets beside wrapping month labels, and shows the full selected range in forced colors.
 - Documentation section links no longer pull you back after manual scrolling. The left menu keeps its scroll position and expanded groups between pages.
@@ -45,7 +45,6 @@
 
 ### Added
 
-- `Dialog` supports `scroll="paper"` (default) and `scroll="body"`, with `Dialog.Body` and `Dialog.Footer` for scrollable content and fixed actions. Body mode scrolls the whole panel within the overlay while the page stays locked.
 - Component documentation ends with one API section (root and parts, native element, slots and dependencies) generated from the component sources; curated examples carry authored code. `packages/ui/src/components/dialog` is the reference page.
 - `LinkUnfurl`, `ChatMessage`, `HoldToConfirm` and `AttachmentList` accept `slots.root`, `slotProps.root` and `component` to replace their native root while retaining generated content, props, refs and styling.
 - `CodeBlock`, `TypewriterTerminal` and `JsonViewer` share Surface panel material and support inherited or contrast appearance. Root replacements own their panel material.

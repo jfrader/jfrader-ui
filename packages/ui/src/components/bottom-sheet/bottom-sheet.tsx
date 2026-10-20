@@ -57,15 +57,23 @@ import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 export interface BottomSheetBaseProps {
+  /** Control whether the sheet is open. */
   open?: boolean;
+  /** Open the uncontrolled sheet initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receive requests to open or close the sheet. */
   onOpenChange?: (open: boolean) => void;
   /** Nonempty ascending unique fractions in (0, 1]. Numeric contents require remount to change. */
   detents?: readonly number[];
+  /** Control the selected zero-based detent index. Must be a valid index in `detents`. */
   value?: number;
+  /** Set the uncontrolled sheet's initial detent index. Defaults to `0`; must be a valid index in `detents`. */
   defaultValue?: number;
+  /** Receive requests to select a zero-based detent index. */
   onValueChange?: (index: number) => void;
+  /** Choose the locale for the handle's default percentage text. */
   locale?: Intl.LocalesArgument;
+  /** Replace the handle's percentage text using the selected detent fraction and zero-based index. */
   getValueText?: (fraction: number, index: number) => string;
 }
 export interface BottomSheetTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
@@ -139,6 +147,7 @@ export interface BottomSheetSlots {
 }
 
 export interface BottomSheetCompoundProps extends BottomSheetBaseProps {
+  /** Compose the sheet from `BottomSheet` parts. */
   children?: ReactNode;
   triggerLabel?: never;
   title?: never;
@@ -163,7 +172,9 @@ export interface BottomSheetEasyProps extends BottomSheetBaseProps, Omit<BottomS
   /** Name the close button. */
   closeLabel: ReactNode;
   children?: never;
+  /** Pass props and `sx` to generated sheet parts. */
   slotProps?: BottomSheetSlotProps;
+  /** Replace generated sheet parts with components that forward props and ref. */
   slots?: BottomSheetSlots;
   component?: BottomSheetSlots['root'];
   /** Place actions below the scrollable body. */

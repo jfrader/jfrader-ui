@@ -26,16 +26,27 @@ export interface ThemeSwitchProps extends Omit<
   SwitchProps,
   'value' | 'defaultValue' | 'checked' | 'defaultChecked' | 'onCheckedChange' | 'children' | 'slotProps' | 'slots'
 > {
+  /** Replaces the switch parts and the theme icon frame and wrappers. */
   slots?: ThemeSwitchSlots;
+  /** Controls the selected appearance without applying the app's theme. */
   value?: ThemeSwitchValue;
+  /** Sets the initial uncontrolled appearance. Defaults to `"light"`. */
   defaultValue?: ThemeSwitchValue;
+  /** Receives the requested appearance, transition, input element, and reduced-motion preference. */
   onValueChange?: (next: ThemeSwitchValue, details: ThemeSwitchChangeDetails) => void;
+  /** Names the switch. Keep the accessible name unchanged between appearances. */
   label: ReactNode;
+  /** Visually hides the label while retaining its accessible name. Defaults to `false`. */
   iconOnly?: boolean;
+  /** Replaces the icon shown for light appearance. Defaults to a sun. */
   lightIcon?: ReactNode;
+  /** Replaces the icon shown for dark appearance. Defaults to a moon. */
   darkIcon?: ReactNode;
+  /** Selects the icon motion cue and transition reported on change. Defaults to `"reveal"`. */
   transition?: ThemeSwitchTransition;
+  /** Marks the switch busy and prevents toggling. Defaults to `false`. */
   loading?: boolean;
+  /** Passes props to the switch parts and theme icon frame and wrappers. */
   slotProps?: SwitchProps['slotProps'] & {
     /** Circle holding the visible theme icon. */
     iconFrame?: Omit<ComponentPropsWithRef<'label'>, 'css'> & { sx?: SwitchPartProps['sx'] };

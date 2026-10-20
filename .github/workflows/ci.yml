@@ -30,6 +30,7 @@ jobs:
       - run: pnpm verify:exports
       - run: pnpm verify:slots
       - run: pnpm build
+      - run: pnpm --filter @jfrader/storybook test:browser
       - run: pnpm --filter @jfrader/tokens build
       - run: pnpm --filter @jfrader/ui build
       - run: pnpm --filter @jfrader/storybook verify:docs:layout

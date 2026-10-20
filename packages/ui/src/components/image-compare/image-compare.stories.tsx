@@ -5,6 +5,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ImageCompare } from './index';
+import { Button } from '../button';
 import { sceneSource } from '../scene';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
@@ -29,13 +30,21 @@ const expectPx = (value: string, px: number) =>
   expect(Math.abs(Number.parseFloat(value) - px)).toBeLessThan(PX_TOLERANCE);
 
 const Frame = styled.div({
-  inlineSize: '36rem',
+  inlineSize: `min(36rem, calc(100vw - ${vars.space[8]}))`,
+  minInlineSize: 0,
   maxInlineSize: '100%',
+  boxSizing: 'border-box',
   display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr)',
   gap: vars.space[6],
   padding: vars.space[4],
 });
 const NarrowFrame = styled.div({ inlineSize: '14rem', maxInlineSize: '100%' });
+const ResizableFrame = styled.div({
+  inlineSize: '32rem',
+  maxInlineSize: '100%',
+  '&[data-compact]': { inlineSize: '16rem' },
+});
 const Status = styled.div({
   display: 'grid',
   placeItems: 'center',
@@ -46,7 +55,7 @@ const Status = styled.div({
   background: vars.color.surface,
   fontSize: vars.textSize.sm,
 });
-const FixtureButton = styled.button({
+const FixtureButton = styled(Button)({
   minBlockSize: vars.space[8],
   minInlineSize: vars.space[8],
   paddingInline: vars.space[3],
@@ -100,7 +109,7 @@ The slider value represents the visible percentage of the Before image. Horizont
 
 Both images stay mounted. Give each meaningful, distinct alternative text and keep interactive content out of the images. Captions are decorative and describe the slider.
 
-Tap the frame to jump or drag anywhere on it. Double-clicking the handle or pressing the reset button requests 50%. The slider reports the accepted position; after a drag, the divider settles back to that value. Touch dragging starts along the reveal axis, allowing orthogonal scrolling past the component.
+Tap the frame to jump or drag anywhere on it. Double-clicking the handle or pressing the reset button requests 50%. The slider reports the accepted value. Keyboard, tap and reset changes animate the reveal; dragging follows the pointer. Reduced motion makes changes immediate. Touch dragging starts along the reveal axis, allowing orthogonal scrolling past the component.
 
 ### Keyboard and accessibility
 The divider follows the WAI-ARIA slider pattern. Arrows move one step; Shift+Arrow and Page Up/Page Down move a large step. Home jumps to 0% and End to 100%. Left and Right follow physical screen direction in RTL; Up always increases.
@@ -344,11 +353,15 @@ export const FadingCaptions: Story = {
       await expect(getComputedStyle(after).opacity).toBe('1');
       slider.focus();
       await userEvent.keyboard('{Home}');
-      await expect(getComputedStyle(before).opacity).toBe('0');
-      await expect(getComputedStyle(after).opacity).toBe('1');
+      await waitFor(() => {
+        expect(getComputedStyle(before).opacity).toBe('0');
+        expect(getComputedStyle(after).opacity).toBe('1');
+      });
       await userEvent.keyboard('{End}');
-      await expect(getComputedStyle(before).opacity).toBe('1');
-      await expect(getComputedStyle(after).opacity).toBe('0');
+      await waitFor(() => {
+        expect(getComputedStyle(before).opacity).toBe('1');
+        expect(getComputedStyle(after).opacity).toBe('0');
+      });
       const frame = part(root, 'image-compare-frame').getBoundingClientRect();
       const caption = before.getBoundingClientRect();
       const vertical = slider.getAttribute('aria-orientation') === 'vertical';
@@ -362,9 +375,11 @@ export const FadingCaptions: Story = {
       const axisSize = vertical ? frame.height : frame.width;
       const partial = Math.round(((farEdge + size / 2) / axisSize) * 100);
       await userEvent.keyboard(`{Home}${'{ArrowUp}'.repeat(partial)}`);
-      const opacity = Number(getComputedStyle(before).opacity);
-      await expect(opacity).toBeGreaterThan(0);
-      await expect(opacity).toBeLessThan(1);
+      await waitFor(() => {
+        const opacity = Number(getComputedStyle(before).opacity);
+        expect(opacity).toBeGreaterThan(0);
+        expect(opacity).toBeLessThan(1);
+      });
     }
   },
 };
@@ -612,10 +627,10 @@ export function ControlledComparison() {
     await userEvent.tab();
     await userEvent.keyboard('{End}');
     await expect(slider).toHaveAttribute('aria-valuenow', '100');
-    await expect(layerAt(canvasElement, 0.95)).toBe('before');
+    await waitFor(() => expect(layerAt(canvasElement, 0.95)).toBe('before'));
     await userEvent.keyboard('{Home}');
     await expect(slider).toHaveAttribute('aria-valuenow', '0');
-    await expect(layerAt(canvasElement, 0.05)).toBe('after');
+    await waitFor(() => expect(layerAt(canvasElement, 0.05)).toBe('after'));
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
     await expect(args.onValueCommit).toHaveBeenCalledTimes(2);
     await expect(canvasElement.querySelector('output')).toHaveTextContent('0');
@@ -894,7 +909,7 @@ const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade
       await userEvent.keyboard(key);
       await expect(slider).toHaveAttribute('aria-valuenow', String(n));
       await expect(slider).toHaveAttribute('aria-valuetext', `${n}% Before visible`);
-      await expect(Math.abs(dividerRatio(canvasElement) - n / 100)).toBeLessThan(0.02);
+      await waitFor(() => expect(Math.abs(dividerRatio(canvasElement) - n / 100)).toBeLessThan(0.02));
     }
     // Bounds and unrelated keys request nothing.
     await userEvent.keyboard('{End}{ArrowRight}{PageUp}{Enter} ');
@@ -984,8 +999,11 @@ const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade
     await expect(slider.ownerDocument.activeElement).toBe(slider);
     pointer.fire('pointerup', 0.2);
     await expect(slider).toHaveAttribute('aria-valuenow', '20');
-    await expect(layerAt(canvasElement, 0.1)).toBe('before');
-    await expect(layerAt(canvasElement, 0.3)).toBe('after');
+    await waitFor(() => {
+      expect(layerAt(canvasElement, 0.1)).toBe('before');
+      expect(layerAt(canvasElement, 0.3)).toBe('after');
+    });
+    await waitFor(() => expect(Math.abs(dividerRatio(canvasElement) - 0.2)).toBeLessThan(0.003));
     await expect(args.onValueCommit).toHaveBeenCalledTimes(1);
     await expect(args.onValueCommit).toHaveBeenLastCalledWith(20);
     // Non-primary and secondary-button presses are ignored.
@@ -1106,6 +1124,126 @@ const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade
     await expect(args.onValueChange).toHaveBeenCalledWith(60);
     await expect(args.onValueCommit).not.toHaveBeenCalled();
     await expect(part(canvasElement, 'image-compare-handle')).not.toHaveAttribute('data-dragging');
+  },
+};
+
+export const TouchCaptureTransfer: Story = {
+  args: { defaultValue: 50 },
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement, args }) => {
+    const frame = part(canvasElement, 'image-compare-frame');
+    const handle = canvas.getByRole('slider');
+    const pointer = pointerOn(frame, 'touch');
+    pointer.fire('pointerdown', 0.5, 0.5, { target: handle });
+    pointer.fire('pointermove', 0.6, 0.5, { target: handle });
+    // Touch transfers implicit capture from the pressed child to the frame.
+    pointer.fire('lostpointercapture', 0.6, 0.5, { target: handle });
+    await expect(handle).toHaveAttribute('data-dragging');
+    await expect(handle).toHaveAttribute('aria-valuenow', '60');
+    await expect(Math.abs(dividerRatio(canvasElement) - 0.6)).toBeLessThan(0.01);
+    pointer.fire('pointermove', 0.75, 0.5);
+    await expect(handle).toHaveAttribute('aria-valuenow', '75');
+    pointer.fire('pointerup', 0.75, 0.5);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueCommit).toHaveBeenCalledTimes(1);
+    await expect(args.onValueCommit).toHaveBeenLastCalledWith(75);
+    await expect(handle).not.toHaveAttribute('data-dragging');
+  },
+};
+
+export const FirstDragFrame: Story = {
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement }) => {
+    const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
+    pointer.fire('pointerdown', 0.5);
+    pointer.fire('pointermove', 0.7);
+    const handle = canvas.getByRole('slider');
+    await expect(handle).toHaveAttribute('data-dragging');
+    await expect(handle).toHaveAttribute('aria-valuenow', '70');
+    await expect(Math.abs(dividerRatio(canvasElement) - 0.7)).toBeLessThan(0.01);
+    await expect(layerAt(canvasElement, 0.65)).toBe('before');
+    pointer.fire('pointercancel', 0.7);
+  },
+};
+
+export const AnimatedReveal: Story = {
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const handle = canvas.getByRole('slider');
+    const frame = part(canvasElement, 'image-compare-frame');
+    const before = part(canvasElement, 'image-compare-before');
+    handle.focus();
+    await userEvent.keyboard('{End}');
+    await expect(handle).toHaveAttribute('aria-valuenow', '100');
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const samples: number[] = [];
+      for (let index = 0; index < 5; index++) {
+        await new Promise(requestAnimationFrame);
+        const ratio = dividerRatio(canvasElement);
+        samples.push(ratio);
+        const frameBox = frame.getBoundingClientRect();
+        const handleBox = handle.getBoundingClientRect();
+        const handleRatio = (handleBox.left + handleBox.width / 2 - frameBox.left) / frameBox.width;
+        if (ratio < 0.9) await expect(Math.abs(handleRatio - ratio)).toBeLessThan(0.01);
+        const clip = getComputedStyle(before).clipPath.match(/[\d.]+%/);
+        await expect(clip).not.toBeNull();
+        await expect(Math.abs(1 - Number.parseFloat(clip![0]) / 100 - ratio)).toBeLessThan(0.01);
+      }
+      await expect(samples.some((sample) => sample > 0.5 && sample < 0.99)).toBe(true);
+      await expect(samples.at(-1)!).toBeGreaterThan(samples[0]!);
+    }
+    await waitFor(() => expect(Math.abs(dividerRatio(canvasElement) - 1)).toBeLessThan(0.01));
+  },
+};
+
+export const GrabMovingHandle: Story = {
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement, args }) => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const handle = canvas.getByRole('slider');
+    const frame = part(canvasElement, 'image-compare-frame');
+    const before = part(canvasElement, 'image-compare-before');
+    const pointer = pointerOn(frame);
+    handle.focus();
+    fireEvent.keyDown(handle, { key: 'End' });
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
+
+    const movingRatio = dividerRatio(canvasElement);
+    const frameBox = frame.getBoundingClientRect();
+    const handleBox = handle.getBoundingClientRect();
+    const pressRatio = (handleBox.left + handleBox.width / 2 - frameBox.left) / frameBox.width + 0.01;
+    pointer.fire('pointerdown', pressRatio, 0.5, { target: handle });
+    const grabbedRatio = dividerRatio(canvasElement);
+    const grabbedBox = handle.getBoundingClientRect();
+    const pressX = frameBox.left + pressRatio * frameBox.width;
+    try {
+      await expect(handle).toHaveAttribute('aria-valuenow', '100');
+      await expect(movingRatio).toBeGreaterThan(0.5);
+      await expect(movingRatio).toBeLessThan(0.85);
+      await expect(grabbedRatio).toBeLessThan(0.85);
+      await expect(grabbedBox.left).toBeLessThan(pressX);
+      await expect(grabbedBox.right).toBeGreaterThan(pressX);
+      await new Promise(requestAnimationFrame);
+      await expect(Math.abs(dividerRatio(canvasElement) - grabbedRatio)).toBeLessThan(0.001);
+
+      for (const distance of [0.06, 0.09]) {
+        pointer.fire('pointermove', pressRatio + distance, 0.5);
+        const ratio = dividerRatio(canvasElement);
+        await expect(handle).toHaveAttribute('data-dragging');
+        await expect(Math.abs(ratio - grabbedRatio - distance)).toBeLessThan(0.01);
+        const box = handle.getBoundingClientRect();
+        const handleRatio = (box.left + box.width / 2 - frameBox.left) / frameBox.width;
+        await expect(Math.abs(handleRatio - ratio)).toBeLessThan(0.01);
+        const clip = getComputedStyle(before).clipPath.match(/[\d.]+%/);
+        await expect(clip).not.toBeNull();
+        await expect(Math.abs(1 - Number.parseFloat(clip![0]) / 100 - ratio)).toBeLessThan(0.01);
+      }
+    } finally {
+      pointer.fire('pointercancel', pressRatio + 0.09, 0.5);
+    }
+    await expect(args.onValueCommit).toHaveBeenCalledTimes(1);
+    await expect(args.onValueCommit).toHaveBeenLastCalledWith(100);
   },
 };
 
@@ -1266,14 +1404,15 @@ export const ResizeDuringDrag: Story = {
         <FixtureButton type="button" onClick={() => setWide(false)}>
           Shrink
         </FixtureButton>
-        <div style={{ inlineSize: wide ? '32rem' : '16rem' }}>
+        <ResizableFrame data-compact={wide ? undefined : ''}>
           <ImageCompare {...args} />
-        </div>
+        </ResizableFrame>
       </>
     );
   },
   play: async ({ canvas, canvasElement, args }) => {
     const frame = part(canvasElement, 'image-compare-frame');
+    await expect(frame.getBoundingClientRect().right).toBeLessThanOrEqual(canvasElement.getBoundingClientRect().right);
     const pointer = pointerOn(frame);
     pointer.fire('pointerdown', 0.5);
     pointer.fire('pointermove', 0.25);
@@ -1585,7 +1724,7 @@ const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade
     await userEvent.keyboard('{ArrowUp}');
     await expect(slider).toHaveAttribute('aria-valuenow', '30');
     await userEvent.keyboard('{Home}');
-    await expect(layerAt(canvasElement, 0.98)).toBe('after');
+    await waitFor(() => expect(layerAt(canvasElement, 0.98)).toBe('after'));
     const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
     pointer.fire('pointerdown', 0.25);
     pointer.fire('pointerup', 0.25);

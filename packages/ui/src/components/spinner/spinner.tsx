@@ -28,29 +28,39 @@ export interface SpinnerSlots {
 }
 
 export interface SpinnerProps extends Omit<ComponentPropsWithRef<'span'>, 'children'>, SxProps {
+  /** Set the indicator's size preset unless `dimension` is supplied. Defaults to `md`. */
   size?: SpinnerSize;
   /** Accessible text announced for the status region. */
   label?: string;
   /** Morph the loading strokes to a result without changing the footprint. */
   value?: SpinnerValue;
+  /** Set the initial status when `value` is omitted. Defaults to `loading`. */
   defaultValue?: SpinnerValue;
+  /** Choose the loading drawing. Defaults to `ring`. */
   variant?: SpinnerVariant;
   /** Hide the drawing from assistive technology inside an already named control. */
   decorative?: boolean;
+  /** Set the accessible text for the success status. Defaults to `Complete`. */
   successLabel?: string;
+  /** Set the accessible text for the error status. Defaults to `Failed`. */
   errorLabel?: string;
+  /** Use result colors with `status`, or inherit the text color with `neutral` (the default). */
   tone?: 'neutral' | 'status';
   /** Positive pixel dimension; invalid values use the size preset. */
   dimension?: number;
   /** Positive stroke width in the SVG's 24-unit grid; invalid values use 2. */
   strokeWidth?: number;
+  /** Replace the root `span`; `slots.root` takes precedence. */
   component?: SpinnerSlots['root'];
+  /** Replace the root, indicator, or status text with components that forward props and ref. */
   slots?: SpinnerSlots;
+  /** Pass props and `sx` to the root, indicator, and status text. */
   slotProps?: {
     root?: SpinnerPartProps;
     indicator?: SpinnerPartProps;
     status?: SpinnerPartProps;
   };
+  /** Append whitespace-separated root markers while preserving `spinner`. */
   'data-ui'?: string;
 }
 

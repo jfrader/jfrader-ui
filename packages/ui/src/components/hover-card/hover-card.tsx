@@ -76,6 +76,7 @@ export interface HoverCardBaseProps {
   onOpenChange?: (open: boolean) => void;
   /** Required inside `HoverCard.Group`: this member's unique id. Ignored when standalone. */
   value?: string;
+  /** Sets the preferred card position relative to the trigger. Defaults to `"bottom-start"`. */
   placement?: Placement;
   /** Hover delay before opening, in ms. Keyboard focus and activation open immediately. */
   openDelay?: number;
@@ -84,6 +85,7 @@ export interface HoverCardBaseProps {
 }
 
 export interface HoverCardCompoundProps extends HoverCardBaseProps {
+  /** Composes the card from `HoverCard.Trigger` and `HoverCard.Content`. */
   children?: ReactNode;
   triggerLabel?: never;
   profile?: never;
@@ -106,7 +108,9 @@ export interface HoverCardEasyProps extends HoverCardBaseProps {
   /** Profile attributes to render inside the card. */
   profile: HoverCardProfileProps;
   children?: never;
+  /** Passes props to the generated trigger, content, and profile parts. */
   slotProps?: HoverCardSlotProps;
+  /** Replaces the generated trigger, content, and profile components. */
   slots?: {
     /** Opens the hover card. */
     trigger?: ComponentType<NonNullable<HoverCardSlotProps['trigger']>>;
@@ -122,12 +126,15 @@ export type HoverCardProps = HoverCardCompoundProps | HoverCardEasyProps;
 export interface HoverCardGroupProps {
   /** The open member's `value`, or `null` when none is open. */
   value?: string | null;
+  /** Sets the initially open member when uncontrolled. Defaults to `null`. */
   defaultValue?: string | null;
+  /** Receives the requested open member's value, or `null` when closing. */
   onValueChange?: (value: string | null) => void;
   /** How long the group stays warm after its last card closes, in ms. */
   skipDelay?: number;
   /** Hover delay before opening while the group is warm, in ms. */
   intentDelay?: number;
+  /** Contains the cards that share open state and warm hover timing. */
   children?: ReactNode;
 }
 
@@ -170,18 +177,23 @@ export type HoverCardProfilePartProps<Element extends 'div' | 'dl' | 'span' = 'd
 export interface HoverCardProfileProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   /** Visible full identity; also the avatar's initials source. */
   name: string;
+  /** Adds a secondary identity line below the name. */
   subtitle?: ReactNode;
+  /** Adds biography content below the identity. */
   bio?: ReactNode;
   /** Image URL for the default Avatar. */
   src?: string;
   /** Custom decorative avatar; replaces the default Avatar when it renders content. */
   avatar?: ReactNode;
+  /** Displays labeled statistics below the biography. Empty by default. */
   stats?: readonly HoverCardStat[];
   /** Footer line, e.g. a consumer-formatted join date. */
   meta?: ReactNode;
   /** Locale for numeric stats; defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Replaces the profile's avatar, identity, biography, statistics, and metadata elements. */
   slots?: HoverCardProfileSlots;
+  /** Passes props to the profile's avatar, identity, biography, statistics, and metadata elements. */
   slotProps?: {
     /** Decorative avatar element; `aria-hidden` is not configurable. */
     avatar?: Omit<HoverCardProfilePartProps<'span'>, 'aria-hidden'>;
