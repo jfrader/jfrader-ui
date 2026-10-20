@@ -42,16 +42,27 @@ export interface ScrollAreaSlots {
   thumb?: ComponentType<Slot>;
 }
 export interface ScrollAreaProps extends Omit<ComponentPropsWithRef<'div'>, 'onScroll'>, SxProps {
+  /** Choose the scrollable axes. Defaults to `vertical`. */
   orientation?: 'vertical' | 'horizontal' | 'both';
+  /** Set the overflow-edge fade length in pixels. Defaults to the spacing-6 token; `0` disables it. */
   fade?: number;
+  /** Show custom scrollbars on interaction (`auto`), keep them visible (`always`), or use native ones. Defaults to `auto`. */
   scrollbars?: 'auto' | 'always' | 'native';
+  /** Delay hiding custom scrollbars after scrolling, in milliseconds. Defaults to `900`. */
   hideDelay?: number;
+  /** Limit the viewport's block size using a CSS length or a pixel number. */
   maxBlockSize?: CSSProperties['maxBlockSize'];
+  /** Set the viewport's CSS `scroll-snap-type`; temporarily disabled while dragging a thumb. */
   snap?: CSSProperties['scrollSnapType'];
+  /** Convert vertical wheel movement to horizontal scrolling when `orientation` is `horizontal`. Defaults to `false`. */
   wheelToHorizontal?: boolean;
+  /** Handle viewport scroll events after `slotProps.viewport.onScroll`. */
   onScroll?: (event: UIEvent<HTMLDivElement>) => void;
+  /** Receive initial and changed physical overflow edges; `true` means content remains beyond that edge. */
   onEdgeChange?: (edges: ScrollAreaEdges) => void;
+  /** Pass props and `sx` to the viewport, tracks, and thumbs. */
   slotProps?: ScrollAreaSlotProps;
+  /** Replace the viewport, tracks, or thumbs with components that forward props and ref. */
   slots?: ScrollAreaSlots;
 }
 

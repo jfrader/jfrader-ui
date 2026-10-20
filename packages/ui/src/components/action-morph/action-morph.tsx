@@ -117,19 +117,31 @@ export type ActionMorphSlots = {
   [K in keyof ActionMorphSlotProps]?: ComponentType<NonNullable<ActionMorphSlotProps[K]>>;
 };
 export interface ActionMorphProps extends Omit<ComponentPropsWithRef<'div'>, 'onSubmit'>, SxProps {
+  /** Supplies the menu actions and each action's composer configuration. */
   actions: readonly ActionMorphAction[];
+  /** Names the trigger button. Defaults to `"Create"`. */
   label?: string;
+  /** Controls whether the action menu or composer is open. */
   open?: boolean;
+  /** Opens the uncontrolled menu initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receives requests to open or close the menu or composer. */
   onOpenChange?: (open: boolean) => void;
+  /** Submits the action id, text, and choice. A rejected promise shows failure feedback; omission disables submission. */
   onSubmit?: (submission: ActionMorphSubmission) => void | Promise<unknown>;
+  /** Aligns the popup above the trigger's logical edge. Defaults to `"end"`. */
   corner?: 'start' | 'end';
   /** Success feedback in milliseconds, default 1600; 0 resets immediately. */
   resetAfter?: number;
+  /** Overrides navigation, validation, empty-state, and announcement text. */
   messages?: Partial<ActionMorphMessages>;
+  /** Replaces the generated trigger, menu, composer, and feedback parts. */
   slots?: ActionMorphSlots;
+  /** Replaces the root `div`. `slots.root` takes precedence. */
   component?: ActionMorphSlots['root'];
+  /** Passes props to the generated root, trigger, menu, composer, and feedback parts. */
   slotProps?: ActionMorphSlotProps;
+  /** Adds whitespace-separated root markers alongside `action-morph`, with duplicates removed. */
   'data-ui'?: string;
 }
 const DEFAULT_MESSAGES: ActionMorphMessages = {

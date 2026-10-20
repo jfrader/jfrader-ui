@@ -176,6 +176,7 @@ export interface CommentThreadProps
     SxProps {
   /** Comment tree (controlled). Treated as immutable. */
   value?: readonly ThreadComment[];
+  /** Sets the initial uncontrolled comment tree. Defaults to an empty thread. */
   defaultValue?: readonly ThreadComment[];
   /** The full proposed tree plus what changed. */
   onValueChange?: (next: ThreadComment[], event: CommentThreadEvent) => void;
@@ -183,15 +184,21 @@ export interface CommentThreadProps
   currentUser: CommentAuthor;
   /** Mention candidates; defaults to every author plus `currentUser`. Deduped by id. */
   people?: readonly CommentAuthor[];
+  /** Controls whether the thread is resolved, hiding its comments and composers. */
   resolvedValue?: boolean;
+  /** Sets the initial uncontrolled resolved state. Defaults to `false`. */
   defaultResolvedValue?: boolean;
+  /** Requests resolving or reopening the thread after a user action. */
   onResolvedValueChange?: (resolved: boolean) => void;
   /** Ids whose replies are shown (controlled). */
   expandedValue?: readonly string[];
   /** Defaults to every comment that has replies at first render. */
   defaultExpandedValue?: readonly string[];
+  /** Reports the proposed expanded comment ids after a reply disclosure is toggled. */
   onExpandedValueChange?: (ids: string[]) => void;
+  /** Displays the thread heading and includes it in the region's accessible name. */
   title?: ReactNode;
+  /** Sets the thread heading level. Defaults to `3`. */
   headingLevel?: CommentThreadHeadingLevel;
   /** Emoji offered by the picker, deduped; `[]` removes the picker. */
   reactions?: readonly string[];
@@ -199,11 +206,13 @@ export interface CommentThreadProps
   maxDepth?: number;
   /** Reference instant in epoch ms for relative times. Pass the same value on server and client. */
   now: number;
+  /** Formats dates, relative times and counts. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
   /** IANA zone for full dates. */
   timeZone?: string;
   /** Id for a newly submitted comment; called once per accepted submit interaction. */
   getNewId?: () => string;
+  /** Sets the new-comment and reply placeholder. Defaults to `labels.placeholder`. */
   placeholder?: string;
   /** Accessible name of the new-comment field; defaults to `labels.composer`. */
   composerLabel?: string;
@@ -211,9 +220,13 @@ export interface CommentThreadProps
   disabled?: boolean;
   /** Hides mutation controls; reply disclosure still works. */
   readOnly?: boolean;
+  /** Sets spacing and composer sizing. Defaults to `md`. */
   size?: CommentThreadSize;
+  /** Overrides the thread's English action labels, messages and count formatters. */
   labels?: Partial<CommentThreadLabels>;
+  /** Passes props and `sx` to the thread's named parts. */
   slotProps?: CommentThreadSlotProps;
+  /** Replaces named parts with components that forward their props and ref. */
   slots?: CommentThreadSlots;
   /** Shorthand for slots.root; slots.root takes precedence. */
   component?: CommentThreadSlots['root'];

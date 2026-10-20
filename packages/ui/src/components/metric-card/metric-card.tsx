@@ -44,26 +44,39 @@ export interface MetricCardSlots {
 }
 
 export interface MetricCardProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
+  /** Names the metric in the card heading. */
   label: ReactNode;
+  /** Sets the number to format. Null and non-finite values show `missingValueLabel`. */
   value: number | null;
+  /** Adds supplementary text below the value and describes the card for assistive technology. */
   description?: ReactNode;
+  /** Sets the metric heading level. Defaults to `3`. */
   headingLevel?: CardHeadingLevel;
+  /** Sets the card surface treatment. Defaults to `raised`. */
   variant?: CardVariant;
   /** Set locale to match server and client output. */
   locale?: Intl.LocalesArgument;
   /** Percent values are fractions; currency formatting requires a currency code. Invalid options throw. */
   formatOptions?: Intl.NumberFormatOptions;
+  /** Appends a unit label after a finite formatted value. */
   unitLabel?: string;
+  /** Shows a signed change pill. Omitted and non-finite values hide it. */
   delta?: number;
   /** Nonzero deltas always have a sign, including when signDisplay is 'never'. */
   deltaFormatOptions?: Intl.NumberFormatOptions;
+  /** Sets the change pill color independently of its direction. Defaults to `neutral`. */
   deltaTone?: PillTone;
+  /** Appends context after the formatted change inside the pill. */
   deltaDescription?: string;
+  /** Marks the card as busy without replacing its content. Defaults to `false`. */
   loading?: boolean;
+  /** Replaces null or non-finite metric values. Defaults to "Unavailable". */
   missingValueLabel?: string;
+  /** Replaces the root, surface and metric content elements. */
   slots?: MetricCardSlots;
   /** Shorthand for slots.root; slots.root takes precedence. */
   component?: MetricCardSlots['root'];
+  /** Applies props and styles to the named card parts. */
   slotProps?: MetricCardSlotProps;
 }
 

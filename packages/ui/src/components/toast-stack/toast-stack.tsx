@@ -33,16 +33,27 @@ export interface ToastStackSlots {
   item?: ComponentType<ToastPartProps>;
 }
 export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, Omit<ToastPartProps, 'css'>, SxProps {
+  /** Chooses a collapsible stack or an always-expanded list. Defaults to `"stacked"`. */
   variant?: ToastStackVariant;
+  /** Anchors the stack at a logical bottom edge or center. Defaults to `"bottom-end"`. */
   position?: ToastStackPosition;
+  /** Renders inline with absolute positioning instead of in a fixed portal. Defaults to `false`. */
   contained?: boolean;
+  /** Limits visible cards while collapsed. Rounded down with a minimum of `1`; omitted or nonfinite values use `3`. */
   maxVisible?: number;
+  /** Names the notification region unless ARIA naming props override it. Defaults to `"Notifications"`. */
   label?: string;
+  /** Enables Alt+T to expand the stack and focus the newest dismiss button outside editable fields. Defaults to `false`. */
   hotkey?: boolean;
+  /** Labels the expand button. Defaults to `"Expand notifications"`. */
   expandLabel?: string;
+  /** Labels the collapse button. Defaults to `"Collapse notifications"`. */
   collapseLabel?: string;
+  /** Replaces the root `div`. `slots.root` takes precedence. */
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
+  /** Replaces the root, list, toggle, and toast item containers. */
   slots?: ToastStackSlots;
+  /** Passes props to the root, list, toggle, and toast item containers. */
   slotProps?: {
     /** Outer toast stack container element. */
     root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & ToastPartProps & SxProps;

@@ -96,17 +96,25 @@ export interface TagInputProps
    * Tokens in order. Entries must be unique, nonempty and normalized. The list renders as supplied.
    */
   value?: readonly string[];
+  /** Set the initial uncontrolled tokens and their form-reset value. Defaults to an empty list. */
   defaultValue?: readonly string[];
+  /** Receive the committed token list after an addition or removal request. */
   onValueChange?: (value: string[]) => void;
   /** Draft text in the input, independent from the committed tokens. */
   inputValue?: string;
+  /** Set the initial uncontrolled draft and its form-reset value. Defaults to an empty string. */
   defaultInputValue?: string;
+  /** Receive draft changes, including clearing the draft after a successful commit. */
   onInputChange?: (value: string) => void;
+  /** Name the text input with a label. */
   label?: ReactNode;
   /** Label placement. `hidden` keeps the accessible name without taking layout space. */
   labelPlacement?: FieldLabelPlacement;
+  /** Show supporting text linked to the input's accessible description. */
   description?: ReactNode;
+  /** Show an error linked to the input and mark the field invalid. */
   error?: ReactNode;
+  /** Set the control and token sizing. Defaults to `md`. */
   size?: TagInputSize;
   /** Keys that commit the draft. Without `','`, commas are ordinary token text. */
   separators?: readonly TagInputSeparator[];
@@ -120,6 +128,7 @@ export interface TagInputProps
   maxTokens?: number;
   /** Locale for duplicate comparison and default number formatting. */
   locale?: Intl.LocalesArgument;
+  /** Override the English accessible labels, announcements, and validation messages. */
   messages?: Partial<TagInputMessages>;
   /** Replaces the remove glyph; rendered decoratively inside each remove button. */
   removeIcon?: ReactNode;
@@ -127,6 +136,7 @@ export interface TagInputProps
   component?: TagInputSlots['root'];
   /** Replace generated parts with components that forward props and ref. */
   slots?: TagInputSlots;
+  /** Pass props and `sx` to generated field parts. */
   slotProps?: TagInputSlotProps;
 }
 

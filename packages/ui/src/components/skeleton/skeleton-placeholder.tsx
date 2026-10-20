@@ -12,10 +12,13 @@ import { WithSx, type SxProps } from '../../styling/sx';
 type Length = number | string;
 
 export interface SkeletonProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
+  /** Sets the placeholder width in pixels or a CSS length. Defaults to full width, or the circle size when `circle` is set. */
   width?: Length;
+  /** Sets the placeholder height in pixels or a CSS length. Defaults to `1em`, or follows width when `circle` is set. */
   height?: Length;
   /** Round placeholder; height follows width unless `height` is given. */
   circle?: boolean;
+  /** Sets the corner radius in pixels or a CSS length. Defaults to the small radius token; ignored when `circle` is set. */
   radius?: Length;
 }
 
