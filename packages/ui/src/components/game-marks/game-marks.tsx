@@ -1,6 +1,6 @@
 'use client';
 
-import { withoutSx } from '../../styling/sx';
+import { WithSx, withoutSx } from '../../styling/sx';
 
 import { useId, type ComponentPropsWithRef, type ComponentType, type CSSProperties, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
@@ -9,6 +9,8 @@ import type { SxProps } from '../../styling/sx';
 import { FORCED_COLORS } from '../../styling/media';
 import { GamePanel, type GamePanelProps, type GamePanelCustomization, type GamePanelSlotProps } from '../game-panel/game-panel';
 import { cardPartIdentity } from '../game-card/card-parts';
+import { CARD_FRAME } from '../game-card/card-frame';
+import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 
 export type GameMarksPartProps = ComponentPropsWithRef<'span'> & {
   'data-ui'?: string;
@@ -62,16 +64,32 @@ export interface GameMarksProps extends Omit<GamePanelProps, 'children'>, Omit<G
   slots?: GameMarksSlots;
 }
 const DEFAULT_MAX_PER_ROW = 5;
-const rootStyle = css({ label: 'game-marks', display: 'grid', justifyItems: 'start', gap: vars.space[2], color: vars.color.text, fontFamily: vars.font.sans,
+// A trick counter: five card-ratio pips that are the count. Taken tricks are card stock carrying
+// the consumer's mark; open slots are inset. The localized number stays for assistive tech only.
+const PIP = `calc(${vars.size.gameCardSm} * 0.5625)`;
+const rootStyle = css({ label: 'game-marks', display: 'grid', justifyItems: 'start', gap: vars.space[2], inlineSize: 'fit-content',
+  color: vars.color.text, fontFamily: vars.font.sans, lineHeight: vars.lineHeight.tight,
+  [FORCED_COLORS]: { color: 'CanvasText' },
+});
+const labelStyle = css({ fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold, color: vars.color.textMuted,
   [FORCED_COLORS]: { color: 'CanvasText' },
 });
 const marksStyle = css({
-  display: 'grid', gridTemplateColumns: 'repeat(var(--game-marks-columns), max-content)', gap: vars.space[1],
+  display: 'grid', gridTemplateColumns: 'repeat(var(--game-marks-columns), max-content)', alignItems: 'center', gap: vars.space[1],
   '&[data-layout="pile"]': { columnGap: 0 },
 });
-const markStyle = css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', inlineSize: vars.space[5], blockSize: vars.space[5], border: `1px solid ${vars.color.borderControl}`, borderRadius: '50%',
-  '&[data-filled="true"]': { backgroundColor: vars.color.accentSoft },
-  '[data-layout="pile"] > &': { marginInlineEnd: `calc(-1 * ${vars.space[1]})` },
+const markStyle = css({ display: 'inline-grid', placeItems: 'center', boxSizing: 'border-box', inlineSize: PIP, blockSize: `calc(${PIP} * ${CARD_FRAME.ratio})`,
+  borderRadius: `calc(${PIP} / ${CARD_FRAME.cornerDivisor})`, border: `1px solid ${vars.color.borderSubtle}`, backgroundColor: vars.color.surfaceInset,
+  fontSize: vars.textSize.xs, lineHeight: 1,
+  '&[data-filled="true"]': { borderColor: vars.color.borderControl, backgroundColor: vars.color.cardFace, color: vars.color.cardInk,
+    boxShadow: `inset 0 -1px 0 ${vars.color.borderControl}, ${vars.shadow.raised}` },
+  '[data-layout="pile"] > &': { marginInlineEnd: `calc(-1 * ${vars.space[2]})` },
+  [FORCED_COLORS]: { borderColor: 'CanvasText', backgroundColor: 'Canvas', '&[data-filled="true"]': { borderColor: 'CanvasText', backgroundColor: 'CanvasText', color: 'Canvas', boxShadow: 'none' } },
+});
+const overflowStyle = css({ marginInlineStart: vars.space[1], paddingInline: vars.space[1], borderRadius: vars.radius.sm, backgroundColor: vars.color.surfaceInset,
+  fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold, fontVariantNumeric: 'tabular-nums', lineHeight: vars.lineHeight.base, color: vars.color.textMuted,
+  '[data-layout="pile"] > &': { marginInlineStart: vars.space[3] },
+  [FORCED_COLORS]: { color: 'CanvasText', border: '1px solid CanvasText' },
 });
 
 export function GameMarks({ label, count, mark = '●', max = DEFAULT_MAX_PER_ROW, maxPerRow = DEFAULT_MAX_PER_ROW, layout = 'rows', locale, slotProps, slots, component, ...props }: GameMarksProps) {
@@ -94,15 +112,22 @@ export function GameMarks({ label, count, mark = '●', max = DEFAULT_MAX_PER_RO
 
   return <GamePanel {...props} component={component} slots={slots} marker="game-marks" structure={rootStyle} rootSlot={slotProps?.root}
     attributes={{ role: 'group', 'aria-labelledby': [labelId, externalLabel].filter(Boolean).join(' '), 'data-layout': layout }}>
-    <Label {...withoutSx(slotProps?.label)} id={labelId} data-ui={labelIdentity} className={slotProps?.label?.className} css={slotProps?.label?.sx}>{label}</Label>
-    <Count {...withoutSx(slotProps?.count)} data-ui={countIdentity} className={slotProps?.count?.className} css={slotProps?.count?.sx}>{new Intl.NumberFormat(locale).format(count)}</Count>
+    <WithSx styles={[labelStyle, slotProps?.label?.sx]} className={slotProps?.label?.className}>{(classes) =>
+      <Label {...withoutSx(slotProps?.label)} id={labelId} data-ui={labelIdentity} className={classes}>{label}</Label>}
+    </WithSx>
+    <WithSx styles={[visuallyHiddenStyle, slotProps?.count?.sx]} className={slotProps?.count?.className}>{(classes) =>
+      <Count {...withoutSx(slotProps?.count)} data-ui={countIdentity} className={classes}>{new Intl.NumberFormat(locale).format(count)}</Count>}
+    </WithSx>
+    <WithSx styles={[marksStyle, slotProps?.marks?.sx]} className={slotProps?.marks?.className}>{(classes) =>
     <Marks {...withoutSx(slotProps?.marks)} aria-hidden="true" data-layout={layout} data-ui={marksIdentity}
       style={{ ...slotProps?.marks?.style, '--game-marks-columns': Math.min(max, maxPerRow) } as CSSProperties}
-      className={slotProps?.marks?.className}
-      css={[marksStyle, slotProps?.marks?.sx]}>
-      {Array.from({ length: max }, (_, index) => <Mark {...withoutSx(slotProps?.mark)} key={index} data-filled={index < count ? 'true' : 'false'} data-ui={markIdentity} className={slotProps?.mark?.className} css={[markStyle, slotProps?.mark?.sx]}>{index < count ? mark : null}</Mark>)}
-      {count > max && <bdi dir="auto" data-ui="game-marks-overflow">{new Intl.NumberFormat(locale, { signDisplay: 'always' }).format(count - max)}</bdi>}
-    </Marks>
+      className={classes}>
+      {Array.from({ length: max }, (_, index) => <WithSx key={index} styles={[markStyle, slotProps?.mark?.sx]} className={slotProps?.mark?.className}>{(classes) =>
+        <Mark {...withoutSx(slotProps?.mark)} data-filled={index < count ? 'true' : 'false'} data-ui={markIdentity} className={classes}>{index < count ? mark : null}</Mark>}
+      </WithSx>)}
+      {count > max && <bdi dir="auto" data-ui="game-marks-overflow" css={overflowStyle}>{new Intl.NumberFormat(locale, { signDisplay: 'always' }).format(count - max)}</bdi>}
+    </Marks>}
+    </WithSx>
   </GamePanel>;
 }
 GameMarks.displayName = 'GameMarks';

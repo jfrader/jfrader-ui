@@ -1,4 +1,4 @@
-import type { ComponentPropsWithRef } from 'react';
+import { createElement, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within } from 'storybook/test';
 import { GameRounds, type GameRoundsPartProps } from './index';
@@ -34,9 +34,9 @@ const meta = {
       { title: 'Round leads', stories: ['Default'] },
     ],
     usage: `### Results
-Keep rounds in play order and give every result a nonempty name in your game's language. Result text accompanies each tone; pending rounds also have a dashed boundary. Your application owns game rules and result transitions.
+Keep rounds in play order and give every result a nonempty name in your game's language. Result text and a shape accompany each result on one baseline: won rounds show a filled disc, lost rounds an open diamond and pending rounds a thin ring. The current round is underlined. Your application owns game rules and result transitions.
 
-The strip uses a bordered panel. Set surface="transparent" when composing inside an existing surface.
+The strip uses a raised panel. Set surface="transparent" when composing inside an existing surface.
 
 ### Keyboard and accessibility
 
@@ -63,12 +63,18 @@ export const Default: Story = {
     await expect(items[0]).toHaveTextContent('1OpeningWon');
     await expect(items[2]).toHaveAttribute('aria-current', 'step');
     await expect(items[2]).toHaveTextContent('3Lead♠Pending');
-    await expect(getComputedStyle(items[2]!).borderTopStyle).toBe('dashed');
+    const pip = (item: Element) => getComputedStyle(item.querySelector('[data-ui="game-rounds-outcome"]')!, '::before');
+    await expect(pip(items[0]!).backgroundColor).toBe(pip(items[0]!).borderTopColor);
+    await expect(pip(items[1]!).transform).not.toBe('none');
+    await expect(pip(items[3]!).backgroundColor).not.toBe(pip(items[3]!).borderTopColor);
+    await expect(pip(items[3]!).transform).toBe('none');
+    for (const item of items) await expect(getComputedStyle(item).borderTopWidth).toBe('0px');
+    await expect(getComputedStyle(items[2]!.querySelector('[data-ui="game-rounds-head"]')!).borderBottomColor).not.toBe('rgba(0, 0, 0, 0)');
+    await expect(getComputedStyle(items[2]!).backgroundColor).toBe('rgba(0, 0, 0, 0)');
     const list = within(group).getByRole('list');
     await expect(list).toBeVisible();
     await expect(list.tagName).toBe('OL');
     await expect(list).not.toHaveAttribute('role');
-    await expect(getComputedStyle(list).listStyleType).toBe('decimal');
   },
 };
 
@@ -80,11 +86,24 @@ export const ForcedColors: Story = {
     const items = within(group).getAllByRole('listitem');
     await expect(items).toHaveLength(5);
     await expect(items[2]).toHaveAttribute('aria-current', 'step');
-    await expect(getComputedStyle(items[2]!).outlineStyle).toBe('solid');
-    await expect(getComputedStyle(items[2]!).outlineWidth).toBe('2px');
+    const head = getComputedStyle(items[2]!.querySelector('[data-ui="game-rounds-head"]')!);
+    await expect(head.borderBottomStyle).toBe('solid');
+    await expect(head.borderBottomWidth).toBe('2px');
+    const inactiveHead = getComputedStyle(items[0]!.querySelector('[data-ui="game-rounds-head"]')!);
+    const systemColor = group.ownerDocument.createElement('span');
+    group.append(systemColor);
+    try {
+      systemColor.style.color = 'Canvas';
+      await expect(inactiveHead.borderBottomColor).toBe(getComputedStyle(systemColor).color);
+      systemColor.style.color = 'Highlight';
+      await expect(head.borderBottomColor).toBe(getComputedStyle(systemColor).color);
+    } finally {
+      systemColor.remove();
+    }
     for (const item of items) {
-      await expect(getComputedStyle(item).borderTopWidth).toBe('1px');
-      await expect(getComputedStyle(item).borderTopColor).toBe(getComputedStyle(group).color);
+      const pip = getComputedStyle(item.querySelector('[data-ui="game-rounds-outcome"]')!, '::before');
+      await expect(pip.borderTopStyle).toBe('solid');
+      await expect(pip.borderTopColor).toBe(getComputedStyle(group).color);
     }
     await expect(items[0]).toHaveTextContent('Ganada');
     await expect(items[1]).toHaveTextContent('Perdida');
@@ -158,7 +177,7 @@ export const Empty: Story = {
 };
 
 function ReplacementRound(props: ComponentPropsWithRef<'li'> & GameRoundsPartProps<'li'>) {
-  return <li {...props} data-replacement="custom-round" />;
+  return createElement('li', { ...props, 'data-replacement': 'custom-round', 'data-received-css': String(Object.hasOwn(props, 'css')) });
 }
 
 /** Supply a custom round element for won and lost rounds. */
@@ -208,6 +227,8 @@ function ReplacementRound(props: ComponentPropsWithRef<'li'> & GameRoundsPartPro
     const firstRound = roundElements[0]!;
     await expect(firstRound).toHaveAttribute('data-replacement', 'custom-round');
     await expect(firstRound.className).not.toBe('');
+    await expect(firstRound).toHaveAttribute('data-received-css', 'false');
+    await expect(getComputedStyle(firstRound).display).toBe('grid');
     await expect(firstRound).toHaveAttribute('data-ui', 'game-rounds-round custom-round-ui');
     await expect(args.slotProps?.round?.ref).toHaveBeenCalledWith(firstRound);
     await expect(firstRound).toHaveAttribute('data-outcome', 'won');

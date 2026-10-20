@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useId, useRef, useState, type ComponentPropsWithRef } from 'react';
+import { createElement, useId, useRef, useState, type ComponentPropsWithRef } from 'react';
 import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { GameScore, type GameScorePartProps, type GameScoreTableSlotProps } from './index';
@@ -42,7 +42,7 @@ Use the same locale on server and client for number formatting. Stage text is di
 
 GameScore.Table accepts players with scores keyed by round, explicit totals, and caller-owned leader flags. Supply localized column and state labels. Missing scores show the pending label; zero stays zero. Round labels may contain trump artwork. The table scrolls horizontally when its content exceeds the available width.
 
-Both score layouts use a bordered panel. Set surface="transparent" when composing inside an existing surface.
+Both score layouts use a raised panel. Set surface="transparent" when composing inside an existing surface.
 
 ### Keyboard and accessibility
 
@@ -95,6 +95,10 @@ export const Scoreboard: Story = {
     await expect(within(table).getByRole('rowheader', { name: 'Alex You Leader' })).toBeVisible();
     await expect(table.querySelector('[data-state="current"][data-ui="game-score-table-cell"]')).toHaveTextContent('0');
     await expect(table.querySelectorAll('[data-ui="game-score-table-total"]')).toHaveLength(2);
+    const current = table.querySelector('[data-state="current"][data-ui="game-score-table-round"]')!;
+    await expect(getComputedStyle(current).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    await expect(getComputedStyle(current.querySelector('[data-ui="game-score-table-round-token"]')!).borderBottomWidth).toBe('2px');
+    for (const cell of table.querySelectorAll('[data-ui="game-score-table-cell"]')) await expect(getComputedStyle(cell).borderBottomStyle).toBe('none');
   },
 };
 
@@ -185,11 +189,12 @@ export const ForcedColors: Story = {
     const table = canvas.getByRole('table', { name: 'Evening match' });
     await expect(within(table).getByRole('columnheader', { name: '3 Current' })).toBeVisible();
     await expect(within(table).getByRole('rowheader', { name: 'Alex You Leader' })).toBeVisible();
-    for (const cell of table.querySelectorAll('[data-ui="game-score-table-cell"]')) {
-      await expect(getComputedStyle(cell).borderBottomStyle).toBe('solid');
-      await expect(getComputedStyle(cell).borderBottomWidth).toBe('1px');
-      await expect(getComputedStyle(cell).borderBottomColor).toBe(getComputedStyle(group).color);
+    for (const header of within(table).getAllByRole('columnheader')) {
+      await expect(getComputedStyle(header).borderBottomStyle).toBe('solid');
+      await expect(getComputedStyle(header).borderBottomWidth).toBe('1px');
+      await expect(getComputedStyle(header).borderBottomColor).toBe(getComputedStyle(group).color);
     }
+    await expect(getComputedStyle(table.querySelector('[data-state="current"] > [data-ui="game-score-table-round-token"]')!).borderBottomWidth).toBe('2px');
     await expect(canvasElement.getAnimations({ subtree: true })).toHaveLength(0);
   },
 };
@@ -397,7 +402,7 @@ export const AriaComposition: Story = {
 };
 
 function ReplacementRow(props: ComponentPropsWithRef<'div'> & GameScorePartProps<'div'>) {
-  return <div {...props} data-replacement="custom-row" />;
+  return createElement('div', { ...props, 'data-replacement': 'custom-row', 'data-received-css': String(Object.hasOwn(props, 'css')) });
 }
 
 /** Supply a custom score row for each player. */
@@ -445,6 +450,8 @@ function ReplacementRow(props: ComponentPropsWithRef<'div'> & GameScorePartProps
     const firstRow = rowElements[0]!;
     await expect(firstRow).toHaveAttribute('data-replacement', 'custom-row');
     await expect(firstRow.className).not.toBe('');
+    await expect(firstRow).toHaveAttribute('data-received-css', 'false');
+    await expect(getComputedStyle(firstRow).display).toBe('flex');
     await expect(firstRow).toHaveAttribute('data-ui', 'game-score-row custom-row-ui');
     await expect(args.slotProps?.row?.ref).toHaveBeenCalledWith(firstRow);
     await expect(firstRow).toHaveAttribute('data-stage', 'Final');

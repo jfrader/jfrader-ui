@@ -51,23 +51,44 @@ export interface GameScoreTableProps extends Omit<GamePanelProps, 'children'>, O
   slots?: GameScoreTableSlots;
   slotProps?: GameScoreTableSlotProps;
 }
+// A scorekeeper's ledger: one hairline under the header, round tokens with the current round
+// underlined, a dot before each player, totals one step up, and a brass mark for the leader.
+const DOT = `calc(${vars.space[1]} + 2px)`;
+const LEADER_MARK = `calc(${vars.space[2]} + 2px)`;
 const rootStyle = css({ minInlineSize: 0, maxInlineSize: '100%', overflowX: 'auto', fontFamily: vars.font.sans, color: vars.color.text });
-const tableStyle = css({ inlineSize: '100%', borderCollapse: 'collapse', fontSize: vars.textSize.sm,
-  '& > caption': { textAlign: 'start', fontWeight: vars.fontWeight.semibold, paddingBlockEnd: vars.space[3] },
-  [FORCED_COLORS]: { color: 'CanvasText' },
+const tableStyle = css({ inlineSize: '100%', borderCollapse: 'collapse', fontSize: vars.textSize.sm, lineHeight: vars.lineHeight.tight,
+  '& > caption': { textAlign: 'start', fontSize: vars.textSize.md, fontWeight: vars.fontWeight.semibold, paddingBlockEnd: vars.space[3] },
+  '& > thead th': { paddingBlockStart: 0, paddingBlockEnd: vars.space[2], verticalAlign: 'baseline', fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.medium,
+    color: vars.color.textMuted, borderBlockEnd: `1px solid ${vars.color.borderSubtle}` },
+  '& > tbody > tr:first-of-type > *': { paddingBlockStart: vars.space[3] },
+  [FORCED_COLORS]: { color: 'CanvasText', '& > thead th': { color: 'CanvasText', borderColor: 'CanvasText' } },
 });
-const cellStyle = css({ paddingBlock: vars.space[2], paddingInline: vars.space[1], textAlign: 'end', fontVariantNumeric: 'tabular-nums', borderBlockEnd: `1px solid ${vars.color.borderControl}`,
-  '&[data-state="current"]': { backgroundColor: vars.color.accentSoft },
-  '&[data-state="upcoming"]': { color: vars.color.textMuted },
-  '[data-me="true"] > &': { fontWeight: vars.fontWeight.bold },
-  [FORCED_COLORS]: {
-    borderColor: 'CanvasText',
-    '&[data-state="current"], &[data-state="upcoming"]': { color: 'CanvasText', backgroundColor: 'Canvas' },
-  },
+const cellStyle = css({ paddingBlock: vars.space[2], paddingInline: vars.space[2], textAlign: 'center', fontVariantNumeric: 'tabular-nums',
+  '&[data-state="upcoming"]': { color: vars.color.textSubtle },
+  'tbody > [data-me="true"] > &': { fontWeight: vars.fontWeight.semibold },
+  [FORCED_COLORS]: { '&[data-state="upcoming"]': { color: 'CanvasText' } },
 });
-const nameStyle = css({ paddingBlock: vars.space[2], paddingInline: vars.space[1], textAlign: 'start', borderBlockEnd: `1px solid ${vars.color.borderControl}`, whiteSpace: 'nowrap' });
-const totalStyle = css({ fontWeight: vars.fontWeight.bold, borderInlineStart: `1px solid ${vars.color.borderControl}` });
-const badgeStyle = css({ display: 'inline-block', marginInlineStart: vars.space[1], fontSize: vars.textSize.xs, whiteSpace: 'nowrap' });
+const roundTokenStyle = css({ display: 'inline-block', boxSizing: 'border-box', minInlineSize: vars.space[5], paddingBlockEnd: vars.space[1],
+  borderBlockEnd: '2px solid transparent', color: vars.color.text, fontSize: vars.textSize.sm, fontWeight: vars.fontWeight.semibold,
+  '[data-state="current"] > &': { borderBlockEndColor: vars.color.accent, color: vars.color.accentText },
+  '[data-state="upcoming"] > &': { color: vars.color.textSubtle },
+  [FORCED_COLORS]: { '[data-state] > &': { color: 'CanvasText' }, '[data-state="current"] > &': { borderBlockEndColor: 'Highlight' } },
+});
+const nameStyle = css({ paddingBlock: vars.space[2], paddingInline: vars.space[1], textAlign: 'start', whiteSpace: 'nowrap',
+  'tbody &': { fontSize: vars.textSize.md, fontWeight: vars.fontWeight.medium,
+    '&::before': { content: '""', display: 'inline-block', inlineSize: DOT, blockSize: DOT, marginInlineEnd: vars.space[2], verticalAlign: 'middle',
+      borderRadius: '50%', backgroundColor: vars.color.borderStrong } },
+  'tbody > [data-me="true"] > &': { fontWeight: vars.fontWeight.semibold, '&::before': { backgroundColor: vars.color.accent } },
+  [FORCED_COLORS]: { 'tbody &::before': { backgroundColor: 'CanvasText' }, 'tbody > [data-me="true"] > &': { textDecoration: 'underline' } },
+});
+const totalStyle = css({ textAlign: 'end', paddingInlineStart: vars.space[4], paddingInlineEnd: vars.space[1],
+  'tbody &': { fontSize: vars.textSize.md, fontWeight: vars.fontWeight.bold },
+});
+const leaderStyle = css({ display: 'inline-block', marginInlineStart: vars.space[2], verticalAlign: 'middle', lineHeight: 0 });
+const leaderMarkStyle = css({ display: 'inline-block', inlineSize: LEADER_MARK, blockSize: LEADER_MARK, borderRadius: '2px', transform: 'rotate(45deg) scale(0.8)',
+  backgroundColor: vars.color.warning, boxShadow: `inset 0 1px 0 ${vars.color.surfaceHighlight}`,
+  [FORCED_COLORS]: { backgroundColor: 'CanvasText' },
+});
 
 export function GameScoreTable({ caption, players, rounds, labels, locale, slots, slotProps, component, ...props }: GameScoreTableProps) {
   const formatter = new Intl.NumberFormat(locale);
@@ -83,15 +104,16 @@ export function GameScoreTable({ caption, players, rounds, labels, locale, slots
         <thead><tr><th scope="col" css={nameStyle}>{labels.player}</th>
           {rounds.map((round) => <WithSx key={round.key} styles={[cellStyle, slotProps?.round?.sx]} className={slotProps?.round?.className}>{(classes) =>
             <Round {...withoutSx(slotProps?.round)} scope="col" data-state={round.state} data-ui={cardPartIdentity('game-score-table-round', slotProps?.round?.['data-ui'])} className={classes}>
-              {round.label}{round.state === 'current' && <span css={badgeStyle}>{labels.current}</span>}{round.state === 'upcoming' && <span css={badgeStyle}>{labels.upcoming}</span>}
+              <span data-ui="game-score-table-round-token" css={roundTokenStyle}>{round.label}</span>
+              {round.state === 'current' && <span css={visuallyHiddenStyle}>{labels.current}</span>}{round.state === 'upcoming' && <span css={visuallyHiddenStyle}>{labels.upcoming}</span>}
             </Round>}
           </WithSx>)}
           <th scope="col" css={[cellStyle, totalStyle]}>{labels.total}</th>
         </tr></thead>
         <tbody>{players.map((player) => <tr key={player.key} data-me={String(Boolean(player.isMe))} data-leader={String(Boolean(player.leader))}>
           <th scope="row" css={nameStyle}>{player.label}{player.isMe && <span css={visuallyHiddenStyle}>{labels.me}</span>}
-            {player.leader && <WithSx styles={[badgeStyle, slotProps?.leader?.sx]} className={slotProps?.leader?.className}>{(classes) =>
-              <Leader {...withoutSx(slotProps?.leader)} data-ui={cardPartIdentity('game-score-table-leader', slotProps?.leader?.['data-ui'])} className={classes}><span aria-hidden="true">♛</span><span css={visuallyHiddenStyle}>{labels.leader}</span></Leader>}
+            {player.leader && <WithSx styles={[leaderStyle, slotProps?.leader?.sx]} className={slotProps?.leader?.className}>{(classes) =>
+              <Leader {...withoutSx(slotProps?.leader)} data-ui={cardPartIdentity('game-score-table-leader', slotProps?.leader?.['data-ui'])} className={classes}><span aria-hidden="true" css={leaderMarkStyle} /><span css={visuallyHiddenStyle}>{labels.leader}</span></Leader>}
             </WithSx>}
           </th>
           {rounds.map((round) => <WithSx key={round.key} styles={[cellStyle, slotProps?.cell?.sx]} className={slotProps?.cell?.className}>{(classes) =>

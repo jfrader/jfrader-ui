@@ -1,6 +1,6 @@
 'use client';
 
-import { withoutSx } from '../../styling/sx';
+import { WithSx, withoutSx } from '../../styling/sx';
 
 import { useId, type ComponentPropsWithRef, type ComponentType, type Key, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
@@ -69,13 +69,22 @@ export interface GameScoreProps extends Omit<GamePanelProps, 'children'>, Omit<G
   /** Replaces the score group and its parts. */
   slots?: GameScoreSlots;
 }
-const rootStyle = css({ label: 'game-score', display: 'grid', gap: vars.space[2], color: vars.color.text, fontFamily: vars.font.sans,
+const rootStyle = css({ label: 'game-score', display: 'grid', gap: vars.space[3], color: vars.color.text, fontFamily: vars.font.sans, lineHeight: vars.lineHeight.tight,
   [FORCED_COLORS]: { color: 'CanvasText' },
 });
-const listStyle = css({ display: 'grid', gap: vars.space[2], margin: 0 });
-const rowStyle = css({ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: vars.space[4] });
-const valueStyle = css({ margin: 0, fontVariantNumeric: 'tabular-nums', fontWeight: vars.fontWeight.semibold });
-const stageStyle = css({ marginInlineStart: vars.space[2], fontSize: vars.textSize.sm });
+const labelStyle = css({ fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold, color: vars.color.textMuted,
+  [FORCED_COLORS]: { color: 'CanvasText' },
+});
+const listStyle = css({ display: 'grid', margin: 0 });
+const rowStyle = css({ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: vars.space[6], paddingBlock: vars.space[2],
+  '& + &': { borderBlockStart: `1px solid ${vars.color.borderSubtle}` },
+  [FORCED_COLORS]: { '& + &': { borderColor: 'CanvasText' } },
+});
+const nameStyle = css({ fontSize: vars.textSize.md, fontWeight: vars.fontWeight.semibold });
+const valueStyle = css({ margin: 0, fontVariantNumeric: 'tabular-nums', fontSize: vars.textSize.xl, fontWeight: vars.fontWeight.bold, letterSpacing: vars.editorial.tracking.secondary });
+const stageStyle = css({ marginInlineStart: vars.space[2], fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold, letterSpacing: 'normal', color: vars.color.textMuted, verticalAlign: 'middle',
+  [FORCED_COLORS]: { color: 'CanvasText' },
+});
 
 export function GameScore({ label, rows, locale, slotProps, slots, component, ...props }: GameScoreProps) {
   const id = useId();
@@ -99,25 +108,33 @@ export function GameScore({ label, rows, locale, slotProps, slots, component, ..
 
   return <GamePanel {...props} component={component} slots={slots} marker="game-score" structure={rootStyle} rootSlot={slotProps?.root}
     attributes={{ role: 'group', 'aria-labelledby': [labelId, externalLabel].filter(Boolean).join(' ') }}>
-    <Label {...withoutSx(slotProps?.label)} id={labelId} data-ui={labelIdentity} className={slotProps?.label?.className} css={slotProps?.label?.sx}>{label}</Label>
-    <List {...withoutSx(slotProps?.list)} data-ui={listIdentity} className={slotProps?.list?.className} css={[listStyle, slotProps?.list?.sx]}>
+    <WithSx styles={[labelStyle, slotProps?.label?.sx]} className={slotProps?.label?.className}>{(classes) =>
+      <Label {...withoutSx(slotProps?.label)} id={labelId} data-ui={labelIdentity} className={classes}>{label}</Label>}
+    </WithSx>
+    <WithSx styles={[listStyle, slotProps?.list?.sx]} className={slotProps?.list?.className}>{(classes) =>
+    <List {...withoutSx(slotProps?.list)} data-ui={listIdentity} className={classes}>
       {rows.map((row) => (
-        <Row
+        <WithSx key={row.key} styles={[rowStyle, slotProps?.row?.sx]} className={slotProps?.row?.className}>{(classes) => <Row
           {...withoutSx(slotProps?.row)}
-          key={row.key}
           data-stage={row.stage}
           data-ui={rowIdentity}
-          className={slotProps?.row?.className}
-          css={[rowStyle, slotProps?.row?.sx]}
+          className={classes}
         >
-          <Name {...withoutSx(slotProps?.name)} data-ui={nameIdentity} className={slotProps?.name?.className} css={slotProps?.name?.sx}>{row.label}</Name>
-          <Value {...withoutSx(slotProps?.value)} data-ui={valueIdentity} className={slotProps?.value?.className} css={[valueStyle, slotProps?.value?.sx]}>
+          <WithSx styles={[nameStyle, slotProps?.name?.sx]} className={slotProps?.name?.className}>{(classes) =>
+            <Name {...withoutSx(slotProps?.name)} data-ui={nameIdentity} className={classes}>{row.label}</Name>}
+          </WithSx>
+          <WithSx styles={[valueStyle, slotProps?.value?.sx]} className={slotProps?.value?.className}>{(classes) =>
+          <Value {...withoutSx(slotProps?.value)} data-ui={valueIdentity} className={classes}>
             {formatter.format(row.value)}
-            {row.stage !== undefined && <Stage {...withoutSx(slotProps?.stage)} data-ui={stageIdentity} className={slotProps?.stage?.className} css={[stageStyle, slotProps?.stage?.sx]}>{row.stage}</Stage>}
-          </Value>
-        </Row>
+            {row.stage !== undefined && <WithSx styles={[stageStyle, slotProps?.stage?.sx]} className={slotProps?.stage?.className}>{(classes) =>
+              <Stage {...withoutSx(slotProps?.stage)} data-ui={stageIdentity} className={classes}>{row.stage}</Stage>}
+            </WithSx>}
+          </Value>}
+          </WithSx>
+        </Row>}</WithSx>
       ))}
-    </List>
+    </List>}
+    </WithSx>
   </GamePanel>;
 }
 GameScore.displayName = 'GameScore';

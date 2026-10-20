@@ -3,6 +3,7 @@
 import type { ComponentPropsWithRef, ComponentType } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
+import { FORCED_COLORS } from '../../styling/media';
 import type { SxProps } from '../../styling/sx';
 import { SurfaceRoot } from '../surface/surface-root';
 
@@ -16,16 +17,21 @@ export interface GamePanelCustomization {
   component?: ComponentType<GamePanelProps>;
   slots?: { root?: ComponentType<GamePanelProps> };
 }
+// A raised plaque: opaque fill, a subtle hairline and an inset top lip instead of a heavy border.
+const plaque = { border: `1px solid ${vars.color.borderSubtle}`, boxShadow: `inset 0 1px 0 ${vars.color.surfaceHighlight}, ${vars.shadow.raised}`,
+  [FORCED_COLORS]: { boxShadow: 'none', borderColor: 'CanvasText' } };
+const transparentMaterial = css({ background: 'transparent', border: 0, borderRadius: 0, boxShadow: 'none' });
+// The chip root reserves its box without painting it: the plaque is a `::before` the owner's
+// structure places as a grid item, so it hugs the content instead of filling the footprint.
 const materials = {
-  chip: css({ backgroundColor: vars.color.surfaceRaised, border: `1px solid ${vars.color.borderStrong}`, borderRadius: vars.radius.full, boxShadow: vars.shadow.raised }),
-  panel: css({ backgroundColor: vars.color.surface, border: `1px solid ${vars.color.borderStrong}`, borderRadius: vars.radius.lg, boxShadow: 'none' }),
+  chip: css([transparentMaterial, { '&::before': { ...plaque, content: '""', boxSizing: 'border-box', backgroundColor: vars.color.surfaceRaised, borderRadius: vars.radius.md } }]),
+  panel: css({ ...plaque, backgroundColor: vars.color.surface, borderRadius: vars.radius.lg }),
 };
 const spacing = {
-  chip: css({ paddingBlock: vars.space[2], paddingInline: vars.space[3] }),
+  chip: css({ paddingBlock: 0, paddingInline: vars.space[2] }),
   panel: css({ padding: vars.space[4] }),
 };
 const structureStyle = css({ minInlineSize: 0, maxInlineSize: '100%', boxSizing: 'border-box' });
-const transparentMaterial = css({ background: 'transparent', border: 0, borderRadius: 0, boxShadow: 'none' });
 
 function relationships(...values: (string | undefined)[]) {
   return [...new Set(values.flatMap((value) => value?.split(/\s+/).filter(Boolean) ?? []))].join(' ') || undefined;

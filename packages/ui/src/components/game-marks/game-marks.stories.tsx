@@ -1,4 +1,4 @@
-import type { ComponentPropsWithRef } from 'react';
+import { createElement, type ComponentPropsWithRef } from 'react';
 import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn } from 'storybook/test';
@@ -13,7 +13,7 @@ const meta = {
     usage: `### Limits
 Count is a nonnegative safe integer; max and maxPerRow are positive safe integers. Invalid values throw RangeError. The track always renders max slots and shows +N for marks beyond the goal. Keep max small enough to render one element per slot.
 
-The track uses a bordered panel. Set surface="transparent" when composing inside an existing surface.
+The track uses a raised panel. Set surface="transparent" when composing inside an existing surface.
 
 ### Keyboard and accessibility
 
@@ -113,13 +113,18 @@ export const Limits: Story = {
     }
   },
 };
-function ReplacementMark(props: ComponentPropsWithRef<'span'>) { return <span {...props} data-replacement="mark" />; }
+function ReplacementMark(props: ComponentPropsWithRef<'span'>) {
+  return createElement('span', { ...props, 'data-replacement': 'mark', 'data-received-css': String(Object.hasOwn(props, 'css')) });
+}
 export const MarkReplacement: Story = {
   tags: ['!autodocs'], args: { mark: 0, slots: { mark: ReplacementMark }, slotProps: { mark: { ref: fn(), 'data-ui': 'custom-mark' } } },
   play: async ({ canvasElement, args }) => {
     const marks = canvasElement.querySelectorAll('[data-replacement="mark"]');
     await expect(marks).toHaveLength(5);
     await expect(marks[0]).toHaveTextContent('0');
+    await expect(marks[0]).toHaveAttribute('data-received-css', 'false');
+    await expect(marks[0]!.className).not.toBe('');
+    await expect(getComputedStyle(marks[0]!).display).toBe('grid');
     await expect(marks[0]).toHaveAttribute('data-ui', 'game-marks-mark custom-mark');
     await expect(args.slotProps?.mark?.ref).toHaveBeenCalledWith(marks[0]);
     await expect(marks[4]).toHaveTextContent('');
