@@ -1253,7 +1253,7 @@ export const SlotStylingAndRefs: Story = {
   args: {
     ref: fn(),
     sx: { borderRadius: 0 },
-    slotProps: { separator: { ref: fn(), className: 'mail-separator', css: separatorStyle } },
+    slotProps: { separator: { ref: fn(), className: 'mail-separator', sx: separatorStyle } },
   },
   render: (args) => (
     <ResizablePanels {...args}>

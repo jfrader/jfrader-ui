@@ -140,9 +140,9 @@ function FruitField(props: ComponentPropsWithRef<'div'>) {
     { value: 'cherry', label: 'Cherry' },
   ]}
   slotProps={{
-    label: { css: { fontStyle: 'italic' } },
+    label: { sx: { fontStyle: 'italic' } },
     description: { className: 'fruit-description' },
-    input: { slotProps: { label: { css: { fontStyle: 'normal' } }, control: { className: 'fruit-input' } } },
+    input: { slotProps: { label: { sx: { fontStyle: 'normal' } }, control: { className: 'fruit-input' } } },
     item: { className: 'fruit-option' },
   }}
 />` } } },
@@ -150,9 +150,9 @@ function FruitField(props: ComponentPropsWithRef<'div'>) {
     label: 'Fruit', description: 'Type to search', options: FRUITS,
     component: CustomComboboxRoot,
     slotProps: {
-      label: { css: { fontStyle: 'italic' } },
+      label: { sx: { fontStyle: 'italic' } },
       description: { className: 'fruit-description' },
-      input: { slotProps: { label: { css: { fontStyle: 'normal' } }, control: { className: 'fruit-input' } } },
+      input: { slotProps: { label: { sx: { fontStyle: 'normal' } }, control: { className: 'fruit-input' } } },
       item: { className: 'fruit-option' },
     },
   },

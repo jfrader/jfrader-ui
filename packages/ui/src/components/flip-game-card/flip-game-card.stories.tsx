@@ -644,7 +644,7 @@ export const RootCustomization: Story = {
   args: { ref: fn(), component: ReplacementRoot, 'data-ui': 'consumer flip-game-card consumer',
     title: 'Host title', className: 'host-class', style: { marginInlineStart: 1, marginBlockStart: 2 },
     slotProps: { root: { 'data-ui': 'slot consumer', title: 'Slot title', className: 'slot-class',
-      style: { marginInlineStart: 3 }, css: css({ opacity: 0.8 }) } },
+      style: { marginInlineStart: 3 }, sx: css({ opacity: 0.8 }) } },
     sx: { opacity: 0.6 } },
   render: (args) => <ClassNames>{({ css: register }) => <FlipGameCard {...args} className={`${args.className} ${register(strayRootStyle)}`} />}</ClassNames>,
   play: async ({ args, canvasElement }) => {

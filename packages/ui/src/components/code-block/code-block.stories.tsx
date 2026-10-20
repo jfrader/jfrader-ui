@@ -547,7 +547,7 @@ export const ConsumerStylePrecedence: Story = {
   args: {
     slots: { pre: SlotPre },
     sx: consumerSx,
-    slotProps: { label: { css: slotStyle, className: 'consumer-label' }, pre: { css: slotStyle } },
+    slotProps: { label: { sx: slotStyle, className: 'consumer-label' }, pre: { sx: slotStyle } },
   },
   render: (args) => <ClassNames>{({ css: register }) => <CodeBlock {...args} className={register(consumerCss)} />}</ClassNames>,
   play: async ({ canvasElement }) => {

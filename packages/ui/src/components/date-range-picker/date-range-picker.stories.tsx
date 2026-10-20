@@ -1883,7 +1883,7 @@ export const RefsAndStyling: Story = {
         ref={contentRef}
         slots={{ presets: CustomRangePart, calendars: CustomRangePart, summary: CustomRangeSummary, actions: CustomRangePart }}
         sx={{ letterSpacing: '1px' }}
-        slotProps={{ summary: { className: 'summary-slot', css: { textTransform: 'uppercase' } } }}
+        slotProps={{ summary: { className: 'summary-slot', sx: { textTransform: 'uppercase' } } }}
       />
     </DateRangePicker>
   ),

@@ -227,7 +227,7 @@ function ReplacementTitle(props: ComponentPropsWithRef<'a'>) {
 // This story tests sx and the documented slot css API.
 export const Customization: Story = {
   render: (args) => <LinkPreview {...args} slots={{ title: ReplacementTitle }} />,
-  args: { ref: fn(), sx: { borderStyle: 'dashed' }, slotProps: { title: { css: { textDecoration: 'underline' }, target: '_blank', rel: 'noreferrer' }, body: { css: { padding: vars.space[4] } }, image: { onLoad: fn() } } },
+  args: { ref: fn(), sx: { borderStyle: 'dashed' }, slotProps: { title: { sx: { textDecoration: 'underline' }, target: '_blank', rel: 'noreferrer' }, body: { sx: { padding: vars.space[4] } }, image: { onLoad: fn() } } },
   play: async ({ canvas, canvasElement, args }) => {
     const root = canvasElement.querySelector('[data-ui="link-preview"]')!;
     await expect(args.ref).toHaveBeenCalledWith(root);

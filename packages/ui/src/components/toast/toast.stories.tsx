@@ -211,12 +211,11 @@ export const GeneratedPartCustomization: Story = {
     className: 'consumer-viewport',
     title: 'Consumer title',
     style: { paddingInlineEnd: '8px' },
-    css: { marginBlockEnd: vars.space[3] },
-    sx: { marginBlockEnd: vars.space[4] },
+    sx: [{ marginBlockEnd: vars.space[3] }, { marginBlockEnd: vars.space[4] }],
     slotProps: {
       root: { className: 'custom-viewport', title: 'Slot title', style: { paddingInlineEnd: '24px' },
-        css: { marginBlockEnd: vars.space[2] } },
-      item: { className: 'custom-notification', css: { borderRadius: vars.radius.sm } },
+        sx: { marginBlockEnd: vars.space[2] } },
+      item: { className: 'custom-notification', sx: { borderRadius: vars.radius.sm } },
     },
   }}><Triggers options={{ duration: null }} /></Toast>,
   play: async ({ canvasElement }) => {

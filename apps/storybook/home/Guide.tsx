@@ -19,7 +19,7 @@ function GuideLink({ href, ...props }: ComponentPropsWithoutRef<'a'>) {
 
 const shellLanguages = new Set(['sh', 'shell', 'bash', 'shellscript']);
 const terminalScreenStyle = css({ blockSize: 'auto' });
-const terminalSlots = { screen: { css: terminalScreenStyle } };
+const terminalSlots = { screen: { sx: terminalScreenStyle } };
 const completedPosition = Number.MAX_SAFE_INTEGER;
 
 function GuideTerminal({ code }: { code: string }) {

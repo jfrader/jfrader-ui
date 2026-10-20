@@ -178,12 +178,12 @@ function LabelsField(props: ComponentPropsWithRef<'div'>) {
     { value: 'feature', label: 'Feature' },
     { value: 'docs', label: 'Documentation' },
   ]}
-  slotProps={{ label: { css: { fontStyle: 'italic' } }, item: { className: 'label-option' } }}
+  slotProps={{ label: { sx: { fontStyle: 'italic' } }, item: { className: 'label-option' } }}
 />` } } },
   args: {
     label: 'Labels', options: OPTIONS,
     component: MultiSelectRootAdapter,
-    slotProps: { label: { css: { fontStyle: 'italic' } }, item: { className: 'label-option' } },
+    slotProps: { label: { sx: { fontStyle: 'italic' } }, item: { className: 'label-option' } },
   },
   render: (args) => <MultiSelect {...args} />,
   play: async ({ canvasElement, userEvent }) => {

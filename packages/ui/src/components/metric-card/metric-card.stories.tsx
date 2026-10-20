@@ -390,12 +390,12 @@ export const ConsumerStylePrecedence: Story = {
       delta={12}
       sx={finalStyle}
       slotProps={{
-        surface: { css: consumerStyle },
-        header: { css: slotStyle },
-        label: { css: slotStyle },
-        value: { css: slotValueStyle },
-        delta: { css: slotStyle },
-        description: { css: slotStyle },
+        surface: { sx: consumerStyle },
+        header: { sx: slotStyle },
+        label: { sx: slotStyle },
+        value: { sx: slotValueStyle },
+        delta: { sx: slotStyle },
+        description: { sx: slotStyle },
       }}
     />
   ),

@@ -257,7 +257,7 @@ export const SlotCustomization: Story = {
         className: 'slot-root',
         title: 'slot title',
         style: fieldRootStyles.slot,
-        css: { borderRadius: '8px' },
+        sx: { borderRadius: '8px' },
       },
       label: { ref: fn(), title: 'generated part' },
     },

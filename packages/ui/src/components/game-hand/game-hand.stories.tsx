@@ -638,12 +638,12 @@ const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.s
 export const HiddenCardSlots: Story = {
   name: 'Hidden card slots',
   render: () => <GameHand.Hidden count={3} label="Opponent hand"
-    slotProps={{ card: { className: 'custom-hidden-card', css: { borderRadius: vars.radius.lg } } }} />,
+    slotProps={{ card: { className: 'custom-hidden-card', sx: { borderRadius: vars.radius.lg } } }} />,
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 import { vars } from '@jfrader/tokens/vars';
 
 <GameHand.Hidden count={3} label="Opponent hand"
-  slotProps={{ card: { className: 'custom-hidden-card', css: { borderRadius: vars.radius.lg } } }} />` } } },
+  slotProps={{ card: { className: 'custom-hidden-card', sx: { borderRadius: vars.radius.lg } } }} />` } } },
   play: async ({ canvasElement }) => {
     const cards = canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-hand-hidden-card"]');
     await expect(cards).toHaveLength(3);

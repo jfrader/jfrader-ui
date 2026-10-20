@@ -139,7 +139,7 @@ export const SlotProps: EasyStory = {
     component: UnusedMenuRoot,
     slots: { root: MenuRootAdapter },
     items: [{ type: 'item', label: 'Edit' }, { type: 'separator' }, { type: 'item', label: 'Delete' }],
-    slotProps: { root: { 'data-ui': 'menu custom' }, trigger: { css: { fontStyle: 'italic' } }, item: { className: 'custom-action' } },
+    slotProps: { root: { 'data-ui': 'menu custom' }, trigger: { sx: { fontStyle: 'italic' } }, item: { className: 'custom-action' } },
   },
   render: (args) => <Menu {...args} />,
   play: async ({ canvasElement, userEvent }) => {

@@ -2029,10 +2029,10 @@ export const SlotStyling: Story = {
   args: {
     slots: { list: SlotList },
     slotProps: {
-      body: { css: slotBodyStyle },
-      header: { css: slotHeaderStyle },
-      title: { css: slotTitleStyle },
-      reaction: { css: slotReactionStyle },
+      body: { sx: slotBodyStyle },
+      header: { sx: slotHeaderStyle },
+      title: { sx: slotTitleStyle },
+      reaction: { sx: slotReactionStyle },
     },
   },
   render: (args) => (

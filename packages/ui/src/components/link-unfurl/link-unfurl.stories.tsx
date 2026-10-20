@@ -795,8 +795,8 @@ export const SlotStyling: Story = {
   args: {
     sx: { rowGap: vars.space[8] },
     slotProps: {
-      chip: { css: { borderStyle: 'dashed' } },
-      title: { css: { textDecoration: 'underline' } },
+      chip: { sx: { borderStyle: 'dashed' } },
+      title: { sx: { textDecoration: 'underline' } },
     },
   },
   play: async ({ canvasElement, canvas, userEvent }) => {

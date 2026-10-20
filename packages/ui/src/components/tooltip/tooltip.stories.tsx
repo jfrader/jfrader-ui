@@ -179,7 +179,7 @@ export const CustomParts: StoryObj<TooltipEasyProps> = {
     triggerLabel: TRIGGER,
     content: TIP,
     slots: { trigger: TooltipButtonRoot, content: TooltipHelpRoot },
-    slotProps: { trigger: { className: 'copy-trigger', ref: fn() }, content: { className: 'copy-help', ref: fn(), css: { padding: vars.space[4] }, sx: { padding: vars.space[3] } } },
+    slotProps: { trigger: { className: 'copy-trigger', ref: fn() }, content: { className: 'copy-help', ref: fn(), sx: [{ padding: vars.space[4] }, { padding: vars.space[3] }] } },
   },
   render: (args) => <Tooltip {...args} />,
   parameters: { docs: { source: { code: `<Tooltip triggerLabel="Copy" content="Copy to clipboard"

@@ -1641,10 +1641,10 @@ export const FalsyContent: Story = {
 export const SlotStyling: Story = {
   args: {
     slotProps: {
-      stage: { css: overrideStyle },
-      content: { css: overrideStyle },
-      controls: { css: overrideStyle },
-      rightButton: { css: overrideStyle },
+      stage: { sx: overrideStyle },
+      content: { sx: overrideStyle },
+      controls: { sx: overrideStyle },
+      rightButton: { sx: overrideStyle },
     },
     sx: { gap: vars.space[6] },
   },

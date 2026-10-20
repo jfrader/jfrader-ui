@@ -159,7 +159,7 @@ export const EasyCustomization: EasyStory = {
   ...Easy,
   parameters: { docs: { source: { code: `<RadioGroup label="Plan" options={plans} defaultValue="free"
   sx={{ borderRadius: 0 }}
-  slotProps={{ label: { title: 'Plan label' }, radio: { slotProps: { control: { css: { borderRadius: theme.radius.sm } } } } }}
+  slotProps={{ label: { title: 'Plan label' }, radio: { slotProps: { control: { sx: { borderRadius: theme.radius.sm } } } } }}
 />` } } },
   args: {
     ...Easy.args,
@@ -171,11 +171,11 @@ export const EasyCustomization: EasyStory = {
       root: {
         className: 'slot-root',
         style: { padding: 8 },
-        css: { borderRadius: vars.radius.md },
+        sx: { borderRadius: vars.radius.md },
         'data-custom-root': 'slot-root',
       },
       label: { title: 'Plan label' },
-      radio: { slotProps: { control: { css: { borderRadius: vars.radius.sm } } } },
+      radio: { slotProps: { control: { sx: { borderRadius: vars.radius.sm } } } },
     },
   },
   render: (args) => <StyledRadioGroup {...args} data-custom-root="consumer-root" component={EasyRoot} />,

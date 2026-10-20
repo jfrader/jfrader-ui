@@ -264,7 +264,7 @@ export const LongContent: Story = {
       title: `${image.title} — A walking journal from the coast to the highland trails`,
       caption: Array(16).fill('We followed the trail along the coast, stopping at each headland to watch the changing light.').join(' '),
     })),
-    slotProps: { viewer: { css: css({ maxInlineSize: '24rem', blockSize: 'min(100dvh, 40rem)' }) } },
+    slotProps: { viewer: { sx: css({ maxInlineSize: '24rem', blockSize: 'min(100dvh, 40rem)' }) } },
   },
   play: async ({ canvasElement }) => {
     const dialog = viewer(canvasElement);
@@ -283,7 +283,7 @@ export const FilmstripSelection: Story = {
   tags: ['!autodocs'],
   args: {
     defaultOpen: true,
-    slotProps: { viewer: { css: css({ maxInlineSize: '24rem' }) } },
+    slotProps: { viewer: { sx: css({ maxInlineSize: '24rem' }) } },
   },
   play: async ({ canvasElement, userEvent }) => {
     const dialog = viewer(canvasElement);
@@ -914,10 +914,10 @@ export const SlotStyles: Story = {
   args: {
     defaultOpen: true,
     slotProps: {
-      viewer: { css: css({ borderStyle: 'dashed' }) },
-      controls: { css: css({ gap: vars.space[6] }) },
-      title: { css: css({ fontStyle: 'italic' }) },
-      caption: { css: css({ fontWeight: vars.fontWeight.semibold }) },
+      viewer: { sx: css({ borderStyle: 'dashed' }) },
+      controls: { sx: css({ gap: vars.space[6] }) },
+      title: { sx: css({ fontStyle: 'italic' }) },
+      caption: { sx: css({ fontWeight: vars.fontWeight.semibold }) },
     },
   },
   play: async ({ canvas, canvasElement }) => {

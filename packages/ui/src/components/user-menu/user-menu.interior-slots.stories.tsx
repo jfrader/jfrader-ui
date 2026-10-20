@@ -45,7 +45,7 @@ function AccountFixture() {
       title="Host"
       style={{ textTransform: 'none', letterSpacing: '1px' }}
       slotProps={{
-        root: { ref: rootRefTracker.ref, css: rootSlotStyle, className: 'account-slot', title: 'Slot', style: { letterSpacing: '2px' }, 'data-ui': 'account slot' },
+        root: { ref: rootRefTracker.ref, sx: rootSlotStyle, className: 'account-slot', title: 'Slot', style: { letterSpacing: '2px' }, 'data-ui': 'account slot' },
         content: { slots: { menu: AccountList }, title: String(revision) },
       }}
     />}</ClassNames>}

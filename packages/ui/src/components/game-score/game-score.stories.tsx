@@ -147,9 +147,9 @@ function ContractFixture() {
     className: 'consumer-root', style: { margin: vars.space[1], opacity: 1 },
     'data-ui': 'consumer', 'data-lane': 'consumer',
     'aria-labelledby': externalId, 'aria-describedby': externalId,
-    css: { padding: vars.space[4] }, sx: { padding: vars.space[6] },
+    sx: [{ padding: vars.space[4] }, { padding: vars.space[6] }],
   };
-  const rootSlot = { className: 'slot-root', style: { margin: vars.space[2] }, 'data-lane': 'slot', css: { padding: vars.space[2] } };
+  const rootSlot = { className: 'slot-root', style: { margin: vars.space[2] }, 'data-lane': 'slot', sx: { padding: vars.space[2] } };
   return <ContractScope>
     <span id={externalId}>Match</span>
     <GameScore {...customization} ref={scoreRef} label="Score contract" rows={updated ? [{ key: 'south', label: 0, value: 42 }] : rows} locale="en-US"

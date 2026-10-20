@@ -1220,7 +1220,7 @@ export const HiddenCanvas: Story = {
   args: {
     defaultValue: seeded,
     apiRef: hiddenApi,
-    slotProps: { canvas: { css: css({ display: 'none' }) } },
+    slotProps: { canvas: { sx: css({ display: 'none' }) } },
   },
   play: async ({ canvasElement, args }) => {
     let data = '';
@@ -1290,8 +1290,8 @@ function CanvasRefExample() {
       hint="Sign here"
       messages={messages}
       slotProps={{
-        canvas: { css: { borderRadius: vars.radius.sm } },
-        toolbar: { css: { gap: vars.space[8] } },
+        canvas: { sx: { borderRadius: vars.radius.sm } },
+        toolbar: { sx: { gap: vars.space[8] } },
       }}
     />
   );
@@ -1302,8 +1302,8 @@ function CanvasRefExample() {
   args: {
     ref: refSpy,
     slotProps: {
-      canvas: { css: css({ borderRadius: vars.radius.sm }) },
-      toolbar: { css: css({ gap: vars.space[8] }) },
+      canvas: { sx: css({ borderRadius: vars.radius.sm }) },
+      toolbar: { sx: css({ gap: vars.space[8] }) },
     },
   },
   play: async ({ canvasElement }) => {

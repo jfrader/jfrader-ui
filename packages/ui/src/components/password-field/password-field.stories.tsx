@@ -657,13 +657,13 @@ export const SlotsAndStyling: Story = {
     className: 'custom-root',
     sx: { maxInlineSize: '260px' },
     slotProps: {
-      root: { css: { rowGap: '10px' } },
-      label: { className: 'custom-label', css: { textTransform: 'uppercase' } },
-      shell: { css: { paddingBlock: '3px' } },
-      control: { css: { letterSpacing: '2px' } },
-      reveal: { className: 'custom-reveal', css: { borderRadius: '3px' } },
-      description: { css: { fontStyle: 'italic' } },
-      error: { css: { textDecorationLine: 'underline' } },
+      root: { sx: { rowGap: '10px' } },
+      label: { className: 'custom-label', sx: { textTransform: 'uppercase' } },
+      shell: { sx: { paddingBlock: '3px' } },
+      control: { sx: { letterSpacing: '2px' } },
+      reveal: { className: 'custom-reveal', sx: { borderRadius: '3px' } },
+      description: { sx: { fontStyle: 'italic' } },
+      error: { sx: { textDecorationLine: 'underline' } },
     },
   },
   play: async ({ canvas, canvasElement }) => {
@@ -734,7 +734,7 @@ export const SlotCustomization: Story = {
         className: 'slot-root',
         title: 'slot title',
         style: fieldRootStyles.slot,
-        css: { borderRadius: '8px' },
+        sx: { borderRadius: '8px' },
       },
       label: { ref: fn(), title: 'generated part' },
     },
@@ -743,7 +743,7 @@ export const SlotCustomization: Story = {
   parameters: {
     docs: {
       source: {
-        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<PasswordField label=\"Name\"\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { css: { borderRadius: '8px' } }, label: { title: 'Name' } }}\n  sx={{ borderRadius: '11px' }}\n/>",
+        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<PasswordField label=\"Name\"\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { sx: { borderRadius: '8px' } }, label: { title: 'Name' } }}\n  sx={{ borderRadius: '11px' }}\n/>",
       },
     },
   },

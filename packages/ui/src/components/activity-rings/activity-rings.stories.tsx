@@ -1733,9 +1733,9 @@ const ActivityHint = styled.p({ margin: 0, color: theme.color.text });
   <ActivityHint id="activity-hint">Isolates one ring</ActivityHint>
   <WeeklyActivity metrics={metrics} days={days} locale="en-GB" interactiveLegend
     slotProps={{
-      metric: { css: { paddingBlock: theme.space[3] }, 'aria-describedby': 'activity-hint' },
-      summary: { css: { fontWeight: theme.fontWeight.regular } },
-      dayLabel: { css: { minInlineSize: theme.space[12] } },
+      metric: { sx: { paddingBlock: theme.space[3] }, 'aria-describedby': 'activity-hint' },
+      summary: { sx: { fontWeight: theme.fontWeight.regular } },
+      dayLabel: { sx: { minInlineSize: theme.space[12] } },
     }} />
 </>` } } },
   args: {
@@ -1744,9 +1744,9 @@ const ActivityHint = styled.p({ margin: 0, color: theme.color.text });
     values: undefined,
     sx: { padding: vars.space[4] },
     slotProps: {
-      metric: { css: { paddingBlock: vars.space[3] }, 'aria-describedby': 'rings-slot-hint' },
-      summary: { css: { fontWeight: vars.fontWeight.regular } },
-      dayLabel: { css: { minInlineSize: vars.space[12] } },
+      metric: { sx: { paddingBlock: vars.space[3] }, 'aria-describedby': 'rings-slot-hint' },
+      summary: { sx: { fontWeight: vars.fontWeight.regular } },
+      dayLabel: { sx: { minInlineSize: vars.space[12] } },
     },
   },
   render: (args) => (

@@ -875,12 +875,12 @@ export const SlotsAndStyling: Story = {
           value="monthly"
           sx={{ paddingInline: vars.space[4] }}
           slotProps={{
-            label: { css: { fontStyle: 'italic' } },
-            badge: { css: { borderRadius: vars.radius.sm } },
+            label: { sx: { fontStyle: 'italic' } },
+            badge: { sx: { borderRadius: vars.radius.sm } },
             selection: {
               className: 'billing-selection',
               title: 'Selected period',
-              css: { borderRadius: vars.radius.full },
+              sx: { borderRadius: vars.radius.full },
             },
           }}
           badge={0}
@@ -896,9 +896,9 @@ export const SlotsAndStyling: Story = {
         period="/ month"
         sx={{ gap: vars.space[4] }}
         slotProps={{
-          amount: { css: { fontSize: vars.textSize.xl } },
-          previous: { css: { fontStyle: 'italic' } },
-          period: { css: { fontWeight: vars.fontWeight.semibold } },
+          amount: { sx: { fontSize: vars.textSize.xl } },
+          previous: { sx: { fontStyle: 'italic' } },
+          period: { sx: { fontWeight: vars.fontWeight.semibold } },
         }}
       />
     </ToggleSubscription>

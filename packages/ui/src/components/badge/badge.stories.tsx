@@ -339,8 +339,8 @@ export const SlotProps: Story = {
   args: {
     className: 'consumer-root',
     slotProps: {
-      root: { className: 'slot-root', css: slotRootStyle },
-      badge: { className: 'slot-badge', css: slotBadgeStyle },
+      root: { className: 'slot-root', sx: slotRootStyle },
+      badge: { className: 'slot-badge', sx: slotBadgeStyle },
     },
   },
   play: async ({ canvasElement }) => {

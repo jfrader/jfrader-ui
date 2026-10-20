@@ -194,15 +194,16 @@ export const ScopedTokens: Story = {
 
 // This story tests the documented css/slot API and native style merging.
 export const StylingPrecedence: Story = {
-  parameters: { docs: { source: { code: '<Surface slotProps={{ root: { css: slotStyle } }} sx={finalStyle}>Panel contents</Surface>' } } },
+  parameters: { docs: { source: { code: "<Surface slotProps={{ root: { sx: slotStyle } }} sx={finalStyle}>Panel contents</Surface>" } } },
   render: (args) => <>{[undefined, Paper, Card].map((component, index) => <div key={index}>
-    <Surface {...args} component={component} data-testid={`slot-${index}`} slotProps={{ root: { css: slotStyle } }} />
-    <Surface {...args} component={component} data-testid={`consumer-${index}`} slotProps={{ root: { css: slotStyle } }} sx={consumerStyle} />
-    {createElement(Surface, { ...args, component, 'data-testid': `explicit-${index}`, slotProps: { root: { css: slotStyle } }, sx: consumerStyle })}
-    <Surface {...args} component={component} data-testid={`sx-${index}`} slotProps={{ root: { css: slotStyle } }} sx={[consumerStyle, finalStyle]} />
+    <Surface {...args} component={component} data-testid={`slot-${index}`} slotProps={{ root: { sx: slotStyle } }} />
+    <Surface {...args} component={component} data-testid={`consumer-${index}`} slotProps={{ root: { sx: slotStyle } }} sx={consumerStyle} />
+    {createElement(Surface, { ...args, component, 'data-testid': `explicit-${index}`, slotProps: { root: { sx: slotStyle } }, sx: consumerStyle })}
+    <Surface {...args} component={component} data-testid={`sx-${index}`} slotProps={{ root: { sx: slotStyle } }} sx={[consumerStyle, finalStyle]} />
   </div>)}</>,
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
     for (const index of [0, 1, 2]) {
+      await expect(canvasElement.querySelector('[sx]')).toBeNull();
       await expect(getComputedStyle(canvas.getByTestId(`slot-${index}`)).fontStyle).toBe('italic');
       await expect(getComputedStyle(canvas.getByTestId(`consumer-${index}`)).fontStyle).toBe('normal');
       await expect(getComputedStyle(canvas.getByTestId(`explicit-${index}`)).fontStyle).toBe('normal');
@@ -218,9 +219,9 @@ export const StylingPrecedence: Story = {
 export const RegisteredClassPrecedence: Story = {
   render: (args) => <ClassNames>{({ css: register }) => <>{[undefined, Paper].map((component, index) => <div key={index}>
     <Surface {...args} component={component} data-testid={`class-slot-${index}`}
-      slotProps={{ root: { css: consumerStyle, className: register(slotStyle) } }} />
+      slotProps={{ root: { sx: consumerStyle, className: register(slotStyle) } }} />
     {createElement(Surface, { ...args, component, 'data-testid': `class-consumer-${index}`,
-      slotProps: { root: { css: consumerStyle, className: register(slotStyle) } }, sx: consumerStyle })}
+      slotProps: { root: { sx: consumerStyle, className: register(slotStyle) } }, sx: consumerStyle })}
     <Surface {...args} component={component} data-testid={`class-sx-${index}`}
       slotProps={{ root: { className: register(slotStyle) } }} className={register(consumerStyle)} sx={finalStyle} />
   </div>)}</>}</ClassNames>,
@@ -292,7 +293,7 @@ function StableFixture(props: SurfaceProps) {
   const [changed, setChanged] = useState(false);
   return <ThemeRoot theme={changed ? 'light' : 'dark'}>
     <Surface {...props} appearance={changed ? 'contrast' : 'default'}
-      sx={changed ? [consumerStyle, padding] : undefined} slotProps={changed ? { root: { css: slotStyle } } : undefined}>
+      sx={changed ? [consumerStyle, padding] : undefined} slotProps={changed ? { root: { sx: slotStyle } } : undefined}>
       <TextField label="Draft" defaultValue="Keep me" />
     </Surface>
     <Button onMouseDown={(event) => event.preventDefault()} onClick={() => setChanged(!changed)}>Update styles</Button>

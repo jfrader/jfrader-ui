@@ -595,9 +595,9 @@ export const RefAndSlots: Story = {
     ref: fn(),
     defaultOpen: true,
     slotProps: {
-      control: { css: { borderStyle: 'dashed' } },
-      content: { css: { borderStyle: 'dotted' } },
-      option: { css: { fontStyle: 'italic' } },
+      control: { sx: { borderStyle: 'dashed' } },
+      content: { sx: { borderStyle: 'dotted' } },
+      option: { sx: { fontStyle: 'italic' } },
     },
     sx: { gap: vars.space[3] },
   },

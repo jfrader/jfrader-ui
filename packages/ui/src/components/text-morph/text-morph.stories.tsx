@@ -555,7 +555,7 @@ export const ReplacementSlots: Story = {
             glyph: ReplacementGlyph,
           }}
           slotProps={{
-            root: { title: 'Root slot', css: { fontWeight: vars.fontWeight.medium } },
+            root: { title: 'Root slot', sx: { fontWeight: vars.fontWeight.medium } },
             glyph: { title: 'Glyph slot' },
           }}
           sx={{ fontWeight: vars.fontWeight.semibold }}

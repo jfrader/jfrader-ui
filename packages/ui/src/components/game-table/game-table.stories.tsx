@@ -109,7 +109,7 @@ function CompoundPartsFixture() {
           title="host-seat" onClick={partEvents.root} className="host-seat" style={{ fontWeight: 400 }}
           sx={{ fontStyle: 'normal' }} slotProps={{ root: {
             title: 'slot-seat', onClick: partEvents.slot, className: 'slot-seat', style: { fontWeight: 700 },
-            css: { fontStyle: 'italic' }, ref: (node) => {
+            sx: { fontStyle: 'italic' }, ref: (node) => {
               if (node) { partEvents.attaches += 1; return () => { partEvents.cleanups += 1; }; }
             },
           } }}>

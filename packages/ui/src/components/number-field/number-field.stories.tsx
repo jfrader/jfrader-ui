@@ -601,7 +601,7 @@ export const OffGridDown: Story = {
 
 const StyledField = styled(NumberField)({ inlineSize: `calc(${vars.space[8]} * 7)` });
 export const CustomizationOrder: Story = {
-  args: { slotProps: { root: { css: { inlineSize: `calc(${vars.space[10]} * 4)` } } }, sx: { inlineSize: `calc(${vars.space[12]} * 5)` } },
+  args: { slotProps: { root: { sx: { inlineSize: `calc(${vars.space[10]} * 4)` } } }, sx: { inlineSize: `calc(${vars.space[12]} * 5)` } },
   render: (args) => <StyledField {...args} />,
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-ui="number-field"]')!.getBoundingClientRect().width).toBe(240);
