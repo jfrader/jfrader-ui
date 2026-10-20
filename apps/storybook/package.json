@@ -11,6 +11,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && pnpm verify:docs:examples",
     "verify:docs": "node ../../scripts/customization-inventory.mjs --check && node --test scripts/verify-docs.test.mjs scripts/verify-docs-usage.test.mjs && node scripts/verify-docs.mjs && node scripts/verify-docs-usage.mjs",
     "verify:docs:layout": "node scripts/verify-docs-layout.mjs",
+    "audit:docs": "node scripts/audit-docs.mjs",
     "verify:docs:examples": "node scripts/verify-guide-examples.mjs",
     "verify:game-card": "node scripts/verify-game-card-edge.mjs"
   },
