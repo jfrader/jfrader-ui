@@ -137,6 +137,8 @@ export const ShellAndPanelSlots: EasyStory = {
     await userEvent.click(trigger);
     const shell = await canvas.findByRole('dialog', { name: TITLE });
     const panel = within(shell).getByTestId('replacement-panel');
+    await settleMotion(shell);
+    await expect(shell.scrollWidth).toBeLessThanOrEqual(shell.clientWidth);
     await expect(shell).toBe(canvas.getByTestId('replacement-shell'));
     await expect(shell).toHaveAttribute('data-ui', 'dialog');
     await expect(shell).toHaveClass('replacement-shell-class');
@@ -375,7 +377,7 @@ function rootAdapterStory(component: DialogPanelProps['component']): Story {
           ref: (node) => { if (node) node.dataset.rootRef = node.tagName; },
         } }}>
           <Dialog.Title>Adapter export</Dialog.Title>
-          <input aria-label="Export draft" defaultValue="Keep me" />
+          <TextField label="Export draft" defaultValue="Keep me" />
           <Dialog.Close>Close adapter</Dialog.Close>
         </Dialog.Panel>
       </Dialog.Content>
@@ -389,6 +391,7 @@ function rootAdapterStory(component: DialogPanelProps['component']): Story {
       await expect(shell.querySelectorAll('[data-ui~="dialog-panel"]')).toHaveLength(1);
       await expect(getComputedStyle(shell).outlineOffset).not.toBe(getComputedStyle(panel).outlineOffset);
       const input = canvas.getByRole('textbox', { name: 'Export draft' });
+      await expect(input.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
       await userEvent.type(input, ' edited');
       fireEvent(shell, new Event('cancel', { cancelable: true }));
       await waitFor(() => expect(shell).not.toHaveAttribute('open'));
@@ -1277,7 +1280,11 @@ const exportNotes = [
     await expect(within(dialog).getByRole('heading', { name: 'Before you export' })).toHaveFocus();
     await expect(dialog.scrollTop).toBe(0);
     await expect(dialog.scrollHeight).toBeGreaterThan(dialog.clientHeight);
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
+    dialog.scrollTop = dialog.scrollHeight;
+    const done = within(dialog).getByRole('button', { name: 'Done' });
+    await expect(dialog.scrollTop).toBeGreaterThan(0);
+    await expect(done.getBoundingClientRect().bottom).toBeLessThanOrEqual(dialog.getBoundingClientRect().bottom);
+    await userEvent.click(done);
     await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
   },
 };

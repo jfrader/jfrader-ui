@@ -230,6 +230,7 @@ const dialogStyle = css(modalShellReset, modalBackdropMotion, {
 });
 
 const panelStyle = css({
+  boxSizing: 'border-box',
   padding: vars.space[5],
   inlineSize: '100%',
 });
