@@ -584,6 +584,68 @@ export const Compound: Story = {
 };
 
 export const Keyboard: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Button, styled, UserMenu } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[3],
+});
+
+function ProfileIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="8" cy="5.5" r="2.5" />
+      <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+    </svg>
+  );
+}
+
+<Row>
+  <UserMenu user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}>
+    <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" />
+    <UserMenu.Content variant="menu" closeLabel="Close account menu">
+      <UserMenu.Identity />
+      <UserMenu.Item icon={<ProfileIcon />} onSelect={() => {}}>
+        Profile
+      </UserMenu.Item>
+      <UserMenu.Item keys={['Ctrl', ',']} onSelect={() => {}}>
+        Settings
+      </UserMenu.Item>
+      <UserMenu.Item disabled>Billing</UserMenu.Item>
+      <UserMenu.Separator />
+      <UserMenu.ThemeGroup
+        labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }}
+        onValueChange={(theme) => {}}
+      />
+      <UserMenu.StatusGroup
+        labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }}
+        onValueChange={(status) => {}}
+      />
+      <UserMenu.Separator />
+      <UserMenu.SignOut
+        pendingLabel="Signing out"
+        errorMessage="Sign out failed. Try again."
+        onSignOut={async () => {
+          const res = await fetch('/api/auth/sign-out', { method: 'POST' });
+          if (!res.ok) throw new Error('Sign out failed');
+        }}
+      >
+        Sign out
+      </UserMenu.SignOut>
+    </UserMenu.Content>
+  </UserMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await userEvent.tab();
@@ -653,6 +715,68 @@ export const Keyboard: Story = {
 };
 
 export const TabAndOutsidePress: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Button, styled, UserMenu } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[3],
+});
+
+function ProfileIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="8" cy="5.5" r="2.5" />
+      <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+    </svg>
+  );
+}
+
+<Row>
+  <UserMenu user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}>
+    <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" />
+    <UserMenu.Content variant="menu" closeLabel="Close account menu">
+      <UserMenu.Identity />
+      <UserMenu.Item icon={<ProfileIcon />} onSelect={() => {}}>
+        Profile
+      </UserMenu.Item>
+      <UserMenu.Item keys={['Ctrl', ',']} onSelect={() => {}}>
+        Settings
+      </UserMenu.Item>
+      <UserMenu.Item disabled>Billing</UserMenu.Item>
+      <UserMenu.Separator />
+      <UserMenu.ThemeGroup
+        labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }}
+        onValueChange={(theme) => {}}
+      />
+      <UserMenu.StatusGroup
+        labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }}
+        onValueChange={(status) => {}}
+      />
+      <UserMenu.Separator />
+      <UserMenu.SignOut
+        pendingLabel="Signing out"
+        errorMessage="Sign out failed. Try again."
+        onSignOut={async () => {
+          const res = await fetch('/api/auth/sign-out', { method: 'POST' });
+          if (!res.ok) throw new Error('Sign out failed');
+        }}
+      >
+        Sign out
+      </UserMenu.SignOut>
+    </UserMenu.Content>
+  </UserMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     const after = getAfter(canvasElement);
@@ -696,6 +820,71 @@ export const TabAndOutsidePress: Story = {
 };
 
 export const ShowName: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Button, styled, UserMenu } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[3],
+});
+
+function ProfileIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="8" cy="5.5" r="2.5" />
+      <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+    </svg>
+  );
+}
+
+<Row>
+  <UserMenu
+    compactBreakpoint={1}
+    user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}
+  >
+    <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" showName />
+    <UserMenu.Content variant="menu" closeLabel="Close account menu">
+      <UserMenu.Identity />
+      <UserMenu.Item icon={<ProfileIcon />} onSelect={() => {}}>
+        Profile
+      </UserMenu.Item>
+      <UserMenu.Item keys={['Ctrl', ',']} onSelect={() => {}}>
+        Settings
+      </UserMenu.Item>
+      <UserMenu.Item disabled>Billing</UserMenu.Item>
+      <UserMenu.Separator />
+      <UserMenu.ThemeGroup
+        labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }}
+        onValueChange={(theme) => {}}
+      />
+      <UserMenu.StatusGroup
+        labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }}
+        onValueChange={(status) => {}}
+      />
+      <UserMenu.Separator />
+      <UserMenu.SignOut
+        pendingLabel="Signing out"
+        errorMessage="Sign out failed. Try again."
+        onSignOut={async () => {
+          const res = await fetch('/api/auth/sign-out', { method: 'POST' });
+          if (!res.ok) throw new Error('Sign out failed');
+        }}
+      >
+        Sign out
+      </UserMenu.SignOut>
+    </UserMenu.Content>
+  </UserMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   args: { showName: true, compactBreakpoint: NEVER_COMPACT },
   play: async ({ canvasElement }) => {
     const trigger = getTrigger(canvasElement);
@@ -707,6 +896,71 @@ export const ShowName: Story = {
 };
 
 export const CompactHidesName: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Button, styled, UserMenu } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[3],
+});
+
+function ProfileIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="8" cy="5.5" r="2.5" />
+      <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+    </svg>
+  );
+}
+
+<Row>
+  <UserMenu
+    compactBreakpoint={100_000}
+    user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}
+  >
+    <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" showName />
+    <UserMenu.Content variant="adaptive" closeLabel="Close account menu">
+      <UserMenu.Identity />
+      <UserMenu.Item icon={<ProfileIcon />} onSelect={() => {}}>
+        Profile
+      </UserMenu.Item>
+      <UserMenu.Item keys={['Ctrl', ',']} onSelect={() => {}}>
+        Settings
+      </UserMenu.Item>
+      <UserMenu.Item disabled>Billing</UserMenu.Item>
+      <UserMenu.Separator />
+      <UserMenu.ThemeGroup
+        labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }}
+        onValueChange={(theme) => {}}
+      />
+      <UserMenu.StatusGroup
+        labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }}
+        onValueChange={(status) => {}}
+      />
+      <UserMenu.Separator />
+      <UserMenu.SignOut
+        pendingLabel="Signing out"
+        errorMessage="Sign out failed. Try again."
+        onSignOut={async () => {
+          const res = await fetch('/api/auth/sign-out', { method: 'POST' });
+          if (!res.ok) throw new Error('Sign out failed');
+        }}
+      >
+        Sign out
+      </UserMenu.SignOut>
+    </UserMenu.Content>
+  </UserMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   args: { showName: true, compactBreakpoint: ALWAYS_COMPACT, variant: 'adaptive' },
   play: async ({ canvasElement }) => {
     const trigger = getTrigger(canvasElement);
@@ -853,6 +1107,68 @@ export const AccountCommands: Story = {
 };
 
 export const ThemeGroup: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Button, styled, UserMenu } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[3],
+});
+
+function ProfileIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="8" cy="5.5" r="2.5" />
+      <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+    </svg>
+  );
+}
+
+<Row>
+  <UserMenu user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}>
+    <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" />
+    <UserMenu.Content variant="menu" closeLabel="Close account menu">
+      <UserMenu.Identity />
+      <UserMenu.Item icon={<ProfileIcon />} onSelect={() => {}}>
+        Profile
+      </UserMenu.Item>
+      <UserMenu.Item keys={['Ctrl', ',']} onSelect={() => {}}>
+        Settings
+      </UserMenu.Item>
+      <UserMenu.Item disabled>Billing</UserMenu.Item>
+      <UserMenu.Separator />
+      <UserMenu.ThemeGroup
+        labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }}
+        onValueChange={(theme) => {}}
+      />
+      <UserMenu.StatusGroup
+        labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }}
+        onValueChange={(status) => {}}
+      />
+      <UserMenu.Separator />
+      <UserMenu.SignOut
+        pendingLabel="Signing out"
+        errorMessage="Sign out failed. Try again."
+        onSignOut={async () => {
+          const res = await fetch('/api/auth/sign-out', { method: 'POST' });
+          if (!res.ok) throw new Error('Sign out failed');
+        }}
+      >
+        Sign out
+      </UserMenu.SignOut>
+    </UserMenu.Content>
+  </UserMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     await userEvent.tab();
     await userEvent.keyboard('{Enter}');
@@ -1032,6 +1348,72 @@ export const ControlledAccept: Story = {
 };
 
 export const RejectedOpen: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Button, styled, UserMenu } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[3],
+});
+
+function ProfileIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="8" cy="5.5" r="2.5" />
+      <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+    </svg>
+  );
+}
+
+<Row>
+  <UserMenu
+    open={false}
+    onOpenChange={() => {}}
+    user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}
+  >
+    <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" />
+    <UserMenu.Content variant="menu" closeLabel="Close account menu">
+      <UserMenu.Identity />
+      <UserMenu.Item icon={<ProfileIcon />} onSelect={() => {}}>
+        Profile
+      </UserMenu.Item>
+      <UserMenu.Item keys={['Ctrl', ',']} onSelect={() => {}}>
+        Settings
+      </UserMenu.Item>
+      <UserMenu.Item disabled>Billing</UserMenu.Item>
+      <UserMenu.Separator />
+      <UserMenu.ThemeGroup
+        labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }}
+        onValueChange={(theme) => {}}
+      />
+      <UserMenu.StatusGroup
+        labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }}
+        onValueChange={(status) => {}}
+      />
+      <UserMenu.Separator />
+      <UserMenu.SignOut
+        pendingLabel="Signing out"
+        errorMessage="Sign out failed. Try again."
+        onSignOut={async () => {
+          const res = await fetch('/api/auth/sign-out', { method: 'POST' });
+          if (!res.ok) throw new Error('Sign out failed');
+        }}
+      >
+        Sign out
+      </UserMenu.SignOut>
+    </UserMenu.Content>
+  </UserMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   args: { open: false },
   play: async ({ args, canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
@@ -1045,6 +1427,68 @@ export const RejectedOpen: Story = {
 };
 
 export const SignOutSuccess: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Button, styled, UserMenu } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[3],
+});
+
+function ProfileIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="8" cy="5.5" r="2.5" />
+      <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+    </svg>
+  );
+}
+
+<Row>
+  <UserMenu user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}>
+    <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" />
+    <UserMenu.Content variant="menu" closeLabel="Close account menu">
+      <UserMenu.Identity />
+      <UserMenu.Item icon={<ProfileIcon />} onSelect={() => {}}>
+        Profile
+      </UserMenu.Item>
+      <UserMenu.Item keys={['Ctrl', ',']} onSelect={() => {}}>
+        Settings
+      </UserMenu.Item>
+      <UserMenu.Item disabled>Billing</UserMenu.Item>
+      <UserMenu.Separator />
+      <UserMenu.ThemeGroup
+        labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }}
+        onValueChange={(theme) => {}}
+      />
+      <UserMenu.StatusGroup
+        labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }}
+        onValueChange={(status) => {}}
+      />
+      <UserMenu.Separator />
+      <UserMenu.SignOut
+        pendingLabel="Signing out"
+        errorMessage="Sign out failed. Try again."
+        onSignOut={async () => {
+          const res = await fetch('/api/auth/sign-out', { method: 'POST' });
+          if (!res.ok) throw new Error('Sign out failed');
+        }}
+      >
+        Sign out
+      </UserMenu.SignOut>
+    </UserMenu.Content>
+  </UserMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const pending = deferred();
     (args.onSignOut as Mock).mockImplementation(() => pending.promise);
@@ -1077,6 +1521,71 @@ export const SignOutSuccess: Story = {
 };
 
 export const SignOutErrorRetry: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Button, styled, UserMenu } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[3],
+});
+
+function ProfileIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="8" cy="5.5" r="2.5" />
+      <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+    </svg>
+  );
+}
+
+<Row>
+  <UserMenu user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}>
+    <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" />
+    <UserMenu.Content variant="menu" closeLabel="Close account menu">
+      <UserMenu.Identity />
+      <UserMenu.Item icon={<ProfileIcon />} onSelect={() => {}}>
+        Profile
+      </UserMenu.Item>
+      <UserMenu.Item keys={['Ctrl', ',']} onSelect={() => {}}>
+        Settings
+      </UserMenu.Item>
+      <UserMenu.Item disabled>Billing</UserMenu.Item>
+      <UserMenu.Separator />
+      <UserMenu.ThemeGroup
+        labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }}
+        onValueChange={(theme) => {}}
+      />
+      <UserMenu.StatusGroup
+        labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }}
+        onValueChange={(status) => {}}
+      />
+      <UserMenu.Separator />
+      <UserMenu.SignOut
+        pendingLabel="Signing out"
+        errorMessage="Sign out failed. Try again."
+        onSignOut={async () => {
+          const res = await fetch('/api/auth/sign-out', { method: 'POST' });
+          if (!res.ok) throw new Error('Sign out failed');
+        }}
+        onSignOutError={(error) => {
+          console.error('Sign out error:', error);
+        }}
+      >
+        Sign out
+      </UserMenu.SignOut>
+    </UserMenu.Content>
+  </UserMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const failed = deferred();
     const retried = deferred();
@@ -1113,6 +1622,76 @@ export const SignOutErrorRetry: Story = {
 };
 
 export const SignOutSyncOutcomes: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Button, styled, UserMenu } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[3],
+});
+
+function ProfileIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="8" cy="5.5" r="2.5" />
+      <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+    </svg>
+  );
+}
+
+let attempt = 0;
+
+<Row>
+  <UserMenu user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}>
+    <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" />
+    <UserMenu.Content variant="menu" closeLabel="Close account menu">
+      <UserMenu.Identity />
+      <UserMenu.Item icon={<ProfileIcon />} onSelect={() => {}}>
+        Profile
+      </UserMenu.Item>
+      <UserMenu.Item keys={['Ctrl', ',']} onSelect={() => {}}>
+        Settings
+      </UserMenu.Item>
+      <UserMenu.Item disabled>Billing</UserMenu.Item>
+      <UserMenu.Separator />
+      <UserMenu.ThemeGroup
+        labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }}
+        onValueChange={(theme) => {}}
+      />
+      <UserMenu.StatusGroup
+        labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }}
+        onValueChange={(status) => {}}
+      />
+      <UserMenu.Separator />
+      <UserMenu.SignOut
+        pendingLabel="Signing out"
+        errorMessage="Sign out failed. Try again."
+        onSignOut={() => {
+          if (attempt === 0) {
+            attempt += 1;
+            throw new Error('Sync sign out failed');
+          }
+          sessionStorage.clear();
+        }}
+        onSignOutError={(error) => {
+          console.error('Sign out error:', error);
+        }}
+      >
+        Sign out
+      </UserMenu.SignOut>
+    </UserMenu.Content>
+  </UserMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const failure = new Error('blocked');
     (args.onSignOut as Mock).mockImplementationOnce(() => {
@@ -1137,6 +1716,68 @@ export const SignOutSyncOutcomes: Story = {
 };
 
 export const SignOutPendingAcrossReopen: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Button, styled, UserMenu } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[3],
+});
+
+function ProfileIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="8" cy="5.5" r="2.5" />
+      <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+    </svg>
+  );
+}
+
+<Row>
+  <UserMenu user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}>
+    <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" />
+    <UserMenu.Content variant="menu" closeLabel="Close account menu">
+      <UserMenu.Identity />
+      <UserMenu.Item icon={<ProfileIcon />} onSelect={() => {}}>
+        Profile
+      </UserMenu.Item>
+      <UserMenu.Item keys={['Ctrl', ',']} onSelect={() => {}}>
+        Settings
+      </UserMenu.Item>
+      <UserMenu.Item disabled>Billing</UserMenu.Item>
+      <UserMenu.Separator />
+      <UserMenu.ThemeGroup
+        labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }}
+        onValueChange={(theme) => {}}
+      />
+      <UserMenu.StatusGroup
+        labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }}
+        onValueChange={(status) => {}}
+      />
+      <UserMenu.Separator />
+      <UserMenu.SignOut
+        pendingLabel="Signing out"
+        errorMessage="Sign out failed. Try again."
+        onSignOut={async () => {
+          const res = await fetch('/api/auth/sign-out', { method: 'POST' });
+          if (!res.ok) throw new Error('Sign out failed');
+        }}
+      >
+        Sign out
+      </UserMenu.SignOut>
+    </UserMenu.Content>
+  </UserMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const pending = deferred();
     (args.onSignOut as Mock).mockImplementation(() => pending.promise);
@@ -1300,6 +1941,68 @@ export const OpenSheet: Story = {
 };
 
 export const Sheet: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Button, styled, UserMenu } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[3],
+});
+
+function ProfileIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="8" cy="5.5" r="2.5" />
+      <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+    </svg>
+  );
+}
+
+<Row>
+  <UserMenu user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}>
+    <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" />
+    <UserMenu.Content variant="sheet" closeLabel="Close account menu">
+      <UserMenu.Identity />
+      <UserMenu.Item icon={<ProfileIcon />} onSelect={() => {}}>
+        Profile
+      </UserMenu.Item>
+      <UserMenu.Item keys={['Ctrl', ',']} onSelect={() => {}}>
+        Settings
+      </UserMenu.Item>
+      <UserMenu.Item disabled>Billing</UserMenu.Item>
+      <UserMenu.Separator />
+      <UserMenu.ThemeGroup
+        labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }}
+        onValueChange={(theme) => {}}
+      />
+      <UserMenu.StatusGroup
+        labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }}
+        onValueChange={(status) => {}}
+      />
+      <UserMenu.Separator />
+      <UserMenu.SignOut
+        pendingLabel="Signing out"
+        errorMessage="Sign out failed. Try again."
+        onSignOut={async () => {
+          const res = await fetch('/api/auth/sign-out', { method: 'POST' });
+          if (!res.ok) throw new Error('Sign out failed');
+        }}
+      >
+        Sign out
+      </UserMenu.SignOut>
+    </UserMenu.Content>
+  </UserMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   args: { variant: 'sheet' },
   play: async ({ args, canvasElement, userEvent }) => {
     const doc = canvasElement.ownerDocument;
@@ -1381,6 +2084,68 @@ export const SheetRejectedClose: Story = {
 };
 
 export const SheetHandle: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Button, styled, UserMenu } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[3],
+});
+
+function ProfileIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="8" cy="5.5" r="2.5" />
+      <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+    </svg>
+  );
+}
+
+<Row>
+  <UserMenu user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}>
+    <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" />
+    <UserMenu.Content variant="sheet" closeLabel="Close account menu">
+      <UserMenu.Identity />
+      <UserMenu.Item icon={<ProfileIcon />} onSelect={() => {}}>
+        Profile
+      </UserMenu.Item>
+      <UserMenu.Item keys={['Ctrl', ',']} onSelect={() => {}}>
+        Settings
+      </UserMenu.Item>
+      <UserMenu.Item disabled>Billing</UserMenu.Item>
+      <UserMenu.Separator />
+      <UserMenu.ThemeGroup
+        labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }}
+        onValueChange={(theme) => {}}
+      />
+      <UserMenu.StatusGroup
+        labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }}
+        onValueChange={(status) => {}}
+      />
+      <UserMenu.Separator />
+      <UserMenu.SignOut
+        pendingLabel="Signing out"
+        errorMessage="Sign out failed. Try again."
+        onSignOut={async () => {
+          const res = await fetch('/api/auth/sign-out', { method: 'POST' });
+          if (!res.ok) throw new Error('Sign out failed');
+        }}
+      >
+        Sign out
+      </UserMenu.SignOut>
+    </UserMenu.Content>
+  </UserMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   args: { variant: 'sheet' },
   play: async ({ args, canvasElement, userEvent }) => {
     const view = canvasElement.ownerDocument.defaultView!;
@@ -1910,6 +2675,64 @@ export const ReducedMotion: Story = {
 export const ForcedColors: Story = {
   parameters: {
     docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Button, styled, UserMenu } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[3],
+});
+
+function ProfileIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="8" cy="5.5" r="2.5" />
+      <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+    </svg>
+  );
+}
+
+<Row>
+  <UserMenu user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}>
+    <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" />
+    <UserMenu.Content variant="menu" closeLabel="Close account menu">
+      <UserMenu.Identity />
+      <UserMenu.Item icon={<ProfileIcon />} onSelect={() => {}}>
+        Profile
+      </UserMenu.Item>
+      <UserMenu.Item keys={['Ctrl', ',']} onSelect={() => {}}>
+        Settings
+      </UserMenu.Item>
+      <UserMenu.Item disabled>Billing</UserMenu.Item>
+      <UserMenu.Separator />
+      <UserMenu.ThemeGroup
+        labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }}
+        onValueChange={(theme) => {}}
+      />
+      <UserMenu.StatusGroup
+        labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }}
+        onValueChange={(status) => {}}
+      />
+      <UserMenu.Separator />
+      <UserMenu.SignOut
+        pendingLabel="Signing out"
+        errorMessage="Sign out failed. Try again."
+        onSignOut={async () => {
+          const res = await fetch('/api/auth/sign-out', { method: 'POST' });
+          if (!res.ok) throw new Error('Sign out failed');
+        }}
+      >
+        Sign out
+      </UserMenu.SignOut>
+    </UserMenu.Content>
+  </UserMenu>
+  <Button>After</Button>
+</Row>`,
+      },
       description: {
         story:
           'Enable forced colors to check rendering in the browser. This story checks CSS rules only.',

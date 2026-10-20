@@ -34,6 +34,82 @@ function ReplacementSignatureAction(props: ComponentPropsWithRef<typeof Button>)
 }
 
 export const ReplaceSignatureParts: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import type { ComponentPropsWithRef } from 'react';
+import { Button, SignaturePad, type SignaturePadMessages } from '@jfrader/ui';
+
+const messages: SignaturePadMessages = {
+  ink: 'Ink color',
+  nib: 'Pen width',
+  colors: { black: 'Black', blue: 'Blue', violet: 'Violet' },
+  widths: { fine: 'Fine', medium: 'Medium', bold: 'Bold' },
+  actions: {
+    undo: 'Undo',
+    redo: 'Redo',
+    clear: 'Clear',
+    replay: 'Replay',
+    stop: 'Stop replay',
+    png: 'Download PNG',
+    svg: 'Download SVG',
+  },
+  empty: 'Empty drawing',
+  signed: 'Signature drawing',
+  roleDescription: 'Signature pad',
+  fallback: 'Draw with a pointer, or enter your name in the alternative field.',
+  shortcuts:
+    'Control or Command Z to undo, Shift Z or Y to redo. Delete to clear. Escape to stop replay or cancel a stroke.',
+  required: 'Signature required',
+  added: 'Stroke added',
+  undone: 'Stroke undone',
+  redone: 'Stroke restored',
+  cleared: 'Signature cleared',
+  reset: 'Signature reset',
+  replayComplete: 'Replay complete',
+  exported: 'Signature exported',
+  exportFailed: 'Export failed',
+};
+
+function ReplacementSignatureContainer(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replaced="container" />;
+}
+
+function ReplacementSignatureLabel(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-replaced="label" />;
+}
+
+function ReplacementSignatureCanvas(props: ComponentPropsWithRef<'canvas'>) {
+  return <canvas {...props} data-replaced="canvas" />;
+}
+
+function ReplacementSignatureAction(props: ComponentPropsWithRef<typeof Button>) {
+  return <Button {...props} data-replaced="action" />;
+}
+
+<SignaturePad
+  label="Sign here"
+  hint="Draw your signature"
+  description="Document signature"
+  error="Signature required"
+  messages={messages}
+  slots={{
+    root: ReplacementSignatureContainer,
+    label: ReplacementSignatureLabel,
+    canvas: ReplacementSignatureCanvas,
+    guide: ReplacementSignatureContainer,
+    toolbar: ReplacementSignatureContainer,
+    action: ReplacementSignatureAction,
+    description: ReplacementSignatureContainer,
+    error: ReplacementSignatureContainer,
+    status: ReplacementSignatureContainer,
+  }}
+  slotProps={{ canvas: { title: 'Signature canvas' } }}
+/>`,
+      },
+    },
+  },
   args: {
     label: 'Sign here', hint: 'Draw your signature', description: 'Document signature', error: 'Signature required',
     slots: {
@@ -664,6 +740,74 @@ export const ReplayIgnoresObservers: Story = {
         story:
           'Resize the pad or change its styles during replay, then press Escape to cancel. This fixture advances frames manually and checks pixels after resize and style observers run; check normal browser replay separately.',
       },
+      source: {
+        language: 'tsx',
+        code: `import { useRef } from 'react';
+import { SignaturePad, type SignaturePadHandle, type SignaturePadMessages, type SignatureStroke } from '@jfrader/ui';
+
+const messages: SignaturePadMessages = {
+  ink: 'Ink color',
+  nib: 'Pen width',
+  colors: { black: 'Black', blue: 'Blue', violet: 'Violet' },
+  widths: { fine: 'Fine', medium: 'Medium', bold: 'Bold' },
+  actions: {
+    undo: 'Undo',
+    redo: 'Redo',
+    clear: 'Clear',
+    replay: 'Replay',
+    stop: 'Stop replay',
+    png: 'Download PNG',
+    svg: 'Download SVG',
+  },
+  empty: 'Empty drawing',
+  signed: 'Signature drawing',
+  roleDescription: 'Signature pad',
+  fallback: 'Draw with a pointer, or enter your name in the alternative field.',
+  shortcuts:
+    'Control or Command Z to undo, Shift Z or Y to redo. Delete to clear. Escape to stop replay or cancel a stroke.',
+  required: 'Signature required',
+  added: 'Stroke added',
+  undone: 'Stroke undone',
+  redone: 'Stroke restored',
+  cleared: 'Signature cleared',
+  reset: 'Signature reset',
+  replayComplete: 'Replay complete',
+  exported: 'Signature exported',
+  exportFailed: 'Export failed',
+};
+
+const seeded: SignatureStroke[] = [
+  {
+    id: 'seed',
+    color: 'black',
+    width: 'medium',
+    startTime: 0,
+    points: [
+      { x: 100, y: 180, pressure: null, time: 0 },
+      { x: 170, y: 65, pressure: null, time: 40 },
+      { x: 145, y: 205, pressure: null, time: 80 },
+      { x: 230, y: 155, pressure: null, time: 120 },
+      { x: 290, y: 170, pressure: null, time: 160 },
+      { x: 360, y: 130, pressure: null, time: 200 },
+      { x: 445, y: 160, pressure: null, time: 240 },
+    ],
+  },
+];
+
+function CroppedExportExample() {
+  const exportApi = useRef<SignaturePadHandle>(null);
+
+  return (
+    <SignaturePad
+      label="Signature"
+      hint="Sign here"
+      messages={messages}
+      defaultValue={seeded}
+      apiRef={exportApi}
+    />
+  );
+}`,
+      },
     },
   },
   play: async ({ canvasElement, userEvent }) => {
@@ -754,6 +898,78 @@ export const ReplayIgnoresObservers: Story = {
 };
 const exportApi = createRef<SignaturePadHandle>();
 export const CroppedExport: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useRef } from 'react';
+import { SignaturePad, type SignaturePadHandle, type SignaturePadMessages, type SignatureStroke } from '@jfrader/ui';
+
+const messages: SignaturePadMessages = {
+  ink: 'Ink color',
+  nib: 'Pen width',
+  colors: { black: 'Black', blue: 'Blue', violet: 'Violet' },
+  widths: { fine: 'Fine', medium: 'Medium', bold: 'Bold' },
+  actions: {
+    undo: 'Undo',
+    redo: 'Redo',
+    clear: 'Clear',
+    replay: 'Replay',
+    stop: 'Stop replay',
+    png: 'Download PNG',
+    svg: 'Download SVG',
+  },
+  empty: 'Empty drawing',
+  signed: 'Signature drawing',
+  roleDescription: 'Signature pad',
+  fallback: 'Draw with a pointer, or enter your name in the alternative field.',
+  shortcuts:
+    'Control or Command Z to undo, Shift Z or Y to redo. Delete to clear. Escape to stop replay or cancel a stroke.',
+  required: 'Signature required',
+  added: 'Stroke added',
+  undone: 'Stroke undone',
+  redone: 'Stroke restored',
+  cleared: 'Signature cleared',
+  reset: 'Signature reset',
+  replayComplete: 'Replay complete',
+  exported: 'Signature exported',
+  exportFailed: 'Export failed',
+};
+
+const seeded: SignatureStroke[] = [
+  {
+    id: 'seed',
+    color: 'black',
+    width: 'medium',
+    startTime: 0,
+    points: [
+      { x: 100, y: 180, pressure: null, time: 0 },
+      { x: 170, y: 65, pressure: null, time: 40 },
+      { x: 145, y: 205, pressure: null, time: 80 },
+      { x: 230, y: 155, pressure: null, time: 120 },
+      { x: 290, y: 170, pressure: null, time: 160 },
+      { x: 360, y: 130, pressure: null, time: 200 },
+      { x: 445, y: 160, pressure: null, time: 240 },
+    ],
+  },
+];
+
+function CroppedExportExample() {
+  const exportApi = useRef<SignaturePadHandle>(null);
+
+  return (
+    <SignaturePad
+      label="Signature"
+      hint="Sign here"
+      messages={messages}
+      defaultValue={seeded}
+      apiRef={exportApi}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { defaultValue: seeded, apiRef: exportApi },
   play: async ({ canvasElement }) => {
     const api = exportApi.current!;
@@ -1022,6 +1238,64 @@ export const LightTheme: Story = {
 };
 const refSpy = fn<(element: HTMLCanvasElement | null) => void>();
 export const RefAndSlots: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useRef } from 'react';
+import { vars } from '@jfrader/tokens/vars';
+import { SignaturePad, type SignaturePadMessages } from '@jfrader/ui';
+
+const messages: SignaturePadMessages = {
+  ink: 'Ink color',
+  nib: 'Pen width',
+  colors: { black: 'Black', blue: 'Blue', violet: 'Violet' },
+  widths: { fine: 'Fine', medium: 'Medium', bold: 'Bold' },
+  actions: {
+    undo: 'Undo',
+    redo: 'Redo',
+    clear: 'Clear',
+    replay: 'Replay',
+    stop: 'Stop replay',
+    png: 'Download PNG',
+    svg: 'Download SVG',
+  },
+  empty: 'Empty drawing',
+  signed: 'Signature drawing',
+  roleDescription: 'Signature pad',
+  fallback: 'Draw with a pointer, or enter your name in the alternative field.',
+  shortcuts:
+    'Control or Command Z to undo, Shift Z or Y to redo. Delete to clear. Escape to stop replay or cancel a stroke.',
+  required: 'Signature required',
+  added: 'Stroke added',
+  undone: 'Stroke undone',
+  redone: 'Stroke restored',
+  cleared: 'Signature cleared',
+  reset: 'Signature reset',
+  replayComplete: 'Replay complete',
+  exported: 'Signature exported',
+  exportFailed: 'Export failed',
+};
+
+function CanvasRefExample() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  return (
+    <SignaturePad
+      ref={canvasRef}
+      label="Signature"
+      hint="Sign here"
+      messages={messages}
+      slotProps={{
+        canvas: { css: { borderRadius: vars.radius.sm } },
+        toolbar: { css: { gap: vars.space[8] } },
+      }}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     ref: refSpy,
     slotProps: {

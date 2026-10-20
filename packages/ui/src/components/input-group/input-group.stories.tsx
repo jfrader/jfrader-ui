@@ -70,6 +70,23 @@ export const Default: Story = {
   },
 };
 export const Invalid: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+import { InputGroup } from '@jfrader/ui';
+
+export function AmountField() {
+  const id = useId();
+  return (
+    <>
+      <label htmlFor={id}>Amount</label>
+      <InputGroup size="md" invalid>
+        <InputGroup.Addon placement="start">$</InputGroup.Addon>
+        <InputGroup.Input id={id} aria-describedby={id + '-error'} defaultValue="25" />
+        <InputGroup.Addon placement="end">USD</InputGroup.Addon>
+      </InputGroup>
+      <p id={id + '-error'}>Enter a positive amount.</p>
+    </>
+  );
+}` } } },
   args: { invalid: true },
   play: async ({ canvasElement }) => {
     const input = within(canvasElement).getByRole('textbox');
@@ -84,6 +101,22 @@ export const Invalid: Story = {
   },
 };
 export const Disabled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+import { InputGroup } from '@jfrader/ui';
+
+export function AmountField() {
+  const id = useId();
+  return (
+    <>
+      <label htmlFor={id}>Amount</label>
+      <InputGroup size="md" disabled>
+        <InputGroup.Addon placement="start">$</InputGroup.Addon>
+        <InputGroup.Input id={id} defaultValue="25" />
+        <InputGroup.Addon placement="end">USD</InputGroup.Addon>
+      </InputGroup>
+    </>
+  );
+}` } } },
   args: { disabled: true },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('textbox')).toBeDisabled();
@@ -139,6 +172,26 @@ function Replacement(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replacement="" />;
 }
 export const ReplacementRoot: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId, type ComponentPropsWithRef } from 'react';
+import { InputGroup } from '@jfrader/ui';
+
+function AmountFrame(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="" />;
+}
+
+export function AmountField() {
+  const id = useId();
+  return (
+    <>
+      <label htmlFor={id}>Amount</label>
+      <InputGroup size="md" slots={{ root: AmountFrame }} slotProps={{ root: { 'data-example': 'replacement' } }}>
+        <InputGroup.Addon placement="start">$</InputGroup.Addon>
+        <InputGroup.Input id={id} defaultValue="25" />
+        <InputGroup.Addon placement="end">USD</InputGroup.Addon>
+      </InputGroup>
+    </>
+  );
+}` } } },
   args: { slots: { root: Replacement }, slotProps: { root: { 'data-example': 'replacement' } } },
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('[data-replacement]');
@@ -147,6 +200,60 @@ export const ReplacementRoot: Story = {
     await expect(root).toHaveClass(/css-/);
   },
 };
-export const Small: Story = { args: { size: 'sm' } };
-export const Large: Story = { args: { size: 'lg' } };
-export const LightTheme: Story = { decorators: [withLightTheme] };
+export const Small: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+import { InputGroup } from '@jfrader/ui';
+
+export function AmountField() {
+  const id = useId();
+  return (
+    <>
+      <label htmlFor={id}>Amount</label>
+      <InputGroup size="sm">
+        <InputGroup.Addon placement="start">$</InputGroup.Addon>
+        <InputGroup.Input id={id} defaultValue="25" />
+        <InputGroup.Addon placement="end">USD</InputGroup.Addon>
+      </InputGroup>
+    </>
+  );
+}` } } },
+  args: { size: 'sm' },
+};
+export const Large: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+import { InputGroup } from '@jfrader/ui';
+
+export function AmountField() {
+  const id = useId();
+  return (
+    <>
+      <label htmlFor={id}>Amount</label>
+      <InputGroup size="lg">
+        <InputGroup.Addon placement="start">$</InputGroup.Addon>
+        <InputGroup.Input id={id} defaultValue="25" />
+        <InputGroup.Addon placement="end">USD</InputGroup.Addon>
+      </InputGroup>
+    </>
+  );
+}` } } },
+  args: { size: 'lg' },
+};
+export const LightTheme: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+import { InputGroup } from '@jfrader/ui';
+
+export function AmountField() {
+  const id = useId();
+  return (
+    <>
+      <label htmlFor={id}>Amount</label>
+      <InputGroup size="md">
+        <InputGroup.Addon placement="start">$</InputGroup.Addon>
+        <InputGroup.Input id={id} defaultValue="25" />
+        <InputGroup.Addon placement="end">USD</InputGroup.Addon>
+      </InputGroup>
+    </>
+  );
+}` } } },
+  decorators: [withLightTheme],
+};
