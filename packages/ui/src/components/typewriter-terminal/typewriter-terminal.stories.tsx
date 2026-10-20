@@ -98,6 +98,11 @@ const meta = {
   args: { steps: SCRIPT, onValueChange: fn(), onPausedChange: fn() },
   parameters: {
     docs: {
+      sections: [
+        { title: 'Scripted sessions', stories: ['Default', 'PlainOutput'] },
+        { title: 'Output content', stories: ['EveryTone', 'ProgressAndTasks', 'CwdChanges'] },
+        { title: 'Playback control', stories: ['ControlledTimeline'] },
+      ],
       description: {
         component: 'Play a scripted terminal session, command by command. Commands are text and are never executed.',
       },
@@ -106,10 +111,6 @@ const meta = {
 - Tab reaches Copy, Play/Pause, Replay, the seek control, then the transcript links.
 - On the seek control, arrows and Page keys jump command boundaries; Home and End jump to the start and the end.
 - Space and K toggle playback.
-
-**Values**
-
-- Cadence: 40ms per grapheme, 160ms per output line, 240ms between commands, 1200ms per task.
 
 **Limits**
 
@@ -192,6 +193,16 @@ async function tick() {
 }
 
 export const Default: Story = {
+  name: 'Play a terminal session',
+  parameters: { docs: {
+    description: { story: 'Watch two commands play, then seek or replay the session.' },
+    source: { language: 'tsx', code: `import { TypewriterTerminal } from '@jfrader/ui';
+
+<TypewriterTerminal steps={[
+  { command: 'example init', output: ['Workspace created', '', { text: 'Ready', tone: 'success' }] },
+  { command: 'example --help', output: ['Usage: example [command]', { text: 'Documentation', href: '/docs' }] },
+]} />` },
+  } },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('figure', { name: 'Terminal session' })).toBeVisible();
     await expect(transcript(canvasElement)).toHaveTextContent('example --help');
@@ -201,6 +212,17 @@ export const Default: Story = {
   },
 };
 export const PlainOutput: Story = {
+  name: 'Completed plain output',
+  parameters: { docs: {
+    description: { story: 'Show the full command output immediately and let the reader replay it.' },
+    source: { language: 'tsx', code: `import { TypewriterTerminal } from '@jfrader/ui';
+
+<TypewriterTerminal
+  steps={[{ command: 'example list', output: ['alpha', 'beta'] }]}
+  defaultValue={Number.MAX_SAFE_INTEGER}
+  defaultPaused
+/>` },
+  } },
   args: {
     steps: [{ command: 'example list', output: ['alpha', 'beta'] }],
     defaultValue: FINISHED,
@@ -208,6 +230,24 @@ export const PlainOutput: Story = {
   },
 };
 export const EveryTone: Story = {
+  name: 'Output tones',
+  parameters: { docs: {
+    description: { story: 'Compare neutral, muted, success, warning, danger and accent output lines.' },
+    source: { language: 'tsx', code: `import { TypewriterTerminal } from '@jfrader/ui';
+
+<TypewriterTerminal
+  defaultValue={Number.MAX_SAFE_INTEGER}
+  defaultPaused
+  steps={[{ command: 'example check', output: [
+    { text: 'neutral result', tone: 'neutral' },
+    { text: 'muted result', tone: 'muted' },
+    { text: 'success result', tone: 'success' },
+    { text: 'warning result', tone: 'warning' },
+    { text: 'danger result', tone: 'danger' },
+    { text: 'accent result', tone: 'accent' },
+  ] }]}
+/>` },
+  } },
   args: {
     steps: [
       {
@@ -222,6 +262,19 @@ export const EveryTone: Story = {
   },
 };
 export const ProgressAndTasks: Story = {
+  name: 'Progress and task output',
+  parameters: { docs: {
+    description: { story: 'Play a build sequence with a progress line and a task that completes.' },
+    source: { language: 'tsx', code: `import { TypewriterTerminal } from '@jfrader/ui';
+
+<TypewriterTerminal steps={[{
+  command: 'example build',
+  output: [
+    { kind: 'progress', label: 'Building' },
+    { kind: 'task', label: 'Checking', doneLabel: 'Checks passed' },
+  ],
+}]} />` },
+  } },
   args: {
     steps: [
       {
@@ -256,6 +309,17 @@ export const BlankLines: Story = {
   },
 };
 export const CwdChanges: Story = {
+  name: 'Working directory changes',
+  parameters: { docs: {
+    description: { story: 'Carry a command’s working directory into the next prompt.' },
+    source: { language: 'tsx', code: `import { TypewriterTerminal } from '@jfrader/ui';
+
+<TypewriterTerminal
+  steps={[{ command: 'example enter', cwd: '~/demo' }, { command: 'example list' }]}
+  defaultValue={Number.MAX_SAFE_INTEGER}
+  defaultPaused
+/>` },
+  } },
   args: {
     steps: [{ command: 'example enter', cwd: '~/demo' }, { command: 'example list' }],
     defaultValue: FINISHED,
@@ -349,6 +413,27 @@ function ControlledTimelineExample(args: TypewriterTerminalProps) {
   );
 }
 export const ControlledTimeline: Story = {
+  name: 'App-owned timeline',
+  parameters: { docs: {
+    description: { story: 'Seek through a paused session while React state owns its timeline position.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { TypewriterTerminal } from '@jfrader/ui';
+
+export function SessionTimeline() {
+  const [position, setPosition] = useState(0);
+  return (
+    <TypewriterTerminal
+      paused
+      value={position}
+      onValueChange={setPosition}
+      steps={[
+        { command: 'example init', output: ['Workspace created', '', { text: 'Ready', tone: 'success' }] },
+        { command: 'example --help', output: ['Usage: example [command]', { text: 'Documentation', href: '/docs' }] },
+      ]}
+    />
+  );
+}` },
+  } },
   render: (args) => <ControlledTimelineExample {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     const slider = canvas.getByRole('slider');

@@ -21,12 +21,17 @@ const meta = {
   args: { label: 'Dark appearance' },
   parameters: {
     docs: {
+      sections: [
+        { title: 'Apply appearance', stories: ['ScopedThemeRoot', 'ControlledAccept'] },
+        { title: 'Transition cues', stories: ['DefaultReveal', 'Eclipse', 'Split', 'Rise'] },
+        { title: 'Compact controls', stories: ['IconOnly'] },
+      ],
       description: {
         component:
           'Switch between light and dark appearance.',
       },
       usage: `- Apply the requested theme in your app. ThemeSwitch does not manage system preferences or page transitions.
-- Keep the accessible name the same in both states. The ref points to the input.
+- Keep the accessible name the same in both states, including when the visible label is hidden.
 - Space toggles the switch; Enter does not.`,
     },
   },
@@ -158,10 +163,45 @@ function ScopedExample(args: ThemeSwitchProps) {
     </ThemeFrame></ThemeRoot>
   );
 }
-export const DefaultReveal: Story = {};
-export const Eclipse: Story = { args: { transition: 'eclipse' } };
-export const Split: Story = { args: { transition: 'split' } };
-export const Rise: Story = { args: { transition: 'rise' } };
+export const DefaultReveal: Story = {
+  name: 'Reveal cue',
+  parameters: { docs: {
+    description: { story: 'Toggle the switch to reveal the active appearance icon.' },
+    source: { language: 'tsx', code: `import { ThemeSwitch } from '@jfrader/ui';
+
+<ThemeSwitch label="Dark appearance" />` },
+  } },
+};
+export const Eclipse: Story = {
+  name: 'Eclipse cue',
+  parameters: { docs: {
+    description: { story: 'Toggle the switch to move the icon sideways with an eclipse cue.' },
+    source: { language: 'tsx', code: `import { ThemeSwitch } from '@jfrader/ui';
+
+<ThemeSwitch label="Dark appearance" transition="eclipse" />` },
+  } },
+  args: { transition: 'eclipse' },
+};
+export const Split: Story = {
+  name: 'Split cue',
+  parameters: { docs: {
+    description: { story: 'Toggle the switch to try the split icon cue.' },
+    source: { language: 'tsx', code: `import { ThemeSwitch } from '@jfrader/ui';
+
+<ThemeSwitch label="Dark appearance" transition="split" />` },
+  } },
+  args: { transition: 'split' },
+};
+export const Rise: Story = {
+  name: 'Rise cue',
+  parameters: { docs: {
+    description: { story: 'Toggle the switch to lift the active appearance icon.' },
+    source: { language: 'tsx', code: `import { ThemeSwitch } from '@jfrader/ui';
+
+<ThemeSwitch label="Dark appearance" transition="rise" />` },
+  } },
+  args: { transition: 'rise' },
+};
 export const TransitionCues: Story = {
   render: (args) => (
     <StackFrame>
@@ -215,6 +255,21 @@ export const IconClick: Story = {
 export const LightValue: Story = { args: { value: 'light' } };
 export const DarkValue: Story = { args: { value: 'dark' } };
 export const IconOnly: Story = {
+  name: 'Icon-only controls',
+  parameters: { docs: {
+    description: { story: 'Compare all four cues with the visible label hidden and the accessible name retained.' },
+    source: { language: 'tsx', code: `import { ThemeSwitch, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[4] });
+
+<Stack>
+  <ThemeSwitch label="Dark appearance" iconOnly transition="reveal" />
+  <ThemeSwitch label="Dark appearance" iconOnly transition="eclipse" />
+  <ThemeSwitch label="Dark appearance" iconOnly transition="split" />
+  <ThemeSwitch label="Dark appearance" iconOnly transition="rise" />
+</Stack>` },
+  } },
   args: { iconOnly: true },
   render: (args) => (
     <StackFrame>
@@ -259,12 +314,21 @@ export const Uncontrolled: Story = {
   },
 };
 export const ControlledAccept: Story = {
+  name: 'App-owned preference',
   args: { onValueChange: fn() },
   render: (args) => <ControlledExample {...args} />,
   parameters: {
     docs: {
+      description: { story: 'Store the requested appearance in React state without applying it to the page.' },
       source: {
-        code: '<ThemeSwitch label="Dark appearance" value={appearance} onValueChange={setAppearance} />',
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { ThemeSwitch, type ThemeSwitchValue } from '@jfrader/ui';
+
+export function AppearancePreference() {
+  const [appearance, setAppearance] = useState<ThemeSwitchValue>('light');
+  return <ThemeSwitch label="Dark appearance" value={appearance} onValueChange={setAppearance} />;
+}`,
       },
     },
   },
@@ -542,11 +606,27 @@ export const LightTheme: Story = {
   args: { defaultValue: 'dark' },
 };
 export const ScopedThemeRoot: Story = {
+  name: 'Switch a themed section',
   render: (args) => <ScopedExample {...args} />,
   parameters: {
     docs: {
+      description: { story: 'Toggle Dark appearance to update the surrounding section’s theme.' },
       source: {
-        code: '<ThemeRoot theme={appearance}><ThemeSwitch label="Dark appearance" value={appearance} onValueChange={setAppearance} /></ThemeRoot>',
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { ThemeRoot, ThemeSwitch, styled, type ThemeSwitchValue } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Frame = styled.div({ backgroundColor: vars.color.bg, padding: vars.space[4] });
+
+export function AppearanceSection() {
+  const [appearance, setAppearance] = useState<ThemeSwitchValue>('light');
+  return (
+    <ThemeRoot theme={appearance}>
+      <Frame><ThemeSwitch label="Dark appearance" value={appearance} onValueChange={setAppearance} /></Frame>
+    </ThemeRoot>
+  );
+}`,
       },
     },
   },
