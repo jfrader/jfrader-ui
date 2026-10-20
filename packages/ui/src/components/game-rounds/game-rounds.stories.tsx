@@ -2,7 +2,11 @@ import type { ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within } from 'storybook/test';
 import { GameRounds, type GameRoundsPartProps } from './index';
+import { styled } from '../../index';
+import { vars } from '@jfrader/tokens/vars';
 
+const RoundDemo = styled.div({ inlineSize: `calc(12 * ${vars.space[12]})`, maxInlineSize: '100%', marginInline: 'auto' });
+const PhoneRoundDemo = styled.div({ inlineSize: `calc(7 * ${vars.space[12]} + ${vars.space[4]})`, maxInlineSize: '100%', marginInline: 'auto' });
 
 const rounds = [
   { key: 'first', label: 'Opening', outcome: 'won' },
@@ -20,7 +24,7 @@ const source = `import { GameRounds } from '@jfrader/ui/game-rounds';
   { key: 'third', label: 'Lead', outcome: 'pending', current: true, trump: '♠' },
   { key: 'fourth', label: 'Next', outcome: 'pending' },
   { key: 'fifth', label: 'Final', outcome: 'pending' },
-]} outcomeLabels={{ won: 'Ganada', lost: 'Perdida', pending: 'Pendiente' }} />`;
+]} outcomeLabels={{ won: 'Won', lost: 'Lost', pending: 'Pending' }} />`;
 const meta = {
   title: 'Games/GameRounds', component: GameRounds, tags: ['autodocs'],
   args: { label: 'Rounds', rounds, outcomeLabels },
@@ -31,6 +35,8 @@ const meta = {
     ],
     usage: `### Results
 Keep rounds in play order and give every result a nonempty name in your game's language. Result text accompanies each tone; pending rounds also have a dashed boundary. Your application owns game rules and result transitions.
+
+The strip uses a bordered panel. Set surface="transparent" when composing inside an existing surface.
 
 ### Keyboard and accessibility
 
@@ -44,14 +50,19 @@ type Story = StoryObj<typeof meta>;
 /** Display round history in play order with outcome tags. */
 export const Default: Story = {
   name: 'Five-round lead strip',
-  parameters: { docs: { description: { story: 'Read won, lost and pending rounds in play order.' } } },
+  args: { outcomeLabels: { won: 'Won', lost: 'Lost', pending: 'Pending' } },
+  render: (args) => <RoundDemo><GameRounds {...args} /></RoundDemo>,
+  parameters: { layout: 'padded', docs: { description: { story: 'Read won, lost and pending rounds in play order.' } } },
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group', { name: 'Rounds' });
     const items = within(group).getAllByRole('listitem');
     await expect(items.map((item) => item.getAttribute('data-outcome'))).toEqual(['won', 'lost', 'pending', 'pending', 'pending']);
-    await expect(items[0]).toHaveTextContent('1OpeningGanada');
+    await expect(group).toHaveAttribute('data-game-material', 'panel');
+    await expect(getComputedStyle(group).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+    await expect(getComputedStyle(group).borderTopWidth).toBe('1px');
+    await expect(items[0]).toHaveTextContent('1OpeningWon');
     await expect(items[2]).toHaveAttribute('aria-current', 'step');
-    await expect(items[2]).toHaveTextContent('3Lead♠Pendiente');
+    await expect(items[2]).toHaveTextContent('3Lead♠Pending');
     await expect(getComputedStyle(items[2]!).borderTopStyle).toBe('dashed');
     const list = within(group).getByRole('list');
     await expect(list).toBeVisible();
@@ -78,6 +89,24 @@ export const ForcedColors: Story = {
     await expect(items[0]).toHaveTextContent('Ganada');
     await expect(items[1]).toHaveTextContent('Perdida');
     await expect(items[2]).toHaveTextContent('Pendiente');
+  },
+};
+export const CompactStrip: Story = {
+  tags: ['!autodocs'], args: Default.args,
+  parameters: { layout: 'padded' },
+  render: (args) => <PhoneRoundDemo><GameRounds {...args} /></PhoneRoundDemo>,
+  play: async ({ canvas, canvasElement }) => {
+    const items = canvas.getAllByRole('listitem');
+    const outcomes = items.map(item => item.querySelector('[data-ui="game-rounds-outcome"]')!);
+    for (const item of items) {
+      const label = item.querySelector('[data-ui="game-rounds-round-label"]')!;
+      const range = canvasElement.ownerDocument.createRange();
+      range.selectNodeContents(label);
+      await expect(range.getClientRects()).toHaveLength(1);
+    }
+    for (const outcome of outcomes) await expect(outcome.getBoundingClientRect().top).toBe(outcomes[0]!.getBoundingClientRect().top);
+    const panel = canvas.getByRole('group', { name: 'Rounds' });
+    await expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth);
   },
 };
 export const ReducedMotion: Story = {

@@ -69,11 +69,12 @@ const roundStyle = css({ display: 'grid', gap: vars.space[1], padding: vars.spac
   '&[data-outcome="lost"]': { backgroundColor: vars.color.dangerSoft },
   '&[data-outcome="pending"]': { borderStyle: 'dashed' },
   minInlineSize: 0, overflowWrap: 'anywhere',
-  '[data-variant="strip"] &': { borderRadius: 0, borderInlineEndWidth: 0, paddingInline: vars.space[1], '&:last-child': { borderInlineEndWidth: '1px' } },
+  '[data-variant="strip"] &': { borderRadius: 0, borderInlineEndWidth: 0, paddingInline: `calc(${vars.space[1]} / 2)`, gridTemplateRows: `auto auto minmax(${vars.space[4]}, 1fr) auto`, '&:last-child': { borderInlineEndWidth: '1px' } },
   '&[aria-current="step"]': { outline: `2px solid ${vars.color.accent}`, outlineOffset: '-2px' },
   [FORCED_COLORS]: { borderColor: 'CanvasText', backgroundColor: 'Canvas' },
 });
 const outcomeStyle = css({ fontSize: vars.textSize.xs });
+const detailStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[1] });
 
 export function GameRounds({ label, rounds, outcomeLabels, variant = 'strip', locale, slotProps, slots, component, ...props }: GameRoundsProps) {
   const id = useId();
@@ -105,9 +106,8 @@ export function GameRounds({ label, rounds, outcomeLabels, variant = 'strip', lo
           css={[roundStyle, slotProps?.round?.sx]}
         >
           {variant === 'strip' && <span data-ui="game-rounds-number">{new Intl.NumberFormat(locale).format(round.number ?? index + 1)}</span>}
-          <span>{round.label}</span>
-          {round.trump}
-          {round.detail}
+          <span data-ui="game-rounds-round-label">{round.label}</span>
+          {variant === 'strip' ? <div data-ui="game-rounds-detail" css={detailStyle}>{round.trump}{round.detail}</div> : <>{round.trump}{round.detail}</>}
           <Outcome
             {...withoutSx(slotProps?.outcome)}
             data-ui={outcomeIdentity}

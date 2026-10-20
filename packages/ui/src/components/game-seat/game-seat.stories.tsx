@@ -23,7 +23,7 @@ const meta = {
   title: 'Games/GameSeat', component: GameSeat, tags: ['autodocs'],
   args: {
     name: 'Alex', avatar: <Avatar name="Alex" size="lg" aria-hidden="true" />,
-    badges: <Badge>Host</Badge>, points: 0, handCount: 3, turn,
+    badges: <Badge>Host</Badge>, points: 35, handCount: 3, turn,
     chat: <span aria-live="polite">Your turn · 45 seconds</span>,
   },
   parameters: { docs: {
@@ -35,6 +35,8 @@ const meta = {
 Show a player's identity and turn status on its own or inside a GameTable seat region. GameSeat does not position players around the board or enforce turn rules.
 
 The default chip reserves its avatar footprint. Its hidden-card fan is decorative, capped at three backs and absolutely positioned around the avatar. Changing handCount never resizes the chip. Use handDisplay="count" with formatHandCount for localized count text, or "none" to hide the shorthand. Custom hand content overrides handDisplay. Chat is shown only in variant="panel".
+
+The chip uses a raised pill surface; the panel uses a bordered surface. Set surface="transparent" when composing inside an existing surface. Layout and the opaque avatar are retained.
 
 ### Clock constraints
 
@@ -49,7 +51,7 @@ The seat is a named group, not an interactive widget, and adds no focus target o
 import { GameSeat } from '@jfrader/ui/game-seat';
 
 <GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
-  handCount={3} badges={<Badge>Host</Badge>} points={0}
+  handCount={3} badges={<Badge>Host</Badge>} points={35}
   turn={{ remainingMs: 45000, durationMs: 60000 }}
   chat={<span aria-live="polite">Your turn · 45 seconds</span>} />` },
   } },
@@ -64,7 +66,16 @@ export const Default: Story = {
   play: async ({ canvas, canvasElement }) => {
     const seat = canvas.getByRole('group', { name: 'Alex' });
     await expect(seat).toHaveAttribute('data-turned', 'false');
-    await expect(seat.querySelector('[data-ui="game-seat-points"]')).toHaveTextContent('0');
+    await expect(seat.querySelector('[data-ui="game-seat-points"]')).toHaveTextContent('35');
+    await expect(seat).toHaveAttribute('data-game-material', 'chip');
+    await expect(getComputedStyle(seat).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+    await expect(getComputedStyle(seat).borderTopWidth).toBe('1px');
+    await expect(getComputedStyle(seat).boxShadow).not.toBe('none');
+    const avatar = seat.querySelector('[data-ui="game-seat-avatar-content"]')!;
+    const fan = seat.querySelector('[data-ui="game-seat-hand"]')!;
+    await expect(getComputedStyle(avatar).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+    await expect(Number(getComputedStyle(avatar).zIndex)).toBeGreaterThan(Number(getComputedStyle(fan).zIndex));
+    await expect(Number(getComputedStyle(fan).zIndex)).toBeGreaterThanOrEqual(0);
     await expect(canvasElement.querySelector('[data-ui="game-seat-timer"]')).toHaveAttribute('aria-hidden', 'true');
     await expect(canvasElement.querySelector('circle')).toHaveAttribute('stroke-dashoffset', '25');
   },
@@ -76,6 +87,24 @@ import { GameSeat } from '@jfrader/ui/game-seat';
 
 <GameSeat variant="panel" name="Alex" avatar={<Avatar name="Alex" aria-hidden="true" />}
   handCount={3} points={35} chat="Your turn" />` } } },
+  play: async ({ canvas }) => {
+    const seat = canvas.getByRole('group', { name: 'Alex' });
+    await expect(seat).toHaveAttribute('data-game-material', 'panel');
+    await expect(getComputedStyle(seat).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+    await expect(getComputedStyle(seat).borderTopWidth).toBe('1px');
+    await expect(seat.querySelector('[data-ui="game-seat-chat"]')).toBeVisible();
+  },
+};
+export const Transparent: Story = {
+  tags: ['!autodocs'], args: { surface: 'transparent' },
+  play: async ({ canvas }) => {
+    const seat = canvas.getByRole('group', { name: 'Alex' });
+    await expect(seat).toHaveAttribute('data-game-material', 'transparent');
+    await expect(getComputedStyle(seat).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    await expect(getComputedStyle(seat).borderTopWidth).toBe('0px');
+    await expect(getComputedStyle(seat).boxShadow).toBe('none');
+    await expect(getComputedStyle(seat.querySelector('[data-ui="game-seat-avatar-content"]')!).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+  },
 };
 export const Count: Story = {
   name: 'Compact hand count', args: { handDisplay: 'count', locale: 'en-US', formatHandCount: (_count, value) => `${value} cards` },
@@ -97,6 +126,8 @@ export const WinnerWithTimer: Story = {
     const timer = seat.querySelector('[data-ui="game-seat-timer"]')!;
     await expect(getComputedStyle(timer).stroke).toBe(getComputedStyle(avatar).outlineColor);
     await expect(timer.querySelector('circle')).toHaveAttribute('stroke-dashoffset', '25');
+    const badges = seat.querySelector('[data-ui="game-seat-badges"]')!;
+    await expect(badges.scrollWidth).toBeLessThanOrEqual(badges.clientWidth);
   },
 };
 export const ForcedColors: Story = {

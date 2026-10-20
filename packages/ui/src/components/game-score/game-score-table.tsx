@@ -56,7 +56,7 @@ const tableStyle = css({ inlineSize: '100%', borderCollapse: 'collapse', fontSiz
   '& > caption': { textAlign: 'start', fontWeight: vars.fontWeight.semibold, paddingBlockEnd: vars.space[3] },
   [FORCED_COLORS]: { color: 'CanvasText' },
 });
-const cellStyle = css({ padding: vars.space[2], textAlign: 'end', fontVariantNumeric: 'tabular-nums', borderBlockEnd: `1px solid ${vars.color.borderControl}`,
+const cellStyle = css({ paddingBlock: vars.space[2], paddingInline: vars.space[1], textAlign: 'end', fontVariantNumeric: 'tabular-nums', borderBlockEnd: `1px solid ${vars.color.borderControl}`,
   '&[data-state="current"]': { backgroundColor: vars.color.accentSoft },
   '&[data-state="upcoming"]': { color: vars.color.textMuted },
   '[data-me="true"] > &': { fontWeight: vars.fontWeight.bold },
@@ -65,7 +65,7 @@ const cellStyle = css({ padding: vars.space[2], textAlign: 'end', fontVariantNum
     '&[data-state="current"], &[data-state="upcoming"]': { color: 'CanvasText', backgroundColor: 'Canvas' },
   },
 });
-const nameStyle = css({ padding: vars.space[2], textAlign: 'start', borderBlockEnd: `1px solid ${vars.color.borderControl}`, whiteSpace: 'nowrap' });
+const nameStyle = css({ paddingBlock: vars.space[2], paddingInline: vars.space[1], textAlign: 'start', borderBlockEnd: `1px solid ${vars.color.borderControl}`, whiteSpace: 'nowrap' });
 const totalStyle = css({ fontWeight: vars.fontWeight.bold, borderInlineStart: `1px solid ${vars.color.borderControl}` });
 const badgeStyle = css({ display: 'inline-block', marginInlineStart: vars.space[1], fontSize: vars.textSize.xs, whiteSpace: 'nowrap' });
 

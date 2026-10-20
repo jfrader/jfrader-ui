@@ -14,6 +14,7 @@ import { styled } from '../../index';
 
 const forcedColorStyle = { [FORCED_COLORS]: { color: 'CanvasText', backgroundColor: 'Canvas' } };
 const Summary = styled.div({ display: 'grid', gap: vars.space[4] });
+const ScoreboardDemo = styled.div({ inlineSize: `calc(12 * ${vars.space[12]})`, maxInlineSize: '100%', marginInline: 'auto' });
 const ContractScope = styled.div(forcedColorStyle);
 const ContractButton = styled(Button)(forcedColorStyle);
 
@@ -41,6 +42,8 @@ Use the same locale on server and client for number formatting. Stage text is di
 
 GameScore.Table accepts players with scores keyed by round, explicit totals, and caller-owned leader flags. Supply localized column and state labels. Missing scores show the pending label; zero stays zero. Round labels may contain trump artwork. The table scrolls horizontally when its content exceeds the available width.
 
+Both score layouts use a bordered panel. Set surface="transparent" when composing inside an existing surface.
+
 ### Keyboard and accessibility
 
 The compact group contains a native description list. The scoreboard uses a caption, column headers, and player row headers. Neither adds keyboard commands or live announcements. Announce score changes in your application when needed.`,
@@ -66,8 +69,8 @@ const tableLabels = { player: 'Player', total: 'Total', me: 'You', leader: 'Lead
 /** Scores across five rounds with the current lead and local player. */
 export const Scoreboard: Story = {
   name: 'Five-round scoreboard',
-  render: () => <GameScore.Table caption="Evening match" players={tablePlayers} rounds={tableRounds} labels={tableLabels} locale="en-US" />,
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameScore } from '@jfrader/ui/game-score';
+  render: () => <ScoreboardDemo><GameScore.Table caption="Evening match" players={tablePlayers} rounds={tableRounds} labels={tableLabels} locale="en-US" /></ScoreboardDemo>,
+  parameters: { layout: 'padded', docs: { source: { language: 'tsx', code: `import { GameScore } from '@jfrader/ui/game-score';
 
 <GameScore.Table caption="Evening match" locale="en-US"
   rounds={[
@@ -84,6 +87,10 @@ export const Scoreboard: Story = {
   labels={{ player: 'Player', total: 'Total', me: 'You', leader: 'Leader', current: 'Current', upcoming: 'Next', pending: '—' }} />` } } },
   play: async ({ canvas }) => {
     const table = canvas.getByRole('table', { name: 'Evening match' });
+    const panel = table.closest('[data-ui="game-score-table"]')!;
+    await expect(panel).toHaveAttribute('data-game-material', 'panel');
+    await expect(getComputedStyle(panel).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+    await expect(getComputedStyle(panel).borderTopWidth).toBe('1px');
     await expect(within(table).getAllByRole('columnheader')).toHaveLength(7);
     await expect(within(table).getByRole('rowheader', { name: 'Alex You Leader' })).toBeVisible();
     await expect(table.querySelector('[data-state="current"][data-ui="game-score-table-cell"]')).toHaveTextContent('0');

@@ -13,6 +13,8 @@ const meta = {
     usage: `### Limits
 Count is a nonnegative safe integer; max and maxPerRow are positive safe integers. Invalid values throw RangeError. The track always renders max slots and shows +N for marks beyond the goal. Keep max small enough to render one element per slot.
 
+The track uses a bordered panel. Set surface="transparent" when composing inside an existing surface.
+
 ### Keyboard and accessibility
 
 The named group exposes the localized count. Repeated artwork is hidden from assistive technology. Supply a label in your game's language and the same locale on server and client. There are no keyboard commands, motion, or live announcements.`,
@@ -29,6 +31,9 @@ export const Default: Story = {
   name: 'Tricks this round',
   play: async ({ canvas }) => {
     const group = canvas.getByRole('group', { name: 'Tricks won' });
+    await expect(group).toHaveAttribute('data-game-material', 'panel');
+    await expect(getComputedStyle(group).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+    await expect(getComputedStyle(group).borderTopWidth).toBe('1px');
     await expect(group.querySelectorAll('[data-ui="game-marks-mark"]')).toHaveLength(5);
     await expect(group.querySelectorAll('[data-filled="true"]')).toHaveLength(3);
     await expect(group.querySelectorAll('[data-filled="false"]')).toHaveLength(2);

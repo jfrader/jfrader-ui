@@ -63,7 +63,7 @@ export interface GameSeatProps extends Omit<GamePanelProps, 'children'>, Omit<Ga
   hand?: ReactNode;
   /** Hidden hand count; the decorative fan shows at most three backs. */
   handCount?: number;
-  /** Chip fits a table edge; panel includes standalone chat. Defaults to chip. */
+  /** Raised pill for a table edge; panel includes standalone chat on a bordered surface. Defaults to chip. */
   variant?: 'chip' | 'panel';
   /** Decorative avatar fan (at most three backs), localized count, or no shorthand hand. */
   handDisplay?: 'fan' | 'count' | 'none';
@@ -88,7 +88,7 @@ export interface GameSeatProps extends Omit<GamePanelProps, 'children'>, Omit<Ga
 }
 
 const rootStyle = css({
-  label: 'game-seat', display: 'grid', gridTemplateColumns: 'auto minmax(0, 1fr) auto', alignItems: 'center', columnGap: vars.space[3], rowGap: vars.space[1],
+  label: 'game-seat', display: 'grid', gridTemplateColumns: 'auto minmax(0, 1fr) auto', alignItems: 'center', columnGap: vars.space[2], rowGap: vars.space[1],
   inlineSize: `calc(4 * ${vars.space[12]})`, blockSize: `calc(${vars.space[12]} + ${vars.space[8]})`, boxSizing: 'border-box',
   maxInlineSize: '100%', position: 'relative', isolation: 'isolate',
   color: vars.color.text, fontSize: vars.textSize.sm,
@@ -100,17 +100,19 @@ const rootStyle = css({
   '&[data-offline="true"]': { outline: `1px dashed ${vars.color.borderControl}`, outlineOffset: vars.space[1] },
   [FORCED_COLORS]: { color: 'CanvasText', '&[data-turned="true"], &[data-state="active"], &[data-state="winner"]': { '--seat-ring-color': 'Highlight' } },
 });
-const avatarStyle = css({ position: 'relative', display: 'grid', placeItems: 'center', gridRow: '1 / span 3', inlineSize: vars.space[10], blockSize: vars.space[10],
+const avatarStyle = css({ position: 'relative', isolation: 'isolate', display: 'grid', placeItems: 'center', gridRow: '1 / span 3', inlineSize: vars.space[10], blockSize: vars.space[10],
   borderRadius: '50%', outline: '2px solid var(--seat-ring-color, transparent)', outlineOffset: vars.space[1],
   '[data-variant="panel"] > &': { gridRow: 'auto' },
   '[data-state="winner"] > &': { outlineStyle: 'double', outlineWidth: '3px' },
-  '& > [data-ui~="avatar"]': { zIndex: 1 },
+});
+const avatarContentStyle = css({ position: 'relative', zIndex: 1, display: 'grid', placeItems: 'center', inlineSize: '100%', blockSize: '100%', borderRadius: '50%', overflow: 'hidden', backgroundColor: vars.color.surfaceRaised,
+  [FORCED_COLORS]: { backgroundColor: 'Canvas' },
 });
 const nameStyle = css({ fontWeight: vars.fontWeight.semibold, gridColumn: 2, minInlineSize: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', '[data-variant="panel"] > &': { gridColumn: 'auto' } });
 const badgesStyle = css({ display: 'flex', gap: vars.space[1], gridColumn: 2, minInlineSize: 0, overflow: 'hidden', whiteSpace: 'nowrap', '[data-variant="panel"] > &': { gridColumn: 'auto', justifyContent: 'center', flexWrap: 'wrap' } });
 const pointsStyle = css({ gridColumn: 3, gridRow: '1 / span 3', maxInlineSize: vars.space[12], overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: vars.fontWeight.bold, fontVariantNumeric: 'tabular-nums', '[data-variant="panel"] > &': { gridColumn: 'auto', gridRow: 'auto', maxInlineSize: 'none' } });
 const handStyle = css({ gridColumn: 2, fontVariantNumeric: 'tabular-nums', '[data-variant="panel"] > &': { gridColumn: 'auto' } });
-const fanStyle = css({ position: 'absolute', insetInlineStart: '50%', insetBlockEnd: '50%', zIndex: -1, pointerEvents: 'none',
+const fanStyle = css({ position: 'absolute', insetInlineStart: '50%', insetBlockEnd: '50%', zIndex: 0, pointerEvents: 'none',
   '& > [data-ui~="game-hand-hidden"]': { position: 'absolute', insetBlockEnd: 0, insetInlineStart: 'calc(-1 * var(--game-card-width) / 2)', transform: 'scale(.85)', transformOrigin: '50% 100%' },
 });
 const timerStyle = css({
@@ -118,6 +120,7 @@ const timerStyle = css({
   inlineSize: `calc(100% + 2 * ${vars.space[1]})`, blockSize: `calc(100% + 2 * ${vars.space[1]})`,
   overflow: 'visible', pointerEvents: 'none', fill: 'none', stroke: `var(--seat-ring-color, ${vars.color.accent})`,
   transform: 'rotate(-90deg)',
+  zIndex: 2,
   [FORCED_COLORS]: { stroke: 'Highlight' },
 });
 const emptyStyle = css({});
@@ -185,14 +188,14 @@ export function GameSeat({ name, avatar, badges, points, hand, handCount, chat, 
     ? formatHandCount ? formatHandCount(count, formattedCount) : formattedCount : undefined;
   const Name = slots?.name ?? 'span';
   const nameIdentity = [...new Set(['game-seat-name', slotProps?.name?.['data-ui']].flatMap((value) => value?.split(/\s+/).filter(Boolean) ?? []))].join(' ');
-  return <DeckArtProvider artSet={artSet} cardArtSets={cardArtSets}><GamePanel {...props} slots={slots} marker="game-seat" structure={rootStyle} rootSlot={slotProps?.root}
+  return <DeckArtProvider artSet={artSet} cardArtSets={cardArtSets}><GamePanel {...props} variant={variant} slots={slots} marker="game-seat" structure={rootStyle} rootSlot={slotProps?.root}
     attributes={{ role: 'group', 'aria-labelledby': [labelId, externalLabel].filter(Boolean).join(' '),
       'data-variant': variant, 'data-state': state ?? slotProps?.root?.['data-state'] ?? props['data-state'] ?? 'idle', 'data-turned': String(turned), 'data-offline': String(offline), 'data-dimmed': String(dimmed) }}>
     <SeatPart {...slotProps?.avatar} component={slots?.avatar} marker="avatar" styles={avatarStyle} data-timer-only={!isRenderable(avatar) && turn ? 'true' : undefined}>
       {fan && <SeatPart {...slotProps?.hand} component={slots?.hand} marker="hand" styles={fanStyle} aria-hidden="true">
         <GameHand.Hidden playerKey={seat?.player?.key} count={Math.min(count, 3)} size="sm" label="" aria-hidden="true" artSet={artSet} cardArtSets={cardArtSets} />
       </SeatPart>}
-      {avatar}
+      <span data-ui="game-seat-avatar-content" css={avatarContentStyle}>{avatar}</span>
       {turn && <TurnRing {...slotProps?.timer} component={slots?.timer} turn={turn} onMilestone={onTurnMilestone} />}
     </SeatPart>
     <WithSx styles={[nameStyle, slotProps?.name?.sx]} className={slotProps?.name?.className}>
