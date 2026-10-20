@@ -133,20 +133,35 @@ export interface LightboxGalleryLabels {
 export interface LightboxGalleryProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>,
     SxProps {
+  /** Supplies images in thumbnail and viewer navigation order, keyed by stable ids. */
   images: readonly LightboxGalleryImage[];
+  /** Names the gallery region and viewer and prefixes the active image title. */
   label: string;
+  /** Sets the target minimum column width in pixels; at least two columns remain. Defaults to 150 for omitted, non-positive or non-finite values. */
   minColumnWidth?: number;
+  /** Selects the spacing token between thumbnail tiles. Defaults to `2`. */
   gap?: keyof typeof vars.space;
+  /** Controls the selected image id; an unknown or `null` id prevents the viewer opening. */
   value?: string | null;
+  /** Selects the initial image when uncontrolled. Defaults to the first image id, or `null` for an empty gallery. */
   defaultValue?: string | null;
+  /** Called with the requested image id when opening a tile or navigating. */
   onValueChange?: (id: string | null) => void;
+  /** Controls viewer visibility; the selected id must exist in `images`. */
   open?: boolean;
+  /** Opens the uncontrolled viewer initially when the selected image exists. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Called when the viewer requests opening or closing. */
   onOpenChange?: (open: boolean) => void;
+  /** Caps magnification as a multiplier, with a minimum of 1. Defaults to 4 for omitted, non-positive or non-finite values. */
   maxZoom?: number;
+  /** Overrides English control labels, fallback text and position/zoom formatters. */
   labels?: Partial<LightboxGalleryLabels>;
+  /** Sets number and zoom-percentage formatting locales; omitted uses the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Passes props to thumbnail and viewer parts. */
   slotProps?: LightboxGallerySlotProps;
+  /** Replaces thumbnail and viewer parts. */
   slots?: LightboxGallerySlots;
 }
 

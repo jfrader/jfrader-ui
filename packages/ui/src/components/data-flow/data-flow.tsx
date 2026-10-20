@@ -473,6 +473,9 @@ const controlsStyle = css({
 
 const buttonStyle = css({
   minBlockSize: vars.space[8],
+  minInlineSize: 0,
+  maxInlineSize: '100%',
+  whiteSpace: 'normal',
   paddingBlock: vars.space[2],
   paddingInline: vars.space[3],
   border: `1px solid ${vars.color.borderControl}`,
@@ -714,13 +717,15 @@ export function DataFlow({
     const resize =
       typeof ResizeObserver === 'undefined'
         ? null
-        : new ResizeObserver(([entry]) => {
-            if (!entry) return;
-            const width = entry.contentRect.width;
-            setContainerWidth(width);
+        : new ResizeObserver((entries) => {
+            const sceneEntry = entries.find(entry => entry.target === sceneEl);
+            if (sceneEntry) setContainerWidth(sceneEntry.contentRect.width);
             recomputeGeometry();
           });
     resize?.observe(sceneEl);
+    for (const node of [...sourceNodeRefs.current, coreNodeRef.current, ...destNodeRefs.current]) {
+      if (node) resize?.observe(node);
+    }
     const directionObserver = new MutationObserver(recomputeGeometry);
     for (let ancestor: HTMLElement | null = sceneEl; ancestor; ancestor = ancestor.parentElement) {
       directionObserver.observe(ancestor, { attributes: true, attributeFilter: ['dir'] });

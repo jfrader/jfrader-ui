@@ -48,27 +48,44 @@ export interface HoldToConfirmSlots {
 
 export interface HoldToConfirmProps
   extends Omit<ComponentPropsWithRef<'button'>, 'children' | 'value' | 'defaultValue'>, SxProps {
+  /** Displays the button text before confirmation. */
   label: ReactNode;
   'data-ui'?: string;
+  /** Displays the button text after confirmation. */
   confirmedLabel: ReactNode;
+  /** Announces completion when confirmation is accepted on the next render. */
   confirmationAnnouncement: string;
+  /** Builds the hold hint from the locale-formatted duration in seconds. */
   getHoldDescription: (formattedDuration: string) => string;
+  /** Formats the hold duration using this locale; defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Sets the required hold time in milliseconds. Must be finite and positive; defaults to 1200. */
   duration?: number;
+  /** Controls confirmation state; confirmed buttons cannot start another hold. */
   value?: boolean;
+  /** Sets initial uncontrolled confirmation state. Defaults to false. */
   defaultValue?: boolean;
+  /** Requests confirmation state after a completed hold. */
   onValueChange?: (confirmed: boolean) => void;
+  /** Runs after the hold completes, even if controlled confirmation is rejected. */
   onConfirm: () => void;
+  /** Reports when a hold starts, completes or is cancelled. */
   onHoldChange?: (holding: boolean) => void;
+  /** Sets the progress fill color. Defaults to `accent`. */
   tone?: HoldToConfirmTone;
+  /** Sets button height, padding and text size. Defaults to `md`. */
   size?: HoldToConfirmSize;
   /** Morphs the pill-shaped button between its idle and confirmed faces. */
   variant?: HoldToConfirmVariant;
+  /** Displays a glyph before confirmation. */
   icon?: ReactNode;
+  /** Displays a glyph after confirmation. Defaults to a checkmark. */
   confirmedIcon?: ReactNode;
+  /** Replaces the button and its presentation parts. */
   slots?: HoldToConfirmSlots;
   /** Shorthand for slots.root; slots.root takes precedence. */
   component?: HoldToConfirmSlots['root'];
+  /** Passes props to the button and its presentation parts. */
   slotProps?: Partial<
     Record<
       | /** Face layer displaying the button icon and label. */

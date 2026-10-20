@@ -84,25 +84,43 @@ export type CodeHighlightLoader = (
 export interface CodeBlockProps extends Omit<ComponentPropsWithRef<'section'>, 'children' | 'onChange'>, SxProps {
   /** Use fixed charcoal with `contrast`; `default` inherits the parent appearance. */
   appearance?: SurfaceAppearance;
+  /** Supplies the source text to display and copy. */
   code: string;
+  /** Displays a filename in the header instead of `label`. */
   filename?: string;
+  /** Displays the language badge and identifies the language for `highlight`. */
   language?: string;
+  /** Displays the header caption when `filename` is absent. Defaults to "Source code". */
   label?: string;
+  /** Names the selectable source region. Defaults to "Selectable source code". */
   sourceLabel?: string;
+  /** Limits collapsed source lines, rounded down to at least one; nonpositive or nonfinite values disable collapsing. */
   maxLines?: number;
+  /** Controls whether collapsible source is fully expanded. */
   open?: boolean;
+  /** Expands collapsible source initially when uncontrolled. Defaults to false. */
   defaultOpen?: boolean;
+  /** Requests expansion or collapse when the disclosure button is pressed. */
   onOpenChange?: (open: boolean) => void;
+  /** Shows the line-number gutter. Defaults to false. */
   lineNumbers?: boolean;
+  /** Formats line numbers and the expansion count; defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Builds the expand button text from the total line count and its formatted value; defaults to English. */
   getExpandLabel?: (count: number, formatted: string) => string;
+  /** Labels the collapse button. Defaults to "Show fewer lines". */
   collapseLabel?: string;
+  /** Shows the button that copies the full source. Defaults to true. */
   copyable?: boolean;
+  /** Customizes the copy button without changing its source text. */
   copyButtonProps?: Partial<Omit<CopyButtonProps, 'text' | 'ref'>> & SxProps;
+  /** Receives the preformatted source element. */
   preRef?: Ref<HTMLPreElement>;
   /** Syntax highlighting loader, read when `code` or `language` changes. */
   highlight?: CodeHighlightLoader;
+  /** Passes props to the section and its presentation parts. */
   slotProps?: CodeBlockSlotProps;
+  /** Replaces the section and its presentation parts. */
   slots?: CodeBlockSlots;
   /** Shorthand for slots.root; slots.root takes precedence. */
   component?: CodeBlockSlots['root'];

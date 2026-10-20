@@ -33,6 +33,9 @@
 ### Fixed
 
 - The axe gate also runs the WCAG 2.2 A rules; `README.md`, `docs/qa-gates.md`, and `SKILL.md` list the exact rule set.
+- `VoiceOrb` keeps a violet shell with subtle cyan Listening, indigo Thinking and rose Speaking clouds. State changes crossfade and gather or release the cloud; Speaking reshapes the volume while Idle stays calm. Motion remains continuous and honors live reduced-motion changes.
+- `ImageCompare` keeps touch dragging active when pointer capture moves from the handle to the frame. Reveal, divider and handle animate together between values, follow dragging directly, and honor live reduced-motion changes. Resizable examples fit phone screens.
+- `DataFlow` wraps long playback labels inside narrow panels and keeps connections attached when individual nodes resize.
 - `Calendar` keeps localized weekday headers and dates centered in equal columns, fits narrow containers, preserves navigation targets beside wrapping month labels, and shows the full selected range in forced colors.
 - Documentation section links no longer pull you back after manual scrolling. The left menu keeps its scroll position and expanded groups between pages.
 - `StretchRefresh` wraps long pull instructions and empty-state text inside narrow feeds; its examples fit phone screens.

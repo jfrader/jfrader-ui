@@ -85,21 +85,37 @@ export interface StretchRefreshLabels {
 }
 export interface StretchRefreshProps<T>
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'title'>, SxProps {
+  /** Name the feed in its heading. */
   title: ReactNode;
+  /** Set the feed heading level. Defaults to `2`. */
   headingLevel?: 2 | 3 | 4 | 5 | 6;
+  /** Show content below the feed heading. */
   subtitle?: ReactNode;
+  /** Render these feed entries in order. */
   items: readonly T[];
+  /** Return a stable React key for each feed entry. */
   getKey: (item: T) => string;
+  /** Render an entry's content inside its list item. */
   renderItem: (item: T, index: number) => ReactNode;
+  /** Refresh the feed. A resolved string replaces the success message. Rejection shows `labels.error`. */
   onRefresh: () => Promise<string | void>;
+  /** Control the busy state. Accept a refresh request by committing `true` before the next animation frame. */
   refreshing?: boolean;
+  /** Set the initial uncontrolled busy state without calling `onRefresh`. Defaults to `false`. */
   defaultRefreshing?: boolean;
+  /** Receive refresh start requests and `false` when refresh work settles. */
   onRefreshingChange?: (refreshing: boolean) => void;
+  /** Block new pull and button refresh requests. Defaults to `false`. */
   disabled?: boolean;
+  /** Set the pull distance required on release, in pixels. Defaults to `72` for omitted, nonpositive or nonfinite values. */
   threshold?: number;
+  /** Show this content when `items` is empty. */
   emptyContent?: ReactNode;
+  /** Override refresh action, progress and result messages. Defaults to English. */
   labels?: StretchRefreshLabels;
+  /** Pass props and styles to feed parts, optionally per item. */
   slotProps?: StretchRefreshSlotProps<T>;
+  /** Replace feed parts with custom components. */
   slots?: StretchRefreshSlots;
 }
 

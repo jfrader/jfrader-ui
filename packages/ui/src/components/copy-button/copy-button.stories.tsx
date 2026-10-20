@@ -278,8 +278,8 @@ export const Sizes: Story = {
   ),
   play: async ({ canvasElement }) => {
     for (const size of SIZES) {
-      const labelled = getButton(canvasElement, `Copy ${size}`).getBoundingClientRect();
-      await expect(labelled.height).toBe(SIZE_PX[size]);
+      const labeled = getButton(canvasElement, `Copy ${size}`).getBoundingClientRect();
+      await expect(labeled.height).toBe(SIZE_PX[size]);
       const square = getButton(canvasElement, `Copy ${size} icon`).getBoundingClientRect();
       await expect(square.height).toBe(SIZE_PX[size]);
       await expect(square.width).toBe(SIZE_PX[size]);

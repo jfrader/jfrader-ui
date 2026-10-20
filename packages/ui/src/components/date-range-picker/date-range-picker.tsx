@@ -155,12 +155,17 @@ export interface DateRangePickerMessages {
 }
 
 export interface DateRangePickerBaseProps {
+  /** Controls the committed inclusive date range; `null` leaves it empty. */
   value?: DateRangeValue | null;
+  /** Initial uncontrolled committed range. Defaults to empty. */
   defaultValue?: DateRangeValue | null;
   /** Apply request; a structurally unchanged range is not requested. Controlled values may reject it. */
   onValueChange?: (range: DateRangeValue | null) => void;
+  /** Controls whether the date range dialog is open. */
   open?: boolean;
+  /** Opens the uncontrolled dialog initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Requests a change to the dialog's open state. */
   onOpenChange?: (open: boolean) => void;
   /** Earliest selectable date, 'YYYY-MM-DD'. */
   min?: string;
@@ -176,16 +181,19 @@ export interface DateRangePickerBaseProps {
   months?: DateRangePickerMonths;
   /** Collision boundary of the dialog. Defaults to the clipping ancestors and the viewport. */
   boundary?: HTMLElement | null;
+  /** Lists shortcuts that replace the draft range. Defaults to no presets. */
   presets?: readonly DateRangePreset[];
   /** Blocks the popup, even with controlled open=true, and omits the form fields. */
   disabled?: boolean;
   /** The dialog opens for inspection; days, presets and Apply change nothing. */
   readOnly?: boolean;
+  /** Adds `messages.required` to the trigger name without native form validation. */
   required?: boolean;
   /** Hidden form field carrying the start date ('' when empty). */
   startName?: string;
   /** Hidden form field carrying the end date ('' when empty). */
   endName?: string;
+  /** Supplies action labels, range summaries and accessible descriptions. */
   messages: DateRangePickerMessages;
   /** One Trigger and one Content. */
   children?: ReactNode;
@@ -203,12 +211,16 @@ export interface DateRangePickerCompoundProps extends DateRangePickerBaseProps {
 export interface DateRangePickerEasyProps extends Omit<DateRangePickerBaseProps, 'children'> {
   /** Name the generated range trigger and dialog. */
   label: string;
+  /** Content shown in the trigger when no valid range is committed. */
   placeholder?: ReactNode;
+  /** Sets the generated trigger's size. Defaults to `md`. */
   size?: DateRangePickerSize;
+  /** Decorative icon before the generated trigger's range text. */
   icon?: ReactNode;
   children?: never;
   /** Replace native roots with components that forward all supplied props and ref. */
   slots?: DateRangePickerSlots;
+  /** Supplies props and `sx` to the generated trigger and dialog. */
   slotProps?: {
     /** Button trigger opening the date range dialog. */
     trigger?: DateRangePickerTriggerProps & DateRangePickerSlotProps;
@@ -240,6 +252,7 @@ export interface DateRangePickerContentSlots {
 export interface DateRangePickerTriggerProps
   extends Omit<ComponentPropsWithRef<'button'>, 'value' | 'defaultValue' | 'children'>,
     SxProps {
+  /** Sets the trigger's size. Defaults to `md`. */
   size?: DateRangePickerSize;
   /** Decorative icon before the range text. */
   icon?: ReactNode;
@@ -253,7 +266,9 @@ export interface DateRangePickerSlotProps {
 }
 
 export interface DateRangePickerContentProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
+  /** Replaces the preset, calendar, summary and action containers. */
   slots?: DateRangePickerContentSlots;
+  /** Supplies attributes and `sx` to the dialog's interior containers. */
   slotProps?: {
     /** List of quick-selection date range presets. */
     presets?: DateRangePickerSlotProps;

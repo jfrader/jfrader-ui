@@ -26,11 +26,17 @@ import { useControlledState } from '../../utils/use-controlled-state';
 export type RadioGroupOrientation = 'vertical' | 'horizontal';
 
 export interface RadioGroupCompoundProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
+  /** Controls the selected radio value. */
   value?: string;
+  /** Sets the initial uncontrolled selection; omitted values leave all radios unchecked. */
   defaultValue?: string;
+  /** Reports the requested radio value when an option becomes checked. */
   onValueChange?: (value: string) => void;
+  /** Groups native inputs under this form field name; defaults to a generated name. */
   name?: string;
+  /** Disables every radio in the group. Defaults to false. */
   disabled?: boolean;
+  /** Arranges options vertically or horizontally. Defaults to `vertical`; arrow-key behavior is unchanged. */
   orientation?: RadioGroupOrientation;
   options?: never;
   label?: never;
@@ -63,11 +69,16 @@ export interface RadioGroupSlotProps {
   radio?: Omit<RadioGroupRadioProps, 'value' | 'label' | 'description' | 'disabled' | 'id' | 'children'>;
 }
 export interface RadioGroupEasyProps extends Omit<RadioGroupCompoundProps, 'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component'> {
+  /** Renders radio options in array order instead of compound children. */
   options: readonly RadioGroupOption[];
+  /** Displays the group heading and supplies its accessible name. */
   label?: ReactNode;
   children?: never;
+  /** Replaces the group container, heading and radio options. */
   slots?: RadioGroupSlots;
+  /** Replaces the group container; `slots.root` takes precedence. */
   component?: RadioGroupSlots['root'];
+  /** Passes props to the group container, heading and radio options. */
   slotProps?: RadioGroupSlotProps;
 }
 export type RadioGroupProps = RadioGroupCompoundProps | RadioGroupEasyProps;
@@ -90,10 +101,15 @@ export interface RadioGroupRadioSlots {
 export interface RadioGroupRadioProps
   extends Omit<ComponentPropsWithRef<'input'>, 'type' | 'value' | 'name' | 'checked' | 'defaultChecked' | 'size'>,
     SxProps {
+  /** Identifies this option for selection and form submission. */
   value: string;
+  /** Displays the option text and adds it to the input's accessible name. */
   label?: ReactNode;
+  /** Displays supporting text and adds it to the input's accessible description. */
   description?: ReactNode;
+  /** Replaces the option wrapper, control, label and description. */
   slots?: RadioGroupRadioSlots;
+  /** Passes props to the option wrapper, control, label and description. */
   slotProps?: {
     /** Outer label wrapping the radio control and text. */
     root?: ComponentPropsWithRef<'label'> & { sx?: Interpolation<Theme> };
