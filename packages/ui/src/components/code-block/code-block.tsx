@@ -23,7 +23,9 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import type { SlotCss, SxProps } from '../../styling/sx';
-import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
+import type { PresentationProps } from '../../utils/presentation-slot';
+import { SurfaceRoot } from '../surface/surface-root';
+import type { SurfaceAppearance } from '../../styling/surface';
 import { numberFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
@@ -80,6 +82,8 @@ export type CodeHighlightLoader = (
 ) => CodeHighlightLines | null | PromiseLike<CodeHighlightLines | null>;
 
 export interface CodeBlockProps extends Omit<ComponentPropsWithRef<'section'>, 'children' | 'onChange'>, SxProps {
+  /** Use fixed charcoal with `contrast`; `default` inherits the parent appearance. */
+  appearance?: SurfaceAppearance;
   code: string;
   filename?: string;
   language?: string;
@@ -137,15 +141,9 @@ const rootStyle = css({
   minInlineSize: 0,
   maxInlineSize: '100%',
   padding: vars.space[1],
-  backgroundColor: vars.color.surfaceRaised,
-  color: vars.color.text,
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.lg,
-  boxShadow: vars.shadow.raised,
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   lineHeight: vars.lineHeight.base,
-  [FORCED_COLORS]: { borderColor: 'CanvasText', color: 'CanvasText' },
 });
 const headerStyle = css({
   display: 'flex',
@@ -275,6 +273,7 @@ function renderLine(line: string, tokens: readonly CodeHighlightToken[] | undefi
 }
 
 export function CodeBlock({
+  appearance,
   ref,
   code,
   filename,
@@ -370,14 +369,19 @@ export function CodeBlock({
   });
 
   return (
-        <PresentationSlot
+        <SurfaceRoot
           element="section"
-          component={slots?.root ?? component}
-          slotProps={{ ...slotProps?.root, 'data-highlighted': highlightedLines ? '' : undefined }}
-          styles={rootStyle}
+          owner="CodeBlock"
+          appearance={appearance}
+          variant="raised"
+          component={component}
+          slots={slots}
+          slotProps={slotProps}
+          attributes={{ 'data-highlighted': highlightedLines ? '' : undefined }}
+          structure={rootStyle}
           sx={sx}
           {...rest}
-          ref={ref}
+          internalRef={ref}
           marker="code-block"
           className={className}
           aria-label={ariaLabel}
@@ -487,7 +491,7 @@ export function CodeBlock({
               {expanded ? collapseLabel : getExpandLabel(lines.length, formatter.format(lines.length))}
             </Toggle>
           )}
-        </PresentationSlot>
+        </SurfaceRoot>
   );
 }
 

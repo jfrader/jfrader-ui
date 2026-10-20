@@ -17,9 +17,10 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { raisedSurface } from '../../styling/surface';
+import type { SurfaceAppearance } from '../../styling/surface';
 import type { SxProps } from '../../styling/sx';
-import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
+import type { PresentationProps } from '../../utils/presentation-slot';
+import { SurfaceRoot } from '../surface/surface-root';
 import { numberFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
@@ -99,6 +100,8 @@ export interface JsonViewerSlots {
 
 export interface JsonViewerProps
   extends Omit<ComponentPropsWithRef<'div'>, 'onSelect' | 'onCopy' | 'defaultValue' | 'children'>, SxProps {
+  /** Use fixed charcoal with `contrast`; `default` inherits the parent appearance. */
+  appearance?: SurfaceAppearance;
   data: JsonValue;
   rootName?: string;
   expandedValue?: readonly string[];
@@ -235,10 +238,7 @@ const thinScrollbar = {
   scrollbarColor: `${vars.color.borderStrong} transparent`,
 } as const;
 const rootStyle = css({
-  ...raisedSurface,
   minInlineSize: 0,
-  borderRadius: vars.radius.lg,
-  boxShadow: vars.shadow.raised,
   fontSize: vars.textSize.sm,
   overflow: 'hidden',
 });
@@ -279,6 +279,9 @@ const matchStatusStyle = css({
 });
 const actionsStyle = css({
   display: 'flex',
+  flexWrap: 'wrap',
+  minInlineSize: 0,
+  maxInlineSize: '100%',
   alignItems: 'center',
   gap: vars.space[1],
   marginInlineStart: 'auto',
@@ -366,17 +369,19 @@ const caretStyle = css({
 // JSON text runs resolve their own direction so RTL layouts keep keys, values and counts readable.
 const ownDirection = { unicodeBidi: 'plaintext' } as const;
 const keyStyle = css({ ...ownDirection, color: vars.color.text });
-const punctuationStyle = css({ color: vars.color.textMuted });
+const selectedText = { '[aria-selected="true"] &': { color: vars.color.text } };
+const punctuationStyle = css({ color: vars.color.textMuted, ...selectedText });
 const valueStyle = css({
   ...ownDirection,
   '&[data-type="string"]': { color: vars.color.accentText },
-  '&[data-type="number"]': { color: vars.color.textMuted, fontVariantNumeric: 'tabular-nums' },
+  '&[data-type="number"]': { color: vars.color.textMuted, fontVariantNumeric: 'tabular-nums', ...selectedText },
   '&[data-type="boolean"]': { color: vars.color.warning },
-  '&[data-type="null"]': { color: vars.color.textMuted, fontStyle: 'italic' },
+  '&[data-type="null"]': { color: vars.color.textMuted, fontStyle: 'italic', ...selectedText },
   [FORCED_COLORS]: { color: 'CanvasText' },
 });
 const chipStyle = css({
   ...ownDirection,
+  ...selectedText,
   display: 'inline-flex',
   alignItems: 'center',
   paddingInline: vars.space[2],
@@ -491,6 +496,7 @@ const pathIcon = icon(
  * Accepts strict JSON only, without getters, cycles or nonfinite numbers. Paged, not virtualized.
  */
 export function JsonViewer({
+  appearance,
   data,
   rootName = 'root',
   expandedValue,
@@ -1020,28 +1026,33 @@ export function JsonViewer({
   );
   const separator = <span aria-hidden="true" css={separatorStyle} />;
   return (
-        <PresentationSlot
-          element="div"
-          component={slots?.root ?? component}
-          styles={rootStyle}
+        <SurfaceRoot
+          owner="JsonViewer"
+          appearance={appearance}
+          variant="raised"
+          component={component}
+          slots={slots}
+          structure={rootStyle}
           sx={sx}
           slotProps={{
-            ...slotProps?.root,
-            onKeyDown: handleKeyDown,
-            onClick: (event) => {
-              (slotProps?.root?.onClick ?? onClick)?.(event);
-              if (event.defaultPrevented) return;
-              const item = (event.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
-              if (!item || !treeRef.current?.contains(item)) return;
-              const row = visible.find((row) => rowRefs.current.get(row.path) === item);
-              if (row) {
-                moveFocus(row.path);
-                activate(row);
-              }
+            root: {
+              ...slotProps?.root,
+              onKeyDown: handleKeyDown,
+              onClick: (event) => {
+                (slotProps?.root?.onClick ?? onClick)?.(event);
+                if (event.defaultPrevented) return;
+                const item = (event.target as HTMLElement).closest<HTMLElement>('[role="treeitem"]');
+                if (!item || !treeRef.current?.contains(item)) return;
+                const row = visible.find((row) => rowRefs.current.get(row.path) === item);
+                if (row) {
+                  moveFocus(row.path);
+                  activate(row);
+                }
+              },
             },
           }}
           {...rest}
-          ref={ref}
+          internalRef={ref}
           marker="json-viewer"
           className={className}
           style={
@@ -1176,7 +1187,7 @@ export function JsonViewer({
           >
             {status}
           </Status>
-        </PresentationSlot>
+        </SurfaceRoot>
   );
 }
 JsonViewer.displayName = 'JsonViewer';

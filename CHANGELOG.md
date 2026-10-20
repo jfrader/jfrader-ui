@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- `JsonViewer` keeps selected counts and muted values readable on contrast panels, and wraps toolbar actions inside narrow containers.
 - `LightboxGallery` keeps long captions and viewer controls inside the dialog, reveals the selected thumbnail in LTR and RTL, and fits its documentation examples on narrow screens.
 - `VoiceRecorder` wraps long action labels and message metadata on narrow screens, and aligns waveform progress with right-to-left seeking while keeping timers in playback order.
 - `ShareSheet` inline layouts retain their content width, the access picker stays on the copy row at phone widths, and confirmation faces appear without fading when reduced motion is enabled.
@@ -21,6 +22,7 @@
 
 ### Added
 
+- `CodeBlock`, `TypewriterTerminal` and `JsonViewer` share Surface panel material and support inherited or contrast appearance. Root replacements own their panel material.
 - `CommentThread`, `TypewriterTerminal`, `CodeBlock` and `JsonViewer` accept `slots.root`, `slotProps.root` and `component` to replace their outer element while retaining generated content and existing panel styling.
 - `Timeline`, `MetricCard`, `EmptyState` and `ChatThread` accept `slots.root`, `slotProps.root` and `component` to replace their outer element while retaining generated content, props, refs and styling.
 - `Avatar` accepts fallback children, including `PersonAvatar size="full"`; `AvatarGroup` forwards shared and per-member artwork and customization.

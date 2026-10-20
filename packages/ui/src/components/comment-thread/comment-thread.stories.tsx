@@ -6,6 +6,7 @@ import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storyb
 import { vars } from '@jfrader/tokens/vars';
 import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside } from '../../testing/geometry-assertions';
 import { Button, type ButtonProps } from '../button';
 import { Textarea, type TextareaProps } from '../textarea';
 import {
@@ -26,6 +27,20 @@ function ReplacementRoot(props: ComponentPropsWithRef<'section'>) {
 function SugarRoot(props: ComponentPropsWithRef<'section'>) {
   return <section {...props} data-testid="sugar-root" />;
 }
+
+/** The section remains a layout lane around the comment card. */
+export const LayoutRoot: StoryObj<typeof CommentThread> = {
+  tags: ['!autodocs'],
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui~="comment-thread"]')!;
+    const card = root.querySelector<HTMLElement>('[data-ui~="card"]')!;
+    await expect(root.tagName).toBe('SECTION');
+    await expect(getComputedStyle(root).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    await expect(getComputedStyle(root).borderTopWidth).toBe('0px');
+    await expect(getComputedStyle(card).borderTopWidth).toBe('1px');
+    await expectInside(card, root);
+  },
+};
 
 /** Replace the outer section while keeping the comments and composer. */
 export const RootReplacement: StoryObj<typeof CommentThread> = {

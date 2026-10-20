@@ -259,15 +259,16 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
 - `surface` — `raisedSurface` panel, the surface appearance helpers and `modalShellReset` for native
   `<dialog>` shells.
 - `components/surface/surface-root` — private root seam shared by Surface, Card, Drawer.Panel,
-  BottomSheet.Panel, Dialog.Panel and DialogStack.Content: separates
+   BottomSheet.Panel, Dialog.Panel, DialogStack.Content, CodeBlock, TypewriterTerminal and JsonViewer: separates
   default material from retained host structure, resolves inherited appearance once, carries
   same-theme tokens, merges root props and style lanes, composes refs with cleanup, and diagnoses
   missing/non-div refs, roots outside their owning shell/stage and changed replacement identity.
   Each adopts `slots.root`; Card also exposes
   header/title/description/content/footer replacement slots alongside its anatomy `slotProps`.
   Card interior replacements forward all received props/ref and retain the supplied className.
-  Root replacements own
-  material, forward all received props to one div, and apply their styles before the supplied
+   Root replacements own
+   material, forward all received props to one native root (section for CodeBlock, figure for
+   TypewriterTerminal, div otherwise), and apply their styles before the supplied
   className. Declare component types outside render; first-render inline functions cannot be
   reliably diagnosed. Scope/style updates must preserve the root and descendant identity.
   Native Content refs/styles/events remain on the dialog shell. Plain Dialog.Content children
