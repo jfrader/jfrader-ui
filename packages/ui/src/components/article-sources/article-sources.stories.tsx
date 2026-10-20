@@ -46,27 +46,110 @@ export const Light: Story = { globals: { theme: 'light' } };
 export const HeadingLevels: Story = { render: () => <div><ArticleSources title="Edition" level={1} items={items} /><ArticleSources title="Northline" level={2} items={items} /><ArticleSources title="Station" level={3} items={items} /><ArticleSources title="Platform" level={4} items={items} /><ArticleSources title="Inspection" level={5} items={items} /><ArticleSources title="Record" level={6} items={items} /></div> };
 const clicked = fn((event: MouseEvent<HTMLAnchorElement>) => event.preventDefault());
 function renderLink(props: ComponentPropsWithRef<'a'>) { return <a {...props} data-adapter="router" />; }
-export const LinkAdapter: Story = { args: { items: [{ id: 'edition', label: 'Morning edition', href: '#edition', renderLink }], slotProps: { link: { onClick: clicked, target: '_blank', rel: 'author' } } }, play: async ({ canvasElement, userEvent }) => {
-  const link = canvasElement.querySelector('a')!;
-  await expect(link).toHaveAttribute('data-adapter', 'router');
-  await expect(link).toHaveAttribute('rel', 'author noopener noreferrer');
-  await expect(canvasElement.querySelector('a a')).toBeNull();
-  clicked.mockClear();
-  await userEvent.tab(); await expect(link.ownerDocument.activeElement).toBe(link);
-  await expect(getComputedStyle(link).outlineStyle).not.toBe('none');
-  await userEvent.keyboard('{Enter}'); await expect(clicked).toHaveBeenCalledTimes(1);
-} };
+export const LinkAdapter: Story = {
+  args: { items: [{ id: 'edition', label: 'Morning edition', href: '#edition', renderLink }], slotProps: { link: { onClick: clicked, target: '_blank', rel: 'author' } } },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import type { ComponentPropsWithRef } from 'react';
+import { ArticleSources } from '@jfrader/ui';
+
+function RouterLink(props: ComponentPropsWithRef<'a'>) {
+  return <a {...props} />;
+}
+
+<ArticleSources
+  title="Coverage"
+  items={[
+    {
+      id: 'edition',
+      label: 'Morning edition',
+      href: '#edition',
+      renderLink: RouterLink,
+    },
+  ]}
+  slotProps={{
+    link: {
+      target: '_blank',
+      rel: 'author',
+    },
+  }}
+/>`,
+      },
+    },
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const link = canvasElement.querySelector('a')!;
+    await expect(link).toHaveAttribute('data-adapter', 'router');
+    await expect(link).toHaveAttribute('rel', 'author noopener noreferrer');
+    await expect(canvasElement.querySelector('a a')).toBeNull();
+    clicked.mockClear();
+    await userEvent.tab(); await expect(link.ownerDocument.activeElement).toBe(link);
+    await expect(getComputedStyle(link).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{Enter}'); await expect(clicked).toHaveBeenCalledTimes(1);
+  },
+};
 function Section(props: ComponentPropsWithRef<'section'>) { return <section {...props} data-replacement="section" />; }
 function Heading({ level = 2, ...props }: PresentationHeadingProps) { const Element = `h${level}` as const; return <Element {...props} data-replacement="heading" />; }
 function List(props: ComponentPropsWithRef<'ul'>) { return <ul {...props} data-replacement="list" />; }
 function Item(props: ComponentPropsWithRef<'li'>) { return <li {...props} data-replacement="item" />; }
 function Link(props: ComponentPropsWithRef<'a'>) { return <a {...props} data-replacement="link" />; }
 const rootRef = createRef<HTMLElement>();
-export const ReplacementSlots: Story = { args: { ref: rootRef, slots: { root: Section, heading: Heading, list: List, item: Item, link: Link }, id: 'consumer-sources', className: 'consumer', sx: { '--article-font-body': vars.font.mono }, slotProps: { root: { id: 'slot-sources', 'data-ui': 'custom article-sources', className: 'slot' }, item: { id: 'not-repeated' }, link: { id: 'not-repeated-link' } } }, play: async ({ canvasElement }) => {
-  await expect(rootRef.current).toHaveAttribute('id', 'slot-sources'); await expect(rootRef.current).toHaveClass('slot', 'consumer');
-  await expect(rootRef.current).toHaveAttribute('data-ui', 'article-sources custom');
-  await expect(canvasElement.querySelector('a')?.tagName).toBe('A');
-  await expect(canvasElement.querySelector('#not-repeated, #not-repeated-link')).toBeNull();
-  await expect(canvasElement.querySelectorAll('[data-replacement]')).toHaveLength(6);
-  await expect(getComputedStyle(canvasElement.querySelector('ul')!).fontFamily).toContain('monospace');
-} };
+export const ReplacementSlots: Story = {
+  args: { ref: rootRef, slots: { root: Section, heading: Heading, list: List, item: Item, link: Link }, id: 'consumer-sources', className: 'consumer', sx: { '--article-font-body': vars.font.mono }, slotProps: { root: { id: 'slot-sources', 'data-ui': 'custom article-sources', className: 'slot' }, item: { id: 'not-repeated' }, link: { id: 'not-repeated-link' } } },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import type { ComponentPropsWithRef } from 'react';
+import { ArticleSources, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const MonoSources = styled(ArticleSources)({
+  '--article-font-body': vars.font.mono,
+});
+
+function Section(props: ComponentPropsWithRef<'section'>) {
+  return <section {...props} />;
+}
+function Heading({ level = 2, ...props }: ComponentPropsWithRef<'h2'> & { level?: 1 | 2 | 3 | 4 | 5 | 6 }) {
+  const Element = \`h\${level}\` as const;
+  return <Element {...props} />;
+}
+function List(props: ComponentPropsWithRef<'ul'>) {
+  return <ul {...props} />;
+}
+function Item(props: ComponentPropsWithRef<'li'>) {
+  return <li {...props} />;
+}
+function Link(props: ComponentPropsWithRef<'a'>) {
+  return <a {...props} />;
+}
+
+<MonoSources
+  title="Coverage"
+  items={[
+    { id: 'edition', label: 'Morning edition', href: '#edition' },
+    { id: 'record', label: 'Station record' },
+  ]}
+  slots={{
+    root: Section,
+    heading: Heading,
+    list: List,
+    item: Item,
+    link: Link,
+  }}
+/>`,
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    await expect(rootRef.current).toHaveAttribute('id', 'slot-sources'); await expect(rootRef.current).toHaveClass('slot', 'consumer');
+    await expect(rootRef.current).toHaveAttribute('data-ui', 'article-sources custom');
+    await expect(canvasElement.querySelector('a')?.tagName).toBe('A');
+    await expect(canvasElement.querySelector('#not-repeated, #not-repeated-link')).toBeNull();
+    await expect(canvasElement.querySelectorAll('[data-replacement]')).toHaveLength(6);
+    await expect(getComputedStyle(canvasElement.querySelector('ul')!).fontFamily).toContain('monospace');
+  },
+};

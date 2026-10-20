@@ -115,7 +115,29 @@ export const EmptyOptionals: Story = { render: () => <ArticleBody><ArticleBody.H
   await expect(canvasElement.querySelector('h2, ul, blockquote, [data-ui~="article-body-cell-label"]')).toBeNull();
 } };
 export const LongText: Story = { render: () => <ArticleBody><ArticleBody.Paragraph>{'Northline'.repeat(60)}</ArticleBody.Paragraph><ArticleBody.Split><ArticleBody.Cell>{'Northline'.repeat(40)}</ArticleBody.Cell><ArticleBody.Cell>{'Northline'.repeat(40)}</ArticleBody.Cell></ArticleBody.Split></ArticleBody> };
-export const RTL: Story = { args: { dir: 'rtl' } };
+export const RTL: Story = {
+  args: { dir: 'rtl' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleBody } from '@jfrader/ui';
+
+<ArticleBody dir="rtl">
+  <ArticleBody.Paragraph variant="drop-cap">The morning edition reached Northline before the first train.</ArticleBody.Paragraph>
+  <ArticleBody.Heading>At the station</ArticleBody.Heading>
+  <ArticleBody.Paragraph>The platform reopened after the inspection.</ArticleBody.Paragraph>
+  <ArticleBody.Fact title="The record" items={[{ id: 'edition', content: 'The first edition arrived at dawn.' }, { id: 'platform', content: 'The platform reopened.' }]} />
+  <ArticleBody.Quote speaker="The editor" attribution="Morning edition">The record remains open.</ArticleBody.Quote>
+  <ArticleBody.Split>
+    <ArticleBody.Cell label="Before">The platform was closed.</ArticleBody.Cell>
+    <ArticleBody.Cell label="After">The platform reopened.</ArticleBody.Cell>
+  </ArticleBody.Split>
+</ArticleBody>`,
+      },
+    },
+  },
+};
 export const Light: Story = { globals: { theme: 'light' } };
 export const ArticleDetail: Story = {
   parameters: { docs: { source: { code: `<article>

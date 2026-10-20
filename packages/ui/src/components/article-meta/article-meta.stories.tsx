@@ -39,9 +39,22 @@ export const UpdatedOnly: Story = { args: { place: undefined, published: undefin
 export const PlaceAndUpdate: Story = { args: { published: undefined, updated }, play: async ({ canvasElement }) => {
   await expect(canvasElement.querySelectorAll('[aria-hidden="true"]')).toHaveLength(1);
 } };
-export const Empty: Story = { args: { place: undefined, published: undefined }, play: async ({ canvasElement }) => {
-  await expect(canvasElement.querySelector('[data-ui~="article-meta"]')).toBeNull();
-} };
+export const Empty: Story = {
+  args: { place: undefined, published: undefined },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleMeta } from '@jfrader/ui';
+
+<ArticleMeta />`,
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-ui~="article-meta"]')).toBeNull();
+  },
+};
 export const Zero: Story = { args: { place: 0, published: { ...published, label: 0 } } };
 export const RTL: Story = { args: { dir: 'rtl', place: 'Northline · المنطقة' } };
 export const Light: Story = { globals: { theme: 'light' }, args: { variant: 'ruled', updated } };
@@ -52,6 +65,43 @@ function Time(props: ComponentPropsWithRef<'time'>) { return <time {...props} da
 const slots: ArticleMetaSlots = { root: Paragraph, place: Span, published: Time, updated: Time, publishedLabel: Span, updatedLabel: Span, placeSeparator: Span, updateSeparator: Span };
 export const ReplacementSlots: Story = {
   args: { slots, publishedLabel: 'Published', updatedLabel: 'Updated', updated, id: 'consumer-meta', slotProps: { root: { id: 'slot-meta', 'data-ui': 'custom article-meta', className: 'slot-root' } }, className: 'consumer-root' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import type { ComponentPropsWithRef } from 'react';
+import { ArticleMeta } from '@jfrader/ui';
+
+function Paragraph(props: ComponentPropsWithRef<'p'>) {
+  return <p {...props} />;
+}
+function Span(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} />;
+}
+function Time(props: ComponentPropsWithRef<'time'>) {
+  return <time {...props} />;
+}
+
+<ArticleMeta
+  place="Northline"
+  published={{ dateTime: '2026-10-19T09:00:00Z', label: '19 October · 09:00' }}
+  publishedLabel="Published"
+  updated={{ dateTime: '2026-10-19T10:00:00Z', label: '19 October · 10:00' }}
+  updatedLabel="Updated"
+  slots={{
+    root: Paragraph,
+    place: Span,
+    published: Time,
+    updated: Time,
+    publishedLabel: Span,
+    updatedLabel: Span,
+    placeSeparator: Span,
+    updateSeparator: Span,
+  }}
+/>`,
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('[data-ui~="article-meta"]');
     await expect(root).toHaveAttribute('id', 'slot-meta');

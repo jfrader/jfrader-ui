@@ -27,11 +27,87 @@ export const Accent: Story = { play: async ({ canvas, userEvent }) => {
   await expect(link.ownerDocument.activeElement).toBe(link);
   await expect(getComputedStyle(link).outlineStyle).not.toBe('none');
 } };
-export const Neutral: Story = { args: { tone: 'neutral' } };
-export const Wrapping: Story = { args: { items: [...items, { id: 'long', label: 'A long topic label that wraps naturally across narrow columns', href: '#topic' }] } };
-export const Empty: Story = { args: { items: [] }, play: async ({ canvasElement }) => { await expect(canvasElement.querySelector('p')).toBeNull(); } };
-export const Zero: Story = { args: { items: [{ id: 'zero', label: 0 }] } };
-export const RTL: Story = { args: { dir: 'rtl', items: [{ id: 'place', label: 'المنطقة Northline', href: '#place' }] } };
+export const Neutral: Story = {
+  args: { tone: 'neutral' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleKicker } from '@jfrader/ui';
+
+<ArticleKicker
+  tone="neutral"
+  items={[
+    { id: 'section', label: 'The city', href: '#city' },
+    { id: 'place', label: 'Northline' },
+  ]}
+/>`,
+      },
+    },
+  },
+};
+export const Wrapping: Story = {
+  args: { items: [...items, { id: 'long', label: 'A long topic label that wraps naturally across narrow columns', href: '#topic' }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleKicker } from '@jfrader/ui';
+
+<ArticleKicker
+  items={[
+    { id: 'section', label: 'The city', href: '#city' },
+    { id: 'place', label: 'Northline' },
+    { id: 'long', label: 'A long topic label that wraps naturally across narrow columns', href: '#topic' },
+  ]}
+/>`,
+      },
+    },
+  },
+};
+export const Empty: Story = {
+  args: { items: [] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleKicker } from '@jfrader/ui';
+
+<ArticleKicker items={[]} />`,
+      },
+    },
+  },
+  play: async ({ canvasElement }) => { await expect(canvasElement.querySelector('p')).toBeNull(); },
+};
+export const Zero: Story = {
+  args: { items: [{ id: 'zero', label: 0 }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleKicker } from '@jfrader/ui';
+
+<ArticleKicker items={[{ id: 'zero', label: 0 }]} />`,
+      },
+    },
+  },
+};
+export const RTL: Story = {
+  args: { dir: 'rtl', items: [{ id: 'place', label: 'المنطقة Northline', href: '#place' }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleKicker } from '@jfrader/ui';
+
+<ArticleKicker
+  dir="rtl"
+  items={[{ id: 'place', label: 'المنطقة Northline', href: '#place' }]}
+/>`,
+      },
+    },
+  },
+};
 export const Light: Story = { globals: { theme: 'light' } };
 const clicked = fn((event: MouseEvent<HTMLAnchorElement>) => event.preventDefault());
 const linkRef = createRef<HTMLAnchorElement>();

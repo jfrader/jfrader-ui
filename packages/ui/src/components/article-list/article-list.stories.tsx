@@ -37,23 +37,350 @@ export const Headlines: Story = { play: async ({ canvas, userEvent, canvasElemen
   await userEvent.tab({ shift: true });
   await expect(links[0]!.ownerDocument.activeElement).toBe(links[0]);
 } };
-export const HeadlineTime: Story = { args: { items: [{ ...items[0], variant: 'headline-time', level: 2 }] } };
-export const HeadlineTag: Story = { args: { items: [{ ...items[0], variant: 'headline-tag', level: 2 }] }, play: async ({ canvas }) => {
-  await expect(canvas.getByRole('link')).not.toHaveTextContent('The city');
-} };
-export const HeadlinePlace: Story = { args: { items: [{ ...items[0], variant: 'headline-place', level: 3 }] } };
-export const Wire: Story = { args: { variant: 'wire', items: [{ ...items[0], label: undefined }] } };
-export const WireWithLabel: Story = { args: { variant: 'wire' }, play: async ({ canvas }) => { await expect(canvas.getAllByRole('link')[0]).toHaveTextContent('The city'); } };
-export const Stacked: Story = { args: { variant: 'stacked' } };
-export const Small: Story = { args: { size: 'sm' } };
-export const Medium: Story = { args: { size: 'md' } };
-export const MissingFields: Story = { args: { variant: 'stacked', items: [{ id: 'bare', headline: 'The river path opens for the weekend', href: '#river' }] }, play: async ({ canvasElement }) => {
-  await expect(canvasElement.querySelector('[data-ui~="article-list-meta"]')).toBeNull();
-} };
-export const Empty: Story = { args: { items: [] }, play: async ({ canvas }) => { await expect(canvas.queryByRole('list')).not.toBeInTheDocument(); } };
-export const Zero: Story = { args: { items: [{ id: 'zero', headline: 0, label: 0, time: { ...time, label: 0 }, variant: 'stacked' }] } };
-export const LongHeadlines: Story = { args: { items: [{ id: 'long', headline: 'A long headline follows the river from the first bridge to the last station without shortening the story', href: '#long' }, { id: 'unbroken', headline: 'Northline'.repeat(24), href: '#unbroken' }] } };
-export const RTL: Story = { args: { dir: 'rtl', variant: 'wire', items: [{ ...items[0], headline: 'Northline المنطقة' }] } };
+export const HeadlineTime: Story = {
+  args: { items: [{ ...items[0], variant: 'headline-time', level: 2 }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleList } from '@jfrader/ui';
+
+<ArticleList
+  items={[
+    {
+      id: 'river',
+      headline: 'The river path opens for the weekend',
+      href: '#river',
+      time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' },
+      label: 'The city',
+      place: 'Northline',
+      variant: 'headline-time',
+      level: 2,
+    },
+  ]}
+/>`,
+      },
+    },
+  },
+};
+export const HeadlineTag: Story = {
+  args: { items: [{ ...items[0], variant: 'headline-tag', level: 2 }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleList } from '@jfrader/ui';
+
+<ArticleList
+  items={[
+    {
+      id: 'river',
+      headline: 'The river path opens for the weekend',
+      href: '#river',
+      time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' },
+      label: 'The city',
+      place: 'Northline',
+      variant: 'headline-tag',
+      level: 2,
+    },
+  ]}
+/>`,
+      },
+    },
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('link')).not.toHaveTextContent('The city');
+  },
+};
+export const HeadlinePlace: Story = {
+  args: { items: [{ ...items[0], variant: 'headline-place', level: 3 }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleList } from '@jfrader/ui';
+
+<ArticleList
+  items={[
+    {
+      id: 'river',
+      headline: 'The river path opens for the weekend',
+      href: '#river',
+      time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' },
+      label: 'The city',
+      place: 'Northline',
+      variant: 'headline-place',
+      level: 3,
+    },
+  ]}
+/>`,
+      },
+    },
+  },
+};
+export const Wire: Story = {
+  args: { variant: 'wire', items: [{ ...items[0], label: undefined }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleList } from '@jfrader/ui';
+
+<ArticleList
+  variant="wire"
+  items={[
+    {
+      id: 'river',
+      headline: 'The river path opens for the weekend',
+      href: '#river',
+      time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' },
+      place: 'Northline',
+    },
+  ]}
+/>`,
+      },
+    },
+  },
+};
+export const WireWithLabel: Story = {
+  args: { variant: 'wire' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleList } from '@jfrader/ui';
+
+<ArticleList
+  variant="wire"
+  items={[
+    {
+      id: 'river',
+      headline: 'The river path opens for the weekend',
+      href: '#river',
+      time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' },
+      label: 'The city',
+      place: 'Northline',
+    },
+    {
+      id: 'station',
+      headline: 'Work begins at the old station',
+      href: '#station',
+      time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' },
+    },
+  ]}
+/>`,
+      },
+    },
+  },
+  play: async ({ canvas }) => { await expect(canvas.getAllByRole('link')[0]).toHaveTextContent('The city'); },
+};
+export const Stacked: Story = {
+  args: { variant: 'stacked' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleList } from '@jfrader/ui';
+
+<ArticleList
+  variant="stacked"
+  items={[
+    {
+      id: 'river',
+      headline: 'The river path opens for the weekend',
+      href: '#river',
+      time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' },
+      label: 'The city',
+      place: 'Northline',
+    },
+    {
+      id: 'station',
+      headline: 'Work begins at the old station',
+      href: '#station',
+      time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' },
+    },
+  ]}
+/>`,
+      },
+    },
+  },
+};
+export const Small: Story = {
+  args: { size: 'sm' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleList } from '@jfrader/ui';
+
+<ArticleList
+  size="sm"
+  items={[
+    {
+      id: 'river',
+      headline: 'The river path opens for the weekend',
+      href: '#river',
+      time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' },
+      label: 'The city',
+      place: 'Northline',
+    },
+    {
+      id: 'station',
+      headline: 'Work begins at the old station',
+      href: '#station',
+      time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' },
+    },
+  ]}
+/>`,
+      },
+    },
+  },
+};
+export const Medium: Story = {
+  args: { size: 'md' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleList } from '@jfrader/ui';
+
+<ArticleList
+  size="md"
+  items={[
+    {
+      id: 'river',
+      headline: 'The river path opens for the weekend',
+      href: '#river',
+      time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' },
+      label: 'The city',
+      place: 'Northline',
+    },
+    {
+      id: 'station',
+      headline: 'Work begins at the old station',
+      href: '#station',
+      time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' },
+    },
+  ]}
+/>`,
+      },
+    },
+  },
+};
+export const MissingFields: Story = {
+  args: { variant: 'stacked', items: [{ id: 'bare', headline: 'The river path opens for the weekend', href: '#river' }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleList } from '@jfrader/ui';
+
+<ArticleList
+  variant="stacked"
+  items={[
+    {
+      id: 'bare',
+      headline: 'The river path opens for the weekend',
+      href: '#river',
+    },
+  ]}
+/>`,
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-ui~="article-list-meta"]')).toBeNull();
+  },
+};
+export const Empty: Story = {
+  args: { items: [] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleList } from '@jfrader/ui';
+
+<ArticleList items={[]} />`,
+      },
+    },
+  },
+  play: async ({ canvas }) => { await expect(canvas.queryByRole('list')).not.toBeInTheDocument(); },
+};
+export const Zero: Story = {
+  args: { items: [{ id: 'zero', headline: 0, label: 0, time: { ...time, label: 0 }, variant: 'stacked' }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleList } from '@jfrader/ui';
+
+<ArticleList
+  items={[
+    {
+      id: 'zero',
+      headline: 0,
+      label: 0,
+      time: { dateTime: '2026-10-19T09:00:00Z', label: 0 },
+      variant: 'stacked',
+    },
+  ]}
+/>`,
+      },
+    },
+  },
+};
+export const LongHeadlines: Story = {
+  args: { items: [{ id: 'long', headline: 'A long headline follows the river from the first bridge to the last station without shortening the story', href: '#long' }, { id: 'unbroken', headline: 'Northline'.repeat(24), href: '#unbroken' }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleList } from '@jfrader/ui';
+
+<ArticleList
+  items={[
+    {
+      id: 'long',
+      headline: 'A long headline follows the river from the first bridge to the last station without shortening the story',
+      href: '#long',
+    },
+    {
+      id: 'unbroken',
+      headline: 'Northline'.repeat(24),
+      href: '#unbroken',
+    },
+  ]}
+/>`,
+      },
+    },
+  },
+};
+export const RTL: Story = {
+  args: { dir: 'rtl', variant: 'wire', items: [{ ...items[0], headline: 'Northline المنطقة' }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ArticleList } from '@jfrader/ui';
+
+<ArticleList
+  dir="rtl"
+  variant="wire"
+  items={[
+    {
+      id: 'river',
+      headline: 'Northline المنطقة',
+      href: '#river',
+      time: { dateTime: '2026-10-19T09:00:00Z', label: '09:00' },
+      label: 'The city',
+      place: 'Northline',
+    },
+  ]}
+/>`,
+      },
+    },
+  },
+};
 export const Light: Story = { globals: { theme: 'light' } };
 
 function List(props: ComponentPropsWithRef<'ul'>) { return <ul {...props} data-replacement="root" />; }

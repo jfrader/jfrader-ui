@@ -189,6 +189,67 @@ export const SlotReplacements: Story = {
       emptyResetButton: { 'aria-label': 'Review again' },
     },
   },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import type { ComponentPropsWithRef } from 'react';
+import { CardStack, Card, Button } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+];
+
+function CustomPanel(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+function CustomCard(props: ComponentPropsWithRef<typeof Card>) {
+  return <Card {...props} />;
+}
+function CustomButton(props: ComponentPropsWithRef<typeof Button>) {
+  return <Button {...props} />;
+}
+
+<CardStack
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+  slots={{
+    stage: CustomPanel,
+    card: CustomCard,
+    content: CustomPanel,
+    leftStamp: CustomPanel,
+    rightStamp: CustomPanel,
+    controls: CustomPanel,
+    leftButton: CustomButton,
+    undoButton: CustomButton,
+    rightButton: CustomButton,
+    resetButton: CustomButton,
+    emptyResetButton: CustomButton,
+    empty: CustomPanel,
+    hint: CustomPanel,
+    status: CustomPanel,
+  }}
+  slotProps={{
+    resetButton: { 'aria-label': 'Reset queue' },
+    emptyResetButton: { 'aria-label': 'Review again' },
+  }}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, userEvent }) => {
     for (const part of ['stage', 'content', 'left-stamp', 'right-stamp', 'controls', 'hint', 'status']) {
       await expect(canvasElement.querySelector(`[data-ui="card-stack-${part}"]`)).toHaveAttribute('data-replacement', 'div');
@@ -440,6 +501,37 @@ export const Sizes: Story = {
 };
 export const SingleCard: Story = {
   args: { items: cities.slice(0, 1), visibleCount: 1 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+];
+
+<CardStack
+  items={cities}
+  visibleCount={1}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+/>`,
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelectorAll('[data-ui="card-stack-card"]')).toHaveLength(1);
     await containedGeometry(canvasElement);
@@ -451,9 +543,78 @@ export const CustomActions: Story = {
     outcomes: { left: 'Skipped', right: 'Shortlisted' },
     icons: { undo: icon },
   },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+const undoIcon = (
+  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+    <path d="M8 6 3 11l5 5M3 11h10a6 6 0 0 1 0 12" fill="none" stroke="currentColor" strokeWidth="2" />
+  </svg>
+);
+
+<CardStack
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+  labels={{ left: 'Skip for now', right: 'Add to shortlist' }}
+  outcomes={{ left: 'Skipped', right: 'Shortlisted' }}
+  icons={{ undo: undoIcon }}
+/>`,
+      },
+    },
+  },
 };
 export const InitiallyEmpty: Story = {
   args: { items: [] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+<CardStack
+  items={[] as City[]}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, args, userEvent }) => {
     await expect(canvas.getByText('No cards')).toBeInTheDocument();
     await userEvent.click(canvas.getByRole('button', { name: 'Keep' }));
@@ -468,6 +629,39 @@ export const LongEmptyLabel: Story = {
     labels: { empty: 'No_destinations_available_in_the_current_travel_shortlist' },
   },
   decorators: [(Story) => <NarrowFixture><Story /></NarrowFixture>],
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack, styled } from '@jfrader/ui';
+
+const NarrowFrame = styled.div({ inlineSize: '14rem', maxInlineSize: '100%' });
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+<NarrowFrame>
+<CardStack
+  items={[] as City[]}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+  labels={{
+    empty: 'No_destinations_available_in_the_current_travel_shortlist',
+  }}
+/>
+</NarrowFrame>`,
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     const empty = part(canvasElement, 'empty');
     await expect(empty.scrollWidth).toBeLessThanOrEqual(empty.clientWidth);
@@ -478,7 +672,49 @@ const completedHistory: CardStackDecision[] = cities.map((city) => ({
   key: city.id,
   decision: 'right',
 }));
-export const Completed: Story = { args: { defaultValue: completedHistory } };
+export const Completed: Story = {
+  args: { defaultValue: completedHistory },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack, type CardStackDecision } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+const completedHistory: CardStackDecision[] = cities.map((city) => ({
+  key: city.id,
+  decision: 'right',
+}));
+
+<CardStack
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+  defaultValue={completedHistory}
+/>`,
+      },
+    },
+  },
+};
 export const CustomEmpty: Story = {
   args: {
     defaultValue: completedHistory,
@@ -488,6 +724,52 @@ export const CustomEmpty: Story = {
         <Button onClick={reset}>Review again</Button>
       </>
     ),
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack, Button, type CardStackDecision } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+const completedHistory: CardStackDecision[] = cities.map((city) => ({
+  key: city.id,
+  decision: 'right',
+}));
+
+<CardStack
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+  defaultValue={completedHistory}
+  renderEmpty={({ reset, completed }) => (
+    <>
+      <h3>{completed ? 'Shortlist finished' : 'Nothing to review'}</h3>
+      <Button onClick={reset}>Review again</Button>
+    </>
+  )}
+/>`,
+      },
+    },
   },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Review again' }));
@@ -500,6 +782,42 @@ export const Disabled: Story = {
   args: {
     disabled: true,
     defaultValue: [{ key: 'removed', decision: 'left' }],
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+<CardStack
+  disabled
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+  defaultValue={[{ key: 'removed', decision: 'left' }]}
+/>`,
+      },
+    },
   },
   play: async ({ canvas, args, userEvent }) => {
     await userEvent.tab();
@@ -562,6 +880,48 @@ export const Controlled: Story = {
 };
 export const RejectedControlled: Story = {
   args: { value: [] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { CardStack, type CardStackDecision } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+function ControlledDeck() {
+  const [history] = useState<readonly CardStackDecision[]>([]);
+
+  return (
+    <CardStack
+      items={cities}
+      getKey={(city) => city.id}
+      getLabel={(city) => city.name}
+      renderCard={(city) => (
+        <>
+          <h3>{city.name}</h3>
+          <p>{city.description}</p>
+        </>
+      )}
+      value={history}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     const keep = canvas.getByRole('button', { name: 'Keep' });
     await userEvent.click(keep);
@@ -580,6 +940,41 @@ export const RejectedControlled: Story = {
 };
 export const Undo: Story = {
   args: { defaultValue: [{ key: 'oslo', decision: 'left' }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+<CardStack
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+  defaultValue={[{ key: 'oslo', decision: 'left' }]}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     const button = canvas.getByRole('button', { name: 'Undo' });
     await userEvent.click(button);
@@ -593,6 +988,46 @@ export const Undo: Story = {
 };
 export const Reset: Story = {
   args: { defaultValue: completedHistory },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack, type CardStackDecision } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+const completedHistory: CardStackDecision[] = cities.map((city) => ({
+  key: city.id,
+  decision: 'right',
+}));
+
+<CardStack
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+  defaultValue={completedHistory}
+/>`,
+      },
+    },
+  },
   play: async ({ canvasElement, canvas, args, userEvent }) => {
     const reset = part(canvasElement, 'reset-button');
     await userEvent.click(reset);
@@ -608,6 +1043,37 @@ export const Reset: Story = {
 };
 export const KeyboardDeck: Story = {
   args: { items: cities.slice(0, 2) },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+];
+
+<CardStack
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     const stage = part(canvasElement, 'stage');
     await userEvent.tab();
@@ -668,6 +1134,43 @@ export const InteractiveCardContent: Story = {
         <Button>View details</Button>
       </>
     ),
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack, Button } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+<CardStack
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <label>
+        Notes <input aria-label="Notes" />
+      </label>
+      <Button>View details</Button>
+    </>
+  )}
+/>`,
+      },
+    },
   },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await userEvent.tab();
@@ -748,6 +1251,41 @@ export const ThrowStamp: Story = {
 };
 export const RejectedGesture: Story = {
   args: { value: [] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+<CardStack
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+  value={[]}
+/>`,
+      },
+    },
+  },
   play: async ({ canvasElement, canvas, args }) => {
     const { send } = pointer(part(canvasElement, 'stage'));
     send('pointerdown', 0);
@@ -761,6 +1299,41 @@ export const RejectedGesture: Story = {
 };
 export const UnknownHistoryUndo: Story = {
   args: { defaultValue: [{ key: 'missing', decision: 'right' }] },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+<CardStack
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+  defaultValue={[{ key: 'missing', decision: 'right' }]}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
     await settled(canvasElement);
@@ -811,6 +1384,42 @@ export const LongContent: Story = {
       </>
     ),
   },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+<CardStack
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      {Array.from({ length: 12 }, (_, index) => (
+        <p key={index}>{city.description}</p>
+      ))}
+    </>
+  )}
+/>`,
+      },
+    },
+  },
   play: async ({ canvasElement, canvas, userEvent }) => {
     const content = top(canvasElement).querySelector<HTMLElement>(
       '[data-ui="card-stack-content"]',
@@ -840,6 +1449,55 @@ export const Narrow: Story = {
       </NarrowFixture>
     ),
   ],
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack, styled } from '@jfrader/ui';
+
+const NarrowFrame = styled.div({
+  inlineSize: '14rem',
+  maxInlineSize: '100%',
+});
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+const undoIcon = (
+  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+    <path d="M8 6 3 11l5 5M3 11h10a6 6 0 0 1 0 12" fill="none" stroke="currentColor" strokeWidth="2" />
+  </svg>
+);
+
+<NarrowFrame>
+  <CardStack
+    items={cities}
+    getKey={(city) => city.id}
+    getLabel={(city) => city.name}
+    renderCard={(city) => (
+      <>
+        <h3>{city.name}</h3>
+        <p>{city.description}</p>
+      </>
+    )}
+    icons={{ undo: undoIcon }}
+    labels={{ right: 'Add this destination to the shortlist' }}
+  />
+</NarrowFrame>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement }) => {
     const undo = canvas.getByRole('button', { name: 'Undo' });
     await expect(undo.getBoundingClientRect().width).toBeGreaterThanOrEqual(24);
@@ -859,6 +1517,41 @@ export const LightTheme: Story = {
 };
 export const RTL: Story = {
   args: { dir: 'rtl' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+<CardStack
+  dir="rtl"
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await expect(getComputedStyle(part(canvasElement, 'controls')).direction).toBe('rtl');
     await expect(part(canvasElement, 'left-button').getBoundingClientRect().left).toBeGreaterThan(
@@ -955,6 +1648,49 @@ export const SlotStyling: Story = {
     },
     sx: { gap: vars.space[6] },
   },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const StyledDeck = styled(CardStack<City>)({
+  gap: vars.space[6],
+  '& [data-ui="card-stack-stage"], & [data-ui="card-stack-content"], & [data-ui="card-stack-controls"], & [data-ui="card-stack-right-button"]': {
+    paddingInline: vars.space[6],
+    borderRadius: vars.radius.sm,
+  },
+});
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+<StyledDeck
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+/>`,
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     for (const name of ['stage', 'content', 'controls', 'right-button'])
       await expect(
@@ -990,6 +1726,42 @@ export const FocusedChildDecision: Story = {
       </>
     ),
   },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+<CardStack
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <label>
+        Notes <input aria-label="Notes" />
+      </label>
+    </>
+  )}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.tab();
@@ -1013,6 +1785,59 @@ export const RefAndUnresolvedAria: Story = {
       },
     },
   },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useRef } from 'react';
+import { CardStack } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+function ReviewDeck() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <>
+      <CardStack
+        ref={rootRef}
+        items={cities}
+        getKey={(city) => city.id}
+        getLabel={(city) => city.name}
+        renderCard={(city) => (
+          <>
+            <h3>{city.name}</h3>
+            <p>{city.description}</p>
+          </>
+        )}
+        slotProps={{
+          stage: {
+            ref: stageRef,
+            'aria-label': 'Named deck',
+            'aria-labelledby': 'unresolved-title',
+            'aria-describedby': 'unresolved-description',
+          },
+        }}
+      />
+    </>
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, args }) => {
     await expect(args.ref).toHaveBeenCalledWith(part(canvasElement, 'stage').parentElement);
     await expect(args.slotProps?.stage?.ref).toHaveBeenCalledWith(part(canvasElement, 'stage'));
@@ -1023,6 +1848,43 @@ export const RefAndUnresolvedAria: Story = {
 };
 export const FlickAndReverse: Story = {
   args: { gesture: { flickVelocity: 500 } },
+    parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+<CardStack
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+  gesture={{
+    flickVelocity: 500,
+  }}
+/>`,
+      },
+    },
+  },
   play: async ({ canvasElement, args }) => {
     const { send } = pointer(part(canvasElement, 'stage'));
     const timed = (type: string, dx: number, time: number) => {
@@ -1078,6 +1940,50 @@ export const FalsyItems: Story = {
 };
 export const RejectedUndoAndReset: Story = {
   args: { value: [{ key: 'oslo', decision: 'right' }] },
+    parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { CardStack, type CardStackDecision } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+function ControlledDeck() {
+  const [history] = useState<readonly CardStackDecision[]>([
+    { key: 'oslo', decision: 'right' },
+  ]);
+
+  return (
+    <CardStack
+      items={cities}
+      getKey={(city) => city.id}
+      getLabel={(city) => city.name}
+      renderCard={(city) => (
+        <>
+          <h3>{city.name}</h3>
+          <p>{city.description}</p>
+        </>
+      )}
+      value={history}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Undo' }));
     await settled(canvasElement);
@@ -1122,6 +2028,40 @@ export const FalsyEmptyAndIcons: Story = {
 const budgetRender = fn((city: City) => <h3>{city.name}</h3>);
 export const DragRenderBudget: Story = {
   args: { renderCard: budgetRender },
+    parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CardStack } from '@jfrader/ui';
+
+interface City {
+  id: string;
+  name: string;
+  description: string;
+}
+
+const cities: City[] = [
+  { id: 'oslo', name: 'Oslo', description: 'A waterfront weekend with trails into the forest.' },
+  { id: 'porto', name: 'Porto', description: 'River walks, tiled streets and a slow lunch.' },
+  { id: 'kyoto', name: 'Kyoto', description: 'Quiet gardens and an early morning market.' },
+  { id: 'lima', name: 'Lima', description: 'Coastal paths and an evening in the old town.' },
+  { id: 'tallinn', name: 'Tallinn', description: 'A compact old town and a ferry across the bay.' },
+];
+
+<CardStack
+  items={cities}
+  getKey={(city) => city.id}
+  getLabel={(city) => city.name}
+  renderCard={(city) => (
+    <>
+      <h3>{city.name}</h3>
+      <p>{city.description}</p>
+    </>
+  )}
+/>`,
+      },
+    },
+  },
   play: async ({ canvasElement, args }) => {
     const stage = part(canvasElement, 'stage');
     const rendered = budgetRender.mock.calls.length;
