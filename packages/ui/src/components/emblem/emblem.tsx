@@ -93,7 +93,7 @@ export interface EmblemProps
 const MAX_INITIALS = 3;
 const FULL_SIZE_INITIALS = 2;
 const MONOGRAM_FONT_RATIO = 0.5;
-const MONOGRAM_WIDTH_RATIO = 0.85;
+const MONOGRAM_WIDTH_RATIO = 0.7;
 const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
 const PLATE = '[data-ui="emblem-plate"]';
 /** The crest geometry, 8 units wide for every 7 of height. */

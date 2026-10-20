@@ -347,6 +347,7 @@ export const LongName: Story = {
       await expect(ink).toHaveTextContent('WWW');
       await expect(ink.scrollWidth).toBeLessThanOrEqual(ink.clientWidth);
       await expectInside(ink, ink.parentElement!);
+      await expect(ink.getBoundingClientRect().width).toBeLessThanOrEqual(ink.parentElement!.getBoundingClientRect().width * 0.7);
     }
   },
 };
