@@ -10,12 +10,19 @@ export type { SurfaceAppearance } from '../../styling/surface';
 export type SurfaceVariant = 'flat' | 'raised' | 'floating';
 
 export interface SurfacePartProps extends ComponentPropsWithRef<'div'> {
+  /** Add root markers alongside the component's own `data-ui` tokens. */
   'data-ui'?: string;
+  /** Declare the enclosing theme on the root; the appearance scope takes precedence. */
   'data-theme'?: 'dark' | 'light';
+  /** Declare the effective appearance on the root; cannot override `appearance`. */
   'data-appearance'?: SurfaceAppearance;
+  /** Override the root's surface-variant marker without changing the material. */
   'data-surface-variant'?: SurfaceVariant;
+  /** Add a state marker for consumer selectors. */
   'data-state'?: string;
+  /** Add a variant marker for consumer selectors without changing `variant`. */
   'data-variant'?: string;
+  /** Add a depth marker for consumer selectors without changing the shadow. */
   'data-depth'?: number;
   [attribute: `data-${string}`]: string | number | boolean | undefined;
 }

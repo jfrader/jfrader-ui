@@ -66,8 +66,11 @@ export type DrawerSide = 'inline-start' | 'inline-end' | 'top' | 'bottom';
 export type DrawerSize = 'sm' | 'md' | 'lg';
 
 export interface DrawerBaseProps {
+  /** Control whether the drawer is open. */
   open?: boolean;
+  /** Open the drawer initially when uncontrolled. Defaults to false. */
   defaultOpen?: boolean;
+  /** Receive requests to open or close the drawer. */
   onOpenChange?: (open: boolean) => void;
   /** Viewport edge the panel attaches to. Inline sides follow the drawer's effective direction. */
   side?: DrawerSide;
@@ -126,6 +129,7 @@ export interface DrawerSlots {
 }
 
 export interface DrawerCompoundProps extends DrawerBaseProps {
+  /** Compose the drawer trigger, content, and panel parts directly. */
   children?: ReactNode;
   triggerLabel?: never;
   title?: never;
@@ -150,7 +154,9 @@ export interface DrawerEasyProps extends DrawerBaseProps, Omit<DrawerPanelProps,
   /** Name the close button. */
   closeLabel: ReactNode;
   children?: never;
+  /** Pass props and `sx` to the generated drawer parts and adopted panel root. */
   slotProps?: DrawerSlotProps;
+  /** Replace generated drawer parts or the panel's adopted root. */
   slots?: DrawerSlots;
   component?: DrawerSlots['root'];
   /** Place actions below the scrollable body. */

@@ -29,11 +29,17 @@ export interface SwitchSlots {
 }
 
 export interface SwitchProps extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'type'>, SxProps {
+  /** Show text alongside the control as its clickable label. */
   label?: ReactNode;
+  /** Show supporting text below the control and include it in the accessible description. */
   description?: ReactNode;
+  /** Set the track, thumb, and label size. Defaults to `md`. */
   size?: SwitchSize;
+  /** Receive the native checked state after `onChange` runs. */
   onCheckedChange?: (checked: boolean) => void;
+  /** Replace the outer label, track, text label, or description. */
   slots?: SwitchSlots;
+  /** Pass props and `sx` to the outer label and generated parts. */
   slotProps?: {
     /** Outer label wrapping the switch track, label, and description. */
     root?: SwitchPartProps & ComponentPropsWithRef<'label'>;

@@ -25,13 +25,16 @@ export interface FlipGameCardSlots {
 }
 
 interface FlipGameCardBaseProps extends Omit<GameCardRootProps, 'children'>, SxProps, GameCardRootCustomization {
+  /** Choose the artwork set for both faces; inherits the enclosing deck artwork choice. */
   artSet?: string;
+  /** Override artwork sets by card id, merging with enclosing deck artwork choices. */
   cardArtSets?: Readonly<Record<string, string>>;
   slots?: FlipGameCardSlots;
   /** Shows the back when true. Defaults to false; no interaction changes this prop. */
   flipped?: boolean;
   /** Card width, using the GameCard scale. Defaults to `md`. */
   size?: GameCardSize;
+  /** Pass props and `sx` to the card shell, rotator, and face containers. */
   slotProps?: {
     /** Outer card shell container wrapping the card rotator and faces. */
     root?: GameCardRootSlotProps;
@@ -52,8 +55,11 @@ export type FlipGameCardProps = FlipGameCardBaseProps & (
     label: string;
     /** Accessible name of the back. Required here or on DeckProvider. */
     backLabel?: string;
+    /** Override the printed rank text on the front face. */
     rankLabel?: string;
+    /** Reduce both faces' opacity. Defaults to false. */
     dimmed?: boolean;
+    /** Replace the deck's back artwork with a decorative pattern. */
     backPattern?: PatternVariant;
     front?: never;
     back?: never;
