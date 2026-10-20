@@ -86,7 +86,7 @@ const meta = {
 - Render \`GameCardStack.Pile\` inside \`GameTable.Play\` to put each player's cards in front of their seat. The part fills its host in normal flow; it owns no table placement.
 - The root defaults to \`placement="grid"\`: give it a definite width and height. Measurement chooses rows and columns and shrinks cards to reserve inspected fans. Include empty piles to reserve positions.
 - \`placement="free"\` and a pile's \`geometry\` use caller-owned normalized vectors. A supplied geometry always opts a pile out of fitting. The caller owns collisions in mixed or free placement.
-- \`cardWidth\` overrides inherited \`--game-card-width\`, falling back to the medium card token. Grid fitting treats it as a preferred width. \`maxCards\` defaults to three; non-finite values use that default and finite values are rounded down and clamped to zero.
+- \`cardWidth\` overrides inherited \`--game-card-width\`, falling back to the medium card token. Grid fitting treats it as a preferred width. \`maxCards\` displays the newest cards and defaults to three; non-finite values use that default and finite values are rounded down and clamped to zero.
 - Supply a \`label\` on every pile and card, in your page's language. Each card has a unique play \`id\` and an optional face \`value\`. Supply \`backPattern\` for hidden Spanish-deck cards, which carry no face value.
 - \`data-played-key\` uses the card's \`id\` for flight destinations. Cards stack in array order; a card's optional \`order\` sets its closed-pile layer. Each pile's \`revealed\` keeps its cards spread without enlargement.
 

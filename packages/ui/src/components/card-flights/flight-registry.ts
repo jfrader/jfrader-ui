@@ -2,13 +2,42 @@
 
 import { createContext, useContext } from 'react';
 import { measureCardBox, type CardBox } from './geometry';
+import type { GameCardValue } from '../game-card';
+import type { ReactNode } from 'react';
+
+declare const process: { env: { NODE_ENV?: string } };
+export function warnFlight(message: string) {
+  if (process.env.NODE_ENV !== 'production') console.warn(message);
+}
+export function assertLegacyFlightEngine(treeOwned: boolean | undefined) {
+  if (treeOwned && process.env.NODE_ENV !== 'production') throw new Error('Do not mix legacy flight hooks with CardFlights. Render the card tree instead.');
+}
+
+/** Stable card identity shared by hands and play destinations. */
+export interface PlayingCard { id: string; label: string; value?: GameCardValue }
+export interface TreeFlightNode {
+  node: HTMLElement;
+  role: 'hand' | 'seat' | 'play' | 'deck';
+  card: PlayingCard;
+  cardId: string;
+  seatKey?: string;
+  face: 'up' | 'down' | 'reveal';
+  faceOverride?: 'up' | 'down' | 'reveal';
+  front?: ReactNode;
+  back?: ReactNode;
+}
 
 export interface FlightSeat { key: string; isMe?: boolean }
 export interface FlightNode { node: HTMLElement; box?: CardBox }
 export interface FlightTable { node: HTMLElement; seats: readonly FlightSeat[] }
 
 export function createFlightRegistry() {
+  const listeners = new Set<() => void>();
   return {
+    treeOwned: false,
+    tree: new Map<HTMLElement, TreeFlightNode>(),
+    notify: () => listeners.forEach((listener) => listener()),
+    subscribe: (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
     hand: new Map<string, FlightNode>(),
     hidden: new Map<string, Map<number, FlightNode>>(),
     played: new Map<string, FlightNode>(),

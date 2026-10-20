@@ -7,19 +7,22 @@ import type { GameCardProps } from '../game-card';
 import type { PlayedCard } from '../game-card-stack';
 import { useCardFlights, type CardFlightSpec } from './card-flights';
 import { CARD_FLIGHT_ATTRIBUTES as attributes, FLIGHT_GEOMETRY, dealSequence, flightTarget, measureCardBox, type CardBox } from './geometry';
-import { useFlightRegistry, type FlightNode, type FlightRegistry, type FlightSeat } from './flight-registry';
+import { assertLegacyFlightEngine, useFlightRegistry, type PlayingCard, type FlightNode, type FlightRegistry, type FlightSeat } from './flight-registry';
 
-export interface FlightCard extends Pick<PlayedCard, 'id' | 'label' | 'value'> {
+/** @deprecated Use PlayingCard and CardFlights.Target artwork. Removed in the next major release. */
+export interface FlightCard extends PlayingCard {
   front?: ReactNode;
   back?: ReactNode;
   backPattern?: GameCardProps['backPattern'];
 }
+/** @deprecated Render GameTable seats instead. Removed in the next major release. */
 export interface DealFlightPlayer {
   key: string;
   idx: number;
   isOwn: boolean;
   cards: readonly FlightCard[];
 }
+/** @deprecated Use CardFlightsProps instead. Removed in the next major release. */
 export interface DealFlightsOptions {
   handIndex: string | number | null;
   /** True only once the new hand is ready and no card has been played. */
@@ -51,8 +54,9 @@ function useMeasuredLaunch(resyncKey: string | number | undefined) {
   };
 }
 
-/** Deal a changed hand in forehand order. Initial and resync snapshots appear in place. */
+/** @deprecated Use <CardFlights deal={deal}> instead. Removed in the next major release. */
 export function useDealFlights({ handIndex, dealt, forehandIdx, players, resyncKey }: DealFlightsOptions) {
+  assertLegacyFlightEngine(useFlightRegistry()?.treeOwned);
   useDealFlightEngine({ handIndex, dealt, forehandIdx, resyncKey }, () => players);
 }
 
@@ -116,12 +120,14 @@ function useDealFlightEngine({ handIndex, dealt, forehandIdx, resyncKey }: Omit<
   });
 }
 
+/** @deprecated Use GameCardStack's PlayedCard instead. Removed in the next major release. */
 export interface PlayedFlightCard extends FlightCard, PlayedCard {
   /** Source hand-card id when it differs from the play id. Defaults to `id`. */
   cardId?: string;
   playerKey: string;
   isOwn: boolean;
 }
+/** @deprecated Render CardFlights around the board. Removed in the next major release. */
 export interface PlayedCardFlightsOptions {
   plays: readonly PlayedFlightCard[];
   playerCount: number;
@@ -129,7 +135,9 @@ export interface PlayedCardFlightsOptions {
 }
 
 /** Fly new plays from a captured click/drag origin or the preceding render's hand/seat box. */
+/** @deprecated Render CardFlights around the board. Removed in the next major release. */
 export function usePlayedCardFlights({ plays, playerCount, resyncKey }: PlayedCardFlightsOptions) {
+  assertLegacyFlightEngine(useFlightRegistry()?.treeOwned);
   usePlayedFlightEngine({ plays, resyncKey }, () => playerCount);
 }
 
@@ -215,6 +223,7 @@ function usePlayedFlightEngine({ plays, resyncKey }: Omit<PlayedCardFlightsOptio
   });
 }
 
+/** @deprecated Use CardFlightsProps instead. Removed in the next major release. */
 export interface BoardFlightsOptions {
   hand: readonly FlightCard[];
   /** Change when a new hand is ready. Initial and resync snapshots appear in place. */
@@ -229,13 +238,15 @@ export interface BoardFlightsOptions {
   seats?: readonly FlightSeat[];
 }
 
+/** @deprecated Use useCardFlightStatus instead. Removed in the next major release. */
 export interface BoardFlightsResult {
   landing: ReadonlySet<string>;
   reset: () => void;
 }
 
-/** Animate the same hand and play records rendered by GameHand and GameCardStack.Pile. */
+/** @deprecated Render <CardFlights deal={deal}> around the board instead. Removed in the next major release. */
 export function useBoardFlights({ hand, handKey, plays, forehandIdx, foregroundIdx, resyncKey, seats }: BoardFlightsOptions): BoardFlightsResult {
+  assertLegacyFlightEngine(useFlightRegistry()?.treeOwned);
   const { landingTargets, reset } = useCardFlights();
   const registry = useFlightRegistry()!;
   const getSeats = () => seats ?? registry.tables.values().next().value?.seats ?? [];

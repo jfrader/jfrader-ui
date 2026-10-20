@@ -13,17 +13,18 @@ import { gameCardSizeStyles } from '../game-card/game-card';
 import { CARD_FRAME } from '../game-card/card-frame';
 import { cardPartIdentity, useCardRegistrationRefs } from '../game-card/card-parts';
 import { CardRoot, type GameCardRootProps, type GameCardRootSlotProps } from '../game-card/game-card-root';
+import type { PlayingCard } from '../card-flights/flight-registry';
+import { useFlightRegistry, warnFlight } from '../card-flights/flight-registry';
+import { useCardFlightStatus, useOptionalCardFlights } from '../card-flights/flight-context';
+import { useOptionalGameTableSeat } from '../game-table/game-table';
 import {
   buildOpponentHiddenHandLayout, DEFAULT_HIDDEN_HAND_RULES, getHandFanRotations,
    HAND_CARD_OVERLAP_SPACING, HAND_FAN_DROP_PX, HAND_FAN_MAX_ROTATION_DEG, HAND_SELECTION_TARGET_PX, OPPONENT_SEAT_METRICS,
   type HandPolarVector, type HiddenHandRules,
 } from './hand-layout';
 
-export interface GameHandCard {
-  /** Unique, stable identity; shared with FlightCard.id when using CardFlights. */
-  id: string;
+export interface GameHandCard extends PlayingCard {
   value: GameCardValue;
-  label: string;
 }
 
 export interface GameHandSlots {
@@ -126,7 +127,14 @@ export function GameHand({
   ...rest
 }: GameHandProps) {
   const { artSet, cardArtSets } = useDeckArt({ artSet: explicitArtSet, cardArtSets: explicitCardArtSets });
-  const registrationRef = useCardRegistrationRefs('hand', cards.map((card) => card.id));
+  const seat = useOptionalGameTableSeat();
+  const flights = useOptionalCardFlights();
+  const registry = useFlightRegistry();
+  const { busy } = useCardFlightStatus();
+  disabled = disabled || busy;
+  const artwork = (card: PlayingCard, face: 'front' | 'back') => <GameCard value={card.value} label={card.label} face={face === 'back' ? 'back' : undefined}
+    size={size} dimmed={disabled} artSet={artSet} cardArtSets={cardArtSets} />;
+  const registrationRef = useCardRegistrationRefs('hand', cards, seat?.player?.key, artwork);
   const Fan = slots?.fan ?? 'div';
   const Card = slots?.card ?? 'button';
   const Confirm = slots?.confirm ?? 'button';
@@ -147,7 +155,7 @@ export function GameHand({
               onClick={(event) => { slotProps?.card?.onClick?.(event); if (!event.defaultPrevented && !disabled) select(selectedId === card.id ? null : card.id); }}
               className={slotProps?.card?.className} css={[cardStyle, slotProps?.card?.sx]}
               style={{ '--hand-angle': `${angle}deg`, '--hand-drop': `${angle ? HAND_FAN_DROP_PX : 0}px`, ...slotProps?.card?.style } as CSSProperties}>
-              <GameCard value={card.value} label={card.label} size={size} dimmed={disabled} artSet={artSet} cardArtSets={cardArtSets} />
+              {artwork(card, 'front')}
             </Card>
           );
         })}
@@ -155,7 +163,11 @@ export function GameHand({
       <Button {...slotProps?.confirm} type="button" data-ui={cardPartIdentity('game-hand-confirm', slotProps?.confirm?.['data-ui'])} aria-disabled={disabled || !selectedCard || !onPlayIntent}
         render={(props) => <Confirm {...props} />}
         className={slotProps?.confirm?.className} sx={slotProps?.confirm?.sx}
-        onClick={(event) => { slotProps?.confirm?.onClick?.(event); if (!event.defaultPrevented && !disabled && selectedCard) onPlayIntent?.(selectedCard); }}>
+        onClick={(event) => { slotProps?.confirm?.onClick?.(event); if (!event.defaultPrevented && !disabled && selectedCard) {
+          const node = registry?.hand.get(selectedCard.id)?.node;
+          if (node) flights?.rememberPlayOrigin(selectedCard.id, node);
+          onPlayIntent?.(selectedCard);
+        } }}>
         {playLabel}
       </Button>
     </CardRoot>
@@ -206,6 +218,10 @@ function GameHandHidden({
   ref, count, label, playerKey, size = 'md', polar, scale = 1, rules = DEFAULT_HIDDEN_HAND_RULES,
   className, sx, style, slotProps, slots, artSet: explicitArtSet, cardArtSets: explicitCardArtSets, ...rest
 }: GameHandHiddenProps) {
+  const seat = useOptionalGameTableSeat();
+  const registry = useFlightRegistry();
+  playerKey ??= seat?.player?.key ?? seat?.slot.key;
+  if (registry?.treeOwned && playerKey === undefined) warnFlight('GameHand.Hidden needs playerKey outside GameTable.Seat.');
   const { artSet, cardArtSets } = useDeckArt({ artSet: explicitArtSet, cardArtSets: explicitCardArtSets });
   const layout = buildOpponentHiddenHandLayout({
     geometry: polar ?? STANDALONE_POLAR,
@@ -215,7 +231,8 @@ function GameHandHidden({
     scale,
   });
   const anchor = polar ? layout.anchor : null;
-  const registrationRef = useCardRegistrationRefs('hidden', layout.cards.map((_, index) => String(index)), playerKey);
+  const artwork = () => <GameCard label={label} size={size} artSet={artSet} cardArtSets={cardArtSets} />;
+  const registrationRef = useCardRegistrationRefs('hidden', layout.cards.map((_, index) => ({ id: String(index), label })), playerKey, artwork);
   const Card = slots?.card ?? 'div';
   return (
     <WithSx className={className} styles={[hiddenStyle, gameCardSizeStyles[size]]} sx={sx}>
@@ -230,7 +247,7 @@ function GameHandHidden({
               data-seat-hidden-card-index={playerKey === undefined ? undefined : index} aria-hidden="true"
               className={slotProps?.card?.className} css={[hiddenCardStyle, slotProps?.card?.sx]}
                style={{ '--hidden-x': `${card.x}px`, '--hidden-y': `${card.y}px`, '--hidden-angle': `${card.rotateDeg}deg`, zIndex: card.zIndex, ...slotProps?.card?.style } as CSSProperties}>
-               <GameCard label={label} size={size} artSet={artSet} cardArtSets={cardArtSets} />
+               {artwork()}
              </Card>
           ))}
         </div>

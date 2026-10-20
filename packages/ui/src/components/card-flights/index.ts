@@ -5,3 +5,7 @@ export type { BoardFlightsOptions, BoardFlightsResult } from './use-card-flights
 export type { DealFlightsOptions, DealFlightPlayer, FlightCard, PlayedCardFlightsOptions, PlayedFlightCard } from './use-card-flights';
 export { CARD_FLIGHT_ATTRIBUTES, flightTarget, measureCardBox } from './geometry';
 export type { CardBox } from './geometry';
+export { CardFlights } from './tree-flights';
+export { useCardFlightStatus, useCardFlightOrigin } from './flight-context';
+export type { CardFlightsProps, CardFlightsTargetProps } from './tree-flights';
+export type { PlayingCard } from './flight-registry';
