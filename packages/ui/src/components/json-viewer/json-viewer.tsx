@@ -233,6 +233,7 @@ function inspect(data: JsonValue, rootName: string): Map<string, DataNode> | nul
 }
 
 const SELECTION_BAR = '2px';
+const MIN_LABEL_SIZE = '12ch';
 const thinScrollbar = {
   scrollbarWidth: 'thin',
   scrollbarColor: `${vars.color.borderStrong} transparent`,
@@ -321,8 +322,8 @@ const rowStyle = css({
   borderInlineStart: `${SELECTION_BAR} solid transparent`,
   borderRadius: vars.radius.sm,
   cursor: 'pointer',
-  whiteSpace: 'pre',
-  minInlineSize: 'max-content',
+  whiteSpace: 'pre-wrap',
+  minInlineSize: `calc(var(--json-depth) * var(--json-indent) + var(--json-caret) + ${vars.space[5]} + ${MIN_LABEL_SIZE})`,
   transitionProperty: 'background-color',
   transitionDuration: vars.motion.duration.fast,
   transitionTimingFunction: vars.motion.easeStandard,
@@ -334,6 +335,7 @@ const rowStyle = css({
   [REDUCED_MOTION]: { transitionDuration: '0s' },
   [FORCED_COLORS]: {
     color: 'CanvasText',
+    borderInlineStartColor: 'Canvas',
     '[aria-selected="true"] > &': { borderInlineStartColor: 'Highlight' },
   },
 });
@@ -368,6 +370,12 @@ const caretStyle = css({
 });
 // JSON text runs resolve their own direction so RTL layouts keep keys, values and counts readable.
 const ownDirection = { unicodeBidi: 'plaintext' } as const;
+const labelStyle = css({
+  minInlineSize: 0,
+  overflowWrap: 'anywhere',
+  scrollMarginInlineStart: `calc(var(--json-caret) + ${vars.space[1]} + ${SELECTION_BAR})`,
+  scrollMarginInlineEnd: vars.space[3],
+});
 const keyStyle = css({ ...ownDirection, color: vars.color.text });
 const selectedText = { '[aria-selected="true"] &': { color: vars.color.text } };
 const punctuationStyle = css({ color: vars.color.textMuted, ...selectedText });
@@ -722,7 +730,7 @@ export function JsonViewer({
     setFocused(path);
     target?.focus();
     target
-      ?.querySelector(':scope > [data-ui="json-viewer-row"]')
+      ?.querySelector(':scope > [data-ui="json-viewer-row"] > [data-ui="json-viewer-label"]')
       ?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
   };
   const changeExpansion = (paths: readonly string[]) => {
@@ -761,7 +769,7 @@ export function JsonViewer({
   useLayoutEffect(() => {
     if (pendingFocus.current !== null) {
       suppressFocusSelection.current = true;
-      rowRefs.current.get(pendingFocus.current)?.focus();
+      moveFocus(pendingFocus.current);
       suppressFocusSelection.current = false;
       pendingFocus.current = null;
     }
@@ -959,7 +967,7 @@ export function JsonViewer({
             aria-hidden="true"
             css={caretStyle}
           />
-          <span data-ui="json-viewer-label" id={labelId}>
+          <span data-ui="json-viewer-label" id={labelId} css={labelStyle}>
             {row.more !== undefined ? (
               <span css={moreStyle}>{labels.showMore(row.more)}</span>
             ) : (
