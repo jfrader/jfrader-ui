@@ -264,7 +264,7 @@ const removeStyle = css({
   display: 'inline-grid',
   placeItems: 'center',
   flexShrink: 0,
-  inlineSize: vars.space[6],
+  inlineSize: vars.space[8],
   blockSize: vars.space[6],
   padding: 0,
   border: 0,
