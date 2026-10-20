@@ -18,7 +18,7 @@ The same guides are available under **Foundations** in [Storybook](https://ui.jf
 ## Examples
 
 - [Starter template](https://github.com/jfrader/jfrader-ui-boilerplate): minimal Vite app with a topbar, main content and footer.
-- [Fivefold](https://github.com/jfrader/jfrader-ui-card-game-example): four-seat trick-taking card game built with `@jfrader/ui`; table, hand, dialogs, scoreboard and phone board.
+- [Fivefold](https://github.com/jfrader/jfrader-ui-card-game-example): four-seat trick-taking card game built with `@jfrader/ui`; table, hand, dialogs, scoreboard and phone board. [Play the live demo](https://fivefold.jfrader.com).
 
 ## Packages
 
