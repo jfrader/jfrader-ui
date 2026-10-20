@@ -88,28 +88,68 @@ export type DataTableSlotProps = {
 };
 export type SortableDataTableProps<T> = Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> &
   SxProps & {
+    /** Supplies the records displayed and, in client mode, sorted by the table. */
     rows: readonly T[];
+    /** Defines column headings, cell content and sorting behavior. */
     columns: readonly DataColumn<T>[];
+    /** Returns a stable, unique key for each row and its selection state. */
     getRowId: (row: T) => string;
+    /** Names the table through its caption. */
     caption: ReactNode;
+    /** Visually hides the caption while preserving its accessible name. Defaults to `false`. */
     captionHidden?: boolean;
+    /** Sets the initial uncontrolled sort. Defaults to `null` for input order. */
     defaultValue?: SortState | null;
+    /** Receives the requested sort when a column's sort button is activated. */
     onValueChange?: (sort: SortState | null) => void;
+    /** Controls selected row keys, including keys outside the displayed rows. */
     selectedKeys?: readonly string[];
+    /** Sets initially selected keys when uncontrolled. Defaults to an empty list. */
     defaultSelectedKeys?: readonly string[];
+    /** Receives selected keys after row, select-all or clear actions. */
     onSelectionChange?: (keys: readonly string[]) => void;
+    /** Sets string sorting and number and date formatting locales. */
     locale?: Intl.LocalesArgument;
+    /** Configures formatting for date values without a custom cell renderer. */
     dateFormatOptions?: Intl.DateTimeFormatOptions;
+    /** Sets the date display time zone, overriding `dateFormatOptions.timeZone`. */
     timeZone?: string;
+    /** Overrides empty text, control labels and live announcements. */
     messages?: Partial<DataTableMessages>;
+    /** Replaces the empty-row content. Defaults to `messages.empty`. */
     empty?: ReactNode;
+    /** Marks the table busy. Defaults to `false`. */
     loading?: boolean;
+    /** Sets cell padding density. Defaults to `md`. */
     size?: 'sm' | 'md';
+    /** Receives the table element rather than the outer container. */
     tableRef?: Ref<HTMLTableElement>;
+    /** Passes props to table, scrolling and selection parts. */
     slotProps?: DataTableSlotProps;
+    /** Replaces table, scrolling and selection parts. */
     slots?: SortableDataTableSlots;
-  } & ({ sortMode: 'manual'; value: SortState | null } | { sortMode?: 'client'; value?: SortState | null }) &
-  ({ selectable: true; getRowLabel: (row: T) => string } | { selectable?: false; getRowLabel?: (row: T) => string });
+  } & ({
+    /** Leaves row ordering to you and requires a controlled `value`. */
+    sortMode: 'manual';
+    /** Controls the active sort. Use `null` for no active sort. */
+    value: SortState | null;
+  } | {
+    /** Sorts supplied rows locally. Defaults to `client`. */
+    sortMode?: 'client';
+    /** Controls the active sort. Use `null` for input order. */
+    value?: SortState | null;
+  }) &
+  ({
+    /** Shows row checkboxes and selection controls. */
+    selectable: true;
+    /** Names each row in its selection checkbox label. Required when `selectable` is `true`. */
+    getRowLabel: (row: T) => string;
+  } | {
+    /** Hides row selection controls. Defaults to `false`. */
+    selectable?: false;
+    /** Names each row for selection labels when selection is enabled. */
+    getRowLabel?: (row: T) => string;
+  });
 
 const defaultMessages: DataTableMessages = {
   empty: 'No records',
