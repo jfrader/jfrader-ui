@@ -20,12 +20,6 @@ const FixtureButton = styled.button({ minHeight: vars.space[6], minWidth: vars.s
 const sizes = ['sm', 'md', 'lg'] as const;
 const heights = { sm: 32, md: 40, lg: 48 };
 const StackFrame = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: 'min(100%, 360px)' });
-const usage = `<TagInput
-  label="Topics"
-  defaultValue={['design', 'motion']}
-  description="Press Enter or comma to add."
-  onValueChange={saveTopics}
-/>`;
 
 const meta = {
   title: 'Inputs/TagInput',
@@ -63,7 +57,6 @@ const meta = {
 ### Forms
 - With \`name\`, tokens submit as repeated fields in list order. The draft does not submit.
 - \`required\` requires at least one token.`,
-      source: { code: usage },
     },
   },
 } satisfies Meta<typeof TagInput>;
@@ -222,6 +215,13 @@ export const Empty: Story = {
 export const Prefilled: Story = { args: { defaultValue: ['design', 'motion', 'accessibility'] } };
 
 export const Controlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { TagInput } from '@jfrader/ui';
+
+function Topics() {
+  const [value, setValue] = useState<readonly string[]>(['design']);
+  return <TagInput label="Topics" value={value} onValueChange={setValue} />;
+}` } } },
   args: { defaultValue: ['design'], onValueChange: fn(), onChange: fn() },
   render: (args) => <ControlledField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -245,6 +245,18 @@ export const Controlled: Story = {
 };
 
 export const DraftControlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { TagInput } from '@jfrader/ui';
+
+function Topics() {
+  const [draft, setDraft] = useState('');
+  return (
+    <>
+      <TagInput label="Topics" inputValue={draft} onInputChange={setDraft} />
+      <output>{draft}</output>
+    </>
+  );
+}` } } },
   args: { onInputChange: fn(), onValueChange: fn() },
   render: (args) => <DraftControlledField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -284,6 +296,23 @@ export const ControlledReject: Story = {
 };
 
 export const DelayedControlledAnnouncements: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, TagInput } from '@jfrader/ui';
+
+function ReviewedTopics() {
+  const [value, setValue] = useState<readonly string[]>(['design']);
+  const [requested, setRequested] = useState<readonly string[] | null>(null);
+  return (
+    <>
+      <TagInput label="Topics" value={value} onValueChange={setRequested} />
+      <Button onClick={() => {
+        if (requested) setValue(requested);
+        setRequested(null);
+      }}>Accept</Button>
+      <Button onClick={() => setRequested(null)}>Reject</Button>
+    </>
+  );
+}` } } },
   args: { defaultValue: ['design'], onValueChange: fn() },
   render: (args) => <DelayedField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -373,6 +402,25 @@ export const ControlledDraftReject: Story = {
 };
 
 export const ExternalUpdates: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, TagInput } from '@jfrader/ui';
+
+function Topics() {
+  const [value, setValue] = useState<readonly string[]>(['design']);
+  return (
+    <>
+      <TagInput label="Topics" value={value} onValueChange={setValue} />
+      <Button
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => setValue(['motion', 'type'])}
+      >Replace topics</Button>
+      <Button
+        onMouseDown={(event) => event.preventDefault()}
+        onClick={() => setValue(['design', 'motion'])}
+      >Restore topics</Button>
+    </>
+  );
+}` } } },
   args: { onValueChange: fn(), onInputChange: fn() },
   render: (args) => <ExternalUpdateField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -397,6 +445,11 @@ export const ExternalUpdates: Story = {
 };
 
 export const Sizes: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<>
+  <TagInput label="Small topics" size="sm" defaultValue={['design']} />
+  <TagInput label="Medium topics" size="md" defaultValue={['design']} />
+  <TagInput label="Large topics" size="lg" defaultValue={['design']} />
+</>` } } },
   render: (args) => (
     <>
       {sizes.map((size) => (
@@ -491,6 +544,11 @@ export const Locale: Story = {
 };
 
 export const InvalidToken: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<TagInput
+  label="Recipients"
+  description="Press Enter to add an email address."
+  validateToken={(token) => token.includes('@') ? null : 'Enter an email address.'}
+/>` } } },
   args: {
     label: 'Recipients',
     description: 'Press Enter to add an email address.',
@@ -541,6 +599,9 @@ export const Error: Story = {
 };
 
 export const Disabled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<form>
+  <TagInput label="Topics" name="topics" disabled defaultValue={['design']} />
+</form>` } } },
   args: { disabled: true, name: 'topics', defaultValue: ['design'], onValueChange: fn() },
   render: (args) => <form><TagInput {...args} /></form>,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -587,6 +648,12 @@ export const Required: Story = {
 };
 
 export const BlurCommitOff: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, TagInput } from '@jfrader/ui';
+
+<>
+  <TagInput label="Topics" commitOnBlur={false} />
+  <Button type="button">After</Button>
+</>` } } },
   args: { commitOnBlur: false, onValueChange: fn() },
   render: (args) => <><TagInput {...args} /><FixtureButton type="button">After</FixtureButton></>,
   play: async ({ canvas, userEvent, args }) => {
@@ -600,6 +667,12 @@ export const BlurCommitOff: Story = {
 };
 
 export const BlurCommit: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, TagInput } from '@jfrader/ui';
+
+<>
+  <TagInput label="Topics" commitOnBlur />
+  <Button type="button">After</Button>
+</>` } } },
   args: { onValueChange: fn() },
   render: (args) => <><TagInput {...args} /><FixtureButton type="button">After</FixtureButton></>,
   play: async ({ canvas, userEvent, args }) => {
@@ -615,6 +688,12 @@ export const BlurCommit: Story = {
 };
 
 export const FocusWithinBlurRegression: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, TagInput } from '@jfrader/ui';
+
+<>
+  <TagInput label="Topics" defaultValue={['design', 'motion']} commitOnBlur />
+  <Button type="button">After</Button>
+</>` } } },
   args: { defaultValue: ['design', 'motion'], onValueChange: fn() },
   render: (args) => <><TagInput {...args} /><FixtureButton type="button">After</FixtureButton></>,
   play: async ({ canvas, userEvent, args }) => {
@@ -644,6 +723,12 @@ export const FocusWithinBlurRegression: Story = {
 };
 
 export const ShiftTabExit: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, TagInput } from '@jfrader/ui';
+
+<>
+  <Button type="button">Before</Button>
+  <TagInput label="Topics" defaultValue={['design']} commitOnBlur />
+</>` } } },
   args: { defaultValue: ['design'], onValueChange: fn() },
   render: (args) => (
     <>
@@ -671,6 +756,17 @@ export const ShiftTabExit: Story = {
 };
 
 export const Keyboard: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, TagInput } from '@jfrader/ui';
+
+<>
+  <Button type="button">Before</Button>
+  <TagInput
+    label="Topics"
+    defaultValue={['design', 'motion']}
+    description="Press Enter or comma to add."
+  />
+  <Button type="button">After</Button>
+</>` } } },
   args: { defaultValue: ['design', 'motion'], onValueChange: fn(), onKeyDown: fn() },
   render: (args) => (
     <>
@@ -820,6 +916,12 @@ export const RepeatAndComposition: Story = {
 };
 
 export const CompositionFieldExit: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, TagInput } from '@jfrader/ui';
+
+<>
+  <TagInput label="Topics" commitOnBlur />
+  <Button type="button">After</Button>
+</>` } } },
   args: { onValueChange: fn(), onCompositionStart: fn(), onCompositionEnd: fn() },
   render: (args) => <><TagInput {...args} /><FixtureButton type="button">After</FixtureButton></>,
   play: async ({ canvas, userEvent, args }) => {
@@ -895,6 +997,18 @@ export const SelectedTextEditing: Story = {
 };
 
 export const FormSubmission: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, TagInput } from '@jfrader/ui';
+
+<form action={async (data) => {
+  await fetch('/api/topics', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ topics: data.getAll('topics') }),
+  });
+}}>
+  <TagInput label="Topics" name="topics" defaultValue={['design']} />
+  <Button type="submit">Save</Button>
+</form>` } } },
   args: { name: 'topics', defaultValue: ['design'], onValueChange: fn() },
   render: (args) => (
     <form onSubmit={(event) => event.preventDefault()}>
@@ -919,6 +1033,20 @@ export const FormSubmission: Story = {
 };
 
 export const ExternalForm: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+import { Button, TagInput } from '@jfrader/ui';
+
+function TopicsForm() {
+  const formId = useId();
+  return (
+    <>
+      <form id={formId} aria-label="Topics form">
+        <Button type="reset">Reset topics</Button>
+      </form>
+      <TagInput label="Topics" form={formId} name="topics" defaultValue={['design']} />
+    </>
+  );
+}` } } },
   args: { form: 'external-topics', name: 'topics', defaultValue: ['design'], onValueChange: fn() },
   render: (args) => (
     <>
@@ -939,6 +1067,12 @@ export const ExternalForm: Story = {
 };
 
 export const FormReset: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, TagInput } from '@jfrader/ui';
+
+<form>
+  <TagInput label="Topics" name="topics" defaultValue={['design', 'motion']} />
+  <Button type="reset">Reset topics</Button>
+</form>` } } },
   args: { name: 'topics', defaultValue: ['design', 'motion'], onValueChange: fn(), onInputChange: fn() },
   render: (args) => (
     <form onSubmit={(event) => event.preventDefault()}>
@@ -968,6 +1102,24 @@ export const FormReset: Story = {
 };
 
 export const ControlledReset: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, TagInput } from '@jfrader/ui';
+
+function TopicsForm() {
+  const [value, setValue] = useState<readonly string[]>(['design']);
+  return (
+    <form>
+      <TagInput
+        label="Topics"
+        name="topics"
+        value={value}
+        onValueChange={setValue}
+        commitOnBlur={false}
+      />
+      <Button type="reset">Reset topics</Button>
+    </form>
+  );
+}` } } },
   args: { name: 'topics', defaultValue: ['design'], commitOnBlur: false, onValueChange: fn(), onInputChange: fn() },
   render: (args) => (
     <form onSubmit={(event) => event.preventDefault()}>
@@ -995,6 +1147,10 @@ export const ControlledReset: Story = {
 
 const INVALID_LIST = Object.freeze(['Design', 'design', ' padded', '']);
 export const InvalidConsumerList: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<>
+  <TagInput label="Topics" defaultValue={['Design', 'design', ' padded', '']} />
+  <TagInput label="Valid topics" defaultValue={['design']} />
+</>` } } },
   args: { defaultValue: INVALID_LIST },
   beforeEach: () => {
     const warn = spyOn(console, 'warn').mockImplementation(() => {});
@@ -1016,6 +1172,12 @@ export const InvalidConsumerList: Story = {
 };
 
 export const BooleanAndZeroNodes: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<>
+  <TagInput label={0} description={0} error={0} />
+  <TagInput label="False slots" description={false} error={false} aria-invalid="grammar" />
+  <TagInput label="Null slots" description={null} error={null} />
+  <TagInput label="Empty slots" description="" error="" />
+</>` } } },
   render: (args) => (
     <>
       <TagInput {...args} label={0} description={0} error={0} />
@@ -1044,6 +1206,26 @@ export const BooleanAndZeroNodes: Story = {
 };
 
 export const ExternalAria: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+import { TagInput } from '@jfrader/ui';
+
+function ArticleTopics() {
+  const labelId = useId();
+  const helpId = useId();
+  return (
+    <>
+      <span id={labelId}>for the article</span>
+      <span id={helpId}>Shown on the card.</span>
+      <TagInput
+        label="Topics"
+        aria-labelledby={labelId}
+        aria-describedby={helpId}
+        description="Press Enter to add."
+        error="Add one more topic."
+      />
+    </>
+  );
+}` } } },
   render: (args) => (
     <>
       <span id="tags-extra-name">for the article</span>
@@ -1072,6 +1254,27 @@ export const ExternalAria: Story = {
 
 // This story tests the documented css/slot API and native style merging.
 export const RefAndStyles: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useRef } from 'react';
+import { Button, TagInput, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ArticleTopics = styled(TagInput)({ paddingInline: vars.space[3] });
+
+function TopicEditor() {
+  const input = useRef<HTMLInputElement | null>(null);
+  return (
+    <>
+      <ArticleTopics
+        ref={input}
+        label="Topics"
+        defaultValue={['design']}
+        slotProps={{ list: { className: 'article-topics' } }}
+        messages={{ listLabel: 'Article topics', remove: (token) => 'Delete ' + token }}
+      />
+      <Button onClick={() => input.current?.focus()}>Add topic</Button>
+    </>
+  );
+}` } } },
   args: {
     defaultValue: ['design'],
     className: 'consumer-root',
@@ -1102,6 +1305,15 @@ export const RefAndStyles: Story = {
 };
 
 export const LightTheme: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { TagInput, ThemeRoot } from '@jfrader/ui';
+
+<ThemeRoot theme="light">
+  <TagInput
+    label="Topics"
+    defaultValue={['design', 'motion']}
+    error="Add a topic from the style guide."
+  />
+</ThemeRoot>` } } },
   decorators: [withLightTheme],
   globals: { theme: 'light' },
   args: { defaultValue: ['design', 'motion'], error: 'Add a topic from the style guide.' },
@@ -1175,7 +1387,18 @@ export const SlotCustomization: Story = {
   parameters: {
     docs: {
       source: {
-        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<TagInput label=\"Name\"\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { className: 'custom-field' }, label: { title: 'Name' } }}\n/>",
+        language: 'tsx',
+        code: `import { TagInput, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const TopicsRoot = styled.div({ gap: vars.space[3] });
+const TopicsLabel = styled.label({ fontWeight: vars.fontWeight.semibold });
+
+<TagInput
+  label="Topics"
+  slots={{ root: TopicsRoot, label: TopicsLabel }}
+  slotProps={{ root: { className: 'article-topics' }, label: { title: 'Article topics' } }}
+/>`,
       },
     },
   },
@@ -1197,6 +1420,12 @@ export const SlotCustomization: Story = {
 /** Use component as shorthand for the wrapper's root slot. */
 export const ComponentRoot: Story = {
   args: { component: FieldSugarRoot },
+  parameters: { docs: { source: { language: 'tsx', code: `import { TagInput, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const TopicsRoot = styled.div({ gap: vars.space[3] });
+
+<TagInput label="Topics" component={TopicsRoot} />` } } },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-slot-root="component"]')).not.toBeNull();
   },

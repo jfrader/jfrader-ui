@@ -129,15 +129,6 @@ Pass triggerLabel, title, content and closeLabel for a standard drawer; descript
 Panel defaults to contrast; appearance="default" inherits the enclosing appearance. component is sugar for slots.root; only root is adopted, and slots.root wins. slotProps.root accepts div props and css, not sx. Declare adapters outside render, render one div, forward every supplied prop/ref, and apply material before className. Changing the adapter type remounts children and resets focus and uncontrolled inputs.
 
 Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry → slot css/classes → consumer css/classes → sx. Content stays the native dialog shell. Panel's registered div keeps attached-edge corners, size caps and motion; its translate is host-owned. Select composed panels with [data-ui~="drawer-panel"].`,
-      source: {
-        code: `<Drawer
-  triggerLabel="Open filters"
-  title="Filters"
-  description="Narrow the issue list by owner and status."
-  content={<FilterFields />}
-  closeLabel="Close"
-/>`,
-      },
     },
   },
 } satisfies Meta<typeof Drawer>;
@@ -348,11 +339,21 @@ export const Default: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
     docs: {
       source: {
         language: 'tsx',
-        code: `<Drawer
+        code: `import { Checkbox, Drawer, TextField } from '@jfrader/ui';
+
+<Drawer
   triggerLabel="Open filters"
   title="Filters"
   description="Narrow the issue list by owner and status."
-  content={<FilterFields />}
+  content={
+    <>
+      <TextField label="Owner" />
+      <Checkbox label="Backlog" />
+      <Checkbox label="In progress" />
+      <Checkbox label="In review" />
+      <Checkbox label="Done" />
+    </>
+  }
   closeLabel="Close"
 />`,
       },
@@ -388,6 +389,25 @@ export const Default: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
 
 export const Compound: Story = {
   name: 'Compound',
+  parameters: { docs: { source: { language: 'tsx', code: `import { Checkbox, Drawer, TextField } from '@jfrader/ui';
+
+<Drawer>
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Description>Narrow the issue list by owner and status.</Drawer.Description>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body>
+        <TextField label="Owner" />
+        <Checkbox label="In progress" />
+      </Drawer.Body>
+      <Drawer.Footer><Drawer.Close>Done</Drawer.Close></Drawer.Footer>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -433,6 +453,23 @@ ControlledEasyDrawer.displayName = 'ControlledEasyDrawer';
 
 export const EasyModeControlled: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
   name: 'Easy mode controlled',
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Drawer, TextField } from '@jfrader/ui';
+
+function Filters() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Drawer
+      open={open}
+      onOpenChange={setOpen}
+      triggerLabel="Open filters"
+      title="Filters"
+      description="Narrow the issue list by owner and status."
+      content={<TextField label="Owner" />}
+      closeLabel="Close"
+    />
+  );
+}` } } },
   args: {
     triggerLabel: TRIGGER,
     title: TITLE,
@@ -459,6 +496,16 @@ export const EasyModeControlled: StoryObj<(props: DrawerEasyProps) => ReactNode>
 
 export const EasyModeDisabled: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
   name: 'Easy mode disabled',
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer
+  triggerLabel="Open filters"
+  title="Filters"
+  description="Narrow the issue list by owner and status."
+  content={<TextField label="Owner" />}
+  closeLabel="Close"
+  slotProps={{ trigger: { disabled: true } }}
+/>` } } },
   args: {
     triggerLabel: TRIGGER,
     title: TITLE,
@@ -491,6 +538,30 @@ function CustomDrawerPanel(props: DrawerPanelProps) {
 
 export const EasyModeCustomizationSlotProps: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
   name: 'Easy mode customization slotProps',
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField, styled, type SurfacePartProps } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Material = styled.div({
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  border: '1px dashed ' + vars.color.border,
+});
+
+function FilterPanel(props: SurfacePartProps) {
+  return <Material {...props} />;
+}
+
+<Drawer
+  triggerLabel="Open filters"
+  title="Filters"
+  content={<TextField label="Owner" />}
+  closeLabel="Close"
+  slotProps={{
+    trigger: { className: 'filters-trigger' },
+    panel: { slots: { root: FilterPanel } },
+    title: { title: 'Issue filters' },
+  }}
+/>` } } },
   args: {
     triggerLabel: TRIGGER,
     title: TITLE,
@@ -584,6 +655,21 @@ void easyModeTypeContracts;
 
 export const InlineStart: Story = {
   args: { side: 'inline-start' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer side="inline-start">
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+      <Drawer.Footer><Drawer.Close>Done</Drawer.Close></Drawer.Footer>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const { trigger, dialog, panel, canvas } = await openDrawer({ canvasElement, userEvent });
@@ -601,6 +687,21 @@ export const InlineStart: Story = {
 
 export const InlineEnd: Story = {
   args: { side: 'inline-end' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer side="inline-end">
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+      <Drawer.Footer><Drawer.Close>Done</Drawer.Close></Drawer.Footer>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const { trigger, dialog, panel, canvas } = await openDrawer({ canvasElement, userEvent });
@@ -617,6 +718,21 @@ export const InlineEnd: Story = {
 
 export const Top: Story = {
   args: { side: 'top' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer side="top">
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+      <Drawer.Footer><Drawer.Close>Done</Drawer.Close></Drawer.Footer>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, panel } = await openDrawer({ canvasElement, userEvent });
@@ -629,6 +745,21 @@ export const Top: Story = {
 
 export const Bottom: Story = {
   args: { side: 'bottom' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer side="bottom">
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+      <Drawer.Footer><Drawer.Close>Done</Drawer.Close></Drawer.Footer>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, panel } = await openDrawer({ canvasElement, userEvent });
@@ -687,10 +818,56 @@ const motionStory = (side: 'inline-end' | 'bottom'): Story => ({
   },
 });
 
-export const SlideMotion: Story = motionStory('inline-end');
-export const SlideMotionBottom: Story = motionStory('bottom');
+export const SlideMotion: Story = {
+  ...motionStory('inline-end'),
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer side="inline-end">
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
+};
+export const SlideMotionBottom: Story = {
+  ...motionStory('bottom'),
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer side="bottom">
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
+};
 
 export const ReopenDuringExit: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer>
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const { dialog, panel, trigger } = await openDrawer({ canvasElement, userEvent });
@@ -721,9 +898,57 @@ const sizeStory = (size: DrawerSize): Story => ({
   },
 });
 
-export const Small: Story = sizeStory('sm');
-export const Medium: Story = sizeStory('md');
-export const Large: Story = sizeStory('lg');
+export const Small: Story = {
+  ...sizeStory('sm'),
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer size="sm">
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
+};
+export const Medium: Story = {
+  ...sizeStory('md'),
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer size="md">
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
+};
+export const Large: Story = {
+  ...sizeStory('lg'),
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer size="lg">
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
+};
 
 /** Drag along the header: one pointer, explicit coordinates, `pause` ms between moves. */
 async function drag(header: HTMLElement, points: number[], axis: 'x' | 'y', pause = 0, end: 'up' | 'cancel' = 'up') {
@@ -750,6 +975,20 @@ async function expectHome(panel: HTMLElement) {
 
 export const Draggable: Story = {
   args: { draggable: true },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer draggable>
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const { dialog, panel, header, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
@@ -820,6 +1059,20 @@ export const DraggableRejected: Story = {
 
 export const DraggableBottom: Story = {
   args: { draggable: true, side: 'bottom' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer draggable side="bottom">
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const { panel, header, trigger } = await openDrawer({ canvasElement, userEvent });
@@ -848,6 +1101,36 @@ function LongFormBody() {
 LongFormBody.displayName = 'LongFormBody';
 
 export const LongForm: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer>
+  <Drawer.Trigger>Edit profile</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Profile</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body>
+        <TextField label="First name" />
+        <TextField label="Last name" />
+        <TextField label="Email" type="email" />
+        <TextField label="Company" />
+        <TextField label="Job title" />
+        <TextField label="Department" />
+        <TextField label="Address" />
+        <TextField label="City" />
+        <TextField label="Region" />
+        <TextField label="Postal code" />
+        <TextField label="Country" />
+        <TextField label="Website" type="url" />
+        <TextField label="Portfolio" type="url" />
+        <TextField label="Biography" />
+      </Drawer.Body>
+      <Drawer.Footer><Drawer.Close>Done</Drawer.Close></Drawer.Footer>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
   render: (args) => <DrawerExample {...args} body={<LongFormBody />} />,
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, panel, body, header, footer, canvas } = await openDrawer({ canvasElement, userEvent });
@@ -869,6 +1152,22 @@ export const LongForm: Story = {
 };
 
 export const LightTheme: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField, ThemeRoot } from '@jfrader/ui';
+
+<ThemeRoot theme="light">
+  <Drawer>
+    <Drawer.Trigger>Open filters</Drawer.Trigger>
+    <Drawer.Content>
+      <Drawer.Panel>
+        <Drawer.Header>
+          <Drawer.Title>Filters</Drawer.Title>
+          <Drawer.Close>Close</Drawer.Close>
+        </Drawer.Header>
+        <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+      </Drawer.Panel>
+    </Drawer.Content>
+  </Drawer>
+</ThemeRoot>` } } },
   decorators: [withLightTheme],
   globals: { theme: 'light' },
   render: (args) => <DrawerExample {...args} />,
@@ -887,6 +1186,22 @@ export const LightTheme: Story = {
 };
 
 export const ContrastPanelDark: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField, ThemeRoot } from '@jfrader/ui';
+
+<ThemeRoot theme="dark">
+  <Drawer>
+    <Drawer.Trigger>Open filters</Drawer.Trigger>
+    <Drawer.Content>
+      <Drawer.Panel appearance="contrast">
+        <Drawer.Header>
+          <Drawer.Title>Filters</Drawer.Title>
+          <Drawer.Close>Close</Drawer.Close>
+        </Drawer.Header>
+        <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+      </Drawer.Panel>
+    </Drawer.Content>
+  </Drawer>
+</ThemeRoot>` } } },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const { panel, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
@@ -901,6 +1216,22 @@ export const ContrastPanelDark: Story = {
 };
 
 export const DefaultAppearance: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField, ThemeRoot } from '@jfrader/ui';
+
+<ThemeRoot theme="light">
+  <Drawer>
+    <Drawer.Trigger>Open filters</Drawer.Trigger>
+    <Drawer.Content>
+      <Drawer.Panel appearance="default">
+        <Drawer.Header>
+          <Drawer.Title>Filters</Drawer.Title>
+          <Drawer.Close>Close</Drawer.Close>
+        </Drawer.Header>
+        <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+      </Drawer.Panel>
+    </Drawer.Content>
+  </Drawer>
+</ThemeRoot>` } } },
   decorators: [withLightTheme],
   globals: { theme: 'light' },
   render: (args) => <DrawerExample {...args} panelProps={{ appearance: 'default' }} />,
@@ -971,6 +1302,27 @@ export const OpenNoDescription: Story = {
 };
 
 export const Controlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Drawer, TextField } from '@jfrader/ui';
+
+function Filters() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Drawer open={open} onOpenChange={setOpen}>
+      <Drawer.Trigger>Open filters</Drawer.Trigger>
+      <Drawer.Content>
+        <Drawer.Panel>
+          <Drawer.Header>
+            <Drawer.Title>Filters</Drawer.Title>
+            <Drawer.Close>Close</Drawer.Close>
+          </Drawer.Header>
+          <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+          <Drawer.Footer><Drawer.Close>Done</Drawer.Close></Drawer.Footer>
+        </Drawer.Panel>
+      </Drawer.Content>
+    </Drawer>
+  );
+}` } } },
   render: (args) => <ControlledDrawer {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const { canvas, trigger, dialog } = await openDrawer({ canvasElement, userEvent });
@@ -1015,6 +1367,20 @@ export const ControlledReject: Story = {
 };
 
 export const CancelVeto: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer>
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content onCancel={(event) => event.preventDefault()}>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
   render: (args) => <DrawerExample {...args} contentProps={{ onCancel: (event) => event.preventDefault() }} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const { dialog, canvas } = await openDrawer({ canvasElement, userEvent });
@@ -1029,6 +1395,20 @@ export const CancelVeto: Story = {
 };
 
 export const BackdropClick: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer>
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
   render: (args) => <DrawerExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const { dialog, panel, body, trigger } = await openDrawer({ canvasElement, userEvent });
@@ -1084,6 +1464,28 @@ export const NativeFormClose: Story = {
 const refClose = fn<(element: HTMLDialogElement | null) => void>();
 
 export const RefClose: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useRef } from 'react';
+import { Button, Drawer } from '@jfrader/ui';
+
+function Filters() {
+  const dialog = useRef<HTMLDialogElement | null>(null);
+  return (
+    <Drawer>
+      <Drawer.Trigger>Open filters</Drawer.Trigger>
+      <Drawer.Content ref={dialog}>
+        <Drawer.Panel>
+          <Drawer.Header>
+            <Drawer.Title>Filters</Drawer.Title>
+            <Drawer.Close>Close</Drawer.Close>
+          </Drawer.Header>
+          <Drawer.Body>
+            <Button onClick={() => dialog.current?.close()}>Done</Button>
+          </Drawer.Body>
+        </Drawer.Panel>
+      </Drawer.Content>
+    </Drawer>
+  );
+}` } } },
   render: (args) => <DrawerExample {...args} contentProps={{ ref: refClose }} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const { dialog, trigger } = await openDrawer({ canvasElement, userEvent });
@@ -1123,6 +1525,27 @@ function UnmountFixture({ removeTrigger = false, ...props }: DrawerCompoundProps
 UnmountFixture.displayName = 'UnmountFixture';
 
 export const UnmountOpen: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, Drawer } from '@jfrader/ui';
+
+function Filters() {
+  const [mounted, setMounted] = useState(true);
+  return (
+    <Drawer>
+      <Drawer.Trigger>Open filters</Drawer.Trigger>
+      {mounted && (
+        <Drawer.Content>
+          <Drawer.Panel>
+            <Drawer.Header><Drawer.Title>Filters</Drawer.Title></Drawer.Header>
+            <Drawer.Body>
+              <Button onClick={() => setMounted(false)}>Remove panel</Button>
+            </Drawer.Body>
+          </Drawer.Panel>
+        </Drawer.Content>
+      )}
+    </Drawer>
+  );
+}` } } },
   render: (args) => <UnmountFixture {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -1138,6 +1561,27 @@ export const UnmountOpen: Story = {
 };
 
 export const UnmountDisconnectedInvoker: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, Drawer } from '@jfrader/ui';
+
+function Filters() {
+  const [mounted, setMounted] = useState(true);
+  return (
+    <Drawer>
+      {mounted && <Drawer.Trigger>Open filters</Drawer.Trigger>}
+      {mounted && (
+        <Drawer.Content>
+          <Drawer.Panel>
+            <Drawer.Header><Drawer.Title>Filters</Drawer.Title></Drawer.Header>
+            <Drawer.Body>
+              <Button onClick={() => setMounted(false)}>Remove panel</Button>
+            </Drawer.Body>
+          </Drawer.Panel>
+        </Drawer.Content>
+      )}
+    </Drawer>
+  );
+}` } } },
   render: (args) => <UnmountFixture {...args} removeTrigger />,
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -1158,6 +1602,20 @@ const failingRef = (dialog: HTMLDialogElement | null) => {
 };
 
 export const FailedShowModal: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<Drawer>
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
   render: (args) => <DrawerExample {...args} contentProps={{ ref: failingRef }} />,
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -1171,6 +1629,24 @@ export const FailedShowModal: Story = {
 };
 
 export const KeyboardNavigation: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, Drawer, TextField } from '@jfrader/ui';
+
+<>
+  <Button>Before</Button>
+  <Drawer>
+    <Drawer.Trigger>Open filters</Drawer.Trigger>
+    <Drawer.Content>
+      <Drawer.Panel>
+        <Drawer.Header>
+          <Drawer.Title>Filters</Drawer.Title>
+          <Drawer.Close>Close</Drawer.Close>
+        </Drawer.Header>
+        <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+        <Drawer.Footer><Drawer.Close>Done</Drawer.Close></Drawer.Footer>
+      </Drawer.Panel>
+    </Drawer.Content>
+  </Drawer>
+</>` } } },
   render: (args) => (
     <>
       <FixtureButton type="button" >
@@ -1229,6 +1705,14 @@ export const KeyboardNavigation: Story = {
 };
 
 export const TriggerDefaultPrevented: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Drawer>
+  <Drawer.Trigger onClick={(event) => event.preventDefault()}>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header><Drawer.Title>Filters</Drawer.Title></Drawer.Header>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
   render: (args) => (
     <Drawer {...args}>
       <Drawer.Trigger onClick={(event) => event.preventDefault()}>{TRIGGER}</Drawer.Trigger>
@@ -1284,6 +1768,32 @@ export const ExternalARIA: Story = {
 const FALSY_CONTENT = [0, false, null, ''] as const;
 
 export const FalsyTitle: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<>
+  <Drawer>
+    <Drawer.Trigger>Open count</Drawer.Trigger>
+    <Drawer.Content>
+      <Drawer.Panel>
+        <Drawer.Header>
+          <Drawer.Title>{0}</Drawer.Title>
+          <Drawer.Description>{0}</Drawer.Description>
+          <Drawer.Close>Close</Drawer.Close>
+        </Drawer.Header>
+      </Drawer.Panel>
+    </Drawer.Content>
+  </Drawer>
+  <Drawer>
+    <Drawer.Trigger>Open filters</Drawer.Trigger>
+    <Drawer.Content aria-label="Filters">
+      <Drawer.Panel>
+        <Drawer.Header>
+          <Drawer.Title>{null}</Drawer.Title>
+          <Drawer.Description>{false}</Drawer.Description>
+          <Drawer.Close>Close</Drawer.Close>
+        </Drawer.Header>
+      </Drawer.Panel>
+    </Drawer.Content>
+  </Drawer>
+</>` } } },
   render: (args) => (
     <>
       {FALSY_CONTENT.map((value) => (
@@ -1340,6 +1850,36 @@ function NestedPopoverBody() {
 NestedPopoverBody.displayName = 'NestedPopoverBody';
 
 export const NestedPopover: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, Drawer, Popover, ThemeRoot } from '@jfrader/ui';
+
+function OwnerFilters() {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  return (
+    <Drawer>
+      <Drawer.Trigger>Open filters</Drawer.Trigger>
+      <Drawer.Content>
+        <Drawer.Panel>
+          <Drawer.Header>
+            <Drawer.Title>Filters</Drawer.Title>
+            <Drawer.Close>Close</Drawer.Close>
+          </Drawer.Header>
+          <Drawer.Body>
+            <ThemeRoot portalContainer={host}>
+              <Popover>
+                <Popover.Trigger>Owner options</Popover.Trigger>
+                <Popover.Content aria-label="Owner options">
+                  <Button>Assign to me</Button>
+                </Popover.Content>
+              </Popover>
+              <div ref={setHost} />
+            </ThemeRoot>
+          </Drawer.Body>
+        </Drawer.Panel>
+      </Drawer.Content>
+    </Drawer>
+  );
+}` } } },
   render: (args) => <DrawerExample {...args} body={<NestedPopoverBody />} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const { dialog, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
@@ -1366,6 +1906,39 @@ export const NestedPopover: Story = {
 };
 
 export const ContrastScopedPopover: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, Drawer, Popover, TextField, ThemeRoot } from '@jfrader/ui';
+
+function OwnerFilters() {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  return (
+    <ThemeRoot theme="light">
+      <Drawer>
+        <Drawer.Trigger>Open filters</Drawer.Trigger>
+        <Drawer.Content>
+          <Drawer.Panel appearance="contrast">
+            <Drawer.Header>
+              <Drawer.Title>Filters</Drawer.Title>
+              <Drawer.Close>Close</Drawer.Close>
+            </Drawer.Header>
+            <Drawer.Body>
+              <TextField label="Owner" />
+              <ThemeRoot portalContainer={host}>
+                <Popover>
+                  <Popover.Trigger>Owner options</Popover.Trigger>
+                  <Popover.Content aria-label="Owner options">
+                    <Button>Assign to me</Button>
+                  </Popover.Content>
+                </Popover>
+                <div ref={setHost} />
+              </ThemeRoot>
+            </Drawer.Body>
+          </Drawer.Panel>
+        </Drawer.Content>
+      </Drawer>
+    </ThemeRoot>
+  );
+}` } } },
   decorators: [withLightTheme],
   globals: { theme: 'light' },
   render: (args) => (
@@ -1438,6 +2011,45 @@ function NestedSelectBody() {
 NestedSelectBody.displayName = 'NestedSelectBody';
 
 export const ContrastSelectPanel: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId, useState } from 'react';
+import { Drawer, Select, TextField, ThemeRoot } from '@jfrader/ui';
+
+function StatusFilters() {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  const labelId = useId();
+  return (
+    <ThemeRoot theme="light">
+      <Drawer>
+        <Drawer.Trigger>Open filters</Drawer.Trigger>
+        <Drawer.Content>
+          <Drawer.Panel appearance="contrast">
+            <Drawer.Header>
+              <Drawer.Title>Filters</Drawer.Title>
+              <Drawer.Close>Close</Drawer.Close>
+            </Drawer.Header>
+            <Drawer.Body>
+              <TextField label="Owner" />
+              <ThemeRoot portalContainer={host}>
+                <span id={labelId}>Status</span>
+                <Select>
+                  <Select.Trigger aria-labelledby={labelId}>
+                    <Select.Value placeholder="Choose a status" />
+                  </Select.Trigger>
+                  <Select.Content>
+                    <Select.Item value="backlog">Backlog</Select.Item>
+                    <Select.Item value="in-progress">In progress</Select.Item>
+                    <Select.Item value="done">Done</Select.Item>
+                  </Select.Content>
+                </Select>
+                <div ref={setHost} />
+              </ThemeRoot>
+            </Drawer.Body>
+          </Drawer.Panel>
+        </Drawer.Content>
+      </Drawer>
+    </ThemeRoot>
+  );
+}` } } },
   decorators: [withLightTheme],
   globals: { theme: 'light' },
   render: (args) => <DrawerExample {...args} body={<NestedSelectBody />} />,
@@ -1467,6 +2079,42 @@ export const ContrastSelectPanel: Story = {
 };
 
 export const SelectEscape: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId, useState } from 'react';
+import { Drawer, Select, ThemeRoot } from '@jfrader/ui';
+
+function StatusFilters() {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  const labelId = useId();
+  return (
+    <Drawer>
+      <Drawer.Trigger>Open filters</Drawer.Trigger>
+      <Drawer.Content>
+        <Drawer.Panel>
+          <Drawer.Header>
+            <Drawer.Title>Filters</Drawer.Title>
+            <Drawer.Close>Close</Drawer.Close>
+          </Drawer.Header>
+          <Drawer.Body>
+            <ThemeRoot portalContainer={host}>
+              <span id={labelId}>Status</span>
+              <Select>
+                <Select.Trigger aria-labelledby={labelId}>
+                  <Select.Value placeholder="Choose a status" />
+                </Select.Trigger>
+                <Select.Content>
+                  <Select.Item value="backlog">Backlog</Select.Item>
+                  <Select.Item value="in-progress">In progress</Select.Item>
+                  <Select.Item value="done">Done</Select.Item>
+                </Select.Content>
+              </Select>
+              <div ref={setHost} />
+            </ThemeRoot>
+          </Drawer.Body>
+        </Drawer.Panel>
+      </Drawer.Content>
+    </Drawer>
+  );
+}` } } },
   render: (args) => <DrawerExample {...args} body={<NestedSelectBody />} />,
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
@@ -1509,6 +2157,28 @@ function NestedDialogBody() {
 NestedDialogBody.displayName = 'NestedDialogBody';
 
 export const NestedDialog: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Dialog, Drawer } from '@jfrader/ui';
+
+<Drawer>
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body>
+        <Dialog>
+          <Dialog.Trigger>Confirm reset</Dialog.Trigger>
+          <Dialog.Content>
+            <Dialog.Title>Reset filters</Dialog.Title>
+            <Dialog.Close>Cancel</Dialog.Close>
+          </Dialog.Content>
+        </Dialog>
+      </Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
   render: (args) => <DrawerExample {...args} body={<NestedDialogBody />} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const { dialog, canvas } = await openDrawer({ canvasElement, userEvent });
@@ -1525,6 +2195,22 @@ export const NestedDialog: Story = {
 
 export const RTL: Story = {
   args: { draggable: true },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
+
+<div dir="rtl">
+  <Drawer side="inline-end" draggable>
+    <Drawer.Trigger>Open filters</Drawer.Trigger>
+    <Drawer.Content>
+      <Drawer.Panel>
+        <Drawer.Header>
+          <Drawer.Title>Filters</Drawer.Title>
+          <Drawer.Close>Close</Drawer.Close>
+        </Drawer.Header>
+        <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+      </Drawer.Panel>
+    </Drawer.Content>
+  </Drawer>
+</div>` } } },
   render: (args) => (
     <div dir="rtl">
       <DrawerExample {...args} />
@@ -1687,9 +2373,89 @@ export const PartStyling: Story = {
   },
 };
 
-export const AdapterDrag: Story = { ...Draggable, render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} /> };
+export const AdapterDrag: Story = {
+  ...Draggable,
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, Surface, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FilterPanel = styled(Surface)({ border: '1px dashed ' + vars.color.border });
+
+<Drawer draggable>
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel component={FilterPanel}>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
+  render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} />,
+};
 export const AdapterRejectedDrag: Story = { ...DraggableRejected, render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} /> };
 export const AdapterReducedMotion: Story = { ...ReducedMotion, render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} /> };
-export const AdapterInlineStart: Story = { ...InlineStart, render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} /> };
-export const AdapterTop: Story = { ...Top, render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} /> };
-export const AdapterBottom: Story = { ...Bottom, render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} /> };
+export const AdapterInlineStart: Story = {
+  ...InlineStart,
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, Surface, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FilterPanel = styled(Surface)({ border: '1px dashed ' + vars.color.border });
+
+<Drawer side="inline-start">
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel component={FilterPanel}>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
+  render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} />,
+};
+export const AdapterTop: Story = {
+  ...Top,
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, Surface, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FilterPanel = styled(Surface)({ border: '1px dashed ' + vars.color.border });
+
+<Drawer side="top">
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel component={FilterPanel}>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
+  render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} />,
+};
+export const AdapterBottom: Story = {
+  ...Bottom,
+  parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, Surface, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FilterPanel = styled(Surface)({ border: '1px dashed ' + vars.color.border });
+
+<Drawer side="bottom">
+  <Drawer.Trigger>Open filters</Drawer.Trigger>
+  <Drawer.Content>
+    <Drawer.Panel component={FilterPanel}>
+      <Drawer.Header>
+        <Drawer.Title>Filters</Drawer.Title>
+        <Drawer.Close>Close</Drawer.Close>
+      </Drawer.Header>
+      <Drawer.Body><TextField label="Owner" /></Drawer.Body>
+    </Drawer.Panel>
+  </Drawer.Content>
+</Drawer>` } } },
+  render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} />,
+};
