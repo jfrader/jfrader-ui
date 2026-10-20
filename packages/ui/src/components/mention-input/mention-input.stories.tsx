@@ -49,9 +49,6 @@ const Fixture = styled.button({
   border: `1px solid ${vars.color.borderControl}`,
   borderRadius: vars.radius.sm,
 });
-const source = `<MentionInput label="Comment" people={people} channels={channels}
-  value={draft} onValueChange={setDraft} submitOnEnter
-  onSubmit={(next) => postComment(serializeMentions(next))} />`;
 
 const ScrollFrame = styled.div({ paddingBlockStart: '65vh' });
 function LightThemeScope(props: Omit<ThemeRootProps, 'theme'>) {
@@ -82,7 +79,6 @@ const meta = {
   ],
   parameters: {
     docs: {
-      source: { code: source },
       description: {
         component: 'Write a message and mention people with @ or channels with #.',
       },
@@ -237,6 +233,21 @@ export const Metadata: Story = {
   },
 };
 export const Controlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { MentionInput, type MentionValue } from '@jfrader/ui';
+
+function CommentEditor() {
+  const [value, setValue] = useState<MentionValue>({ text: '', mentions: [] });
+  return (
+    <MentionInput
+      label="Comment"
+      people={[{ id: 'ada', name: 'Ada', role: 'Engineer' }]}
+      channels={[{ id: 'general', name: 'general' }]}
+      value={value}
+      onValueChange={setValue}
+    />
+  );
+}` } } },
   render: (args) => <ControlledField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('textbox');
@@ -255,6 +266,11 @@ export const Controlled: Story = {
   },
 };
 export const Sizes: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<>
+  <MentionInput label="Small comment" size="sm" people={[{ id: 'ada', name: 'Ada' }]} />
+  <MentionInput label="Medium comment" size="md" people={[{ id: 'ada', name: 'Ada' }]} />
+  <MentionInput label="Large comment" size="lg" people={[{ id: 'ada', name: 'Ada' }]} />
+</>` } } },
   render: (args) => (
     <Stack>
       {(['sm', 'md', 'lg'] as const).map((size) => (
@@ -279,6 +295,20 @@ export const MinMaxRows: Story = {
 };
 export const SubmitOnEnter: Story = {
   args: { submitOnEnter: true },
+  parameters: { docs: { source: { language: 'tsx', code: `import { MentionInput, serializeMentions } from '@jfrader/ui';
+
+<MentionInput
+  label="Comment"
+  people={[{ id: 'ada', name: 'Ada' }]}
+  submitOnEnter
+  onSubmit={async (value) => {
+    await fetch('/api/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: serializeMentions(value) }),
+    });
+  }}
+/>` } } },
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('textbox');
     await userEvent.click(input);
@@ -342,6 +372,17 @@ export const Disabled: Story = {
 };
 export const ReadOnly: Story = {
   args: { readOnly: true, defaultValue: TOKEN_VALUE },
+  parameters: { docs: { source: { language: 'tsx', code: `<MentionInput
+  label="Comment"
+  readOnly
+  defaultValue={{
+    text: '@Ada #general',
+    mentions: [
+      { kind: 'person', id: 'ada', label: 'Ada', start: 0, end: 4 },
+      { kind: 'channel', id: 'general', label: 'general', start: 5, end: 13 },
+    ],
+  }}
+/>` } } },
   render: (args) => <ActionField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Insert text' }));
@@ -370,6 +411,27 @@ export const Error: Story = {
   },
 };
 export const ExternalAria: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+import { MentionInput } from '@jfrader/ui';
+
+function ThreadComment() {
+  const labelId = useId();
+  const descriptionId = useId();
+  return (
+    <>
+      <span id={labelId}>Thread</span>
+      <span id={descriptionId}>External details</span>
+      <MentionInput
+        label="Comment"
+        aria-labelledby={labelId}
+        aria-describedby={descriptionId}
+        description="Comment details"
+        error="Required"
+        people={[{ id: 'ada', name: 'Ada' }]}
+      />
+    </>
+  );
+}` } } },
   args: {
     'aria-label': 'Custom comment',
     'aria-labelledby': 'external-label',
@@ -392,6 +454,12 @@ export const ExternalAria: Story = {
   },
 };
 export const BooleanAndZeroNodes: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<>
+  <MentionInput aria-label="Comment 1" label={false} description={false} error={false} />
+  <MentionInput aria-label="Comment 2" label={null} description={null} error={null} />
+  <MentionInput aria-label="Comment 3" label={0} description={0} error={0} />
+  <MentionInput aria-label="Comment 4" label="" description="" error="" />
+</>` } } },
   render: (args) => (
     <Stack>
       {([false, null, 0, ''] as const).map((node, index) => (
@@ -417,6 +485,25 @@ export const BooleanAndZeroNodes: Story = {
 
 export const Keyboard: Story = {
   args: { submitOnEnter: true },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, MentionInput } from '@jfrader/ui';
+
+<>
+  <Button>Before</Button>
+  <MentionInput
+    label="Comment"
+    people={[{ id: 'ada', name: 'Ada' }, { id: 'grace', name: 'Grace' }]}
+    channels={[{ id: 'general', name: 'general' }, { id: 'design', name: 'design' }]}
+    submitOnEnter
+    onSubmit={async (value) => {
+      await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(value),
+      });
+    }}
+  />
+  <Button>After</Button>
+</>` } } },
   render: (args) => (
     <>
       <Fixture>Before</Fixture>
@@ -590,6 +677,20 @@ export const ControlledOpenReject: Story = {
 };
 export const FormReset: Story = {
   args: { defaultValue: TOKEN_VALUE, name: 'comment' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, MentionInput } from '@jfrader/ui';
+
+<form aria-label="Comment form">
+  <MentionInput
+    label="Comment"
+    name="comment"
+    people={[{ id: 'ada', name: 'Ada' }]}
+    defaultValue={{
+      text: '@Ada',
+      mentions: [{ kind: 'person', id: 'ada', label: 'Ada', start: 0, end: 4 }],
+    }}
+  />
+  <Button type="reset">Reset</Button>
+</form>` } } },
   render: (args) => (
     <form aria-label="Comment form">
       <MentionInput {...args} />
@@ -646,6 +747,19 @@ export const Composition: Story = {
   },
 };
 export const Helpers: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { mentionText, serializeMentions, type MentionValue } from '@jfrader/ui';
+
+const label = 'Ada';
+const text = mentionText('person', label);
+const value: MentionValue = {
+  text,
+  mentions: [{ kind: 'person', id: 'ada', label, start: 0, end: text.length }],
+};
+
+const referenceText = serializeMentions(value);
+const customReferenceText = serializeMentions(value, (mention) =>
+  '[' + mention.kind + ':' + mention.id + ']',
+);` } } },
   play: async () => {
     await expect(mentionText('person', 'Ada')).toBe('@Ada');
     await expect(serializeMentions(TOKEN_VALUE)).toBe('<@ada> <#general>');
@@ -658,6 +772,32 @@ export const Helpers: Story = {
   },
 };
 export const Actions: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useRef } from 'react';
+import { Button, MentionInput, type MentionInputActions } from '@jfrader/ui';
+
+function CommentEditor() {
+  const actions = useRef<MentionInputActions | null>(null);
+  const textarea = useRef<HTMLTextAreaElement | null>(null);
+  return (
+    <>
+      <MentionInput
+        label="Comment"
+        people={[{ id: 'ada', name: 'Ada' }]}
+        ref={textarea}
+        actionsRef={actions}
+      />
+      <Button onClick={() => {
+        textarea.current?.focus();
+        actions.current?.insert('hello');
+      }}>Insert text</Button>
+      <Button onClick={() => actions.current?.clear()}>Clear</Button>
+      <Button onClick={() => {
+        textarea.current?.focus();
+        actions.current?.openSuggestions('person');
+      }}>People</Button>
+    </>
+  );
+}` } } },
   render: (args) => <ActionField {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Insert text' }));
@@ -669,6 +809,22 @@ export const Actions: Story = {
 };
 export const LightTheme: Story = {
   args: { defaultValue: TOKEN_VALUE },
+  parameters: { docs: { source: { language: 'tsx', code: `import { MentionInput, ThemeRoot } from '@jfrader/ui';
+
+<ThemeRoot theme="light">
+  <MentionInput
+    label="Comment"
+    people={[{ id: 'ada', name: 'Ada' }]}
+    channels={[{ id: 'general', name: 'general' }]}
+    defaultValue={{
+      text: '@Ada #general',
+      mentions: [
+        { kind: 'person', id: 'ada', label: 'Ada', start: 0, end: 4 },
+        { kind: 'channel', id: 'general', label: 'general', start: 5, end: 13 },
+      ],
+    }}
+  />
+</ThemeRoot>` } } },
   globals: { theme: 'light' },
   decorators: [withLightTheme],
   play: boundaryPlay,
@@ -831,6 +987,20 @@ export const CallbackOrder: Story = {
   },
 };
 export const NativeRef: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useRef, useState } from 'react';
+import { Button, MentionInput } from '@jfrader/ui';
+
+function CommentEditor() {
+  const textarea = useRef<HTMLTextAreaElement | null>(null);
+  const [mounted, setMounted] = useState(true);
+  return (
+    <>
+      {mounted && <MentionInput label="Comment" ref={textarea} />}
+      <Button onClick={() => textarea.current?.focus()}>Focus comment</Button>
+      <Button onClick={() => setMounted(false)}>Remove comment</Button>
+    </>
+  );
+}` } } },
   args: { ref: fn((element: HTMLTextAreaElement | null) => (element ? fn() : undefined)), actionsRef: fn() },
   render: (args) => (
     <StrictMode>
@@ -886,6 +1056,19 @@ export const SlotStyles: Story = {
 };
 export const ControlledFormReset: Story = {
   args: { value: TOKEN_VALUE, name: 'comment' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, MentionInput } from '@jfrader/ui';
+
+<form aria-label="Accepted comment">
+  <MentionInput
+    label="Comment"
+    name="comment"
+    value={{
+      text: '@Ada',
+      mentions: [{ kind: 'person', id: 'ada', label: 'Ada', start: 0, end: 4 }],
+    }}
+  />
+  <Button type="reset">Reset</Button>
+</form>` } } },
   render: (args) => (
     <form aria-label="Accepted comment">
       <MentionInput {...args} />
@@ -940,6 +1123,19 @@ export const SameLabelPasteDropsIdentity: Story = {
 
 export const CanceledFormReset: Story = {
   args: { defaultValue: TOKEN_VALUE },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, MentionInput } from '@jfrader/ui';
+
+<form onReset={(event) => event.preventDefault()}>
+  <MentionInput
+    label="Comment"
+    people={[{ id: 'ada', name: 'Ada' }]}
+    defaultValue={{
+      text: '@Ada',
+      mentions: [{ kind: 'person', id: 'ada', label: 'Ada', start: 0, end: 4 }],
+    }}
+  />
+  <Button type="reset">Reset</Button>
+</form>` } } },
   render: (args) => (
     <form onReset={(event) => event.preventDefault()}>
       <MentionInput {...args} />
@@ -960,6 +1156,29 @@ export const CanceledFormReset: Story = {
 
 export const ExternalFormReset: Story = {
   args: { defaultValue: TOKEN_VALUE, name: 'comment', form: 'external-comment-form' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+import { Button, MentionInput } from '@jfrader/ui';
+
+function CommentForm() {
+  const formId = useId();
+  return (
+    <>
+      <MentionInput
+        label="Comment"
+        name="comment"
+        form={formId}
+        people={[{ id: 'ada', name: 'Ada' }]}
+        defaultValue={{
+          text: '@Ada',
+          mentions: [{ kind: 'person', id: 'ada', label: 'Ada', start: 0, end: 4 }],
+        }}
+      />
+      <form id={formId} aria-label="Comment form">
+        <Button type="reset">Reset</Button>
+      </form>
+    </>
+  );
+}` } } },
   render: (args) => (
     <>
       <MentionInput {...args} />
@@ -1014,7 +1233,19 @@ export const SlotCustomization: Story = {
   parameters: {
     docs: {
       source: {
-        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<MentionInput label=\"Name\"\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { css: { borderRadius: '8px' } }, label: { title: 'Name' } }}\n  sx={{ borderRadius: '11px' }}\n/>",
+        language: 'tsx',
+        code: `import { MentionInput, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const CommentRoot = styled.div({ borderRadius: vars.radius.md });
+const CommentLabel = styled.label({ fontWeight: vars.fontWeight.semibold });
+
+<MentionInput
+  label="Comment"
+  people={[{ id: 'ada', name: 'Ada' }]}
+  slots={{ root: CommentRoot, label: CommentLabel }}
+  slotProps={{ label: { title: 'Mention a teammate with @' } }}
+/>`,
       },
     },
   },
@@ -1036,6 +1267,16 @@ export const SlotCustomization: Story = {
 /** Use component as shorthand for the wrapper's root slot. */
 export const ComponentRoot: Story = {
   args: { component: FieldSugarRoot },
+  parameters: { docs: { source: { language: 'tsx', code: `import { MentionInput, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const CommentRoot = styled.div({ gap: vars.space[3] });
+
+<MentionInput
+  label="Comment"
+  people={[{ id: 'ada', name: 'Ada' }]}
+  component={CommentRoot}
+/>` } } },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-slot-root="component"]')).not.toBeNull();
   },
