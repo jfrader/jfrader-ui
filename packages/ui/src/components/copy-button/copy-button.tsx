@@ -331,9 +331,9 @@ export function CopyButton({
   };
   const faceIcons = FACES.map((face) => (icons?.[face] !== undefined ? icons[face] : DEFAULT_ICONS[face]));
   const hasIcons = faceIcons.some(isRenderable);
-  const { sx: iconSlotCss, ...iconSlotProps } = slotProps?.icon ?? {};
-  const { sx: labelSlotCss, ...labelSlotProps } = slotProps?.label ?? {};
-  const { sx: statusSlotCss, ...statusSlotProps } = slotProps?.status ?? {};
+  const { sx: iconSlotSx, ...iconSlotProps } = slotProps?.icon ?? {};
+  const { sx: labelSlotSx, ...labelSlotProps } = slotProps?.label ?? {};
+  const { sx: statusSlotSx, ...statusSlotProps } = slotProps?.status ?? {};
   const Icon = slots?.icon ?? 'span';
   const Label = slots?.label ?? 'span';
   const Status = slots?.status ?? 'span';
@@ -363,7 +363,7 @@ export function CopyButton({
             {...iconSlotProps}
             aria-hidden="true"
             data-ui="copy-button-icon"
-            css={[stackStyle, iconSlotStyle, iconSlotCss]}
+            css={[stackStyle, iconSlotStyle, iconSlotSx]}
           >
             {FACES.map((face, index) => (
               <span
@@ -381,7 +381,7 @@ export function CopyButton({
             {...labelSlotProps}
             aria-hidden="true"
             data-ui="copy-button-label"
-            css={[stackStyle, labelSlotStyle, labelSlotCss]}
+            css={[stackStyle, labelSlotStyle, labelSlotSx]}
           >
             {FACES.map((face) => (
               <span key={face} data-active={face === current || undefined} css={[faceStyle, labelFaceStyle]}>
@@ -397,7 +397,7 @@ export function CopyButton({
         aria-live="polite"
         aria-atomic="true"
         data-ui="copy-button-status"
-        css={[visuallyHiddenStyle, statusSlotCss]}
+        css={[visuallyHiddenStyle, statusSlotSx]}
       >
         {current === 'idle' ? '' : faceLabels[current]}
       </Status>

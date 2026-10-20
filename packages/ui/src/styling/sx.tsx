@@ -8,7 +8,7 @@ import type { ReactNode } from 'react';
 import { ClassNames, type ClassNamesContent, type Interpolation, type Theme } from './css';
 
 export interface SxProps {
-  /** The public style-override prop. Accepts the same values as `css()` and applies last. */
+  /** The public style-override prop. Accepts theme-aware style values and applies last. */
   sx?: Interpolation<Theme>;
 }
 

@@ -220,7 +220,7 @@ export function ThreadMessageView({
   const timeId = partId(baseId, 'time', messageId);
   const fullId = partId(baseId, 'when', messageId);
 
-  const { sx: articleSlotCss, ...articleSlotProps } = slots?.article ?? {};
+  const { sx: articleSlotSx, ...articleSlotProps } = slots?.article ?? {};
   const mergedArticle = { ...articleProps, ...articleSlotProps };
   const {
     ref: articleRef,
@@ -240,7 +240,7 @@ export function ThreadMessageView({
   const mergedDescribedBy = [customAriaDescribedby, defaultDescribedBy].filter(Boolean).join(' ') || undefined;
 
   return (
-    <WithSx className={articleClassName} styles={[articleStyle, articleSlotCss]} sx={sx}>
+    <WithSx className={articleClassName} styles={[articleStyle, articleSlotSx]} sx={sx}>
       {(rootClass) => (
         <Article
           {...restArticleProps}
