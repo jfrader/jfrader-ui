@@ -11,6 +11,7 @@ import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { TagInput, type TagInputProps } from './index';
+import { Button } from '../button';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
@@ -33,17 +34,23 @@ const meta = {
       description: {
         component: 'Type tags or recipients, add them to a list and remove them.',
       },
-      usage: `- Use a select-style control when choices come from a fixed set.
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Prefilled'] },
+        { title: 'Suggestions', stories: ['SuggestedTopics'] },
+        { title: 'Many and long tags', stories: ['Wrapping', 'LongToken'] },
+        { title: 'Invalid and disabled', stories: ['InvalidToken', 'Error', 'Disabled'] },
+        { title: 'Forms and controlled values', stories: ['FormSubmission', 'Controlled', 'DraftControlled'] },
+        { title: 'Keyboard and removal', stories: ['Keyboard'] },
+      ],
+      usage: `### When to use
+Collect free-form tags or recipients. TagInput has no suggestion list; use Combobox when readers must choose from suggested or fixed options.
 
-### Values
-- \`value\` / \`defaultValue\` / \`onValueChange\` manage the token list. \`inputValue\` / \`defaultInputValue\` / \`onInputChange\` manage the draft.
-- Adding a token requests the new list first, then an empty draft. You can accept or reject each request separately.
-- List entries must be unique, nonempty and normalized. Other entries trigger development warnings and still render as supplied.
-- \`normalize\` trims whitespace by default. Empty results are ignored.
-- Duplicate comparison uses \`Intl.Collator\` with \`sensitivity: "accent"\` under \`locale\`: case is ignored; accents are distinct.
-- \`maxTokens\` and \`validateToken\` reject additions. Rejections keep the draft and are announced.
-- Without \`","\` in \`separators\`, commas remain part of the text.
-- \`commitOnBlur\` adds the draft only when focus leaves the whole field, not when moving to a remove button.
+### Constraints
+- Supply unique, nonempty, normalized entries. Whitespace is trimmed by default; duplicate comparison ignores case but distinguishes accents under the chosen locale.
+- Rejected additions keep the draft and announce the reason. Existing entries are not removed when a limit changes.
+- Adding a tag requests the new list before clearing the draft; a controlled application must accept both changes to clear it.
+- Forms submit committed tags in list order, not the draft. A required field needs at least one committed tag.
+- Blur commits, when enabled, happen only when focus leaves the whole field, not when it moves to a remove button.
 
 ### Keyboard
 - Enter or comma adds the draft. With an empty draft, Enter submits the form and comma types.
@@ -54,14 +61,64 @@ const meta = {
 - Tab and Shift+Tab follow DOM order: remove buttons, input, then page.
 - IME composition bypasses shortcuts and blur commits. Held keys do not remove tokens.
 
-### Forms
-- With \`name\`, tokens submit as repeated fields in list order. The draft does not submit.
-- \`required\` requires at least one token.`,
+### Accessibility
+- Give the field a visible label and instructions for any nondefault separator. Additions, removals and rejected drafts are announced.`,
     },
   },
 } satisfies Meta<typeof TagInput>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+const topicCollator = new Intl.Collator(undefined, { sensitivity: 'accent' });
+
+function TopicSuggestions() {
+  const [value, setValue] = useState<readonly string[]>([]);
+  return (
+    <>
+      <TagInput label="Topics" description="Press Enter or comma to add." placeholder="Add a topic"
+        value={value} onValueChange={setValue} />
+      <Button disabled={value.some((topic) => topicCollator.compare(topic, 'accessibility') === 0)}
+        onClick={() => setValue([...value, 'accessibility'])}>
+        Add accessibility
+      </Button>
+    </>
+  );
+}
+
+export const SuggestedTopics: Story = {
+  name: 'Offer a suggested topic',
+  parameters: { docs: {
+    description: { story: 'Add an application-provided suggestion with a button; TagInput has no autocomplete popup.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, TagInput } from '@jfrader/ui';
+
+const topicCollator = new Intl.Collator(undefined, { sensitivity: 'accent' });
+
+function TopicSuggestions() {
+  const [value, setValue] = useState<readonly string[]>([]);
+  return (
+    <>
+      <TagInput label="Topics" description="Press Enter or comma to add." placeholder="Add a topic"
+        value={value} onValueChange={setValue} />
+      <Button disabled={value.some((topic) => topicCollator.compare(topic, 'accessibility') === 0)}
+        onClick={() => setValue([...value, 'accessibility'])}>
+        Add accessibility
+      </Button>
+    </>
+  );
+}` },
+  } },
+  render: () => <TopicSuggestions />,
+  play: async ({ canvas, userEvent }) => {
+    const suggestion = canvas.getByRole('button', { name: 'Add accessibility' });
+    await userEvent.click(suggestion);
+    await expect(suggestion).toBeDisabled();
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove accessibility' }));
+    await userEvent.type(canvas.getByRole('textbox'), 'ACCESSIBILITY{Enter}');
+    await expect(suggestion).toBeDisabled();
+    await expect(canvas.getAllByRole('listitem')).toHaveLength(1);
+  },
+};
 
 type Spy = ReturnType<typeof fn>;
 
@@ -180,6 +237,13 @@ async function expectFocus(element: HTMLElement) {
 }
 
 export const Default: Story = {
+  name: 'Add topics',
+  parameters: { docs: {
+    description: { story: 'Type a topic and press Enter or comma to add it.' },
+    source: { language: 'tsx', code: `import { TagInput } from '@jfrader/ui';
+
+<TagInput label="Topics" description="Press Enter or comma to add." placeholder="Add a topic" />` },
+  } },
   args: { onValueChange: fn(), onInputChange: fn() },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const input = canvas.getByRole('textbox', { name: 'Topics' });
@@ -212,15 +276,27 @@ export const Empty: Story = {
   },
 };
 
-export const Prefilled: Story = { args: { defaultValue: ['design', 'motion', 'accessibility'] } };
+export const Prefilled: Story = {
+  name: 'Start with existing topics',
+  parameters: { docs: {
+    description: { story: 'Edit a list that already contains three topics.' },
+    source: { language: 'tsx', code: `import { TagInput } from '@jfrader/ui';
+
+<TagInput label="Topics" description="Press Enter or comma to add." placeholder="Add a topic"
+  defaultValue={['design', 'motion', 'accessibility']} />` },
+  } },
+  args: { defaultValue: ['design', 'motion', 'accessibility'] },
+};
 
 export const Controlled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+  name: 'Controlled topics',
+  parameters: { docs: { description: { story: 'Store the committed topics in application state.' }, source: { language: 'tsx', code: `import { useState } from 'react';
 import { TagInput } from '@jfrader/ui';
 
 function Topics() {
   const [value, setValue] = useState<readonly string[]>(['design']);
-  return <TagInput label="Topics" value={value} onValueChange={setValue} />;
+  return <TagInput label="Topics" description="Press Enter or comma to add." placeholder="Add a topic"
+    value={value} onValueChange={setValue} />;
 }` } } },
   args: { defaultValue: ['design'], onValueChange: fn(), onChange: fn() },
   render: (args) => <ControlledField {...args} />,
@@ -245,14 +321,16 @@ function Topics() {
 };
 
 export const DraftControlled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+  name: 'Controlled draft',
+  parameters: { docs: { description: { story: 'Show the current draft separately from committed topics.' }, source: { language: 'tsx', code: `import { useState } from 'react';
 import { TagInput } from '@jfrader/ui';
 
 function Topics() {
   const [draft, setDraft] = useState('');
   return (
     <>
-      <TagInput label="Topics" inputValue={draft} onInputChange={setDraft} />
+      <TagInput label="Topics" description="Press Enter or comma to add." placeholder="Add a topic"
+        inputValue={draft} onInputChange={setDraft} />
       <output>{draft}</output>
     </>
   );
@@ -470,6 +548,15 @@ export const Sizes: Story = {
 };
 
 export const Wrapping: Story = {
+  name: 'Wrap many topics',
+  parameters: { docs: {
+    description: { story: 'Let a long list wrap within a narrow field.' },
+    source: { language: 'tsx', code: `import { TagInput } from '@jfrader/ui';
+
+<TagInput label="Topics" description="Press Enter or comma to add." placeholder="Add a topic"
+  defaultValue={['design', 'motion', 'accessibility', 'typography', 'color', 'layout', 'research']}
+  sx={{ inlineSize: '220px' }} />` },
+  } },
   args: {
     defaultValue: ['design', 'motion', 'accessibility', 'typography', 'color', 'layout', 'research'],
     sx: { inlineSize: '220px' },
@@ -491,6 +578,15 @@ export const Wrapping: Story = {
 
 const LONG_TOKEN = 'interaction-design-for-multilingual-onboarding-flows-across-regions';
 export const LongToken: Story = {
+  name: 'Long topic names',
+  parameters: { docs: {
+    description: { story: 'Keep a long topic and its remove button inside a narrow field.' },
+    source: { language: 'tsx', code: `import { TagInput } from '@jfrader/ui';
+
+<TagInput label="Topics" description="Press Enter or comma to add." placeholder="Add a topic"
+  defaultValue={['interaction-design-for-multilingual-onboarding-flows-across-regions', 'ux']}
+  sx={{ inlineSize: '240px' }} />` },
+  } },
   args: { defaultValue: [LONG_TOKEN, 'ux'], sx: { inlineSize: '240px' } },
   play: async ({ canvas, userEvent }) => {
     const shell = shellOf(inputOf(canvas));
@@ -557,9 +653,13 @@ export const Locale: Story = {
 };
 
 export const InvalidToken: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<TagInput
+  name: 'Reject an invalid recipient',
+  parameters: { docs: { description: { story: 'Try “ada” to hear a rejection, then add “@example.com” and retry.' }, source: { language: 'tsx', code: `import { TagInput } from '@jfrader/ui';
+
+<TagInput
   label="Recipients"
   description="Press Enter to add an email address."
+  placeholder="Add a topic"
   validateToken={(token) => token.includes('@') ? null : 'Enter an email address.'}
 />` } } },
   args: {
@@ -601,6 +701,14 @@ export const MaxTokens: Story = {
 };
 
 export const Error: Story = {
+  name: 'Field error',
+  parameters: { docs: {
+    description: { story: 'Associate a form validation error with the topic field.' },
+    source: { language: 'tsx', code: `import { TagInput } from '@jfrader/ui';
+
+<TagInput label="Topics" description="Press Enter or comma to add." placeholder="Add a topic"
+  defaultValue={['design']} error="Add a topic from the style guide." />` },
+  } },
   args: { defaultValue: ['design'], error: 'Add a topic from the style guide.' },
   play: async ({ canvas }) => {
     const input = inputOf(canvas);
@@ -612,8 +720,12 @@ export const Error: Story = {
 };
 
 export const Disabled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<form>
-  <TagInput label="Topics" name="topics" disabled defaultValue={['design']} />
+  name: 'Disabled topics',
+  parameters: { docs: { description: { story: 'Disable editing and removal and omit the topics from form submission.' }, source: { language: 'tsx', code: `import { TagInput } from '@jfrader/ui';
+
+<form>
+  <TagInput label="Topics" description="Press Enter or comma to add." placeholder="Add a topic"
+    name="topics" disabled defaultValue={['design']} />
 </form>` } } },
   args: { disabled: true, name: 'topics', defaultValue: ['design'], onValueChange: fn() },
   render: (args) => <form><TagInput {...args} /></form>,
@@ -769,12 +881,14 @@ export const ShiftTabExit: Story = {
 };
 
 export const Keyboard: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Button, TagInput } from '@jfrader/ui';
+  name: 'Pick and remove with the keyboard',
+  parameters: { docs: { description: { story: 'Focus the empty input, press Backspace to pick the last topic, then Backspace again to remove it.' }, source: { language: 'tsx', code: `import { Button, TagInput } from '@jfrader/ui';
 
 <>
   <Button type="button">Before</Button>
   <TagInput
     label="Topics"
+    placeholder="Add a topic"
     defaultValue={['design', 'motion']}
     description="Press Enter or comma to add."
   />
@@ -1010,7 +1124,8 @@ export const SelectedTextEditing: Story = {
 };
 
 export const FormSubmission: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Button, TagInput } from '@jfrader/ui';
+  name: 'Submit committed topics',
+  parameters: { docs: { description: { story: 'Add topics before saving; the unfinished draft is not a form value.' }, source: { language: 'tsx', code: `import { Button, TagInput } from '@jfrader/ui';
 
 <form action={async (data) => {
   await fetch('/api/topics', {
@@ -1019,7 +1134,8 @@ export const FormSubmission: Story = {
     body: JSON.stringify({ topics: data.getAll('topics') }),
   });
 }}>
-  <TagInput label="Topics" name="topics" defaultValue={['design']} />
+  <TagInput label="Topics" description="Press Enter or comma to add." placeholder="Add a topic"
+    name="topics" defaultValue={['design']} />
   <Button type="submit">Save</Button>
 </form>` } } },
   args: { name: 'topics', defaultValue: ['design'], onValueChange: fn() },

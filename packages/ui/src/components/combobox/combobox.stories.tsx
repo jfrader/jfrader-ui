@@ -66,7 +66,9 @@ const FRUITS: readonly ComboboxOption[] = [
   { value: 'cherry', label: 'Cherry' },
 ];
 
-const snippet = `<Combobox
+const snippet = `import { Combobox } from '@jfrader/ui';
+
+<Combobox
   label="Fruit"
   description="Type to search"
   options={[
@@ -91,25 +93,30 @@ const meta: Meta<ComboboxCompoundProps> = {
     docs: {
       description: {
         component:
-          'Type to filter a list and choose an option using either a single element with options or compound parts for custom anatomy.',
+          'Type to filter a list and choose an option.',
       },
-      usage: `### Values
-- \`value\` is the selected option's string value, not the typed query. Use \`null\` for a controlled empty selection and update it from \`onValueChange\`. Use \`defaultValue\` for an uncontrolled initial selection.
-- Editing the text filters options without changing the selection. Clearing the text requests \`onValueChange(null)\`; choosing an option writes its label into the input.
-- If you control \`inputValue\`, update it from \`onInputChange\`. That callback reports typing and label writes on selection or Escape. Control \`open\` separately through \`onOpenChange\` when you need to own popup visibility.
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'Filtering and empty results', stories: ['Empty'] },
+        { title: 'Free text', stories: ['UncommittedText'] },
+        { title: 'Grouped options', stories: ['Destinations'] },
+        { title: 'States', stories: ['DisabledItem', 'UnavailableField'] },
+        { title: 'Forms and controlled selection', stories: ['EasyFormReset', 'ControlledSelection'] },
+        { title: 'Slots', stories: ['SlotProps'] },
+      ],
+      usage: `### When to use
+Use a combobox to choose one item from a searchable list. Typed text is a search query, not a committed selection; use a text field when arbitrary text is the answer.
 
-### Keyboard
-- Press Up or Down to open the list or move the highlight, wrapping past disabled options. While open, Home and End highlight the first and last enabled matches. Focus stays on the input.
-- Press Enter to select the highlighted option and close. Press Escape to close and restore the selected label. Tab or an outside press closes without selecting.
+### Constraints
+- Editing text keeps the selected value until you clear the input or choose another option.
+- Matching is case-insensitive and uses substrings by default. Application-ranked results need application-owned retrieval, debouncing and stale-response cancellation.
+- Forms submit the selected value, not the query. Native required validation does not validate the selection; check it in your form.
 
-### Forms
-- Set \`name\` on \`Combobox\` to submit the selected value through a hidden input, or \`''\` when empty. A name on \`Combobox.Input\` submits the text as an additional entry.
-- Selection is not checked by native \`required\` validation. Validate the selected value in your form rather than treating typed text as a committed option.
-
-### Customization
-- Supply \`options\` for the generated field, or compose \`Combobox.Input\` and \`Combobox.List\` with \`Combobox.Item\` and \`Combobox.Empty\` inside the list. Do not mix options and children.
-- Filtering defaults to a case-insensitive substring match. Set \`filter\` to change it, and supply \`textValue\` when an option's rendered content is not the text you want searched and committed to the input.
-- For semantic search, supply application-ranked results, \`filter={() => true}\`, and rich option labels with source/score text. Keep the commit label in \`textValue\`. Retrieval, debouncing and stale-response cancellation belong to the application; there is no separate VectorSearch engine or export. See Semantic Search for the composition.`,
+### Keyboard and accessibility
+- Give the field a visible label. Focus stays in the input while the list highlight moves.
+- Up/Down opens the list and moves through enabled matches, wrapping at the ends. Home/End moves to the first/last enabled match while open.
+- Enter selects the highlighted option. Escape closes and restores the selected label. Tab or an outside press closes without selecting.
+- No matches leaves a closed list closed; an already open list shows its empty message.`,
     },
   },
 };
@@ -125,7 +132,8 @@ type UnknownReplacement = NonNullable<ComboboxEasyProps['slots']>['unknown'];
 
 /** Restyle the generated field label without nesting input slotProps. */
 export const SlotProps: EasyStory = {
-  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+  name: 'Style field parts',
+  parameters: { docs: { description: { story: 'Style the label and pass classes to the description, input and options.' }, source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { Combobox } from '@jfrader/ui';
 
 function FruitField(props: ComponentPropsWithRef<'div'>) {
@@ -248,6 +256,7 @@ async function focusInput(canvasElement: HTMLElement) {
 }
 
 export const Default: EasyStory = {
+  name: 'Choose a fruit',
   args: {
     label: LABEL,
     description: DESCRIPTION,
@@ -263,6 +272,7 @@ export const Default: EasyStory = {
   ),
   parameters: {
     docs: {
+      description: { story: 'Type a fruit name, then choose a matching option.' },
       source: { language: 'tsx', code: snippet },
     },
   },
@@ -327,9 +337,11 @@ export const Default: EasyStory = {
 };
 
 export const Compound: Story = {
+  name: 'Compose a fruit picker',
   render: (args) => <ComboboxExample {...args} inputProps={{ description: DESCRIPTION }} />,
   parameters: {
     docs: {
+      description: { story: 'Compose the labelled input, options and empty message.' },
       source: {
         language: 'tsx',
         code: `import { Combobox } from '@jfrader/ui';
@@ -608,7 +620,10 @@ export const ReadOnlySelection: Story = {
 };
 
 export const EasyFormReset: EasyStory = {
-  parameters: { docs: { source: { language: 'tsx', code: `<form aria-label="Fruit form">
+  name: 'Reset a form selection',
+  parameters: { docs: { description: { story: 'Choose another fruit, then reset the form to Apple.' }, source: { language: 'tsx', code: `import { Button, Combobox } from '@jfrader/ui';
+
+<form aria-label="Fruit form">
   <Combobox label="Fruit" name="fruit" defaultValue="apple" options={[
     { value: 'apple', label: 'Apple' },
     { value: 'apricot', label: 'Apricot' },
@@ -844,7 +859,10 @@ export const EscapeRestores: Story = {
 };
 
 export const DisabledItem: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<Combobox>
+  name: 'Unavailable option',
+  parameters: { docs: { description: { story: 'Open the list to see Banana disabled while other fruits remain selectable.' }, source: { language: 'tsx', code: `import { Combobox } from '@jfrader/ui';
+
+<Combobox>
   <Combobox.Input label="Fruit" />
   <Combobox.List>
     <Combobox.Item value="apple">Apple</Combobox.Item>
@@ -887,7 +905,10 @@ export const DisabledItem: Story = {
 };
 
 export const Empty: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<Combobox>
+  name: 'No matching fruits',
+  parameters: { docs: { description: { story: 'Type “a” to open the list, then “zz” to see the empty message.' }, source: { language: 'tsx', code: `import { Combobox } from '@jfrader/ui';
+
+<Combobox>
   <Combobox.Input label="Fruit" />
   <Combobox.List>
     <Combobox.Item value="apple">Apple</Combobox.Item>
@@ -1278,4 +1299,88 @@ export const Grouped: Story = {
     await userEvent.keyboard('{Home}{ArrowDown}');
     await expect(input).toHaveAttribute('aria-activedescendant', bodyOf(canvasElement).getByRole('option', { name: 'Lima' }).id);
   },
+};
+
+export const UncommittedText: EasyStory = {
+  name: 'Text without a selection',
+  parameters: { docs: {
+    description: { story: 'Start with a draft query; it is not submitted as a selected fruit.' },
+    source: { language: 'tsx', code: `import { Combobox } from '@jfrader/ui';
+
+<Combobox label="Fruit" defaultInputValue="New fruit"
+  options={[{ value: 'apple', label: 'Apple' }]} />` },
+  } },
+  render: () => <Combobox label="Fruit" defaultInputValue="New fruit" options={[{ value: 'apple', label: 'Apple' }]} />,
+};
+
+export const Destinations: Story = {
+  name: 'Destinations by region',
+  parameters: { docs: {
+    description: { story: 'Open the destination list to browse named groups and skip unavailable cities.' },
+    source: { language: 'tsx', code: `import { Combobox } from '@jfrader/ui';
+
+<Combobox>
+  <Combobox.Input label="Destination" />
+  <Combobox.List>
+    <div role="group" aria-label="Europe">
+      <Combobox.Item value="madrid">Madrid</Combobox.Item>
+      <Combobox.Item value="paris" disabled>Paris</Combobox.Item>
+    </div>
+    <div role="group" aria-label="Americas">
+      <Combobox.Item value="lima">Lima</Combobox.Item>
+      <Combobox.Item value="quito">Quito</Combobox.Item>
+    </div>
+    <Combobox.Empty />
+  </Combobox.List>
+</Combobox>` },
+  } },
+  render: () => (
+    <Combobox>
+      <Combobox.Input label="Destination" />
+      <Combobox.List>
+        <div role="group" aria-label="Europe">
+          <Combobox.Item value="madrid">Madrid</Combobox.Item>
+          <Combobox.Item value="paris" disabled>Paris</Combobox.Item>
+        </div>
+        <div role="group" aria-label="Americas">
+          <Combobox.Item value="lima">Lima</Combobox.Item>
+          <Combobox.Item value="quito">Quito</Combobox.Item>
+        </div>
+        <Combobox.Empty />
+      </Combobox.List>
+    </Combobox>
+  ),
+};
+
+export const UnavailableField: EasyStory = {
+  name: 'Disabled field',
+  parameters: { docs: {
+    description: { story: 'Show a selected fruit in a field that cannot be edited.' },
+    source: { language: 'tsx', code: `import { Combobox } from '@jfrader/ui';
+
+<Combobox label="Fruit" disabled defaultValue="apple"
+  options={[{ value: 'apple', label: 'Apple' }]} />` },
+  } },
+  render: () => <Combobox label="Fruit" disabled defaultValue="apple" options={[{ value: 'apple', label: 'Apple' }]} />,
+};
+
+export const ControlledSelection: EasyStory = {
+  name: 'Controlled fruit selection',
+  parameters: { docs: {
+    description: { story: 'Keep the selected fruit in application state while the input manages its query.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Combobox } from '@jfrader/ui';
+
+function FruitPicker() {
+  const [value, setValue] = useState<string | null>('apple');
+  return <Combobox label="Fruit" value={value} onValueChange={setValue}
+    options={[
+      { value: 'apple', label: 'Apple' },
+      { value: 'apricot', label: 'Apricot' },
+      { value: 'banana', label: 'Banana', disabled: true },
+      { value: 'cherry', label: 'Cherry' },
+    ]} />;
+}` },
+  } },
+  render: () => <EasyControlledCombobox label="Fruit" options={FRUITS} />,
 };
