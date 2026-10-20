@@ -7,6 +7,7 @@
     "build": "pnpm verify:docs && storybook build",
     "og:image": "node og/render.mjs",
     "test": "node --test scripts/measure-geometry.test.mjs && vitest run --project=storybook --project=design",
+    "test:touch": "node --test ../../packages/ui/src/components/image-compare/image-compare.browser.test.mjs",
     "verify:design": "vitest run --project=design --project=storybook --maxWorkers=2 design-assertions.test.ts photo-grid control-center share-access voice-recorder booking-pill logo-orbit radial-menu action-button action-morph multi-region-failover payment-flow card-stack",
     "typecheck": "tsc -p tsconfig.json --noEmit && pnpm verify:docs:examples",
     "verify:api": "node --test scripts/verify-styling-api.test.mjs && node scripts/verify-styling-api.mjs",

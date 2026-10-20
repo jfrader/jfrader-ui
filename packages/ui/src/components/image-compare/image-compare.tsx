@@ -489,9 +489,10 @@ export function ImageCompare({
   useLayoutEffect(() => {
     if ((valueProp !== undefined || !gesture.current) && acceptedValue.get() !== value) {
       acceptedValue.set(value);
-      position.jump(value);
+      if (reducedMotion || gesture.current) position.jump(value);
+      else animate(position, value, SETTLE_SPRING);
     }
-  }, [value, valueProp, acceptedValue, position]);
+  }, [value, valueProp, acceptedValue, position, reducedMotion]);
 
   useEffect(() => {
     const target = horizontal ? 0 : 90;
@@ -532,7 +533,8 @@ export function ImageCompare({
     if (next === acceptedValue.get()) return false;
     if (valueProp === undefined) {
       acceptedValue.set(next);
-      position.jump(next);
+      if (reducedMotion || gesture.current) position.jump(next);
+      else animate(position, next, SETTLE_SPRING);
       if (gesture.current?.dragging) onValueChange?.(next);
       else requestChange(next);
     } else requestChange(next);
@@ -609,6 +611,7 @@ export function ImageCompare({
     if (!onHandle && interactive && event.currentTarget.contains(interactive)) return;
     const frame = event.currentTarget;
     const doc = frame.ownerDocument;
+    position.stop();
     // Before capture, a release or cancel outside the frame never reaches it; abandon the gesture there.
     const endOutside = (outside: globalThis.PointerEvent) => {
       if (outside.pointerId === gesture.current?.pointerId && !frame.contains(outside.target as Node)) finish(false);
@@ -620,7 +623,7 @@ export function ImageCompare({
       mouse: event.pointerType === 'mouse',
       originX: event.clientX,
       originY: event.clientY,
-      offset: onHandle ? mainAxis(event) - clientAt(acceptedValue.get()) : 0,
+      offset: onHandle ? mainAxis(event) - clientAt(position.get()) : 0,
       onHandle,
       dragging: false,
       initial: acceptedValue.get(),
@@ -726,12 +729,13 @@ export function ImageCompare({
   const ResetButton = slots?.resetButton ?? Button;
   const handleSlot = slotProps?.handle;
   const resetSlot = slotProps?.resetButton;
+  const renderedValue = valueProp === undefined ? acceptedValue.get() : value;
   const frameStyleVars = {
     ...frameSlot?.style,
     aspectRatio,
-    [VALUE_VAR]: `${value}%`,
+    [VALUE_VAR]: `${position.get()}%`,
   } as CSSProperties;
-  const formatted = percentFormat.format(value / MAX);
+  const formatted = percentFormat.format(renderedValue / MAX);
 
   return (
     <MotionConfig reducedMotion="user">
@@ -774,7 +778,7 @@ export function ImageCompare({
               }}
               onLostPointerCapture={(event) => {
                 frameSlot?.onLostPointerCapture?.(event);
-                handlePointerAbort(event);
+                if (event.target === event.currentTarget) handlePointerAbort(event);
               }}
               onDragStart={(event) => {
                 frameSlot?.onDragStart?.(event);
@@ -830,8 +834,8 @@ export function ImageCompare({
                 aria-disabled={disabled || undefined}
                 aria-valuemin={MIN}
                 aria-valuemax={MAX}
-                aria-valuenow={value}
-                aria-valuetext={valueText(value, formatted)}
+                aria-valuenow={renderedValue}
+                aria-valuetext={valueText(renderedValue, formatted)}
                 aria-label={handleSlot?.['aria-label'] ?? label}
                 aria-describedby={ids(handleSlot?.['aria-describedby'], beforeCaptionId, afterCaptionId)}
                 css={[handleStyle, handleOrientationStyles[orientation], handleSlot?.sx]}

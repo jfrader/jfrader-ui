@@ -26,6 +26,8 @@ import { useLatestCallback } from '../../utils/use-latest-callback';
 import { isRenderable } from '../../utils/renderable';
 import { createDurationFormatters } from '../../utils/duration-format';
 import { Button, type ButtonProps } from '../button';
+import { motionDurationMs } from '../../styling/motion-timings';
+import { paintOrb, type OrbPalette } from './orb-painter';
 
 export type VoiceOrbState = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking' | 'error';
 export type VoiceOrbSize = 'sm' | 'md' | 'lg';
@@ -160,13 +162,12 @@ const visualStyle = css({
   aspectRatio: '1',
   borderRadius: vars.radius.full,
   color: vars.color.accent,
-  backgroundColor: vars.color.surfaceRaised,
   '&::after': {
     content: '""',
     position: 'absolute',
     inset: '18%',
     borderRadius: vars.radius.full,
-    border: `1px solid ${vars.color.borderControl}`,
+    border: '2px solid transparent',
     pointerEvents: 'none',
   },
   [FORCED_COLORS]: {
@@ -383,11 +384,29 @@ function VoiceOrbVisual({
   const mergedRef = useMergeRefs([canvasRef, slotProps?.canvas?.ref]);
   const reducedMotion = useReducedMotion();
   const latest = useRef(context);
+  const repaint = useRef<(() => void) | undefined>(undefined);
   useLayoutEffect(() => {
     latest.current = context;
   });
+  useEffect(() => {
+    if (reducedMotion) repaint.current?.();
+  }, [context.state, context.muted, reducedMotion]);
   const energy = useSpring(STATE_ENERGY[context.state], SPRING);
   const level = useSpring(0, SPRING);
+  useEffect(() => {
+    const source =
+      context.state === 'speaking'
+        ? context.outputLevel
+        : context.state === 'listening' && !context.muted
+          ? context.inputLevel
+          : 0;
+    const update = () => {
+      if (reducedMotion) level.jump(0);
+      else level.set(normalize(source));
+    };
+    update();
+    if (typeof source !== 'number') return source.on('change', update);
+  }, [context.state, context.muted, context.inputLevel, context.outputLevel, level, reducedMotion]);
   useEffect(() => {
     if (reducedMotion) energy.jump(STATE_ENERGY[context.state]);
     else energy.set(STATE_ENERGY[context.state]);
@@ -405,71 +424,19 @@ function VoiceOrbVisual({
     let disposed = false;
     let phase = 0;
     let previousTime = 0;
+    let pixels = 0;
+    let palette: OrbPalette;
     const draw = (time: number) => {
-      if (disposed) return;
+      if (disposed || !pixels || forced.matches) return;
       const current = latest.current;
-      const rect = canvas.getBoundingClientRect();
-      const dpr = Math.min(view.devicePixelRatio || 1, MAX_DPR);
-      const pixels = Math.round(rect.width * dpr);
-      if (canvas.width !== pixels || canvas.height !== pixels) {
-        canvas.width = pixels;
-        canvas.height = pixels;
-      }
-      if (!pixels) return;
-      const styles = view.getComputedStyle(canvas);
-      const accent = styles.getPropertyValue('--ui-color-accent').trim();
-      const surface = styles.getPropertyValue('--ui-color-surface-raised').trim();
-      const text = styles.getPropertyValue('--ui-color-text').trim();
-      const source =
-        current.state === 'speaking'
-          ? current.outputLevel
-          : current.state === 'listening' && !current.muted
-            ? current.inputLevel
-            : 0;
-      if (!reducedMotion) level.set(normalize(source));
-      const amplitude = reducedMotion || (current.state === 'listening' && current.muted) ? 0 : level.get();
+      const amplitude = reducedMotion ? 0 : level.get();
       if (!reducedMotion && previousTime)
         phase +=
-          (Math.min(time - previousTime, 64) /
-            Math.max(1, parseFloat(styles.getPropertyValue('--ui-motion-duration-slow')))) *
-          0.1;
+          (Math.min(time - previousTime, 64) / Math.max(1, motionDurationMs.slow)) *
+          (0.09 + energy.get() * 0.16 + amplitude * 0.08);
       previousTime = time;
       const activity = reducedMotion ? STATE_ENERGY[current.state] : energy.get();
-      const center = pixels / 2;
-      const radius = pixels * (0.28 + amplitude * 0.06);
-      drawing.clearRect(0, 0, pixels, pixels);
-      const gradient = drawing.createRadialGradient(
-        center - radius * 0.35,
-        center - radius * 0.35,
-        0,
-        center,
-        center,
-        radius,
-      );
-      gradient.addColorStop(0, text);
-      gradient.addColorStop(0.35, accent);
-      gradient.addColorStop(1, surface);
-      drawing.fillStyle = gradient;
-      drawing.beginPath();
-      drawing.arc(center, center, radius, 0, Math.PI * 2);
-      drawing.fill();
-      drawing.strokeStyle = accent;
-      drawing.lineWidth = dpr;
-      for (let ripple = 0; ripple < 3; ripple++) {
-        drawing.globalAlpha = (0.2 + activity * 0.35) / (ripple + 1);
-        drawing.beginPath();
-        drawing.ellipse(
-          center,
-          center,
-          radius * (1.12 + ripple * 0.15),
-          radius * (0.7 + activity * 0.3),
-          phase + ripple,
-          0,
-          Math.PI * 2,
-        );
-        drawing.stroke();
-      }
-      drawing.globalAlpha = 1;
+      paintOrb(drawing, pixels, phase, activity, amplitude, palette);
     };
     const tick = (time: number) => {
       frame = 0;
@@ -482,11 +449,25 @@ function VoiceOrbVisual({
       frame = 0;
       previousTime = 0;
       if (visible && !document.hidden) {
+        const dpr = Math.min(view.devicePixelRatio || 1, MAX_DPR);
+        pixels = Math.round(canvas.getBoundingClientRect().width * dpr);
+        if (canvas.width !== pixels || canvas.height !== pixels) {
+          canvas.width = pixels;
+          canvas.height = pixels;
+        }
+        const styles = view.getComputedStyle(canvas);
+        palette = {
+          accent: styles.getPropertyValue('--ui-color-accent').trim(),
+          highlight: styles.getPropertyValue('--ui-color-accent-hover').trim(),
+          shadow: styles.getPropertyValue('--ui-color-surface-raised').trim(),
+          light: styles.getPropertyValue('--ui-color-color-picker-white').trim(),
+        };
         draw(view.performance.now());
         if (!reducedMotion && !forced.matches) frame = view.requestAnimationFrame(tick);
       }
     };
     const resize = new ResizeObserver(refresh);
+    repaint.current = refresh;
     resize.observe(canvas);
     const intersection = new IntersectionObserver(([entry]) => {
       visible = entry?.isIntersecting ?? false;
@@ -500,18 +481,21 @@ function VoiceOrbVisual({
         attributeFilter: ['data-theme', 'data-appearance', 'class', 'style'],
       });
     document.addEventListener('visibilitychange', refresh);
+    view.addEventListener('resize', refresh);
     forced.addEventListener('change', refresh);
     refresh();
     return () => {
       disposed = true;
+      repaint.current = undefined;
       view.cancelAnimationFrame(frame);
       resize.disconnect();
       intersection.disconnect();
       theme.disconnect();
       document.removeEventListener('visibilitychange', refresh);
+      view.removeEventListener('resize', refresh);
       forced.removeEventListener('change', refresh);
     };
-  }, [reducedMotion, context.state, context.muted, size, energy, level]);
+  }, [Canvas, reducedMotion, energy, level]);
   return (
     <WithSx className={className} styles={visualStyle} sx={sx}>
       {(className) => (

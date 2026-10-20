@@ -628,7 +628,7 @@ export const NumericLevels: Story = {
           const calls = arcs[index]!.mock.calls;
           const radius = calls[calls.length - 1]?.[2];
           await expect(radius).toBeDefined();
-          await expect(Math.abs(radius! / surfaces[index]!.width - (0.28 + level * 0.06))).toBeLessThan(
+          await expect(Math.abs(radius! / surfaces[index]!.width - (0.32 + level * 0.035))).toBeLessThan(
             0.001,
           );
         }
@@ -639,6 +639,47 @@ export const NumericLevels: Story = {
   },
 };
 const output = motionValue(0.25);
+function ContinuousSession() {
+  const [speaking, setSpeaking] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [large, setLarge] = useState(false);
+  return (
+    <>
+      <Button onClick={() => setSpeaking(!speaking)}>Change activity</Button>
+      <Button onClick={() => setMuted(!muted)}>Change mute</Button>
+      <Button onClick={() => setLarge(!large)}>Change size</Button>
+      <VoiceOrb state={speaking ? 'speaking' : 'listening'} muted={muted} inputLevel={0.4} outputLevel={0.8}>
+        <VoiceOrb.Visual size={large ? 'lg' : 'md'} />
+        <VoiceOrb.Status />
+      </VoiceOrb>
+    </>
+  );
+}
+export const ContinuousMotion: Story = {
+  render: () => <ContinuousSession />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const surface = canvasElement.querySelector('canvas')!;
+    const acquire = spyOn(surface, 'getContext');
+    const drawing = surface.getContext('2d')!;
+    const clear = spyOn(drawing, 'clearRect');
+    acquire.mockClear();
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: 'Change activity' }));
+      await expect(canvas.getByRole('img', { name: 'Speaking' })).toBeVisible();
+      await userEvent.click(canvas.getByRole('button', { name: 'Change mute' }));
+      await userEvent.click(canvas.getByRole('button', { name: 'Change size' }));
+      await expect(canvasElement.querySelector('canvas')).toBe(surface);
+      await waitFor(async () => {
+        await expect(clear.mock.calls.length).toBeGreaterThan(2);
+      });
+      await expect(acquire).not.toHaveBeenCalled();
+    } finally {
+      acquire.mockRestore();
+      clear.mockRestore();
+    }
+  },
+};
 export const MotionValueLevels: Story = {
   parameters: {
     docs: {
@@ -659,9 +700,39 @@ const outputLevel = motionValue(0.25);
   },
   args: { state: 'speaking', defaultActive: true, outputLevel: output },
   play: async ({ canvasElement }) => {
-    output.set(0.8);
-    await expect(within(canvasElement).getByRole('img', { name: 'Speaking' })).toBeVisible();
-    output.set(0.25);
+    const surface = canvasElement.querySelector('canvas')!;
+    const arcs = spyOn(surface.getContext('2d')!, 'arc');
+    const radius = () => arcs.mock.calls.at(-1)![2] / surface.width;
+    try {
+      await waitFor(async () => {
+        await expect(arcs.mock.calls.length).toBeGreaterThan(0);
+        await expect(Math.abs(radius() - (0.32 + 0.25 * 0.035))).toBeLessThan(0.001);
+      });
+      const before = radius();
+      arcs.mockClear();
+      output.set(1);
+      await waitFor(async () => {
+        await expect(arcs.mock.calls.length).toBeGreaterThan(0);
+      });
+      await expect(arcs.mock.calls[0]![2] / surface.width).toBeLessThan(0.354);
+      await waitFor(async () => {
+        await expect(Math.abs(radius() - 0.355)).toBeLessThan(0.001);
+      });
+      await expect(radius()).toBeGreaterThan(before);
+      arcs.mockClear();
+      output.set(0);
+      await waitFor(async () => {
+        await expect(arcs.mock.calls.length).toBeGreaterThan(0);
+      });
+      await expect(arcs.mock.calls[0]![2] / surface.width).toBeGreaterThan(0.321);
+      await waitFor(async () => {
+        await expect(Math.abs(radius() - 0.32)).toBeLessThan(0.001);
+      });
+      await expect(within(canvasElement).getByRole('img', { name: 'Speaking' })).toBeVisible();
+    } finally {
+      output.set(0.25);
+      arcs.mockRestore();
+    }
   },
 };
 function TranscriptUpdates() {
