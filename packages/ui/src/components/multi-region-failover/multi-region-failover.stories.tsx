@@ -216,6 +216,7 @@ export const LongHostname: Story = {
   },
 };
 export const InvalidWeights: Story = {
+  tags: ['!autodocs'],
   args: {
     stages: stages.map((stage) => ({
       ...stage,

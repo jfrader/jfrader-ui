@@ -689,6 +689,7 @@ export const IntlLocales: Story = {
   },
 };
 export const DurationFormatMissing: Story = {
+  tags: ['!autodocs'],
   beforeEach: () => {
     const descriptor = Object.getOwnPropertyDescriptor(Intl, 'DurationFormat');
     Object.defineProperty(Intl, 'DurationFormat', {
