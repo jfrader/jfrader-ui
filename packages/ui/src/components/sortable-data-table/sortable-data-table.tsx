@@ -134,6 +134,7 @@ const rootStyle = css({
 });
 const scrollerStyle = css({
   overflowX: 'auto',
+  scrollPaddingBlockStart: 'var(--ui-sortable-data-table-header-size, 0px)',
   maxInlineSize: '100%',
   border: `1px solid ${vars.color.border}`,
   borderRadius: vars.radius.md,
@@ -317,6 +318,7 @@ export function SortableDataTable<T>({
   const clearing = useRef(false);
   const focusedRow = useRef<{ key: string; index: number; control: number } | null>(null);
   const bodyRef = useRef<HTMLTableSectionElement>(null);
+  const headerRef = useRef<HTMLTableSectionElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const mergedScrollerRef = useMergeRefs([scrollerRef, slotProps?.scroller?.ref]);
   const mergedTableRef = useMergeRefs([tableRef, slotProps?.table?.ref]);
@@ -324,6 +326,18 @@ export function SortableDataTable<T>({
   const selectionSignature = JSON.stringify([...keys].sort());
   const previous = useRef({ sort: sortSignature, selection: selectionSignature });
   const [status, setStatus] = useState('');
+  useLayoutEffect(() => {
+    const header = headerRef.current;
+    const scroller = scrollerRef.current;
+    if (!header || !scroller) return;
+    const update = () => {
+      scroller.style.setProperty('--ui-sortable-data-table-header-size', `${header.getBoundingClientRect().height}px`);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, [slots?.scroller, slots?.table]);
   useEffect(() => {
     const changed = previous.current.sort !== sortSignature || previous.current.selection !== selectionSignature;
     const announcements: string[] = [];
@@ -427,7 +441,7 @@ export function SortableDataTable<T>({
                   <col key={column.id} style={{ width: column.width }} />
                 ))}
               </colgroup>
-              <thead>
+              <thead ref={headerRef}>
                 <tr>
                   {selectable && (
                     <th scope="col" css={[cellStyle, densityStyles[size], headerStyle]}>

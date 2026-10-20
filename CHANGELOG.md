@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- `SortableDataTable` keeps keyboard-focused row controls below sticky headings when scrolling backward through tall tables.
 - `JsonViewer` wraps long keys and values within tree rows, keeps focused labels and disclosure arrows visible in deeply indented data, and hides inactive selection bars in forced colors.
 - `MultiSelect` keeps selection counts readable in narrow fields and long option lists compact, scrollable and beside their trigger.
 - `Combobox` wraps long option names and scrolls its list within the available space without covering the input in short viewports.

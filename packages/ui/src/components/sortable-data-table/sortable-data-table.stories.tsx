@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn } from 'storybook/test';
+import { expect, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
@@ -954,6 +954,106 @@ export const LongCells: Story = {
     await expect(getComputedStyle(canvas.getAllByRole('cell')[0]!).overflowWrap).toBe('anywhere');
     await expect(getComputedStyle(canvas.getAllByRole('cell')[1]!).textAlign).toBe('end');
     await expect(canvas.getAllByRole('cell')[0]!.getBoundingClientRect().height).toBeGreaterThan(60);
+  },
+};
+export const LongHeaders: Story = {
+  args: {
+    columns: [
+      { ...columns[0]!, header: 'Project_identifier_with_a_long_unbroken_heading' },
+      { ...columns[1]!, header: 'Allocated project budget' },
+    ],
+  },
+  render: (args) => (
+    <NarrowFrame>
+      <Table {...args} />
+    </NarrowFrame>
+  ),
+  play: async ({ canvas }) => {
+    const scroller = canvas.getByRole('region');
+    const headerRow = canvas.getByRole('table').querySelector('thead')!;
+    await waitFor(async () => {
+      await expect(parseFloat(getComputedStyle(scroller).scrollPaddingBlockStart))
+        .toBeCloseTo(headerRow.getBoundingClientRect().height, 0);
+    });
+    const frame = scroller.parentElement!.parentElement!;
+    frame.style.inlineSize = '180px';
+    await waitFor(async () => {
+      await expect(parseFloat(getComputedStyle(scroller).scrollPaddingBlockStart))
+        .toBeCloseTo(headerRow.getBoundingClientRect().height, 0);
+    });
+    frame.style.removeProperty('inline-size');
+    for (const header of canvas.getAllByRole('columnheader')) {
+      const button = header.querySelector('button')!;
+      const indicator = button.querySelector('svg')!;
+      await expect(button.scrollWidth).toBeLessThanOrEqual(button.clientWidth + 1);
+      await expect(indicator.getBoundingClientRect().right).toBeLessThanOrEqual(header.getBoundingClientRect().right);
+      await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+  },
+};
+export const ScrollableRows: Story = {
+  args: {
+    rows: Array.from({ length: 40 }, (_, index) => ({
+      ...rows[index % rows.length]!,
+      id: `project-${index}`,
+      name: `Project ${index + 1}`,
+    })),
+    selectable: true,
+    getRowLabel,
+    slotProps: { scroller: { sx: { maxBlockSize: 280 } }, table: { sx: { minInlineSize: 560 } } },
+  },
+  render: (args) => (
+    <NarrowFrame>
+      <Table {...args} />
+    </NarrowFrame>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    const scroller = canvas.getByRole('region');
+    const table = canvas.getByRole('table');
+    const target = canvas.getByRole('checkbox', { name: 'Select Project 21' });
+    target.focus();
+    for (let index = 20; index >= 15; index--) {
+      await userEvent.tab({ shift: true });
+      const checkbox = canvas.getByRole('checkbox', { name: `Select Project ${index}` });
+      await expect(checkbox.ownerDocument.activeElement).toBe(checkbox);
+      const header = table.querySelector('th')!.getBoundingClientRect();
+      await expect(checkbox.getBoundingClientRect().top).toBeGreaterThanOrEqual(header.bottom);
+    }
+    await expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight);
+    await expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth);
+    await expect(table.querySelector('th')!.getBoundingClientRect().top)
+      .toBeCloseTo(scroller.getBoundingClientRect().top + scroller.clientTop, 0);
+    const headers = table.querySelectorAll('th');
+    const cells = table.querySelectorAll('tbody tr:first-child td');
+    for (let index = 0; index < headers.length; index++) {
+      await expect(headers[index]!.getBoundingClientRect().left)
+        .toBeCloseTo(cells[index]!.getBoundingClientRect().left, 0);
+      await expect(headers[index]!.getBoundingClientRect().width)
+        .toBeCloseTo(cells[index]!.getBoundingClientRect().width, 0);
+    }
+    scroller.scrollLeft = 100;
+    await expect(scroller.scrollLeft).toBeGreaterThan(0);
+  },
+};
+export const ScrollableRowsRTL: Story = {
+  ...ScrollableRows,
+  args: { ...ScrollableRows.args, dir: 'rtl' },
+  play: async ({ canvas }) => {
+    const scroller = canvas.getByRole('region');
+    await expect(getComputedStyle(scroller).direction).toBe('rtl');
+    scroller.scrollLeft = -100;
+    await expect(scroller.scrollLeft).toBeLessThan(0);
+    const checkbox = canvas.getByRole('checkbox', { name: 'Select Project 21' });
+    checkbox.focus();
+    await expect(checkbox.getBoundingClientRect().top)
+      .toBeGreaterThanOrEqual(canvas.getByRole('table').querySelector('th')!.getBoundingClientRect().bottom);
+  },
+};
+export const Error: Story = {
+  args: { rows: [], empty: <span role="alert">Projects could not be loaded.</span> },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('alert')).toBeVisible();
+    await expect(canvas.getByRole('cell')).toHaveAttribute('colspan', '2');
   },
 };
 export const LinksAndButtons: Story = {
