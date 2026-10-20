@@ -294,9 +294,14 @@ function useComboboxListContext(part: string): ComboboxContextValue {
 }
 
 const itemStyle = css({
+  overflowWrap: 'anywhere',
   '&[hidden]': {
     display: 'none',
   },
+});
+
+const listStyle = css({
+  maxBlockSize: 'min(280px, var(--combobox-available-height, 100vh))',
 });
 
 const emptyStyle = css({
@@ -369,6 +374,10 @@ function ComboboxOverlay({ nodeId, ...props }: ComboboxProps & { nodeId: string 
     nodeId,
     open,
     placement: PLACEMENT,
+    shiftCrossAxis: false,
+    onAvailableSize: ({ height }) => {
+      refs.floating.current?.style.setProperty('--combobox-available-height', `${Math.max(0, height)}px`);
+    },
     onOpenChange: (next) => requestOpenChange(next),
   });
 
@@ -812,7 +821,7 @@ function ComboboxList({ ref, id: idProp, style, onMouseDown, children, className
 
   return (
     <OverlayPortal>
-      <WithSx className={className} styles={[listboxSurfaceStyle, listboxScrollStyle]} sx={sx}>
+      <WithSx className={className} styles={[listboxSurfaceStyle, listboxScrollStyle, listStyle]} sx={sx}>
         {(className) => (
           <div
             {...getFloatingProps({ id: listId, ...labelling, ...rest, onMouseDown: handleMouseDown })}
