@@ -903,6 +903,7 @@ function actionPresentation(
   return { name, collapsed: Boolean(collapsed) };
 }
 
+/** Run an action with the group's shared presentation and disabled state. */
 function ButtonGroupItem({
   ref,
   variant,
@@ -1020,6 +1021,7 @@ function TooltipButton({
   );
 }
 
+/** Navigate with the group's shared button presentation. */
 function ButtonGroupLink({
   ref,
   href,
@@ -1221,6 +1223,7 @@ function ButtonGroupContent({ dir, 'aria-labelledby': labelledBy, ...props }: Bu
   );
 }
 ButtonGroupContent.displayName = 'ButtonGroup.Content';
+/** Run an action from the group's dropdown menu. */
 function ButtonGroupMenuItem({
   tone = 'neutral',
   disabled = false,

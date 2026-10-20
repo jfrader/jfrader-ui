@@ -600,6 +600,7 @@ function SplitButtonContent({ dir, 'aria-labelledby': ariaLabelledBy, ...props }
 
 SplitButtonContent.displayName = 'SplitButton.Content';
 
+/** Offer an alternate action in the split button's menu. */
 function SplitButtonItem({ tone = 'neutral', disabled = false, ...props }: SplitButtonItemProps) {
   const context = useSplitButtonContext('Item');
   return (

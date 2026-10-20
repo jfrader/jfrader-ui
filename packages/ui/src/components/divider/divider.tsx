@@ -77,6 +77,7 @@ const labelledStyle = css({
   },
 });
 
+/** Separate content horizontally or vertically, with an optional horizontal label. */
 export function Divider({
   ref,
   orientation = 'horizontal',

@@ -294,6 +294,7 @@ function OrbitPosition({
   );
 }
 
+/** Explore and select logos arranged around a central item. */
 export function LogoOrbit(props: LogoOrbitProps) {
   return (
     <MotionConfig reducedMotion="user">

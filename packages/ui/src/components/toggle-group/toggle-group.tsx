@@ -286,6 +286,7 @@ function ToggleGroupRoot({
 
 ToggleGroupRoot.displayName = 'ToggleGroup';
 
+/** Toggle an option within the group's selection. */
 function ToggleGroupItem({
   ref,
   value,

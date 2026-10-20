@@ -347,6 +347,7 @@ const captionStyle = css({
   color: vars.color.textMuted,
 });
 
+/** Visualize traffic moving between regions through failover and recovery. */
 export function MultiRegionFailover({
   nodes,
   hostname,

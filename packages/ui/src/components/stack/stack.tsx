@@ -10,6 +10,7 @@ export interface StackProps extends Omit<FlexProps, 'direction' | 'inline' | 'al
   align?: StackAlign;
 }
 
+/** Arrange content vertically with shared spacing and alignment. */
 export function Stack({ ref, gap = 'md', align, justify, wrap, className, sx, ...rest }: StackProps) {
   return (
     <WithSx

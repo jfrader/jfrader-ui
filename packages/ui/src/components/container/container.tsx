@@ -36,6 +36,7 @@ const sizeStyles: Record<ContainerSize, SerializedStyles> = {
 
 const paddingStyles = spaceStyles('paddingInline');
 
+/** Center content within a maximum width and inline padding. */
 export function Container({ ref, size = 'lg', paddingInline = 'md', className, sx, ...rest }: ContainerProps) {
   return (
     <WithSx className={className} styles={[rootStyle, sizeStyles[size], paddingStyles[paddingInline]]} sx={sx}>

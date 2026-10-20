@@ -353,6 +353,7 @@ function Artwork({ track, slot, component }: { track: NowPlayingTrack; slot?: Pa
     />
   );
 }
+/** Show decorative level bars that animate during playback. */
 export function NowPlayingLevels({
   ref,
   playing: playingProp,

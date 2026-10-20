@@ -677,6 +677,7 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
 
 FilterToolbarRoot.displayName = 'FilterToolbar';
 
+/** Arrange the controls used to choose filters. */
 function Controls({ children, className, sx, ...rest }: FilterToolbarControlsProps) {
   const { value, disabled, onValueChange } = useToolbar('Controls');
   return (
@@ -746,6 +747,7 @@ function ActiveFilters({ empty, slotProps, slots, className, sx, ...rest }: Filt
 
 ActiveFilters.displayName = 'FilterToolbar.ActiveFilters';
 
+/** Clear all active filters. */
 function Clear({ children, onClick, disabled: disabledProp = false, ...rest }: FilterToolbarClearProps) {
   const { value, disabled: rootDisabled, messages, clear } = useToolbar('Clear');
   if (!value.length) return null;
@@ -771,6 +773,7 @@ function Clear({ children, onClick, disabled: disabledProp = false, ...rest }: F
 
 Clear.displayName = 'FilterToolbar.Clear';
 
+/** Announce the result count or its loading and unavailable states. */
 function ResultCount({
   count,
   locale,

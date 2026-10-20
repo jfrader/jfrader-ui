@@ -750,6 +750,7 @@ function TabsTab({ ref, value, disabled, onClick, onFocus, onPointerDown, classN
 
 TabsTab.displayName = 'Tabs.Tab';
 
+/** Show the content associated with the selected tab. */
 function TabsPanel({
   ref,
   value,

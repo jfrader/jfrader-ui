@@ -660,6 +660,7 @@ function SelectRoot(props: SelectProps) {
 
 SelectRoot.displayName = 'Select';
 
+/** Open the option list and handle keyboard selection. */
 function SelectTrigger({
   ref,
   id: idProp,
