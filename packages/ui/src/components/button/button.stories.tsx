@@ -49,7 +49,21 @@ const Marker = styled.span({ color: vars.color.borderControl });
 const meta = {
   title: 'Inputs/Button',
   component: Button,
-  parameters: { docs: { description: { component: 'Run an action with a button. Show when it is loading or unavailable.' } } },
+  parameters: { docs: {
+    description: { component: 'Run an action with a button.' },
+    sections: [
+      { title: 'Basic', stories: ['Default'] },
+      { title: 'Variants', stories: ['Variants'] },
+      { title: 'Sizes', stories: ['Sizes'] },
+      { title: 'States', stories: ['Loading', 'Disabled'] },
+      { title: 'Icons', stories: ['WithIcons'] },
+    ],
+    usage: `### When to use
+Use a button for an action and a link for navigation. Give each action a concise label. Buttons do not submit forms unless you explicitly make them submit buttons.
+
+### Keyboard and accessibility
+Tab focuses an enabled button; Enter and Space activate it. Disabled native buttons leave the tab order. Loading buttons stay focusable, announce that they are busy and unavailable, and block activation. Icons are decorative; keep a text label or provide an accessible name for an icon-only action.`,
+  } },
   tags: ['autodocs'],
   args: { children: 'Button', variant: 'solid', tone: 'neutral', size: 'md' },
   argTypes: {
@@ -66,6 +80,13 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  name: 'Save changes',
+  parameters: { docs: {
+    description: { story: 'Use an accent submit button for the main form action.' },
+    source: { language: 'tsx', code: `import { Button } from '@jfrader/ui';
+
+<Button tone="accent" type="submit">Save changes</Button>` },
+  } },
   args: { children: 'Save changes', tone: 'accent', type: 'submit' },
   render: (args) => <Button {...args} data-ui="custom" />,
   play: async ({ canvasElement }) => {
@@ -76,16 +97,27 @@ export const Default: Story = {
 export const Variants: Story = {
   parameters: {
     docs: {
+      description: { story: 'Compare solid, soft, and outline buttons in neutral, accent, and danger tones.' },
       source: {
-        code: `import { Button } from '@jfrader/ui';
+        language: 'tsx',
+        code: `import { Button, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
 
-{['neutral', 'accent', 'danger'].map((tone) =>
-  ['solid', 'soft', 'outline'].map((variant) => (
-    <Button key={\`\${tone}-\${variant}\`} tone={tone} variant={variant}>
-      {\`\${variant} \${tone}\`}
-    </Button>
-  )),
-)}`,
+const Grid = styled.div({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, auto)',
+  gap: vars.space[3],
+});
+
+<Grid>
+  {(['neutral', 'accent', 'danger'] as const).map((tone) =>
+    (['solid', 'soft', 'outline'] as const).map((variant) => (
+      <Button key={\`\${tone}-\${variant}\`} tone={tone} variant={variant}>
+        {\`\${variant} \${tone}\`}
+      </Button>
+    )),
+  )}
+</Grid>`,
       },
     },
   },
@@ -105,14 +137,21 @@ export const Variants: Story = {
 export const Sizes: Story = {
   parameters: {
     docs: {
+      description: { story: 'Compare small, medium, and large buttons.' },
       source: {
-        code: `import { Button } from '@jfrader/ui';
+        language: 'tsx',
+        code: `import { Button, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
 
-{['sm', 'md', 'lg'].map((size) => (
-  <Button key={size} size={size}>
-    {size}
-  </Button>
-))}`,
+const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
+
+<Row>
+  {(['sm', 'md', 'lg'] as const).map((size) => (
+    <Button key={size} size={size}>
+      {size}
+    </Button>
+  ))}
+</Row>`,
       },
     },
   },
@@ -152,17 +191,26 @@ export const ControlBoundariesLight: Story = {
 };
 
 export const WithIcons: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Button } from '@jfrader/ui';
+  name: 'Leading and trailing icons',
+  parameters: { docs: {
+    description: { story: 'Place decorative icons before and after a visible button label.' },
+    source: { language: 'tsx', code: `import { Button } from '@jfrader/ui';
 
 <Button
-  variant="solid"
-  tone="neutral"
-  size="md"
-  startIcon={<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M8 3v10M3 8h10" /></svg>}
-  endIcon={<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>}
+  startIcon={
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <path d="M8 3v10M3 8h10" />
+    </svg>
+  }
+  endIcon={
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 8h10M9 4l4 4-4 4" />
+    </svg>
+  }
 >
   Button
-</Button>` } } },
+</Button>` },
+  } },
   args: { startIcon: <PlusIcon />, endIcon: <ArrowIcon /> },
 };
 
@@ -172,6 +220,12 @@ export const LightTheme: Story = {
 };
 
 export const Loading: Story = {
+  parameters: { docs: {
+    description: { story: 'Keep the saving action focusable while blocking repeated activation.' },
+    source: { language: 'tsx', code: `import { Button } from '@jfrader/ui';
+
+<Button loading tone="accent">Saving…</Button>` },
+  } },
   args: { loading: true, tone: 'accent', children: 'Saving…', onClick: fn() },
   play: async ({ args, canvasElement }) => {
     const button = within(canvasElement).getByRole('button');
@@ -183,6 +237,12 @@ export const Loading: Story = {
 };
 
 export const Disabled: Story = {
+  parameters: { docs: {
+    description: { story: 'Make an unavailable action disabled and remove it from the tab order.' },
+    source: { language: 'tsx', code: `import { Button } from '@jfrader/ui';
+
+<Button disabled>Button</Button>` },
+  } },
   args: { disabled: true, onClick: fn() },
   play: async ({ args, canvasElement }) => {
     const button = within(canvasElement).getByRole('button');
