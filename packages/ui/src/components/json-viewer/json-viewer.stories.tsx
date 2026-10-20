@@ -412,6 +412,60 @@ export const LongKeys: Story = {
       <JsonViewer {...args} />
     </NarrowFrame>
   ),
+  play: async ({ canvasElement, canvas, userEvent }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui~="json-viewer"]')!;
+    const tree = within(root).getByRole('tree');
+    await expect(tree.scrollWidth).toBeLessThanOrEqual(tree.clientWidth + 1);
+    const leaf = canvas.getByRole('treeitem', { name: /^longKey/ });
+    const row = leaf.querySelector<HTMLElement>('[data-ui="json-viewer-row"]')!;
+    const label = leaf.querySelector<HTMLElement>('[data-ui="json-viewer-label"]')!;
+    await expectInside(label, row);
+    await expect(label.getBoundingClientRect().height).toBeGreaterThan(32);
+    await userEvent.click(leaf);
+    const path = root.querySelector<HTMLElement>('[data-ui="json-viewer-path"]')!;
+    await expectInside(path, root);
+    const details = root.querySelector<HTMLElement>('[data-ui="json-viewer-details"]')!;
+    await expect(details.scrollWidth).toBeLessThanOrEqual(details.clientWidth + 1);
+    await expect(details).toHaveTextContent('Long value '.repeat(30));
+    for (const action of canvas.getAllByRole('button')) {
+      await expectInside(action, root);
+      await expect(action.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
+      await expect(action.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+  },
+};
+export const DeeplyNested: Story = {
+  args: {
+    data: Array.from({ length: 24 }).reduce<JsonValue>((child) => ({ branch: child }), 'Deep leaf'),
+    defaultExpandDepth: 30,
+    maxHeight: '16rem',
+  },
+  render: (args) => <CompactFrame><JsonViewer {...args} /></CompactFrame>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const tree = canvas.getByRole('tree');
+    await expect(tree.scrollWidth).toBeGreaterThan(tree.clientWidth);
+    await expect(tree.scrollHeight).toBeGreaterThan(tree.clientHeight);
+    canvas.getAllByRole('treeitem')[0]!.focus();
+    await userEvent.keyboard('{End}');
+    const leaf = canvas.getByRole('treeitem', { name: /Deep leaf/ });
+    await expectFocus(canvasElement, leaf);
+    await expectInside(leaf.querySelector('[data-ui="json-viewer-label"]')!, tree);
+    await userEvent.keyboard('{Home}');
+    await expectFocus(canvasElement, canvas.getAllByRole('treeitem')[0]!);
+    await expectInside(canvas.getAllByRole('treeitem')[0]!.querySelector('[data-ui="json-viewer-label"]')!, tree);
+    await expectInside(canvas.getAllByRole('treeitem')[0]!.querySelector('[data-ui="json-viewer-caret"]')!, tree);
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui~="json-viewer"]')!;
+    root.dir = 'rtl';
+    try {
+      await userEvent.keyboard('{End}');
+      await expectFocus(canvasElement, leaf);
+      await expectInside(leaf.querySelector('[data-ui="json-viewer-label"]')!, tree);
+      await userEvent.keyboard('{Home}');
+      await expectInside(canvas.getAllByRole('treeitem')[0]!.querySelector('[data-ui="json-viewer-caret"]')!, tree);
+    } finally {
+      root.removeAttribute('dir');
+    }
+  },
 };
 export const EmptyContainers: Story = { args: { data: { object: {}, array: [] } } };
 const typedPayload: JsonValue = {
@@ -518,6 +572,10 @@ export const ForcedColors: Story = {
       await expect(style.borderInlineStartColor).not.toBe('rgba(0, 0, 0, 0)');
     };
     await expectTriangle();
+    if (view.matchMedia('(forced-colors: active)').matches) {
+      const row = canvasElement.querySelector<HTMLElement>('[aria-selected="false"] > [data-ui="json-viewer-row"]')!;
+      await expect(view.getComputedStyle(row).borderInlineStartColor).toBe(tokenColor(row, 'Canvas'));
+    }
     root.focus();
     await userEvent.keyboard('{ArrowLeft}');
     await expect(root).toHaveAttribute('aria-expanded', 'false');
