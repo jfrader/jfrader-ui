@@ -69,7 +69,8 @@ const meta = {
       usage: `- Multiple values are reported in option order.
 - Selected filters stay visible when the group is collapsed.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Arrows move focus without changing selection; horizontal arrows follow text direction.
 - Home/End move to the first/last enabled item. Enter/Space toggle selection.`,
       source: {

@@ -249,7 +249,8 @@ const meta: Meta<SelectCompoundProps> = {
       usage: `### When to use
 - Use Select for one choice from a fixed list. Use MultiSelect for several choices or Combobox for typed search.
 
-### Keyboard and focus
+### Keyboard and accessibility
+
 - The trigger is a select-only combobox with a listbox. DOM focus stays on the trigger; aria-activedescendant identifies the highlighted option.
 - Enter/Space/ArrowDown opens on the selected or first enabled option. ArrowUp opens on the selected or last enabled option.
 - Arrows wrap and skip disabled options; Home/End reach the ends. Enter/Space selects and closes; Escape/Tab closes without selecting. Tab lets focus move on.
@@ -257,11 +258,13 @@ const meta: Meta<SelectCompoundProps> = {
 - Pointer selection closes the list. Disabled options remain visible and ignore clicks; pressing inside the list never takes focus from the trigger.
 
 ### Constraints and forms
+
 - Option values must be unique. Highlighting an option does not select it.
 - Long lists scroll inside the popup.
 - Named fields submit a single value. Native required validation is not supported.
 
 ### Motion
+
 - Reduced motion skips the pill presentation's spring. Closing removes the list from interaction immediately, before its visual collapse finishes.`,
     },
   },

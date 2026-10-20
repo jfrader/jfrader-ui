@@ -90,15 +90,18 @@ const meta: Meta<CommandPaletteCompoundProps> = {
       usage: `### When to use
 Use a command palette for searchable application actions. Use a menu for a short list that does not need search.
 
-### Constraints
+### Values and constraints
+
 Command values must be unique. Choose generated items or compound content, not both. Register application shortcuts yourself; the palette does not install a global shortcut.
 
 Selection requests closure immediately, without waiting for asynchronous command work. Disabled commands stay visible but cannot run. If application state controls opening, accept close requests to dismiss the palette.
 
 ### Filtering
+
 Matching is case-insensitive and includes keywords. Each query change highlights the first enabled match; reopening resets the query. Disabled matches count toward the result total. Translate the accessible dialog name, empty message and result announcement for your application.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Opening focuses the input; DOM focus stays there while you navigate options. Use ArrowDown and ArrowUp to move with wrapping, or unmodified Home and End to reach the first and last enabled matches.
 - Press Enter to select the highlighted command. With no enabled match, Enter leaves the palette open. Press Escape to request closure; accepted closure returns focus to the invoker after the exit finishes.
 - Tab and Shift+Tab stay inside the modal while it is open.`,

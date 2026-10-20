@@ -159,12 +159,14 @@ const meta = {
       usage: `### When to use
 Use a stack to review items one at a time and keep or pass each item. Use Carousel to browse without recording decisions. Use only masked payment details in wallet cards.
 
-### Constraints
+### Values and constraints
+
 Keep item keys stable across updates. Accepted history determines the next card; requests do not confirm successful persistence. Rejected controlled requests return the card home without an announcement. Unknown history keys remain available for audit and undo.
 
 Drag horizontally from noninteractive content. Vertical gestures scroll; cancellation and lost capture return the card home. Left and right outcomes remain physical directions in RTL. Reduced motion completes without travel or tilt.
 
 ### Keyboard and accessibility
+
 Focus the stage and press Left or Right to decide, or Backspace and Control/Command+Z to undo. Held keys do not review multiple cards. Embedded controls keep their native editing and undo keys. Inactive and outgoing cards are inert; action buttons remain focusable when the queue is exhausted. Give the queue and its actions meaningful localized names.`,
     },
   },

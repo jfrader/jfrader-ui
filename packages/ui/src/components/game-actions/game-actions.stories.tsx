@@ -95,6 +95,7 @@ Tab enters the toolbar at the active action. Left and Right move between horizon
 Unavailable and pending actions remain focusable but cannot be activated. An action that becomes unavailable keeps focus. Pending actions announce their busy state. Bind any game shortcuts in your application and include their hints in the labels.
 
 ### Prompts
+
 Keep turn actions in the table for non-blocking choices. Use a dialog when the player must answer before continuing.`,
     },
   },

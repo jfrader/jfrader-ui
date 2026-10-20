@@ -79,7 +79,8 @@ const meta = {
 - Icon-only actions need a translated label or ARIA name. Format numbers in Label with Intl.
 - The menu uses Menu keyboard controls. Accepted Escape or selection returns focus to the trigger; outside press and Tab-out do not.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Tab/Shift+Tab visit every enabled action.
 - Arrows matching the orientation wrap. Home/End move to the ends; horizontal arrows reverse in RTL.
 - Enter/Space activate buttons. Links keep their native Enter/Space behavior.`,

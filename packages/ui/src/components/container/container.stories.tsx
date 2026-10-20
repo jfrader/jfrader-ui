@@ -77,6 +77,7 @@ const meta = {
 Center page content within a width cap. Use the available parent width, not viewport breakpoints, to choose a readable measure.
 
 ### Layout
+
 The side inset is included in the width cap. Add vertical spacing with a layout component; provide page landmarks and headings in the content.`,
     },
   },

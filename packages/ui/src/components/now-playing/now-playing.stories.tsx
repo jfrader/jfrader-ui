@@ -103,10 +103,12 @@ Connect the controls to your media player. Handle media loading, time updates, t
 
 Without a media connection, Play records intent but never advances time. Volume controls and media-key capture are not included.
 
-### Keyboard
+### Keyboard and accessibility
+
 Expand and Collapse show or hide the full controls. Press Escape inside the expanded controls to close them. Accepted keyboard disclosure changes restore focus as needed.
 
 ### Seeking and artwork
+
 Use arrows to seek, Shift+arrows or PageUp/PageDown for larger jumps, and Home/End to reach the bounds. Horizontal seeking stays left-to-right in RTL.
 
 Supply alternative text when artwork conveys information. Pull artwork down 70 pixels or flick downward to request collapse; Collapse and Escape provide the same action.`,

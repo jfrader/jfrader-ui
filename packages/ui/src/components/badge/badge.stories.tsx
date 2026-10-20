@@ -118,10 +118,12 @@ const meta = {
       usage: `### When to use
 Mark content with unread counts or a notification dot. Use Pill for a standalone status label.
 
-### Accessibility
+### Keyboard and accessibility
+
 The badge adds no keyboard interaction. Keep the wrapped action reachable as a button or link. Dots are decorative; include their meaning in the action’s accessible name. A count outside a control does not join its accessible name: include it in an explicit label, for example “Inbox, 3 unread”. When a control is named by text that includes the count, that text is read in order.
 
 ### Layout
+
 Leave room around the wrapped content for the marker; a clipping ancestor can cut it off. Placement follows the reading direction.`,
     },
   },

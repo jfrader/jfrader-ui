@@ -1,12 +1,14 @@
 # jfrader-ui
 
-From-scratch React component system. Emotion for styling, CSS custom properties for theming, Storybook 10 as the workbench. pnpm monorepo, ESM, TypeScript strict.
+From-scratch React component system. Emotion for styling, CSS custom properties for theming, Storybook
+10 as the workbench. pnpm monorepo, ESM, TypeScript strict, React 19. Pre-1.0.
 
 ## Packages
 
 - @jfrader/tokens (packages/tokens): typed token source, generated CSS vars and typed var() references
 - @jfrader/ui (packages/ui): React components
-- @jfrader/storybook (apps/storybook): Storybook workbench, docs and browser tests
+- @jfrader/storybook (apps/storybook): workbench, component docs, browser tests
+- @jfrader/docs (apps/docs): documentation site published at ui.jfrader.com
 - @jfrader/pilot (apps/pilot): reference Vite consumer app
 
 ## Key paths
@@ -15,15 +17,22 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 - Token generator: packages/tokens/scripts/generate.ts
 - Generated CSS vars: packages/tokens/dist/tokens.css (import as @jfrader/tokens/tokens.css)
 - Generated typed vars: packages/tokens/src/generated/vars.ts (import as @jfrader/tokens/vars)
-- Styling seam: packages/ui/src/styling/css.ts
+- Component inventory: packages/ui/src/index.ts
 - Components: packages/ui/src/components/<name>/
-- Game components and procedural scene: opt-in subpaths (@jfrader/ui/game-table, @jfrader/ui/scene, etc.), not re-exported by the root barrel
-- EditableDetails: nested description lists with app-owned editors; lifecycle and overlay recipes in docs/consuming-jfrader-ui.md#editable-details
+- Styling seam: packages/ui/src/styling/css.ts
 - Storybook config: apps/storybook/.storybook/
+- Game components and procedural scene: opt-in subpaths (@jfrader/ui/game-table, @jfrader/ui/scene, and so on), not re-exported by the root barrel
+
+## Docs
+
+- Consumer setup: docs/getting-started.md
+- Theming: docs/theming.md
+- Styling: docs/styling.md
+- Manual QA gates: docs/qa-gates.md
+- Releasing: docs/releasing.md
+- Generated API inventory: docs/customization-inventory.md
 - Agent conventions: AGENTS.md
-- Component authoring + maintenance guide: SKILL.md
-- Consumer setup: docs/consuming-jfrader-ui.md
-- Automated and manual QA gates: docs/qa-gates.md
+- Component authoring and documentation spec: SKILL.md
 
 ## Commands
 
@@ -32,8 +41,13 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 - pnpm build: generate tokens and build static Storybook
 - pnpm test: generate tokens and run Storybook browser tests
 - pnpm typecheck: generate tokens and typecheck every package
+- pnpm verify:docs: check component documentation coverage
+- pnpm verify:api: check sx-only public styling types, slot props and authored examples
+- pnpm verify:slots: check that every declared replacement key is rendered
 - pnpm verify:exports: validate UI source subpath exports and their target files
+- pnpm og:image: regenerate the Open Graph share card
 
-## The rule that matters most
+## Styling rule
 
-Components consume semantic --ui-* variables via @jfrader/tokens/vars. No raw colors.
+Components consume semantic --ui-* variables through @jfrader/tokens/vars. No raw colors outside
+packages/tokens.

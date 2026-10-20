@@ -57,10 +57,12 @@ const meta = {
       usage: `### When to use
 Show metadata for a link already present in a page or message. Use LinkUnfurl for composing a draft with detected URLs and expandable previews.
 
-### Limits
+### Values and constraints
+
 Fetch metadata in your application; the card makes no metadata requests. Use absolute HTTP(S) destinations. Titles occupy up to two lines and descriptions up to three, with complete text retained in the DOM. Keep descriptions noninteractive.
 
 ### Keyboard and accessibility
+
 Tab focuses the title link and Enter follows it. The rest of the card is not clickable. Describe informative cover images and leave decorative images unnamed; favicons are decorative. Reduced motion stops decorative animation.`,
     },
   },

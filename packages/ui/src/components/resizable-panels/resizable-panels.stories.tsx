@@ -123,13 +123,16 @@ const meta: Meta<ResizablePanelsCompoundProps> = {
       usage: `### When to use
 Let people divide horizontal workspace between adjacent panes. Give the group a definite height and each pane an accessible name.
 
-### Constraints
+### Values and constraints
+
 When minimum widths do not fit, they shrink together. Space beyond all maximum widths stays empty. Collapsed content stays mounted but inert.
 
-### Keyboard and gestures
+### Keyboard and accessibility
+
 Focus a separator with Tab. Left/Right moves it 16px in screen direction; Shift moves it 64px. At a limit, another press collapses a collapsible pane, and pressing back restores it. Home/End reaches the smallest/largest open size; Enter collapses or restores. Ctrl/Meta+Home or double-click resets the initial layout. Escape cancels a drag without committing it.
 
 ### Localization
+
 Percentages follow the selected locale. Translate any custom state wording used for the accessible value text.`,
     },
   },

@@ -127,13 +127,15 @@ const meta = {
       usage: `### When to use
 Use a drawer for a task, filter panel, or set of details that needs focus without leaving the page. For brief, non-modal content anchored to a trigger, use a Popover instead.
 
-### Constraints
+### Values and constraints
+
 - Modal only: the rest of the page is inert, Tab and Shift+Tab stay inside, and closing returns focus to the invoker.
 - Inline panels cap their width and adapt to compact viewports; top and bottom panels span the viewport width.
 - The panel slides into place and finishes sliding out before the dialog closes. Reduced motion disables dragging and makes entry and exit instant.
 - Floating overlays need a portal container inside the drawer so they stay above the top layer.
 
 ### Keyboard and accessibility
+
 - Tab and Shift+Tab cycle focus between interactive controls inside the drawer.
 - Escape, close buttons, and backdrop clicks request closure. If you veto closure, provide another way to finish the task.
 - Give the close button visible text or an aria-label.

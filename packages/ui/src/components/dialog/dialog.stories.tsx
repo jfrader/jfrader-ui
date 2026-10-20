@@ -85,6 +85,7 @@ const meta = {
 Use a dialog for a task or decision that needs attention before returning to the page. Keep non-blocking information in the page instead.
 
 ### Keyboard and accessibility
+
 Tab and Shift+Tab stay inside the open dialog; the rest of the page is inert. Escape, the close button, and a backdrop click request closure. An onCancel handler can prevent all three; provide another way to finish the task if you veto closure. Native form submission with \`method="dialog"\` cannot be vetoed this way.
 
 Give every dialog an accessible name. For structured or long content, set withDescription={false} so assistive technology can read the content in order rather than as one description.

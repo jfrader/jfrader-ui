@@ -104,9 +104,11 @@ const meta = {
 Use a carousel for a short collection of related slides. All slides stay mounted; use a list or paginated view for large collections. Give slides stable keys and name the carousel and its slides for assistive technology.
 
 ### Rotation
+
 Keep essential information reachable without waiting for rotation. Rotation stops when focus enters or a controlled step is rejected. Hover, dragging, offscreen placement and hidden pages pause rotation. Reduced motion disables it.
 
 ### Keyboard and accessibility
+
 Use Left/Right or Home/End on the viewport or slide picker to navigate; Left/Right reverse in RTL. With manual indicators, press Enter or Space to select the focused indicator. Tab reaches controls in the active slide only; editing keys inside inputs keep their native behavior. Touch, trackpad and mouse dragging snap to a slide.
 
 A rejected controlled change keeps the accepted slide selected and scrolls back to it.`,

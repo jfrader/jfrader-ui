@@ -19,7 +19,8 @@ const meta = {
     usage: `### Content
 Supply your own labels and destinations. Labels wrap onto additional lines when space is limited; empty collections render nothing.
 
-### Keyboard
+### Keyboard and accessibility
+
 Tab and Shift+Tab move between links; Enter follows them. Plain labels are not keyboard stops.`,
   } },
 } satisfies Meta<typeof Article.Kicker>;

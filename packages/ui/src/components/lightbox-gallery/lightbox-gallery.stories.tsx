@@ -144,10 +144,12 @@ const meta = {
       usage: `### When to use
 Use a masonry gallery when photos should keep their proportions and open in a full-screen viewer. Choose PhotoGrid for square thumbnails with favorites and density controls.
 
-### Limits
+### Values and constraints
+
 Paginate large collections; images are not virtualized. Supply unique IDs, meaningful alternative text, and positive intrinsic dimensions. Load image assets and metadata in your application. Navigation stops at each end of the collection.
 
 ### Keyboard and accessibility
+
 Tab follows the tiles in reading order. The open modal contains focus and locks page scrolling. Left/Right select in the reading direction; Home/End select endpoints. Plus/minus zoom and 0 resets. When zoomed, arrows pan. These commands work throughout the viewer except in editable fields.
 
 Hover or focus an icon control to read its name. Buttons and the thumbnail strip provide alternatives to swipes, pinch, and dragging. Escape closes even when zoomed and restores focus to the current image's tile. Keep floating content inside the dialog subtree. For structured captions, avoid announcing the whole caption as one description. Reduced motion disables transitions.`,

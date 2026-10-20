@@ -37,7 +37,8 @@ const meta = {
 - Both \`min\` and \`max\` are required bounds in the same mode-specific wire format.
 - Month and year edits clamp the day to the month's end before committing.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Tab moves between the date and time reels.
 - Press ArrowUp or ArrowDown to step to the previous or next selectable entry without wrapping.
 - Press PageUp or PageDown for larger jumps: 10 years, 3 months, 7 days, 3 hours, or minute jumps (step = ceil(15 / minuteStep)).
@@ -45,7 +46,8 @@ const meta = {
 - Press ArrowLeft or ArrowRight to move focus between neighboring reels; the order follows the text direction.
 - Type numbers or letters to search within the focused reel with a 500ms typeahead buffer. Modifier combinations and IME composition are guarded and ignored.
 
-### Limits
+### Values and constraints
+
 - Invalid configuration or values outside \`[min, max]\` display an accessible alert and disable interactions.
 - Touch gestures use inertial momentum and spring-settle to valid candidates only after release. Drag cancellation resets position.
 - Scroll the wheel over a focused reel to change its value instead of scrolling the page.

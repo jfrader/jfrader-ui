@@ -39,14 +39,15 @@ const meta = {
       usage: `### When to use
 Use pagination for a finite set of results readers need to revisit by page. Load and render the requested results in your application, and keep the current page aligned with those results.
 
-### Constraints
+### Values and constraints
+
 Page numbers start at one. Ellipses are not controls; choose a displayed page or use Previous and Next. With no pages, there are no numbered controls and both navigation buttons are disabled. There is one target size; reduce the number of visible neighbours rather than shrinking buttons in a narrow layout.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Press Tab to reach each enabled button, then Enter or Space to request a page. There is no arrow-key navigation between buttons.
 - Previous and Next are disabled at the boundaries. If an accepted request disables the focused navigation button, focus moves to the current page button.
 
-### Accessibility
 Give each pagination landmark a distinct name when a page has more than one. Translate navigation names as well as page numerals.`,
     },
   },

@@ -270,9 +270,11 @@ const meta = {
 Show collaborators or participants in a compact row. Keep a separate member list when people need to inspect or act on everyone.
 
 ### Layout
+
 Keep members in display order with stable, unique ids. The visible member limit does not respond to available width; choose it for the surrounding layout.
 
-### Accessibility
+### Keyboard and accessibility
+
 The group and overflow are not controls or keyboard targets. Provide a separate button to open the complete member list. Keep portrait artwork decorative inside each named Avatar.
 
 Localize the group name, overflow label and total summary together. Number formatting does not translate these labels; choose an explicit locale for server rendering.`,

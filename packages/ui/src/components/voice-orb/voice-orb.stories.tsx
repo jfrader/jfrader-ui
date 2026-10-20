@@ -43,12 +43,15 @@ const meta = {
 Connect your own permissions, microphone capture, audio processing, speech and network transport. This component never opens a microphone. Your application owns elapsed time and resource cleanup.
 
 ### Session state
+
 Starting, muting and ending request state changes; a controlled parent can reject them. Keep the visual state synchronized with your actual session, rather than treating a button press as proof of a connection.
 
-### Keyboard
+### Keyboard and accessibility
+
 Tab reaches Start, Mute and End in document order. Enter or Space activates a focused button. Escape does not end the session.
 
 ### Transcript
+
 Keep partial speech visible without announcing each update. Mark a turn complete when it is ready for the polite announcement.`,
     },
   },

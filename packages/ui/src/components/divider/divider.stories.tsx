@@ -42,9 +42,11 @@ const meta = {
 Separate related sections or groups of actions without adding a heading.
 
 ### Layout
+
 Give vertical separators a row with content or an explicit height; they have no intrinsic height. Set surrounding spacing on the parent.
 
-### Accessibility
+### Keyboard and accessibility
+
 Keep labels textual, not interactive. A separator is not a control and is skipped by Tab.`,
     },
   },

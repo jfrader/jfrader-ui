@@ -180,9 +180,11 @@ const meta = {
 - Inline and pill navigation leave the current language as plain text, outside the Tab order.
 
 ### Router links
+
 Forward every supplied link prop, including the ref and event handlers, to the app's link element.
 
-### Keyboard
+### Keyboard and accessibility
+
 - On the menu trigger, Enter, Space, or ArrowDown opens on the first item. ArrowUp opens on the last.
 - In the menu, arrows move and wrap. Home and End jump to the first and last items. Type a native name to move to its option.
 - Enter follows the focused link. Space clicks it. Escape closes and returns focus to the trigger. Tab closes and lets focus move on.

@@ -22,9 +22,12 @@ const FeaturedCard = styled(Card)(({ theme }) => ({
 }));
 FeaturedCard.displayName = 'FeaturedCard';
 
-const smallCorners = css({ borderRadius: theme.radius.sm });
+const SmallCornersButton = styled(Button)({ borderRadius: theme.radius.sm });
+SmallCornersButton.displayName = 'SmallCornersButton';
 const highlightStyle = css({ borderColor: theme.color.accentBorder });
 const roomyStyle = css({ paddingBlock: theme.space[6] });
+const RoomierCard = styled(Card)([highlightStyle, roomyStyle]);
+RoomierCard.displayName = 'RoomierCard';
 
 /** The computed form of a token reference for `property`, read from a throwaway probe element. */
 function resolveToken(container: HTMLElement, property: string, value: string) {
@@ -120,15 +123,15 @@ export const SxOneOffs: Story = {
   },
 };
 
-export const SxOverCss: Story = {
+export const SxOverStyled: Story = {
   parameters: {
     docs: {
       source: {
-        code: `const smallCorners = css({ borderRadius: theme.radius.sm });
+        code: `const SmallCornersButton = styled(Button)({ borderRadius: theme.radius.sm });
 
 <>
-  <Button css={smallCorners} sx={(theme) => ({ borderRadius: theme.radius.full })}>Rounded</Button>
-  <Button css={smallCorners}>Small corners</Button>
+  <SmallCornersButton sx={{ borderRadius: theme.radius.full }}>Rounded</SmallCornersButton>
+  <SmallCornersButton>Small corners</SmallCornersButton>
   <Button>Default corners</Button>
 </>`,
       },
@@ -136,10 +139,8 @@ export const SxOverCss: Story = {
   },
   render: () => (
     <div style={columnStyle}>
-      <Button css={smallCorners} sx={(theme) => ({ borderRadius: theme.radius.full })}>
-        Rounded
-      </Button>
-      <Button css={smallCorners}>Small corners</Button>
+      <SmallCornersButton sx={{ borderRadius: theme.radius.full }}>Rounded</SmallCornersButton>
+      <SmallCornersButton>Small corners</SmallCornersButton>
       <Button>Default corners</Button>
     </div>
   ),
@@ -250,29 +251,30 @@ export const RenderPathParity: Story = {
   },
 };
 
-export const CssPropWithTokens: Story = {
+export const CssFunctionWithStyled: Story = {
   parameters: {
     docs: {
       source: {
         code: `const highlightStyle = css({ borderColor: theme.color.accentBorder });
 const roomyStyle = css({ paddingBlock: theme.space[6] });
+const RoomierCard = styled(Card)([highlightStyle, roomyStyle]);
 
-<Card css={[highlightStyle, roomyStyle]}>
+<RoomierCard>
   <Card.Header>
     <Card.Title>Usage</Card.Title>
     <Card.Description>12 of 20 seats in use.</Card.Description>
   </Card.Header>
-</Card>`,
+</RoomierCard>`,
       },
     },
   },
   render: () => (
-    <Card css={[highlightStyle, roomyStyle]}>
+    <RoomierCard>
       <Card.Header>
         <Card.Title>Usage</Card.Title>
         <Card.Description>12 of 20 seats in use.</Card.Description>
       </Card.Header>
-    </Card>
+    </RoomierCard>
   ),
   play: async ({ canvasElement }) => {
     const card = canvasElement.querySelector<HTMLElement>('[data-ui="card"]')!;

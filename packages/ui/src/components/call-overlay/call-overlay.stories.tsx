@@ -72,9 +72,11 @@ const meta = {
 The status region announces content politely; there is no modal or keyboard interaction. Focus stays on the active control.
 
 ### Timing
+
 After three seconds the component requests closure. Reopen or remount to replay; no state callback fires on mount. Reduced motion keeps only the fade and the same closure lifecycle.
 
 ### Placement
+
 Keep announcements clear of turn controls so play can continue.`,
     source: { code: `import { CallOverlay } from '@jfrader/ui/call-overlay';
 

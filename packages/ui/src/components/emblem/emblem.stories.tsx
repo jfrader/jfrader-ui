@@ -83,7 +83,8 @@ const meta = {
       usage: `### Contrast
 Check the initials against both the fill and pattern colors. A contrasting fill alone is not enough when a band crosses the letters. Shield marks are taller than they are wide; leave room for the full shape.
 
-### Accessibility
+### Keyboard and accessibility
+
 A mark is not a control unless you make it a link. Keep visible initials in a linked mark's accessible name. Failed images fall back to initials, so keep a useful name even when supplying artwork.`,
     },
   },

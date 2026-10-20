@@ -31,12 +31,14 @@ const meta = {
       usage: `### When to use
 Attach lightweight feedback to a message or other shared content. Use a separate action for decisions that require confirmation.
 
-### Constraints
+### Values and constraints
+
 The application owns counts and each person's selected reactions. A request does not change a count until the application supplies updated data. Translate control names and count text as well as formatting numbers for your audience.
 
 Read-only groups show text instead of controls. Disabled groups prevent changes, but an already open picker can still close.
 
 ### Keyboard and accessibility
+
 Tab and Shift+Tab visit reaction buttons in document order. Enter and Space toggle a reaction; the pressed state identifies your reactions.
 
 The inline picker is a named group, not a menu. Left and Right arrows wrap between emoji, reversed in RTL; Home and End jump to the ends. Enter or Space selects. Escape or the close button requests closure; an accepted close returns focus to the add button.`,

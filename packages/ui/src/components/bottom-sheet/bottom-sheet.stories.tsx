@@ -72,13 +72,14 @@ const meta = {
       usage: `### When to use
 Use a bottom sheet on mobile viewports or touch devices for secondary tasks, filters, or details that open from the bottom without leaving the current view.
 
-### Constraints
+### Values and constraints
+
 The sheet is always modal; the background page remains inert even at peek heights. Height snaps to stable ascending detents between 0 and 1; remount the sheet to change detent values. The panel rises when opening and finishes sinking before the dialog closes. Reduced motion disables sliding and spring travel. Floating overlays inside the sheet must portal into a container inside the sheet rather than the document body.
 
-### Keyboard
+### Keyboard and accessibility
+
 Focusing the handle: Arrow Up and Down navigate between adjacent detents, Home and End jump to the highest and lowest detents, and Enter or Space toggles between extremes. In the scrollable body, PageDown and Space expand to the maximum height before scrolling down. Escape cancels an active drag gesture first; a subsequent Escape dismisses the sheet.
 
-### Accessibility
 Provide an accessible name for the sheet heading, resize handle, and close button. If the sheet contains complex structured content, opt out of the automatic accessible description so assistive technology reads content in order rather than as a single description string.`,
     },
   },

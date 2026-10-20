@@ -345,10 +345,12 @@ const meta = {
 - Keep persistence and authorization on the server; the current user only determines which actions are shown.
 
 ### Time and formatting
+
 - Dates accept epoch milliseconds, a Date, or an ISO date-time with an offset. Relative times use \`Intl.RelativeTimeFormat\`; update the reference time yourself because the component runs no clock. The full date in the chosen time zone is the accessible description.
 - Plain text bodies only; rich markup is not supported.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Tab traverses interactive elements in document order.
 - Press Ctrl+Enter (Cmd+Enter on macOS) to submit once, except during IME composition, while disabled, or while a submit is pending.
 - Escape closes mention suggestions, reaction pickers, and delete confirmations; a second Escape cancels an active reply or edit.

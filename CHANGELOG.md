@@ -2,14 +2,37 @@
 
 ## Unreleased
 
+### Added
+
+- Component documentation ends with one API section (root and parts, native element, slots and dependencies) generated from the component sources; curated examples carry authored code. `packages/ui/src/components/dialog` is the reference page.
+- `LinkUnfurl`, `ChatMessage`, `HoldToConfirm` and `AttachmentList` accept `slots.root`, `slotProps.root` and `component` to replace their native root while retaining generated content, props, refs and styling.
+- `CodeBlock`, `TypewriterTerminal` and `JsonViewer` share Surface panel material and support inherited or contrast appearance. Root replacements own their panel material.
+- `CommentThread`, `TypewriterTerminal`, `CodeBlock` and `JsonViewer` accept `slots.root`, `slotProps.root` and `component` to replace their outer element while retaining generated content and existing panel styling.
+- `Timeline`, `MetricCard`, `EmptyState` and `ChatThread` accept `slots.root`, `slotProps.root` and `component` to replace their outer element while retaining generated content, props, refs and styling.
+- `Avatar` accepts fallback children, including `PersonAvatar size="full"`; `AvatarGroup` forwards shared and per-member artwork and customization.
+- `ArticleBody`, `ArticleSources` and `SectionHeading` add article text, fact boxes, quotations, two-cell comparisons, source lists and section titles.
+- `ColorPicker` opens a modal dialog that fits the viewport instead of an anchored popover: focus moves inside, Escape and backdrop cancel, and the swatch checker matches its box.
+- `MoneyInput` accepts non-ISO assets with `decimals` (0–18) and a display `symbol`, storing integer base units such as bitcoin satoshis.
+- `PersonAvatar` draws seeded pixel-art portraits, full kits and staff attire, with a pure v3 appearance entry for shared identity data.
+- `ArticleCard`, `ArticleList`, `ArticleKicker` and `ArticleMeta` compose newspaper-style cards, headline rows, kickers and metadata with editorial typography tokens and no media requirement.
+- `NumberField` adds locale-aware quantity entry, exact decimal steps, keyboard and pointer controls, draft validation, and canonical form values.
+- `MoneyInput` enters integer minor-unit amounts with locale-aware currency formatting, a currency picker, quick-add buttons and native form reset. Changing currency preserves the stored integer without conversion.
+- `PhoneInput` collects international telephone numbers with a searchable country picker, national formatting, incomplete storage candidates, metadata validation and independent controlled number, country and picker state.
+- `ColorPicker` edits HEX, RGB, HSL and OKLCH colors, saves swatches and reports text contrast against an opaque background.
+- `labelPlacement="hidden"` keeps a field's label as the control's accessible name without taking layout space. Available on TextField, Textarea, PasswordField, SearchField, TagInput, MentionInput, TimePicker, Combobox, Select and MultiSelect.
+
 ### Changed
 
 - Breaking pre-1.0 article API cleanup: use `Article` with `Article.Body`, `Article.Kicker`, `Article.Meta` and `Article.Sources` instead of the separate article components. `ArticleList` stays standalone. `ArticleSection` composes ordered articles into mixed editorial layouts, and `SectionHeading` moves to `ArticleSection.Heading`.
 - `CardFlights` now animates the rendered board tree, with `Deck`, custom `Target` destinations, `deal`/`revision`, automatic hand locking and `onBusyChange`. The provider, explicit deal/play hooks, measurement helpers and flight-spec exports are deprecated until the next major release; replace them with `CardFlights` and `useCardFlightStatus`. Piles now retain the newest `maxCards` cards.
 - Breaking pre-1.0 API cleanup: every `slotProps` part accepts `sx` instead of `css`, preserving own styles → slot `sx` → consumer `sx` precedence. Emotion's `css` remains internal.
+- Component documentation groups usage notes under four headings: "Keyboard and accessibility", "Values and constraints", "Forms", and "Customization". Distinct topics keep their own section.
+- The styling showcase demonstrates `styled` with `sx` precedence instead of the internal `css` prop.
+- `docs/getting-started.md` replaces `docs/consuming-jfrader-ui.md`, and `docs/releasing.md` becomes the single home for packing and publishing. The README, `AGENTS.md`, and both package READMEs were rebuilt around one description: "React component library based on Emotion and CSS custom properties."
 
 ### Fixed
 
+- The axe gate also runs the WCAG 2.2 A rules; `README.md`, `docs/qa-gates.md`, and `SKILL.md` list the exact rule set.
 - `Calendar` keeps localized weekday headers and dates centered in equal columns, fits narrow containers, preserves navigation targets beside wrapping month labels, and shows the full selected range in forced colors.
 - Documentation section links no longer pull you back after manual scrolling. The left menu keeps its scroll position and expanded groups between pages.
 - `StretchRefresh` wraps long pull instructions and empty-state text inside narrow feeds; its examples fit phone screens.
@@ -35,32 +58,8 @@
 - `DataFlow` wraps long summaries on narrow screens, keeps horizontal diagrams readable in a scrolling scene, and routes vertical connections outside the nodes. Connections stay attached when the inherited text direction changes.
 - `PhotoGrid` keeps the current viewer thumbnail visible when opening or navigating a scrolling filmstrip, including RTL layouts.
 - `PhotoGrid` fits unzoomed viewer images inside the stage instead of clipping images taller than the viewport.
-
 - The new inputs match the field skin: `ColorPicker`'s trigger is no longer a native grey button (surface, border, radius, padding, one focus ring) and its hex reads LTR; `NumberField` keeps one focus ring on the shell and its range text isolates direction in RTL; `PhoneInput` isolates `+44` in RTL and shows a disclosure caret.
-
 - `PhoneInput` keeps its country panel anchored to the field: the panel is capped at 20rem with the list scrolling inside, instead of being clamped to the viewport edge when neither side fits.
-
-### Added
-
-- Component documentation ends with one API section (root and parts, native element, slots and dependencies) generated from the component sources; curated examples carry authored code. `packages/ui/src/components/dialog` is the reference page.
-- `LinkUnfurl`, `ChatMessage`, `HoldToConfirm` and `AttachmentList` accept `slots.root`, `slotProps.root` and `component` to replace their native root while retaining generated content, props, refs and styling.
-- `CodeBlock`, `TypewriterTerminal` and `JsonViewer` share Surface panel material and support inherited or contrast appearance. Root replacements own their panel material.
-- `CommentThread`, `TypewriterTerminal`, `CodeBlock` and `JsonViewer` accept `slots.root`, `slotProps.root` and `component` to replace their outer element while retaining generated content and existing panel styling.
-- `Timeline`, `MetricCard`, `EmptyState` and `ChatThread` accept `slots.root`, `slotProps.root` and `component` to replace their outer element while retaining generated content, props, refs and styling.
-- `Avatar` accepts fallback children, including `PersonAvatar size="full"`; `AvatarGroup` forwards shared and per-member artwork and customization.
-- `ArticleBody`, `ArticleSources` and `SectionHeading` add article text, fact boxes, quotations, two-cell comparisons, source lists and section titles.
-- `ColorPicker` opens a modal dialog that fits the viewport instead of an anchored popover: focus moves inside, Escape and backdrop cancel, and the swatch checker matches its box.
-- `MoneyInput` accepts non-ISO assets with `decimals` (0–18) and a display `symbol`, storing integer base units such as bitcoin satoshis.
-- `PersonAvatar` draws seeded pixel-art portraits, full kits and staff attire, with a pure v3 appearance entry for shared identity data.
-- `ArticleCard`, `ArticleList`, `ArticleKicker` and `ArticleMeta` compose newspaper-style cards, headline rows, kickers and metadata with editorial typography tokens and no media requirement.
-- `NumberField` adds locale-aware quantity entry, exact decimal steps, keyboard and pointer controls, draft validation, and canonical form values.
-- `MoneyInput` enters integer minor-unit amounts with locale-aware currency formatting, a currency picker, quick-add buttons and native form reset. Changing currency preserves the stored integer without conversion.
-- `PhoneInput` collects international telephone numbers with a searchable country picker, national formatting, incomplete storage candidates, metadata validation and independent controlled number, country and picker state.
-- `ColorPicker` edits HEX, RGB, HSL and OKLCH colors, saves swatches and reports text contrast against an opaque background.
-- `labelPlacement="hidden"` keeps a field's label as the control's accessible name without taking layout space. Available on TextField, Textarea, PasswordField, SearchField, TagInput, MentionInput, TimePicker, Combobox, Select and MultiSelect.
-
-### Fixed
-
 - NowPlaying returns to the mini height when it collapses instead of keeping a stale face height: the measured target comes from the visible panel, so the wrapped Next/Expand row can no longer be clipped by the card face.
 - NowPlaying expands and collapses by revealing its content as the card grows, instead of scaling the text and controls with the card. A rejected sheet drag on UserMenu springs back, and Carousel clears a pointer released outside before the drag threshold.
 - Dialogs close even when a child animation is paused or long-running: exits wait only for the surface's running exit effects, with a bounded fallback. PhotoGrid retains its viewer through the closing transition instead of cutting to the grid immediately.

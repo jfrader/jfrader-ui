@@ -244,6 +244,7 @@ const meta = {
 - Native radios and buttons also work with the keyboard. Form reset requests the initial strokes.
 
 ### Exports
+
 - PNG and SVG have transparent backgrounds, optional cropping and fixed print ink. Guides and signer text are excluded.
 - Reduced motion skips animated replay.`,
       source: {

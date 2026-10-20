@@ -181,6 +181,7 @@ export function CustomAccent() {
 - Explicit \`tokens\` override derived values.
 
 ### Contrast
+
 - Check text and focus-ring contrast with your chosen accent. Some colors need explicit overrides.
 - See [Custom palettes](https://github.com/jfrader/jfrader-ui/blob/master/docs/theming.md#custom-palettes) for color formats, contrast limits, and document-level themes.`,
     },

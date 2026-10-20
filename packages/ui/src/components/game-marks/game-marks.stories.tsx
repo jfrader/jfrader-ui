@@ -17,7 +17,8 @@ const meta = {
     usage: `### Art and layout
 Supply decorative, noninteractive artwork without IDs: the same artwork is repeated for each award. Award counts must be nonnegative safe integers; row limits must be positive safe integers. Invalid values throw RangeError. Keep counts small enough to render one element per mark. Size the artwork in your application.
 
-### Accessibility
+### Keyboard and accessibility
+
 Use the same locale on server and client for number formatting. Repeated art is hidden from assistive technology; the named group exposes the count. It adds no keyboard commands, motion or live announcements.`,
     source: { language: 'tsx', code: `import { GameMarks } from '@jfrader/ui/game-marks';
 

@@ -58,10 +58,12 @@ const meta = {
     usage: `### When to use
 Show an update or problem beside the affected content. Reserve urgent announcements for problems that need immediate attention; put the meaning in visible text, not color alone.
 
-### Accessibility
+### Keyboard and accessibility
+
 Screen readers may not announce content already present when a live region mounts. Mount the region before changing its text when an announcement is required. Keep actionable controls outside the announcement text.
 
 ### Dismissal
+
 Remove dismissed messages in application state. Tab reaches the dismiss button; Enter or Space activates it. If removal takes focus away, move focus to the next relevant control.`,
   } },
   args: { tone: 'info', title: TONE_COPY.info.title, children: TONE_COPY.info.body },

@@ -42,14 +42,17 @@ const meta = {
       usage: `### When to use
 Enter a payment, tip, or budget in integer minor units, rather than a floating-point amount. Changing currency keeps the integer; it does not convert exchange rates.
 
-### Values and limits
+### Values and constraints
+
 USD 12.50 is 1250, JPY 12 is 12, and KWD 12.345 is 12345. Bounds, steps, and quick additions use the same units. ISO currencies support zero to three decimal places; non-ISO assets support an explicit scale of zero to eighteen decimals. The stored integer is limited to twelve digits even at higher scales.
 Supply the same explicit locale on the server and client. ISO currency support requires Intl.supportedValuesOf('currency').
 
 ### Editing and keyboard
+
 The focused field uses ungrouped decimal text. Blur or Enter settles to a full currency string; below-minimum drafts show an error without clamping. Sub-minor precision and over-maximum edits are rejected. Escape discards the draft. ArrowUp/Down changes by \`step\`; Shift+Arrow or PageUp/Down changes by ten steps. Add buttons commit the draft and add once, clamped to the range. The currency picker uses Select's arrows, Home/End, typeahead, Enter/Space, Escape and Tab; focus stays on its trigger.
 
-### Forms and accessibility
+### Forms
+
 Empty fields submit an empty string; disabled fields are omitted. Native reset restores uncontrolled amount and currency defaults without callbacks. Amount, currency, and picker visibility are independent; rejected requests do not change the submitted amount.
 Give the editor a visible label or accessible name and translate full messages for your locale. Read-only fields lock the editor, currency picker, and add buttons.`,
     },

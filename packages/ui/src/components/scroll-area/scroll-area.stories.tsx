@@ -54,9 +54,11 @@ const meta = {
 Keep overflowing content inside a bounded panel. Content is not virtualized; use a virtualized list for large datasets.
 
 ### Layout
+
 Constrain the height with a limit or a sized parent. Horizontal content needs a width larger than the viewport to overflow.
 
 ### Keyboard and accessibility
+
 Give the scrolling region an accessible name. Tab enters and leaves the viewport; arrows, Page Up/Down, Home/End and Space use native browser scrolling. Keep controls inside reachable by Tab.`,
       source: {
         code: '<ScrollArea maxBlockSize="16rem" slotProps={{ viewport: { "aria-label": "Activity" } }}><ActivityList /></ScrollArea>',

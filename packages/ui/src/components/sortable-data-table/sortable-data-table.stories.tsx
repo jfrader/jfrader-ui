@@ -58,7 +58,8 @@ const meta = {
 - Specify an explicit locale and time zone for deterministic date and number formatting across SSR and hydration.
 - Use bounded collections and add Pagination outside the table. Grid navigation, editing, and virtualization are not supported.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Tab traverses the scroller container, sortable column headers, and selection checkboxes.
 - Press Enter or Space on a column header to toggle sort direction.
 - Press Space on a row checkbox to toggle selection, or on the header checkbox to select or clear all rows.`,

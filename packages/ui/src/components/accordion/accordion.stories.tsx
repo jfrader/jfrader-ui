@@ -49,10 +49,12 @@ const meta = {
     usage: `### When to use
 Use an accordion for related sections readers can open independently, such as settings or frequently asked questions. Keep essential instructions visible outside collapsed sections.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Press Enter or Space to toggle a header. Use ArrowUp and ArrowDown to move between enabled headers with wrapping, or Home and End to reach the first and last. Moving focus does not open a panel.
 
-### Content constraints
+### Values and constraints
+
 - Headers render as \`h3\` and panels as labelled regions. Place the accordion where level-three headings fit your page outline.
 - Closed panels stay mounted and hidden. Their child state persists when you reopen them.
 - If one panel must remain open, start with an open section. Preventing collapse does not open an initially closed accordion.`,

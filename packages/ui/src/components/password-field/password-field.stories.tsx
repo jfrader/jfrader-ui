@@ -74,9 +74,11 @@ const meta = {
 Use a password field for passwords, tokens and API keys that should start concealed. Use TextField for other text. Masking is a display choice, not encryption; avoid revealing secrets on shared screens.
 
 ### Feedback and forms
+
 Your application owns validation. Use PasswordStrength for an account-creation field with policy feedback; PasswordField does not calculate strength. State password requirements before submission and provide a specific error when validation fails. Keep password-manager autocomplete appropriate to sign-in or account creation.
 
 ### Keyboard and accessibility
+
 Give the input an accessible name. Tab moves from input to reveal to page. Enter or Space on reveal toggles visibility without submitting; Enter in the input submits its form. Escape does nothing. The reveal button keeps its accessible name and announces its pressed state.
 
 Toggling keeps the value, selection and input focus. Read-only values can still be revealed; disabled fields disable both input and reveal. Form reset restores uncontrolled value and visibility without change callbacks.`,

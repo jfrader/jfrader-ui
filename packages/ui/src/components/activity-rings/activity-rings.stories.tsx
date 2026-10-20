@@ -246,9 +246,11 @@ const meta = {
 Compare progress toward independent daily goals, including goals measured in different units. Mixed units are never added together.
 
 ### Reading progress
+
 The dial stops at 100%; the legend retains the uncapped amount, percentage and surplus. The centre averages completion with each goal capped at 100% and shows a dash if any goal is unknown or unavailable. Unknown values mean no data, not zero.
 
 ### Keyboard and accessibility
+
 The SVG is decorative; keep the text legend available for amounts and goals. The day picker has one Tab stop. Arrow keys select days; Home and End select the first and last day. Interactive legend rows preview on hover or focus; Enter or Space toggles a pinned metric.
 
 Assistive technology receives committed values rather than intermediate animation counts. Reduced motion shows results immediately.`,

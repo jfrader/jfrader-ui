@@ -82,6 +82,7 @@ const meta: Meta<PopoverProps> = {
 Show related information or actions beside a button while keeping the rest of the page available. Use a modal dialog when the task must block the page.
 
 ### Keyboard and accessibility
+
 Give the panel an accessible name, preferably from a visible heading. Enter or Space toggles it; Escape and outside press request closure. Opening does not move focus. Tab follows page order through the panel and out without closing it or trapping focus.
 
 Escape returns focus to the trigger only after an accepted close. Outside press closes without moving focus to the trigger. Nested layers handle Escape and outside press before their parent.`,

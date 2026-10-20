@@ -37,6 +37,7 @@ const meta = {
 Use a menu for a short list of actions. Use a select for choosing a form value. Keep a similar-tone backdrop behind translucent menus so text remains readable; reduced transparency uses an opaque fill.
 
 ### Keyboard and accessibility
+
 - Give the menu button a clear action label.
 - Enter, Space or ArrowDown opens on the first enabled item; ArrowUp opens on the last. Pointer opening also focuses the first item.
 - Arrows wrap and skip disabled items; Home/End reach the ends. Typeahead resets after 500ms.

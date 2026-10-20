@@ -90,6 +90,7 @@ const meta = {
 Articles appear once, in the supplied order. Prepare text, links and printed times in your app. Empty collections render nothing.
 
 ### Headings and links
+
 The section title names the section. Article headlines default to the next heading level, capped at 6; without a section title they default to level 2. Set an article's level when its place in the page outline differs. Links use native Tab and Enter behavior.`,
       sections: [
         { title: 'Sections', stories: ['Mixed', 'WithoutHeading', 'SingleArticle'] },

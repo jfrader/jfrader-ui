@@ -246,11 +246,13 @@ const meta = {
 Offer secondary actions for an object, such as a file or board. Keep primary actions visible, and provide a visible menu button for touch users. Submenus are not supported.
 
 ### Opening and dismissal
+
 Context clicks open at the pointer; keyboard requests open below the object at its inline start. Ordinary clicks preserve the object's actions. Enable whole-object click opening only for objects without interactive children.
 
 Scrolling outside the menu or resizing the window requests closure; scrolling inside it does not. Controlled state may reject a request.
 
 ### Keyboard and accessibility
+
 Give the context area an accessible name. Shift+F10 or the ContextMenu key opens its actions. On a menu button, Enter, Space, or ArrowDown opens the first enabled action; ArrowUp opens the last.
 
 Arrows wrap, Home/End reach the ends, and typeahead resets after 500ms. Disabled actions remain visible but are skipped, unlike the APG recommendation. Enter or Space activates an action; checkbox choices stay open unless configured to close.

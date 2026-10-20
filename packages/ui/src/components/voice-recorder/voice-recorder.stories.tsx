@@ -81,7 +81,8 @@ const meta = {
       usage: `### Audio ownership
 Supply audio capture, MediaRecorder, playback, uploads, message persistence and cleanup in your application. VoiceRecorder does not call browser media APIs. These examples show the controls without capturing or playing audio.
 
-### Keyboard
+### Keyboard and accessibility
+
 Tab follows the controls in order; Enter and Space activate buttons. Escape discards while recording or reviewing. Use the review slider to scrub with the keyboard.`,
       description: {
         component:

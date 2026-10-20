@@ -77,6 +77,7 @@ const meta = {
 Arrange content along one axis, or wrap a row when it runs out of room. Use Stack for a column with standard spacing.
 
 ### Responsive layout
+
 Use media queries for changes at a breakpoint. Keep the source order meaningful: visual layout must not change the reading or keyboard order. Rows follow the inherited writing direction.`,
     },
   },

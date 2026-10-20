@@ -86,14 +86,17 @@ const meta = {
       ],
       usage: `
 ### When to use
+
 Generate person artwork when a photo is unavailable. Use Avatar for identity, initials and presence; PersonAvatar supplies only the artwork.
 
 ### Identity and layout
+
 Keep the seed tied to a durable member id, not a display name or list position. Clothing changes do not change the person's identity. Appearance signatures are not identifiers.
 
 A full-size portrait needs a parent with explicit dimensions. Circular portraits clip peripheral hair and clothing without zooming; full kits stay letterboxed in square frames. Artwork colors stay fixed across themes and forced colors.
 
-### Accessibility
+### Keyboard and accessibility
+
 Name standalone artwork when it conveys a person's identity. Keep it decorative inside a named Avatar to avoid duplicate announcements. The SVG is not a keyboard target; put profile actions in named buttons or links.
 `,
     },

@@ -56,12 +56,15 @@ const meta = {
 Use a checkbox for independent choices or consent in a form. Use a switch for a setting that takes effect immediately.
 
 ### Mixed selection
+
 The mixed state represents a partially selected group. Activation does not clear it; update the parent selection and clear the mixed state together.
 
 ### Forms
+
 Only checked, enabled inputs contribute values to form submission. Group related choices under a fieldset legend.
 
 ### Keyboard and accessibility
+
 Give each checkbox an accessible name, even without a visible label. Tab focuses enabled checkboxes; Space toggles the focused choice. Disabled choices cannot change and are skipped by Tab.`,
     },
   },

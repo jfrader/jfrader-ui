@@ -61,9 +61,11 @@ const cards = [
 Let a player select a card and confirm a play. Your application accepts the play and updates the hand; selection alone does not play or remove a card. There is no drag gesture.
 
 ### Card identity and hidden hands
+
 Keep each card's id unique and stable when reordering or removing cards so selection follows the same card. Use count-only hidden hands for opponents; never include secret values or revealing labels. Reserve enough space for the fan and its confirmation control. Radial hidden hands need a caller-positioned seat.
 
 ### Keyboard and accessibility
+
 Tab and Shift+Tab follow card order, then confirmation. Enter or Space selects or clears a card; activate confirmation to request a play. Name cards and confirmation in the player's language. Disabled cards and confirmation remain focusable but do not act. After removing a selected card, confirmation stays focused and unavailable until another card is selected. Hands have no opening animation.`,
   } },
 } satisfies Meta<typeof GameHand>;

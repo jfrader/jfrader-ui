@@ -221,7 +221,8 @@ const meta = {
       usage: `### When to use
 Use a plain-text composer when a message needs previews for detected web links. Use LinkPreview to display a link without editing a draft.
 
-### Limits
+### Values and constraints
+
 Load metadata in your application; the composer does not fetch it. The examples below use metadata already available to the application. Replace that lookup with your server request and honor cancellation when loading over the network.
 
 Addresses must be complete, whitespace-delimited absolute HTTP(S) URLs. Images and favicons also need absolute HTTP(S) URLs. Paste and blur scan the whole draft; typing waits for whitespace after the address. A URL in an initial draft waits for Retry rather than fetching on mount. Duplicate addresses remain separate occurrences.
@@ -229,6 +230,7 @@ Addresses must be complete, whitespace-delimited absolute HTTP(S) URLs. Images a
 The native textarea retains undo, paste, IME, and mobile editing. During a pending send it becomes read-only; failure preserves the draft. Keep application state until a send actually succeeds.
 
 ### Keyboard and accessibility
+
 Tab follows the field, preview actions, suggestions, and Send. Enter follows a title link. When sending is enabled, Enter sends once except during IME composition or a pending send; Shift+Enter inserts a line. Alt+Enter toggles a ready preview at the caret without inserting a line. Escape is left to the surrounding page.`,
     },
   },

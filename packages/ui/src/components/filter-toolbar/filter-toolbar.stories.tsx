@@ -208,12 +208,14 @@ const meta = {
       usage: `### When to use
 Use a filter toolbar above a collection to edit criteria, review active filters and clear them. Keep the collection and its filtering logic in your application.
 
-### Constraints
+### Values and constraints
+
 Result counts describe the results your application has committed; changing filters does not calculate a count. Keep the previous count while loading and announce the replacement when the request finishes. Translate the count and control labels for your audience.
 
 Keep multiselect chip IDs stable and unique across the toolbar. Do not switch between controlled and uncontrolled values. Use custom controls for free-text, date or range criteria.
 
 ### Keyboard and accessibility
+
 Tab and Shift+Tab follow control order. Enter and Space activate remove and clear buttons. Each control keeps its own editing and selection keys. Removing a chip moves focus to a neighboring chip, then an available control, or the toolbar when none remain.`,
     },
   },

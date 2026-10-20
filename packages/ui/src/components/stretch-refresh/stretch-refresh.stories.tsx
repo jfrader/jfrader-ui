@@ -84,7 +84,8 @@ const meta = {
 - Supply an accessible name when the heading has no text.
 - Check touch gestures and screen-reader announcements on a device.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Tab and Shift+Tab visit Refresh, the scroll region and item controls.
 - Enter or Space activates Refresh once. Arrows and Page keys scroll. Escape cancels a pull.
 - Refresh follows the APG button pattern; there is no pull-to-refresh ARIA pattern.`,

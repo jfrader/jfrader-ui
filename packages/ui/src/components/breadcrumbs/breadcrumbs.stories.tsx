@@ -40,9 +40,11 @@ const meta = {
 Show the current page’s place in a hierarchy and provide links to its ancestors. Use a separate navigation menu for unrelated destinations.
 
 ### Current page
+
 The last item becomes current unless another item is explicitly marked. Mark the current item explicitly when server-rendered markup must include its current-page announcement. The current page can remain a link or be plain text.
 
 ### Keyboard and accessibility
+
 Tab and Shift+Tab move through links in page order; Enter follows a link. Text items and decorative separators are not tab stops. Give each breadcrumb landmark a distinct accessible name when a page has more than one trail.`,
   } },
 } satisfies Meta<BreadcrumbsCompoundProps>;

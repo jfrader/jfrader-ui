@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../../..', import.meta.url));
-const guides = ['consuming-jfrader-ui.md', 'theming.md', 'styling.md'];
+const guides = ['getting-started.md', 'theming.md', 'styling.md'];
 const pilot = path.join(root, 'apps/pilot');
 const directory = mkdtempSync(path.join(pilot, 'node_modules/.guide-examples-'));
 

@@ -99,13 +99,15 @@ const meta = {
       usage: `### When to use
 Use a slider to adjust a bounded number or interval when dragging is useful. Prefer a number field when people need to enter an exact value directly.
 
-### Constraints
+### Values and constraints
+
 - The interval must contain a whole number of steps. Values must be finite, range endpoints ordered, and any minimum gap achievable.
 - Thumbs cannot cross and keep their tab order.
 - Hidden form inputs do not provide native required validation.
 - A completed interaction reports the requested value even if a controlled parent rejects it.
 
 ### Keyboard and accessibility
+
 - Arrows move one step; horizontal arrows reverse in RTL. Shift+arrows and PageUp/Down move a large step. Home/End reach the permitted bounds.
 - Give each thumb an accessible name that distinguishes its endpoint. Descriptions and errors are announced with the thumbs.
 - Test touch screen-reader operation on devices.`,

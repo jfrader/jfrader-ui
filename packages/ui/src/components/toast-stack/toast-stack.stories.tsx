@@ -43,12 +43,14 @@ const meta = {
       usage: `### When to use
 Group non-blocking notifications in a compact pile, or use a list when several messages need to remain readable together. Keep timed information available elsewhere.
 
-### Constraints
+### Values and constraints
+
 Mount one queue renderer per provider. A contained stack needs a positioned host with enough height for the expanded messages. The queue limit removes the oldest message; the visible limit only changes the collapsed pile.
 
 Hovering or focusing the stack pauses dismissal. Messages hidden behind the newest card keep their remaining time until exposed.
 
 ### Keyboard and accessibility
+
 Tab visits the toggle and controls from newest to oldest. Escape dismisses the focused toast, not a notification elsewhere on the page. Enter and Space activate buttons. The optional Alt+T shortcut focuses notifications but does not interrupt editing in a text field.
 
 Only exposed messages announce. Use persistent notifications for actions readers must complete.`,

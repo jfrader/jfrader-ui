@@ -63,9 +63,11 @@ const meta = {
 Group related information and actions in a page or grid. A card is not an interactive control; put actions in buttons or links inside it.
 
 ### Materials
+
 Keep a similar-tone backdrop behind translucent cards so text stays readable. Reduced transparency uses an opaque fill. Mouse and pen tilt does not change keyboard behaviour and is disabled by reduced motion.
 
-### Accessibility
+### Keyboard and accessibility
+
 Choose a heading level that fits the surrounding page. Cards add no landmark by default; give a card a named region only when it needs to be a navigation landmark. Tab moves between the controls inside, not the card itself.`,
   } },
   args: { variant: 'raised' },

@@ -84,7 +84,8 @@ const meta = {
 - The actions button offers the same commands as swiping.
 - A full swipe can activate an action directly; ask for confirmation before destructive work.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Enter, Space or ArrowDown opens the first menu item. ArrowUp opens the last.
 - Arrows wrap and skip disabled commands. Home, End and typing move between commands.
 - Escape closes the menu and restores focus. Tab leaves.`,
