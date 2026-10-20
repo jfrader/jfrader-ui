@@ -72,6 +72,10 @@ const meta = {
   ),
   parameters: {
     docs: {
+      sections: [
+        { title: 'Explore integrations', stories: ['Default', 'Detail'] },
+        { title: 'Static browsing', stories: ['ListAlternative', 'Paused'] },
+      ],
       description: {
         component:
           'Show supplied integration marks in an orbit and open their details.',
@@ -83,37 +87,80 @@ Tab enters one logo. Arrows move focus without selecting; Home/End jump. Horizon
 ### Motion
 Pause stops the orbit. Hover and focus rest the targets immediately; details, hidden pages and offscreen stages also pause. Reduced motion and speed=0 keep positions static. The semantic list order does not rotate.
 ### Connections
-onConnect must return a real promise. Pending blocks duplicate calls and rejection exposes Retry. Promise completion never changes connected: update the supplied item when your application confirms it. Without onConnect, no connection button appears. Root and interior replacements forward all props and refs.`,
-      source: {
-        language: 'tsx',
-        code: `<LogoOrbit items={[
-  { id: 'mail', name: 'Mail', logo: <MailMark />, description: 'Send updates.' },
-  { id: 'files', name: 'Files', logo: <FilesMark />, connected: true },
-]} center={<ProductMark />} onConnect={connectIntegration} />`,
-      },
+Connection requests must return a real promise. Pending blocks duplicate calls and rejection exposes Retry. Promise completion never marks an item connected: update the supplied item when your application confirms it. Without a connection handler, no connection button appears.`,
     },
   },
 } satisfies Meta<typeof LogoOrbit>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Default: Story = {};
+export const Default: Story = {
+  name: 'Integration catalog',
+  parameters: { docs: {
+    description: { story: 'Filter integrations by category and select a logo to read its details.' },
+    source: { language: 'tsx', code: `import { LogoOrbit, Surface, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Frame = styled(Surface)({
+  boxSizing: 'border-box', inlineSize: '48rem', maxInlineSize: '100%', padding: vars.space[6],
+});
+const Orbit = styled(LogoOrbit)({
+  display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4],
+  '& > [data-ui="logo-orbit-filters"]': { flex: '1 1 auto' },
+  '& > [data-ui="logo-orbit-stage"]': { flexBasis: '100%', marginInline: 'auto' },
+  '& > [data-ui="logo-orbit-detail"]': { flexBasis: '100%' },
+});
+const integrations = [
+  { id: 'mail', name: 'Mail', logo: '◇', category: 'Messages', description: 'Send updates.' },
+  { id: 'files', name: 'Files', logo: '▱', category: 'Storage', description: 'Store attachments.', connected: true },
+  { id: 'chat', name: 'Chat', logo: '○', category: 'Messages', description: 'Post a message.' },
+  { id: 'calendar', name: 'Calendar', logo: '□', category: 'Planning', description: 'Schedule a meeting.' },
+];
+
+<Frame><Orbit items={integrations} center="✳"
+  slotProps={{ pauseButton: { sx: { borderRadius: vars.radius.md } } }}
+/></Frame>` },
+  } },
+};
 export const Light: Story = {
   globals: { theme: 'light' },
   decorators: [withLightTheme],
 };
 export const RTL: Story = { args: { dir: 'rtl' } };
 export const ListAlternative: Story = {
+  name: 'Static list',
   args: { variant: 'list' },
   parameters: {
     docs: {
+      description: { story: 'Browse the same catalog without an orbit.' },
       source: {
         language: 'tsx',
-        code: '<LogoOrbit items={integrations} variant="list" />',
+        code: `import { LogoOrbit } from '@jfrader/ui';
+
+<LogoOrbit variant="list" center="✳" items={[
+  { id: 'mail', name: 'Mail', logo: '◇', category: 'Messages', description: 'Send updates.' },
+  { id: 'files', name: 'Files', logo: '▱', category: 'Storage', description: 'Store attachments.', connected: true },
+  { id: 'chat', name: 'Chat', logo: '○', category: 'Messages', description: 'Post a message.' },
+  { id: 'calendar', name: 'Calendar', logo: '□', category: 'Planning', description: 'Schedule a meeting.' },
+]} />`,
       },
     },
   },
 };
-export const Paused: Story = { args: { defaultPaused: true } };
+export const Paused: Story = {
+  name: 'Paused orbit',
+  args: { defaultPaused: true },
+  parameters: { docs: {
+    description: { story: 'Start with stationary logos and use Resume to begin rotation.' },
+    source: { language: 'tsx', code: `import { LogoOrbit } from '@jfrader/ui';
+
+<LogoOrbit defaultPaused center="✳" items={[
+  { id: 'mail', name: 'Mail', logo: '◇', category: 'Messages', description: 'Send updates.' },
+  { id: 'files', name: 'Files', logo: '▱', category: 'Storage', description: 'Store attachments.', connected: true },
+  { id: 'chat', name: 'Chat', logo: '○', category: 'Messages', description: 'Post a message.' },
+  { id: 'calendar', name: 'Calendar', logo: '□', category: 'Planning', description: 'Schedule a meeting.' },
+]} />` },
+  } },
+};
 export const ReducedMotion: Story = {
   parameters: {
     docs: {
@@ -124,7 +171,21 @@ export const ReducedMotion: Story = {
     },
   },
 };
-export const Detail: Story = { args: { defaultValue: 'mail' } };
+export const Detail: Story = {
+  name: 'Selected integration',
+  args: { defaultValue: 'mail' },
+  parameters: { docs: {
+    description: { story: 'Read Mail details while the selected logo rests.' },
+    source: { language: 'tsx', code: `import { LogoOrbit } from '@jfrader/ui';
+
+<LogoOrbit defaultValue="mail" center="✳" items={[
+  { id: 'mail', name: 'Mail', logo: '◇', category: 'Messages', description: 'Send updates.' },
+  { id: 'files', name: 'Files', logo: '▱', category: 'Storage', description: 'Store attachments.', connected: true },
+  { id: 'chat', name: 'Chat', logo: '○', category: 'Messages', description: 'Post a message.' },
+  { id: 'calendar', name: 'Calendar', logo: '□', category: 'Planning', description: 'Schedule a meeting.' },
+]} />` },
+  } },
+};
 export const Empty: Story = { args: { items: [] } };
 export const NoMatches: Story = { args: { defaultFilter: 'Unknown' } };
 export const Keyboard: Story = {

@@ -142,7 +142,33 @@ const EVENTS: readonly TimelineEvent[] = Object.freeze([
 ] satisfies TimelineEvent[]);
 const SORTED_IDS = ['deploy', 'build', 'keys', 'review', 'project'];
 
-const usage = `<Timeline events={events} now={now} timeZone="Europe/Madrid" aria-label="Deploy history" />`;
+const usage = `import { Timeline, styled, type TimelineEvent } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Field = styled.label({ display: 'grid', gap: vars.space[1] });
+const Input = styled.input({
+  boxSizing: 'border-box', minBlockSize: vars.space[8], minInlineSize: vars.space[8],
+  paddingInline: vars.space[3], color: vars.color.text, backgroundColor: vars.color.surface,
+  border: \`1px solid \${vars.color.borderControl}\`, borderRadius: vars.radius.sm, font: 'inherit',
+});
+
+const now = Date.parse('2026-10-11T12:00:00Z');
+const events: TimelineEvent[] = [
+  { id: 'keys', at: '2026-10-10T08:00:00Z', actor: 'Grace Hopper',
+    title: 'Rotated API keys', meta: '2 keys revoked',
+    detail: <Field>Rotation reason<Input defaultValue="Quarterly" /></Field> },
+  { id: 'deploy', at: '2026-10-11T11:55:00Z', actor: 'Ada Lovelace',
+    title: 'Deployed web 4.2 to production', meta: 'main · 9f2c1ab', tone: 'success',
+    icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M3 8.5l3 3 7-7" /></svg>,
+    detail: <p>Three services updated with no errors.</p> },
+  { id: 'project', at: '2026-10-08T09:00:00Z', actor: 'Ada Lovelace', title: 'Created project' },
+  { id: 'build', at: '2026-10-11T10:00:00Z', title: 'Build failed on staging', tone: 'danger',
+    icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" /></svg>,
+    detail: <p>The test step exited with code 1.</p> },
+  { id: 'review', at: '2026-10-10T10:00:00+02:00', actor: 'Grace Hopper', title: 'Opened pull request 118' },
+];
+
+<Timeline events={events} now={now} locale="en-US" timeZone="UTC" aria-label="Deploy history" />`;
 
 const part = (root: Element, name: string) => root.querySelector<HTMLElement>(`[data-ui="timeline-${name}"]`)!;
 const parts = (root: Element, name: string) =>
@@ -247,20 +273,24 @@ const meta = {
   parameters: {
     layout: 'padded',
     docs: {
-      source: { code: usage },
+      sections: [
+        { title: 'Activity and details', stories: ['Default', 'ExpandedDetails'] },
+        { title: 'Long histories', stories: ['Scrolling'] },
+        { title: 'Localization', stories: ['Localized'] },
+      ],
+      source: { language: 'tsx', code: usage },
       description: {
         component: 'Read activity by day, newest first, and expand events to see details.',
       },
-      usage: `- Days are headings with ordered lists, grouped in \`timeZone\`. This is not an ARIA feed or accordion.
-- Events with \`detail\` have disclosure buttons. Their panels stay mounted. \`value\` / \`defaultValue\` / \`onValueChange\` hold the open ids.
+      usage: `### Reading activity
+- Days are headings with ordered lists, grouped in the chosen time zone. This is not an ARIA feed or accordion.
+- Expand an event to read its details. Collapsed panels stay mounted.
 - All events render; there is no virtualization or pagination.
 
 ### Dates and updates
 - Pass \`now\` in epoch milliseconds and update it about once a minute. Timeline runs no timer.
 - Use the same \`now\`, \`locale\` and \`timeZone\` on server and client so hydration text matches.
-- Headings use \`Intl.RelativeTimeFormat\` for today, yesterday and tomorrow; other dates use \`Intl.DateTimeFormat\`.
 - Rows show signed relative times and include the full date as hidden text. Events with unreadable dates stay in a trailing group.
-- Set counts and the region name through \`labels\`.
 - New rows do not take focus. With \`maxHeight\`, the row being read keeps its position as newer events arrive. Use \`scrollToNew\` to scroll to them instead.
 - A status region announces new ids.
 
@@ -275,6 +305,8 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  name: 'Deploy history',
+  parameters: { docs: { description: { story: 'Read activity grouped by day and expand a deployment for more detail.' } } },
   play: async ({ canvas, canvasElement }) => {
     const region = canvas.getByRole('region', { name: 'Deploy history' });
     await expect(Timeline.displayName).toBe('Timeline');
@@ -500,8 +532,10 @@ export const MixedDetails: Story = {
 };
 
 export const ExpandedDetails: Story = {
+  name: 'Expanded event details',
   parameters: {
     docs: {
+      description: { story: 'Read several open details and edit the rotation reason without closing them.' },
       source: {
         language: 'tsx',
         code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
@@ -1070,8 +1104,10 @@ const events: TimelineEvent[] = [
 };
 
 export const Scrolling: Story = {
+  name: 'Scrollable history',
   parameters: {
     docs: {
+      description: { story: 'Scroll through a bounded history while day headings stay visible.' },
       source: {
         language: 'tsx',
         code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
@@ -1310,8 +1346,10 @@ export const SSRConsistency: Story = {
 };
 
 export const Localized: Story = {
+  name: 'Spanish activity labels',
   parameters: {
     docs: {
+      description: { story: 'Read relative times, day headings, and event counts in Spanish.' },
       source: {
         language: 'tsx',
         code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
