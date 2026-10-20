@@ -102,6 +102,7 @@ export type SelectSize = 'sm' | 'md' | 'lg';
 
 export interface SelectTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
   id?: string;
+  /** Sets the trigger height and text size. Defaults to `md`. */
   size?: SelectSize;
 }
 export interface SelectValueProps extends ComponentPropsWithRef<'span'>, SxProps {
@@ -112,7 +113,9 @@ export interface SelectContentProps extends ComponentPropsWithRef<'div'>, SxProp
 export interface SelectItemProps extends ComponentPropsWithRef<'div'>, SxProps {
   /** Unique within the select. */
   value: string;
+  /** Keeps the option visible but prevents selection and keyboard activation. Defaults to `false`. */
   disabled?: boolean;
+  /** Supplies plain text for typeahead matching when the option content is not plain text. */
   textValue?: string;
 }
 export interface SelectLabelProps extends ComponentPropsWithRef<'label'>, SxProps {}
@@ -169,16 +172,23 @@ export interface SelectSlotProps {
 export interface SelectBaseProps {
   /** Morph the pill trigger into the floating panel. Default: `default`. */
   variant?: 'default' | 'morph';
+  /** Controls the selected option value. */
   value?: string;
+  /** Sets the initial uncontrolled selection. Omit to start without a selection. */
   defaultValue?: string;
   /** Highlight this enabled option on opening when no selected option exists. Typeahead takes precedence. */
   initialActiveValue?: string;
   /** Fires once per accepted selection with the option's `value`. */
   onValueChange?: (value: string) => void;
+  /** Controls whether the option popup is open. A disabled select stays closed. */
   open?: boolean;
+  /** Opens the uncontrolled popup initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receives requests to open or close the option popup. */
   onOpenChange?: (open: boolean) => void;
+  /** Positions the popup relative to the trigger. Defaults to `bottom-start`. */
   placement?: Placement;
+  /** Prevents opening the popup and selecting options. Defaults to `false`. */
   disabled?: boolean;
   /** Adds a hidden input to submit the value with a native form. */
   name?: string;
@@ -186,6 +196,7 @@ export interface SelectBaseProps {
 
 export interface SelectCompoundProps extends SelectBaseProps {
   options?: never;
+  /** Composes the trigger, value, content and option parts instead of supplying `options`. */
   children?: ReactNode;
   label?: never;
   labelPlacement?: never;
@@ -200,18 +211,28 @@ export interface SelectCompoundProps extends SelectBaseProps {
 }
 
 export interface SelectEasyProps extends SelectBaseProps {
+  /** Supplies the options rendered by the shorthand select. */
   options: readonly SelectOption[];
   children?: never;
+  /** Shows a label associated with the trigger. */
   label?: ReactNode;
   /** Label placement. `hidden` keeps the accessible name without taking layout space. */
   labelPlacement?: FieldLabelPlacement;
+  /** Shows helper text associated with the trigger. */
   description?: ReactNode;
+  /** Marks the trigger invalid and shows an associated error message. */
   error?: ReactNode;
+  /** Shows content in the trigger when no option matches the selected value. */
   placeholder?: ReactNode;
+  /** Sets the trigger height and text size. Defaults to `md`. */
   size?: SelectSize;
+  /** Shows content in the popup when the options list is empty. */
   empty?: ReactNode;
+  /** Replaces select elements with custom components. */
   slots?: SelectSlots;
+  /** Replaces the root element. Shorthand for `slots.root`. */
   component?: SelectSlots['root'];
+  /** Passes props to the select elements. */
   slotProps?: SelectSlotProps;
 }
 
