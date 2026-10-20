@@ -7,6 +7,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { createRefCleanupTracker } from '../../testing/interior-slot-assertions';
+import { expectAligned, expectInside } from '../../testing/geometry-assertions';
 import { Button } from '../button';
 import type { AvatarSize, AvatarStatus } from '../avatar';
 import { AvatarGroup, type AvatarGroupMember } from './index';
@@ -400,6 +401,51 @@ export const Sizes: Story = {
       // whose rendered width depends on the environment's font metrics (CI vs local).
       await expect(overflowRect.width).toBeGreaterThanOrEqual(SIZE_PX[size] - 0.5);
       await expect(Math.round(overflowRect.height)).toBe(SIZE_PX[size]);
+    }
+  },
+};
+
+export const GroupGeometry: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { AvatarGroup } from '@jfrader/ui';
+
+<AvatarGroup size="sm" max={3} label="Review team" members={[
+  { id: 'ada', name: 'Ada Augusta King, Countess of Lovelace', status: 'online' },
+  { id: 'grace', name: 'Grace Brewster Murray Hopper', status: 'away' },
+  { id: 'margaret', name: 'Margaret Heafield Hamilton', status: 'busy' },
+  { id: 'katherine', name: 'Katherine Johnson' },
+]} />` } } },
+  render: (args) => <Stack gap="md">
+    {SIZES.flatMap(size => (['ltr', 'rtl'] as const).map(dir =>
+      <AvatarGroup {...args} key={`${size}-${dir}`} size={size} dir={dir} max={3}
+        label={`Review team ${size} ${dir}`} members={[
+          { id: 'ada', name: 'Ada Augusta King, Countess of Lovelace', status: 'online' },
+          { id: 'grace', name: 'Grace Brewster Murray Hopper', status: 'away' },
+          { id: 'margaret', name: 'Margaret Heafield Hamilton', status: 'busy' },
+          { id: 'katherine', name: 'Katherine Johnson' },
+        ]} />))}
+  </Stack>,
+  play: async ({ canvasElement }) => {
+    const groups = canvasElement.querySelectorAll<HTMLElement>('[data-ui="avatar-group"]');
+    await expect(groups).toHaveLength(SIZES.length * 2);
+    for (const group of groups) {
+      const avatars = [...group.querySelectorAll<HTMLElement>('[data-ui="avatar"]')];
+      const overflow = group.querySelector<HTMLElement>('[data-ui="avatar-group-overflow"]')!;
+      await expect(avatars).toHaveLength(3);
+      await expect(overflow).not.toBeNull();
+      await expectAligned([...avatars, overflow], 'center-y');
+      for (const [index, avatar] of avatars.entries()) {
+        await expectInside(avatar, group);
+        const status = avatar.querySelector<HTMLElement>('[data-status]')!;
+        await expectInside(status, avatar);
+        const badge = status.getBoundingClientRect();
+        const hit = canvasElement.ownerDocument.elementFromPoint(badge.x + badge.width / 2, badge.y + badge.height / 2);
+        await expect(hit?.closest('[data-ui="avatar"]')).toBe(avatar);
+        const next = (avatars[index + 1] ?? overflow).getBoundingClientRect();
+        const box = avatar.getBoundingClientRect();
+        const overlap = group.dir === 'rtl' ? next.right - box.left : box.right - next.left;
+        await expect(overlap).toBe(4);
+      }
+      await expectInside(overflow, group);
     }
   },
 };
