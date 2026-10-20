@@ -99,8 +99,6 @@ export const RootComponent: StoryObj<typeof JsonViewer> = {
 };
 const array = Array.from({ length: 12 }, (_, index) => `record ${index}`);
 const object = Object.fromEntries(array.map((value, index) => [`key${index}`, value]));
-const snippet =
-  '<JsonViewer data={{ type: "invoice.paid", amount: 4900, customer: { email: "ada@example.com" } }} defaultExpandDepth={2} aria-label="Webhook payload" />';
 const meta = {
   title: 'Data display/JsonViewer',
   component: JsonViewer,
@@ -109,12 +107,30 @@ const meta = {
   parameters: {
     layout: 'padded',
     docs: {
-      source: { code: snippet },
       description: {
         component:
           'Browse JSON, search its contents, and copy values or paths.',
       },
-      usage: '- Accepts strict JSON only. Cycles, accessors, unsupported values and nonfinite numbers are rejected. Editing is not supported.\n- Copies values as pretty JSON, including quoted strings. Paths use dot identifiers and JSON-escaped brackets.\n- Expansion, search query and current path each have controlled/default/callback props. Search adds ancestor expansion and pages; clearing restores the base state.\n- Arrays and objects are paged, not virtualized. Avoid multi-megabyte input.\n- Expanded treeitems reference child groups through `aria-owns`; the groups are DOM siblings so names stay scoped to labels.\n- TreeView keyboard navigation: Up/Down stop at the ends; Right opens/enters; Left closes/moves to the parent, including in RTL. Home/End, Enter/Space and 500ms typeahead are supported. `/` opens search; Ctrl/Cmd+C copies a value; add Shift to copy its path.\n- Environment stories do not emulate media settings. Media emulation and screen-reader checks need separate QA.',
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Nested'] },
+        { title: 'Search', stories: ['Search', 'NoSearch'] },
+        { title: 'Collections and pagination', stories: ['PagingArray', 'CountLabels'] },
+        { title: 'Copy actions', stories: ['NoCopy'] },
+        { title: 'Appearance', stories: ['TypeColors'] },
+        { title: 'State', stories: ['Controlled'] },
+      ],
+      usage: `### Data and search
+- The viewer is read-only; editing is not supported.
+- Rejects non-JSON values, circular structures, property getters, functions, and non-finite numbers into a fallback display.
+- Large arrays and objects paginate in chunks rather than virtualizing the DOM. Avoid multi-megabyte input.
+- Searching expands matching branches and loads result pages; clearing or canceling search restores base expansion and pagination state.
+
+### Keyboard
+- Focus lands on the tree widget. Up and Down navigate visible rows and stop at the ends.
+- Right arrow expands a closed node or moves to its first child. Left arrow collapses an open node or moves to its parent. Arrow semantics remain identical in RTL.
+- Home and End jump to the first and last rendered rows; alphanumeric keys trigger 500ms typeahead across sibling keys. Enter or Space activates the focused row.
+- Press / to focus the search input; Escape clears search and restores focus to the tree.
+- Press Ctrl+C (Cmd+C on macOS) on a focused row to copy formatted JSON, or Ctrl+Shift+C (Cmd+Shift+C) to copy its JavaScript path. Active text selections preserve native text copying.`,
     },
     a11y: { test: 'error' },
   },
@@ -174,6 +190,34 @@ const webhook: JsonValue = {
 };
 
 export const Default: Story = {
+  name: 'Webhook payload',
+  parameters: {
+    docs: {
+      description: { story: 'Explore a nested JSON object with default depth expansion and interactive tree nodes.' },
+      source: {
+        language: 'tsx',
+        code: `import { JsonViewer } from '@jfrader/ui';
+
+<JsonViewer
+  aria-label="Webhook payload"
+  data={{
+    id: 'evt_1042',
+    type: 'invoice.paid',
+    livemode: false,
+    amount: 4900,
+    currency: 'usd',
+    customer: {
+      id: 'cus_88',
+      email: 'ada@example.com',
+      tags: ['pro', 'annual'],
+    },
+    note: null,
+  }}
+  defaultExpandDepth={2}
+/>`,
+      },
+    },
+  },
   args: { data: webhook, defaultExpandDepth: 2 },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('tree', { name: 'Webhook payload' })).toBeInTheDocument();
@@ -226,6 +270,34 @@ export const Sizes: Story = {
   },
 };
 export const Nested: Story = {
+  name: 'Deep expansion',
+  parameters: {
+    docs: {
+      description: { story: 'Expand nested objects and array branches up to three levels on mount.' },
+      source: {
+        language: 'tsx',
+        code: `import { JsonViewer } from '@jfrader/ui';
+
+<JsonViewer
+  aria-label="Webhook payload"
+  data={{
+    active: false,
+    count: 0,
+    empty: '',
+    missing: null,
+    user: {
+      name: 'Ada',
+      roles: ['reader', 'writer'],
+    },
+    'a.b': {
+      'quoted"key': 'value',
+    },
+  }}
+  defaultExpandDepth={3}
+/>`,
+      },
+    },
+  },
   args: { defaultExpandDepth: 3 },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getAllByRole('group')).toHaveLength(4);
@@ -235,6 +307,26 @@ export const Nested: Story = {
 export const SearchExpanded: Story = { args: { defaultQuery: 'writer' } };
 export const AllExpanded: Story = { args: { defaultExpandDepth: 10 } };
 export const Search: Story = {
+  name: 'Interactive search',
+  parameters: {
+    docs: {
+      description: { story: 'Search keys and values with match counts, keyword highlighting, and result cycling.' },
+      source: {
+        language: 'tsx',
+        code: `import { JsonViewer } from '@jfrader/ui';
+
+<JsonViewer
+  aria-label="Webhook payload"
+  data={{
+    alpha: { needle: 'Needle value' },
+    beta: ['ordinary', 'needle two'],
+    'a.b': 'needle three',
+  }}
+  defaultExpandedValue={[]}
+/>`,
+      },
+    },
+  },
   args: {
     data: { alpha: { needle: 'Needle value' }, beta: ['ordinary', 'needle two'], 'a.b': 'needle three' },
     defaultExpandedValue: [],
@@ -279,6 +371,35 @@ export const SearchTruncated: Story = {
   },
 };
 export const PagingArray: Story = {
+  name: 'Array pagination',
+  parameters: {
+    docs: {
+      description: { story: 'Paginate long lists with incremental batch loading to maintain responsive rendering.' },
+      source: {
+        language: 'tsx',
+        code: `import { JsonViewer } from '@jfrader/ui';
+
+<JsonViewer
+  aria-label="Webhook payload"
+  data={[
+    'record 0',
+    'record 1',
+    'record 2',
+    'record 3',
+    'record 4',
+    'record 5',
+    'record 6',
+    'record 7',
+    'record 8',
+    'record 9',
+    'record 10',
+    'record 11',
+  ]}
+  pageSize={3}
+/>`,
+      },
+    },
+  },
   args: { data: array, pageSize: 3, onValueChange: fn() },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const more = canvas.getByRole('treeitem', { name: 'Show more (9 remaining)' });
@@ -298,8 +419,66 @@ export const PagingArray: Story = {
   },
 };
 export const PagingObject: Story = { args: { data: object, pageSize: 3 } };
-export const NoSearch: Story = { args: { searchable: false } };
+export const NoSearch: Story = {
+  name: 'Search disabled',
+  parameters: {
+    docs: {
+      description: { story: 'Hide the search input and match navigation toolbar for compact or static displays.' },
+      source: {
+        language: 'tsx',
+        code: `import { JsonViewer } from '@jfrader/ui';
+
+<JsonViewer
+  aria-label="Webhook payload"
+  data={{
+    active: false,
+    count: 0,
+    empty: '',
+    missing: null,
+    user: {
+      name: 'Ada',
+      roles: ['reader', 'writer'],
+    },
+    'a.b': {
+      'quoted"key': 'value',
+    },
+  }}
+  searchable={false}
+/>`,
+      },
+    },
+  },
+  args: { searchable: false },
+};
 export const NoCopy: Story = {
+  name: 'Copy disabled',
+  parameters: {
+    docs: {
+      description: { story: 'Remove copy buttons and keyboard shortcuts when clipboard access is restricted.' },
+      source: {
+        language: 'tsx',
+        code: `import { JsonViewer } from '@jfrader/ui';
+
+<JsonViewer
+  aria-label="Webhook payload"
+  data={{
+    active: false,
+    count: 0,
+    empty: '',
+    missing: null,
+    user: {
+      name: 'Ada',
+      roles: ['reader', 'writer'],
+    },
+    'a.b': {
+      'quoted"key': 'value',
+    },
+  }}
+  copyable={false}
+/>`,
+      },
+    },
+  },
   args: { copyable: false },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const write = fn(async () => {});
@@ -338,6 +517,48 @@ function ControlledViewer(args: JsonViewerProps) {
   );
 }
 export const Controlled: Story = {
+  name: 'Controlled state',
+  parameters: {
+    docs: {
+      description: { story: 'Synchronize expanded nodes, search query, and selected path with parent state.' },
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { JsonViewer } from '@jfrader/ui';
+
+export function ControlledJsonViewer() {
+  const [expanded, setExpanded] = useState<readonly string[]>(['root']);
+  const [query, setQuery] = useState('');
+  const [value, setValue] = useState('root');
+
+  return (
+    <JsonViewer
+      aria-label="Webhook payload"
+      data={{
+        active: false,
+        count: 0,
+        empty: '',
+        missing: null,
+        user: {
+          name: 'Ada',
+          roles: ['reader', 'writer'],
+        },
+        'a.b': {
+          'quoted"key': 'value',
+        },
+      }}
+      expandedValue={expanded}
+      query={query}
+      value={value}
+      onExpandedValueChange={setExpanded}
+      onQueryChange={setQuery}
+      onValueChange={setValue}
+    />
+  );
+}`,
+      },
+    },
+  },
   render: (args) => <ControlledViewer {...args} />,
   args: { onExpandedValueChange: fn(), onQueryChange: fn(), onValueChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
@@ -508,6 +729,29 @@ const typeColorsPlay: Story['play'] = async ({ canvas, canvasElement }) => {
   await expect(canvas.getByRole('treeitem', { name: 'meta: 1 key' })).toBeInTheDocument();
 };
 export const TypeColors: Story = {
+  name: 'Syntax highlighting',
+  parameters: {
+    docs: {
+      description: { story: 'Distinguish string, number, boolean, and null data types with token-based colors.' },
+      source: {
+        language: 'tsx',
+        code: `import { JsonViewer } from '@jfrader/ui';
+
+<JsonViewer
+  aria-label="Webhook payload"
+  data={{
+    text: 'Ada',
+    total: 1234.5,
+    enabled: true,
+    missing: null,
+    tags: ['a'],
+    meta: { id: 1 },
+  }}
+  defaultExpandDepth={1}
+/>`,
+      },
+    },
+  },
   args: { data: typedPayload, defaultExpandDepth: 1 },
   play: typeColorsPlay,
 };
@@ -518,7 +762,13 @@ export const TypeColorsLight: Story = {
   play: typeColorsPlay,
 };
 export const CountLabels: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { JsonViewer } from '@jfrader/ui';
+  name: 'Custom count labels',
+  parameters: {
+    docs: {
+      description: { story: 'Format object key counts and array item counts with a custom label formatter.' },
+      source: {
+        language: 'tsx',
+        code: `import { JsonViewer } from '@jfrader/ui';
 
 export function CollectionCounts() {
   return (
@@ -528,7 +778,10 @@ export function CollectionCounts() {
       labels={{ count: (count, type) => \`\${type}:\${count}\` }}
     />
   );
-}` } } },
+}`,
+      },
+    },
+  },
   args: {
     data: { list: [1, 2], map: {} },
     labels: { count: (count, type) => `${type}:${count}` },
@@ -684,6 +937,27 @@ export const KeyboardNavigation: Story = {
   },
 };
 export const CopyValueAndPath: Story = {
+  name: 'Copy value and path',
+  parameters: {
+    docs: {
+      description: { story: 'Copy JSON values as formatted text or copy JavaScript accessor paths to the clipboard.' },
+      source: {
+        language: 'tsx',
+        code: `import { JsonViewer } from '@jfrader/ui';
+
+<JsonViewer
+  aria-label="Copyable payload"
+  data={{
+    'a.b': {
+      'quoted"key': 'hello',
+    },
+    number: 1234.5,
+  }}
+  defaultExpandDepth={3}
+/>`,
+      },
+    },
+  },
   args: {
     data: { 'a.b': { 'quoted"key': 'hello' }, number: 1234.5 },
     defaultExpandDepth: 3,
@@ -952,22 +1226,41 @@ export const ConsumerVeto: Story = {
   },
 };
 export const RootRef: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useRef } from 'react';
+  name: 'DOM reference',
+  parameters: {
+    docs: {
+      description: { story: 'Pass a React ref to access the root container element for measurement or focus.' },
+      source: {
+        language: 'tsx',
+        code: `import { useRef } from 'react';
 import { JsonViewer } from '@jfrader/ui';
-
-const payload = {
-  active: false,
-  count: 0,
-  empty: '',
-  missing: null,
-  user: { name: 'Ada', roles: ['reader', 'writer'] },
-  'a.b': { 'quoted"key': 'value' },
-};
 
 export function PayloadViewer() {
   const rootRef = useRef<HTMLDivElement>(null);
-  return <JsonViewer ref={rootRef} data={payload} aria-label="Webhook payload" />;
-}` } } },
+
+  return (
+    <JsonViewer
+      ref={rootRef}
+      aria-label="Webhook payload"
+      data={{
+        active: false,
+        count: 0,
+        empty: '',
+        missing: null,
+        user: {
+          name: 'Ada',
+          roles: ['reader', 'writer'],
+        },
+        'a.b': {
+          'quoted"key': 'value',
+        },
+      }}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { ref: fn() },
   play: async ({ canvasElement, args }) => {
     const root = canvasElement.querySelector('[data-ui="json-viewer"]');

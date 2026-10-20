@@ -168,20 +168,22 @@ const meta = {
     docs: {
       description: {
         component:
-          'Display code, copy it, and expand hidden lines. Add a language label or syntax highlighting when needed.',
+          'Display source code with copying, expandable lines, and optional syntax highlighting.',
       },
-      usage: `- Code is plain text by default. Pass a \`highlight\` loader to tokenize it.
-- \`@jfrader/ui/code-block/shiki\` exports \`loadShikiHighlight\` and requires the optional \`shiki\` peer. It supports JavaScript, TypeScript, JSX, TSX, JSON, CSS, Bash, and HTML; other languages stay plain.
-- Copy uses the full source. \`maxLines\` limits the displayed logical lines.
+      sections: [
+        { title: 'Source display', stories: ['Default', 'LanguageMetadata', 'LineNumbers'] },
+        { title: 'Expandable source', stories: ['Collapsed', 'Controlled'] },
+        { title: 'Syntax highlighting', stories: ['HighlightedTsx', 'HighlightedCollapsed'] },
+        { title: 'Copy controls', stories: ['WithoutCopy'] },
+      ],
+      usage: `### Source and copying
+Source is plain text, never executable markup. Copy includes the full source even when some lines are collapsed. Line limits count logical lines, not wrapped visual lines.
+
+### Highlighting
+The optional Shiki adapter requires the \`shiki\` peer dependency. It supports JavaScript, TypeScript, JSX, TSX, JSON, CSS, Bash, and HTML. Unsupported languages, pending loads, and failed loads stay readable as plain text.
 
 ### Keyboard
-- Tab reaches copy, source, then disclosure. Enter/Space activate the buttons.
-- Source scrolling uses native keyboard behavior.`,
-      source: {
-        code: `import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
-
-<CodeBlock code={source} filename="answer.ts" language="ts" highlight={loadShikiHighlight} maxLines={12} lineNumbers />`,
-      },
+Tab reaches copy, source, then disclosure. Enter or Space activates the buttons. Source scrolling uses native keyboard behavior.`,
     },
   },
 } satisfies Meta<typeof CodeBlock>;
@@ -215,6 +217,17 @@ async function expectFocused(element: HTMLElement) {
 }
 
 export const Default: Story = {
+  name: 'Source file',
+  parameters: { docs: {
+    description: { story: 'Read and copy a source file without syntax highlighting.' },
+    source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+
+<CodeBlock
+  code={'export const answer = 42;\\nconsole.log(answer);\\n'}
+  filename="answer.ts"
+  locale="en-GB"
+/>` },
+  } },
   play: async ({ canvasElement, args }) => {
     const root = within(canvasElement).getByRole('region', { name: args.filename });
     await expect(root.tagName).toBe('SECTION');
@@ -241,7 +254,21 @@ export const ExternalAriaLabel: Story = {
     );
   },
 };
-export const LanguageMetadata: Story = { args: { language: 'TypeScript' } };
+export const LanguageMetadata: Story = {
+  name: 'Language label',
+  parameters: { docs: {
+    description: { story: 'Label the source language without loading a highlighter.' },
+    source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+
+<CodeBlock
+  code={'export const answer = 42;\\nconsole.log(answer);\\n'}
+  filename="answer.ts"
+  locale="en-GB"
+  language="TypeScript"
+/>` },
+  } },
+  args: { language: 'TypeScript' },
+};
 export const Empty: Story = {
   args: { code: '', lineNumbers: true, maxLines: 1 },
   play: async ({ canvasElement }) => {
@@ -252,6 +279,21 @@ export const Empty: Story = {
 };
 export const OneLine: Story = { args: { code: 'const answer = 42;', maxLines: 1 } };
 export const Collapsed: Story = {
+  name: 'Collapsible source',
+  parameters: { docs: {
+    description: { story: 'Show two lines initially, then expand to read the rest of the file.' },
+    source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+
+const source = 'export const answer = 42;\\nconsole.log(answer);\\n\\nexport function double(value: number) {\\n\\treturn value * 2;\\n}\\n';
+
+<CodeBlock
+  code={source}
+  filename="answer.ts"
+  locale="en-GB"
+  maxLines={2}
+  lineNumbers
+/>` },
+  } },
   args: { code: LONG_SOURCE, maxLines: 2, lineNumbers: true },
   play: async ({ canvasElement }) => {
     await expect(source(canvasElement).textContent).toBe(SOURCE);
@@ -281,6 +323,32 @@ function ControlledExample({ reject = false, ...args }: CodeBlockProps & { rejec
   );
 }
 export const Controlled: Story = {
+  name: 'Controlled expansion',
+  parameters: { docs: {
+    description: { story: 'Expand the source from another button or its own disclosure.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, CodeBlock } from '@jfrader/ui';
+
+const source = 'export const answer = 42;\\nconsole.log(answer);\\n\\nexport function double(value: number) {\\n\\treturn value * 2;\\n}\\n';
+
+export function ExpandableSource() {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>Expand externally</Button>
+      <CodeBlock
+        code={source}
+        filename="answer.ts"
+        locale="en-GB"
+        maxLines={2}
+        lineNumbers
+        open={open}
+        onOpenChange={setOpen}
+      />
+    </>
+  );
+}` },
+  } },
   args: Collapsed.args,
   render: (args) => <ControlledExample {...args} />,
   play: async ({ args, canvas, canvasElement, userEvent }) => {
@@ -311,6 +379,18 @@ export const RejectedOpen: Story = {
   },
 };
 export const LineNumbers: Story = {
+  name: 'Line numbers',
+  parameters: { docs: {
+    description: { story: 'Add a gutter to help readers refer to individual lines.' },
+    source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+
+<CodeBlock
+  code={'export const answer = 42;\\nconsole.log(answer);\\n'}
+  filename="answer.ts"
+  locale="en-GB"
+  lineNumbers
+/>` },
+  } },
   args: { lineNumbers: true },
   play: async ({ canvasElement }) => {
     await expect(gutter(canvasElement)).toHaveAttribute('aria-hidden', 'true');
@@ -441,7 +521,21 @@ const source = 'export const answer = 42;\\nconsole.log(answer);\\n';
     });
   },
 };
-export const WithoutCopy: Story = { args: { copyable: false } };
+export const WithoutCopy: Story = {
+  name: 'Without a copy button',
+  parameters: { docs: {
+    description: { story: 'Keep the source selectable while hiding the copy action.' },
+    source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+
+<CodeBlock
+  code={'export const answer = 42;\\nconsole.log(answer);\\n'}
+  filename="answer.ts"
+  locale="en-GB"
+  copyable={false}
+/>` },
+  } },
+  args: { copyable: false },
+};
 
 function UpdatingExample(args: CodeBlockProps) {
   const [short, setShort] = useState(false);
@@ -751,7 +845,8 @@ const source = '<button type="button" onClick={() => handleClick(id)}>\\n  {labe
   play: HighlightedJsx.play,
 };
 export const HighlightedTsx: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+  name: 'Highlighted TSX',
+  parameters: { docs: { description: { story: 'Load the optional Shiki adapter to highlight types, JSX, and expressions.' }, source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
 import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
 
 const source = 'interface Props {\\n  count: number;\\n}\\n\\nexport const Counter = ({ count }: Props) => (\\n  <span className="count">{count}</span>\\n);\\n';
@@ -815,7 +910,8 @@ export const HighlightedLanguages: Story = {
   },
 };
 export const HighlightedCollapsed: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
+  name: 'Highlighted expandable file',
+  parameters: { docs: { description: { story: 'Keep syntax highlighting when expanding a longer file.' }, source: { language: 'tsx', code: `import { CodeBlock } from '@jfrader/ui';
 import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
 
 const source = "// Resolve the user's preferred theme.\\nexport type Theme = 'dark' | 'light';\\n\\nexport function preferredTheme(media: MediaQueryList): Theme {\\n  const stored = localStorage.getItem('theme');\\n  if (stored === 'dark' || stored === 'light') return stored;\\n  return media.matches ? 'dark' : 'light';\\n}\\n";
