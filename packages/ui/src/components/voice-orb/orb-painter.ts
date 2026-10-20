@@ -14,6 +14,7 @@ export function paintOrb(
   activity: number,
   amplitude: number,
   palette: OrbPalette,
+  expression: number,
 ) {
   const center = pixels / 2;
   const radius = pixels * (0.32 + amplitude * 0.035);
@@ -29,7 +30,13 @@ export function paintOrb(
 
   drawing.clearRect(0, 0, pixels, pixels);
   drawing.save();
+  const swell = Math.sin(phase * 2) * expression * (0.065 + amplitude * 0.055);
+  drawing.translate(center, center);
+  drawing.rotate(Math.sin(phase * 0.7) * expression * 0.18);
+  drawing.scale(1 + swell, 1 - swell * 0.7);
+  drawing.translate(-center, -center);
   glow(center, center + radius * 0.12, radius * 1.44, accent, 0.16 + activity * 0.1);
+  drawing.save();
   drawing.globalAlpha = 1;
   drawing.beginPath();
   drawing.arc(center, center, radius, 0, Math.PI * 2);
@@ -50,25 +57,25 @@ export function paintOrb(
   drawing.fillStyle = body;
   drawing.fillRect(0, 0, pixels, pixels);
 
-  const drift = phase * 0.42;
+  const drift = phase * 0.7;
   glow(
-    center + Math.cos(drift) * radius * 0.36,
-    center + Math.sin(drift * 1.17) * radius * 0.34,
+    center + Math.cos(drift) * radius * (0.36 + expression * 0.2),
+    center + Math.sin(drift * 1.17) * radius * (0.34 + expression * 0.18),
     radius * 0.95,
     accent,
     0.85,
   );
   glow(
-    center + Math.sin(drift * 0.83) * radius * 0.5,
-    center + Math.cos(drift * 0.91) * radius * 0.4,
-    radius * 0.8,
+    center + Math.sin(drift * 1.3) * radius * 0.5,
+    center + Math.cos(drift * 1.3) * radius * 0.48,
+    radius * (0.8 - expression * 0.12),
     highlight,
-    0.65,
+    0.65 + expression * 0.3,
   );
 
   drawing.save();
   drawing.translate(center, center);
-  drawing.rotate(-0.45 + Math.sin(phase * 0.12) * 0.3);
+  drawing.rotate(-0.45 + Math.sin(phase * 0.12) * 0.3 + Math.sin(phase * 0.7) * expression * 0.9);
   const flow = drawing.createLinearGradient(-radius, -radius, radius * 0.65, radius);
   flow.addColorStop(0, 'transparent');
   flow.addColorStop(0.24, highlight);
@@ -81,9 +88,9 @@ export function paintOrb(
     const position = strand / (FILAMENT_COUNT - 1);
     const offset = Math.sin((position - 0.5) * 2.1) * 0.68;
     const wave = Math.sin(phase * 0.6 + strand * 0.3);
-    const bend = (0.25 + activity * 0.2 + amplitude * 0.22) * wave;
+    const bend = (0.25 + activity * 0.2 + amplitude * 0.22 + expression * 0.2) * wave;
     drawing.globalAlpha = (0.06 + Math.sin(position * Math.PI) * 0.18) * (0.65 + activity * 0.35);
-    drawing.lineWidth = radius * (0.006 + Math.sin(position * Math.PI) * 0.009);
+    drawing.lineWidth = radius * (0.006 + Math.sin(position * Math.PI) * (0.009 + expression * 0.009));
     drawing.beginPath();
     drawing.moveTo(-radius * 1.08, radius * (offset + 0.18));
     drawing.bezierCurveTo(
@@ -128,5 +135,6 @@ export function paintOrb(
   drawing.beginPath();
   drawing.arc(center, center, radius, 0, Math.PI * 2);
   drawing.stroke();
+  drawing.restore();
   drawing.globalAlpha = 1;
 }

@@ -146,6 +146,14 @@ const STATE_ENERGY: Record<VoiceOrbState, number> = {
   speaking: 0.75,
   error: 0,
 };
+const STATE_EXPRESSION: Record<VoiceOrbState, number> = {
+  idle: 0,
+  connecting: 0.22,
+  listening: 0.18,
+  thinking: 0.32,
+  speaking: 1,
+  error: 0,
+};
 const rootStyle = css({
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr)',
@@ -393,6 +401,7 @@ function VoiceOrbVisual({
     if (reducedMotion) repaint.current?.();
   }, [context.state, context.muted, reducedMotion]);
   const energy = useSpring(STATE_ENERGY[context.state], SPRING);
+  const expression = useSpring(STATE_EXPRESSION[context.state], SPRING);
   const level = useSpring(0, SPRING);
   useEffect(() => {
     const source =
@@ -411,7 +420,9 @@ function VoiceOrbVisual({
   useEffect(() => {
     if (reducedMotion) energy.jump(STATE_ENERGY[context.state]);
     else energy.set(STATE_ENERGY[context.state]);
-  }, [context.state, energy, reducedMotion]);
+    if (reducedMotion) expression.jump(0);
+    else expression.set(STATE_EXPRESSION[context.state]);
+  }, [context.state, energy, expression, reducedMotion]);
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -434,10 +445,10 @@ function VoiceOrbVisual({
       if (!reducedMotion && previousTime)
         phase +=
           (Math.min(time - previousTime, 64) / Math.max(1, motionDurationMs.slow)) *
-          (0.09 + energy.get() * 0.16 + amplitude * 0.08);
+          (0.06 + energy.get() * 0.38 + amplitude * 0.22);
       previousTime = time;
       const activity = reducedMotion ? STATE_ENERGY[current.state] : energy.get();
-      paintOrb(drawing, pixels, phase, activity, amplitude, palette);
+      paintOrb(drawing, pixels, phase, activity, amplitude, palette, reducedMotion ? 0 : expression.get());
     };
     const tick = (time: number) => {
       frame = 0;
@@ -496,7 +507,7 @@ function VoiceOrbVisual({
       view.removeEventListener('resize', refresh);
       forced.removeEventListener('change', refresh);
     };
-  }, [Canvas, reducedMotion, energy, level]);
+  }, [Canvas, reducedMotion, energy, expression, level]);
   return (
     <WithSx className={className} styles={visualStyle} sx={sx}>
       {(className) => (
