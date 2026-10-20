@@ -18,7 +18,6 @@ const cases = [
   { id: 'media-sectionheading--docs', primary: '[data-ui~="section-heading"]' },
   { id: 'inputs-linkunfurl--docs', primary: '[data-ui="link-unfurl"]' },
   { id: 'inputs-mentioninput--docs', primary: '[data-ui="mention-input"]' },
-  { id: 'data-display-editabledetails--docs', primary: '[data-ui="editable-details"]' },
 ];
 const editableDetails = {
   title: 'Data display/EditableDetails',
