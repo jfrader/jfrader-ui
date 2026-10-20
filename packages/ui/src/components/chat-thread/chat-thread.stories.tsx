@@ -67,6 +67,31 @@ function ReplacementSend(props: ButtonProps) {
 }
 
 export const InteriorReplacements: StoryObj<typeof ChatThread> = {
+  name: 'Custom transcript and composer parts',
+  parameters: { docs: {
+    description: { story: 'Replace the viewport, message field and send button while forwarding their props and refs.' },
+    source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { Button, ChatThread, Textarea, type ButtonProps, type TextareaProps, styled } from '@jfrader/ui';
+
+const Frame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+const now = Date.parse('2026-10-12T12:00:00Z');
+const people = [{ id: 'me', name: 'Ada Lovelace' }, { id: 'grace', name: 'Grace Hopper' }, { id: 'alan', name: 'Alan Turing' }];
+const messages = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: '2026-10-11T12:00:00Z' },
+  { id: 'second', authorId: 'grace', text: 'I included the mobile layout.', createdAt: '2026-10-11T12:01:00Z', reactions: [{ emoji: '👍', count: 2, mine: true }] },
+  { id: 'own', authorId: 'me', text: 'Thanks! I’ll take a look.', createdAt: '2026-10-12T11:59:00Z', status: 'delivered' as const },
+];
+function Viewport(props: ComponentPropsWithRef<'div'>) { return <div {...props} />; }
+function MessageField(props: TextareaProps) { return <Textarea {...props} />; }
+function SendButton(props: ButtonProps) { return <Button {...props} />; }
+
+<Frame>
+  <ChatThread participants={people} currentUserId="me" defaultValue={messages}
+    now={now} locale="en-US" timeZone="UTC"
+    slots={{ viewport: Viewport }}
+    composerProps={{ slots: { textarea: MessageField, sendButton: SendButton } }} />
+</Frame>` },
+  } },
   render: (args) => <ChatThread {...args} slots={{ viewport: ReplacementViewport }} composerProps={{ slots: { textarea: ReplacementTextarea, sendButton: ReplacementSend } }} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -89,10 +114,24 @@ const MESSAGES: readonly ChatMessage[] = [
   { id: 'own', authorId: 'me', text: 'Thanks! I’ll take a look.', createdAt: NOW - MINUTE, status: 'delivered' },
 ];
 
-const usage = `const Frame = styled.div({ blockSize: '34rem' });
+const usage = `import { ChatThread, styled, type ChatMessage } from '@jfrader/ui';
+
+const Frame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+const now = Date.parse('2026-10-12T12:00:00Z');
+const people = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+const messages: ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: '2026-10-11T12:00:00Z' },
+  { id: 'second', authorId: 'grace', text: 'I included the mobile layout.', createdAt: '2026-10-11T12:01:00Z', reactions: [{ emoji: '👍', count: 2, mine: true }] },
+  { id: 'own', authorId: 'me', text: 'Thanks! I’ll take a look.', createdAt: '2026-10-12T11:59:00Z', status: 'delivered' },
+];
 
 <Frame>
-  <ChatThread participants={people} currentUserId="me" defaultValue={messages} now={now} onSend={send} />
+  <ChatThread participants={people} currentUserId="me" defaultValue={messages}
+    now={now} locale="en-US" timeZone="UTC" />
 </Frame>`;
 
 const Frame = styled.div({ inlineSize: `min(42rem, calc(100vw - 2 * ${vars.space[4]}))`, maxInlineSize: '100%', blockSize: '34rem' });
@@ -122,25 +161,30 @@ const meta = {
   decorators: [(Story) => <Frame><Story /></Frame>],
   parameters: {
     docs: {
-      source: { code: usage },
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Messages', stories: ['GroupedMessages', 'AllDeliveryStates'] },
+        { title: 'Typing and read receipts', stories: ['Typing', 'ReadReceipts'] },
+        { title: 'Attachments', stories: ['Attachments', 'ImageAttachments'] },
+        { title: 'Retry and failed messages', stories: ['Retry', 'RetryFailure'] },
+        { title: 'Separators', stories: ['DaySeparators'] },
+        { title: 'Long and empty content', stories: ['LongContent', 'Empty'] },
+        { title: 'Composition', stories: ['TranscriptOnly', 'StandaloneComposer', 'InteriorReplacements'] },
+      ],
+      source: { language: 'tsx', code: usage },
       description: { component: 'Write messages, attach files, and react to a conversation.' },
-      usage: `### Messages and drafts
-- Messages and Composer drafts support \`value/defaultValue/onValueChange\`.
-- A controlled send proposes a message before calling \`onSend\`. Keep its proposed id until acknowledgement.
-- The draft clears after transport resolves and the id appears in \`value\`. A rejected request keeps the draft; edit it to retry. Transport failures keep text and files.
-- Your app handles transport, uploads, authentication, pagination, and delivery status.
-- The named log contains an ordered list of articles named by author and time. Typing indicators and submission errors stay outside the log.
+      usage: `### When to use
+Use a thread for a conversation with a transcript and message composer. Your application handles transport, uploads, authentication, pagination and delivery status.
 
-### Layout and attachments
-- Set a height limit. History is not virtualized and keeps the order you supply.
-- Scrolling stays pinned within 48px of the bottom or after a send/jump. Incoming updates never move focus.
-- Root and Composer refs target divs. \`composerProps.slotProps.textarea.ref\` targets the textarea.
-- ChatThread releases object URLs it creates on removal, failure and unmount. It never revokes URLs supplied by your app. Image previews and accepted local messages each retain a separate lease on their object URL.
-- Dates, counts, byte sizes, and names use Intl. Update \`now\` yourself with epoch milliseconds; \`timeZone\` defaults to UTC.
+### Constraints
+Set a height limit. History is not virtualized and keeps the order you supply. Scrolling stays pinned within 48px of the bottom or after a send or jump; incoming updates never move focus.
 
-### Keyboard
-- Enter sends once; Shift+Enter adds a newline. IME composition does not send. Tab/Shift+Tab follow native order.
-- In the reaction picker, Left/Right wrap and reverse in RTL; Home/End jump to the ends. Escape returns focus to the trigger; outside dismissal does not.`,
+A controlled send proposes a message before transport starts. Keep its proposed id until acknowledgement. The draft clears only after transport resolves and the application accepts that id. Rejected requests keep the draft; edit it to retry. Transport failures keep text and files.
+
+The thread releases object URLs it creates on removal, failure and unmount, never URLs supplied by your application. Preview images and accepted local messages retain separate leases. Update the relative-time clock in your application.
+
+### Keyboard and accessibility
+The named log contains an ordered list of articles named by author and time. Typing indicators and submission errors stay outside the log. Enter sends once, Shift+Enter adds a newline, and IME composition does not send. Tab and Shift+Tab follow native order. In the reaction picker, Left/Right wrap and reverse in RTL; Home/End jump to the ends. Escape returns focus to the trigger; outside dismissal does not.`,
     },
   },
 } satisfies Meta<typeof ChatThread>;
@@ -167,6 +211,8 @@ function Deferred(args: ChatThreadProps) {
 }
 
 export const Default: Story = {
+  name: 'Team conversation',
+  parameters: { docs: { description: { story: 'Read a conversation, react to a message and write a reply.' } } },
   play: async ({ canvas, canvasElement }) => {
     const log = canvas.getByRole('log', { name: 'Conversation' });
     await waitFor(() => expect(log).toHaveAttribute('aria-live', 'polite'));
@@ -196,6 +242,8 @@ export const Sizes: Story = {
   render: (args) => <Stack>{(['sm', 'md'] as const).map((size) => <Frame key={size}><ChatThread {...args} size={size} labels={{ conversation: `${size} conversation` }} /></Frame>)}</Stack>,
 };
 export const GroupedMessages: Story = {
+  name: 'Consecutive messages',
+  parameters: { docs: { description: { story: 'Group consecutive messages from Grace while keeping each message individually named.' } } },
   play: async ({ canvasElement }) => {
     await expect(item(canvasElement, 'second')).toHaveAttribute('data-grouped', 'true');
     await expect(item(canvasElement, 'own')).toHaveAttribute('data-grouped', 'false');
@@ -203,8 +251,10 @@ export const GroupedMessages: Story = {
   },
 };
 export const DaySeparators: Story = {
+  name: 'Local day separators',
   parameters: {
     docs: {
+      description: { story: 'Separate messages at local midnight across a daylight-saving transition.' },
       source: {
         language: 'tsx',
         code: `import { ChatThread, styled } from '@jfrader/ui';
@@ -397,8 +447,10 @@ export const ReactionsOpen: Story = {
   },
 };
 export const ReadReceipts: Story = {
+  name: 'Read receipts',
   parameters: {
     docs: {
+      description: { story: 'Show which participants have read the latest outgoing message.' },
       source: {
         language: 'tsx',
         code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
@@ -465,8 +517,10 @@ export function Example() {
   },
 };
 export const Typing: Story = {
+  name: 'Typing indicator',
   parameters: {
     docs: {
+      description: { story: 'Show Grace typing outside the conversation log.' },
       source: {
         language: 'tsx',
         code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
@@ -533,8 +587,10 @@ export function Example() {
   },
 };
 export const AllDeliveryStates: Story = {
+  name: 'Delivery states',
   parameters: {
     docs: {
+      description: { story: 'Compare sending, sent, delivered, read and failed outgoing messages.' },
       source: {
         language: 'tsx',
         code: `import { ChatThread, styled } from '@jfrader/ui';
@@ -589,8 +645,10 @@ export function Example() {
   },
 };
 export const Retry: Story = {
+  name: 'Retry a failed message',
   parameters: {
     docs: {
+      description: { story: 'Request another delivery attempt without changing the failed status locally.' },
       source: {
         language: 'tsx',
         code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
@@ -746,8 +804,10 @@ export function Example() {
   },
 };
 export const RetryFailure: Story = {
+  name: 'Failed retry',
   parameters: {
     docs: {
+      description: { story: 'Try Retry to show a transport error outside the transcript.' },
       source: {
         language: 'tsx',
         code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
@@ -821,8 +881,10 @@ export function Example() {
 };
 const ATTACHMENTS = Array.from({ length: 7 }, (_, index) => ({ id: `file-${index}`, name: `Design ${index + 1}.pdf`, kind: 'file' as const, size: 12345, url: `/design-${index + 1}.pdf` }));
 export const Attachments: Story = {
+  name: 'File attachments',
   parameters: {
     docs: {
+      description: { story: 'Read a message with downloadable files and attach files to a reply.' },
       source: {
         language: 'tsx',
         code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
@@ -984,8 +1046,10 @@ export function Example() {
   },
 };
 export const ImageAttachments: Story = {
+  name: 'Image attachments',
   parameters: {
     docs: {
+      description: { story: 'Show an image attachment with descriptive alternative text and a reserved aspect ratio.' },
       source: {
         language: 'tsx',
         code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
@@ -1068,8 +1132,16 @@ export function Example() {
   },
 };
 export const StandaloneComposer: Story = {
+  name: 'Standalone composer',
   render: (args) => <ChatThread.Composer onSend={args.onSend!} onValueChange={fn()} />,
-  parameters: { docs: { source: { code: '<ChatThread.Composer onSend={send} />' } } },
+  parameters: { docs: {
+    description: { story: 'Use the message composer separately from a transcript.' },
+    source: { language: 'tsx', code: `import { ChatThread, type ChatDraft } from '@jfrader/ui';
+
+export function ReplyComposer({ send }: { send: (draft: ChatDraft) => void | Promise<void> }) {
+  return <ChatThread.Composer onSend={send} />;
+}` },
+  } },
   play: async ({ canvas, args, userEvent }) => {
     await userEvent.type(canvas.getByRole('textbox'), 'Standalone');
     await userEvent.keyboard('{Enter}');
@@ -1078,8 +1150,10 @@ export const StandaloneComposer: Story = {
   },
 };
 export const TranscriptOnly: Story = {
+  name: 'Read-only transcript',
   parameters: {
     docs: {
+      description: { story: 'Display message history without a composer or offered reaction picker.' },
       source: {
         language: 'tsx',
         code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
@@ -1141,8 +1215,10 @@ export function Example() {
     },
   }, args: { composer: false, reactions: [] } };
 export const Empty: Story = {
+  name: 'Start a conversation',
   parameters: {
     docs: {
+      description: { story: 'Keep the composer available before the first message is sent.' },
       source: {
         language: 'tsx',
         code: `import { ChatThread, styled } from '@jfrader/ui';
@@ -1451,8 +1527,10 @@ export function Example() {
   },
 };
 export const LongContent: Story = {
+  name: 'Long message content',
   parameters: {
     docs: {
+      description: { story: 'Wrap a long unbroken message and a large reaction count in a narrow thread.' },
       source: {
         language: 'tsx',
         code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';

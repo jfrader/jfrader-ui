@@ -35,7 +35,7 @@ export interface CardSlotProps {
   root?: SurfaceRootSlotProps;
   /** Header container wrapping the title and description. */
   header?: CardPartProps;
-  /** Heading element displaying the card title. */
+  /** Heading element displaying the card title. Renders an `h3` by default, or the heading set by `level`. */
   title?: CardPartProps;
   /** Paragraph displaying the card description. */
   description?: CardPartProps;
@@ -50,7 +50,7 @@ export interface CardSlots {
   root?: ComponentType<SurfacePartProps>;
   /** Replaces the header band that wraps the title and description. */
   header?: ComponentType<CardHeaderProps>;
-  /** Replaces the heading element. */
+  /** Replaces the heading element. Renders an `h3` by default, or the heading set by `level`. */
   title?: ComponentType<CardTitleProps>;
   /** Replaces the description paragraph. */
   description?: ComponentType<CardDescriptionProps>;

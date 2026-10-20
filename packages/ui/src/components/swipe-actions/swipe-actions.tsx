@@ -89,11 +89,11 @@ export interface SwipeActionsRowSlots {
   actionIcon?: ComponentType<ComponentPropsWithRef<'span'> & Slot>;
   /** Text naming a swipe action. */
   actionLabel?: ComponentType<ComponentPropsWithRef<'span'> & Slot>;
-  /** Trigger opening the overflow menu. */
+  /** Trigger opening the overflow menu. Uses `Menu.Trigger` by default. */
   trigger?: ComponentType<MenuTriggerProps & Slot>;
-  /** Overflow menu containing row actions. */
+  /** Overflow menu containing row actions. Uses `Menu.Content` by default. */
   menu?: ComponentType<MenuContentProps & Slot>;
-  /** Overflow menu action. */
+  /** Overflow menu action. Uses `Menu.Item` by default. */
   menuItem?: ComponentType<MenuItemProps & Slot>;
 }
 export interface SwipeActionsSlotProps {

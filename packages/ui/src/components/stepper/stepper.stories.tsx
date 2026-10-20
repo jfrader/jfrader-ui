@@ -7,6 +7,17 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Stepper, type StepperProps, type StepperStep } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
+import { Button } from '../button';
+import { Card } from '../card';
+
+const stepperSource = `import { Stepper } from '@jfrader/ui';
+
+const steps = [
+  { id: 'account', label: 'Account', description: 'Email and password' },
+  { id: 'profile', label: 'Profile', description: 'Name and avatar' },
+  { id: 'security', label: 'Security', description: 'Two-factor setup' },
+  { id: 'review', label: 'Review', description: 'Confirm and submit' },
+];`;
 
 const NarrowFrame = styled.div({ inlineSize: '20rem' });
 
@@ -40,25 +51,27 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Show progress through steps or return to a completed step.' },
-      usage: `### Values
-- Give each step a unique \`id\` and a \`label\`. \`value\` is a zero-based index; \`steps.length\` marks a nonempty flow complete. Values are floored and clamped to that range, and non-finite values become \`0\` without calling \`onValueChange\`.
-- The initial index defaults to \`0\`. Use \`defaultValue\` to seed it, or pair \`value\` with \`onValueChange\` and update \`value\` to accept a request.
-- With \`interactive\` omitted, the stepper is an indicator without controls. Set \`interactive\` to allow returning to enabled steps before the current index. Current and upcoming steps cannot be selected. Render step content and validate forward progress in your app.
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Interactive'] },
+        { title: 'Orientation', stories: ['Horizontal', 'Vertical'] },
+        { title: 'States and errors', stories: ['ErrorCurrent', 'DisabledCompleted', 'AllComplete'] },
+        { title: 'Labels and descriptions', stories: ['DetailsCurrent', 'Compact'] },
+        { title: 'Controlled progress', stories: ['ControlledAccepted'] },
+        { title: 'Composition', stories: ['FlowContent'] },
+        { title: 'Keyboard', stories: ['Keyboard'] },
+      ],
+      usage: `### When to use
+Show a finite, ordered task such as account setup or checkout. Use a static indicator when readers cannot revisit earlier steps. Interactive progress lets them return to enabled completed steps, not skip ahead.
+
+### Flow constraints
+Render step content, validate it, and handle forward progress in your application. Keep stable, unique step identifiers when the list changes. Errors remain visible even in compact layouts; an error alone does not block returning to a completed step. Horizontal layouts fold to markers and a current-step caption in containers of 30rem or less.
 
 ### Keyboard
 - In interactive mode, Tab enters at one step. Use Left and Right horizontally, or Up and Down vertically, to move through the current step and enabled completed steps. Horizontal keys reverse in RTL; movement stops at the ends.
-- Home and End reach the first and last reachable steps. Focus movement does not change \`value\`; press Enter or Space on a completed step to return to it.
+- Home and End reach the first and last reachable steps. Focus movement does not advance progress; press Enter or Space on a completed step to return to it.
 
-### Details
-- \`details\` defaults to \`all\`. Set it to \`current\` to show only the current description. A step's \`error\` replaces its description and always remains visible, including in compact mode; it does not prevent returning to that step unless you also set \`disabled\`.
-- \`orientation\` defaults to \`horizontal\`, and \`responsive\` defaults to \`true\`. At container widths of 30rem or less, horizontal steppers show markers and a current-step caption. Set \`responsive={false}\` to keep labels, or \`compact\` to use markers at any width.
-
-### Localization
-- Use \`locale\` for numerals, \`getStepLabel\` for step names and \`getChangeLabel\` for announcements. Translate \`label\` and \`completeLabel\`, which default to "Progress" and "All steps complete".
-- \`announceChanges\` defaults to \`false\`. Enable it to announce accepted index changes politely; initial rendering and focus moves are not announced.
-
-### Customization
-- Use \`sx\` for the root and \`slotProps\` to style the list, items, heads, markers, labels, descriptions, connectors and caption. A step's \`icon\` replaces its numeral or status glyph.`,
+### Accessibility
+Name the flow and translate status text as well as numerals. Change announcements are optional and polite; initial rendering and focus moves are not announced. Errors are descriptions, not interrupting alerts, so announce validation failures in the app when needed.`,
     },
   },
   args: { steps: STEPS },
@@ -165,13 +178,11 @@ function findConditionalRule(element: HTMLElement, condition: string, pseudo = '
 }
 
 export const Default: Story = {
+  name: 'Account setup progress',
   args: { value: 1 },
-  parameters: { docs: { source: { language: 'tsx', code: `<Stepper value={1} steps={[
-  { id: 'account', label: 'Account', description: 'Email and password' },
-  { id: 'profile', label: 'Profile', description: 'Name and avatar' },
-  { id: 'security', label: 'Security', description: 'Two-factor setup' },
-  { id: 'review', label: 'Review', description: 'Confirm and submit' },
-]} />` } } },
+  parameters: { docs: { description: { story: 'Show the current step alongside completed and upcoming account tasks.' }, source: { language: 'tsx', code: `${stepperSource}
+
+<Stepper steps={steps} value={1} />` } } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const root = canvas.getByRole('group', { name: 'Progress' });
@@ -206,6 +217,10 @@ export const Default: Story = {
 };
 
 export const Horizontal: Story = {
+  name: 'Horizontal progress',
+  parameters: { docs: { description: { story: 'Keep every label visible in a horizontal flow.' }, source: { language: 'tsx', code: `${stepperSource}
+
+<Stepper steps={steps} value={2} orientation="horizontal" responsive={false} />` } } },
   args: { value: 2, orientation: 'horizontal', responsive: false },
   play: async ({ canvasElement }) => {
     const root = getRoot(canvasElement);
@@ -221,6 +236,10 @@ export const Horizontal: Story = {
 };
 
 export const Vertical: Story = {
+  name: 'Vertical progress',
+  parameters: { docs: { description: { story: 'Stack the steps vertically and use Up or Down to move focus.' }, source: { language: 'tsx', code: `${stepperSource}
+
+<Stepper steps={steps} orientation="vertical" interactive defaultValue={2} />` } } },
   args: { orientation: 'vertical', interactive: true, defaultValue: 2, onValueChange: fn() },
   play: async ({ args, canvasElement, userEvent }) => {
     const root = within(canvasElement).getByRole('navigation', { name: 'Progress' });
@@ -299,13 +318,11 @@ export const Static: Story = {
 };
 
 export const Interactive: Story = {
+  name: 'Return to a completed step',
   args: { interactive: true, defaultValue: 2, onValueChange: fn() },
-  parameters: { docs: { source: { language: 'tsx', code: `<Stepper steps={[
-  { id: 'account', label: 'Account', description: 'Email and password' },
-  { id: 'profile', label: 'Profile', description: 'Name and avatar' },
-  { id: 'security', label: 'Security', description: 'Two-factor setup' },
-  { id: 'review', label: 'Review', description: 'Confirm and submit' },
-]} interactive defaultValue={2} />` } } },
+  parameters: { docs: { description: { story: 'Choose Account or Profile to revisit a completed task.' }, source: { language: 'tsx', code: `${stepperSource}
+
+<Stepper steps={steps} interactive defaultValue={2} />` } } },
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     const root = canvas.getByRole('navigation', { name: 'Progress' });
@@ -341,6 +358,11 @@ export const Interactive: Story = {
 };
 
 export const DetailsCurrent: Story = {
+  name: 'Current description and errors',
+  parameters: { docs: { description: { story: 'Show the current task description while keeping an earlier error visible.' }, source: { language: 'tsx', code: `${stepperSource}
+
+<Stepper steps={steps.map((step) => step.id === 'account' ? { ...step, error: 'Email bounced' } : step)}
+  details="current" value={2} interactive />` } } },
   args: {
     details: 'current',
     value: 2,
@@ -360,6 +382,10 @@ export const DetailsCurrent: Story = {
 };
 
 export const Compact: Story = {
+  name: 'Compact labels',
+  parameters: { docs: { description: { story: 'Show markers and a caption for the current task instead of every label.' }, source: { language: 'tsx', code: `${stepperSource}
+
+<Stepper steps={steps} compact interactive value={1} />` } } },
   args: { compact: true, interactive: true, value: 1 },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -432,6 +458,11 @@ export const ResponsiveNarrow: Story = {
 const PROFILE_ERROR: StepperStep = { ...STEPS[1]!, error: 'Handle is already taken' };
 
 export const ErrorCurrent: Story = {
+  name: 'Current step error',
+  parameters: { docs: { description: { story: 'Replace the Profile description with a validation error.' }, source: { language: 'tsx', code: `${stepperSource}
+
+<Stepper steps={steps.map((step) => step.id === 'profile' ? { ...step, error: 'Handle is already taken' } : step)}
+  interactive value={1} />` } } },
   args: { interactive: true, value: 1, steps: [STEPS[0]!, PROFILE_ERROR, ...STEPS.slice(2)] },
   play: async ({ canvasElement }) => {
     const root = getRoot(canvasElement);
@@ -475,6 +506,10 @@ export const ErrorCompleted: Story = {
 };
 
 export const AllComplete: Story = {
+  name: 'Completed flow',
+  parameters: { docs: { description: { story: 'Mark every task complete and keep earlier steps available to revisit.' }, source: { language: 'tsx', code: `${stepperSource}
+
+<Stepper steps={steps} interactive value={4} completeLabel="Account ready" />` } } },
   args: { interactive: true, value: 4, completeLabel: 'Account ready', onValueChange: fn() },
   play: async ({ args, canvasElement, userEvent }) => {
     const root = getRoot(canvasElement);
@@ -535,6 +570,11 @@ export const OneStep: Story = {
 };
 
 export const DisabledCompleted: Story = {
+  name: 'Unavailable completed step',
+  parameters: { docs: { description: { story: 'Skip Profile while navigating earlier completed tasks.' }, source: { language: 'tsx', code: `${stepperSource}
+
+<Stepper steps={steps.map((step) => step.id === 'profile' ? { ...step, disabled: true } : step)}
+  interactive defaultValue={2} />` } } },
   args: {
     interactive: true,
     defaultValue: 2,
@@ -669,6 +709,7 @@ export const ForcedColors: Story = {
 };
 
 export const Keyboard: Story = {
+  name: 'Navigate and revisit by keyboard',
   args: { interactive: true, defaultValue: 2, onValueChange: fn() },
   render: (args) => (
     <>
@@ -677,7 +718,9 @@ export const Keyboard: Story = {
       <FixtureButton type="button">After</FixtureButton>
     </>
   ),
-  parameters: { docs: { source: { code: USAGE } } },
+  parameters: { docs: { description: { story: 'Tab into the flow, move focus with arrows, and press Enter to revisit a completed step.' }, source: { language: 'tsx', code: `${stepperSource}
+
+<Stepper steps={steps} interactive defaultValue={2} />` } } },
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     const root = getRoot(canvasElement);
@@ -753,9 +796,16 @@ export const ControlledRejected: Story = {
 };
 
 export const ControlledAccepted: Story = {
+  name: 'Parent-owned progress',
   args: { interactive: true, value: 3, onValueChange: fn() },
   render: (args) => <ControlledStepper {...args} />,
-  parameters: { docs: { source: { code: USAGE } } },
+  parameters: { docs: { description: { story: 'Update application state when a completed step is selected.' }, source: { language: 'tsx', code: `import { useState } from 'react';
+${stepperSource}
+
+function AccountProgress() {
+  const [value, setValue] = useState(3);
+  return <Stepper steps={steps} interactive value={value} onValueChange={setValue} />;
+}` } } },
   play: async ({ args, canvasElement, userEvent }) => {
     const root = getRoot(canvasElement);
     const heads = parts(root, 'head');
@@ -766,6 +816,43 @@ export const ControlledAccepted: Story = {
     await expect(parts(root, 'head')[1]).toBe(heads[1]);
     await expectFocusRing(heads[1]!);
   },
+};
+
+function AccountFlow() {
+  const [value, setValue] = useState(0);
+  const step = STEPS[value];
+  return <>
+    <Stepper steps={STEPS} interactive value={value} onValueChange={setValue} label="Account setup" />
+    <Card title={step?.label ?? 'Account ready'} content={step?.description ?? 'Setup complete.'} footer={
+      <Button disabled={!step} onClick={() => setValue((current) => Math.min(current + 1, STEPS.length))}>
+        Continue
+      </Button>
+    } />
+  </>;
+}
+
+export const FlowContent: Story = {
+  name: 'Progress with step content',
+  render: () => <AccountFlow />,
+  parameters: { docs: {
+    description: { story: 'Advance through app-owned content and return to completed tasks from the stepper.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, Card } from '@jfrader/ui';
+${stepperSource}
+
+function AccountFlow() {
+  const [value, setValue] = useState(0);
+  const step = steps[value];
+  return <>
+    <Stepper steps={steps} interactive value={value} onValueChange={setValue} label="Account setup" />
+    <Card title={step?.label ?? 'Account ready'} content={step?.description ?? 'Setup complete.'} footer={
+      <Button disabled={!step} onClick={() => setValue((current) => Math.min(current + 1, steps.length))}>
+        Continue
+      </Button>
+    } />
+  </>;
+}` },
+  } },
 };
 
 export const Normalization: Story = {

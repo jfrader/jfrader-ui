@@ -52,12 +52,14 @@ export interface PaymentFlowLabels {
   settlementTime: string;
 }
 type Anatomy = {
+  /** Renders a `figure` by default. */
   root: 'figure';
   scene: 'div';
   node: 'div';
   summary: 'ol';
   summaryItem: 'li';
   controls: 'div';
+  /** Renders a `figcaption` by default. */
   caption: 'figcaption';
 };
 export interface PaymentFlowSlots extends FieldSlots<Anatomy> {

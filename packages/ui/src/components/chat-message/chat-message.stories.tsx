@@ -49,8 +49,10 @@ function ReplacementAttachments(props: ComponentPropsWithRef<'ul'>) {
 }
 
 export const AttachmentsReplacement: StoryObj<typeof ChatMessage> = {
+  name: 'Attached notes',
   parameters: {
     docs: {
+      description: { story: 'Link to a file inside a replaceable attachment list.' },
       source: {
         language: 'tsx',
         code: `import { type ComponentPropsWithRef } from 'react';
@@ -104,6 +106,21 @@ export function Example() {
 };
 
 export const TimeReplacement: Story = {
+  name: 'Custom timestamp element',
+  parameters: { docs: {
+    description: { story: 'Replace the timestamp element while preserving its accessible date and styling.' },
+    source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { ChatMessage } from '@jfrader/ui';
+
+function MessageTime(props: ComponentPropsWithRef<'time'>) {
+  return <time {...props} />;
+}
+const createdAt = Date.parse('2026-10-12T12:00:00Z');
+
+<ChatMessage author={{ id: 'ada', name: 'Ada Lovelace' }} createdAt={createdAt}
+  now={createdAt + 300_000} locale="en-US" timeZone="UTC"
+  slots={{ time: MessageTime }} />` },
+  } },
   render: (args) => <ChatMessage {...args} slots={{ time: ReplacementTime }} />,
   play: async ({ canvasElement }) => {
     const time = canvasElement.querySelector('[data-slot="chat-message-time"]');
@@ -130,13 +147,17 @@ const CustomAvatar = styled.span({ fontSize: vars.textSize.xl, lineHeight: vars.
 const slotArticleStyle = css({ outlineStyle: 'solid' });
 const slotBubbleStyle = css({ textDecorationLine: 'underline' });
 
-const usage = `<ChatMessage
-  author={{ id: 'ada', name: 'Ada Lovelace' }}
-  createdAt={Date.now()}
+const usage = `import { ChatMessage } from '@jfrader/ui';
+
+<ChatMessage
+  author={{ id: 'grace', name: 'Grace Hopper' }}
+  createdAt="2026-10-11T12:00:00Z"
+  now={Date.parse('2026-10-12T12:00:00Z')}
+  locale="en-US"
+  timeZone="UTC"
   reactions={[{ emoji: '👍', count: 2, mine: true }]}
-  status="delivered"
 >
-  The deployment was successful.
+  The build is ready to review.
 </ChatMessage>`;
 
 const meta = {
@@ -156,34 +177,27 @@ const meta = {
   decorators: [(Story) => <Stack><Story /></Stack>],
   parameters: {
     docs: {
-      source: { code: usage },
+      sections: [
+        { title: 'Basic', stories: ['Plain'] },
+        { title: 'Roles', stories: ['OwnAlignment'] },
+        { title: 'Attachments', stories: ['AttachmentsReplacement'] },
+        { title: 'Reactions', stories: ['Reactions'] },
+        { title: 'States', stories: ['SendingAndFailed', 'Disabled'] },
+        { title: 'Long content', stories: ['LongText'] },
+        { title: 'Composition', stories: ['AvatarSlot', 'TimeReplacement', 'ThreadTypography'] },
+      ],
+      source: { language: 'tsx', code: usage },
       description: {
         component: 'Display a conversation message with author details, timestamp, reactions, and delivery status.',
       },
-      usage: `### Roles and structure
-- Render a message as an \`<article>\` named by its author and formatted timestamp (or an explicit \`aria-label\`).
-- The bubble wraps body text, children, and any file attachments.
+      usage: `### When to use
+Use a message on its own in a feed or activity view. Use ChatThread when you need a transcript and composer together.
 
-### Avatar customization
-- Displays an \`Avatar\` by default using \`author.name\` and \`author.avatar\`.
-- Replace the avatar with \`avatar={<CustomElement />}\` or omit the column with \`avatar={null}\`.
+### Constraints
+Your application owns delivery, retry transport and the clock used for relative timestamps; the message starts no timer. Without a supplied clock, timestamps show the full localized date and time. Controlled reaction requests remain unchanged until the application accepts them.
 
-### Reactions and interactions
-- Reaction chips show counts and user-reacted states.
-- Use \`reactions\` and \`onReactionsChange\` for controlled counts, or \`defaultReactions\` to seed local counts. Controlled requests do not change the display until you update the prop. \`message.reactions\` is also controlled.
-- The "Add reaction" button opens an emoji picker popover with roving focus. Picker state can be controlled via \`pickerOpen\` or uncontrolled.
-
-### Keyboard and focus
-- Tab moves through interactive elements: attachments, reaction chips, the add reaction button, and retry.
-- In the reaction picker, ArrowLeft and ArrowRight navigate (reversed in RTL), Home and End jump to the bounds, Enter and Space select, and Escape closes the picker and returns focus to the trigger.
-
-### Clock and time
-- The caller owns \`now\` in epoch milliseconds; the component keeps no internal timer.
-- When \`now\` is \`null\` or omitted, the full localized date and time are rendered.
-
-### State and retry
-- Set \`status\` to \`'sending'\`, \`'sent'\`, \`'delivered'\`, \`'read'\`, or \`'failed'\`.
-- When \`status="failed"\` and \`onRetry\` is supplied, an accessible Retry button appears in the receipt row.`,
+### Keyboard and accessibility
+Messages are articles named by author and timestamp. Tab moves through attachments, reactions and retry actions. In the reaction picker, Left/Right wrap and reverse in RTL, Home/End jump to the bounds, and Enter/Space select. Escape closes the picker and returns focus to its trigger.`,
     },
   },
 } satisfies Meta<typeof ChatMessage>;
@@ -198,6 +212,8 @@ async function focusRing(element: HTMLElement) {
 }
 
 export const Plain: Story = {
+  name: 'Conversation message',
+  parameters: { docs: { description: { story: 'Show an author, timestamp, message body and an existing reaction.' } } },
   args: {
     author: { id: 'grace', name: 'Grace Hopper' },
     createdAt: NOW - DAY,
@@ -218,6 +234,25 @@ export const Plain: Story = {
 };
 
 export const AvatarSlot: Story = {
+  name: 'Bot and system messages',
+  parameters: { docs: {
+    description: { story: 'Use a custom avatar for a bot and omit the avatar for a system notice.' },
+    source: { language: 'tsx', code: `import { ChatMessage, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[4] });
+const BotAvatar = styled.span({ fontSize: vars.textSize.xl, lineHeight: vars.lineHeight.tight });
+const createdAt = Date.parse('2026-10-12T12:00:00Z');
+
+<Stack>
+  <ChatMessage author={{ id: 'bot', name: 'Release Bot' }} createdAt={createdAt} avatar={<BotAvatar>🤖</BotAvatar>}>
+    The release is ready.
+  </ChatMessage>
+  <ChatMessage author={{ id: 'system', name: 'System Notice' }} createdAt={createdAt} avatar={null}>
+    Maintenance starts at midnight.
+  </ChatMessage>
+</Stack>` },
+  } },
   render: () => (
     <Stack>
       <ChatMessage
@@ -248,6 +283,24 @@ export const AvatarSlot: Story = {
 };
 
 export const OwnAlignment: Story = {
+  name: 'Incoming and outgoing messages',
+  parameters: { docs: {
+    description: { story: 'Align incoming messages opposite your own replies and show their delivery receipt.' },
+    source: { language: 'tsx', code: `import { ChatMessage, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '100%' });
+const now = Date.parse('2026-10-12T12:00:00Z');
+
+<Stack>
+  <ChatMessage author={{ id: 'grace', name: 'Grace Hopper' }} createdAt={now - 600_000} now={now}>
+    Can you check the mobile styles?
+  </ChatMessage>
+  <ChatMessage author={{ id: 'me', name: 'Ada Lovelace' }} createdAt={now - 300_000} now={now} own status="delivered">
+    Checking them now!
+  </ChatMessage>
+</Stack>` },
+  } },
   render: () => (
     <WideStack>
       <ChatMessage
@@ -279,6 +332,33 @@ export const OwnAlignment: Story = {
 };
 
 export const SendingAndFailed: Story = {
+  name: 'Sending and retry',
+  parameters: { docs: {
+    description: { story: 'Compare a sending message with a failed message that can be retried.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { ChatMessage, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[4] });
+const author = { id: 'me', name: 'Ada Lovelace' };
+const createdAt = Date.parse('2026-10-12T12:00:00Z');
+
+export function DeliveryMessages({ retry }: { retry: () => void | Promise<void> }) {
+  const [retrying, setRetrying] = useState(false);
+  return <Stack>
+    <ChatMessage author={author} createdAt={createdAt} status="sending" own offeredReactions={[]}>
+      Uploading draft design...
+    </ChatMessage>
+    <ChatMessage author={author} createdAt={createdAt} status="failed" own offeredReactions={[]}
+      retryLoading={retrying} onRetry={async () => {
+        setRetrying(true);
+        try { await retry(); } finally { setRetrying(false); }
+      }}>
+      Could not connect to the server.
+    </ChatMessage>
+  </Stack>;
+}` },
+  } },
   render: function Render(args) {
     const [retrying, setRetrying] = useState(false);
     return (
@@ -326,6 +406,22 @@ export const SendingAndFailed: Story = {
 };
 
 export const LongText: Story = {
+  name: 'Long unbroken text',
+  parameters: { docs: {
+    description: { story: 'Wrap an unbroken word and a large reaction count in a narrow message.' },
+    source: { language: 'tsx', code: `import { ChatMessage, styled } from '@jfrader/ui';
+
+const Frame = styled.div({ inlineSize: '20rem', maxInlineSize: '100%' });
+const createdAt = Date.parse('2026-10-12T12:00:00Z');
+
+<Frame>
+  <ChatMessage author={{ id: 'alan', name: 'Alan Turing' }} createdAt={createdAt}
+    now={createdAt + 300_000} locale="en-US" timeZone="UTC"
+    reactions={[{ emoji: '🚀', count: 9999 }]}>
+    {'Supercalifragilisticexpialidocious'.repeat(6)}
+  </ChatMessage>
+</Frame>` },
+  } },
   args: {
     author: { id: 'alan', name: 'Alan Turing' },
     createdAt: NOW,
@@ -348,6 +444,17 @@ export const LongText: Story = {
 };
 
 export const Reactions: Story = {
+  name: 'Add a reaction',
+  parameters: { docs: {
+    description: { story: 'Toggle a reaction or open Add reaction to choose another emoji.' },
+    source: { language: 'tsx', code: `import { ChatMessage } from '@jfrader/ui';
+
+<ChatMessage author={{ id: 'grace', name: 'Grace Hopper' }}
+  createdAt="2026-10-12T11:59:00Z" now={Date.parse('2026-10-12T12:00:00Z')}
+  locale="en-US" timeZone="UTC" defaultReactions={[{ emoji: '👍', count: 1 }]}>
+  Thanks for reviewing the build.
+</ChatMessage>` },
+  } },
   args: {
     author: { id: 'grace', name: 'Grace Hopper' },
     createdAt: NOW - MINUTE,
@@ -495,6 +602,20 @@ export const ControlledReactions: Story = {
 
 /** Disable reactions and retries while keeping the delivery state visible. */
 export const Disabled: Story = {
+  name: 'Disabled actions',
+  parameters: { docs: {
+    description: { story: 'Keep delivery status visible while reactions and retry actions are disabled.' },
+    source: { language: 'tsx', code: `import { ChatMessage } from '@jfrader/ui';
+
+export function OfflineMessage({ retry }: { retry: () => void }) {
+  return <ChatMessage author={{ id: 'ada', name: 'Ada Lovelace' }}
+    createdAt="2026-10-12T12:00:00Z" now={Date.parse('2026-10-12T12:05:00Z')}
+    locale="en-US" timeZone="UTC" disabled status="failed" onRetry={retry}
+    reactions={[{ emoji: '👍', count: 2 }]}>
+    Waiting for a connection.
+  </ChatMessage>;
+}` },
+  } },
   args: { disabled: true, status: 'failed', reactions: [{ emoji: '👍', count: 2 }], children: 'Waiting for a connection.' },
   play: async ({ canvas, args, userEvent }) => {
     for (const button of canvas.getAllByRole('button')) {
@@ -564,8 +685,20 @@ export const RepeatedMessage: Story = {
 
 /** Set conversation typography once for all its messages. */
 export const ThreadTypography: Story = {
+  name: 'Conversation typography',
   render: () => <ChatThread participants={[{ id: 'ada', name: 'Ada Lovelace' }]} currentUserId="ada" defaultValue={[{ id: 'type', authorId: 'ada', text: 'The build is ready.', createdAt: NOW }]} now={NOW} composer={false} reactions={[]} sx={{ fontFamily: 'serif', fontSize: vars.textSize.lg, '--thread-column-gap': vars.space[8] }} />,
-  parameters: { docs: { source: { code: '<ChatThread participants={people} currentUserId="ada" defaultValue={messages} now={now} composer={false} sx={{ fontFamily: "serif" }} />' } } },
+  parameters: { docs: {
+    description: { story: 'Set conversation typography and spacing once for all of its messages.' },
+    source: { language: 'tsx', code: `import { ChatThread } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const now = Date.parse('2026-10-12T12:00:00Z');
+
+<ChatThread participants={[{ id: 'ada', name: 'Ada Lovelace' }]} currentUserId="ada"
+  defaultValue={[{ id: 'type', authorId: 'ada', text: 'The build is ready.', createdAt: now }]}
+  now={now} composer={false} reactions={[]}
+  sx={{ fontFamily: 'serif', fontSize: vars.textSize.lg, '--thread-column-gap': vars.space[8] }} />` },
+  } },
   play: async ({ canvas, canvasElement }) => {
     const author = canvas.getByText('Ada Lovelace');
     const thread = canvasElement.querySelector('[data-ui="chat-thread"]')!;

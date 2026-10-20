@@ -52,28 +52,46 @@ const meta = {
         component:
           'Show how much of an allowance is used, with its percentage and category amounts.',
       },
-      usage: `- Supply quota data from your app. Use this meter for an allowance, not task progress.
-- Categories use neutral shades by default. Set a segment's \`tone\` when its color carries meaning.
-- Hover the bar or legend to highlight a category. Tap or click to pin it.
-- Numeric ARIA values stop at the limit. Value text reports usage, including overage, following the APG meter contract.
-- Translate status and comparison text with \`labels\`, \`getValueLabel\` and \`getItemLabel\`.
-- Supply \`locale\` for server rendering.
-- Status changes and growing overage are announced by default. Rapid updates are coalesced; set \`announceChanges={false}\` to turn announcements off.
-- Translate “of” and “used” with \`labels.of\` and \`labels.used\`. \`labels.normal\` follows the free amount in the status.
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Quotas and limits', stories: ['StorageQuota', 'AtThreshold', 'OverLimit'] },
+        { title: 'Labels and formats', stories: ['StandardUnits', 'CustomUnit'] },
+        { title: 'States', stories: ['ZeroUsage', 'Static'] },
+        { title: 'Sizes', stories: ['Sizes'] },
+        { title: 'Composition', stories: ['Controlled', 'QuotaUpdate'] },
+      ],
+      usage: `### When to use
+Show consumption of an allowance, not progress through a task. Supply quota data from your app and reserve meaningful colors for categories that need them.
 
-### Keyboard
-- The legend has one Tab stop. Arrows follow the text direction; Home and End move to the first and last item.
-- Enter or Space toggles a pin. Escape clears it.`,
-      source: {
-        code: '<UsageMeter label="Storage" segments={usage} limit={80} locale="en" unitLabel="GB" />',
-      },
+### Constraints
+Use a finite positive limit. Provide a locale during server rendering so numbers match on hydration, and translate comparison and status text for your audience.
+
+Hover a category to preview it; click or tap to pin it. Selection does not change the reported usage.
+
+### Keyboard and accessibility
+The legend has one Tab stop. Arrows follow text direction; Home and End move to the first and last item. Enter or Space toggles a pin; Escape clears it.
+
+Numeric ARIA values stop at the limit; value text still reports overage. Status changes and growing overage are announced, with rapid updates coalesced. Avoid duplicate live announcements elsewhere in the page.`,
     },
   },
 } satisfies Meta<typeof UsageMeter>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+function meterSource(props = '', segments = usage, limit = 80) {
+  return `import { UsageMeter } from '@jfrader/ui';
+
+const segments = ${JSON.stringify(segments, null, 2)};
+
+<UsageMeter label="Storage" segments={segments} limit={${limit}} locale="en" ${props}/>`;
+}
+
 export const Default: Story = {
+  name: 'Storage allowance',
+  parameters: { docs: {
+    description: { story: 'Compare category usage with the remaining storage allowance.' },
+    source: { language: 'tsx', code: meterSource() },
+  } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const meter = canvas.getByRole('meter', { name: 'Storage' });
@@ -88,6 +106,15 @@ export const Default: Story = {
 };
 export const OneSegment: Story = { args: { segments: usage.slice(0, 1) } };
 export const StorageQuota: Story = {
+  name: 'Storage quota in gigabytes',
+  parameters: { docs: {
+    description: { story: 'Format decimal storage amounts in gigabytes against a 15 GB quota.' },
+    source: { language: 'tsx', code: meterSource('numberFormatOptions={{ style: "unit", unit: "gigabyte", maximumFractionDigits: 1 }} ', [
+      { id: 'media', label: 'Media', value: 7.2 },
+      { id: 'documents', label: 'Documents', value: 3.4 },
+      { id: 'backups', label: 'Backups', value: 1.8 },
+    ], 15) },
+  } },
   args: {
     segments: [
       { id: 'media', label: 'Media', value: 7.2 },
@@ -134,6 +161,11 @@ export const ManySegments: Story = {
   },
 };
 export const ZeroUsage: Story = {
+  name: 'Unused allowance',
+  parameters: { docs: {
+    description: { story: 'Show an empty allowance while keeping the zero-value category selectable.' },
+    source: { language: 'tsx', code: meterSource('', [{ id: 'zero', label: 'Files', value: 0 }]) },
+  } },
   args: { segments: [{ id: 'zero', label: 'Files', value: 0 }] },
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
@@ -156,6 +188,11 @@ export const EmptySegments: Story = {
   },
 };
 export const AtThreshold: Story = {
+  name: 'Near the limit',
+  parameters: { docs: {
+    description: { story: 'Show the near-limit status when usage reaches 90 percent of the allowance.' },
+    source: { language: 'tsx', code: meterSource('', [{ id: 'a', label: 'Requests', value: 72 }]) },
+  } },
   args: { segments: [{ id: 'a', label: 'Requests', value: 72 }] },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('group')).toHaveAttribute('data-state', 'near-limit');
@@ -169,6 +206,11 @@ export const AtLimit: Story = {
   },
 };
 export const OverLimit: Story = {
+  name: 'Over the allowance',
+  parameters: { docs: {
+    description: { story: 'Report the excess when category totals exceed the available allowance.' },
+    source: { language: 'tsx', code: meterSource('', usage, 40) },
+  } },
   args: { limit: 40 },
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -188,6 +230,11 @@ export const OverLimit: Story = {
   },
 };
 export const Static: Story = {
+  name: 'Non-interactive summary',
+  parameters: { docs: {
+    description: { story: 'Read category totals without selectable legend buttons.' },
+    source: { language: 'tsx', code: meterSource('interactive={false} ') },
+  } },
   args: { interactive: false },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryAllByRole('button')).toHaveLength(0);
@@ -332,6 +379,23 @@ function SeedFixture(args: UsageMeterProps) {
   );
 }
 export const Sizes: Story = {
+  name: 'Meter sizes',
+  parameters: { docs: {
+    description: { story: 'Compare small, medium, and large meters with the same allowance.' },
+    source: { language: 'tsx', code: `import { UsageMeter } from '@jfrader/ui';
+
+const segments = [
+  { id: 'files', label: 'Files', value: 24 },
+  { id: 'photos', label: 'Photos', value: 16 },
+  { id: 'backups', label: 'Backups', value: 8 },
+];
+
+<>
+  <UsageMeter label="sm allowance" size="sm" segments={segments} limit={80} locale="en" />
+  <UsageMeter label="md allowance" size="md" segments={segments} limit={80} locale="en" />
+  <UsageMeter label="lg allowance" size="lg" segments={segments} limit={80} locale="en" />
+</>` },
+  } },
   render: (args) => (
     <>
       {(['sm', 'md', 'lg'] as const).map((size) => (
@@ -411,6 +475,24 @@ export const ControlledRejected: Story = {
   },
 };
 export const Controlled: Story = {
+  name: 'Own the selected category',
+  parameters: { docs: {
+    description: { story: 'Keep the pinned category in application state and click it again to clear it.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { UsageMeter, type UsageMeterSelection } from '@jfrader/ui';
+
+const segments = [
+  { id: 'files', label: 'Files', value: 24 },
+  { id: 'photos', label: 'Photos', value: 16 },
+  { id: 'backups', label: 'Backups', value: 8 },
+];
+
+export function StorageSelection() {
+  const [pin, setPin] = useState<UsageMeterSelection | null>(null);
+  return <UsageMeter label="Storage" segments={segments} limit={80} locale="en"
+    value={pin} onValueChange={setPin} />;
+}` },
+  } },
   render: (args) => <ControlledFixture {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
     const items = within(canvasElement).getAllByRole('button');
@@ -436,6 +518,22 @@ function ControlledFixture(args: UsageMeterProps) {
   );
 }
 export const QuotaUpdate: Story = {
+  name: 'Update usage from an action',
+  parameters: { docs: {
+    description: { story: 'Increase usage and keep the remainder selected as it becomes overage.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, UsageMeter } from '@jfrader/ui';
+
+export function StorageUsage() {
+  const [total, setTotal] = useState(48);
+  return <>
+    <Button onClick={() => setTotal((value) => value + 42)}>Use more</Button>
+    <UsageMeter label="Storage" locale="en" limit={80} announceChanges
+      defaultValue={{ kind: 'remainder' }}
+      segments={[{ id: 'free', label: 'Files', value: total }]} />
+  </>;
+}` },
+  } },
   args: { announceChanges: true, defaultValue: { kind: 'remainder' } },
   render: (args) => <QuotaFixture {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
@@ -528,6 +626,11 @@ export const IntlPercent: Story = {
   },
 };
 export const StandardUnits: Story = {
+  name: 'Localized unit formatting',
+  parameters: { docs: {
+    description: { story: 'Use Intl unit formatting for category amounts and the total.' },
+    source: { language: 'tsx', code: meterSource('numberFormatOptions={{ style: "unit", unit: "gigabyte", maximumFractionDigits: 1 }} ') },
+  } },
   args: {
     numberFormatOptions: {
       style: 'unit',
@@ -545,7 +648,14 @@ export const StandardUnits: Story = {
     );
   },
 };
-export const CustomUnit: Story = { args: { unitLabel: 'credits' } };
+export const CustomUnit: Story = {
+  name: 'Custom allowance unit',
+  parameters: { docs: {
+    description: { story: 'Label an allowance with an application-specific unit such as credits.' },
+    source: { language: 'tsx', code: meterSource('unitLabel="credits" ') },
+  } },
+  args: { unitLabel: 'credits' },
+};
 export const InvalidLimit: Story = {
   render: (args) => (
     <>

@@ -6,6 +6,15 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Tabs, type TabsCompoundProps, type TabsEasyProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
+import { Card } from '../card';
+
+const tabsSource = `import { Tabs } from '@jfrader/ui';
+
+const sections = [
+  { value: 'one', label: 'Account', panel: 'Name, email and avatar.' },
+  { value: 'two', label: 'Security', panel: 'Password and two-factor sign-in.' },
+  { value: 'three', label: 'Billing', panel: 'Plan, invoices and payment method.' },
+];`;
 
 const ITEMS = [
   { value: 'one', label: 'Account', panel: 'Name, email and avatar.' },
@@ -15,6 +24,7 @@ const ITEMS = [
 
 const Frame = styled.div({
   inlineSize: '360px',
+  maxInlineSize: '100%',
   minBlockSize: '120px',
   fontSize: vars.textSize.sm,
 });
@@ -25,25 +35,31 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Switch between panels by choosing a tab.' },
-      usage: `### Values
-- Pass \`label\` and \`items\` to pair tabs with panels. Each item needs a unique \`value\`, \`label\`, \`panel\` and optional \`disabled\`. For custom anatomy, use \`children\` with \`Tabs.List\`, \`Tabs.Tab\` and \`Tabs.Panel\` instead, matching tab and panel values and naming the list.
-- Use \`defaultValue\` to select a panel initially. Without a matching value, all panels start hidden. Pair \`value\` with \`onValueChange\` to control selection; update \`value\` to accept a request.
-- Hidden panels stay mounted, so their child state persists when you switch tabs.
+      sections: [
+        { title: 'Basic', stories: ['Compound'] },
+        { title: 'Variants', stories: ['Glass', 'Liquid', 'Vertical'] },
+        { title: 'Icons and labels', stories: ['IconLabels'] },
+        { title: 'Controlled selection', stories: ['Controlled'] },
+        { title: 'States', stories: ['DisabledTab', 'ManualActivation'] },
+        { title: 'Overflow', stories: ['Overflow'] },
+        { title: 'Composition', stories: ['PanelComposition'] },
+        { title: 'Keyboard', stories: ['Keyboard'] },
+      ],
+      usage: `### When to use
+Use tabs for related views within the same page. Use links for navigation to another page, or an accordion when readers need to compare several sections at once.
+
+### Content constraints
+Start with a matching selection so a panel is visible. Hidden panels stay mounted and preserve their child state. Use manual activation when panel content takes time to load so moving focus does not start each load.
 
 ### Keyboard
-- \`orientation\` defaults to \`horizontal\`. Use Left and Right horizontally, or Up and Down vertically, to move between enabled tabs with wrapping. Horizontal keys reverse in RTL. Home and End reach the ends.
-- \`activation\` defaults to \`auto\`, so focusing a tab requests selection. If your panel needs time to load, use \`activation="manual"\` and press Enter or Space to select the focused tab.
-- The focused tab is the list's Tab stop even when it is not selected. Press Tab to leave the list for the active panel; panels default to \`tabIndex={0}\`.
+- Use Left and Right horizontally, or Up and Down vertically, to move between enabled tabs with wrapping. Horizontal keys reverse in RTL. Home and End reach the ends.
+- Automatic activation selects the focused tab; manual activation waits for Enter or Space.
+- The focused tab is the list's Tab stop even when it is not selected. Press Tab to leave the list for the active panel.
 
-### Customization
-- Glass and liquid share the same bar material; their default indicators differ (pill for glass, lens for liquid).
-- Use \`variant="glass"\` or \`variant="liquid"\` for a rounded mobile bar with 48px targets and a solid selected boundary. \`indicator\` accepts \`line\`, \`pill\` or \`lens\`; material names do not change tab semantics. Materials use an opaque fallback for reduced transparency and forced colors.
-- Add decorative \`icon\` / \`activeIcon\` and \`badge\` / \`badgeLabel\` per item. Numeric badges use \`locale\`; zero and empty badges are omitted. Supply translated badge descriptions with \`badgeLabel\`.
-- \`labels="active"\`, \`labels="none"\` and \`compact\` hide visual labels only when an icon is present. Names remain available to assistive technology. Pair controlled \`compact\` with \`onCompactChange\`; focus requests expansion. Optional \`collapseOnScroll\` uses the owning window or \`scrollRef\` and pauses while the bar contains focus.
-- \`draggableIndicator\` enables release-only nearest-tab selection on material bars. Pointer cancellation and Escape discard the preview. Click and keyboard work without dragging. There is no momentum or refraction effect.
-- Position a floating list in application code and reserve its height plus the device safe-area inset in your content. Horizontal overflow preserves target sizes; use standard line tabs for vertical layouts.
-- In \`items\` mode, use \`slotProps\` for root, list, tab and panel props. Use \`slots\` to replace generated parts; \`slots.root\` takes precedence over \`component\`.
-- Declare replacements outside render. Forward received props and ref to the root element, or to the corresponding \`Tabs\` part for list, tab and panel adapters, to keep keyboard handling and ARIA relationships.`,
+### Accessibility and layout
+Name the tab list and keep a text name for each tab, including icon-only tabs. Translate badge descriptions as well as labels. Reduced transparency and forced colors use an opaque material fallback.
+
+Use line tabs for vertical layouts. Horizontal overflow preserves target sizes. If your app positions a floating list, reserve its height and the device safe-area inset in the content below it.`,
     },
   },
   argTypes: {
@@ -303,8 +319,8 @@ async function expectSelected(canvasElement: HTMLElement, selectedIndex: number)
 }
 
 export const Compound: Story = {
-  name: 'Compound',
-  parameters: { docs: { source: { language: 'tsx', code: `import { Tabs } from '@jfrader/ui';
+  name: 'Settings panels',
+  parameters: { docs: { description: { story: 'Switch between Account, Security and Billing without leaving the page.' }, source: { language: 'tsx', code: `import { Tabs } from '@jfrader/ui';
 
 <Tabs defaultValue="one">
   <Tabs.List aria-label="Settings">
@@ -331,6 +347,14 @@ export const Compound: Story = {
 };
 
 export const Controlled: Story = {
+  name: 'Parent-owned selection',
+  parameters: { docs: { description: { story: 'Keep the selected settings panel in application state.' }, source: { language: 'tsx', code: `import { useState } from 'react';
+${tabsSource}
+
+function SettingsTabs() {
+  const [value, setValue] = useState('one');
+  return <Tabs label="Settings" items={sections} value={value} onValueChange={setValue} />;
+}` } } },
   args: { onValueChange: fn() },
   render: (args) => <ControlledTabs {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -346,6 +370,10 @@ export const Controlled: Story = {
 };
 
 export const ManualActivation: Story = {
+  name: 'Select after moving focus',
+  parameters: { docs: { description: { story: 'Move focus with arrows, then press Enter or Space to show the focused panel.' }, source: { language: 'tsx', code: `${tabsSource}
+
+<Tabs label="Settings" items={sections} defaultValue="one" activation="manual" />` } } },
   args: { defaultValue: 'one', activation: 'manual', onValueChange: fn() },
   render: (args) => <TabsExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -416,6 +444,10 @@ export const RejectedKeyboardRetry: Story = {
 };
 
 export const Vertical: Story = {
+  name: 'Vertical tab list',
+  parameters: { docs: { description: { story: 'Arrange settings vertically and move between tabs with Up and Down.' }, source: { language: 'tsx', code: `${tabsSource}
+
+<Tabs label="Settings" items={sections} defaultValue="one" orientation="vertical" />` } } },
   args: { defaultValue: 'one', orientation: 'vertical' },
   render: (args) => <TabsExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -437,6 +469,12 @@ export const Vertical: Story = {
 };
 
 export const DisabledTab: Story = {
+  name: 'Unavailable settings panel',
+  parameters: { docs: { description: { story: 'Skip the disabled Security tab when moving between settings.' }, source: { language: 'tsx', code: `${tabsSource}
+
+<Tabs label="Settings" defaultValue="one" items={sections.map((section) => ({
+  ...section, disabled: section.value === 'two',
+}))} />` } } },
   args: { defaultValue: 'one' },
   render: (args) => <TabsExample {...args} disabledValue="two" />,
   play: async ({ canvasElement }) => {
@@ -502,6 +540,10 @@ export const RemovedFocusedFallback: Story = {
 };
 
 export const Keyboard: Story = {
+  name: 'Navigate tabs by keyboard',
+  parameters: { docs: { description: { story: 'Use arrows, Home and End to select tabs, then Tab into the active panel.' }, source: { language: 'tsx', code: `${tabsSource}
+
+<Tabs label="Settings" items={sections} defaultValue="one" />` } } },
   args: { defaultValue: 'one' },
   render: (args) => <TabsExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -554,23 +596,93 @@ export const RTL: Story = {
 };
 
 /** Use a rounded glass bar for short, in-page section labels. */
+export const IconLabels: EasyStory = {
+  name: 'Icons with active labels',
+  args: {
+    label: 'Library', variant: 'glass', labels: 'active', defaultValue: 'home',
+    items: [
+      { value: 'home', label: 'Home', panel: 'Recent activity', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m3 10 9-7 9 7v11H3Z" /></svg> },
+      { value: 'saved', label: 'Saved', panel: 'Your saved items', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M6 3h12v18l-6-4-6 4Z" /></svg> },
+    ],
+  },
+  render: (args) => <Tabs {...args} />,
+  parameters: { docs: {
+    description: { story: 'Show the active label beside its icon while keeping every tab named.' },
+    source: { language: 'tsx', code: `import { Tabs } from '@jfrader/ui';
+
+<Tabs label="Library" variant="glass" labels="active" defaultValue="home" items={[
+  { value: 'home', label: 'Home', panel: 'Recent activity', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m3 10 9-7 9 7v11H3Z" /></svg> },
+  { value: 'saved', label: 'Saved', panel: 'Your saved items', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M6 3h12v18l-6-4-6 4Z" /></svg> },
+]} />` },
+  } },
+};
+
+export const Overflow: EasyStory = {
+  name: 'Scrollable tab labels',
+  args: {
+    label: 'Project settings', defaultValue: 'general', variant: 'glass', sx: { inlineSize: '16rem', maxInlineSize: '100%' },
+    items: [
+      { value: 'general', label: 'General settings', panel: 'Project name and visibility.' },
+      { value: 'members', label: 'Team members', panel: 'Members and permissions.' },
+      { value: 'notifications', label: 'Notification preferences', panel: 'Email and activity notifications.' },
+    ],
+  },
+  render: (args) => <Tabs {...args} />,
+  parameters: { docs: {
+    description: { story: 'Scroll a narrow bar to reach long labels without shrinking tab targets.' },
+    source: { language: 'tsx', code: `import { Tabs } from '@jfrader/ui';
+
+<Tabs label="Project settings" defaultValue="general" variant="glass"
+  sx={{ inlineSize: '16rem', maxInlineSize: '100%' }} items={[
+    { value: 'general', label: 'General settings', panel: 'Project name and visibility.' },
+    { value: 'members', label: 'Team members', panel: 'Members and permissions.' },
+    { value: 'notifications', label: 'Notification preferences', panel: 'Email and activity notifications.' },
+  ]} />` },
+  } },
+};
+
+export const PanelComposition: Story = {
+  name: 'Cards inside tab panels',
+  render: () => (
+    <Tabs defaultValue="account">
+      <Tabs.List aria-label="Settings">
+        <Tabs.Tab value="account">Account</Tabs.Tab>
+        <Tabs.Tab value="billing">Billing</Tabs.Tab>
+      </Tabs.List>
+      <Tabs.Panel value="account"><Card title="Account" content="Name, email and avatar." /></Tabs.Panel>
+      <Tabs.Panel value="billing"><Card title="Billing" content="Plan, invoices and payment method." /></Tabs.Panel>
+    </Tabs>
+  ),
+  parameters: { docs: {
+    description: { story: 'Compose each settings view from a card inside its matching panel.' },
+    source: { language: 'tsx', code: `import { Card, Tabs } from '@jfrader/ui';
+
+<Tabs defaultValue="account">
+  <Tabs.List aria-label="Settings">
+    <Tabs.Tab value="account">Account</Tabs.Tab>
+    <Tabs.Tab value="billing">Billing</Tabs.Tab>
+  </Tabs.List>
+  <Tabs.Panel value="account"><Card title="Account" content="Name, email and avatar." /></Tabs.Panel>
+  <Tabs.Panel value="billing"><Card title="Billing" content="Plan, invoices and payment method." /></Tabs.Panel>
+</Tabs>` },
+  } },
+};
+
 export const Glass: EasyStory = {
+  name: 'Glass tab bar',
   args: { label: 'Settings', items: ITEMS, defaultValue: 'one', variant: 'glass' },
   render: (args) => <Tabs {...args} />,
-  parameters: { docs: { source: { language: 'tsx', code: `<Tabs variant="glass" label="Settings" defaultValue="account" items={[
-  { value: 'account', label: 'Account', panel: 'Name, email and avatar.' },
-  { value: 'security', label: 'Security', panel: 'Password and two-factor sign-in.' },
-  { value: 'billing', label: 'Billing', panel: 'Plan and invoices.' },
-]} />` } } },
+  parameters: { docs: { description: { story: 'Show settings in a rounded glass bar with a pill indicator.' }, source: { language: 'tsx', code: `${tabsSource}
+
+<Tabs variant="glass" label="Settings" defaultValue="one" items={sections} />` } } },
 };
 
 /** Move a shared lens between tabs while keeping panels mounted. */
 export const Liquid: EasyStory = {
   ...Glass,
+  name: 'Liquid tab bar',
   args: { ...Glass.args, variant: 'liquid' },
-  parameters: { docs: { source: { language: 'tsx', code: `<Tabs variant="liquid" label="Settings" defaultValue="account" items={[
-  { value: 'account', label: 'Account', panel: 'Name, email and avatar.' },
-  { value: 'security', label: 'Security', panel: 'Password and two-factor sign-in.' },
-  { value: 'billing', label: 'Billing', panel: 'Plan, invoices and payment method.' },
-]} />` } } },
+  parameters: { docs: { description: { story: 'Move a lens indicator between settings in a rounded liquid bar.' }, source: { language: 'tsx', code: `${tabsSource}
+
+<Tabs variant="liquid" label="Settings" defaultValue="one" items={sections} />` } } },
 };

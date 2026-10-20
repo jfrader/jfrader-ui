@@ -13,7 +13,13 @@ type Anatomy = { root: 'div' };
 type ParagraphAnatomy = { root: 'p' };
 type HeadingAnatomy = { root: 'h2' };
 type FactAnatomy = { root: 'aside'; title: 'p'; list: 'ul'; item: 'li' };
-type QuoteAnatomy = { root: 'blockquote'; excerpt: 'div'; speaker: 'p'; attribution: 'footer' };
+type QuoteAnatomy = {
+  root: 'blockquote';
+  excerpt: 'div';
+  speaker: 'p';
+  /** Renders a `footer` by default. */
+  attribution: 'footer';
+};
 type CellAnatomy = { root: 'div'; label: 'p'; content: 'div' };
 type Customization<A extends Record<string, 'div' | 'p' | 'h2' | 'aside' | 'ul' | 'li' | 'blockquote' | 'span' | 'footer'>> = {
   component?: PresentationSlots<A>['root']; slots?: PresentationSlots<A>; slotProps?: PresentationParts<A>;

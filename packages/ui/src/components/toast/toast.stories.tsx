@@ -29,27 +29,26 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Show messages when actions succeed, fail or need attention.' },
-      usage: `### Queue
-- Set \`viewport="default"\` to mount the queue renderer, or \`viewport="stack"\` for \`ToastStack\`. Without \`viewport\`, mount one explicit \`Toast.Viewport\` or \`ToastStack\` inside the provider. Automatic rendering suppresses explicit renderer descendants.
-- Call \`useToast()\` inside \`Toast\` or \`Toast.Provider\`. \`toast(options)\` returns an id; retain it to call \`update(id, patch)\` or \`dismiss(id)\`. Unknown or closing ids cannot be updated.
-- \`max\` defaults to \`4\`. Adding beyond the limit removes the oldest toast immediately. The limit is floored and clamped to at least \`1\`; non-finite limits fall back to \`4\`.
+      sections: [
+        { title: 'Tones', stories: ['Default'] },
+        { title: 'Title and description', stories: ['Compound'] },
+        { title: 'Actions', stories: ['Action'] },
+        { title: 'Dismissal', stories: ['Persistent'] },
+        { title: 'Stacking and placement', stories: ['MaxStack'] },
+        { title: 'Controlled updates', stories: ['UpdateCountdown'] },
+      ],
+      usage: `### When to use
+Show a non-blocking result after an action. Keep essential information available in the page after a timed notification disappears.
 
-### Timing
-- \`duration\` defaults to 5000 milliseconds. Set a toast's \`duration\` to \`null\` to keep it open until dismissal. Provider duration changes affect new toasts, not existing ones.
-- Timers pause while the toast is hovered, focused or the document is hidden, then resume with the remaining time. Keep timed information accessible elsewhere, or use \`duration: null\` when readers need to act on it.
-- A \`loading\` toast persists when you omit its duration. Updating \`loading\` without a duration sets persistence when \`true\` and the provider delay when \`false\`. A changed duration restarts the timer; a text-only update does not.
+### Constraints
+Mount one queue renderer per provider. Adding beyond the queue limit removes the oldest notification immediately. Updates to unknown or closing notifications have no effect.
 
-### Actions and keyboard
-- Pass an \`action\` with \`label\` and \`onClick\` to add a button. Its handler runs before dismissal; call \`event.preventDefault()\` to keep the toast open.
-- Appearing toasts do not move focus. Press Tab to reach action and dismiss buttons, then Enter or Space to activate. Removing a toast with focus inside it moves focus to the first surviving open toast's dismiss button when one exists.
+Timers pause while a toast is hovered, focused or the document is hidden. A text-only update keeps the remaining time; changing the duration restarts it. Keep messages that require action open until dismissal.
 
-### Announcements
-- \`tone\` defaults to \`neutral\`. Use \`danger\` for an assertive \`alert\`; other tones announce politely through \`status\`. Keep message content in \`title\` and \`description\`, with actions in \`action\` rather than inside the live-region text.
-- Translate the dismiss name with \`messages.dismiss\` or \`dismissLabel\`; \`messages.dismiss\` wins and the fallback is "Dismiss".
+### Accessibility
+New notifications do not move focus. Tab reaches actions and dismiss buttons; Enter or Space activates them. Removing a focused notification moves focus to a surviving notification's dismiss button when available.
 
-### Customization
-- The provider renders no DOM. Use \`slotProps.viewport\` or \`viewportProps\` for renderer props, then the renderer's \`slotProps.root\` and \`slotProps.item\` for root and card styling.
-- Use \`slots.viewport\` to replace the renderer, forwarding received props to \`Toast.Viewport\` or \`ToastStack\`. For the default viewport's div, use \`component\` or \`slots.root\` on its props and forward received props and ref. Declare replacements outside render.`,
+Danger messages announce assertively; other tones announce politely. Keep interactive controls outside the announcement text and translate dismiss names for your audience.`,
     },
   },
 } satisfies Meta<typeof Toast>;
@@ -160,8 +159,11 @@ async function expectRemoved(toast: HTMLElement) {
 }
 
 export const Default: Story = {
+  name: 'Notification tones',
   args: { viewport: 'default', messages: { dismiss: 'Close notification' } },
-  parameters: { docs: { source: { language: 'tsx', code: `function Notifications() {
+  parameters: { docs: { description: { story: 'Show a neutral result, an upload error, or a persistent sync message.' }, source: { language: 'tsx', code: `import { Button, Toast, useToast } from '@jfrader/ui';
+
+function Notifications() {
   const { toast } = useToast();
   return <>
     <Button onClick={() => toast({ title: 'Changes saved', description: 'Your profile is up to date.' })}>Show toast</Button>
@@ -194,6 +196,22 @@ export const Default: Story = {
 };
 
 export const Compound: Story = {
+  name: 'Title and supporting text',
+  parameters: { docs: {
+    description: { story: 'Mount the viewport explicitly and show a title with supporting detail.' },
+    source: { language: 'tsx', code: `import { Button, Toast, useToast } from '@jfrader/ui';
+
+function Notifications() {
+  const { toast } = useToast();
+  return <>
+    <Button onClick={() => toast({ title: 'Changes saved', description: 'Your profile is up to date.' })}>Show toast</Button>
+    <Button onClick={() => toast({ title: 'Upload failed', description: 'The file is larger than 10 MB.', tone: 'danger' })}>Show danger</Button>
+    <Button onClick={() => toast({ title: 'Sync paused', duration: null })}>Show persistent</Button>
+  </>;
+}
+
+<Toast.Provider><Notifications /><Toast.Viewport /></Toast.Provider>` },
+  } },
   render: () => <Toast.Provider><Triggers /><Toast.Viewport /></Toast.Provider>,
 };
 
@@ -338,6 +356,22 @@ export const DangerRole: Story = {
 };
 
 export const MaxStack: Story = {
+  name: 'Limit the queue',
+  parameters: { docs: {
+    description: { story: 'Show three messages to replace the oldest in a two-message queue.' },
+    source: { language: 'tsx', code: `import { Button, Toast, useToast } from '@jfrader/ui';
+
+function Notifications() {
+  const { toast } = useToast();
+  return <>
+    <Button onClick={() => toast({ title: 'Changes saved', description: 'Your profile is up to date.', duration: null })}>Show toast</Button>
+    <Button onClick={() => toast({ title: 'Upload failed', description: 'The file is larger than 10 MB.', tone: 'danger', duration: null })}>Show danger</Button>
+    <Button onClick={() => toast({ title: 'Sync paused', duration: null })}>Show persistent</Button>
+  </>;
+}
+
+<Toast max={2}><Notifications /><Toast.Viewport /></Toast>` },
+  } },
   args: { max: 2 },
   render: (args) => <ToastHarness {...args} options={{ duration: null }} />,
   play: async ({ canvasElement }) => {
@@ -357,6 +391,22 @@ export const MaxStack: Story = {
 };
 
 export const Persistent: Story = {
+  name: 'Dismiss a persistent message',
+  parameters: { docs: {
+    description: { story: 'Keep the sync message open until its dismiss button is activated.' },
+    source: { language: 'tsx', code: `import { Button, Toast, useToast } from '@jfrader/ui';
+
+function Notifications() {
+  const { toast } = useToast();
+  return <>
+    <Button onClick={() => toast({ title: 'Changes saved', description: 'Your profile is up to date.' })}>Show toast</Button>
+    <Button onClick={() => toast({ title: 'Upload failed', description: 'The file is larger than 10 MB.', tone: 'danger' })}>Show danger</Button>
+    <Button onClick={() => toast({ title: 'Sync paused', duration: null })}>Show persistent</Button>
+  </>;
+}
+
+<Toast duration={300}><Notifications /><Toast.Viewport /></Toast>` },
+  } },
   render: (args) => <ToastHarness {...args} duration={300} />,
   play: async ({ canvasElement }) => {
     const toast = await showToast(canvasElement, 'Show persistent', PERSISTENT_TITLE);
@@ -404,6 +454,31 @@ export const FocusContinuation: Story = {
 };
 
 export const Action: Story = {
+  name: 'Undo and retry actions',
+  parameters: { docs: {
+    description: { story: 'Undo dismisses its message; Retry prevents dismissal and leaves the error visible.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, Toast, useToast } from '@jfrader/ui';
+
+function ArchiveActions() {
+  const { toast } = useToast();
+  const [runs, setRuns] = useState(0);
+  return <>
+    <Button onClick={() => toast({ title: 'Message archived', duration: null,
+      action: { label: 'Undo', onClick: () => setRuns((count) => count + 1) },
+    })}>Archive</Button>
+    <Button onClick={() => toast({ title: 'Upload failed', tone: 'danger', duration: null,
+      action: { label: 'Retry', onClick: (event) => {
+        event.preventDefault();
+        setRuns((count) => count + 1);
+      } },
+    })}>Upload</Button>
+    <p>Action runs: {runs}</p>
+  </>;
+}
+
+<Toast><ArchiveActions /><Toast.Viewport /></Toast>` },
+  } },
   render: (args) => (
     <ToastHarness {...args}>
       <ActionTriggers />
@@ -500,6 +575,24 @@ function UpdateTriggers() {
 }
 
 export const UpdateCountdown: Story = {
+  name: 'Update a notification',
+  parameters: { docs: {
+    description: { story: 'Start a countdown, make the message persistent, then resume timed dismissal.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, Toast, useToast } from '@jfrader/ui';
+
+function Countdown() {
+  const { toast, update } = useToast();
+  const [id, setId] = useState('');
+  return <>
+    <Button onClick={() => setId(toast({ title: 'Changes saved', duration: 800 }))}>Start countdown</Button>
+    <Button onClick={() => update(id, { duration: null, title: 'Sync paused' })}>Persist</Button>
+    <Button onClick={() => update(id, { duration: 300 })}>Resume countdown</Button>
+  </>;
+}
+
+<Toast><Countdown /><Toast.Viewport /></Toast>` },
+  } },
   render: (args) => (
     <StrictMode>
       <ToastHarness {...args}>

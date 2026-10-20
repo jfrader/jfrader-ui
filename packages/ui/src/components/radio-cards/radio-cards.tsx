@@ -29,16 +29,27 @@ export type RadioCardsLayout = 'grid' | 'list';
 export type RadioCardsSize = 'sm' | 'md';
 export interface RadioCardsCompoundProps
   extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
+  /** Controls the selected card's value. */
   value?: string;
+  /** Sets the initially selected card. Defaults to no selection. */
   defaultValue?: string;
+  /** Receives the newly selected card's value. */
   onValueChange?: (value: string) => void;
+  /** Names the group's native radio inputs for form submission. Defaults to a generated name. */
   name?: string;
+  /** Requires a selection for native form validation. Defaults to `false`. */
   required?: boolean;
+  /** Disables every card in the group. Defaults to `false`. */
   disabled?: boolean;
+  /** Marks the group and its inputs invalid. Defaults to `false`. */
   invalid?: boolean;
+  /** Displays an error associated with the group and marks it invalid. */
   error?: ReactNode;
+  /** Arranges cards in a responsive grid or single-column list. Defaults to `grid`. */
   layout?: RadioCardsLayout;
+  /** Sets the grid's minimum card width, capped by the available width. Defaults to `12rem`. */
   minColumnWidth?: CSSProperties['inlineSize'];
+  /** Sets card padding and text size. Defaults to `md`. */
   size?: RadioCardsSize;
   options?: never;
   label?: never;
@@ -74,11 +85,16 @@ export interface RadioCardsSlotProps {
   error?: Omit<ComponentPropsWithRef<'span'>, 'children'> & { sx?: Interpolation<Theme> };
 }
 export interface RadioCardsEasyProps extends Omit<RadioCardsCompoundProps, 'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component'> {
+  /** Supplies the cards to render in the generated group. */
   options: readonly RadioCardsOption[];
+  /** Names the generated radio group. */
   label?: ReactNode;
   children?: never;
+  /** Replaces the generated root, label, cards or error element. */
   slots?: RadioCardsSlots;
+  /** Replaces the root element. `slots.root` takes precedence. */
   component?: RadioCardsSlots['root'];
+  /** Passes props and style overrides to generated group parts. */
   slotProps?: RadioCardsSlotProps;
 }
 export type RadioCardsProps = RadioCardsCompoundProps | RadioCardsEasyProps;
@@ -104,13 +120,21 @@ export interface RadioCardsItemProps
       'type' | 'name' | 'checked' | 'defaultChecked' | 'value' | 'size' | 'children'
     >,
     SxProps {
+  /** Identifies this card for selection and form submission. */
   value: string;
+  /** Names the card's radio input. */
   label: ReactNode;
+  /** Adds supporting text beneath the card label. */
   description?: ReactNode;
+  /** Shows a short value at the end of the card. */
   meta?: ReactNode;
+  /** Shows a decorative icon beside the label. */
   icon?: ReactNode;
+  /** Adds an explanation associated with the input when the card is disabled. */
   disabledReason?: ReactNode;
+  /** Replaces the card's content parts. */
   slots?: RadioCardsItemSlots;
+  /** Passes props and style overrides to the card's content parts. */
   slotProps?: Partial<
     Record<
       | /** Container surrounding the option content. */

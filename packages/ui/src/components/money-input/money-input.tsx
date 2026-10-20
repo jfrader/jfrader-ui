@@ -64,17 +64,28 @@ const defaultMessages: MoneyInputMessages = {
 
 export type MoneyInputSlotProps = Partial<
   Record<
-    | 'root'
-    | 'label'
-    | 'shell'
-    | 'control'
-    | 'currency'
-    | 'quickAdd'
-    | 'quickAddButton'
-    | 'range'
-    | 'description'
-    | 'error'
-    | 'status',
+    | /** Renders a `div` by default. */
+      'root'
+    | /** Renders a `label` by default. */
+      'label'
+    | /** Renders a `div` by default. */
+      'shell'
+    | /** Renders an `input` by default. */
+      'control'
+    | /** Renders a `span` by default. */
+      'currency'
+    | /** Renders a `div` by default. */
+      'quickAdd'
+    | /** Renders a `button` by default. */
+      'quickAddButton'
+    | /** Renders a `span` by default. */
+      'range'
+    | /** Renders a `span` by default. */
+      'description'
+    | /** Renders a `span` by default. */
+      'error'
+    | /** Renders a `span` by default. */
+      'status',
     FieldPartProps
   >
 >;
@@ -88,13 +99,21 @@ export interface MoneyInputProps
     SxProps {
   /** Integer minor units; `null` is controlled empty. */
   value?: number | null;
+  /** Sets the initial amount in integer minor units. Defaults to `null` (empty). */
   defaultValue?: number | null;
+  /** Receives the amount in integer minor units, or `null`, with currency and display details. */
   onValueChange?: (value: number | null, details: MoneyInputDetails) => void;
+  /** Controls the selected currency. Must be included in `currencies`. */
   currency?: string;
+  /** Sets the initial currency. Defaults to the first entry in `currencies`. */
   defaultCurrency?: string;
+  /** Receives the selected currency code. Changing currency preserves minor units. */
   onCurrencyChange?: (currency: string) => void;
+  /** Controls whether the currency selector is open. */
   currencyOpen?: boolean;
+  /** Opens the uncontrolled currency selector initially. Defaults to `false`. */
   defaultCurrencyOpen?: boolean;
+  /** Receives changes to the currency selector's open state. */
   onCurrencyOpenChange?: (open: boolean) => void;
   /** Unique ISO currency codes, or free-form asset codes when `decimals` is set. Changing currency preserves minor units. */
   currencies: readonly string[];
@@ -110,15 +129,25 @@ export interface MoneyInputProps
   step?: number;
   /** Positive integer minor-unit increments. */
   quickAdd?: readonly number[];
+  /** Selects amount formatting, parsing and currency-name locale. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Chooses the ISO currency's display notation. Defaults to `symbol`. */
   currencyDisplay?: 'symbol' | 'narrowSymbol' | 'code' | 'name';
+  /** Names the amount field with a linked label. */
   label?: ReactNode;
+  /** Adds supporting text associated with the amount field. */
   description?: ReactNode;
+  /** Displays an error instead of the generated validation message. */
   error?: ReactNode;
+  /** Visually hides the label while retaining its accessible name. Defaults to `false`. */
   hideLabel?: boolean;
+  /** Chooses the standard or enlarged amount presentation. Defaults to `standard`. */
   variant?: 'standard' | 'prominent';
+  /** Sets the control height and text size. Defaults to `md`. */
   size?: 'sm' | 'md' | 'lg';
+  /** Overrides validation, currency and quick-add messages. Defaults to English. */
   messages?: Partial<MoneyInputMessages>;
+  /** Passes props and style overrides to named field parts. */
   slotProps?: MoneyInputSlotProps;
 }
 

@@ -109,7 +109,7 @@ export interface DialogSlotProps {
   trigger?: Omit<DialogTriggerProps, 'children'>;
   /** Native `<dialog>` shell that manages backdrop and focus trapping. */
   content?: Omit<DialogContentProps, 'children'>;
-  /** Adopted panel container that renders the dialog surface material; Dialog.Panel by default. */
+  /** Adopted panel container that renders the dialog surface material. Uses `Dialog.Panel` by default. */
   panel?: Omit<DialogPanelProps, 'children'>;
   /** Container grouping the title and optional description. */
   header?: Omit<ComponentPropsWithRef<'div'>, 'children'> & { sx?: Interpolation<Theme> };
@@ -127,7 +127,7 @@ export interface DialogSlots {
   root?: NonNullable<DialogPanelProps['slots']>['root'];
   /** Replaces the shell with one native dialog, forwarding every prop and its dialog ref. */
   content?: ComponentType<ComponentPropsWithRef<'dialog'>>;
-  /** Replaces the panel div through the Surface root seam; slots.root wins. */
+  /** Replaces the panel div through the Surface root seam; slots.root wins. Renders a `div` by default. */
   panel?: NonNullable<DialogPanelProps['slots']>['root'];
   /** Replaces the container grouping the title and optional description. */
   header?: ComponentType<ComponentPropsWithRef<'div'>>;
