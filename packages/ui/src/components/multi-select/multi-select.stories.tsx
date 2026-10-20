@@ -32,7 +32,9 @@ const OPTIONS: readonly MultiSelectOption[] = [
   { value: 'docs', label: 'Documentation' },
 ];
 
-const snippet = `<MultiSelect
+const snippet = `import { MultiSelect } from '@jfrader/ui';
+
+<MultiSelect
   label="Labels"
   placeholder="Select labels"
   options={[
@@ -126,11 +128,25 @@ const meta: Meta<MultiSelectCompoundProps> = {
         component:
           'Choose more than one option from a list without closing it after each choice.',
       },
-      usage: `- MultiSelect is a select-only combobox with a listbox. It uses virtual focus: DOM focus stays on the trigger while an option is highlighted. Toggling an option leaves the list open.
-- Arrows and Home/End move the highlight. Prefix typeahead keeps a 500ms buffer.
-- Enter and Space toggle the highlighted option. Escape and Tab close without changing selection.
-- Clear keeps disabled selections.
-- Named fields submit repeated form entries. A separate native input validates required selection.`,
+      sections: [
+        { title: 'Choose options', stories: ['Default'] },
+        { title: 'Selection summaries', stories: ['Overflow', 'OverflowOnly'] },
+        { title: 'Field size and feedback', stories: ['Sizes', 'Empty', 'Error'] },
+        { title: 'Controlled state and forms', stories: ['EasyControlled', 'Required', 'EasyFormReset'] },
+        { title: 'Keyboard', stories: ['Keyboard', 'Typeahead'] },
+      ],
+      usage: `### When to use
+- Use MultiSelect for several choices from a fixed list. Use Select for one choice or Combobox for typed search.
+
+### Keyboard and focus
+- DOM focus stays on the trigger while an option is highlighted. Toggling an option leaves the list open.
+- Arrows wrap and skip disabled options; Home/End reach the ends. Prefix typeahead keeps a 500ms buffer and highlights matches without filtering the list.
+- Enter and Space toggle the highlighted option. Escape and Tab close without changing selection; Tab moves focus to the next control.
+
+### Selection and forms
+- Clearing the selection keeps disabled selections.
+- The spoken selection summary includes options hidden by the visible count limit.
+- Named fields submit repeated form entries. Required fields need at least one selection before submission.`,
     },
   },
 };
@@ -192,6 +208,7 @@ async function active(canvasElement: HTMLElement, name: string) {
   await expect(canvasElement.ownerDocument.activeElement).toBe(triggerOf(canvasElement));
 }
 export const Default: EasyStory = {
+  name: 'Choose project labels',
   args: {
     label: LABEL,
     placeholder: 'Select labels',
@@ -207,6 +224,7 @@ export const Default: EasyStory = {
   ),
   parameters: {
     docs: {
+      description: { story: 'Select several labels without closing the list, or clear the selection.' },
       source: { language: 'tsx', code: snippet },
     },
   },
@@ -311,7 +329,10 @@ export const EasyClearable: EasyStory = {
 };
 
 export const EasyFormReset: EasyStory = {
-  parameters: { docs: { source: { language: 'tsx', code: `<form aria-label="Labels form">
+  name: 'Reset a form',
+  parameters: { docs: { description: { story: 'Select more labels, then reset the form to restore Bug.' }, source: { language: 'tsx', code: `import { Button, MultiSelect } from '@jfrader/ui';
+
+<form aria-label="Easy multi-select form">
   <MultiSelect label="Labels" name="labels" defaultValue={['bug']} options={[
     { value: 'bug', label: 'Bug' },
     { value: 'locked', label: 'Locked', disabled: true },
@@ -354,7 +375,8 @@ function EasyControlledExample(props: MultiSelectEasyProps) {
 }
 
 export const EasyControlled: EasyStory = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+  name: 'Control selection and visibility',
+  parameters: { docs: { description: { story: 'Keep the selected labels and popup visibility in React state.' }, source: { language: 'tsx', code: `import { useState } from 'react';
 import { MultiSelect } from '@jfrader/ui';
 
 function LabelsPicker() {
@@ -492,7 +514,10 @@ export const ControlledOpen: Story = {
   },
 };
 export const Sizes: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<>
+  name: 'Field sizes',
+  parameters: { docs: { description: { story: 'Compare small, medium, and large label pickers.' }, source: { language: 'tsx', code: `import { MultiSelect } from '@jfrader/ui';
+
+<>
   {(['sm', 'md', 'lg'] as const).map((size) => (
     <MultiSelect key={size}>
       <MultiSelect.Label>Labels ({size})</MultiSelect.Label>
@@ -521,7 +546,10 @@ export const Sizes: Story = {
   },
 };
 export const Empty: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect>
+  name: 'No available options',
+  parameters: { docs: { description: { story: 'Open the field to see the empty-list message.' }, source: { language: 'tsx', code: `import { MultiSelect } from '@jfrader/ui';
+
+<MultiSelect>
   <MultiSelect.Label>Labels</MultiSelect.Label>
   <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
   <MultiSelect.Content><MultiSelect.Empty /></MultiSelect.Content>
@@ -543,7 +571,10 @@ export const Selected: Story = {
   args: { defaultValue: ['bug', 'feature'] },
 };
 export const Overflow: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect defaultValue={['bug', 'feature', 'docs']}>
+  name: 'Summarize additional selections',
+  parameters: { docs: { description: { story: 'Show two selected labels and a count for the remaining selection.' }, source: { language: 'tsx', code: `import { MultiSelect } from '@jfrader/ui';
+
+<MultiSelect defaultValue={['bug', 'feature', 'docs']}>
   <MultiSelect.Label>Labels</MultiSelect.Label>
   <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" maxVisible={2} /></MultiSelect.Trigger>
   <MultiSelect.Clear />
@@ -563,7 +594,10 @@ export const Overflow: Story = {
   },
 };
 export const OverflowOnly: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect defaultValue={['bug', 'feature', 'docs']}>
+  name: 'Show only the selection count',
+  parameters: { docs: { description: { story: 'Replace visible label chips with a count while retaining the spoken selection summary.' }, source: { language: 'tsx', code: `import { MultiSelect } from '@jfrader/ui';
+
+<MultiSelect defaultValue={['bug', 'feature', 'docs']}>
   <MultiSelect.Label>Labels</MultiSelect.Label>
   <MultiSelect.Trigger><MultiSelect.Value maxVisible={0} /></MultiSelect.Trigger>
   <MultiSelect.Clear />
@@ -735,7 +769,10 @@ export const GroupedOptions: Story = {
   },
 };
 export const Required: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<form>
+  name: 'Require a selection',
+  parameters: { docs: { description: { story: 'Submit the form with no labels to focus the field, then select a label to satisfy validation.' }, source: { language: 'tsx', code: `import { Button, MultiSelect } from '@jfrader/ui';
+
+<form>
   <MultiSelect name="labels" required>
     <MultiSelect.Label>Labels</MultiSelect.Label>
     <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
@@ -803,7 +840,10 @@ export const RequiredSatisfied: Story = {
   },
 };
 export const Error: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect>
+  name: 'Invalid field',
+  parameters: { docs: { description: { story: 'Display a validation message alongside the field description.' }, source: { language: 'tsx', code: `import { MultiSelect } from '@jfrader/ui';
+
+<MultiSelect>
   <MultiSelect.Label>Labels</MultiSelect.Label>
   <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
   <MultiSelect.Clear />
@@ -1144,7 +1184,10 @@ export const PersistentOpenEmpty: Story = {
   },
 };
 export const Keyboard: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect>
+  name: 'Keyboard navigation',
+  parameters: { docs: { description: { story: 'Use arrows to highlight labels, Enter or Space to toggle them, and Escape to close the list.' }, source: { language: 'tsx', code: `import { MultiSelect } from '@jfrader/ui';
+
+<MultiSelect>
   <MultiSelect.Label>Labels</MultiSelect.Label>
   <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
   <MultiSelect.Clear />
@@ -1198,7 +1241,10 @@ export const Keyboard: Story = {
   },
 };
 export const Typeahead: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect>
+  name: 'Find by typing',
+  parameters: { docs: { description: { story: 'Type a label prefix to highlight a match without filtering or selecting it.' }, source: { language: 'tsx', code: `import { MultiSelect } from '@jfrader/ui';
+
+<MultiSelect>
   <MultiSelect.Label>Labels</MultiSelect.Label>
   <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
   <MultiSelect.Clear />
