@@ -32,10 +32,14 @@ export const ReplaceItemParts: Story = {
   },
 };
 
-const usage = `<RadioCards name="shipping" defaultValue="standard" layout="list" required>
+const usage = `import { RadioCards } from '@jfrader/ui';
+
+<RadioCards defaultValue="standard">
   <RadioCards.Label>Shipping speed</RadioCards.Label>
+  <RadioCards.Description>Choose a delivery option.</RadioCards.Description>
   <RadioCards.Item value="standard" label="Standard" description="4–6 business days" />
-  <RadioCards.Item value="express" label="Express" />
+  <RadioCards.Item value="express" label="Express" description="1–2 business days" disabledReason="Unavailable at this address" />
+  <RadioCards.Item value="pickup" label="Pickup" description="Collect at the store" />
 </RadioCards>`;
 const Fixture = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '100%', maxInlineSize: '44rem' });
 const FixtureForm = Fixture.withComponent('form');
@@ -45,7 +49,7 @@ const FixtureButton = styled.button({
   minInlineSize: vars.space[8],
   padding: vars.space[2],
 });
-// These overrides exercise the documented slot `css` API.
+// These overrides exercise the documented slot sx API.
 const overrides = {
   control: { sx: css({ borderRadius: vars.radius.sm }) },
   indicator: { sx: css({ inlineSize: vars.space[6], blockSize: vars.space[6] }) },
@@ -86,30 +90,32 @@ const meta = {
   render: (args) => <Example {...args} />,
   parameters: {
     docs: {
-      source: { code: `const shipping = [
-  { value: 'standard', label: 'Standard', description: '4–6 business days' },
-  { value: 'express', label: 'Express', disabled: true },
-  { value: 'pickup', label: 'Pickup' },
-] as const;
-
-<RadioCards label="Shipping speed" options={shipping} name="shipping" defaultValue="standard" />` },
+      sections: [
+        { title: 'Basic', stories: ['DefaultGrid', 'Easy'] },
+        { title: 'Layouts', stories: ['List'] },
+        { title: 'Descriptions and icons', stories: ['DescriptionsMeta', 'Icons'] },
+        { title: 'States', stories: ['DisabledReason', 'Disabled'] },
+        { title: 'Validation', stories: ['Required', 'InvalidError'] },
+        { title: 'Forms', stories: ['NativeForm'] },
+        { title: 'Keyboard', stories: ['Keyboard'] },
+      ],
       description: {
         component:
           'Choose one option from cards that can include a description and supporting details.',
       },
-      usage: `- Supply readonly options for the complete field, or children for custom anatomy; do not mix them.
-- slotProps customizes the generated root, label and items, including item anatomy. slots replaces those parts; component is shorthand for slots.root. Replacement roots forward props and ref to one div.
+      usage: `### When to use
+Use cards when a single choice needs descriptions, icons or supporting details. Use a compact radio group for short labels alone.
+
+### Content and forms
+- Give every group a name and use unique values. Do not put links or buttons inside items.
+- Native radios provide validation and form submission. Reset restores the initial uncontrolled selection without reporting a change.
+- Format numeric metadata with Intl.
 
 ### Keyboard
-- Native radios provide validation and form submission. Tab enters the checked enabled radio. Without a selection, Tab enters the first enabled radio and Shift+Tab the last.
+- Tab enters the checked enabled radio. Without a selection, Tab enters the first enabled radio and Shift+Tab the last.
 - Arrows select in DOM order, wrap and skip disabled options. Horizontal arrows reverse in RTL.
 - Home/End select the first/last option. Enter selects without submitting; Space follows native radio behavior.
-
-### Values and content
-- Controlled requests stay unchecked until accepted. Form reset restores defaultValue without a callback.
-- Values must be unique. Do not put links or buttons inside items.
-- Metadata supplements the choice; format numbers and currency with Intl.
-- Reduced motion removes ring animation. The border and dot show the accepted selection.`,
+- Reduced motion removes ring animation; the border and dot still show the selection.`,
     },
   },
 } satisfies Meta<RadioCardsProps>;
@@ -122,6 +128,19 @@ const shipping = [
   { value: 'pickup', label: 'Pickup', description: 'Collect at the store' },
 ] as const;
 export const Easy: EasyStory = {
+  name: 'Options from data',
+  parameters: { docs: {
+    description: { story: 'Build a shipping field from options, including an unavailable delivery method.' },
+    source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
+
+const shipping = [
+  { value: 'standard', label: 'Standard', description: '4–6 business days' },
+  { value: 'express', label: 'Express', disabled: true },
+  { value: 'pickup', label: 'Pickup', description: 'Collect at the store' },
+] as const;
+
+<RadioCards label="Shipping speed" options={shipping} name="shipping" defaultValue="standard" layout="list" />` },
+  } },
   args: { label: 'Shipping speed', options: shipping, name: 'shipping', defaultValue: 'standard', layout: 'list', onValueChange: fn() },
   render: (args) => <RadioCards {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -147,9 +166,9 @@ function EasyControlledExample(args: RadioCardsEasyProps) {
     }} />
   );
 }
-export const EasyControlled: EasyStory = { ...Easy, render: (args) => <EasyControlledExample {...args} /> };
+export const EasyControlled: EasyStory = { ...Easy, name: 'Easy controlled', render: (args) => <EasyControlledExample {...args} /> };
 export const EasyRejected: EasyStory = {
-  ...Easy, args: { ...Easy.args, value: 'standard' },
+  ...Easy, name: 'Easy rejected', args: { ...Easy.args, value: 'standard' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('radio', { name: 'Pickup' }));
     await expect(canvas.getByRole('radio', { name: 'Standard' })).toBeChecked();
@@ -160,6 +179,7 @@ export const EasyRejected: EasyStory = {
 };
 export const EasyKeyboard: EasyStory = {
   ...Easy,
+  name: 'Easy keyboard',
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     await assertFocus(canvas.getByRole('radio', { name: 'Standard' }));
@@ -172,7 +192,7 @@ export const EasyKeyboard: EasyStory = {
   },
 };
 export const EasyRTL: EasyStory = {
-  ...EasyKeyboard, args: { ...Easy.args, dir: 'rtl' },
+  ...EasyKeyboard, name: 'Easy RTL', args: { ...Easy.args, dir: 'rtl' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.keyboard('{ArrowLeft}');
@@ -188,6 +208,7 @@ function EasyRoot(props: ComponentPropsWithRef<'div'>) {
 }
 export const EasyCustomization: EasyStory = {
   ...Easy,
+  name: 'Easy customization',
   parameters: { docs: { source: { code: `<RadioCards label="Shipping speed" options={shipping} defaultValue="standard"
   slotProps={{ label: { title: 'Shipping label' }, item: { slotProps: { control: { sx: { borderRadius: 0 } } } } }}
 />` } } },
@@ -277,7 +298,8 @@ async function assertRing(group: HTMLElement, input: HTMLElement) {
   );
 }
 export const DefaultGrid: Story = {
-  parameters: { docs: { source: { code: usage } } },
+  name: 'Shipping choices',
+  parameters: { docs: { description: { story: 'Choose one delivery method from a grid of cards.' }, source: { language: 'tsx', code: usage } } },
   play: async ({ canvas, args, userEvent }) => {
     const group = canvas.getByRole('radiogroup', { name: 'Shipping speed' });
     const radios = canvas.getAllByRole('radio') as HTMLInputElement[];
@@ -296,7 +318,8 @@ export const DefaultGrid: Story = {
   },
 };
 export const List: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
+  name: 'List layout',
+  parameters: { docs: { description: { story: 'Stack delivery choices in a single column.' }, source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
 
 <RadioCards defaultValue="standard" layout="list">
   <RadioCards.Label>Shipping speed</RadioCards.Label>
@@ -320,6 +343,19 @@ export const Sizes: Story = {
   },
 };
 export const DescriptionsMeta: Story = {
+  name: 'Descriptions and prices',
+  parameters: { docs: {
+    description: { story: 'Compare delivery times and locale-formatted prices beside each choice.' },
+    source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
+
+const price = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
+<RadioCards defaultValue="standard" layout="list">
+  <RadioCards.Label>Shipping speed</RadioCards.Label>
+  <RadioCards.Item value="standard" label="Standard" description="4–6 business days" meta={price.format(0)} />
+  <RadioCards.Item value="express" label="Express" description="1–2 business days" meta={price.format(12)} />
+</RadioCards>` },
+  } },
   render: (args) => (
     <RadioCards {...args} layout="list">
       <RadioCards.Label>Shipping speed</RadioCards.Label>
@@ -339,6 +375,24 @@ export const DescriptionsMeta: Story = {
   ),
 };
 export const Icons: Story = {
+  name: 'Delivery icons',
+  parameters: { docs: {
+    description: { story: 'Pair a decorative delivery icon with each visible option label.' },
+    source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
+
+function DeliveryIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 6h12v12H3zM15 10h3l3 4v4h-6M6 18v2m12-2v2" />
+    </svg>
+  );
+}
+
+<RadioCards defaultValue="standard" aria-label="Delivery">
+  <RadioCards.Item value="standard" label="Standard" icon={<DeliveryIcon />} />
+  <RadioCards.Item value="express" label="Express" icon={<DeliveryIcon />} />
+</RadioCards>` },
+  } },
   render: (args) => (
     <RadioCards {...args} aria-label="Delivery">
       <RadioCards.Item value="standard" label="Standard" icon={<DeliveryIcon />} />
@@ -347,6 +401,19 @@ export const Icons: Story = {
   ),
 };
 export const DisabledReason: Story = {
+  name: 'Unavailable option',
+  parameters: { docs: {
+    description: { story: 'Explain why Express delivery is unavailable while keeping other choices enabled.' },
+    source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
+
+<RadioCards defaultValue="standard">
+  <RadioCards.Label>Shipping speed</RadioCards.Label>
+  <RadioCards.Description>Choose a delivery option.</RadioCards.Description>
+  <RadioCards.Item value="standard" label="Standard" description="4–6 business days" />
+  <RadioCards.Item value="express" label="Express" description="1–2 business days" disabled disabledReason="Unavailable at this address" />
+  <RadioCards.Item value="pickup" label="Pickup" description="Collect at the store" />
+</RadioCards>` },
+  } },
   render: (args) => <Example {...args} disabledOption />,
   play: async ({ canvas, userEvent, args }) => {
     const disabled = canvas.getByRole('radio', { name: 'Express' });
@@ -357,7 +424,8 @@ export const DisabledReason: Story = {
   },
 };
 export const Disabled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
+  name: 'Disabled field',
+  parameters: { docs: { description: { story: 'Keep the selected delivery visible when the whole field is unavailable.' }, source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
 
 <RadioCards defaultValue="standard" disabled>
   <RadioCards.Label>Shipping speed</RadioCards.Label>
@@ -375,7 +443,8 @@ export const Disabled: Story = {
   },
 };
 export const Required: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
+  name: 'Required choice',
+  parameters: { docs: { description: { story: 'Start with no selection and require a delivery choice.' }, source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
 
 <RadioCards required>
   <RadioCards.Label>Shipping speed</RadioCards.Label>
@@ -387,7 +456,8 @@ export const Required: Story = {
   args: { required: true, defaultValue: undefined },
 };
 export const InvalidError: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
+  name: 'Validation error',
+  parameters: { docs: { description: { story: 'Associate an error message with an unselected delivery field.' }, source: { language: 'tsx', code: `import { RadioCards } from '@jfrader/ui';
 
 <RadioCards invalid error="Choose a delivery option.">
   <RadioCards.Label>Shipping speed</RadioCards.Label>
@@ -458,6 +528,25 @@ export const NoSelection: Story = {
   },
 };
 export const Keyboard: Story = {
+  name: 'Keyboard navigation',
+  parameters: { docs: {
+    description: { story: 'Tab into the choices, then use arrows or Home and End to skip the unavailable option.' },
+    source: { language: 'tsx', code: `import { Button, RadioCards, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '100%', maxInlineSize: '44rem' });
+
+<Stack>
+  <RadioCards defaultValue="standard">
+    <RadioCards.Label>Shipping speed</RadioCards.Label>
+    <RadioCards.Description>Choose a delivery option.</RadioCards.Description>
+    <RadioCards.Item value="standard" label="Standard" description="4–6 business days" />
+    <RadioCards.Item value="express" label="Express" description="1–2 business days" disabled disabledReason="Unavailable at this address" />
+    <RadioCards.Item value="pickup" label="Pickup" description="Collect at the store" />
+  </RadioCards>
+  <Button>After</Button>
+</Stack>` },
+  } },
   render: (args) => (
     <Fixture>
       <Example {...args} disabledOption />
@@ -538,6 +627,23 @@ export const ControlledRejects: Story = {
   },
 };
 export const NativeForm: Story = {
+  name: 'Native form and reset',
+  parameters: { docs: {
+    description: { story: 'Choose a required shipping value, then reset the form to its unselected state.' },
+    source: { language: 'tsx', code: `import { Button, RadioCards, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ShippingForm = styled.form({ display: 'grid', gap: vars.space[4], inlineSize: '100%', maxInlineSize: '44rem' });
+
+<ShippingForm>
+  <RadioCards name="shipping" aria-label="Shipping speed" required>
+    <RadioCards.Item value="" label="Pickup" />
+    <RadioCards.Item value="express" label="Express" />
+    <RadioCards.Item value="disabled" label="Unavailable" disabled />
+  </RadioCards>
+  <Button type="reset">Reset</Button>
+</ShippingForm>` },
+  } },
   args: { defaultValue: undefined, required: true },
   render: (args) => (
     <FixtureForm>

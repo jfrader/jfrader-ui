@@ -15,6 +15,25 @@ function ReplacementSelection(props: ComponentPropsWithRef<'span'>) {
   return <span {...props} data-replaced="selection" />;
 }
 export const ReplaceTrackAndSelection: Story = {
+  name: 'Replace track and selection',
+  parameters: { docs: {
+    description: { story: 'Replace the track and selected background with elements that forward their props and ref.' },
+    source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { SegmentedControl } from '@jfrader/ui';
+
+function LayoutTrack(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replaced="track" />;
+}
+
+function LayoutSelection(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-replaced="selection" />;
+}
+
+<SegmentedControl label="Layout" defaultValue="list" slots={{ track: LayoutTrack, selection: LayoutSelection }}>
+  <SegmentedControl.Item value="list">List</SegmentedControl.Item>
+  <SegmentedControl.Item value="grid">Grid</SegmentedControl.Item>
+</SegmentedControl>` },
+  } },
   render: () => (
     <SegmentedControl label="Layout" defaultValue="list" slots={{ track: ReplacementSegmentTrack, selection: ReplacementSelection }}>
       <SegmentedControl.Item value="list">List</SegmentedControl.Item>
@@ -35,9 +54,13 @@ export const ReplaceTrackAndSelection: Story = {
 const Stack = styled.div({ display: 'grid', gap: vars.space[4], justifyItems: 'start' });
 const OPTIONS = ['List', 'Grid', 'Board', 'Table'];
 const LONG_OPTIONS = ['Recent projects', 'Assigned to me', 'Shared with the team', 'Archived projects'];
-const usage = `<SegmentedControl label="Layout" defaultValue="List">
+const usage = `import { SegmentedControl } from '@jfrader/ui';
+
+<SegmentedControl label="Layout" defaultValue="List">
   <SegmentedControl.Item value="List">List</SegmentedControl.Item>
   <SegmentedControl.Item value="Grid">Grid</SegmentedControl.Item>
+  <SegmentedControl.Item value="Board" disabled>Board</SegmentedControl.Item>
+  <SegmentedControl.Item value="Table">Table</SegmentedControl.Item>
 </SegmentedControl>`;
 
 function Example({
@@ -69,24 +92,31 @@ const meta = {
   render: (args) => <Example {...args} />,
   parameters: {
     docs: {
-      source: { code: `const layouts = [
-  { value: 'List', label: 'List' },
-  { value: 'Grid', label: 'Grid' },
-] as const;
-
-<SegmentedControl label="Layout" options={layouts} defaultValue="List" />` },
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Easy'] },
+        { title: 'Sizes', stories: ['Sizes'] },
+        { title: 'Icons and labels', stories: ['Icons', 'Accessories'] },
+        { title: 'Controlled', stories: ['Controlled'] },
+        { title: 'States', stories: ['NoSelection', 'Disabled'] },
+        { title: 'Composition', stories: ['ReplaceTrackAndSelection'] },
+        { title: 'Keyboard', stories: ['Keyboard'] },
+      ],
       description: {
         component:
           'Choose one option from a row of buttons.',
       },
-      usage: `- Use SegmentedControl to pick one visual state on a track. Use ToggleGroup for the APG toolbar pattern with single or multiple selection and horizontal or vertical orientation.
-- Supply readonly options for the complete selector, or children for custom anatomy; do not mix them.
-- Use slotProps for the generated root, track, selection and items. slots replaces the root or items; component is shorthand for slots.root. Replacement roots forward props and ref to one div.
-- Selection changes on arrow movement and cannot be cleared. The group owns no panels; use Tabs for panels and RadioGroup for form values.
+      usage: `### When to use
+Choose one view or display mode from a short row of options. Use Tabs for associated panels, RadioGroup for submitted form values, and ToggleGroup for toolbar actions or multiple selection.
+
+### Content
+- Values must be unique. Accessories must not be interactive.
+- Give the group an accessible name and provide a name for icon-only choices.
+- A selection cannot be cleared by activating it again. Long rows scroll to keep the focused choice visible.
+
+### Keyboard
 - Tab enters the last focused enabled option, then exits.
 - Arrows select and wrap, skipping disabled options. Horizontal arrows reverse in RTL. Home/End select the first/last enabled option.
-- Space and Enter select once through a native button click.
-- Values must be unique. Accessories must not be interactive.`,
+- Space and Enter select the focused option.`,
     },
   },
 } satisfies Meta<SegmentedControlProps>;
@@ -95,6 +125,20 @@ type Story = StoryObj<Omit<SegmentedControlProps, 'component'>>;
 type EasyStory = StoryObj<Omit<SegmentedControlEasyProps, 'component'>>;
 const layouts = OPTIONS.map((value) => ({ value, label: value, disabled: value === 'Board' }));
 export const Easy: EasyStory = {
+  name: 'Options from data',
+  parameters: { docs: {
+    description: { story: 'Build a layout selector from a list of labeled options.' },
+    source: { language: 'tsx', code: `import { SegmentedControl } from '@jfrader/ui';
+
+const layouts = [
+  { value: 'List', label: 'List' },
+  { value: 'Grid', label: 'Grid' },
+  { value: 'Board', label: 'Board', disabled: true },
+  { value: 'Table', label: 'Table' },
+] as const;
+
+<SegmentedControl label="Layout" options={layouts} defaultValue="List" />` },
+  } },
   args: { label: 'Layout', options: layouts, defaultValue: 'List', onValueChange: fn() },
   render: (args) => <SegmentedControl {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -117,9 +161,9 @@ function EasyControlledExample(args: SegmentedControlEasyProps) {
     }} />
   );
 }
-export const EasyControlled: EasyStory = { ...Easy, render: (args) => <EasyControlledExample {...args} /> };
+export const EasyControlled: EasyStory = { ...Easy, name: 'Easy controlled', render: (args) => <EasyControlledExample {...args} /> };
 export const EasyRejected: EasyStory = {
-  ...Easy, args: { ...Easy.args, value: 'List' },
+  ...Easy, name: 'Easy rejected', args: { ...Easy.args, value: 'List' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('radio', { name: 'Grid' }));
     await expect(canvas.getByRole('radio', { name: 'List' })).toHaveAttribute('aria-checked', 'true');
@@ -130,6 +174,7 @@ export const EasyRejected: EasyStory = {
 };
 export const EasyKeyboard: EasyStory = {
   ...Easy,
+  name: 'Easy keyboard',
   play: async ({ canvas, userEvent, args }) => {
     const list = canvas.getByRole('radio', { name: 'List' });
     const table = canvas.getByRole('radio', { name: 'Table' });
@@ -143,7 +188,7 @@ export const EasyKeyboard: EasyStory = {
   },
 };
 export const EasyRTL: EasyStory = {
-  ...Easy, args: { ...Easy.args, dir: 'rtl' },
+  ...Easy, name: 'Easy RTL', args: { ...Easy.args, dir: 'rtl' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.keyboard('{ArrowLeft}');
@@ -159,6 +204,7 @@ function EasyRoot(props: ComponentPropsWithRef<'div'>) {
 }
 export const EasyCustomization: EasyStory = {
   ...Easy,
+  name: 'Easy customization',
   parameters: { docs: { source: { code: `<SegmentedControl label="Layout" options={layouts} defaultValue="List"
   slotProps={{ root: { title: 'Layout selector' }, item: { sx: { borderRadius: 0 } } }}
 />` } } },
@@ -212,7 +258,8 @@ function contrastRatio(document: Document, first: string, second: string) {
 }
 
 export const Default: Story = {
-  parameters: { docs: { source: { code: usage } } },
+  name: 'Layout choices',
+  parameters: { docs: { description: { story: 'Choose a layout from a row with one unavailable option.' }, source: { language: 'tsx', code: usage } } },
   play: async ({ canvas }) => {
     const group = canvas.getByRole('radiogroup');
     const selected = canvas.getByRole('radio', { checked: true });
@@ -230,10 +277,10 @@ export const Default: Story = {
     ).toBeGreaterThanOrEqual(3);
   },
 };
-export const Soft: Story = { ...Default, args: { variant: 'soft' } };
-export const Solid: Story = { ...Default, args: { variant: 'solid' } };
-export const LightTheme: Story = { ...Default, decorators: [withLightTheme] };
-export const LightSolid: Story = { ...Default, decorators: [withLightTheme], args: { variant: 'solid' } };
+export const Soft: Story = { ...Default, name: 'Soft', args: { variant: 'soft' } };
+export const Solid: Story = { ...Default, name: 'Solid', args: { variant: 'solid' } };
+export const LightTheme: Story = { ...Default, name: 'Light theme', decorators: [withLightTheme] };
+export const LightSolid: Story = { ...Default, name: 'Light solid', decorators: [withLightTheme], args: { variant: 'solid' } };
 export const ScopedTheme: Story = {
   render: (args) => (
     <ThemeRoot theme="light">
@@ -242,6 +289,27 @@ export const ScopedTheme: Story = {
   ),
 };
 export const Sizes: Story = {
+  name: 'Control sizes',
+  parameters: { docs: {
+    description: { story: 'Compare small, medium and large layout selectors.' },
+    source: { language: 'tsx', code: `import { SegmentedControl, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[4], justifyItems: 'start' });
+const sizes = ['sm', 'md', 'lg'] as const;
+const layouts = [
+  { value: 'List', label: 'List' },
+  { value: 'Grid', label: 'Grid' },
+  { value: 'Board', label: 'Board', disabled: true },
+  { value: 'Table', label: 'Table' },
+] as const;
+
+<Stack>
+  {sizes.map((size) => (
+    <SegmentedControl key={size} size={size} label={\`\${size} layout\`} options={layouts} defaultValue="List" />
+  ))}
+</Stack>` },
+  } },
   render: (args) => (
     <Stack>
       {(['sm', 'md', 'lg'] as const).map((size) => (
@@ -259,6 +327,22 @@ export const Sizes: Story = {
 };
 
 export const Keyboard: Story = {
+  name: 'Keyboard navigation',
+  parameters: { docs: {
+    description: { story: 'Tab through the surrounding buttons and use arrows to change the focused layout.' },
+    source: { language: 'tsx', code: `import { Button, SegmentedControl } from '@jfrader/ui';
+
+<>
+  <Button>Before</Button>
+  <SegmentedControl label="Layout" defaultValue="List">
+    <SegmentedControl.Item value="List">List</SegmentedControl.Item>
+    <SegmentedControl.Item value="Grid">Grid</SegmentedControl.Item>
+    <SegmentedControl.Item value="Board" disabled>Board</SegmentedControl.Item>
+    <SegmentedControl.Item value="Table">Table</SegmentedControl.Item>
+  </SegmentedControl>
+  <Button>After</Button>
+</>` },
+  } },
   render: (args) => (
     <>
       <button>Before</button>
@@ -402,6 +486,27 @@ function ControlledExample(args: SegmentedControlProps) {
   );
 }
 export const Controlled: Story = {
+  name: 'Controlled layout',
+  parameters: { docs: {
+    description: { story: 'Keep the selected layout in state and change it from an external button.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, SegmentedControl } from '@jfrader/ui';
+
+export function LayoutSwitcher() {
+  const [value, setValue] = useState('List');
+  return (
+    <>
+      <SegmentedControl label="Layout" value={value} onValueChange={setValue}>
+        <SegmentedControl.Item value="List">List</SegmentedControl.Item>
+        <SegmentedControl.Item value="Grid">Grid</SegmentedControl.Item>
+        <SegmentedControl.Item value="Board" disabled>Board</SegmentedControl.Item>
+        <SegmentedControl.Item value="Table">Table</SegmentedControl.Item>
+      </SegmentedControl>
+      <Button onClick={() => setValue('Table')}>Set table</Button>
+    </>
+  );
+}` },
+  } },
   render: (args) => <ControlledExample {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('radio', { name: 'Grid' }));
@@ -414,8 +519,10 @@ export const Controlled: Story = {
 };
 
 export const NoSelection: Story = {
+  name: 'Start without a selection',
   parameters: {
     docs: {
+      description: { story: 'Leave the row unselected until a choice is activated.' },
       source: {
         language: 'tsx',
         code: `import { SegmentedControl } from '@jfrader/ui';
@@ -439,6 +546,7 @@ export const NoSelection: Story = {
 };
 export const UnknownValue: Story = {
   ...NoSelection,
+  name: 'Unknown value',
   parameters: {
     docs: {
       source: {
@@ -460,8 +568,10 @@ export const UnknownValue: Story = {
 };
 export const Empty: Story = { render: (args) => <Example {...args} options={[]} /> };
 export const Disabled: Story = {
+  name: 'Disabled control',
   parameters: {
     docs: {
+      description: { story: 'Keep the current layout visible while preventing changes to the row.' },
       source: {
         language: 'tsx',
         code: `import { SegmentedControl } from '@jfrader/ui';
@@ -489,6 +599,7 @@ export const Disabled: Story = {
 };
 export const AllDisabled: Story = {
   ...Disabled,
+  name: 'All disabled',
   args: { onOptionIntent: fn() },
   render: (args) => <Example {...args} allDisabled />,
   play: async ({ canvas }) => {
@@ -589,6 +700,16 @@ export const AriaMerge: Story = {
 };
 export const FalsyAccessory: Story = { ...AriaMerge };
 export const Accessories: Story = {
+  name: 'Labels with counts',
+  parameters: { docs: {
+    description: { story: 'Show a formatted count beside each layout label, including a zero count.' },
+    source: { language: 'tsx', code: `import { SegmentedControl } from '@jfrader/ui';
+
+<SegmentedControl label="Layout" defaultValue="List">
+  <SegmentedControl.Item value="List" accessory={new Intl.NumberFormat('en').format(120)}>List</SegmentedControl.Item>
+  <SegmentedControl.Item value="Grid" accessory={0}>Grid</SegmentedControl.Item>
+</SegmentedControl>` },
+  } },
   render: (args) => (
     <SegmentedControl {...args}>
       <SegmentedControl.Item value="List" accessory={new Intl.NumberFormat('en').format(120)}>
@@ -596,6 +717,41 @@ export const Accessories: Story = {
       </SegmentedControl.Item>
       <SegmentedControl.Item value="Grid" accessory={0}>
         Grid
+      </SegmentedControl.Item>
+    </SegmentedControl>
+  ),
+};
+
+export const Icons: Story = {
+  name: 'Icon-only labels',
+  parameters: { docs: {
+    description: { story: 'Name icon-only layout choices for assistive technology.' },
+    source: { language: 'tsx', code: `import { SegmentedControl } from '@jfrader/ui';
+
+<SegmentedControl label="Layout" defaultValue="List">
+  <SegmentedControl.Item value="List" aria-label="List">
+    <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  </SegmentedControl.Item>
+  <SegmentedControl.Item value="Grid" aria-label="Grid">
+    <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
+    </svg>
+  </SegmentedControl.Item>
+</SegmentedControl>` },
+  } },
+  render: () => (
+    <SegmentedControl label="Layout" defaultValue="List">
+      <SegmentedControl.Item value="List" aria-label="List">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </SegmentedControl.Item>
+      <SegmentedControl.Item value="Grid" aria-label="Grid">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
+        </svg>
       </SegmentedControl.Item>
     </SegmentedControl>
   ),

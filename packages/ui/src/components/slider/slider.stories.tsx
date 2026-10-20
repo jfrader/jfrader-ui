@@ -83,20 +83,31 @@ const meta = {
   parameters: {
     layout: 'padded',
     docs: {
-      source: { code: '<Slider label="Volume" defaultValue={40} locale="en-GB" />' },
+      sections: [
+        { title: 'Basic', stories: ['DefaultSingle'] },
+        { title: 'Ranges', stories: ['Range', 'RangeGap'] },
+        { title: 'Steps and marks', stories: ['FractionalStep', 'Marks'] },
+        { title: 'Formats and adornments', stories: ['IntlPercent', 'IntlCurrency', 'Adornments'] },
+        { title: 'States', stories: ['Disabled', 'InvalidError'] },
+        { title: 'Controlled', stories: ['ControlledRange'] },
+        { title: 'Keyboard', stories: ['Keyboard'] },
+      ],
       description: {
         component:
           'Drag a thumb to choose a number, or use two thumbs to choose a range.',
       },
-      usage: `### Keyboard
-- Arrows move one step; horizontal arrows reverse in RTL. Shift+arrows and PageUp/Down move a large step. Home/End reach the permitted bounds.
-- Thumbs cannot cross and keep their tab order.
+      usage: `### When to use
+Use a slider to adjust a bounded number or interval when dragging is useful. Prefer a number field when people need to enter an exact value directly.
 
-### Values and forms
-- max must equal min + n × step. Nonfinite values, unordered tuples and infeasible gaps throw.
-- onValueCommit reports a completed request even when a controlled parent rejects it.
-- Pass thumb ARIA through slotProps.thumb. Root descriptions also reach the thumbs.
+### Constraints
+- The interval must contain a whole number of steps. Values must be finite, range endpoints ordered, and any minimum gap achievable.
+- Thumbs cannot cross and keep their tab order.
 - Hidden form inputs do not provide native required validation.
+- A completed interaction reports the requested value even if a controlled parent rejects it.
+
+### Keyboard and accessibility
+- Arrows move one step; horizontal arrows reverse in RTL. Shift+arrows and PageUp/Down move a large step. Home/End reach the permitted bounds.
+- Give each thumb an accessible name that distinguishes its endpoint. Descriptions and errors are announced with the thumbs.
 - Test touch screen-reader operation on devices.`,
     },
   },
@@ -105,6 +116,13 @@ export default meta;
 type Story = StoryObj<typeof Slider>;
 
 export const DefaultSingle: Story = {
+  name: 'Volume',
+  parameters: { docs: {
+    description: { story: 'Drag the thumb to adjust a volume level between zero and one hundred.' },
+    source: { language: 'tsx', code: `import { Slider } from '@jfrader/ui';
+
+<Slider label="Volume" defaultValue={40} locale="en-GB" />` },
+  } },
   play: async ({ canvas }) => {
     const thumb = canvas.getByRole('slider', { name: 'Volume' });
     await expect(thumb).toHaveAttribute('aria-valuenow', '40');
@@ -116,7 +134,8 @@ export const DefaultSingle: Story = {
   },
 };
 export const Range: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Slider } from '@jfrader/ui';
+  name: 'Price range',
+  parameters: { docs: { description: { story: 'Adjust minimum and maximum prices with two separately named thumbs.' }, source: { language: 'tsx', code: `import { Slider } from '@jfrader/ui';
 
 <Slider
   type="range"
@@ -159,6 +178,13 @@ export const Sizes: Story = {
   ),
 };
 export const FractionalStep: Story = {
+  name: 'Fractional steps',
+  parameters: { docs: {
+    description: { story: 'Adjust a value from zero to one in tenths.' },
+    source: { language: 'tsx', code: `import { Slider } from '@jfrader/ui';
+
+<Slider label="Volume" min={0} max={1} step={0.1} defaultValue={0.2} locale="en-GB" />` },
+  } },
   args: { min: 0, max: 1, step: 0.1, defaultValue: 0.2 },
   play: async ({ canvas, userEvent }) => {
     const thumb = canvas.getByRole('slider');
@@ -218,6 +244,13 @@ export const LargeStep: Story = {
   },
 };
 export const Keyboard: Story = {
+  name: 'Keyboard adjustment',
+  parameters: { docs: {
+    description: { story: 'Focus the thumb and try arrows, Shift+arrows, Page Up, Page Down, Home and End.' },
+    source: { language: 'tsx', code: `import { Slider } from '@jfrader/ui';
+
+<Slider label="Volume" defaultValue={50} locale="en-GB" />` },
+  } },
   args: { defaultValue: 50 },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const thumb = canvas.getByRole('slider');
@@ -259,7 +292,8 @@ export const Keyboard: Story = {
   },
 };
 export const Marks: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Slider } from '@jfrader/ui';
+  name: 'Labeled marks',
+  parameters: { docs: { description: { story: 'Select a labeled mark to jump to a preset volume.' }, source: { language: 'tsx', code: `import { Slider } from '@jfrader/ui';
 
 export function VolumePresets() {
   return (
@@ -272,9 +306,6 @@ export function VolumePresets() {
         25,
         { value: 50, label: 'Half' },
         { value: 100, label: 'Full' },
-        101,
-        NaN,
-        50,
       ]}
     />
   );
@@ -308,6 +339,21 @@ export function VolumePresets() {
   },
 };
 export const RangeGap: Story = {
+  name: 'Minimum range gap',
+  parameters: { docs: {
+    description: { story: 'Keep the window endpoints at least two five-unit steps apart.' },
+    source: { language: 'tsx', code: `import { Slider } from '@jfrader/ui';
+
+<Slider
+  type="range"
+  label="Window"
+  defaultValue={[20, 80]}
+  step={5}
+  minStepsBetweenThumbs={2}
+  thumbLabels={['Start', 'End']}
+  locale="en-GB"
+/>` },
+  } },
   args: {
     type: 'range',
     label: 'Window',
@@ -334,7 +380,8 @@ export const CoincidentThumbs: Story = {
 };
 export const HiddenReadout: Story = { args: { showValue: false } };
 export const Adornments: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Slider, styled } from '@jfrader/ui';
+  name: 'Start and end adornments',
+  parameters: { docs: { description: { story: 'Place buttons beside the track; adornments do not change the value unless you wire their actions.' }, source: { language: 'tsx', code: `import { Slider, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
 const AdornmentButton = styled.button({
@@ -372,6 +419,13 @@ export function VolumeAdornments() {
   },
 };
 export const Disabled: Story = {
+  name: 'Disabled slider',
+  parameters: { docs: {
+    description: { story: 'Keep the volume visible while disabling the thumb and preset mark.' },
+    source: { language: 'tsx', code: `import { Slider } from '@jfrader/ui';
+
+<Slider label="Volume" defaultValue={40} locale="en-GB" disabled marks={[{ value: 0, label: 'Silent' }]} />` },
+  } },
   args: { disabled: true, marks: [{ value: 0, label: 'Silent' }] },
   play: async ({ canvas, userEvent, args }) => {
     const thumb = canvas.getByRole('slider');
@@ -382,6 +436,13 @@ export const Disabled: Story = {
   },
 };
 export const InvalidError: Story = {
+  name: 'Validation message',
+  parameters: { docs: {
+    description: { story: 'Announce an output-level description and validation error with the thumb.' },
+    source: { language: 'tsx', code: `import { Slider } from '@jfrader/ui';
+
+<Slider label="Volume" defaultValue={40} locale="en-GB" description="Output level" error="Choose a lower volume" />` },
+  } },
   args: { error: 'Choose a lower volume', description: 'Output level' },
   play: async ({ canvas }) => {
     const thumb = canvas.getByRole('slider');
@@ -409,6 +470,20 @@ export const ControlledRejects: Story = {
   },
 };
 export const ControlledRange: Story = {
+  name: 'Controlled range',
+  parameters: { docs: {
+    description: { story: 'Store the two endpoints in React state and accept each requested change.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Slider } from '@jfrader/ui';
+
+export function VolumeRange() {
+  const [value, setValue] = useState<readonly [number, number]>([20, 80]);
+  return (
+    <Slider type="range" label="Volume" value={value} onValueChange={setValue}
+      thumbLabels={['Start', 'End']} locale="en-GB" />
+  );
+}` },
+  } },
   args: { type: 'range', value: [20, 80], defaultValue: undefined, thumbLabels: ['Start', 'End'] },
   render: (args) => {
     const [value, setValue] = useState<readonly [number, number]>([20, 80]);
@@ -472,9 +547,25 @@ export const FormNames: Story = {
   },
 };
 export const IntlPercent: Story = {
+  name: 'Percentage format',
+  parameters: { docs: {
+    description: { story: 'Display and announce a fractional volume as a percentage.' },
+    source: { language: 'tsx', code: `import { Slider } from '@jfrader/ui';
+
+<Slider label="Volume" min={0} max={1} step={0.01} defaultValue={0.4}
+  locale="en-GB" formatOptions={{ style: 'percent' }} />` },
+  } },
   args: { min: 0, max: 1, step: 0.01, defaultValue: 0.4, formatOptions: { style: 'percent' } },
 };
 export const IntlCurrency: Story = {
+  name: 'Currency format',
+  parameters: { docs: {
+    description: { story: 'Format both budget endpoints as British pounds.' },
+    source: { language: 'tsx', code: `import { Slider } from '@jfrader/ui';
+
+<Slider type="range" label="Budget" defaultValue={[20, 80]} thumbLabels={['Minimum', 'Maximum']}
+  locale="en-GB" formatOptions={{ style: 'currency', currency: 'GBP' }} />` },
+  } },
   args: {
     type: 'range',
     label: 'Budget',
