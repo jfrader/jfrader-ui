@@ -72,17 +72,6 @@ const triggerRef = fn<(element: HTMLButtonElement | null) => void>();
 const contentRef = fn<(element: HTMLDivElement | null) => void>();
 const linkRef = fn<(element: HTMLButtonElement | null) => void>();
 
-const usage = `<HoverCard>
-  <HoverCard.Trigger>@maya</HoverCard.Trigger>
-  <HoverCard.Content>
-    <HoverCard.Profile
-      name="Maya Chen"
-      subtitle="Product designer"
-      stats={[{ id: 'projects', label: 'Projects', value: 12 }]}
-    />
-  </HoverCard.Content>
-</HoverCard>`;
-
 const ProfileStack = styled.div({ display: 'grid', gap: vars.space[3] });
 const SpacedRow = styled(Row)({ columnGap: `calc(${vars.space[4]} * 22)` });
 const Stack = styled.div({ display: 'grid', gap: vars.space[6] });
@@ -102,8 +91,23 @@ const meta = {
         component:
           'Preview a person or reference by hovering over or focusing its trigger.',
       },
-      usage: '- Uses the tooltip pattern: `role="tooltip"`; the open card describes the trigger. Repeat information available elsewhere. Do not add links, buttons or fields; use Popover for actions.\n- Hover opens after `openDelay` (500ms). Tab onto the trigger opens immediately; Enter or Space activate the trigger and open once. The pointer can rest on the card (WCAG 1.4.13).\n- Escape closes without moving focus and blocks reopening until the pointer leaves or focus moves. Tab/Shift+Tab away closes without moving focus. Arrows, Home and End pass through.\n- A touch tap on a button trigger toggles the card. A link supplied through `render` still navigates on click, Enter or tap.\n- `HoverCard.Group` controls the open member through `value` / `defaultValue` / `onValueChange`. Cards swap after 80ms while the group is warm.\n- Inside a modal, give the enclosing ThemeRoot a `portalContainer` inside the dialog.',
-      source: { code: usage },
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'Navigation', stories: ['LinkTrigger'] },
+        { title: 'Related previews', stories: ['GroupWarmTraversal'] },
+      ],
+      usage: `### Content
+Repeat information available elsewhere. The preview describes its trigger and has no tab stops. Use Popover for links, buttons or fields inside the popup.
+
+### Pointer and keyboard
+Hover opens after a delay. Focus opens immediately; Enter or Space activates a button trigger and opens the card once. You can move the pointer onto the card to keep reading.
+
+Press Escape to close without moving focus; reopening waits until the pointer leaves or focus moves. Tab and Shift+Tab away close the card. Arrows, Home and End pass through.
+
+A touch tap toggles a button trigger. A link still navigates on click, Enter or tap. Grouped previews switch faster after the first card opens.
+
+### Inside a modal
+Give the enclosing ThemeRoot a portal container inside the dialog.`,
     },
   },
 } satisfies Meta<HoverCardCompoundProps>;
@@ -202,7 +206,7 @@ function easyModeTypeContracts() {
 void easyModeTypeContracts;
 
 export const Default: StoryObj<HoverCardEasyProps> = {
-  name: 'Easy mode',
+  name: 'Profile preview',
   args: {
     triggerLabel: TRIGGER,
     profile: PROFILE,
@@ -210,21 +214,31 @@ export const Default: StoryObj<HoverCardEasyProps> = {
   },
   parameters: {
     docs: {
+      description: { story: 'Hover over @maya or focus it to read a profile summary.' },
       source: {
         language: 'tsx',
-        code: `<HoverCard
-  triggerLabel="@maya"
-  profile={{
-    name: 'Maya Chen',
-    subtitle: 'Product designer · Platform',
-    bio: 'Designs the review and release flows.',
-    stats: [
-      { id: 'projects', label: 'Projects', value: 12 },
-      { id: 'reviews', label: 'Reviews', value: 1280 },
-    ],
-    meta: 'Joined March 2024',
-  }}
-/>`,
+        code: `import { Button, HoverCard, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Actions = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[3] });
+
+<Actions>
+  <Button>Before</Button>
+  <HoverCard
+    triggerLabel="@maya"
+    profile={{
+      name: 'Maya Chen',
+      subtitle: 'Product designer · Platform',
+      bio: 'Designs the review and release flows.',
+      stats: [
+        { id: 'projects', label: 'Projects', value: 12 },
+        { id: 'reviews', label: 'Reviews', value: 1280 },
+      ],
+      meta: 'Joined March 2024',
+    }}
+  />
+  <Button>Next</Button>
+</Actions>`,
       },
     },
   },
@@ -348,6 +362,31 @@ export const CustomSlots: StoryObj<HoverCardEasyProps> = {
 };
 
 export const Compound: Story = {
+  name: 'Composed profile',
+  parameters: { docs: { description: { story: 'Assemble a profile inside a preview with its own trigger and content.' }, source: { language: 'tsx', code: `import { Button, HoverCard, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Actions = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[3] });
+
+<Actions>
+  <Button>Before</Button>
+  <HoverCard>
+    <HoverCard.Trigger>@maya</HoverCard.Trigger>
+    <HoverCard.Content>
+      <HoverCard.Profile
+        name="Maya Chen"
+        subtitle="Product designer · Platform"
+        bio="Designs the review and release flows."
+        stats={[
+          { id: 'projects', label: 'Projects', value: 12 },
+          { id: 'reviews', label: 'Reviews', value: 1280 },
+        ]}
+        meta="Joined March 2024"
+      />
+    </HoverCard.Content>
+  </HoverCard>
+  <Button>Next</Button>
+</Actions>` } } },
   render: (args) => <ProfileExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
@@ -576,6 +615,28 @@ GroupExample.displayName = 'GroupExample';
 type GroupStory = StoryObj<HoverCardGroupProps>;
 
 export const GroupWarmTraversal: GroupStory = {
+  name: 'Grouped profiles',
+  parameters: { docs: { description: { story: 'Move between teammates to switch previews after opening the first one.' }, source: { language: 'tsx', code: `import { HoverCard, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const People = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[3] });
+
+<HoverCard.Group>
+  <People>
+    <HoverCard value="maya">
+      <HoverCard.Trigger>@maya</HoverCard.Trigger>
+      <HoverCard.Content><HoverCard.Profile name="Maya Chen" subtitle="Platform team" /></HoverCard.Content>
+    </HoverCard>
+    <HoverCard value="leo">
+      <HoverCard.Trigger>@leo</HoverCard.Trigger>
+      <HoverCard.Content><HoverCard.Profile name="Leo Park" subtitle="Platform team" /></HoverCard.Content>
+    </HoverCard>
+    <HoverCard value="ana">
+      <HoverCard.Trigger>@ana</HoverCard.Trigger>
+      <HoverCard.Content><HoverCard.Profile name="Ana Ruiz" subtitle="Platform team" /></HoverCard.Content>
+    </HoverCard>
+  </People>
+</HoverCard.Group>` } } },
   args: { onValueChange: fn() },
   render: (args) => <GroupExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -747,6 +808,32 @@ export const PendingTimerCleanup: Story = {
 };
 
 export const LinkTrigger: Story = {
+  name: 'Linked profile',
+  parameters: { docs: { description: { story: 'Preview a linked profile without replacing the link’s navigation.' }, source: { language: 'tsx', code: `import { HoverCard } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+<div>
+  Reviewed by{' '}
+  <HoverCard>
+    <HoverCard.Trigger
+      sx={{ paddingBlock: vars.space[1] }}
+      render={(props) => <a {...props} href="#maya-profile">@maya</a>}
+    />
+    <HoverCard.Content>
+      <HoverCard.Profile
+        name="Maya Chen"
+        subtitle="Product designer · Platform"
+        bio="Designs the review and release flows."
+        stats={[
+          { id: 'projects', label: 'Projects', value: 12 },
+          { id: 'reviews', label: 'Reviews', value: 1280 },
+        ]}
+        meta="Joined March 2024"
+      />
+    </HoverCard.Content>
+  </HoverCard>{' '}
+  yesterday.
+</div>` } } },
   args: { onOpenChange: fn() },
   render: (args) => (
     <div data-testid="prose">

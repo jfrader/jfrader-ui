@@ -35,6 +35,11 @@ const snippet = `<ShareAccess
   ]}
   onInvite={async (people, role) => { await invitePeople(people, role); }}
 />`;
+const sharePanelSource = `import { ShareAccess, Surface, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const SharePanel = styled(Surface)({ boxSizing: 'border-box',
+  inlineSize: \`calc(\${vars.space[8]} * 18)\`, maxInlineSize: '100%', padding: vars.space[6] });`;
 const meta = {
   title: 'Actions/ShareAccess',
   component: ShareAccess,
@@ -42,13 +47,16 @@ const meta = {
   render: (args) => <SharePanel><ShareAccess {...args} /></SharePanel>,
   parameters: {
     docs: {
+      sections: [
+        { title: 'People and permissions', stories: ['Default', 'PendingInvite', 'EmptyMembers'] },
+        { title: 'Link sharing', stories: ['LinkAccess'] },
+      ],
       description: {
         component:
           'Invite people to a document, change their roles, and choose who can use its link.',
       },
-      usage: `### Values
-- Members, general access, invitation role and link role each support controlled and uncontrolled use. Owners cannot be changed or removed.
-- Return a promise from \`onInvite\` to persist invitations. A rejection preserves the draft. In controlled mode, reflect invited email addresses in \`value\` to clear submitted chips.
+      usage: `### Invitations
+- Owners cannot be changed or removed. Persist invitations in your app; no network calls or permission enforcement are included. A rejected invitation preserves the draft. When controlling members, reflect invited email addresses in the member list to clear submitted chips.
 - Undo remains available until dismissed and inserts the removed person around their surviving neighbours.
 
 ### Keyboard
@@ -56,10 +64,9 @@ const meta = {
 - Up/Down navigate directory suggestions; Home/End select the edges while open. Escape closes suggestions before the host overlay. Focus stays in the field.
 - Empty Backspace selects the final chip; press again to remove it. Buttons use Enter/Space; role and access pickers use Select's keyboard map.
 
-### Composition
-- ShareAccess uses ShareSheet's inline presentation for its heading, link copying and general-access picker. Role pickers use Select's combobox/listbox semantics, not menu roles.
+### Hosting
 - Put it inside a Dialog or Popover; the host owns opening and focus containment. Inside a native modal, scope nested portals to the modal subtree with ThemeRoot's portalContainer.
-- No network calls or permission enforcement are included. Labels and announcements are supplied through \`messages\`.`,
+- Translate labels and announcements for your audience.`,
       source: { code: snippet, language: 'tsx' },
     },
   },
@@ -75,6 +82,27 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  name: 'Manage collaborators',
+  parameters: { docs: {
+    description: { story: 'Invite people, change a collaborator’s role, or remove someone and undo it.' },
+    source: { language: 'tsx', code: `${sharePanelSource}
+
+<SharePanel>
+<ShareAccess
+  title="Roadmap"
+  link="https://example.com/roadmap"
+  selfId="owner"
+  defaultValue={[
+    { id: 'owner', name: 'Alex Rivera', email: 'alex@example.com', role: 'owner' },
+    { id: 'editor', name: 'Sam Lee', email: 'sam@example.com', role: 'editor' },
+  ]}
+  directory={[
+    { email: 'jo@example.com', name: 'Jo Morgan' },
+    { email: 'jamie@example.com', name: 'Jamie Bell' },
+  ]}
+/>
+</SharePanel>` },
+  } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const invite = canvas.getByRole('button', { name: 'Invite' });
@@ -107,9 +135,66 @@ export const Default: Story = {
   },
 };
 export const Light: Story = { globals: { theme: 'light' } };
-export const LinkAccess: Story = { args: { defaultAccess: 'link' } };
-export const EmptyMembers: Story = { args: { defaultValue: [] } };
+export const LinkAccess: Story = {
+  name: 'Anyone with the link',
+  parameters: { docs: {
+    description: { story: 'Choose the role granted to people who open the shared link.' },
+    source: { language: 'tsx', code: `${sharePanelSource}
+
+<SharePanel>
+<ShareAccess title="Roadmap" link="https://example.com/roadmap" selfId="owner"
+  defaultAccess="link"
+  defaultValue={[
+    { id: 'owner', name: 'Alex Rivera', email: 'alex@example.com', role: 'owner' },
+    { id: 'editor', name: 'Sam Lee', email: 'sam@example.com', role: 'editor' },
+  ]}
+  directory={[
+    { email: 'jo@example.com', name: 'Jo Morgan' },
+    { email: 'jamie@example.com', name: 'Jamie Bell' },
+  ]}
+/>
+</SharePanel>` },
+  } },
+  args: { defaultAccess: 'link' },
+};
+export const EmptyMembers: Story = {
+  name: 'First invitation',
+  parameters: { docs: {
+    description: { story: 'Add the first collaborator to an empty access list.' },
+    source: { language: 'tsx', code: `${sharePanelSource}
+
+<SharePanel>
+<ShareAccess title="Roadmap" link="https://example.com/roadmap" selfId="owner"
+  defaultValue={[]}
+  directory={[
+    { email: 'jo@example.com', name: 'Jo Morgan' },
+    { email: 'jamie@example.com', name: 'Jamie Bell' },
+  ]}
+/>
+</SharePanel>` },
+  } },
+  args: { defaultValue: [] },
+};
 export const PendingInvite: Story = {
+  name: 'Pending invitation',
+  parameters: { docs: {
+    description: { story: 'Show an invited person alongside existing collaborators.' },
+    source: { language: 'tsx', code: `${sharePanelSource}
+
+<SharePanel>
+<ShareAccess title="Roadmap" link="https://example.com/roadmap" selfId="owner"
+  defaultValue={[
+    { id: 'owner', name: 'Alex Rivera', email: 'alex@example.com', role: 'owner' },
+    { id: 'editor', name: 'Sam Lee', email: 'sam@example.com', role: 'editor' },
+    { id: 'pending', name: 'Jo Morgan', email: 'jo@example.com', role: 'viewer', pending: true },
+  ]}
+  directory={[
+    { email: 'jo@example.com', name: 'Jo Morgan' },
+    { email: 'jamie@example.com', name: 'Jamie Bell' },
+  ]}
+/>
+</SharePanel>` },
+  } },
   args: {
     defaultValue: [
       ...members,

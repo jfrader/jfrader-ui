@@ -126,31 +126,30 @@ const meta = {
   ],
   parameters: {
     docs: {
+      sections: [
+        { title: 'Reading a journal', stories: ['Default', 'Interior', 'BackCover'] },
+        { title: 'Short books', stories: ['OnePage'] },
+      ],
       description: {
         component:
           'Turn through a short sequence of editorial pages with previous and next controls.',
       },
-      usage: `### Pages\nSupply stable unique page ids. The cover sits alone at the logical end, followed by facing pairs. An even final page sits alone at the logical start. Only the accepted spread is mounted. Page content remains selectable.\n\n### Keyboard\nFocus the named book group. Left/Right turn with RTL reversal; PageUp/PageDown always move backward/forward. Home/End select the first/last spread. Nested page controls keep their native keys. Native navigation buttons work with Enter/Space.\n\n### Motion and limits\nDrag the Next button horizontally toward the spine to preview a paper flap; release past the midpoint or flick to request the next spread. Escape cancels. Previous navigation is button/keyboard only. Reduced motion swaps pages immediately. This compact presentation does not implement physical SVG crease geometry, corner handles, or an introductory tease. Optional renderFold supplies noninteractive artwork, not a duplicate mount of page content.\n\n### State\nvalue/defaultValue is the zero-based spread index. Controlled requests do not change page content until accepted. Invalid spread indices clamp for rendering without notifying.`,
-      source: {
-        language: 'tsx',
-        code: `<PageCurl label="Portfolio" pages={[
-  { id: 'cover', content: <h2>Selected work</h2> },
-  { id: 'detail', content: <p>Coastal studies</p> },
-]} />`,
-      },
+      usage: `### Reading order
+Use stable, unique page ids. The cover sits alone at the logical end, followed by facing pairs. An even final page sits alone at the logical start. Only the accepted spread is mounted; page content remains selectable.
+
+### Keyboard
+Focus the named book group. Left/Right turn with RTL reversal; PageUp/PageDown always move backward/forward. Home/End select the first/last spread. Nested page controls keep their native keys. Navigation buttons work with Enter/Space.
+
+### Turning pages
+Drag Next horizontally toward the spine to preview a paper flap. Release past the midpoint or flick to request the next spread; Escape cancels. Previous navigation is button/keyboard only. Reduced motion swaps pages immediately. The fold is noninteractive artwork, not another mount of the page content.
+
+### State
+Controlled requests leave page content unchanged until accepted. Out-of-range spread indices clamp for rendering without notifying.`,
     },
   },
 } satisfies Meta<typeof PageCurl>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Default: Story = {
-  play: async ({ canvas }) => {
-    const cover = canvas.getByRole('group', { name: 'Cover' });
-    await expect(cover.getBoundingClientRect().width).toBeGreaterThan(250);
-    await expect(canvas.getByRole('heading', { name: 'Field notes' })).toBeVisible();
-    await expect(canvas.getByText('A walking journal from the coast to the river.')).toBeVisible();
-  },
-};
 export const RootRefs: Story = {
   tags: ['!autodocs'],
   args: {
@@ -287,10 +286,28 @@ const pages = [
   },
 ];`;
 
+export const Default: Story = {
+  name: 'Walking journal',
+  parameters: { docs: {
+    description: { story: 'Turn from the cover through a four-page illustrated journal.' },
+    source: { language: 'tsx', code: `${standalonePagesSource}
+
+<PageCurl label="Field notes" locale="en-GB" pages={pages} />` },
+  } },
+  play: async ({ canvas }) => {
+    const cover = canvas.getByRole('group', { name: 'Cover' });
+    await expect(cover.getBoundingClientRect().width).toBeGreaterThan(250);
+    await expect(canvas.getByRole('heading', { name: 'Field notes' })).toBeVisible();
+    await expect(canvas.getByText('A walking journal from the coast to the river.')).toBeVisible();
+  },
+};
+
 export const Interior: Story = {
+  name: 'Facing pages',
   args: { defaultValue: 1 },
   parameters: {
     docs: {
+      description: { story: 'Start at the coast and forest spread.' },
       source: {
         language: 'tsx',
         code: `${standalonePagesSource}
@@ -306,9 +323,11 @@ export const Interior: Story = {
   },
 };
 export const BackCover: Story = {
+  name: 'Final page',
   args: { defaultValue: 2 },
   parameters: {
     docs: {
+      description: { story: 'Finish with the back cover on its own.' },
       source: {
         language: 'tsx',
         code: `${standalonePagesSource}
@@ -343,9 +362,11 @@ export const OddPages: Story = {
 };
 export const Empty: Story = { args: { pages: [] } };
 export const OnePage: Story = {
+  name: 'Single-page book',
   args: { pages: pages.slice(0, 1) },
   parameters: {
     docs: {
+      description: { story: 'Show a cover without any following spreads.' },
       source: {
         language: 'tsx',
         code: `${standalonePagesSource}

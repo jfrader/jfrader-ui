@@ -23,19 +23,17 @@ const meta: Meta<TooltipProps> = {
   parameters: {
     docs: {
       description: { component: 'Show help when someone hovers over or focuses a control.' },
-      usage: `### Composition
-- Pass \`triggerLabel\` and \`content\` for a generated button and tooltip. For custom anatomy, use \`Tooltip.Trigger\` and \`Tooltip.Content\` as \`children\` instead; do not combine the two modes.
-- Keep content non-interactive: the tooltip has no tab stop. If you need a link, button or input in the popup, use \`Popover\` instead.
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'State', stories: ['Controlled'] },
+      ],
+      usage: `### Content
+Keep help short and non-interactive. Use Popover for a link, button or input. Keep the trigger's accessible name about its action; help supplements that name.
 
-### Opening
-- The tooltip starts closed. Use \`defaultOpen\` to start open, or pair \`open\` with \`onOpenChange\` and update \`open\` to accept requests.
-- Hover opens after \`openDelay\`, which defaults to 300 milliseconds. Focus opens immediately. Leaving both the trigger and content closes after \`closeDelay\`, which defaults to 100 milliseconds; you can move the pointer onto the content to keep reading.
-- Press Escape to close without moving focus. Moving focus away from the trigger also closes it.
+### Pointer and keyboard
+Hover opens after a delay; focus opens immediately. Move the pointer onto the help to keep reading. Leaving both the trigger and help closes it after a delay.
 
-### Customization
-- \`placement\` defaults to \`top\`. Set it to choose the preferred side of the trigger.
-- In generated mode, use \`slotProps\` for trigger and content props and \`slots\` to replace their button and div roots. Declare replacements outside render and forward every received prop and ref to the matching element.
-- While open, the tooltip's description joins any \`aria-describedby\` you supply on the trigger. Keep the trigger's accessible name about its action.`,
+Press Escape to close without moving focus. Moving focus away from the trigger also closes it. The help has no tab stop.`,
     },
   },
 };
@@ -127,9 +125,12 @@ async function tabToOpen(canvasElement: HTMLElement) {
 }
 
 export const Default: StoryObj<TooltipEasyProps> = {
+  name: 'Control help',
   args: { triggerLabel: TRIGGER, content: TIP },
   render: (args) => <Tooltip {...args} />,
-  parameters: { docs: { source: { language: 'tsx', code: '<Tooltip triggerLabel="Copy" content="Copy to clipboard" />' } } },
+  parameters: { docs: { description: { story: 'Hover over Copy or focus it to read the help.' }, source: { language: 'tsx', code: `import { Tooltip } from '@jfrader/ui';
+
+<Tooltip triggerLabel="Copy" content="Copy to clipboard" />` } } },
   play: async ({ canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await userEvent.tab();
@@ -143,11 +144,20 @@ export const Default: StoryObj<TooltipEasyProps> = {
 
 /** Assemble the trigger and help text for a custom layout. */
 export const Compound: Story = {
+  name: 'Composed help',
   render: (args) => <TooltipExample {...args} />,
-  parameters: { docs: { source: { language: 'tsx', code: `<Tooltip>
-  <Tooltip.Trigger>Copy</Tooltip.Trigger>
-  <Tooltip.Content>Copy to clipboard</Tooltip.Content>
-</Tooltip>` } } },
+  parameters: { docs: { description: { story: 'Compose a trigger and help text beside another action.' }, source: { language: 'tsx', code: `import { Button, Tooltip, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Actions = styled.div({ display: 'flex', gap: vars.space[3] });
+
+<Actions>
+  <Tooltip>
+    <Tooltip.Trigger>Copy</Tooltip.Trigger>
+    <Tooltip.Content>Copy to clipboard</Tooltip.Content>
+  </Tooltip>
+  <Button>Next</Button>
+</Actions>` } } },
   play: async ({ canvasElement }) => {
     const trigger = getTrigger(canvasElement);
     await userEvent.hover(trigger);
@@ -315,6 +325,25 @@ export const Escape: Story = {
 };
 
 export const Controlled: Story = {
+  name: 'Controlled help',
+  parameters: { docs: { description: { story: 'Keep the open state in your component and accept hover, focus and dismissal requests.' }, source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, Tooltip, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Actions = styled.div({ display: 'flex', gap: vars.space[3] });
+
+export function CopyHelp() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Actions>
+      <Tooltip open={open} onOpenChange={setOpen}>
+        <Tooltip.Trigger>Copy</Tooltip.Trigger>
+        <Tooltip.Content>Copy to clipboard</Tooltip.Content>
+      </Tooltip>
+      <Button>Next</Button>
+    </Actions>
+  );
+}` } } },
   args: { onOpenChange: fn() },
   render: (args) => <ControlledTooltip {...args} />,
   play: async ({ args, canvasElement }) => {

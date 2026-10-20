@@ -80,6 +80,10 @@ const meta = {
   component: ThemeRoot,
   parameters: {
     docs: {
+      sections: [
+        { title: 'Theme scopes', stories: ['Default', 'Light'] },
+        { title: 'Overlays', stories: ['PortalContainer'] },
+      ],
       source: { language: 'tsx', code: `import { Button, ThemeRoot } from '@jfrader/ui';
 
 export function ThemedSection() {
@@ -90,7 +94,7 @@ export function ThemedSection() {
   );
 }` },
       description: { component: 'Apply a theme to part of a page and its overlays.' },
-      usage: 'For setup, light/dark switching, custom palettes and portal behavior, start with the [Theming guide](./?path=/docs/foundations-theming--docs). The examples below cover ThemeRoot itself.',
+      usage: 'Nested scopes and their overlays use the nearest theme. For app setup and custom palettes, start with the [Theming guide](./?path=/docs/foundations-theming--docs).',
     },
   },
   args: { onClick: fn() },
@@ -117,6 +121,20 @@ function getRoot(canvasElement: HTMLElement) {
 }
 
 export const Default: Story = {
+  name: 'Dark section',
+  parameters: { docs: {
+    description: { story: 'Group project controls in a dark theme scope.' },
+    source: { language: 'tsx', code: `import { Button, TextField, ThemeRoot, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Section = styled(ThemeRoot)({ display: 'grid', gap: vars.space[4], padding: vars.space[6], borderRadius: vars.radius.lg, backgroundColor: vars.color.surface });
+const Actions = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
+
+<Section theme="dark">
+  <Actions><Button tone="accent">Save</Button><Button variant="outline">Cancel</Button></Actions>
+  <TextField label="Project name" placeholder="Untitled" />
+</Section>` },
+  } },
   play: async ({ args, canvasElement }) => {
     await expect(getRoot(canvasElement)).toHaveAttribute('data-theme', 'dark');
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Save' }));
@@ -125,6 +143,20 @@ export const Default: Story = {
 };
 
 export const Light: Story = {
+  name: 'Light section',
+  parameters: { docs: {
+    description: { story: 'Use a light theme for the same project controls.' },
+    source: { language: 'tsx', code: `import { Button, TextField, ThemeRoot, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Section = styled(ThemeRoot)({ display: 'grid', gap: vars.space[4], padding: vars.space[6], borderRadius: vars.radius.lg, backgroundColor: vars.color.surface });
+const Actions = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
+
+<Section theme="light">
+  <Actions><Button tone="accent">Save</Button><Button variant="outline">Cancel</Button></Actions>
+  <TextField label="Project name" placeholder="Untitled" />
+</Section>` },
+  } },
   args: { theme: 'light' },
   play: async ({ canvasElement }) => {
     await expect(getRoot(canvasElement)).toHaveAttribute('data-theme', 'light');
@@ -146,6 +178,37 @@ function getHost(canvasElement: HTMLElement) {
 }
 
 export const PortalContainer: Story = {
+  name: 'Local overlay host',
+  parameters: { docs: {
+    description: { story: 'Open Share to place its popover inside a local host with the section’s light theme.' },
+    source: { language: 'tsx', code: `import { useId, useState } from 'react';
+import { Button, Popover, ThemeRoot, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Section = styled(ThemeRoot)({ display: 'grid', gap: vars.space[4], padding: vars.space[6], borderRadius: vars.radius.lg, backgroundColor: vars.color.surface });
+const Actions = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
+const Heading = styled.h2({ margin: 0, marginBlockEnd: vars.space[2], fontSize: vars.textSize.md });
+
+export function ShareSection() {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  const headingId = useId();
+  return (
+    <Section theme="light" portalContainer={host}>
+      <Actions>
+        <Popover>
+          <Popover.Trigger>Share</Popover.Trigger>
+          <Popover.Content aria-labelledby={headingId}>
+            <Heading id={headingId}>Share details</Heading>
+            <Button size="sm">Share action</Button>
+          </Popover.Content>
+        </Popover>
+        <Button>After</Button>
+      </Actions>
+      <div ref={setHost} />
+    </Section>
+  );
+}` },
+  } },
   args: { theme: 'light' },
   render: (args) => (
     <PortalContainerExample {...args}>

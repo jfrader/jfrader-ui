@@ -129,28 +129,51 @@ export interface ShareAccessProps
   extends
     Omit<ComponentPropsWithRef<'section'>, 'title' | 'defaultValue' | 'onChange' | 'children'>,
     SxProps {
+  /** Names the shared resource in the heading. */
   title: string;
+  /** Sets the sharing URL copied by the copy action. */
   link: string;
+  /** Controls the members with access and their roles. */
   value?: readonly ShareAccessMember[];
+  /** Sets the initial members when uncontrolled. Defaults to an empty list. */
   defaultValue?: readonly ShareAccessMember[];
+  /** Receives members after invitations, role changes, removals or undo. */
   onValueChange?: (next: ShareAccessMember[]) => void;
+  /** Controls whether access is restricted or available through the link. */
   access?: ShareGeneralAccess;
+  /** Sets initial general access when uncontrolled. Defaults to `restricted`. */
   defaultAccess?: ShareGeneralAccess;
+  /** Receives changes to general access. */
   onAccessChange?: (next: ShareGeneralAccess) => void;
+  /** Controls the role granted to anyone with the link. */
   linkRole?: ShareRole;
+  /** Sets the initial link role when uncontrolled. Defaults to `viewer`. */
   defaultLinkRole?: ShareRole;
+  /** Receives changes to the link role. */
   onLinkRoleChange?: (next: ShareRole) => void;
+  /** Controls the role assigned to new invitations. */
   inviteRole?: ShareRole;
+  /** Sets the initial invitation role when uncontrolled. Defaults to `editor`. */
   defaultInviteRole?: ShareRole;
+  /** Receives changes to the invitation role. */
   onInviteRoleChange?: (next: ShareRole) => void;
+  /** Supplies contacts suggested while entering invitation recipients. */
   directory?: readonly ShareAccessContact[];
+  /** Identifies the member marked as you in the access list. */
   selfId?: string;
+  /** Sends selected invitations. A rejected promise shows an error without adding members. */
   onInvite?: (people: ShareAccessContact[], role: ShareRole) => void | Promise<void>;
+  /** Receives the sharing URL after a successful copy. */
   onCopyLink?: (link: string) => void;
+  /** Handles the Done action. Omit to hide its button. */
   onDone?: () => void;
+  /** Overrides labels, validation messages and live announcements. */
   messages?: Partial<ShareAccessMessages>;
+  /** Replaces the section root. `slots.root` takes precedence. */
   component?: ShareAccessSlots['root'];
+  /** Replaces sharing controls and structural parts. */
   slots?: ShareAccessSlots;
+  /** Passes props to sharing controls and structural parts. */
   slotProps?: ShareAccessSlotProps;
 }
 const EMPTY: readonly ShareAccessMember[] = [];

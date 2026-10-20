@@ -14,14 +14,18 @@ const meta = {
   args: { children: 'Generating summary' },
   parameters: {
     docs: {
+      sections: [
+        { title: 'Activity labels', stories: ['Default', 'Accent', 'Idle'] },
+        { title: 'Motion control', stories: ['ContinuousWithPauseButton'] },
+      ],
       description: {
         component: 'Sweep a highlight over a short label while work is in progress.',
       },
-      usage: `### Activity
-Pass active=false on completion. Activity, pause and text are caller-owned; labels update immediately without width or text transitions. Active text defaults aria-busy to true; an explicit aria-busy (including false) on the root or slotProps.root takes precedence. TextShimmer does not create a live region or announce progress. Put task announcements in a separate live region outside the busy subtree. Use Progress for measurable work.
+      usage: `### Activity and announcements
+Stop activity when work completes. Labels update immediately without width or text transitions. Active text is marked busy unless you override its accessibility state. Put task announcements in a separate live region outside the busy text; shimmer does not announce progress. Use Progress for measurable work.
 ### Motion
-The default animation stops after 4000ms of running time, leaving solid text without marking the task complete. Positive maxDurationMs values are capped at 5000ms. A budget shorter than durationMs ends mid-sweep and settles to solid text; no full sweep is guaranteed. Pausing, leaving the viewport, or hiding the page preserves the remaining budget. Text changes do not restart it; a new inactive-to-active period does.
-Nonpositive maxDurationMs values disable the time budget. Use them only alongside a named pause/stop control to meet WCAG 2.2.2. Reduced motion and forced colors show solid text immediately. Without background-clip support the label stays solid.
+Motion stops after 4000ms of running time by default, leaving solid text without marking the task complete. Positive motion budgets cannot exceed 5000ms. A short budget may end mid-sweep. Pausing, leaving the viewport, or hiding the page preserves the remaining budget. Text changes do not restart it; starting activity again does.
+Zero or negative budgets allow continuous motion. Always provide a named pause or stop control for continuous animation to meet WCAG 2.2.2. Reduced motion, forced colors and missing background-clip support leave solid text.
 ### Keyboard
 Text has no widget role or keyboard handlers. Tab skips the label and reaches surrounding native controls.`,
       source: {
@@ -35,6 +39,13 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  name: 'Generating summary',
+  parameters: { docs: {
+    description: { story: 'Show activity with a shimmer that settles to solid text after its motion budget.' },
+    source: { language: 'tsx', code: `import { TextShimmer } from '@jfrader/ui';
+
+<TextShimmer>Generating summary</TextShimmer>` },
+  } },
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('[data-ui="text-shimmer"]')!;
     await expect(root).toHaveAttribute('aria-busy', 'true');
@@ -43,6 +54,13 @@ export const Default: Story = {
   },
 };
 export const Idle: Story = {
+  name: 'Completed label',
+  parameters: { docs: {
+    description: { story: 'Show a solid label when generation has finished.' },
+    source: { language: 'tsx', code: `import { TextShimmer } from '@jfrader/ui';
+
+<TextShimmer active={false}>Summary ready</TextShimmer>` },
+  } },
   args: { active: false, children: 'Summary ready' },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-ui="text-shimmer"]')).not.toHaveAttribute(
@@ -54,7 +72,16 @@ export const Idle: Story = {
     ).toBe('none');
   },
 };
-export const Accent: Story = { args: { tone: 'accent' } };
+export const Accent: Story = {
+  name: 'Accent shimmer',
+  parameters: { docs: {
+    description: { story: 'Use the accent tone for an active summary label.' },
+    source: { language: 'tsx', code: `import { TextShimmer } from '@jfrader/ui';
+
+<TextShimmer tone="accent">Generating summary</TextShimmer>` },
+  } },
+  args: { tone: 'accent' },
+};
 export const LightTheme: Story = {
   decorators: [withLightTheme],
   globals: { theme: 'light' },
@@ -228,11 +255,24 @@ function ContinuousDemo({ maxDurationMs = 0 }: { maxDurationMs?: number }) {
   );
 }
 export const ContinuousWithPauseButton: Story = {
+  name: 'Continuous shimmer with pause',
   render: () => <ContinuousDemo />,
   parameters: {
     docs: {
+      description: { story: 'Pause or resume a continuous shimmer with a keyboard-accessible button.' },
       source: {
-        code: '<>\n  <TextShimmer maxDurationMs={0} paused={paused}>Generating summary</TextShimmer>\n  <Button onClick={() => setPaused(!paused)}>{paused ? "Resume animation" : "Pause animation"}</Button>\n</>',
+        code: `import { useState } from 'react';
+import { Button, TextShimmer } from '@jfrader/ui';
+
+export function SummaryActivity() {
+  const [paused, setPaused] = useState(false);
+  return <>
+    <TextShimmer maxDurationMs={0} paused={paused}>Generating summary</TextShimmer>
+    <Button onClick={() => setPaused(!paused)}>
+      {paused ? 'Resume animation' : 'Pause animation'}
+    </Button>
+  </>;
+}`,
         language: 'tsx',
       },
     },

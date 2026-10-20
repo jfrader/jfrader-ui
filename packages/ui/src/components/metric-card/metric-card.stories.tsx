@@ -95,14 +95,22 @@ const meta = {
         component:
           'Show a number with a heading and a change from a previous value.',
       },
-      usage: `- The card is read-only, not an APG widget. Tab and Shift+Tab skip it.
-- Values update without animation or live announcements.
-- Percent inputs are fractions. Currency formatting requires a currency code; invalid Intl options throw.
-- Nonzero deltas always show a sign, even with signDisplay="never".
-- Set locale to match server and client output.`,
-      source: {
-        code: '<MetricCard label="Revenue" value={42000} locale="en-GB" formatOptions={{ style: "currency", currency: "GBP" }} delta={0.12} deltaFormatOptions={{ style: "percent" }} deltaTone="success" description="Last 30 days" />',
-      },
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Flat'] },
+        { title: 'Formatting', stories: ['Currency', 'Compact', 'LiteralUnit'] },
+        { title: 'Trends and deltas', stories: ['PositiveDelta', 'Comparison', 'DecreasingIsGood'] },
+        { title: 'States', stories: ['Loading', 'MissingValue'] },
+      ],
+      usage: `### Values and formatting
+- Values and deltas are formatted via \`Intl.NumberFormat\`. Pass percentage values as decimal fractions (0.12 for 12%).
+- Currency formatting requires a valid ISO 4217 currency code; invalid Intl options throw.
+- Nonzero deltas display an explicit sign and directional arrow. Non-finite or missing numbers render fallback text.
+- Specify an explicit locale to guarantee consistent formatting across server rendering and client hydration.
+
+### Accessibility
+- Cards display read-only values and are skipped during tab navigation; place interactive actions outside.
+- Value updates apply immediately without live region announcements. Wrap in an external live region if updates require screen-reader announcements.
+- Loading states indicate background fetching with \`aria-busy="true"\`.`,
     },
   },
 } satisfies Meta<typeof MetricCard>;
@@ -140,6 +148,23 @@ async function expectFits(root: HTMLElement) {
 }
 
 export const Default: Story = {
+  name: 'Metric overview',
+  parameters: {
+    docs: {
+      description: { story: 'Display a primary metric with a label, formatted value, and time period.' },
+      source: {
+        language: 'tsx',
+        code: `import { MetricCard } from '@jfrader/ui';
+
+<MetricCard
+  label="Revenue"
+  value={42000}
+  locale="en-GB"
+  description="Last 30 days"
+/>`,
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     const root = roots(canvasElement)[0]!;
     await expect(root).not.toHaveAttribute('role');
@@ -150,6 +175,24 @@ export const Default: Story = {
   },
 };
 export const Flat: Story = {
+  name: 'Flat variant',
+  parameters: {
+    docs: {
+      description: { story: 'Render with a flat border and transparent surface without elevation shadow.' },
+      source: {
+        language: 'tsx',
+        code: `import { MetricCard } from '@jfrader/ui';
+
+<MetricCard
+  label="Revenue"
+  value={42000}
+  locale="en-GB"
+  description="Last 30 days"
+  variant="flat"
+/>`,
+      },
+    },
+  },
   args: { variant: 'flat' },
   play: async ({ canvasElement }) => {
     await expect(
@@ -170,6 +213,24 @@ export const Decimal: Story = {
   play: formattingPlay,
 };
 export const Compact: Story = {
+  name: 'Compact notation',
+  parameters: {
+    docs: {
+      description: { story: 'Abbreviate large numbers with metric suffixes to conserve horizontal space.' },
+      source: {
+        language: 'tsx',
+        code: `import { MetricCard } from '@jfrader/ui';
+
+<MetricCard
+  label="Revenue"
+  value={1234000}
+  locale="en-GB"
+  formatOptions={{ notation: 'compact' }}
+  description="Last 30 days"
+/>`,
+      },
+    },
+  },
   args: { value: 1234000, formatOptions: { notation: 'compact' } },
   play: formattingPlay,
 };
@@ -178,10 +239,46 @@ export const Percent: Story = {
   play: formattingPlay,
 };
 export const Currency: Story = {
+  name: 'Currency formatting',
+  parameters: {
+    docs: {
+      description: { story: 'Format amounts with currency symbols according to the specified locale.' },
+      source: {
+        language: 'tsx',
+        code: `import { MetricCard } from '@jfrader/ui';
+
+<MetricCard
+  label="Revenue"
+  value={42000}
+  locale="en-GB"
+  formatOptions={{ style: 'currency', currency: 'GBP' }}
+  description="Last 30 days"
+/>`,
+      },
+    },
+  },
   args: { value: 42000, formatOptions: { style: 'currency', currency: 'GBP' } },
   play: formattingPlay,
 };
 export const LiteralUnit: Story = {
+  name: 'Literal unit label',
+  parameters: {
+    docs: {
+      description: { story: 'Append a custom text unit suffix directly after the formatted count.' },
+      source: {
+        language: 'tsx',
+        code: `import { MetricCard } from '@jfrader/ui';
+
+<MetricCard
+  label="Active projects"
+  value={0}
+  unitLabel="projects"
+  locale="en-GB"
+  description="Last 30 days"
+/>`,
+      },
+    },
+  },
   args: { label: 'Active projects', value: 0, unitLabel: 'projects' },
   play: async ({ canvasElement }) => {
     await expect(part(roots(canvasElement)[0]!, 'value')).toHaveTextContent(/^0 projects$/);
@@ -205,6 +302,26 @@ const deltaPlay: Story['play'] = async ({ canvasElement, args }) => {
   );
 };
 export const PositiveDelta: Story = {
+  name: 'Positive trend',
+  parameters: {
+    docs: {
+      description: { story: 'Display an upward percentage delta with an arrow and success color tone.' },
+      source: {
+        language: 'tsx',
+        code: `import { MetricCard } from '@jfrader/ui';
+
+<MetricCard
+  label="Revenue"
+  value={42000}
+  locale="en-GB"
+  description="Last 30 days"
+  delta={0.12}
+  deltaTone="success"
+  deltaFormatOptions={{ style: 'percent' }}
+/>`,
+      },
+    },
+  },
   args: { delta: 0.12, deltaTone: 'success', deltaFormatOptions: { style: 'percent' } },
   play: deltaPlay,
 };
@@ -219,10 +336,49 @@ export const RoundedNonzeroDelta: Story = {
   play: deltaPlay,
 };
 export const DecreasingIsGood: Story = {
+  name: 'Inverse delta tone',
+  parameters: {
+    docs: {
+      description: { story: 'Apply a success tone to negative changes when a reduction represents a positive outcome.' },
+      source: {
+        language: 'tsx',
+        code: `import { MetricCard } from '@jfrader/ui';
+
+<MetricCard
+  label="Incidents"
+  value={4}
+  locale="en-GB"
+  description="Last 30 days"
+  delta={-8}
+  deltaTone="success"
+/>`,
+      },
+    },
+  },
   args: { label: 'Incidents', value: 4, delta: -8, deltaTone: 'success' },
   play: deltaPlay,
 };
 export const Comparison: Story = {
+  name: 'Comparison baseline',
+  parameters: {
+    docs: {
+      description: { story: 'Provide comparison text alongside the delta pill to clarify the measurement window.' },
+      source: {
+        language: 'tsx',
+        code: `import { MetricCard } from '@jfrader/ui';
+
+<MetricCard
+  label="Revenue"
+  value={42000}
+  locale="en-GB"
+  description="Last 30 days"
+  delta={0.12}
+  deltaFormatOptions={{ style: 'percent' }}
+  deltaDescription="vs last month"
+/>`,
+      },
+    },
+  },
   args: { delta: 0.12, deltaFormatOptions: { style: 'percent' }, deltaDescription: 'vs last month' },
   play: async ({ canvasElement }) => {
     await expect(roots(canvasElement)[0]!.querySelector('[data-ui="pill"]')).toHaveTextContent(
@@ -231,6 +387,24 @@ export const Comparison: Story = {
   },
 };
 export const Loading: Story = {
+  name: 'Loading state',
+  parameters: {
+    docs: {
+      description: { story: 'Show an animated shimmer across the metric value while data is being fetched.' },
+      source: {
+        language: 'tsx',
+        code: `import { MetricCard } from '@jfrader/ui';
+
+<MetricCard
+  label="Revenue"
+  value={42000}
+  locale="en-GB"
+  description="Last 30 days"
+  loading
+/>`,
+      },
+    },
+  },
   args: { loading: true },
   play: async ({ canvasElement }) => {
     const root = roots(canvasElement)[0]!;
@@ -240,6 +414,24 @@ export const Loading: Story = {
   },
 };
 export const MissingValue: Story = {
+  name: 'Missing value fallback',
+  parameters: {
+    docs: {
+      description: { story: 'Render custom placeholder text when the metric value is null or unrecorded.' },
+      source: {
+        language: 'tsx',
+        code: `import { MetricCard } from '@jfrader/ui';
+
+<MetricCard
+  label="Revenue"
+  value={null}
+  missingValueLabel="Not reported"
+  locale="en-GB"
+  description="Last 30 days"
+/>`,
+      },
+    },
+  },
   args: { value: null, missingValueLabel: 'Not reported' },
   play: async ({ canvasElement }) => {
     await expect(part(roots(canvasElement)[0]!, 'value')).toHaveTextContent('Not reported');
@@ -370,13 +562,31 @@ export const ExternalAria: Story = {
   },
 };
 export const RefTarget: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useRef } from 'react';
+  name: 'DOM reference',
+  parameters: {
+    docs: {
+      description: { story: 'Attach a React ref to access the root card element directly.' },
+      source: {
+        language: 'tsx',
+        code: `import { useRef } from 'react';
 import { MetricCard } from '@jfrader/ui';
 
-export function Revenue() {
+export function MetricCardRefExample() {
   const cardRef = useRef<HTMLDivElement>(null);
-  return <MetricCard ref={cardRef} label="Revenue" value={42000} locale="en-GB" description="Last 30 days" />;
-}` } } },
+
+  return (
+    <MetricCard
+      ref={cardRef}
+      label="Revenue"
+      value={42000}
+      locale="en-GB"
+      description="Last 30 days"
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { ref: fn() },
   play: async ({ canvasElement, args }) => {
     await expect(args.ref).toHaveBeenCalledWith(roots(canvasElement)[0]);

@@ -107,6 +107,10 @@ const meta = {
   component: Scene,
   parameters: {
     docs: {
+      sections: [
+        { title: 'Artwork', stories: ['Default', 'Grades'] },
+        { title: 'Image sources', stories: ['AvatarContent'] },
+      ],
       description: {
         component: 'Render procedural landscape artwork and avatars from deterministic seeds.',
       },
@@ -117,20 +121,8 @@ const meta = {
 <Scene seed="north-dunes" variant="landscape" />`,
       },
       usage: `
-### Setup
-- Import from \`@jfrader/ui/scene\`. Scene is an opt-in subpath and is not re-exported by the package root.
-
 ### Seeds
-Pass any string to \`seed\`. The same seed produces identical artwork across reloads and platforms.
-
-### Variants
-Choose \`landscape\`, \`dunes\`, \`dusk\`, or \`tide\` to change the terrain style and lighting.
-
-### Grades
-Set \`grade="warm"\` for a warmer final grade of the same scene. Only colours change, so a raw and a warm scene from one seed line up as a before/after pair.
-
-### Image slots
-Use \`sceneSource(seed, options)\` to generate a \`data:image/svg+xml\` URL for image-slot components such as \`Avatar\`.
+The same seed produces identical artwork across reloads and platforms. A raw and a warm scene from one seed line up as a before/after pair; only colours change.
 
 ### Accessibility
 Provide \`alt\` or \`aria-label\` to describe the scene. Pass \`aria-hidden\` or an empty \`alt\` string when the scene is decorative.
@@ -171,6 +163,17 @@ export const SeededCoreParity: Story = {
 
 /** Default scene rendered inline at full container width. */
 export const Default: Story = {
+  name: 'Seeded landscape',
+  parameters: { docs: {
+    description: { story: 'Render a landscape at the width of its container.' },
+    source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { Scene } from '@jfrader/ui/scene';
+import { vars } from '@jfrader/tokens/vars';
+
+const Preview = styled.div({ maxInlineSize: '640px', borderRadius: vars.radius.md, overflow: 'hidden' });
+
+<Preview><Scene seed="north-dunes" variant="landscape" size="full" /></Preview>` },
+  } },
   render: (args) => (
     <WidePreview>
       <Scene {...args} />
@@ -285,6 +288,23 @@ export const Determinism: Story = {
 
 /** One seed in its raw colours and with the warm grade. */
 export const Grades: Story = {
+  name: 'Raw and warm colours',
+  parameters: { docs: {
+    description: { story: 'Compare two colour grades without changing the terrain.' },
+    source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { Scene } from '@jfrader/ui/scene';
+import { vars } from '@jfrader/tokens/vars';
+
+const Rail = styled.div({ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: vars.space[4] });
+const Card = styled.div({ display: 'flex', flexDirection: 'column', gap: vars.space[2], padding: vars.space[3], borderRadius: vars.radius.md, border: \`1px solid \${vars.color.border}\`, backgroundColor: vars.color.surface });
+const Label = styled.span({ fontSize: vars.textSize.sm, fontWeight: vars.fontWeight.medium });
+const Preview = styled.div({ blockSize: '180px', borderRadius: vars.radius.sm, overflow: 'hidden' });
+
+<Rail>
+  <Card><Label>raw</Label><Preview><Scene seed="grade-check" grade="raw" alt="raw grade" /></Preview></Card>
+  <Card><Label>warm</Label><Preview><Scene seed="grade-check" grade="warm" alt="warm grade" /></Preview></Card>
+</Rail>` },
+  } },
   render: () => (
     <Rail>
       {GRADES.map((grade) => (
@@ -399,6 +419,22 @@ export const AspectCrops: Story = {
 
 /** Using `sceneSource` data URLs inside Avatar image slots. */
 export const AvatarContent: Story = {
+  name: 'Landscape avatars',
+  parameters: { docs: {
+    description: { story: 'Use generated SVG image sources for four named avatars.' },
+    source: { language: 'tsx', code: `import { Avatar, styled } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[4] });
+
+<Row>
+  <Avatar name="Dune Explorer" src={sceneSource('north-dunes', { variant: 'dunes' })} size="lg" />
+  <Avatar name="Alpine Climber" src={sceneSource('alpine-ridge', { variant: 'landscape' })} size="lg" />
+  <Avatar name="Night Watch" src={sceneSource('twilight-fjord', { variant: 'dusk' })} size="lg" />
+  <Avatar name="Ocean Surfer" src={sceneSource('coastal-swell', { variant: 'tide' })} size="lg" />
+</Row>` },
+  } },
   render: () => (
     <AvatarRow>
       <Avatar

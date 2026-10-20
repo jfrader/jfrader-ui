@@ -152,29 +152,51 @@ export interface ShareSheetProps
   extends Omit<ComponentPropsWithRef<'div'>, 'title' | 'defaultValue' | 'onCopy'>, SxProps {
   /** Shorthand for slots.root. */
   component?: ShareSheetSlots['root'];
+  /** Names the shared item in the heading. */
   title: string;
+  /** Sets the link written to the clipboard by the copy action. */
   link: string;
+  /** Supplies the people available for recipient selection. */
   people: readonly ShareSheetPerson[];
+  /** Supplies the available access permissions. Disabled options cannot be selected. */
   accessOptions: readonly ShareSheetAccessOption[];
+  /** Adds sharing channel actions. Actions require `onChannel` to be enabled. */
   channels?: readonly ShareSheetChannel[];
+  /** Controls whether the sharing overlay is open. */
   open?: boolean;
+  /** Opens the uncontrolled overlay initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receives requests to open or close the sharing overlay. */
   onOpenChange?: (next: boolean) => void;
+  /** Controls the selected recipient IDs. */
   value?: readonly string[];
+  /** Sets the initial uncontrolled recipient IDs. Defaults to an empty selection. */
   defaultValue?: readonly string[];
+  /** Receives the requested recipient IDs after selection or removal. */
   onValueChange?: (next: string[]) => void;
+  /** Controls the selected access permission value. */
   access?: string;
+  /** Sets the initial uncontrolled permission. Defaults to the first enabled access option. */
   defaultAccess?: string;
+  /** Receives the requested access permission value. */
   onAccessChange?: (next: string) => void;
+  /** Sends the selected people and permission. A returned promise delays confirmation until it resolves. */
   onSend?: (submission: ShareSheetSubmission) => void | Promise<unknown>;
+  /** Handles a channel action by ID. A rejected promise shows the channel failure message. */
   onChannel?: (id: string) => void | Promise<unknown>;
+  /** Receives the permission captured when a successful link copy began. */
   onCopy?: (access: string) => void;
+  /** Aligns the popover with its trigger. Defaults to `end`. */
   align?: 'start' | 'end' | 'center';
   /** Inline renders the heading, children, link copy and access picker without an overlay or trigger. */
   presentation?: 'responsive' | 'popover' | 'sheet' | 'inline';
+  /** Sets the locale for recipient counts, plural rules and name lists. Defaults to the runtime locale. */
   locale?: string;
+  /** Overrides the English action labels and status messages. */
   messages?: Partial<ShareSheetMessages>;
+  /** Passes props to the sharing widget elements. */
   slotProps?: ShareSheetSlotProps;
+  /** Replaces sharing widget elements with custom components. */
   slots?: ShareSheetSlots;
 }
 const PHONE_QUERY = '(max-width: 520px)';

@@ -56,6 +56,31 @@ const actions: readonly ActionMorphAction[] = [
     },
   },
 ];
+const actionExample = (corner: 'start' | 'end') => `import { ActionMorph, styled, type ActionMorphProps } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stage = styled.div({ minBlockSize: '30rem', paddingBlockStart: '24rem', display: 'flex', justifyContent: 'end', gap: vars.space[4] });
+
+export function CreateAction({ save }: { save: NonNullable<ActionMorphProps['onSubmit']> }) {
+  return <Stage>
+    <ActionMorph label="Create" corner="${corner}" resetAfter={0} onSubmit={save} actions={[
+      { id: 'note', label: 'Note', shortcut: 'n', composer: {
+        title: 'New note', label: 'Note text', submitLabel: 'Save note', successLabel: 'Note saved',
+      } },
+      { id: 'locked', label: 'Locked action', disabled: true, composer: {
+        title: 'Unavailable', submitLabel: 'Save', successLabel: 'Saved',
+      } },
+      { id: 'message', label: 'Message', shortcut: 'm', composer: {
+        title: 'New message', label: 'Message text', multiline: true,
+        submitLabel: 'Send message', successLabel: 'Message sent', choices: {
+          label: 'Audience', options: [
+            { value: 'team', label: 'Team' }, { value: 'all', label: 'Everyone' },
+          ],
+        },
+      } },
+    ]} />
+  </Stage>;
+}`;
 const meta = {
   title: 'Actions/ActionMorph',
   component: ActionMorph,
@@ -79,13 +104,10 @@ const meta = {
       description: {
         component: 'Choose a create action, write a short draft and submit it without leaving the page.',
       },
-      source: {
-        code: `<ActionMorph label="Create" actions={[
-  { id: 'note', label: 'Note', composer: { title: 'New note',
-    label: 'Note text', submitLabel: 'Save note', successLabel: 'Note saved' } }
-]} onSubmit={({ action, text, choice }) => save(action, text, choice)} />`,
-        language: 'tsx',
-      },
+      sections: [
+        { title: 'Create and compose', stories: ['Default'] },
+        { title: 'Placement', stories: ['CornerStart'] },
+      ],
       usage: `### Drafts and submission
 Use this for short drafts, Menu for immediate commands, and Dialog for longer forms. Drafts and choices stay in memory while mounted, including after Back or a failed request. Return the real promise from \`onSubmit\`; omitting it disables submission. Empty trimmed text is rejected, but the original text is submitted. Closing or going Back invalidates UI updates, not the app's request; cancellation belongs to the consumer. Give actions unique ids and shortcuts.
 
@@ -93,10 +115,7 @@ Use this for short drafts, Menu for immediate commands, and Dialog for longer fo
 Enter, Space or ArrowDown opens on the first enabled action; ArrowUp opens on the last. Up/Down wraps and Home/End jumps. Menu-local shortcuts take precedence over typeahead. Enter/Space chooses an action. Enter submits a single-line draft; Control/Meta+Enter submits multiline text. Escape returns from composer to menu, then closes the menu. Tab follows the nonmodal page order; leaving closes without moving focus back. Accepted Escape and success close return focus to the trigger.
 
 ### State and motion
-\`open/defaultOpen/onOpenChange\` controls visibility. Rejected close requests retain an accessible success face with a Close button. Only the active face is interactive. Motion changes layout without delaying submission or focus; reduced motion swaps faces immediately. Position the root in your own layout; \`corner\` selects the logical growth direction.
-
-### Customization
-Every \`slotProps\` key has a matching replacement in \`slots\`. \`component\` is sugar for \`slots.root\`. Adapters forward supplied props, ref and className to their default native element or component. Field adapters receive \`multiline\` and forward the ref to the input or textarea. Root \`sx\` applies last.`,
+Rejected close requests retain an accessible success face with a Close button. Only the active face is interactive. Motion changes layout without delaying submission or focus; reduced motion swaps faces immediately. Reserve space around the trigger for the menu and composer to grow.`,
     },
   },
   args: {
@@ -110,9 +129,22 @@ Every \`slotProps\` key has a matching replacement in \`slots\`. \`component\` i
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  name: 'Create a note or message',
+  parameters: { docs: {
+    description: { story: 'Choose Note for a short draft or Message for multiline text and an audience.' },
+    source: { language: 'tsx', code: actionExample('end') },
+  } },
+};
 export const Light: Story = { globals: { theme: 'light' } };
-export const CornerStart: Story = { args: { corner: 'start' } };
+export const CornerStart: Story = {
+  name: 'Grow from the start corner',
+  args: { corner: 'start' },
+  parameters: { docs: {
+    description: { story: 'Open the same create actions from the logical start corner.' },
+    source: { language: 'tsx', code: actionExample('start') },
+  } },
+};
 export const EmptyActions: Story = { args: { actions: [] } };
 export const PersistentMenu: Story = {
   args: { defaultOpen: true },

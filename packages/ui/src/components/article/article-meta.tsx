@@ -12,14 +12,23 @@ type Anatomy = { root: 'p'; place: 'span'; published: 'time'; updated: 'time'; p
 export type ArticleMetaSlots = PresentationSlots<Anatomy>;
 export type ArticleMetaSlotProps = PresentationParts<Anatomy>;
 export type ArticleMetaProps = Omit<ComponentPropsWithRef<'p'>, 'children'> & SxProps & {
+  /** Adds rules and spacing with `ruled`. Defaults to `inline`. */
   variant?: 'inline' | 'ruled';
+  /** Shows a location before the publication and update times. */
   place?: ReactNode;
+  /** Shows the publication label and machine-readable timestamp. */
   published?: PrintedTime;
+  /** Shows the update label and machine-readable timestamp. */
   updated?: PrintedTime;
+  /** Adds text before the publication time when `published` has a visible label. */
   publishedLabel?: ReactNode;
+  /** Adds text before the update time when `updated` has a visible label. */
   updatedLabel?: ReactNode;
+  /** Replaces the paragraph root. `slots.root` takes precedence. */
   component?: ArticleMetaSlots['root'];
+  /** Replaces metadata labels, times and separators. */
   slots?: ArticleMetaSlots;
+  /** Passes props to metadata labels, times and separators. */
   slotProps?: ArticleMetaSlotProps;
 };
 

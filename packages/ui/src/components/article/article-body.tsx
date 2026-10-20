@@ -52,7 +52,11 @@ export type ArticleBodyFactProps = Omit<ComponentPropsWithRef<'aside'>, 'title'>
   /** Renders supporting facts as a keyed list instead of custom `children`. */
   items: readonly ArticleBodyFactItem[];
   children?: never;
-} | { items?: never; children?: ReactNode });
+} | {
+  items?: never;
+  /** Composes supporting facts manually instead of generating them from `items`. */
+  children?: ReactNode;
+});
 export type ArticleBodyQuoteProps = ComponentPropsWithRef<'blockquote'> & SxProps & Customization<QuoteAnatomy> & {
   /** Names the speaker beneath the quotation. */
   speaker?: ReactNode;

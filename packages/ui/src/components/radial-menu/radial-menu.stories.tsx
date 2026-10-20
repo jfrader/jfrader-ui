@@ -54,6 +54,9 @@ const meta = {
       },
     },
     docs: {
+      sections: [
+        { title: 'Object actions', stories: ['Default'] },
+      ],
       description: {
         component:
           'Choose a short object action from buttons arranged around a trigger.',
@@ -63,21 +66,51 @@ Enter, Space and ArrowDown open the menu. ArrowUp opens on the last action. Up/D
 ### Pointer
 Click the trigger, then an action. Hold the trigger for 250ms and drag over an action to select on release. Release elsewhere to cancel. Disabled actions cannot run. A pending action blocks repeat requests; a rejection leaves a readable failure and allows retry.
 ### Geometry
-Use three to six actions. Angles are physical degrees: up -90, right 0, down 90, left 180. The menu uses a vertical layout when targets overlap or the viewport cannot fit the radial stage. Reduced motion removes the entrance animation. Root and interior replacements forward all props and refs.`,
+Use three to six actions. The menu uses a vertical layout when targets overlap or the viewport cannot fit the radial stage. Reduced motion removes the entrance animation.`,
       source: {
         language: 'tsx',
-        code: `<RadialMenu label="Note actions" actions={[
-  { id: 'copy', label: 'Copy', icon: '+' },
+        code: `import { RadialMenu, Surface, styled, type RadialMenuProps } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Frame = styled(Surface)({
+  boxSizing: 'border-box',
+  inlineSize: \`calc(\${vars.space[8]} * 18)\`,
+  maxInlineSize: '100%',
+  minBlockSize: \`calc(\${vars.space[8]} * 12)\`,
+  display: 'grid',
+  gridTemplateRows: 'auto minmax(0, 1fr)',
+  placeItems: 'center',
+  padding: vars.space[8],
+  gap: vars.space[4],
+});
+const NoteLabel = styled.p({
+  justifySelf: 'start', margin: 0, fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm, color: vars.color.textMuted,
+});
+const actions = [
+  { id: 'copy', label: 'Copy', icon: '＋' },
   { id: 'archive', label: 'Archive', icon: '↓' },
-  { id: 'delete', label: 'Delete', icon: '×', tone: 'danger' },
-]} onAction={performAction} />`,
+  { id: 'delete', label: 'Delete', icon: '×', tone: 'danger' as const },
+];
+
+export function NoteActions({ onAction }: Pick<RadialMenuProps, 'onAction'>) {
+  return (
+    <Frame>
+      <NoteLabel>Product notes · Launch checklist</NoteLabel>
+      <RadialMenu label="Note actions" actions={actions} onAction={onAction} />
+    </Frame>
+  );
+}`,
       },
     },
   },
 } satisfies Meta<typeof RadialMenu>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Default: Story = {};
+export const Default: Story = {
+  name: 'Note actions',
+  parameters: { docs: { description: { story: 'Open the trigger to copy, archive or delete a note.' } } },
+};
 export const Light: Story = {
   globals: { theme: 'light' },
   decorators: [withLightTheme],

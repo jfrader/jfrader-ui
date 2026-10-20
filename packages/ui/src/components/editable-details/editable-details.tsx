@@ -103,6 +103,7 @@ export interface EditableDetailsSlotProps {
 }
 
 export interface EditableDetailsBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
+  /** Overrides the edit button text. Defaults to `Edit`. */
   messages?: Partial<EditableDetailsMessages>;
   /** Replace the root. Exactly sugar for `slots.root`; declare the component outside render. */
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
@@ -110,9 +111,12 @@ export interface EditableDetailsBaseProps extends Omit<ComponentPropsWithRef<'di
 }
 
 export interface EditableDetailsCompoundProps extends EditableDetailsBaseProps {
+  /** Composes sections and detail lists instead of supplying `sections`. */
   children?: ReactNode;
   sections?: never;
+  /** Replaces the root, section, list and item components. */
   slots?: EditableDetailsSlots;
+  /** Passes props and `sx` to the root and repeated sections, lists and items. */
   slotProps?: EditableDetailsSlotProps;
 }
 
@@ -120,7 +124,9 @@ export interface EditableDetailsEasyProps extends EditableDetailsBaseProps {
   /** Structured section records to render. */
   sections: readonly EditableDetailsSectionRecord[];
   children?: never;
+  /** Replaces the root, section, list and item components. */
   slots?: EditableDetailsSlots;
+  /** Passes props and `sx` to the root and repeated sections, lists and items. */
   slotProps?: EditableDetailsSlotProps;
 }
 
@@ -148,13 +154,21 @@ export interface EditableDetailsItemSlots {
 }
 
 export interface EditableDetailsSectionProps extends Omit<ComponentPropsWithRef<'section'>, 'title'>, SxProps {
+  /** Replaces the section heading, disclosure trigger and panel. */
   slots?: EditableDetailsSectionSlots;
+  /** Displays the section's disclosure button text. */
   title: ReactNode;
+  /** Sets the section heading's HTML level. Defaults to `3`. */
   headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
+  /** Controls whether the section body is visible. */
   open?: boolean;
+  /** Shows the uncontrolled section body initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receives requests to expand or collapse the section. */
   onOpenChange?: (open: boolean) => void;
+  /** Receives the section's disclosure button. */
   triggerRef?: Ref<HTMLButtonElement>;
+  /** Passes props and `sx` to the section heading, disclosure trigger and panel. */
   slotProps?: {
     /** Heading element wrapping the disclosure trigger button. Renders an `h3` by default, or the heading set by `headingLevel`. */
     heading?: EditableDetailsPartProps;
@@ -172,12 +186,19 @@ export interface EditableDetailsEditorProps {
   visible: boolean;
 }
 export interface EditableDetailsItemProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /** Replaces the item's label, summary, edit button and editor parts. */
   slots?: EditableDetailsItemSlots;
+  /** Names the detail beside its summary or editor. */
   label: ReactNode;
+  /** Renders the editor and enables the edit button. The caller owns form state and saving. */
   renderEditor?: (props: EditableDetailsEditorProps) => ReactNode;
+  /** Controls the editor session; requires `renderEditor`. */
   open?: boolean;
+  /** Opens the uncontrolled editor initially when `renderEditor` is provided. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receives requests to open or close the editor. */
   onOpenChange?: (open: boolean) => void;
+  /** Passes props and `sx` to the item's label, summary, edit button and editor parts. */
   slotProps?: {
     /** Definition term (`<dt>`) displaying the item label. */
     label?: EditableDetailsPartProps;

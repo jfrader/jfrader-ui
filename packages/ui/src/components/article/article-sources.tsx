@@ -19,15 +19,32 @@ type Anatomy = {
 export type ArticleSourcesSlots = Omit<PresentationSlots<Anatomy>, 'heading'> & { heading?: ComponentType<PresentationHeadingProps> };
 export type ArticleSourcesSlotProps = PresentationParts<Anatomy>;
 export type ArticleSourceItem = { id: string; label: ReactNode; href?: string; renderLink?: RenderArticleLink };
-type AccessibleName = { title: ReactNode } | { title?: never; 'aria-label': string } | { title?: never; 'aria-labelledby': string };
+type AccessibleName = {
+  /** Adds a visible heading naming the sources section. Otherwise supply an ARIA name. */
+  title: ReactNode;
+} | { title?: never; 'aria-label': string } | { title?: never; 'aria-labelledby': string };
 export type ArticleSourcesProps = Omit<ComponentPropsWithRef<'section'>, 'title' | 'children'> & SxProps & AccessibleName & {
+  /** Sets the sources heading level. Defaults to 2. */
   level?: ArticleHeadingLevel;
+  /** Arranges sources in a wrapping row or vertical list. Defaults to `inline`. */
   variant?: 'inline' | 'stacked';
+  /** Replaces the section root. `slots.root` takes precedence. */
   component?: ArticleSourcesSlots['root'];
+  /** Passes props to the section, heading, list and links. */
   slotProps?: ArticleSourcesSlotProps;
 } & (
-  { slots?: Omit<ArticleSourcesSlots, 'link'> & { link?: never }; items: readonly ArticleSourceItem[] }
-  | { slots?: ArticleSourcesSlots; items: readonly (Omit<ArticleSourceItem, 'renderLink'> & { renderLink?: never })[] }
+  {
+    /** Replaces source parts except links rendered by an item's `renderLink`. */
+    slots?: Omit<ArticleSourcesSlots, 'link'> & { link?: never };
+    /** Supplies prepared source labels and optional links. An empty list hides the section. */
+    items: readonly ArticleSourceItem[];
+  }
+  | {
+    /** Replaces source parts, including links when no item uses `renderLink`. */
+    slots?: ArticleSourcesSlots;
+    /** Supplies prepared source labels and optional links. An empty list hides the section. */
+    items: readonly (Omit<ArticleSourceItem, 'renderLink'> & { renderLink?: never })[];
+  }
 );
 
 const rootStyle = css({ minInlineSize: 0, color: vars.color.text, overflowWrap: 'anywhere' });

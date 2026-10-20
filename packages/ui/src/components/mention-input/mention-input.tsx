@@ -118,35 +118,59 @@ export type MentionInputSlotProps = FieldParts<MentionInputAnatomy>;
 
 export interface MentionInputProps
   extends Omit<ComponentPropsWithRef<'textarea'>, 'value' | 'defaultValue' | 'onSubmit'>, SxProps {
+  /** Controls the text and mention ranges, measured in UTF-16 code units. */
   value?: MentionValue;
+  /** Sets the initial text and mentions when uncontrolled. Defaults to empty. */
   defaultValue?: MentionValue;
+  /** Receives the next text and mention ranges after an edit. */
   onValueChange?: (value: MentionValue) => void;
+  /** Controls whether suggestions are open for the active mention query. */
   open?: boolean;
+  /** Sets the initial suggestion popup state. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receives requests to open or close suggestions. */
   onOpenChange?: (open: boolean) => void;
+  /** Supplies people suggested after `@`. */
   people?: readonly MentionPerson[];
+  /** Supplies channels suggested after `#`. */
   channels?: readonly MentionChannel[];
+  /** Receives a mention after a suggestion is inserted. */
   onMentionAdd?: (mention: Mention) => void;
+  /** Receives nonblank content on Enter when `submitOnEnter` is enabled. */
   onSubmit?: (value: MentionValue) => void;
+  /** Submits on Enter when no suggestion is accepted. Shift+Enter keeps a newline. Defaults to `false`. */
   submitOnEnter?: boolean;
+  /** Labels the textarea. */
   label?: ReactNode;
   /** Label placement. `hidden` keeps the accessible name without taking layout space. */
   labelPlacement?: FieldLabelPlacement;
+  /** Adds descriptive text associated with the textarea. */
   description?: ReactNode;
+  /** Shows a validation message and marks the textarea invalid. */
   error?: ReactNode;
+  /** Sets the control spacing and typography. Defaults to `md`. */
   size?: 'sm' | 'md' | 'lg';
+  /** Sets the minimum visible text rows. Defaults to 1. */
   minRows?: number;
+  /** Limits auto-growing text rows, never below `minRows`. Defaults to 8. */
   maxRows?: number;
+  /** Limits matching suggestions displayed in the popup. Defaults to 6. */
   maxSuggestions?: number;
+  /** Positions suggestions above or below the input. `auto` flips to fit and is the default. */
   placement?: 'auto' | 'top' | 'bottom';
+  /** Sets suggestion matching, grapheme segmentation and result-number formatting locales. */
   locale?: Intl.LocalesArgument;
+  /** Overrides suggestion labels, empty text and live announcements. */
   messages?: Partial<MentionInputMessages>;
+  /** Replaces each suggestion's content using the item and active query. */
   renderSuggestion?: (item: MentionSuggestion, query: string) => ReactNode;
+  /** Exposes actions to insert text, open suggestions and clear the input. */
   actionsRef?: Ref<MentionInputActions>;
   /** Replace the wrapper div; `slots.root` takes precedence. */
   component?: MentionInputSlots['root'];
   /** Replace generated parts with components that forward props and ref. */
   slots?: MentionInputSlots;
+  /** Passes props to the field, highlight and suggestion parts. */
   slotProps?: MentionInputSlotProps;
 }
 

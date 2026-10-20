@@ -24,9 +24,17 @@ const meta = {
   args: { triggerLabel: 'Search members', inputProps: { placeholder: 'Name or email' } },
   decorators: [(Story) => <Frame><Story /></Frame>],
   parameters: { docs: {
-    source: { code: '<ExpandingSearch triggerLabel="Search members" value={query} onValueChange={setQuery} />' },
+    sections: [
+      { title: 'Search entry', stories: ['Default', 'Controlled'] },
+      { title: 'Layout', stories: ['Sizes', 'Anchors'] },
+      { title: 'Forms', stories: ['FormReset'] },
+    ],
     description: { component: 'Open a search field from a button without moving nearby toolbar items.' },
-    usage: '- Enter or Space opens and focuses the searchbox. Escape collapses without clearing the query; accepted closure returns focus to the button.\n- Tab and Shift+Tab move through the field and clear action. Leaving closes without returning focus. Controlled open requests take effect only when accepted.\n- SearchField handles query entry, clearing, validation and form reset. Supply filtering and results.\n- Reserve space for the field to expand in the toolbar.',
+    usage: `### Keyboard
+Enter or Space opens and focuses the searchbox. Escape collapses without clearing the query; accepted closure returns focus to the button. Tab and Shift+Tab move through the field and clear action. Leaving closes without returning focus. Controlled open requests take effect only when accepted.
+
+### Layout and results
+Reserve space for expansion in the toolbar. Supply filtering and results in your application. Query entry, clearing, validation and form reset follow SearchField behaviour.`,
   } },
 } satisfies Meta<typeof ExpandingSearch>;
 export default meta;
@@ -67,6 +75,13 @@ async function expectFocus(element: HTMLElement, ring = element) {
 }
 
 export const Default: Story = {
+  name: 'Search members',
+  parameters: { docs: {
+    description: { story: 'Open the field to search by name or email.' },
+    source: { language: 'tsx', code: `import { ExpandingSearch } from '@jfrader/ui';
+
+<ExpandingSearch triggerLabel="Search members" inputProps={{ placeholder: 'Name or email' }} />` },
+  } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(canvas.queryByRole('searchbox')).toBeNull();
     const trigger = canvas.getByRole('button', { name: 'Search members' });
@@ -86,6 +101,17 @@ export const PersistentOpen: Story = { tags: ['!autodocs'], args: { defaultOpen:
 export const Description: Story = { tags: ['!autodocs'], args: { defaultOpen: true, label: 'Search members', description: 'Search by name or email.' } };
 export const Error: Story = { tags: ['!autodocs'], args: { defaultOpen: true, error: 'Enter at least four characters.', defaultValue: 'Ada', inputProps: { required: true } } };
 export const Sizes: Story = {
+  name: 'Search sizes',
+  parameters: { docs: {
+    description: { story: 'Choose a search control size for the surrounding toolbar.' },
+    source: { language: 'tsx', code: `import { ExpandingSearch, Stack } from '@jfrader/ui';
+
+<Stack>
+  <ExpandingSearch size="sm" triggerLabel="Search sm" inputProps={{ placeholder: 'Name or email' }} />
+  <ExpandingSearch size="md" triggerLabel="Search md" inputProps={{ placeholder: 'Name or email' }} />
+  <ExpandingSearch size="lg" triggerLabel="Search lg" inputProps={{ placeholder: 'Name or email' }} />
+</Stack>` },
+  } },
   render: (args) => <Stack>{(['sm', 'md', 'lg'] as const).map((size) => <ExpandingSearch {...args} key={size} size={size} triggerLabel={`Search ${size}`} />)}</Stack>,
   play: async ({ canvas }) => {
     for (const [index, size] of [32, 40, 48].entries()) {
@@ -97,6 +123,16 @@ export const Sizes: Story = {
   },
 };
 export const Anchors: Story = {
+  name: 'Expansion direction',
+  parameters: { docs: {
+    description: { story: 'Expand from the logical start or end of the search lane.' },
+    source: { language: 'tsx', code: `import { ExpandingSearch, Stack } from '@jfrader/ui';
+
+<Stack>
+  <ExpandingSearch anchor="start" triggerLabel="Search from start" inputProps={{ placeholder: 'Name or email' }} />
+  <ExpandingSearch anchor="end" triggerLabel="Search from end" inputProps={{ placeholder: 'Name or email' }} />
+</Stack>` },
+  } },
   render: (args) => <Stack><ExpandingSearch {...args} anchor="start" triggerLabel="Search from start" /><ExpandingSearch {...args} anchor="end" triggerLabel="Search from end" /></Stack>,
 };
 export const Uncontrolled: Story = {
@@ -117,7 +153,24 @@ export const Uncontrolled: Story = {
     await settledOpen(canvasElement);
   },
 };
-export const Controlled: Story = { ...Uncontrolled, render: (args) => <ControlledSearch {...args} />, args: { defaultValue: 'Ada', onOpenChange: fn(), onValueChange: fn() } };
+export const Controlled: Story = {
+  ...Uncontrolled,
+  name: 'Controlled search',
+  parameters: { docs: {
+    description: { story: 'Keep the query when the field closes and opens again.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { ExpandingSearch } from '@jfrader/ui';
+
+export function MemberSearch() {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('Ada');
+  return <ExpandingSearch triggerLabel="Search members" open={open} onOpenChange={setOpen}
+    value={query} onValueChange={setQuery} inputProps={{ placeholder: 'Name or email' }} />;
+}` },
+  } },
+  render: (args) => <ControlledSearch {...args} />,
+  args: { defaultValue: 'Ada', onOpenChange: fn(), onValueChange: fn() },
+};
 export const RejectedOpen: Story = {
   args: { open: false, onOpenChange: fn() },
   play: async ({ canvas, userEvent, args }) => {
@@ -260,6 +313,16 @@ export const ClearThenCollapse: Story = {
   },
 };
 export const FormReset: Story = {
+  name: 'Reset a search form',
+  parameters: { docs: {
+    description: { story: 'Reset the search query to its initial value with a native form reset.' },
+    source: { language: 'tsx', code: `import { Button, ExpandingSearch } from '@jfrader/ui';
+
+<form>
+  <ExpandingSearch triggerLabel="Search members" defaultValue="Ada" inputProps={{ name: 'query' }} />
+  <Button type="reset">Reset query</Button>
+</form>` },
+  } },
   args: { defaultValue: 'Ada', inputProps: { name: 'query' }, onValueChange: fn() },
   render: (args) => <form><ExpandingSearch {...args} /><FixtureButton type="reset">Reset query</FixtureButton></form>,
   play: async ({ canvas, canvasElement, userEvent, args }) => {

@@ -82,24 +82,43 @@ export interface LogoOrbitLabels {
 }
 export interface LogoOrbitProps
   extends Omit<DivProps, 'children' | 'defaultValue' | 'onChange'>, SxProps {
+  /** Supplies the logos, categories and connection details to display. */
   items: readonly OrbitLogo[];
+  /** Displays content at the center of the orbit. */
   center?: ReactNode;
+  /** Names the logo list for assistive technology. Defaults to `Integrations`. */
   label?: string;
+  /** Chooses an animated orbit or a static list. Defaults to `orbit`. */
   variant?: 'orbit' | 'list';
+  /** Controls the selected logo by ID; `null` closes its details. */
   value?: string | null;
+  /** Sets the initial uncontrolled logo selection. Defaults to `null`. */
   defaultValue?: string | null;
+  /** Receives selection requests with a logo ID or `null` to close details. */
   onValueChange?: (id: string | null) => void;
+  /** Controls the category filter; `null` shows all categories. */
   filter?: string | null;
+  /** Sets the initial uncontrolled category filter. Defaults to `null` for all categories. */
   defaultFilter?: string | null;
+  /** Receives category filter requests; `null` selects all categories. */
   onFilterChange?: (category: string | null) => void;
+  /** Controls whether orbit rotation is paused. */
   paused?: boolean;
+  /** Pauses uncontrolled rotation initially. Defaults to `false`. */
   defaultPaused?: boolean;
+  /** Receives requests to pause or resume rotation. */
   onPausedChange?: (paused: boolean) => void;
+  /** Multiplies orbit rotation speed. Defaults to `1` (64 seconds per turn); `0` stops rotation. Negative or nonfinite values use `1`. */
   speed?: number;
+  /** Enables connection actions and connects the requested logo ID. Rejection displays a retry action. */
   onConnect?: (id: string) => Promise<void>;
+  /** Overrides control labels and status messages, including the connection failure formatter. */
   labels?: Partial<LogoOrbitLabels>;
+  /** Replaces the root element; `slots.root` takes precedence. */
   component?: LogoOrbitSlots['root'];
+  /** Replaces the elements rendering the orbit's parts. */
   slots?: LogoOrbitSlots;
+  /** Passes props and `sx` to the orbit's parts. */
   slotProps?: {
     root?: GeneratedRootSlotProps;
     stage?: Part<DivProps>;

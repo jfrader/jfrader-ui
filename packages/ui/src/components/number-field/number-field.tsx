@@ -40,27 +40,49 @@ export interface NumberFieldProps extends Omit<ComponentPropsWithRef<'input'>,
   defaultValue?: number | null;
   /** Receives changed commit requests, not partial typing. */
   onValueChange?: (value: number | null) => void;
+  /** Sets the lower bound and step-grid origin. Defaults to `0`. */
   min?: number;
+  /** Sets the upper bound. Defaults to `Number.MAX_SAFE_INTEGER`. */
   max?: number;
+  /** Sets the positive increment for arrow keys and stepper buttons. Defaults to `1`. */
   step?: number;
+  /** Sets the positive increment for Page Up/Down and Shift+Arrow keys. Defaults to ten times `step`. */
   largeStep?: number;
+  /** Labels the input. Non-text content requires `incrementLabel` and `decrementLabel`. */
   label?: ReactNode;
+  /** Shows helper text associated with the input. */
   description?: ReactNode;
+  /** Marks the input invalid and shows an error unless an internal validation error takes precedence. */
   error?: ReactNode;
+  /** Sets the field width, control height and text size. Defaults to `md`. */
   size?: NumberFieldSize;
+  /** Sets the locale for parsing and formatting. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Customizes decimal or unit formatting. Fraction digits above twelve throw `NumberFieldConfigError`. */
   formatOptions?: NumberFieldFormatOptions;
+  /** Shows decorative content before the amount, optionally derived from the committed value. */
   prefix?: ReactNode | ((value: number | null) => ReactNode);
+  /** Shows decorative content after the amount, optionally derived from the committed value. */
   suffix?: ReactNode | ((value: number | null) => ReactNode);
+  /** Supplies spoken value text from the committed amount and its formatted text. */
   formatValueText?: (value: number | null, formatted: string) => string;
+  /** Repeats stepping while a pointer holds a stepper button. Defaults to `true`. */
   repeat?: boolean;
+  /** Overrides the English validation messages and stepper labels. */
   messages?: Partial<NumberFieldMessages>;
+  /** Names the increase button. Required when `label` is non-text content. */
   incrementLabel?: string;
+  /** Names the decrease button. Required when `label` is non-text content. */
   decrementLabel?: string;
+  /** Replaces the decorative plus icon on the increase button. */
   incrementIcon?: ReactNode;
+  /** Replaces the decorative minus icon on the decrease button. */
   decrementIcon?: ReactNode;
+  /** Replaces the root element. Shorthand for `slots.root`. */
   component?: NumberFieldSlots['root'];
+  /** Replaces field elements with custom components. */
   slots?: NumberFieldSlots;
+  /** Passes props to the field elements. */
   slotProps?: NumberFieldSlotProps;
 }
 
