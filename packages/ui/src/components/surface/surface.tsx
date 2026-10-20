@@ -32,7 +32,7 @@ export interface SurfaceRootCustomization {
   };
   /** Root props override matching component props; className and style merge. */
   slotProps?: {
-    /** Outer panel element rendering the surface material. */
+    /** Outer panel element rendering the surface material. Renders a `div` by default. */
     root?: SurfaceRootSlotProps;
   };
 }

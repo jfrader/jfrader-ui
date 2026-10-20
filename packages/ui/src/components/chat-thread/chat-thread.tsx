@@ -100,15 +100,15 @@ type ChatThreadPart =
     'list'
   | /** Message item element wrapping an individual chat message. */
     'message'
-  | /** Container bubble holding message body content. */
+  | /** Container bubble holding message body content. Uses `Card` by default. */
     'bubble'
-  | /** Timestamp element displaying when the message was sent. */
+  | /** Timestamp element displaying when the message was sent. Renders a `time` by default, or a `span` for an invalid timestamp. */
     'time'
   | /** Container rendering message file attachments. */
     'attachments'
-  | /** Delivery receipt element displaying message status. */
+  | /** Delivery receipt element displaying message status. Renders a `div` by default. */
     'receipt'
-  | /** Reaction button element displaying an emoji reaction. */
+  | /** Container displaying emoji reactions. Renders a `div` by default. */
     'reaction';
 export type ChatThreadSlotProps = Partial<Record<ChatThreadPart, ThreadPartProps>> & {
   /** Props for the outer div. */
@@ -222,13 +222,13 @@ export interface ChatThreadSlots {
     list?: ComponentType<ThreadPartProps>;
     /** Holds a message and its day heading. */
     message?: ComponentType<ThreadPartProps>;
-    /** Holds the message body. */
+    /** Holds the message body. Uses `Card` by default. */
     bubble?: ComponentType<ThreadPartProps>;
-    /** Displays the message timestamp. */
+    /** Displays the message timestamp. Renders a `time` by default, or a `span` for an invalid timestamp. */
     time?: ComponentType<ThreadPartProps>;
-    /** Displays the delivery receipt. */
+    /** Displays the delivery receipt. Renders a `div` by default. */
     receipt?: ComponentType<ThreadPartProps>;
-    /** Holds the message reactions. */
+    /** Holds the message reactions. Renders a `div` by default. */
     reaction?: ComponentType<ThreadPartProps>;
     /** Scrolls to the latest message. */
     jumpButton?: ComponentType<ThreadButtonProps>;

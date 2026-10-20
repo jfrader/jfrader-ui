@@ -38,8 +38,18 @@ export type ArticleCardMediaProps = ComponentPropsWithRef<'figure'> & SxProps & 
   caption?: ReactNode;
   credit?: ReactNode;
   component?: ComponentType<ComponentPropsWithRef<'figure'>>;
-  slots?: PresentationSlots<{ root: 'figure'; caption: 'figcaption'; credit: 'span' }>;
-  slotProps?: PresentationParts<{ root: 'figure'; caption: 'figcaption'; credit: 'span' }>;
+  slots?: PresentationSlots<{
+    root: 'figure';
+    /** Renders a `figcaption` by default. */
+    caption: 'figcaption';
+    credit: 'span';
+  }>;
+  slotProps?: PresentationParts<{
+    root: 'figure';
+    /** Renders a `figcaption` by default. */
+    caption: 'figcaption';
+    credit: 'span';
+  }>;
 };
 type NativeAnatomy = { root: 'article'; content: 'div'; time: 'time'; kicker: 'div'; rule: 'div'; meta: 'div' };
 export type ArticleCardSlots = PresentationSlots<NativeAnatomy> & {

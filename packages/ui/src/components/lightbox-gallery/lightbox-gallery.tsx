@@ -68,7 +68,7 @@ export interface LightboxGallerySlotProps {
   viewer?: Omit<Slot<'dialog'>, 'open'> & { withDescription?: boolean };
   /** Viewport stage container element panning and zooming the active image. */
   stage?: Slot<'div'>;
-  /** Heading element (`h2`) naming the currently active image. */
+  /** Heading element naming the currently active image. Renders an `h2` by default. */
   title?: Slot<'h2'>;
   /** Caption paragraph element (`p`) describing the active image. */
   caption?: Slot<'p'>;
@@ -91,7 +91,7 @@ export interface LightboxGallerySlots {
   viewer?: ComponentType<NonNullable<LightboxGallerySlotProps['viewer']>>;
   /** Holds the pannable image. */
   stage?: ComponentType<NonNullable<LightboxGallerySlotProps['stage']>>;
-  /** Displays the image title. */
+  /** Displays the image title. Renders an `h2` by default. */
   title?: ComponentType<NonNullable<LightboxGallerySlotProps['title']>>;
   /** Displays the image caption. */
   caption?: ComponentType<NonNullable<LightboxGallerySlotProps['caption']>>;
