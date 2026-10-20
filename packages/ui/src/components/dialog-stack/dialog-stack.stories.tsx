@@ -70,42 +70,30 @@ const meta = {
         component:
           'Open settings or pickers in stacked panels, then go back one panel at a time.',
       },
-      usage: `### Composition
-Pass \`triggerLabel\` and \`pages\` (with optional \`initialPage\`) for a stacked multi-page dialog flow. Each page record provides \`value\`, \`title\`, \`content\`, and optional \`description\`, \`footer\`, \`back\`, and \`close\`. Navigation is handled automatically by the existing parts and controller: \`triggerLabel\` opens the initial page, triggers inside page content push child panels, Back pops to the parent, Close clears the stack, and Escape dismisses the topmost panel.
+      sections: [
+        { title: 'Easy and compound', stories: ['Default', 'Compound'] },
+        { title: 'Two and three levels', stories: ['TwoLevels', 'ThreeLevels'] },
+        { title: 'Resize', stories: ['AutoResize'] },
+        { title: 'Contained', stories: ['Contained'] },
+        { title: 'Non-dismissible', stories: ['Nondismissible'] },
+        { title: 'Removal', stories: ['RemovedActiveSheet'] },
+        { title: 'Hooks', stories: ['HookActions'] },
+        { title: 'Nested', stories: ['NestedPopover', 'NestedDialog'] },
+      ],
+      usage: `### When to use
+Use a dialog stack for settings or nested pickers where users return to a parent view without losing its form state.
 
-Do not combine \`pages\` with \`children\`. Use \`slotProps.trigger\`, \`slotProps.content\`, \`slotProps.title\`, \`slotProps.back\`, \`slotProps.close\`, and \`slotProps.footer\` for part props, or \`slots\` to replace generated parts. For custom anatomy, use the compound parts (\`DialogStack.Trigger\`, \`DialogStack.Content\`, \`DialogStack.Title\`, etc.).
+### Constraints
+A dialog stack is document-modal: the surrounding page is inert. Viewport overlays lock page scroll; contained overlays do not. Parents stay mounted and retain form state while child panels are open. Returning to an already-open panel removes the panels above it. Popped panels unmount.
 
-### Values
-- Each \`Trigger\` pushes its matching \`Content\` onto the stack. Pushing an open key returns to that panel and removes the panels above it.
-- \`value\` lists open keys from bottom to top. Control it with \`onValueChange\`, or use \`defaultValue\` (empty by default). Rejected requests keep the committed stack.
-- Unknown and duplicate keys are ignored with a development warning. Requests that leave the ordered stack unchanged do not call \`onValueChange\`.
-- Parents stay mounted behind the top panel, keeping form state. They peek above it but are inert and hidden from assistive technology. Popped panels unmount.
-- \`useDialogStack\` exposes \`push\`, \`pop\`, \`popTo\`, and \`close\`. Call it inside \`DialogStack\`.
+In bottom sheet layout, dragging the handle downward requests dismissal. A non-dismissible panel still needs an explicit way back or out. Reduced motion disables dragging and entry/depth animation; closure is immediate. Floating overlays must mount in a portal container inside the active panel.
 
-### Keyboard and focus
-- Enter or Space on Trigger opens its panel. Tab and Shift+Tab stay inside the top panel.
-- Back pops one panel. Close clears the stack. Give both a localized \`label\`.
-- Escape closes an open child overlay first. Otherwise, Escape or a backdrop click requests one pop.
-- New panels focus an \`autoFocus\` element, then the heading, then Back, then the panel. Popping returns focus to the exact control that opened the child. If that control is gone, focus falls back to the parent's heading, Back, or panel. Closing the stack returns focus to the outer invoker.
+### Keyboard
+Tab and Shift+Tab circulate focus within the topmost panel. Enter or Space on a trigger opens or pushes its panel. Escape or backdrop clicks request closing the topmost panel; when child overlays (such as menus or popovers) are open inside, Escape closes them first. New panels move focus to an autoFocus element, then the heading, Back button, or panel container. Popping restores focus to the control that opened the child; closing the entire stack returns focus to the outer trigger.
 
-### Layout
-- \`variant="auto"\` is the default. It uses a bottom sheet below \`breakpoint\` and a centered dialog at or above it. The breakpoint measures the layer's inline size in CSS pixels. Resizing changes layout without replacing the DOM or changing focus or value.
-- By default, one native modal dialog covers the viewport, makes the page inert, and locks page scroll after \`showModal()\` succeeds.
-- \`contained\` draws the layer inside the nearest positioned ancestor. It remains document-wide modal: everything outside it is inert until close, and focus stays in the layer. Page scroll is not locked.
+### Accessibility
+Give every panel and navigation button an accessible name. Inactive parent panels are inert and hidden from assistive technology. If the control that opened a child has been removed, returning focuses the parent's heading, Back button, or panel instead.`,
 
-### Dismissal and limits
-- In sheet layout, drag the top panel's handle downward to dismiss it. This is pointer-only. Body content never starts a drag. Add \`data-sheet-no-drag\` to \`Content\` to disable dragging. There are no snap points.
-- Reduced motion disables dragging, entry animation, and depth motion. Back and Close still work. Closing is immediate, with no top-panel exit animation.
-- \`dismissible={false}\` refuses Escape, backdrop, and drag dismissal. \`onCancel\` can veto those requests with \`preventDefault()\`. Back and Close still work.
-- A platform close that cannot be canceled closes the native shell and requests an empty stack. If a controlled parent rejects it, the closed shell releases its scroll lock. The next explicit open request reopens it.
-- Floating overlays inside a panel need a \`ThemeRoot portalContainer\` host inside that panel.
-
-### Panel material
-Content inherits appearance; appearance="contrast" uses fixed charcoal. Declaration-site theme and tokens cross the internal stage portal, which remains inside the modal layer.
-
-component is sugar for slots.root; only root is adopted, and slots.root wins. slotProps.root accepts div props and sx. Declare adapters outside render, render one div, forward every supplied prop/ref, and apply material before className. Changing the adapter type remounts the panel and resets focus and uncontrolled input state.
-
-Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry/motion → slot sx/classes → consumer classes → consumer sx. Generated handle/body, IDs, active/parent state, inertness, native dismissal and depth variables stay authoritative. Select composed panels with [data-ui~="dialog-stack"].`,
       source: {
         language: 'tsx',
         code: `const pages = [
@@ -377,6 +365,49 @@ const EASY_PAGES: readonly DialogStackPageRecord[] = [
 
 export const Default: StoryObj<(props: DialogStackEasyProps) => ReactNode> = {
   name: 'Easy mode',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Open stacked panels configured through a declarative page list with built-in navigation.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DialogStack, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({
+  display: 'grid',
+  gap: vars.space[3],
+});
+
+const pages = [
+  {
+    value: 'settings',
+    title: 'Settings',
+    description: 'Manage your workspace preferences.',
+    close: 'Close settings',
+    content: (
+      <Stack>
+        <TextField label="Workspace name" defaultValue="Apollo" />
+        <DialogStack.Trigger value="account">Account settings</DialogStack.Trigger>
+      </Stack>
+    ),
+  },
+  {
+    value: 'account',
+    title: 'Account',
+    description: 'Sign-in details for this workspace.',
+    back: 'Back to Settings',
+    close: 'Close all',
+    content: <TextField label="Display name" defaultValue="Maya" />,
+    footer: <DialogStack.Close label="Done">Done</DialogStack.Close>,
+  },
+];
+
+<DialogStack triggerLabel="Open settings" pages={pages} />`,
+      },
+    },
+  },
   args: {
     triggerLabel: 'Open settings',
     pages: EASY_PAGES,
@@ -534,6 +565,55 @@ void easyModeTypeContracts;
 
 export const Compound: Story = {
   name: 'Compound anatomy',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Assemble stacked panels with explicit trigger, content, title, back, and close parts.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DialogStack, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Header = styled.div({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: vars.space[2],
+});
+
+<DialogStack>
+  <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
+  <DialogStack.Content value="settings">
+    <Header>
+      <DialogStack.Title>Settings</DialogStack.Title>
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Description>Manage your workspace preferences.</DialogStack.Description>
+    <TextField label="Workspace name" />
+    <DialogStack.Trigger value="account">Account</DialogStack.Trigger>
+  </DialogStack.Content>
+  <DialogStack.Content value="account">
+    <Header>
+      <DialogStack.Back label="Back to Settings" />
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Title>Account</DialogStack.Title>
+    <DialogStack.Description>Sign-in details for this workspace.</DialogStack.Description>
+    <DialogStack.Trigger value="password">Change password</DialogStack.Trigger>
+  </DialogStack.Content>
+  <DialogStack.Content value="password">
+    <Header>
+      <DialogStack.Back label="Back to Account" />
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Title>Change password</DialogStack.Title>
+    <TextField label="New password" type="password" />
+  </DialogStack.Content>
+</DialogStack>`,
+      },
+    },
+  },
   render: (args) => <Levels {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -564,6 +644,56 @@ export const Compound: Story = {
 };
 
 export const TwoLevels: Story = {
+  name: 'Two levels',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Navigate to a child panel and return with the back button while preserving parent state.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DialogStack, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Header = styled.div({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: vars.space[2],
+});
+
+<DialogStack>
+  <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
+  <DialogStack.Content value="settings">
+    <Header>
+      <DialogStack.Title>Settings</DialogStack.Title>
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Description>Manage your workspace preferences.</DialogStack.Description>
+    <TextField label="Workspace name" />
+    <DialogStack.Trigger value="account">Account</DialogStack.Trigger>
+  </DialogStack.Content>
+  <DialogStack.Content value="account">
+    <Header>
+      <DialogStack.Back label="Back to Settings" />
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Title>Account</DialogStack.Title>
+    <DialogStack.Description>Sign-in details for this workspace.</DialogStack.Description>
+    <DialogStack.Trigger value="password">Change password</DialogStack.Trigger>
+  </DialogStack.Content>
+  <DialogStack.Content value="password">
+    <Header>
+      <DialogStack.Back label="Back to Account" />
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Title>Change password</DialogStack.Title>
+    <TextField label="New password" type="password" />
+  </DialogStack.Content>
+</DialogStack>`,
+      },
+    },
+  },
   render: (args) => <Levels {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -599,6 +729,56 @@ export const TwoLevels: Story = {
 };
 
 export const ThreeLevels: Story = {
+  name: 'Three levels',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Stack three levels deep with visual depth cues, one-level Escape pop, and stack-clearing Close.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DialogStack, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Header = styled.div({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: vars.space[2],
+});
+
+<DialogStack>
+  <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
+  <DialogStack.Content value="settings">
+    <Header>
+      <DialogStack.Title>Settings</DialogStack.Title>
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Description>Manage your workspace preferences.</DialogStack.Description>
+    <TextField label="Workspace name" />
+    <DialogStack.Trigger value="account">Account</DialogStack.Trigger>
+  </DialogStack.Content>
+  <DialogStack.Content value="account">
+    <Header>
+      <DialogStack.Back label="Back to Settings" />
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Title>Account</DialogStack.Title>
+    <DialogStack.Description>Sign-in details for this workspace.</DialogStack.Description>
+    <DialogStack.Trigger value="password">Change password</DialogStack.Trigger>
+  </DialogStack.Content>
+  <DialogStack.Content value="password">
+    <Header>
+      <DialogStack.Back label="Back to Account" />
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Title>Change password</DialogStack.Title>
+    <TextField label="New password" type="password" />
+  </DialogStack.Content>
+</DialogStack>`,
+      },
+    },
+  },
   render: (args) => <Levels {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -685,6 +865,81 @@ function ResizableContainer({ children }: { children: (setWidth: (width: number)
 ResizableContainer.displayName = 'ResizableContainer';
 
 export const AutoResize: Story = {
+  name: 'Responsive resize',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Switch between bottom sheet and dialog layout automatically when the container width crosses the breakpoint.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Button, DialogStack, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Container = styled.div({
+  position: 'relative',
+  blockSize: '440px',
+  maxInlineSize: '100%',
+  border: '1px solid ' + vars.color.border,
+  borderRadius: vars.radius.lg,
+  padding: vars.space[4],
+  boxSizing: 'border-box',
+});
+
+const Header = styled.div({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: vars.space[2],
+});
+
+function ResponsiveStack() {
+  const [width, setWidth] = useState(400);
+
+  return (
+    <Container style={{ inlineSize: 'min(' + width + 'px, calc(100vw - 2 * ' + vars.space[4] + '))' }}>
+      <Button type="button" onClick={() => setWidth(400)}>
+        Narrow
+      </Button>
+      <DialogStack contained>
+        <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
+        <DialogStack.Content value="settings">
+          <Header>
+            <DialogStack.Title>Settings</DialogStack.Title>
+            <DialogStack.Close label="Close all" />
+          </Header>
+          <DialogStack.Description>Manage your workspace preferences.</DialogStack.Description>
+          <TextField label="Workspace name" />
+          <DialogStack.Trigger value="account">Account</DialogStack.Trigger>
+          <Button type="button" onClick={() => setWidth(680)}>
+            Widen
+          </Button>
+        </DialogStack.Content>
+        <DialogStack.Content value="account">
+          <Header>
+            <DialogStack.Back label="Back to Settings" />
+            <DialogStack.Close label="Close all" />
+          </Header>
+          <DialogStack.Title>Account</DialogStack.Title>
+          <DialogStack.Description>Sign-in details for this workspace.</DialogStack.Description>
+          <DialogStack.Trigger value="password">Change password</DialogStack.Trigger>
+        </DialogStack.Content>
+        <DialogStack.Content value="password">
+          <Header>
+            <DialogStack.Back label="Back to Account" />
+            <DialogStack.Close label="Close all" />
+          </Header>
+          <DialogStack.Title>Change password</DialogStack.Title>
+          <TextField label="New password" type="password" />
+        </DialogStack.Content>
+      </DialogStack>
+    </Container>
+  );
+}`,
+      },
+    },
+  },
   render: (args) => (
     <ResizableContainer>
       {(setWidth) => (
@@ -737,6 +992,77 @@ function ContainedFixture(args: LevelsProps) {
 ContainedFixture.displayName = 'ContainedFixture';
 
 export const Contained: Story = {
+  name: 'Contained mode',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Confine the stacked panels to a positioned container while preserving document-wide modality.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Button, DialogStack, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({
+  display: 'grid',
+  gap: vars.space[3],
+});
+
+const Container = styled.div({
+  position: 'relative',
+  inlineSize: 'min(480px, calc(100vw - 2 * ' + vars.space[4] + '))',
+  blockSize: '440px',
+  maxInlineSize: '100%',
+  border: '1px solid ' + vars.color.border,
+  borderRadius: vars.radius.lg,
+  padding: vars.space[4],
+  boxSizing: 'border-box',
+});
+
+const Header = styled.div({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: vars.space[2],
+});
+
+<Stack>
+  <Button type="button">Page action</Button>
+  <Container>
+    <DialogStack contained>
+      <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
+      <DialogStack.Content value="settings">
+        <Header>
+          <DialogStack.Title>Settings</DialogStack.Title>
+          <DialogStack.Close label="Close all" />
+        </Header>
+        <DialogStack.Description>Manage your workspace preferences.</DialogStack.Description>
+        <TextField label="Workspace name" />
+        <DialogStack.Trigger value="account">Account</DialogStack.Trigger>
+      </DialogStack.Content>
+      <DialogStack.Content value="account">
+        <Header>
+          <DialogStack.Back label="Back to Settings" />
+          <DialogStack.Close label="Close all" />
+        </Header>
+        <DialogStack.Title>Account</DialogStack.Title>
+        <DialogStack.Description>Sign-in details for this workspace.</DialogStack.Description>
+        <DialogStack.Trigger value="password">Change password</DialogStack.Trigger>
+      </DialogStack.Content>
+      <DialogStack.Content value="password">
+        <Header>
+          <DialogStack.Back label="Back to Account" />
+          <DialogStack.Close label="Close all" />
+        </Header>
+        <DialogStack.Title>Change password</DialogStack.Title>
+        <TextField label="New password" type="password" />
+      </DialogStack.Content>
+    </DialogStack>
+  </Container>
+</Stack>`,
+      },
+    },
+  },
   render: (args) => <ContainedFixture {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -782,6 +1108,56 @@ export const Contained: Story = {
 };
 
 export const Nondismissible: Story = {
+  name: 'Non-dismissible panel',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Require an explicit Back or Close action by disabling Escape, backdrop clicks, and drag gestures.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DialogStack, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Header = styled.div({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: vars.space[2],
+});
+
+<DialogStack>
+  <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
+  <DialogStack.Content value="settings">
+    <Header>
+      <DialogStack.Title>Settings</DialogStack.Title>
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Description>Manage your workspace preferences.</DialogStack.Description>
+    <TextField label="Workspace name" />
+    <DialogStack.Trigger value="account">Account</DialogStack.Trigger>
+  </DialogStack.Content>
+  <DialogStack.Content value="account" dismissible={false}>
+    <Header>
+      <DialogStack.Back label="Back to Settings" />
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Title>Account</DialogStack.Title>
+    <DialogStack.Description>Sign-in details for this workspace.</DialogStack.Description>
+    <DialogStack.Trigger value="password">Change password</DialogStack.Trigger>
+  </DialogStack.Content>
+  <DialogStack.Content value="password">
+    <Header>
+      <DialogStack.Back label="Back to Account" />
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Title>Change password</DialogStack.Title>
+    <TextField label="New password" type="password" />
+  </DialogStack.Content>
+</DialogStack>`,
+      },
+    },
+  },
   render: (args) => <Levels {...args} contentProps={{ account: { dismissible: false } }} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -1227,6 +1603,81 @@ function HookOutside() {
 HookOutside.displayName = 'HookOutside';
 
 export const HookActions: Story = {
+  name: 'Hook actions',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Control the stack programmatically with push, pop, popTo, and close from useDialogStack.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Button, DialogStack, styled, useDialogStack } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', gap: vars.space[2] });
+const WrappingRow = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
+
+function HookControls() {
+  const { value, push, pop, popTo, close } = useDialogStack();
+
+  return (
+    <WrappingRow>
+      <output>{value.join(' > ')}</output>
+      <Button type="button" onClick={() => push('account')}>
+        push account
+      </Button>
+      <Button type="button" onClick={() => push('password')}>
+        push password
+      </Button>
+      <Button type="button" onClick={() => push('missing')}>
+        push missing
+      </Button>
+      <Button type="button" onClick={() => push('settings')}>
+        push settings
+      </Button>
+      <Button type="button" onClick={() => popTo('account')}>
+        popTo account
+      </Button>
+      <Button type="button" onClick={() => popTo('missing')}>
+        popTo missing
+      </Button>
+      <Button type="button" onClick={pop}>
+        pop
+      </Button>
+      <Button type="button" onClick={close}>
+        close
+      </Button>
+    </WrappingRow>
+  );
+}
+
+function HookTrigger() {
+  const { pop, push } = useDialogStack();
+
+  return (
+    <Row>
+      <Button type="button" onClick={() => push('settings')}>
+        Open settings
+      </Button>
+      <Button type="button" onClick={pop}>
+        Pop empty
+      </Button>
+    </Row>
+  );
+}
+
+<DialogStack>
+  {['settings', 'account', 'password'].map((key) => (
+    <DialogStack.Content key={key} value={key}>
+      <DialogStack.Title>{key}</DialogStack.Title>
+      <HookControls />
+    </DialogStack.Content>
+  ))}
+  <HookTrigger />
+</DialogStack>`,
+      },
+    },
+  },
   render: (args) => <HookFixture {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const warn = spyOn(console, 'warn').mockImplementation(() => {});
@@ -1319,6 +1770,41 @@ function RemovableFixture(props: Omit<DialogStackCompoundProps, 'children'>) {
 RemovableFixture.displayName = 'RemovableFixture';
 
 export const RemovedActiveSheet: Story = {
+  name: 'Active panel removal',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Fall back gracefully to the previous retained panel when the active panel unmounts dynamically.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Button, DialogStack } from '@jfrader/ui';
+
+function RemovablePanelExample() {
+  const [mounted, setMounted] = useState(true);
+
+  return (
+    <DialogStack>
+      <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
+      <DialogStack.Content value="settings">
+        <DialogStack.Title>Settings</DialogStack.Title>
+        <DialogStack.Trigger value="account">Account</DialogStack.Trigger>
+      </DialogStack.Content>
+      {mounted && (
+        <DialogStack.Content value="account">
+          <DialogStack.Title>Account</DialogStack.Title>
+          <Button type="button" onClick={() => setMounted(false)}>
+            Remove sheet
+          </Button>
+        </DialogStack.Content>
+      )}
+    </DialogStack>
+  );
+}`,
+      },
+    },
+  },
   render: (args) => <RemovableFixture {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const warn = spyOn(console, 'warn').mockImplementation(() => {});
@@ -1566,6 +2052,74 @@ function NestedPopoverBody() {
 NestedPopoverBody.displayName = 'NestedPopoverBody';
 
 export const NestedPopover: Story = {
+  name: 'Nested popover',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Portal a floating popover into a container inside the panel so Escape closes the popover first.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Button, DialogStack, Popover, TextField, ThemeRoot, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Header = styled.div({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: vars.space[2],
+});
+
+function MemberOptions() {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+
+  return (
+    <ThemeRoot portalContainer={host}>
+      <Popover>
+        <Popover.Trigger>Member options</Popover.Trigger>
+        <Popover.Content aria-label="Member options">
+          <Button type="button">Make admin</Button>
+        </Popover.Content>
+      </Popover>
+      <div ref={setHost} />
+    </ThemeRoot>
+  );
+}
+
+<DialogStack>
+  <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
+  <DialogStack.Content value="settings">
+    <Header>
+      <DialogStack.Title>Settings</DialogStack.Title>
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Description>Manage your workspace preferences.</DialogStack.Description>
+    <TextField label="Workspace name" />
+    <DialogStack.Trigger value="account">Account</DialogStack.Trigger>
+    <MemberOptions />
+  </DialogStack.Content>
+  <DialogStack.Content value="account">
+    <Header>
+      <DialogStack.Back label="Back to Settings" />
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Title>Account</DialogStack.Title>
+    <DialogStack.Description>Sign-in details for this workspace.</DialogStack.Description>
+    <DialogStack.Trigger value="password">Change password</DialogStack.Trigger>
+  </DialogStack.Content>
+  <DialogStack.Content value="password">
+    <Header>
+      <DialogStack.Back label="Back to Account" />
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Title>Change password</DialogStack.Title>
+    <TextField label="New password" type="password" />
+  </DialogStack.Content>
+</DialogStack>`,
+      },
+    },
+  },
   render: (args) => <Levels {...args} body={<NestedPopoverBody />} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
@@ -1607,6 +2161,63 @@ function NestedDialogBody() {
 NestedDialogBody.displayName = 'NestedDialogBody';
 
 export const NestedDialog: Story = {
+  name: 'Nested dialog',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Open a standalone modal dialog from inside a panel without disturbing the underlying stack.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Dialog, DialogStack, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Header = styled.div({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: vars.space[2],
+});
+
+<DialogStack>
+  <DialogStack.Trigger value="settings">Settings</DialogStack.Trigger>
+  <DialogStack.Content value="settings">
+    <Header>
+      <DialogStack.Title>Settings</DialogStack.Title>
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Description>Manage your workspace preferences.</DialogStack.Description>
+    <TextField label="Workspace name" />
+    <DialogStack.Trigger value="account">Account</DialogStack.Trigger>
+    <Dialog>
+      <Dialog.Trigger>Reset workspace</Dialog.Trigger>
+      <Dialog.Content>
+        <Dialog.Title>Reset workspace?</Dialog.Title>
+        <Dialog.Close>Cancel</Dialog.Close>
+      </Dialog.Content>
+    </Dialog>
+  </DialogStack.Content>
+  <DialogStack.Content value="account">
+    <Header>
+      <DialogStack.Back label="Back to Settings" />
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Title>Account</DialogStack.Title>
+    <DialogStack.Description>Sign-in details for this workspace.</DialogStack.Description>
+    <DialogStack.Trigger value="password">Change password</DialogStack.Trigger>
+  </DialogStack.Content>
+  <DialogStack.Content value="password">
+    <Header>
+      <DialogStack.Back label="Back to Account" />
+      <DialogStack.Close label="Close all" />
+    </Header>
+    <DialogStack.Title>Change password</DialogStack.Title>
+    <TextField label="New password" type="password" />
+  </DialogStack.Content>
+</DialogStack>`,
+      },
+    },
+  },
   render: (args) => <Levels {...args} body={<NestedDialogBody />} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
