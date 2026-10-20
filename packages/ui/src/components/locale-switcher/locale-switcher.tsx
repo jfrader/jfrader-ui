@@ -90,6 +90,7 @@ export interface LocaleSwitcherSlots extends Pick<MenuSlots, 'trigger' | 'conten
 }
 
 export interface LocaleSwitcherProps extends Omit<ComponentPropsWithRef<'nav'>, 'children'>, SxProps {
+  /** Defines language labels and destination links in display order. Use two options for `'swap'`. */
   options: readonly LocaleSwitcherOption[];
   /** Identifies the current language option. */
   value: string;
@@ -109,8 +110,11 @@ export interface LocaleSwitcherProps extends Omit<ComponentPropsWithRef<'nav'>, 
   defaultOpen?: boolean;
   /** Requests a menu open-state change. */
   onOpenChange?: (open: boolean) => void;
+  /** Positions the menu relative to its trigger. Defaults to `'bottom-start'`. Applies only to `'menu'`. */
   placement?: Placement;
+  /** Passes props and styles to the menu trigger, popup and language options. */
   slotProps?: LocaleSwitcherSlotProps;
+  /** Replaces the menu trigger, popup and language option elements. */
   slots?: LocaleSwitcherSlots;
 }
 
