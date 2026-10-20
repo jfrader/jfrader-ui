@@ -276,6 +276,7 @@ const itemStyle = css({
   display: 'flex',
   alignItems: 'center',
   inlineSize: '100%',
+  minInlineSize: 0,
   minBlockSize: '32px',
   flexShrink: 0,
   border: 0,
@@ -287,6 +288,7 @@ const itemStyle = css({
   fontSize: vars.textSize.sm,
   color: vars.color.text,
   textAlign: 'start',
+  overflowWrap: 'anywhere',
   cursor: 'pointer',
   transitionProperty: 'background-color',
   transitionDuration: vars.motion.duration.fast,
@@ -301,6 +303,7 @@ const itemStyle = css({
 
 const separatorStyle = css({
   blockSize: '1px',
+  flexShrink: 0,
   marginBlock: vars.space[1],
   backgroundColor: vars.color.border,
   [FORCED_COLORS]: {
