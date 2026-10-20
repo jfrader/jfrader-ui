@@ -21,6 +21,11 @@ function Root(props: ComponentPropsWithRef<'span'>) {
 function Word(props: ComponentPropsWithRef<'span'>) {
   return <span {...props} data-replacement="word" />;
 }
+const revealHeadingSource = `import { TextReveal, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Heading = styled.h2({ margin: 0, fontSize: vars.textSize['3xl'],
+  fontWeight: vars.fontWeight.semibold, lineHeight: vars.lineHeight.tight });`;
 
 const meta = {
   title: 'Data display/TextReveal',
@@ -34,11 +39,15 @@ const meta = {
   ),
   parameters: {
     docs: {
+      sections: [
+        { title: 'Entrance', stories: ['Default', 'Soft', 'Delayed'] },
+        { title: 'Replay', stories: ['Replay'] },
+      ],
       description: {
         component: 'Reveal short headings and hero copy once as they appear.',
       },
       usage: `### Content
-Wrap TextReveal in your heading or paragraph. Text is read-only; no value or open state is created. Typography is inherited. Newlines and repeated spaces are preserved. Server output and the first client render contain unsegmented, readable text. After mount, Intl.Segmenter splits words using locale; platforms without Segmenter reveal each line together. Server and browser ICU versions do not need to match.
+Wrap text in your heading or paragraph to inherit its typography. Newlines and repeated spaces are preserved. Server output and the first client render contain readable text. After mount, Intl.Segmenter splits words; platforms without Segmenter reveal each line together. Server and browser ICU versions do not need to match.
 ### Motion
 The entrance starts after client mount, not on scroll. Delay is capped at 1000ms and total word stagger at the slow motion token. Change text or the React key to replay. Reduced motion shows text immediately; forced colors uses solid text.
 ### Keyboard
@@ -54,6 +63,13 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  name: 'Reveal a heading',
+  parameters: { docs: {
+    description: { story: 'Reveal the words of a two-line heading after it mounts.' },
+    source: { language: 'tsx', code: `${revealHeadingSource}
+
+<Heading><TextReveal text={'Build better\\ninterfaces'} /></Heading>` },
+  } },
   play: async ({ canvas, canvasElement }) => {
     await expect(
       canvas.getByRole('heading', {
@@ -74,7 +90,16 @@ export const Default: Story = {
     await expect(getComputedStyle(words[0]!).filter).toBe('none');
   },
 };
-export const Soft: Story = { args: { variant: 'soft' } };
+export const Soft: Story = {
+  name: 'Soft entrance',
+  parameters: { docs: {
+    description: { story: 'Use a soft entrance for the same two-line heading.' },
+    source: { language: 'tsx', code: `${revealHeadingSource}
+
+<Heading><TextReveal variant="soft" text={'Build better\\ninterfaces'} /></Heading>` },
+  } },
+  args: { variant: 'soft' },
+};
 export const Hydration: Story = {
   play: async ({ canvasElement, args }) => {
     const host = canvasElement.ownerDocument.createElement('div');
@@ -104,7 +129,16 @@ export const Hydration: Story = {
     }
   },
 };
-export const Delayed: Story = { args: { delayMs: 500 } };
+export const Delayed: Story = {
+  name: 'Delayed entrance',
+  parameters: { docs: {
+    description: { story: 'Wait half a second after mount before revealing the heading.' },
+    source: { language: 'tsx', code: `${revealHeadingSource}
+
+<Heading><TextReveal delayMs={500} text={'Build better\\ninterfaces'} /></Heading>` },
+  } },
+  args: { delayMs: 500 },
+};
 export const LightTheme: Story = {
   decorators: [withLightTheme],
   globals: { theme: 'light' },
@@ -202,11 +236,26 @@ function ReplayDemo() {
   );
 }
 export const Replay: Story = {
+  name: 'Replay the entrance',
   render: () => <ReplayDemo />,
   parameters: {
     docs: {
+      description: { story: 'Press Replay to mount the heading again and restart its entrance.' },
       source: {
-        code: '<TextReveal key={version} text="Build better interfaces" />',
+        code: `import { useState } from 'react';
+import { Button, TextReveal, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Heading = styled.h2({ margin: 0, fontSize: vars.textSize['3xl'],
+  fontWeight: vars.fontWeight.semibold, lineHeight: vars.lineHeight.tight });
+
+export function ReplayHeading() {
+  const [version, setVersion] = useState(0);
+  return <>
+    <Heading><TextReveal key={version} text="Build better interfaces" /></Heading>
+    <Button onClick={() => setVersion(version + 1)}>Replay</Button>
+  </>;
+}`,
         language: 'tsx',
       },
     },

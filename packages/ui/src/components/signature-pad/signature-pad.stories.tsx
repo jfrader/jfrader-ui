@@ -183,6 +183,31 @@ const Frame = styled.div({
   gap: vars.space[4],
 });
 const NarrowFrame = styled.div({ inlineSize: 'min(100%, 18rem)' });
+const signatureMessagesSource = `const messages = {
+  ink: 'Ink color', nib: 'Pen width',
+  colors: { black: 'Black', blue: 'Blue', violet: 'Violet' },
+  widths: { fine: 'Fine', medium: 'Medium', bold: 'Bold' },
+  actions: { undo: 'Undo', redo: 'Redo', clear: 'Clear', replay: 'Replay',
+    stop: 'Stop replay', png: 'Download PNG', svg: 'Download SVG' },
+  empty: 'Empty drawing', signed: 'Signature drawing', roleDescription: 'Signature pad',
+  fallback: 'Draw with a pointer, or enter your name in the alternative field.',
+  shortcuts: 'Control or Command Z to undo, Shift Z or Y to redo. Delete to clear. Escape to stop replay or cancel a stroke.',
+  required: 'Signature required', added: 'Stroke added', undone: 'Stroke undone',
+  redone: 'Stroke restored', cleared: 'Signature cleared', reset: 'Signature reset',
+  replayComplete: 'Replay complete', exported: 'Signature exported', exportFailed: 'Export failed',
+};`;
+const signatureDrawingSource = `const strokes: SignatureStroke[] = [{
+  id: 'signature', color: 'black', width: 'medium', startTime: 0,
+  points: [
+    { x: 100, y: 180, pressure: null, time: 0 },
+    { x: 170, y: 65, pressure: null, time: 40 },
+    { x: 145, y: 205, pressure: null, time: 80 },
+    { x: 230, y: 155, pressure: null, time: 120 },
+    { x: 290, y: 170, pressure: null, time: 160 },
+    { x: 360, y: 130, pressure: null, time: 200 },
+    { x: 445, y: 160, pressure: null, time: 240 },
+  ],
+}];`;
 const meta = {
   title: 'Inputs/SignaturePad',
   component: SignaturePad,
@@ -204,20 +229,23 @@ const meta = {
   ],
   parameters: {
     docs: {
+      sections: [
+        { title: 'Drawing', stories: ['Default', 'Signed'] },
+        { title: 'App state', stories: ['Controlled'] },
+      ],
       description: {
         component:
           'Draw a signature with a pointer, undo strokes and export the drawing as PNG or SVG.',
       },
       usage: `### Input and keyboard
 - Forms must offer a typed-name or upload alternative. A drawing does not verify identity or establish legal consent.
-- Samples use normalized 600×260 coordinates, midpoint-quadratic segments and round caps. Pressure changes width; speed does not taper strokes. Cancelled gestures are discarded.
+- Drawings use normalized 600×260 coordinates. Pressure changes width; speed does not taper strokes. Cancelled gestures are discarded.
 - On the canvas: Mod+Z undoes; Shift+Mod+Z or Mod+Y redoes; Delete/Backspace clears; Escape cancels or stops.
 - Native radios and buttons also work with the keyboard. Form reset requests the initial strokes.
 
-### Exports and checks
+### Exports
 - PNG and SVG have transparent backgrounds, optional cropping and fixed print ink. Guides and signer text are excluded.
-- ref reaches the canvas; apiRef exposes actions and exports.
-- Forced colors, reduced motion, pen hardware and screen-reader behavior need separate manual checks.`,
+- Reduced motion skips animated replay.`,
       source: {
         code: '<SignaturePad label="Signature" messages={messages} value={strokes} onValueChange={setStrokes} apiRef={signatureApi} />',
       },
@@ -320,6 +348,18 @@ const strokeEvents = [
 ];
 
 export const Default: Story = {
+  name: 'Draw or type a signature',
+  parameters: { docs: {
+    description: { story: 'Draw with a pointer, or enter a name in the alternative field.' },
+    source: { language: 'tsx', code: `import { SignaturePad, TextField } from '@jfrader/ui';
+
+${signatureMessagesSource}
+
+<>
+  <SignaturePad label="Signature" hint="Sign here" messages={messages} />
+  <TextField label="Type your name instead" />
+</>` },
+  } },
   render: (args) => (
     <>
       <SignaturePad {...args} />
@@ -351,6 +391,17 @@ export const Default: Story = {
   },
 };
 export const Signed: Story = {
+  name: 'Edit an existing signature',
+  parameters: { docs: {
+    description: { story: 'Add strokes, replay the drawing, or download it as PNG or SVG.' },
+    source: { language: 'tsx', code: `import { SignaturePad, type SignatureStroke } from '@jfrader/ui';
+
+${signatureMessagesSource}
+
+${signatureDrawingSource}
+
+<SignaturePad label="Signature" hint="Sign here" messages={messages} defaultValue={strokes} />` },
+  } },
   args: { defaultValue: seeded },
   play: async ({ canvasElement }) => {
     await assertInkContrast(pad(canvasElement));
@@ -510,6 +561,22 @@ export const CancelledGestures: Story = {
   },
 };
 export const Controlled: Story = {
+  name: 'Store the drawing in app state',
+  parameters: { docs: {
+    description: { story: 'Keep strokes in React state as you draw, clear, and undo.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { SignaturePad, type SignatureStroke } from '@jfrader/ui';
+
+${signatureMessagesSource}
+
+${signatureDrawingSource}
+
+export function SignatureEditor() {
+  const [value, setValue] = useState(strokes);
+  return <SignaturePad label="Signature" hint="Sign here" messages={messages}
+    value={value} onValueChange={setValue} />;
+}` },
+  } },
   render: function ControlledDemo(args) {
     const [value, setValue] = useState(seeded);
     return (
