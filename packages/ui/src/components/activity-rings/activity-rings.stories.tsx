@@ -231,21 +231,27 @@ const meta = {
     docs: {
       description: {
         component:
-          'Track daily activity against independent goals. Compare days with the week picker. Enable the interactive legend to preview or pin a metric.',
+          'Track daily activity against independent goals.',
       },
-      usage: `- Each ring compares a metric with its goal using the UsageMeter value rules and Intl percentage formatting.
-- The SVG is decorative. The legend gives the amount, goal, and percentage; unknown values show "No data", not zero.
-- Set each metric's \`tone\` to \`accent\`, \`success\`, \`info\` or \`warning\`. Known values keep that colour at and above the goal; unknown and unavailable metrics stay neutral. Omit tones for the neutral positional palette.
-- All ticks at full tone mean the goal is complete. The dial stops at 100%; surplus appears only in the legend as the uncapped amount, percentage and amount over goal. Translate surplus text with \`labels.overGoal\`.
-- The centre averages completion across goals, capping each at 100%. It shows a dash if any goal is unknown or unavailable. Mixed units are never added together. Translate the caption with \`labels.completion\`.
-- Legend rows are static by default. With \`interactiveLegend\`, hover or focus previews a metric; activation toggles a pin. Preview does not call \`onFocusedMetricChange\`.
-- Counts and sweeps retarget from their displayed values. Assistive technology receives committed values, not intermediate counts. Reduced motion shows the result immediately.
-- \`days\` takes precedence over \`values\`.
-- \`onRingClose\` fires when a value rises to its goal on the same day. Mounting, remounting, and changing days do not fire it.
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Neutral'] },
+        { title: 'Goals and metrics', stories: ['OneMetric', 'FiveMetrics', 'OverGoal', 'CustomFormatter'] },
+        { title: 'Legend', stories: ['InteractiveLegend', 'Isolated'] },
+        { title: 'Day picker', stories: ['WeekSelector'] },
+        { title: 'Sizes', stories: ['Sizes'] },
+        { title: 'States', stories: ['ZeroDay', 'UnknownAndInvalid'] },
+        { title: 'Long content', stories: ['LongIntlUnits'] },
+      ],
+      usage: `### When to use
+Compare progress toward independent daily goals, including goals measured in different units. Mixed units are never added together.
 
-### Keyboard
-- The day picker has one Tab stop. Arrow keys move between days; Home/End choose the first/last day.
-- With the legend toggle buttons enabled, Enter/Space isolate one ring.`,
+### Reading progress
+The dial stops at 100%; the legend retains the uncapped amount, percentage and surplus. The centre averages completion with each goal capped at 100% and shows a dash if any goal is unknown or unavailable. Unknown values mean no data, not zero.
+
+### Keyboard and accessibility
+The SVG is decorative; keep the text legend available for amounts and goals. The day picker has one Tab stop. Arrow keys select days; Home and End select the first and last day. Interactive legend rows preview on hover or focus; Enter or Space toggles a pinned metric.
+
+Assistive technology receives committed values rather than intermediate animation counts. Reduced motion shows results immediately.`,
     },
   },
 } satisfies Meta<RingsArgs>;
@@ -253,7 +259,8 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: defaultSource } } },
+  name: 'Daily activity',
+  parameters: { docs: { description: { story: 'Compare distance, exercise and standing time with their daily goals.' }, source: { language: 'tsx', code: defaultSource } } },
   play: async ({ canvasElement, args }) => {
     await expectLegendAlignment(canvasElement);
     await expectTickContrast(canvasElement);
@@ -288,12 +295,13 @@ export const Default: Story = {
 };
 
 export const Neutral: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: neutralSource } } },
+  name: 'Neutral rings',
+  parameters: { docs: { description: { story: 'Distinguish goals by position without assigning semantic tones.' }, source: { language: 'tsx', code: neutralSource } } },
   args: { metrics: goals.map(({ tone, ...metric }) => metric) },
   play: async ({ canvasElement }) => expectTickContrast(canvasElement),
 };
 
-export const NeutralLight: Story = { ...Neutral, decorators: [withLightTheme] };
+export const NeutralLight: Story = { ...Neutral, name: 'Neutral light', decorators: [withLightTheme] };
 
 export const ColourLight: Story = {
   parameters: { docs: { source: { language: 'tsx', code: defaultSource } } },
@@ -326,7 +334,8 @@ export const ColouredStatesLight: Story = {
 };
 
 export const WeekSelector: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+  name: 'Choose a day',
+  parameters: { docs: { description: { story: 'Select a day to compare its progress with the same daily goals.' }, source: { language: 'tsx', code: `${weekSource}
 
 <ActivityRings metrics={metrics} days={days} locale="en-GB" />` } } },
   args: { values: undefined, days: week },
@@ -354,7 +363,8 @@ export const WeekSelector: Story = {
 };
 
 export const InteractiveLegend: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+  name: 'Preview and pin a goal',
+  parameters: { docs: { description: { story: 'Hover or focus a goal to preview it, then activate it to pin the ring.' }, source: { language: 'tsx', code: `${metricsSource}
 
 <ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }} locale="en-GB" interactiveLegend />` } } },
   args: { interactiveLegend: true },
@@ -378,9 +388,9 @@ export const InteractiveLegend: Story = {
   },
 };
 
-/** Persistent isolated state for the axe gate. */
 export const Isolated: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+  name: 'Start with a pinned goal',
+  parameters: { docs: { description: { story: 'Start with standing time pinned; activate it again to return to all goals.' }, source: { language: 'tsx', code: `${metricsSource}
 
 <ActivityRings metrics={metrics} values={{ distance: 4.5, exercise: 34, stand: 9 }}
   locale="en-GB" interactiveLegend defaultFocusedMetric="stand" />` } } },
@@ -452,7 +462,8 @@ const preventPreview = (event: SyntheticEvent) => event.preventDefault();
 };
 
 export const Sizes: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: sizesSource } } },
+  name: 'Ring sizes',
+  parameters: { docs: { description: { story: 'Compare small, medium and large rings with the same values.' }, source: { language: 'tsx', code: sizesSource } } },
   render: (args) => (
     <>
       {(['sm', 'md', 'lg'] as const).map((size) => (
@@ -471,14 +482,16 @@ export const Sizes: Story = {
 };
 
 export const OneMetric: Story = {
+  name: 'One goal',
   args: { metrics: goals.slice(0, 1) },
-  parameters: { docs: { source: { language: 'tsx', code: `import { ActivityRings } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Track distance on its own.' }, source: { language: 'tsx', code: `import { ActivityRings } from '@jfrader/ui';
 
 <ActivityRings locale="en-GB" values={{ distance: 4.5 }}
   metrics={[{ id: 'distance', label: 'Distance', goal: 6, unit: 'kilometer', tone: 'accent' }]} />` } } },
 };
 export const FiveMetrics: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+  name: 'Five independent goals',
+  parameters: { docs: { description: { story: 'Add steps and water intake without combining their units.' }, source: { language: 'tsx', code: `${metricsSource}
 
 <ActivityRings locale="en-GB" metrics={[
   ...metrics,
@@ -567,8 +580,9 @@ const values = Object.fromEntries(ratios.map(ratio => [\`ratio-\${ratio}\`, rati
 };
 
 export const OverGoal: Story = {
+  name: 'Beyond the goals',
   args: { values: { distance: 9, exercise: 52, stand: 13 } },
-  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+  parameters: { docs: { description: { story: 'Read surplus amounts in the legend after the rings reach full completion.' }, source: { language: 'tsx', code: `${metricsSource}
 
 <ActivityRings metrics={metrics} values={{ distance: 9, exercise: 52, stand: 13 }} locale="en-GB" />` } } },
 };
@@ -706,7 +720,8 @@ export const SurplusLabel: Story = {
   },
 };
 export const ZeroDay: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${weekSource}
+  name: 'A day with zero activity',
+  parameters: { docs: { description: { story: 'Compare a recorded zero day with the adjacent day that has no data.' }, source: { language: 'tsx', code: `${weekSource}
 
 <ActivityRings metrics={metrics} days={days} defaultValue="fri" locale="en-GB" />` } } },
   args: { days: week, values: undefined, defaultValue: week[4]!.id },
@@ -718,7 +733,8 @@ export const ZeroDay: Story = {
   },
 };
 export const UnknownAndInvalid: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
+  name: 'Missing values and unavailable goals',
+  parameters: { docs: { description: { story: 'Keep missing values and an invalid goal distinct from zero progress.' }, source: { language: 'tsx', code: `${metricsSource}
 
 <ActivityRings metrics={[metrics[0]!, metrics[1]!, { ...metrics[2]!, goal: 0 }]}
   values={{ distance: null, exercise: null, stand: 9 }} locale="en-GB" />` } } },
@@ -1454,7 +1470,8 @@ export const IntlFormatting: Story = {
 const formatSteps = (value: number, locale: string | undefined) =>
   new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
 export const CustomFormatter: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { ActivityRings } from '@jfrader/ui';
+  name: 'Format step counts',
+  parameters: { docs: { description: { story: 'Format steps as locale-aware whole numbers.' }, source: { language: 'tsx', code: `import { ActivityRings } from '@jfrader/ui';
 
 <ActivityRings locale="en-GB" values={{ steps: 12345 }}
   metrics={[{ id: 'steps', label: 'Steps', goal: 10000,
@@ -1472,7 +1489,8 @@ export const CustomFormatter: Story = {
 };
 
 export const LongIntlUnits: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${longUnitsDataSource}
+  name: 'Long labels and localized units',
+  parameters: { docs: { description: { story: 'Read long German labels alongside large values and localized units.' }, source: { language: 'tsx', code: `${longUnitsDataSource}
 
 <ActivityRings metrics={metrics} values={values} locale="de" />` } } },
   args: {
@@ -1498,6 +1516,7 @@ export const LongIntlUnits: Story = {
 
 export const NarrowLongUnits: Story = {
   ...LongIntlUnits,
+  name: 'Narrow long units',
   parameters: { frameWidth: 'narrow', docs: { source: { language: 'tsx', code: `${longUnitsDataSource}
 
 import { styled } from '@jfrader/ui';
@@ -1909,6 +1928,7 @@ const ActivityLane = styled.div({ display: 'flex', flexWrap: 'wrap', justifyCont
 };
 export const CenteredSizes: Story = {
   ...Sizes,
+  name: 'Centered sizes',
   decorators: [centered],
   parameters: { docs: { source: { language: 'tsx', code: `${metricsSource}
 
@@ -1925,6 +1945,7 @@ const ActivityLane = styled.div({ display: 'flex', flexWrap: 'wrap', justifyCont
 };
 export const CenteredLongIntlUnits: Story = {
   ...LongIntlUnits,
+  name: 'Centered long Intl units',
   decorators: [centered],
   parameters: { docs: { source: { language: 'tsx', code: `${longUnitsDataSource}
 

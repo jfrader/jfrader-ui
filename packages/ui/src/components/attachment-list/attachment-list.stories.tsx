@@ -42,20 +42,22 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Show files and image previews with names, sizes, and download links.' },
-      source: { code: `<AttachmentList attachments={[
-  { id: 'launch-brief', name: 'Launch brief.pdf', kind: 'file', size: 2400000, url: '/launch-brief.pdf' },
-]} />` },
-      usage: `### Files and links
-- Supply a stable id, name, and kind for each attachment. Sizes are bytes; locale formats them with decimal kB and MB units.
-- Images use url for their preview. Supply alt, width, and height when known.
-- Files without a URL, or with an unsafe URL, appear as text. Relative URLs and http, https, and blob schemes are allowed; data and javascript schemes are not.
-- Links download using the attachment name by default. Set download to false to navigate, and target to choose a browsing context. Your app owns fetching files and reporting upload failures.
+      sections: [
+        { title: 'Basic', stories: ['Files'] },
+        { title: 'Images and files', stories: ['ImagePreview'] },
+        { title: 'Limits and more', stories: ['MoreFiles', 'CustomLimit'] },
+        { title: 'Links', stories: ['LinkTarget'] },
+        { title: 'States', stories: ['MissingAndUnsafeURLs', 'Empty'] },
+        { title: 'Slots', stories: ['LinkReplacement'] },
+      ],
+      usage: `### When to use
+Show attachments on a message or record, with image previews or file download links. Your app owns fetching files and reporting upload failures.
 
-### Expansion and keyboard
-- The native list shows four files initially. Set previewCount to a different limit, or Infinity to show all. Expansion stays open for the lifetime of the list.
-- Tab and Shift+Tab move through links and the expand button. Enter follows a link; Enter or Space expands the list. The component never moves focus after expansion.
-- The ref reaches the list element. Native list attributes and sx apply to the list, not the expand button; use slotProps.expandButton for that button.
-- Labels translate the list name and the expand button. The defaults are English.`,
+### Constraints
+Sizes are bytes, displayed in decimal kB and MB. Give images meaningful alternative text. Missing or unsafe URLs render as text; relative URLs and http, https and blob schemes are allowed, but data and javascript schemes are not. Expansion stays open for the lifetime of the list. An empty list adds no empty-state message.
+
+### Keyboard and accessibility
+Tab and Shift+Tab move through links and the expand button. Enter follows a link; Enter or Space expands the list. Expansion does not move focus. Translate the list name and expansion action for your audience.`,
     },
   },
 } satisfies Meta<typeof AttachmentList>;
@@ -63,6 +65,16 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Files: Story = {
+  name: 'Download files',
+  parameters: { docs: {
+    description: { story: 'Show two downloadable files with their names and formatted sizes.' },
+    source: { language: 'tsx', code: `import { AttachmentList } from '@jfrader/ui';
+
+<AttachmentList locale="en-US" attachments={[
+  { id: 'launch-brief', name: 'Launch brief.pdf', kind: 'file', size: 2400000, url: '/launch-brief.pdf' },
+  { id: 'notes', name: 'Pricing notes.txt', kind: 'file', size: 4200, url: '/pricing-notes.txt' },
+]} />` },
+  } },
   play: async ({ canvas, userEvent }) => {
     await expect(canvas.getByRole('list', { name: 'Attachments' })).toHaveAttribute('data-ui', 'attachment-list');
     const first = canvas.getByRole('link', { name: 'Launch brief.pdf · 2.4 MB' });
@@ -80,6 +92,15 @@ export const Files: Story = {
 };
 
 export const ImagePreview: Story = {
+  name: 'Image preview',
+  parameters: { docs: {
+    description: { story: 'Preview an image with alternative text and its intrinsic dimensions.' },
+    source: { language: 'tsx', code: `import { AttachmentList } from '@jfrader/ui';
+
+<AttachmentList locale="en-US" attachments={[
+  { id: 'image', name: 'Share card.png', kind: 'image', url: '/og-image.png', alt: 'Share card preview', width: 1200, height: 630 },
+]} />` },
+  } },
   args: { attachments: [{ id: 'image', name: 'Share card.png', kind: 'image', url: '/og-image.png', alt: 'Share card preview', width: 1200, height: 630 }] },
   play: async ({ canvas }) => {
     const image = canvas.getByRole('img', { name: 'Share card preview' });
@@ -90,8 +111,10 @@ export const ImagePreview: Story = {
 };
 
 export const MissingAndUnsafeURLs: Story = {
+  name: 'Unavailable links',
   parameters: {
     docs: {
+      description: { story: 'Read file names as text when a URL is missing or unsafe.' },
       source: {
         language: 'tsx',
         code: `import { AttachmentList } from '@jfrader/ui';
@@ -130,45 +153,22 @@ export function Example() {
 };
 
 export const MoreFiles: Story = {
+  name: 'Expand the attachment list',
   parameters: {
     docs: {
+      description: { story: 'Show four attachments initially, then reveal the remaining two.' },
       source: {
         language: 'tsx',
-        code: `import { AttachmentList, type Attachment } from '@jfrader/ui';
+        code: `import { AttachmentList } from '@jfrader/ui';
 
-const FILES: readonly Attachment[] = [
-  {
-    id: 'launch-brief',
-    name: 'Launch brief.pdf',
-    kind: 'file',
-    size: 2400000,
-    url: '/launch-brief.pdf',
-  },
+<AttachmentList locale="en-US" attachments={[
+  { id: 'launch-brief', name: 'Launch brief.pdf', kind: 'file', size: 2400000, url: '/launch-brief.pdf' },
   { id: 'notes', name: 'Pricing notes.txt', kind: 'file', size: 4200, url: '/pricing-notes.txt' },
-];
-
-export function Example() {
-  return (
-    <AttachmentList
-      attachments={[
-        ...FILES,
-        ...Array.from({ length: 4 }, (_, index): Attachment => ({
-          id: \`file-\${index}\`,
-          name: \`Invoice 2026-0\${index + 1}.pdf\`,
-          kind: 'file',
-        })),
-      ]}
-      locale="en-US"
-      slotProps={{
-        expandButton: {
-          onClick: () => {
-            console.info('Action selected');
-          },
-        },
-      }}
-    />
-  );
-}`,
+  { id: 'invoice-1', name: 'Invoice 2026-01.pdf', kind: 'file' },
+  { id: 'invoice-2', name: 'Invoice 2026-02.pdf', kind: 'file' },
+  { id: 'invoice-3', name: 'Invoice 2026-03.pdf', kind: 'file' },
+  { id: 'invoice-4', name: 'Invoice 2026-04.pdf', kind: 'file' },
+]} />`,
       },
     },
   },
@@ -192,6 +192,16 @@ export function Example() {
 };
 
 export const CustomLimit: Story = {
+  name: 'Start with files collapsed',
+  parameters: { docs: {
+    description: { story: 'Reveal the whole list from a single expansion action.' },
+    source: { language: 'tsx', code: `import { AttachmentList } from '@jfrader/ui';
+
+<AttachmentList locale="en-US" previewCount={0} attachments={[
+  { id: 'launch-brief', name: 'Launch brief.pdf', kind: 'file', size: 2400000, url: '/launch-brief.pdf' },
+  { id: 'notes', name: 'Pricing notes.txt', kind: 'file', size: 4200, url: '/pricing-notes.txt' },
+]} />` },
+  } },
   args: { previewCount: 0 },
   play: async ({ canvas, userEvent }) => {
     await expect(canvas.queryByRole('listitem')).not.toBeInTheDocument();
@@ -245,6 +255,21 @@ function SlotLink(props: ComponentPropsWithRef<'a'>) {
 }
 
 export const LinkReplacement: Story = {
+  name: 'Replace file links',
+  parameters: { docs: {
+    description: { story: 'Wrap each file link in an app-owned component while preserving its native attributes.' },
+    source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { AttachmentList } from '@jfrader/ui';
+
+function AttachmentLink(props: ComponentPropsWithRef<'a'>) {
+  return <a {...props} data-slot="attachment-link" />;
+}
+
+<AttachmentList locale="en-US" slots={{ link: AttachmentLink }} attachments={[
+  { id: 'launch-brief', name: 'Launch brief.pdf', kind: 'file', size: 2400000, url: '/launch-brief.pdf' },
+  { id: 'notes', name: 'Pricing notes.txt', kind: 'file', size: 4200, url: '/pricing-notes.txt' },
+]} />` },
+  } },
   render: (args) => <AttachmentList {...args} slots={{ link: SlotLink }} />,
   play: async ({ canvas, canvasElement }) => {
     const [link] = canvas.getAllByRole('link');
@@ -257,6 +282,16 @@ export const LinkReplacement: Story = {
 };
 
 export const LinkTarget: Story = {
+  name: 'Open a file in a new tab',
+  parameters: { docs: {
+    description: { story: 'Navigate to an external file instead of requesting a download.' },
+    source: { language: 'tsx', code: `import { AttachmentList } from '@jfrader/ui';
+
+<AttachmentList locale="en-US" attachments={[
+  { id: 'launch-brief', name: 'Launch brief.pdf', kind: 'file', size: 2400000,
+    url: 'https://example.com/launch-brief.pdf', download: false, target: '_blank' },
+]} />` },
+  } },
   args: { attachments: [{ ...FILES[0]!, download: false, target: '_blank', url: 'https://example.com/launch-brief.pdf' }] },
   play: async ({ canvas }) => {
     const link = canvas.getByRole('link');
@@ -303,6 +338,15 @@ export function Example() {
   },
 };
 
-export const Empty: Story = { args: { attachments: [] } };
+export const Empty: Story = {
+  name: 'No attachments',
+  parameters: { docs: {
+    description: { story: 'An empty attachment list leaves the empty-state message to the surrounding page.' },
+    source: { language: 'tsx', code: `import { AttachmentList } from '@jfrader/ui';
+
+<AttachmentList locale="en-US" attachments={[]} />` },
+  } },
+  args: { attachments: [] },
+};
 export const RTL: Story = { args: { dir: 'rtl' } };
 export const Light: Story = { globals: { theme: 'light' } };

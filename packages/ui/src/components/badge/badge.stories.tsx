@@ -7,6 +7,7 @@ import { withLightTheme } from '../../testing/story-decorators';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { Badge, type BadgeTone } from './index';
+import { Button } from '../button';
 
 const TONES = ['accent', 'danger', 'neutral'] as const satisfies readonly BadgeTone[];
 
@@ -77,7 +78,6 @@ function Square({ round = false }: { round?: boolean }) {
 }
 Square.displayName = 'Square';
 
-// The slot API takes `css` values, so this story keeps the documented spelling.
 const slotRootStyle = css({ marginInlineStart: vars.space[4] });
 const slotBadgeStyle = css({ fontWeight: vars.fontWeight.semibold });
 
@@ -106,8 +106,23 @@ const meta = {
   component: Badge,
   parameters: {
     docs: {
-      description: { component: 'Show a notification count or dot on content. In this library, Badge names the notification indicator and Pill the tonal status label, rather than the common design-system use of Badge for a status label.' },
-      usage: '- The count does not join the control’s accessible name. If the control has an `aria-label`, include the count, for example `Inbox, 3 unread`.\n- When the control is named by its text, the count is read after its name.',
+      description: { component: 'Show a notification count or dot on content.' },
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Tones', stories: ['Tones'] },
+        { title: 'Counts', stories: ['MaxContent', 'ShowZero'] },
+        { title: 'Dot and label', stories: ['Dot', 'TextLabel'] },
+        { title: 'Placement', stories: ['Anchors', 'OverlapCircular'] },
+        { title: 'Composition', stories: ['InboxAction', 'SlotProps'] },
+      ],
+      usage: `### When to use
+Mark content with unread counts or a notification dot. Use Pill for a standalone status label.
+
+### Accessibility
+The badge adds no keyboard interaction. Keep the wrapped action reachable as a button or link. Dots are decorative; include their meaning in the action’s accessible name. A count outside a control does not join its accessible name: include it in an explicit label, for example “Inbox, 3 unread”. When a control is named by text that includes the count, that text is read in order.
+
+### Layout
+Leave room around the wrapped content for the marker; a clipping ancestor can cut it off. Placement follows the reading direction.`,
     },
   },
   args: { children: <Square />, badgeContent: 4 },
@@ -129,9 +144,9 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** If the wrapped control has an `aria-label`, include the count in it: `aria-label="Inbox, 3 unread"`. */
 export const Default: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}<Badge badgeContent={4}><NotificationTarget /></Badge>` } } },
+  name: 'Notification count',
+  parameters: { docs: { description: { story: 'Place a count at the top end of the wrapped content.' }, source: { language: 'tsx', code: `${badgeSource}<Badge badgeContent={4}><NotificationTarget /></Badge>` } } },
   play: async ({ canvasElement }) => {
     const [root] = getRoots(canvasElement);
     const marker = within(canvasElement).getByText('4');
@@ -145,7 +160,8 @@ export const Default: Story = {
 };
 
 export const MaxContent: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}<>
+  name: 'Count limits',
+  parameters: { docs: { description: { story: 'Compare capped counts, exact limits and negative values.' }, source: { language: 'tsx', code: `${badgeSource}<>
   <Badge badgeContent={1500}><NotificationTarget /></Badge>
   <Badge badgeContent={10} max={9}><NotificationTarget /></Badge>
   <Badge badgeContent={9} max={9}><NotificationTarget /></Badge>
@@ -168,7 +184,8 @@ export const MaxContent: Story = {
 };
 
 export const ShowZero: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}<>
+  name: 'Show a zero count',
+  parameters: { docs: { description: { story: 'Keep a recorded zero visible rather than hiding its marker.' }, source: { language: 'tsx', code: `${badgeSource}<>
   <Badge badgeContent={0}><NotificationTarget /></Badge>
   <Badge badgeContent={0} showZero><NotificationTarget /></Badge>
 </>` } } },
@@ -222,7 +239,8 @@ export const VisibilityMatrix: Story = {
 };
 
 export const Dot: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}<>
+  name: 'Notification dots',
+  parameters: { docs: { description: { story: 'Show a dot with or without a count, or hide it explicitly.' }, source: { language: 'tsx', code: `${badgeSource}<>
   <Badge variant="dot" badgeContent={4}><NotificationTarget /></Badge>
   <Badge variant="dot"><NotificationTarget /></Badge>
   <Badge variant="dot" invisible><NotificationTarget /></Badge>
@@ -264,7 +282,8 @@ export const Invisible: Story = {
 };
 
 export const Anchors: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}<>
+  name: 'Corner placement',
+  parameters: { docs: { description: { story: 'Compare markers at all four logical corners.' }, source: { language: 'tsx', code: `${badgeSource}<>
   <Badge badgeContent={4} anchor={{ vertical: 'top', horizontal: 'start' }}><NotificationTarget /></Badge>
   <Badge badgeContent={4} anchor={{ vertical: 'top', horizontal: 'end' }}><NotificationTarget /></Badge>
   <Badge badgeContent={4} anchor={{ vertical: 'bottom', horizontal: 'start' }}><NotificationTarget /></Badge>
@@ -294,7 +313,8 @@ export const Anchors: Story = {
 };
 
 export const OverlapCircular: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}const RoundTarget = styled(NotificationTarget)({ borderRadius: vars.radius.full });
+  name: 'Circular content',
+  parameters: { docs: { description: { story: 'Inset the marker to follow a circular target.' }, source: { language: 'tsx', code: `${badgeSource}const RoundTarget = styled(NotificationTarget)({ borderRadius: vars.radius.full });
 
 <Badge badgeContent={4} overlap="circular"><RoundTarget /></Badge>` } } },
   args: { overlap: 'circular', children: <Square round /> },
@@ -326,12 +346,13 @@ export const RTL: Story = {
 };
 
 export const SlotProps: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${badgeSource}<Badge
+  name: 'Style the wrapper and marker',
+  parameters: { docs: { description: { story: 'Add wrapper spacing and marker emphasis through their styling slots.' }, source: { language: 'tsx', code: `${badgeSource}<Badge
   badgeContent={4}
   className="consumer-root"
   slotProps={{
-    root: { className: 'slot-root', css: { marginInlineStart: vars.space[4] } },
-    badge: { className: 'slot-badge', css: { fontWeight: vars.fontWeight.semibold } },
+    root: { className: 'slot-root', sx: { marginInlineStart: vars.space[4] } },
+    badge: { className: 'slot-badge', sx: { fontWeight: vars.fontWeight.semibold } },
   }}
 >
   <NotificationTarget />
@@ -378,4 +399,39 @@ ${badgeSource}<ThemeRoot theme="light">
     const markers = canvasElement.querySelectorAll(MARKER);
     await expect(markers).toHaveLength(TONES.length * 2);
   },
+};
+
+export const Tones: Story = {
+  name: 'Notification tones',
+  parameters: { docs: {
+    description: { story: 'Compare accent, danger and neutral markers on the same target.' },
+    source: { language: 'tsx', code: `${badgeSource}<>
+  <Badge tone="accent" badgeContent={4}><NotificationTarget /></Badge>
+  <Badge tone="danger" badgeContent={4}><NotificationTarget /></Badge>
+  <Badge tone="neutral" badgeContent={4}><NotificationTarget /></Badge>
+</>` },
+  } },
+  render: (args) => <>{TONES.map((tone) => <Badge {...args} key={tone} tone={tone} />)}</>,
+};
+
+export const TextLabel: Story = {
+  name: 'Text marker',
+  parameters: { docs: {
+    description: { story: 'Use a short text marker instead of a numeric count.' },
+    source: { language: 'tsx', code: `${badgeSource}<Badge badgeContent="New"><NotificationTarget /></Badge>` },
+  } },
+  args: { badgeContent: 'New' },
+};
+
+export const InboxAction: Story = {
+  name: 'Inbox action',
+  parameters: { docs: {
+    description: { story: 'Include the unread count in the wrapped button’s accessible name.' },
+    source: { language: 'tsx', code: `import { Badge, Button } from '@jfrader/ui';
+
+<Badge badgeContent={3}>
+  <Button aria-label="Inbox, 3 unread">Inbox</Button>
+</Badge>` },
+  } },
+  render: () => <Badge badgeContent={3}><Button aria-label="Inbox, 3 unread">Inbox</Button></Badge>,
 };
