@@ -121,34 +121,63 @@ export interface BookingPillProps
       'children' | 'defaultValue' | 'onChange'
     >,
     SxProps {
+  /** Names the venue in the trigger and booking summary. */
   venue: string;
+  /** Adds venue details beneath the current step title. */
   venueDetail?: ReactNode;
+  /** Controls the party size, date and selected time. */
   value?: BookingDraft;
+  /** Seeds the draft and reset target. Defaults to two guests within the party bounds, `startDate` and the first available time. */
   defaultValue?: BookingDraft;
+  /** Receives draft changes, including clearing a time that becomes unavailable. */
   onValueChange?: (draft: BookingDraft) => void;
+  /** Controls whether the booking steps are expanded. */
   open?: boolean;
+  /** Initially expands the uncontrolled booking steps. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receives requests to expand or collapse the booking steps. */
   onOpenChange?: (open: boolean) => void;
+  /** Controls the displayed booking step. */
   step?: BookingPillStep;
+  /** Sets the initial uncontrolled step. Defaults to `party`. */
   defaultStep?: BookingPillStep;
+  /** Receives step navigation and reset requests. */
   onStepChange?: (step: BookingPillStep) => void;
+  /** Sets the first bookable civil date in `YYYY-MM-DD` format. Invalid dates throw. */
   startDate: string;
+  /** Sets the number of bookable days including `startDate`. Defaults to 21. Must be a positive integer. */
   days?: number;
+  /** Supplies sorted, unique bookable times in `HH:mm` format. Invalid or unordered entries throw. */
   times: readonly string[];
+  /** Seeds the selected time when listed and available. Otherwise the first available time is used. */
   preferredTime?: string;
+  /** Checks availability for a date, time and party size. Defaults to allowing every listed time. */
   isAvailable?: (date: string, time: string, partySize: number) => boolean;
+  /** Sets the smallest party size. Defaults to 1. Must be a positive integer. */
   minPartySize?: number;
+  /** Sets the largest party size. Defaults to 12. Must be an integer at least `minPartySize`. */
   maxPartySize?: number;
+  /** Confirms a valid booking. Resolution shows the receipt; rejection shows an error. */
   onConfirm: (booking: Booking) => void | Promise<void>;
+  /** Runs after requesting the initial draft and `party` step for a new booking. */
   onReset?: () => void;
+  /** Sets the locale for dates, times and guest counts. */
   locale?: string;
+  /** Sets 12- or 24-hour time display. Defaults to the locale's hour cycle. */
   hourCycle?: 'h12' | 'h23';
+  /** Overrides booking labels, summaries and feedback messages. */
   labels?: Partial<BookingPillLabels>;
+  /** Prevents opening, editing, navigation and confirmation. Defaults to `false`. */
   disabled?: boolean;
+  /** Configures the calendar without overriding booking-owned dates or selection. */
   calendarProps?: CalendarOverrides;
+  /** Configures the time picker without overriding booking-owned selection or availability. */
   timePickerProps?: TimeOverrides;
+  /** Replaces booking parts. */
   slots?: BookingPillSlots;
+  /** Passes props to booking parts. */
   slotProps?: BookingPillSlotProps;
+  /** Replaces the root element. `slots.root` takes precedence. */
   component?: BookingPillSlots['root'];
 }
 const STEP_ORDER: readonly BookingPillStep[] = [

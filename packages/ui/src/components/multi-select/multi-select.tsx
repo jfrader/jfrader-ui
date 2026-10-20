@@ -113,21 +113,34 @@ export interface MultiSelectSlotProps {
   empty?: Partial<MultiSelectEmptyProps>;
 }
 export interface MultiSelectBaseProps {
+  /** Controls the selected option values. */
   value?: readonly string[];
+  /** Seeds uncontrolled selection. Defaults to no selected options. */
   defaultValue?: readonly string[];
+  /** Receives the selected values after a toggle or clear request. */
   onValueChange?: (value: string[]) => void;
+  /** Controls whether the options popup is open. */
   open?: boolean;
+  /** Initially opens the uncontrolled popup. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receives requests to open or close the popup. */
   onOpenChange?: (open: boolean) => void;
+  /** Prevents selection changes and excludes values from submission. Defaults to `false`. */
   disabled?: boolean;
+  /** Requires at least one selected option for form validation. Defaults to `false`. */
   required?: boolean;
+  /** Sets the form field name submitted once per selected value. */
   name?: string;
+  /** Sets the locale for typeahead matching and overflow counts. */
   locale?: Intl.LocalesArgument;
+  /** Overrides accessible labels, announcements and validation messages. */
   messages?: Partial<MultiSelectMessages>;
+  /** Positions the popup relative to the trigger. Defaults to `bottom-start`. */
   placement?: Placement;
 }
 export interface MultiSelectCompoundProps extends MultiSelectBaseProps {
   options?: never;
+  /** Composes the field from `MultiSelect` parts instead of `options`. */
   children?: ReactNode;
   label?: never;
   labelPlacement?: never;
@@ -143,34 +156,52 @@ export interface MultiSelectCompoundProps extends MultiSelectBaseProps {
   slotProps?: never;
 }
 export interface MultiSelectEasyProps extends MultiSelectBaseProps {
+  /** Supplies the options rendered in the popup. */
   options: readonly MultiSelectOption[];
   children?: never;
+  /** Names the field with a linked label. */
   label?: ReactNode;
   /** Label placement. `hidden` keeps the accessible name without taking layout space. */
   labelPlacement?: FieldLabelPlacement;
+  /** Adds descriptive text linked to the trigger. */
   description?: ReactNode;
+  /** Shows a validation message and marks the trigger invalid. */
   error?: ReactNode;
+  /** Shows content in the trigger when no options are selected. */
   placeholder?: ReactNode;
+  /** Limits visible selection chips before the overflow count. Defaults to 2. Must be a nonnegative integer. */
   maxVisible?: number;
+  /** Sets trigger height. Defaults to `md`. */
   size?: 'sm' | 'md' | 'lg';
+  /** Shows a button to clear all selected values. Defaults to `false`. */
   clearable?: boolean;
+  /** Replaces the message shown when there are no options. */
   empty?: ReactNode;
+  /** Replaces field parts. */
   slots?: MultiSelectSlots;
+  /** Replaces the root element. `slots.root` takes precedence. */
   component?: MultiSelectSlots['root'];
+  /** Passes props to field parts. */
   slotProps?: MultiSelectSlotProps;
 }
 export type MultiSelectProps = MultiSelectCompoundProps | MultiSelectEasyProps;
 export interface MultiSelectTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
+  /** Sets trigger height. Defaults to `md`. */
   size?: 'sm' | 'md' | 'lg';
 }
 export interface MultiSelectValueProps extends ComponentPropsWithRef<'span'>, SxProps {
+  /** Limits visible selection chips before the overflow count. Defaults to 2. Must be a nonnegative integer. */
   maxVisible?: number;
+  /** Shows content when no options are selected. */
   placeholder?: ReactNode;
 }
 export interface MultiSelectContentProps extends ComponentPropsWithRef<'div'>, SxProps {}
 export interface MultiSelectItemProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /** Identifies the option in selection and form submission. */
   value: string;
+  /** Prevents selecting the option and skips it during keyboard navigation. */
   disabled?: boolean;
+  /** Supplies plain text for typeahead and selected chips when content is not plain text. */
   textValue?: string;
 }
 export interface MultiSelectClearProps extends ComponentPropsWithRef<'button'>, SxProps {}
