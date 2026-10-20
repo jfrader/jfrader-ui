@@ -102,33 +102,59 @@ export interface JsonViewerProps
   extends Omit<ComponentPropsWithRef<'div'>, 'onSelect' | 'onCopy' | 'defaultValue' | 'children'>, SxProps {
   /** Use fixed charcoal with `contrast`; `default` inherits the parent appearance. */
   appearance?: SurfaceAppearance;
+  /** Supplies the JSON tree to inspect. */
   data: JsonValue;
+  /** Names the root node and path prefix. Defaults to `root`. */
   rootName?: string;
+  /** Controls which branch paths are expanded. */
   expandedValue?: readonly string[];
+  /** Sets initially expanded paths instead of using `defaultExpandDepth`. */
   defaultExpandedValue?: readonly string[];
+  /** Receives the expanded branch paths after an expansion change. */
   onExpandedValueChange?: (paths: string[]) => void;
+  /** Expands branches through this initial depth, counting the root as 1. Defaults to 1. */
   defaultExpandDepth?: number;
+  /** Controls the search text. */
   query?: string;
+  /** Sets the initial uncontrolled search text. Defaults to empty. */
   defaultQuery?: string;
+  /** Receives changes to the search text. */
   onQueryChange?: (query: string) => void;
+  /** Controls the selected node path. */
   value?: string;
+  /** Sets the initial selected path. Defaults to `rootName`. */
   defaultValue?: string;
+  /** Receives the newly selected node path. */
   onValueChange?: (path: string) => void;
+  /** Receives the path, value and type when a leaf node is activated. */
   onNodeActivate?: (detail: { path: string; value: JsonValue; type: JsonValueType }) => void;
+  /** Shows the search field and match navigation. Defaults to `true`. */
   searchable?: boolean;
+  /** Shows actions for copying the selected value and path. Defaults to `true`. */
   copyable?: boolean;
+  /** Shows the selected node's path bar. Defaults to `true`. */
   showPath?: boolean;
+  /** Sets children revealed per branch page. Defaults to 50 when omitted or not a positive integer. */
   pageSize?: number;
+  /** Caps collected search matches. Defaults to 2000 when omitted or not a positive integer. */
   maxMatches?: number;
+  /** Limits the tree's scrollable height. Numbers are pixels. Defaults to `26rem`. */
   maxHeight?: CSSProperties['maxHeight'];
+  /** Sets row spacing and text size. Defaults to `md`. */
   size?: 'sm' | 'md';
+  /** Selects the locale for counts and keyboard typeahead. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Overrides tree, search, action and status messages. Defaults to English. */
   labels?: Partial<JsonViewerLabels>;
+  /** Receives the copied text and node path after a successful clipboard write. */
   onCopy?: (detail: { kind: 'value' | 'path'; path: string; text: string }) => void;
+  /** Receives the error and node path when a clipboard write fails. */
   onCopyError?: (detail: { kind: 'value' | 'path'; path: string; error: unknown }) => void;
+  /** Replaces the root and named tree parts. */
   slots?: JsonViewerSlots;
   /** Shorthand for slots.root; slots.root takes precedence. */
   component?: JsonViewerSlots['root'];
+  /** Passes props and style overrides to the root and named tree parts. */
   slotProps?: JsonViewerSlotProps;
 }
 
