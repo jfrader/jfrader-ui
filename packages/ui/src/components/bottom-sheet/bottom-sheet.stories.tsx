@@ -86,9 +86,9 @@ Pass triggerLabel, title, content and closeLabel for a standard bottom sheet; de
 - In Body, PageDown/Space expands before scrolling. Reverse reading keys scroll natively.
 
 ### Panel material
-Panel inherits appearance; appearance="contrast" uses fixed charcoal and carries it to descendant portals. component is sugar for slots.root; only root is adopted, slots.root wins. slotProps.root accepts div props and css, not sx. Declare adapters outside render, render one div, and forward every supplied prop and ref. Apply material before className. Changing the adapter type remounts children and resets focus and uncontrolled inputs.
+Panel inherits appearance; appearance="contrast" uses fixed charcoal and carries it to descendant portals. component is sugar for slots.root; only root is adopted, slots.root wins. slotProps.root accepts div props and sx. Declare adapters outside render, render one div, and forward every supplied prop and ref. Apply material before className. Changing the adapter type remounts children and resets focus and uncontrolled inputs.
 
-Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry → slot css/classes → consumer css/classes → sx. Host IDs, ref registration, transform and measured height stay authoritative. Select composed panels with [data-ui~="bottom-sheet-panel"].`,
+Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry → slot sx/classes → consumer classes → consumer sx. Host IDs, ref registration, transform and measured height stay authoritative. Select composed panels with [data-ui~="bottom-sheet-panel"].`,
     },
   },
 } satisfies Meta<typeof BottomSheet>;

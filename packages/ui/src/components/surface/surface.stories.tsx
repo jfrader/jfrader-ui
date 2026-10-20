@@ -70,9 +70,9 @@ A replacement must render one div and forward ref, className, style, children, n
 
 | Slot | Replacement | Props |
 | --- | --- | --- |
-| root | component or slots.root: ComponentType<SurfacePartProps> | slotProps.root: div props and css; no sx |
+| root | component or slots.root: ComponentType<SurfacePartProps> | slotProps.root: div props and sx |
 
-Extra div props flow into root. slotProps.root wins collisions, including children and event handlers; displaced handlers are not also called. className combines and style shallow-merges, slot values last. Styling order is adapter material → host structure → slot css/classes → consumer classes → sx. Inline style retains normal CSS precedence.
+Extra div props flow into root. slotProps.root wins collisions, including children and event handlers; displaced handlers are not also called. className combines and style shallow-merges, slot values last. Styling order is adapter material → host structure → slot sx/classes → consumer classes → consumer sx. Inline style retains normal CSS precedence.
 
 Composed roots keep both data-ui tokens. Select them with [data-ui~="surface"], not an exact-value selector. Surface uses data-surface-variant and preserves a host's data-variant.`,
     },
@@ -192,7 +192,7 @@ export const ScopedTokens: Story = {
   },
 };
 
-// This story tests the documented css/slot API and native style merging.
+// This story tests the documented sx/slot API and native style merging.
 export const StylingPrecedence: Story = {
   parameters: { docs: { source: { code: "<Surface slotProps={{ root: { sx: slotStyle } }} sx={finalStyle}>Panel contents</Surface>" } } },
   render: (args) => <>{[undefined, Paper, Card].map((component, index) => <div key={index}>
@@ -215,7 +215,7 @@ export const StylingPrecedence: Story = {
   },
 };
 
-// This story tests the documented css/slot API and native style merging.
+// This story tests the documented sx/slot API and native style merging.
 export const RegisteredClassPrecedence: Story = {
   render: (args) => <ClassNames>{({ css: register }) => <>{[undefined, Paper].map((component, index) => <div key={index}>
     <Surface {...args} component={component} data-testid={`class-slot-${index}`}
@@ -234,7 +234,7 @@ export const RegisteredClassPrecedence: Story = {
   },
 };
 
-// This story tests the documented css/slot API and native style merging.
+// This story tests the documented sx/slot API and native style merging.
 export const RootPropMerge: Story = {
   args: { onClick: fn(), ref: fn(), slotProps: { root: { onClick: fn(), ref: fn() } } },
   render: (args) => <>{[undefined, Paper].map((component, index) =>
