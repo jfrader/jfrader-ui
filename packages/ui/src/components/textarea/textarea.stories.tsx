@@ -10,6 +10,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { Button } from '../button';
 import { Textarea, type TextareaProps, type TextareaResize, type TextareaSize } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -23,12 +24,16 @@ const StackFrame = styled.div({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '320px',
+  maxInlineSize: '100%',
+  minInlineSize: 0,
+  marginInline: 'auto',
 });
 
 const meta = {
   title: 'Inputs/Textarea',
   component: Textarea,
   parameters: {
+    layout: 'padded',
     docs: {
       description: { component: 'Write text across multiple lines in a field with a label and error message.' },
       sections: [
@@ -332,6 +337,36 @@ export const LongContent: Story = {
   parameters: { docs: { description: { story: 'Scroll or resize a multi-line message that exceeds the initial height.' }, source: { language: 'tsx', code: `import { Textarea } from '@jfrader/ui';
 
 <Textarea label="Message" placeholder="Write a message" rows={4} defaultValue={'Release checklist:\\nReview the migration guide and confirm the deployment window.\\nNotify the team before starting the rollout.\\nCheck the service after deployment.\\nRecord any follow-up work.'} />` } } },
+};
+
+export const NarrowLayout: Story = {
+  args: {
+    label: 'Message for the release coordinator',
+    description: 'Include the planned deployment window.',
+    error: 'Write at least 10 characters.',
+    required: true,
+    defaultValue: 'Review the migration guide and confirm the deployment window.',
+    slotProps: { root: { sx: { maxInlineSize: '10rem' } } },
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const root = canvasElement.querySelector('[data-ui="textarea"]')!;
+    const textarea = canvas.getByRole('textbox');
+    const inlineSize = canvasElement.style.inlineSize;
+    canvasElement.style.inlineSize = '15rem';
+    try {
+      await expectInside(root.parentElement!, canvasElement);
+    } finally {
+      canvasElement.style.inlineSize = inlineSize;
+    }
+    await expectInside(textarea, root);
+    await expectNoOverlap(canvas.getByText('Message for the release coordinator'), textarea);
+    await expect(textarea.scrollWidth).toBeLessThanOrEqual(textarea.clientWidth);
+    await userEvent.tab();
+    await expect(textarea.ownerDocument.activeElement).toBe(textarea);
+    await expect(getComputedStyle(textarea).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{Control>}{End}{/Control}{Enter}Notify the team.');
+    await expect(textarea).toHaveValue('Review the migration guide and confirm the deployment window.\nNotify the team.');
+  },
 };
 
 export const Keyboard: Story = {
