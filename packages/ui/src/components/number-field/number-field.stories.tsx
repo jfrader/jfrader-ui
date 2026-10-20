@@ -112,7 +112,28 @@ export const Negative: Story = {
   },
 };
 export const Unit: Story = { args: { label: 'Volume', min: 0, max: 10, defaultValue: 1.5, step: 0.1, formatOptions: { style: 'unit', unit: 'liter', unitDisplay: 'long' } } };
-export const PrefixSuffix: Story = { args: { label: 'Length', prefix: <Affix>≈</Affix>, suffix: () => <Affix>m</Affix>, formatValueText: (value, formatted) => value === null ? 'No length' : `${formatted} meters` } };
+export const PrefixSuffix: Story = {
+  args: { label: 'Length', prefix: <Affix>≈</Affix>, suffix: () => <Affix>m</Affix>, formatValueText: (value, formatted) => value === null ? 'No length' : `${formatted} meters` },
+  parameters: { docs: { source: { language: 'tsx', code: `import { NumberField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Affix = styled.span({ color: vars.color.textMuted });
+
+export function LengthField() {
+  return (
+    <NumberField
+      label="Length"
+      defaultValue={5}
+      min={1}
+      max={500}
+      locale="en-US"
+      prefix={<Affix>≈</Affix>}
+      suffix={() => <Affix>m</Affix>}
+      formatValueText={(value, formatted) => value === null ? 'No length' : \`\${formatted} meters\`}
+    />
+  );
+}` } } },
+};
 export const Empty: Story = {
   args: { defaultValue: null, min: 0 },
   play: async ({ canvasElement, userEvent }) => {
