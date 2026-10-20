@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- `MentionInput` keeps suggestions beside the field when scrolling moves the caret out of view.
 - `ContextMenu` keeps separators visible when long menus scroll.
 - `CardStack` wraps long empty-state labels inside narrow panels, and its documentation examples fit phone screens.
 - `ActivityRings` keeps focused amounts and labels inside the ring tracks at every size, and its documentation examples fit narrow previews. Long content truncates in the dial and remains available in the legend.

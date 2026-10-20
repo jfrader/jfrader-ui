@@ -640,7 +640,20 @@ export function MentionInput({
       mirror.scrollLeft = input.scrollLeft;
       floating.refs.setPositionReference({
         contextElement: input,
-        getBoundingClientRect: () => caretRef.current?.getBoundingClientRect() ?? input.getBoundingClientRect(),
+        getBoundingClientRect: () => {
+          const field = input.getBoundingClientRect();
+          const caret = caretRef.current?.getBoundingClientRect();
+          if (!caret) return field;
+          const left = field.left + input.clientLeft;
+          const top = field.top + input.clientTop;
+          const height = Math.min(caret.height, input.clientHeight);
+          return new DOMRect(
+            Math.min(Math.max(caret.left, left), left + input.clientWidth),
+            Math.min(Math.max(caret.top, top), top + input.clientHeight - height),
+            caret.width,
+            height,
+          );
+        },
       });
     };
     measure();

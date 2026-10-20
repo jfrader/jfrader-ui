@@ -909,6 +909,42 @@ export const NarrowPanel: Story = {
   },
 };
 
+export const ScrolledSuggestions: Story = {
+  args: {
+    maxRows: 3,
+    defaultValue: { text: `${'Earlier message line\n'.repeat(24)}@`, mentions: [] },
+    open: true,
+  },
+  play: async (context) => {
+    await openPlay(context);
+    const input = context.canvas.getByRole('textbox') as HTMLTextAreaElement;
+    const body = within(input.ownerDocument.body);
+    const panel = body.getByRole('listbox').parentElement!;
+    input.scrollTop = 0;
+    fireEvent.scroll(input);
+    await new Promise<void>((resolve) => {
+      input.ownerDocument.defaultView!.requestAnimationFrame(() => {
+        input.ownerDocument.defaultView!.requestAnimationFrame(() => resolve());
+      });
+    });
+    await expect(input.scrollTop).toBe(0);
+    await waitFor(async () => {
+      const field = input.getBoundingClientRect();
+      const popup = panel.getBoundingClientRect();
+      await expect(popup.top - field.bottom).toBeLessThanOrEqual(9);
+      await expect(field.top - popup.bottom).toBeLessThanOrEqual(9);
+      await expect(popup.left).toBeGreaterThanOrEqual(7);
+      await expect(popup.right).toBeLessThanOrEqual(input.ownerDocument.documentElement.clientWidth - 7);
+    });
+    for (const option of body.getAllByRole('option')) {
+      await expect(option.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+    await context.userEvent.click(body.getByRole('option', { name: /Ada/ }));
+    await expect(input).toHaveValue(`${'Earlier message line\n'.repeat(24)}@Ada `);
+    await expect(input).toHaveFocus();
+  },
+};
+
 export const EditReconciliation: Story = {
   args: { defaultValue: TOKEN_VALUE },
   play: async ({ canvas, userEvent, args }) => {
