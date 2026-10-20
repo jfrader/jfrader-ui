@@ -48,7 +48,7 @@ function ArticleKickerRoot({ items, children, tone = 'accent', component, slots,
     </PresentationSlot>
   </ItemContext.Provider>;
 }
-ArticleKickerRoot.displayName = 'ArticleKicker';
+ArticleKickerRoot.displayName = 'Article.Kicker';
 
 /** Label an article topic or link to its coverage. */
 function ArticleKickerItem(allProps: ArticleKickerItemProps) {
@@ -66,6 +66,6 @@ function ArticleKickerItem(allProps: ArticleKickerItemProps) {
   }
   return <PresentationSlot {...props as ComponentPropsWithRef<'span'>} element="span" component={slots?.root ?? component ?? parent.slots?.item} slotProps={slotProps?.root} marker="article-kicker-item">{children}</PresentationSlot>;
 }
-ArticleKickerItem.displayName = 'ArticleKicker.Item';
+ArticleKickerItem.displayName = 'Article.Kicker.Item';
 /** Group topic labels and links above an article headline. */
 export const ArticleKicker = Object.assign(ArticleKickerRoot, { Item: ArticleKickerItem });

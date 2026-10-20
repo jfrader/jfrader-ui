@@ -4,7 +4,7 @@ export const designAuditFamilies = [
   'photo-grid', 'control-center', 'share-access', 'voice-recorder', 'booking-pill',
   'logo-orbit', 'radial-menu', 'action-button', 'action-morph',
   'multi-region-failover', 'payment-flow', 'card-stack',
-  'article-card', 'article-list', 'article-kicker', 'article-meta',
+  'article', 'article-section', 'article-list', 'article-kicker', 'article-meta',
 ] as const;
 
 const colorProperties = ['color', 'background-color', 'border-top-color', 'border-right-color',

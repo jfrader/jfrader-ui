@@ -63,19 +63,19 @@ const cellStyle = css({ minInlineSize: 0, padding: vars.space[4], overflowWrap: 
 function ArticleBodyRoot({ component, slots, slotProps, ...props }: ArticleBodyProps) {
   return <PresentationSlot {...props} element="div" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-body" styles={[proseTypography, bodyStyle]} />;
 }
-ArticleBodyRoot.displayName = 'ArticleBody';
+ArticleBodyRoot.displayName = 'Article.Body';
 /** Render a paragraph with an optional drop cap. */
 function Paragraph({ variant = 'standard', component, slots, slotProps, ...props }: ArticleBodyParagraphProps) {
   return <PresentationSlot {...props} element="p" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-body-paragraph" data-variant={variant} styles={[paragraphStyle, variant === 'drop-cap' && dropCapStyle]} />;
 }
-Paragraph.displayName = 'ArticleBody.Paragraph';
+Paragraph.displayName = 'Article.Body.Paragraph';
 /** Introduce a section of the article. */
 function Heading({ level = 2, component, slots, slotProps, children, ...props }: ArticleBodyHeadingProps) {
   if (!isRenderable(children) || children === '') return null;
   const Root = slots?.root ?? component;
   return <PresentationSlot {...props} element={`h${level}`} component={Root} slotProps={slotProps?.root} marker="article-body-heading" styles={headingStyle} {...(Root ? { level } : {})}>{children}</PresentationSlot>;
 }
-Heading.displayName = 'ArticleBody.Heading';
+Heading.displayName = 'Article.Body.Heading';
 /** Set aside supporting facts with an optional title and list. */
 function Fact({ title, level, items, children, component, slots, slotProps, ...props }: ArticleBodyFactProps) {
   return <PresentationSlot {...props} element="aside" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-body-fact" styles={factStyle}>
@@ -83,7 +83,7 @@ function Fact({ title, level, items, children, component, slots, slotProps, ...p
     {items ? items.length > 0 && <PresentationSlot element="ul" component={slots?.list} slotProps={slotProps?.list} marker="article-body-fact-list" styles={listStyle}>{items.map(({ id, content }) => <PresentationSlot key={id} element="li" component={slots?.item} slotProps={repeatedTemplate(slotProps?.item)} marker="article-body-fact-item" styles={itemStyle}>{content}</PresentationSlot>)}</PresentationSlot> : children}
   </PresentationSlot>;
 }
-Fact.displayName = 'ArticleBody.Fact';
+Fact.displayName = 'Article.Body.Fact';
 /** Present a quotation with its speaker and attribution. */
 function Quote({ children, speaker, attribution, component, slots, slotProps, ...props }: ArticleBodyQuoteProps) {
   if (!isRenderable(children)) return null;
@@ -93,14 +93,14 @@ function Quote({ children, speaker, attribution, component, slots, slotProps, ..
     {isRenderable(attribution) && <PresentationSlot element="footer" component={slots?.attribution} slotProps={slotProps?.attribution} marker="article-body-quote-attribution" styles={[articleLabelStyle, attributionStyle]}>{attribution}</PresentationSlot>}
   </PresentationSlot>;
 }
-Quote.displayName = 'ArticleBody.Quote';
+Quote.displayName = 'Article.Body.Quote';
 /** Arrange two article elements in a responsive split layout. */
 function Split({ children, component, slots, slotProps, ...props }: ArticleBodySplitProps) {
   const cells = Children.toArray(children);
-  if (cells.length !== 2 || cells.some((child) => !isValidElement(child))) throw new Error('ArticleBody.Split requires exactly two elements.');
+  if (cells.length !== 2 || cells.some((child) => !isValidElement(child))) throw new Error('Article.Body.Split requires exactly two elements.');
   return <PresentationSlot {...props} element="div" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-body-split" styles={splitStyle}>{children}</PresentationSlot>;
 }
-Split.displayName = 'ArticleBody.Split';
+Split.displayName = 'Article.Body.Split';
 /** Hold one side of a split with an optional label. */
 function Cell({ label, children, component, slots, slotProps, ...props }: ArticleBodyCellProps) {
   return <PresentationSlot {...props} element="div" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-body-cell" styles={cellStyle}>
@@ -108,6 +108,6 @@ function Cell({ label, children, component, slots, slotProps, ...props }: Articl
     <PresentationSlot element="div" component={slots?.content} slotProps={slotProps?.content} marker="article-body-cell-content">{children}</PresentationSlot>
   </PresentationSlot>;
 }
-Cell.displayName = 'ArticleBody.Cell';
+Cell.displayName = 'Article.Body.Cell';
 /** Compose article prose, headings, facts and quotations. */
 export const ArticleBody = Object.assign(ArticleBodyRoot, { Paragraph, Heading, Fact, Quote, Split, Cell });
