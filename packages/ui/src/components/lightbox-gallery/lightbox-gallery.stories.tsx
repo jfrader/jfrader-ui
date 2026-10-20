@@ -814,6 +814,7 @@ export const MultipleInstances: Story = {
   },
 };
 export const NativeLifecycle: Story = {
+  tags: ['!autodocs'],
   args: { slotProps: { viewer: { onCancel: fn(), onClose: fn() } } },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     await userEvent.click(tiles(canvasElement)[1]!);
