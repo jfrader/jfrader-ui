@@ -5,6 +5,15 @@ import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Pagination, type PaginationProps } from './index';
+import { Card } from '../card';
+
+const paginationSource = `import { useState } from 'react';
+import { Pagination } from '@jfrader/ui';
+
+function ResultsPages() {
+  const [page, setPage] = useState(5);
+  return <Pagination page={page} totalPages={20} locale="en-US" onPageChange={setPage} />;
+}`;
 
 const stackStyle = {
   display: 'grid',
@@ -18,20 +27,27 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Move between pages of results.' },
-      usage: `### Values
-- Pages are one-based. Pair \`page\` with \`onPageChange\` and update \`page\` to accept navigation. Activating the current page does not call the callback.
-- \`totalPages\` and \`page\` are floored, with negative or non-finite counts treated as zero. The displayed page is clamped to the available range. With zero pages, no page numbers render and both navigation buttons are disabled.
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Page ranges and ellipses', stories: ['SmallTotal', 'PageRange'] },
+        { title: 'Sizes', stories: ['NarrowLayout'] },
+        { title: 'Labels', stories: ['TranslatedLabels', 'LocalizedNumbers'] },
+        { title: 'Controlled navigation', stories: ['Controlled'] },
+        { title: 'Composition', stories: ['ResultsCard'] },
+        { title: 'Keyboard', stories: ['Keyboard'] },
+      ],
+      usage: `### When to use
+Use pagination for a finite set of results readers need to revisit by page. Load and render the requested results in your application, and keep the current page aligned with those results.
 
-### Windowing
-- \`siblingCount\` defaults to \`1\` neighbour on each side. It is floored and clamped to 0–50. Set it to change how many page numbers surround the current page.
-- The first and last pages remain visible. An ellipsis replaces at least two hidden pages and cannot be activated; choose a displayed page or use Previous and Next.
+### Constraints
+Page numbers start at one. Ellipses are not controls; choose a displayed page or use Previous and Next. With no pages, there are no numbered controls and both navigation buttons are disabled. There is one target size; reduce the number of visible neighbours rather than shrinking buttons in a narrow layout.
 
 ### Keyboard
 - Press Tab to reach each enabled button, then Enter or Space to request a page. There is no arrow-key navigation between buttons.
 - Previous and Next are disabled at the boundaries. If an accepted request disables the focused navigation button, focus moves to the current page button.
 
-### Localization
-- Use \`locale\` to format page numbers and \`label\`, \`previousLabel\` and \`nextLabel\` to translate their names. The names default to "Pagination", "Previous page" and "Next page".`,
+### Accessibility
+Give each pagination landmark a distinct name when a page has more than one. Translate navigation names as well as page numerals.`,
     },
   },
   args: { page: 5, totalPages: 20, locale: 'en-US' },
@@ -75,11 +91,9 @@ const currentPage = (nav: HTMLElement) =>
   Array.from(nav.querySelectorAll('[aria-current]'), (node) => [node.textContent, node.getAttribute('aria-current')]);
 
 export const Default: Story = {
+  name: 'Browse result pages',
   args: { onPageChange: fn() },
-  parameters: { docs: { source: { language: 'tsx', code: `function ResultsPages() {
-  const [page, setPage] = useState(5);
-  return <Pagination page={page} totalPages={20} locale="en-US" onPageChange={setPage} />;
-}` } } },
+  parameters: { docs: { description: { story: 'Choose a page or move through results with Previous and Next.' }, source: { language: 'tsx', code: paginationSource } } },
   render: (args) => <ControlledPagination {...args} />,
   play: async ({ canvasElement }) => {
     const nav = getNav(canvasElement);
@@ -153,6 +167,20 @@ export const Boundaries: Story = {
 };
 
 export const Controlled: Story = {
+  name: 'Accept or hold a page request',
+  parameters: { docs: { description: { story: 'Compare parent-updated navigation with a second pagination held on page five.' }, source: { language: 'tsx', code: `import { useState } from 'react';
+import { Pagination, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({ display: 'grid', justifyItems: 'start', gap: vars.space[4] });
+
+function ResultsPages() {
+  const [page, setPage] = useState(5);
+  return <Stack>
+    <Pagination page={page} totalPages={20} locale="en-US" onPageChange={setPage} />
+    <Pagination page={5} totalPages={20} locale="en-US" label="Locked pagination" />
+  </Stack>;
+}` } } },
   args: { onPageChange: fn() },
   render: (args) => (
     <div style={stackStyle}>
@@ -197,6 +225,10 @@ export const Controlled: Story = {
 };
 
 export const SmallTotal: Story = {
+  name: 'Show every page',
+  parameters: { docs: { description: { story: 'Keep all five page numbers visible when the result set is short.' }, source: { language: 'tsx', code: `import { Pagination } from '@jfrader/ui';
+
+<Pagination page={3} totalPages={5} locale="en-US" />` } } },
   args: { page: 3, totalPages: 5 },
   play: async ({ canvasElement }) => {
     const nav = getNav(canvasElement);
@@ -321,6 +353,14 @@ export const InvalidAndEmptyInputs: Story = {
 };
 
 export const LocalizedNumbers: Story = {
+  name: 'Localized page numerals',
+  parameters: { docs: { description: { story: 'Format page numbers with Arabic-Indic numerals.' }, source: { language: 'tsx', code: `import { useState } from 'react';
+import { Pagination } from '@jfrader/ui';
+
+function ResultsPages() {
+  const [page, setPage] = useState(5);
+  return <Pagination page={page} totalPages={20} locale="ar-EG-u-nu-arab" onPageChange={setPage} />;
+}` } } },
   args: { locale: 'ar-EG-u-nu-arab', onPageChange: fn() },
   render: (args) => <ControlledPagination {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -342,6 +382,8 @@ export const LocalizedNumbers: Story = {
 };
 
 export const Keyboard: Story = {
+  name: 'Navigate with Tab and Enter',
+  parameters: { docs: { description: { story: 'Tab between enabled buttons and press Enter or Space to change page.' }, source: { language: 'tsx', code: paginationSource } } },
   args: { onPageChange: fn() },
   render: (args) => <ControlledPagination {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -379,6 +421,75 @@ export const Keyboard: Story = {
     await expect(args.onPageChange).toHaveBeenLastCalledWith(5);
     await expect(currentPage(nav)).toEqual([['5', 'page']]);
   },
+};
+
+export const PageRange: Story = {
+  name: 'Wider page range',
+  args: { page: 10, siblingCount: 2 },
+  render: (args) => <ControlledPagination {...args} />,
+  parameters: { docs: {
+    description: { story: 'Show two neighbours on each side while ellipses stand for hidden pages.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Pagination } from '@jfrader/ui';
+
+function ResultsPages() {
+  const [page, setPage] = useState(10);
+  return <Pagination page={page} totalPages={20} siblingCount={2} locale="en-US" onPageChange={setPage} />;
+}` },
+  } },
+};
+
+export const NarrowLayout: Story = {
+  name: 'Narrow result footer',
+  args: { siblingCount: 0, sx: { inlineSize: '16rem', maxInlineSize: '100%' } },
+  render: (args) => <ControlledPagination {...args} />,
+  parameters: { docs: {
+    description: { story: 'Keep full-size controls in a narrow footer by omitting neighbouring pages.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Pagination } from '@jfrader/ui';
+
+function ResultsPages() {
+  const [page, setPage] = useState(5);
+  return <Pagination page={page} totalPages={20} siblingCount={0} locale="en-US"
+    onPageChange={setPage} sx={{ inlineSize: '16rem', maxInlineSize: '100%' }} />;
+}` },
+  } },
+};
+
+export const TranslatedLabels: Story = {
+  name: 'Translated navigation names',
+  args: { locale: 'es-ES', label: 'Páginas de resultados', previousLabel: 'Página anterior', nextLabel: 'Página siguiente' },
+  render: (args) => <ControlledPagination {...args} />,
+  parameters: { docs: {
+    description: { story: 'Name the navigation and its previous and next controls in Spanish.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Pagination } from '@jfrader/ui';
+
+function ResultsPages() {
+  const [page, setPage] = useState(5);
+  return <Pagination page={page} totalPages={20} onPageChange={setPage} locale="es-ES"
+    label="Páginas de resultados" previousLabel="Página anterior" nextLabel="Página siguiente" />;
+}` },
+  } },
+};
+
+export const ResultsCard: Story = {
+  name: 'Pagination in a results card',
+  render: (args) => (
+    <Card title="Search results" content="100 matching projects" footer={<ControlledPagination {...args} label="Project result pages" />} />
+  ),
+  parameters: { docs: {
+    description: { story: 'Place page navigation after a result summary in a card footer.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Card, Pagination } from '@jfrader/ui';
+
+function ProjectResults() {
+  const [page, setPage] = useState(5);
+  return <Card title="Search results" content="100 matching projects" footer={
+    <Pagination page={page} totalPages={20} locale="en-US" onPageChange={setPage} label="Project result pages" />
+  } />;
+}` },
+  } },
 };
 
 export const LightTheme: Story = {
