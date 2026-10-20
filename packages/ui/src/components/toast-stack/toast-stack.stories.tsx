@@ -481,6 +481,86 @@ export const LoadingUpdate: Story = {
     await expect(region.querySelector('[data-ui="toast"]')).toBe(item);
   },
 };
+
+export const Loading: Story = {
+  render: (args) => <Harness {...args} initial={[{ title: 'Saving project', loading: true }]} />,
+  play: async ({ canvasElement }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    const spinner = region.querySelector<HTMLElement>('[data-ui="spinner"]')!;
+    const title = within(region).getByText('Saving project');
+    const dismiss = within(region).getByRole('button', { name: 'Dismiss' });
+    const spinnerRect = spinner.getBoundingClientRect();
+    const titleRect = title.getBoundingClientRect();
+    await expect(spinnerRect.top).toBeLessThan(titleRect.bottom);
+    await expect(spinnerRect.bottom).toBeGreaterThan(titleRect.top);
+    await expect(spinnerRect.right).toBeLessThanOrEqual(titleRect.left);
+    await expect(dismiss.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
+    await expect(dismiss.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+  },
+};
+
+export const CollapsedMixedHeights: Story = {
+  render: (args) => <Harness {...args} initial={[
+    { title: 'Export ready', description: 'The workspace export includes documents, comments and attachments. '.repeat(8), duration: null },
+    { title: 'Message sent', duration: null },
+  ]} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    await userEvent.hover(region);
+    await within(region).findByText('Export ready');
+    await settled(region);
+    await userEvent.unhover(region);
+    await settled(region);
+    const cards = region.querySelectorAll<HTMLElement>('[data-ui="toast"]');
+    const toggle = within(region).getByRole('button', { name: 'Expand notifications' });
+    await expect(cards[1]!.getBoundingClientRect().height).toBe(cards[0]!.getBoundingClientRect().height);
+    await expect(cards[1]!.getBoundingClientRect().top).toBeGreaterThanOrEqual(toggle.getBoundingClientRect().bottom);
+    await expect(cards[1]).toHaveAttribute('inert');
+  },
+};
+
+export const LongLabels: Story = {
+  args: {
+    expandLabel: 'Expand notifications for all your international collaboration workspaces',
+    collapseLabel: 'Collapse notifications for all your international collaboration workspaces',
+    sx: { inlineSize: '18rem' },
+  },
+  render: (args) => <Harness {...args} initial={[
+    { title: 'Export ready', duration: null },
+    { title: 'Upload failed', duration: null, action: {
+      label: 'Retry uploading the original document from your device',
+      onClick: (event) => event.preventDefault(),
+    } },
+  ]} />,
+  play: async ({ canvasElement, userEvent, args }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    for (const expanded of [false, true]) {
+      await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth);
+      for (const button of within(region).getAllByRole('button')) {
+        await expect(button.scrollWidth).toBeLessThanOrEqual(button.clientWidth);
+        await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+      }
+      if (!expanded) {
+        await userEvent.click(within(region).getByRole('button', { name: args.expandLabel }));
+        await settled(region);
+      }
+    }
+    await userEvent.tab();
+    await userEvent.tab({ shift: true });
+    const toggle = within(region).getByRole('button', { name: args.collapseLabel });
+    await expect(canvasElement.ownerDocument.activeElement).toBe(toggle);
+    await expect(getComputedStyle(toggle).outlineStyle).not.toBe('none');
+    const focusSpace = parseFloat(getComputedStyle(toggle).outlineWidth) + parseFloat(getComputedStyle(toggle).outlineOffset);
+    const bounds = region.getBoundingClientRect();
+    const target = toggle.getBoundingClientRect();
+    await expect(target.left - focusSpace).toBeGreaterThanOrEqual(bounds.left);
+    await expect(target.right + focusSpace).toBeLessThanOrEqual(bounds.right);
+    await expect(target.top - focusSpace).toBeGreaterThanOrEqual(bounds.top);
+  },
+};
 export const UndoPrevented: Story = {
   name: 'Keep an action message open',
   parameters: { docs: {
@@ -709,6 +789,7 @@ export const ScrollableQueue: Story = {
     const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
     await settled(region);
     await expect(region.scrollHeight).toBeGreaterThan(region.clientHeight);
+    await expect(getComputedStyle(region).overscrollBehaviorY).toBe('contain');
     const newest = region.querySelector<HTMLElement>('[data-ui="toast"]')!;
     await waitFor(async () => {
       await expect(newest.getBoundingClientRect().bottom).toBeLessThanOrEqual(

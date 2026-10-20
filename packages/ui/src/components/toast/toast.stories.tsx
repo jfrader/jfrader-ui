@@ -543,6 +543,44 @@ export const LongContent: Story = {
   },
 };
 
+function TallQueue() {
+  const { toast } = useToast();
+  const initialized = useRef(false);
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+    for (const title of ['First report', 'Second report', 'Third report', 'Latest report']) {
+      toast({ title, description: 'The export includes all workspace documents. '.repeat(30), duration: null });
+    }
+  }, [toast]);
+  return null;
+}
+
+export const ScrollableLongQueue: Story = {
+  tags: ['!autodocs'],
+  args: { viewport: 'default' },
+  render: (args) => <Toast {...args}><TallQueue /></Toast>,
+  play: async ({ canvasElement }) => {
+    const document = canvasElement.ownerDocument;
+    await bodyOf(canvasElement).findByText('Latest report');
+    const viewport = document.querySelector<HTMLElement>('[data-ui="toast-viewport"]')!;
+    const cards = viewport.querySelectorAll<HTMLElement>('[data-ui="toast"]');
+    await waitFor(async () => {
+      await expect(viewport.scrollHeight).toBeGreaterThan(viewport.clientHeight);
+      await expect(cards[3]!.getBoundingClientRect().bottom).toBeLessThanOrEqual(viewport.getBoundingClientRect().bottom + 1);
+    });
+    await expect(viewport.getBoundingClientRect().top).toBeGreaterThanOrEqual(0);
+    await expect(viewport.getBoundingClientRect().bottom).toBeLessThanOrEqual(document.documentElement.clientHeight);
+    await expect(getComputedStyle(viewport).overscrollBehaviorY).toBe('contain');
+    await expect(getComputedStyle(viewport).pointerEvents).toBe('auto');
+    viewport.scrollTop = 0;
+    await expect(cards[0]!.getBoundingClientRect().top).toBeGreaterThanOrEqual(viewport.getBoundingClientRect().top - 1);
+    const dismiss = within(cards[0]!).getByRole('button', { name: 'Dismiss' });
+    dismiss.focus();
+    await expect(document.activeElement).toBe(dismiss);
+  },
+};
+
 export const PauseOnHoverAndFocus: Story = {
   render: (args) => <ToastHarness {...args} options={{ duration: 400 }} />,
   play: async ({ canvasElement }) => {
