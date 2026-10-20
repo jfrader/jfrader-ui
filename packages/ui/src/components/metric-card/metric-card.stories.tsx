@@ -370,6 +370,13 @@ export const ExternalAria: Story = {
   },
 };
 export const RefTarget: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useRef } from 'react';
+import { MetricCard } from '@jfrader/ui';
+
+export function Revenue() {
+  const cardRef = useRef<HTMLDivElement>(null);
+  return <MetricCard ref={cardRef} label="Revenue" value={42000} locale="en-GB" description="Last 30 days" />;
+}` } } },
   args: { ref: fn() },
   play: async ({ canvasElement, args }) => {
     await expect(args.ref).toHaveBeenCalledWith(roots(canvasElement)[0]);

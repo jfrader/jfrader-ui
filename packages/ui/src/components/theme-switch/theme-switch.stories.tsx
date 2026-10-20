@@ -49,6 +49,35 @@ function ReplacementDarkIcon(props: ComponentPropsWithRef<'span'>) {
 }
 
 export const IconSlots: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useRef, type ComponentPropsWithRef } from 'react';
+import { ThemeSwitch } from '@jfrader/ui';
+
+function IconFrame(props: ComponentPropsWithRef<'label'>) {
+  return <label {...props} />;
+}
+function LightIcon(props: ComponentPropsWithRef<'span'>) {
+  return <i {...props} />;
+}
+function DarkIcon(props: ComponentPropsWithRef<'span'>) {
+  return <i {...props} />;
+}
+
+export function Appearance() {
+  const frameRef = useRef<HTMLLabelElement>(null);
+  const lightRef = useRef<HTMLSpanElement>(null);
+  const darkRef = useRef<HTMLSpanElement>(null);
+  return (
+    <ThemeSwitch
+      label="Dark appearance"
+      slots={{ iconFrame: IconFrame, lightIcon: LightIcon, darkIcon: DarkIcon }}
+      slotProps={{
+        iconFrame: { className: 'custom-icon-frame', title: 'Theme icon', ref: frameRef },
+        lightIcon: { className: 'custom-light-icon', title: 'Light icon', ref: lightRef },
+        darkIcon: { className: 'custom-dark-icon', title: 'Dark icon', ref: darkRef },
+      }}
+    />
+  );
+}` } } },
   args: {
     slots: { iconFrame: ReplacementIconFrame, lightIcon: ReplacementLightIcon, darkIcon: ReplacementDarkIcon },
     slotProps: {
@@ -283,6 +312,13 @@ export const ExternalUpdate: Story = {
   },
 };
 export const Keyboard: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useRef } from 'react';
+import { ThemeSwitch } from '@jfrader/ui';
+
+export function Appearance() {
+  const inputRef = useRef<HTMLInputElement>(null);
+  return <ThemeSwitch ref={inputRef} label="Dark appearance" />;
+}` } } },
   args: { onValueChange: fn(), onClick: fn(), ref: fn() },
   play: async ({ canvas, args, userEvent }) => {
     const input = canvas.getByRole('switch');

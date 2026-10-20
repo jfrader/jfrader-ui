@@ -414,6 +414,15 @@ export const RTL: Story = {
 export const ForcedColors: Story = { args: { defaultValue: 'Ada' }, parameters: { docs: { description: { story: 'Enable forced colors in the browser (see docs/qa-gates.md). This check is manual.' } } } };
 export const ReducedMotion: Story = { args: { defaultValue: 'Ada' }, parameters: { docs: { description: { story: 'Enable prefers-reduced-motion: reduce in the browser (see docs/qa-gates.md). This check is manual.' } } } };
 export const CustomIcons: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { SearchField } from '@jfrader/ui';
+
+<SearchField
+  label="Search members"
+  placeholder="Name or email"
+  defaultValue="Ada"
+  searchIcon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>}
+  clearIcon={<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 12h12" /></svg>}
+/>` } } },
   args: { defaultValue: 'Ada', searchIcon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="10" cy="10" r="6" /><path d="m15 15 6 6" /></svg>, clearIcon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 12h12" /></svg> },
 };
 
@@ -466,6 +475,14 @@ export const SlotCustomization: Story = {
 
 /** Use component as shorthand for the wrapper's root slot. */
 export const ComponentRoot: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { SearchField } from '@jfrader/ui';
+
+function SearchRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+
+<SearchField component={SearchRoot} label="Search members" placeholder="Name or email" />` } } },
   args: { component: FieldSugarRoot },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-slot-root="component"]')).not.toBeNull();

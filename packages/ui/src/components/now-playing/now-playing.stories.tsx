@@ -641,6 +641,19 @@ export const ControlledRejected: Story = {
   },
 };
 export const RejectedExpansion: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { NowPlaying } from '@jfrader/ui';
+
+const artwork = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300"><rect width="300" height="300" fill="currentColor"/><circle cx="150" cy="150" r="100" fill="none" stroke="white" stroke-width="2"/><circle cx="150" cy="150" r="60" fill="none" stroke="white" stroke-width="2"/><circle cx="150" cy="150" r="12" fill="white"/></svg>');
+
+<NowPlaying
+  open={false}
+  locale="en-GB"
+  seekStep={5}
+  tracks={[
+    { id: 'first', title: 'Night Signal', artist: 'Studio Session', duration: 180, artwork },
+    { id: 'second', title: 'Open Water', artist: 'Field Notes', duration: 240, artwork, artworkAlt: 'Concentric grooves on a record' },
+  ]}
+/>` } } },
   args: { open: false },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();

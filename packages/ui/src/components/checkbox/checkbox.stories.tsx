@@ -18,6 +18,14 @@ const stackStyle = {
 } satisfies CSSProperties;
 
 export const SlotReplacement: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { Checkbox } from '@jfrader/ui';
+
+function CheckboxControl(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-slot="checkbox-control" />;
+}
+
+<Checkbox label="Email me updates" size="md" slots={{ control: CheckboxControl }} />` } } },
   args: { slots: { control: SlotControl } },
   play: async ({ canvasElement }) => {
     const replacement = canvasElement.querySelector('[data-slot="checkbox-control"]')!;

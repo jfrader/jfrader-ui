@@ -287,6 +287,14 @@ export const SlotCustomization: Story = {
 
 /** Use component as shorthand for the wrapper's root slot. */
 export const ComponentRoot: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { TextField } from '@jfrader/ui';
+
+function EmailRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+
+<TextField component={EmailRoot} label="Email" placeholder="you@example.com" size="md" />` } } },
   args: { component: FieldSugarRoot },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-slot-root="component"]')).not.toBeNull();

@@ -135,6 +135,32 @@ export const EmptyText: Story = {
 };
 export const ZeroString: Story = { args: { text: '0' } };
 export const CustomSlots: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { TextReveal, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Heading = styled.h2({ margin: 0, fontSize: vars.textSize['3xl'], fontWeight: vars.fontWeight.semibold, lineHeight: vars.lineHeight.tight });
+
+function RevealRoot(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-replacement="root" />;
+}
+function RevealWord(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-replacement="word" />;
+}
+
+<Heading>
+  <TextReveal
+    text={'Build better\\ninterfaces'}
+    component={RevealRoot}
+    slots={{ word: RevealWord }}
+    slotProps={{
+      root: { title: 'Hero' },
+      visual: { 'data-ui': 'hero-visual text-reveal-visual hero-visual' },
+      word: { className: 'hero-word', 'data-ui': 'hero-word text-reveal-word hero-word' },
+    }}
+    sx={{ color: vars.color.accentText }}
+  />
+</Heading>` } } },
   args: {
     component: Root,
     slots: { word: Word },

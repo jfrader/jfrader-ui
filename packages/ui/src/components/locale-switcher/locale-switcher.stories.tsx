@@ -33,6 +33,34 @@ const ReplacementOption: NonNullable<LocaleSwitcherSlots['option']> = (props) =>
 };
 
 export const ReplacementSlots: StoryObj<typeof LocaleSwitcher> = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { LocaleSwitcher, type LocaleSwitcherSlots } from '@jfrader/ui';
+
+function LanguageTrigger(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} />;
+}
+function LanguageContent(props: ComponentPropsWithRef<'div'>) {
+  return <section {...props} />;
+}
+const LanguageOption: NonNullable<LocaleSwitcherSlots['option']> = (props) => <a {...props} />;
+
+<LocaleSwitcher
+  value="en"
+  triggerLabel="Change language"
+  label="Language"
+  options={[
+    { value: 'en', label: 'English', lang: 'en', href: '/en/pricing' },
+    { value: 'es', label: 'Español', lang: 'es', href: '/es/precios' },
+    { value: 'fr', label: 'Français', lang: 'fr', href: '/fr/tarifs' },
+    { value: 'ar', label: 'العربية', lang: 'ar', href: '/ar/pricing' },
+  ]}
+  slots={{ trigger: LanguageTrigger, content: LanguageContent, option: LanguageOption }}
+  slotProps={{
+    trigger: { className: 'replacement-trigger' },
+    content: { className: 'replacement-content' },
+    option: { className: 'replacement-option' },
+  }}
+/>` } } },
   args: {
     slots: { trigger: ReplacementTrigger, content: ReplacementContent, option: ReplacementOption },
     slotProps: {

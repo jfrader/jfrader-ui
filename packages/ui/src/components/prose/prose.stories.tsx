@@ -68,6 +68,60 @@ export const Default: Story = {
     await expect(getComputedStyle(link).outlineStyle).toBe('solid');
   },
 };
-export const Small: Story = { args: { size: 'sm' } };
-export const Large: Story = { args: { size: 'lg' } };
-export const LightTheme: Story = { decorators: [withLightTheme] };
+export const Small: Story = {
+  args: { size: 'sm' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Prose } from '@jfrader/ui';
+
+<Prose size="sm">
+  <h2>Field notes</h2><p>A record of the expedition.</p>
+  <h3>Equipment</h3><ul><li>Compass</li><li>Notebook</li></ul>
+  <ol><li>Check supplies</li><li>Plan the route</li></ol>
+  <blockquote>Leave the trail as you found it.</blockquote>
+  <p>Run <code>collect()</code> to begin.</p>
+  <pre><code>{'const distance = 12;\\nrecord(distance);'}</code></pre>
+  <table>
+    <caption>Route distances</caption>
+    <thead><tr><th scope="col">Route</th><th scope="col">Distance</th></tr></thead>
+    <tbody><tr><td>North</td><td>12 km</td></tr></tbody>
+  </table>
+  <p><a href="#field-notes">Read the field notes</a></p>
+</Prose>` } } },
+};
+export const Large: Story = {
+  args: { size: 'lg' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Prose } from '@jfrader/ui';
+
+<Prose size="lg">
+  <h2>Field notes</h2><p>A record of the expedition.</p>
+  <h3>Equipment</h3><ul><li>Compass</li><li>Notebook</li></ul>
+  <ol><li>Check supplies</li><li>Plan the route</li></ol>
+  <blockquote>Leave the trail as you found it.</blockquote>
+  <p>Run <code>collect()</code> to begin.</p>
+  <pre><code>{'const distance = 12;\\nrecord(distance);'}</code></pre>
+  <table>
+    <caption>Route distances</caption>
+    <thead><tr><th scope="col">Route</th><th scope="col">Distance</th></tr></thead>
+    <tbody><tr><td>North</td><td>12 km</td></tr></tbody>
+  </table>
+  <p><a href="#field-notes">Read the field notes</a></p>
+</Prose>` } } },
+};
+export const LightTheme: Story = {
+  decorators: [withLightTheme],
+  parameters: { docs: { source: { language: 'tsx', code: `import { Prose } from '@jfrader/ui';
+
+<Prose>
+  <h2>Field notes</h2><p>A record of the expedition.</p>
+  <h3>Equipment</h3><ul><li>Compass</li><li>Notebook</li></ul>
+  <ol><li>Check supplies</li><li>Plan the route</li></ol>
+  <blockquote>Leave the trail as you found it.</blockquote>
+  <p>Run <code>collect()</code> to begin.</p>
+  <pre><code>{'const distance = 12;\\nrecord(distance);'}</code></pre>
+  <table>
+    <caption>Route distances</caption>
+    <thead><tr><th scope="col">Route</th><th scope="col">Distance</th></tr></thead>
+    <tbody><tr><td>North</td><td>12 km</td></tr></tbody>
+  </table>
+  <p><a href="#field-notes">Read the field notes</a></p>
+</Prose>` } } },
+};

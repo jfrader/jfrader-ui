@@ -80,6 +80,11 @@ export const FiniteBudget: Story = {
   },
 };
 export const InvalidTiming: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { TextShimmer } from '@jfrader/ui';
+
+<TextShimmer durationMs={Number.NaN} maxDurationMs={Infinity}>
+  Generating summary
+</TextShimmer>` } } },
   args: { durationMs: NaN, maxDurationMs: Infinity },
   play: async ({ canvasElement }) => {
     const text = canvasElement.querySelector<HTMLElement>('[data-ui="text-shimmer-text"]')!;

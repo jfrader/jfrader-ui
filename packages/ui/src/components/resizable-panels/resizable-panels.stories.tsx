@@ -727,6 +727,28 @@ export const Controlled: Story = {
 };
 
 export const ControlledReject: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ResizablePanels, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Frame = styled.div({ inlineSize: '24rem', maxInlineSize: '100%', blockSize: '12rem' });
+const PaneContent = styled.div({ display: 'grid', alignContent: 'start', gap: vars.space[2], padding: vars.space[3] });
+const List = styled.ul({ margin: 0, paddingInlineStart: vars.space[4] });
+const Text = styled.p({ margin: 0 });
+
+export function Mail() {
+  return (
+    <Frame>
+      <ResizablePanels aria-label="Mail" locale="en-US" value={[30, 70]}>
+        <ResizablePanels.Panel value="folders" aria-label="Folders" minSize={96} collapsible>
+          <PaneContent><List><li>Inbox</li><li>Archive</li></List></PaneContent>
+        </ResizablePanels.Panel>
+        <ResizablePanels.Panel value="messages" aria-label="Messages">
+          <PaneContent><Text>Select a conversation</Text></PaneContent>
+        </ResizablePanels.Panel>
+      </ResizablePanels>
+    </Frame>
+  );
+}` } } },
   args: { value: [30, 70], defaultValue: undefined },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const root = rootOf(canvasElement);
@@ -802,6 +824,28 @@ export const KeyboardNavigation: Story = {
 };
 
 export const RTL: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ResizablePanels, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Frame = styled.div({ inlineSize: '24rem', maxInlineSize: '100%', blockSize: '12rem' });
+const PaneContent = styled.div({ display: 'grid', alignContent: 'start', gap: vars.space[2], padding: vars.space[3] });
+const List = styled.ul({ margin: 0, paddingInlineStart: vars.space[4] });
+const Text = styled.p({ margin: 0 });
+
+export function Mail() {
+  return (
+    <Frame>
+      <ResizablePanels aria-label="Mail" locale="en-US" dir="rtl" defaultValue={[50, 50]}>
+        <ResizablePanels.Panel value="folders" aria-label="Folders" minSize={96} collapsible>
+          <PaneContent><List><li>Inbox</li><li>Archive</li></List></PaneContent>
+        </ResizablePanels.Panel>
+        <ResizablePanels.Panel value="messages" aria-label="Messages">
+          <PaneContent><Text>Select a conversation</Text></PaneContent>
+        </ResizablePanels.Panel>
+      </ResizablePanels>
+    </Frame>
+  );
+}` } } },
   args: { dir: 'rtl', defaultValue: [50, 50] },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const root = rootOf(canvasElement);
@@ -905,6 +949,28 @@ export const PointerDrag: Story = {
 };
 
 export const FlickCollapse: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ResizablePanels, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Frame = styled.div({ inlineSize: '24rem', maxInlineSize: '100%', blockSize: '12rem' });
+const PaneContent = styled.div({ display: 'grid', alignContent: 'start', gap: vars.space[2], padding: vars.space[3] });
+const List = styled.ul({ margin: 0, paddingInlineStart: vars.space[4] });
+const Text = styled.p({ margin: 0 });
+
+export function Mail() {
+  return (
+    <Frame>
+      <ResizablePanels aria-label="Mail" locale="en-US" defaultValue={[40, 60]}>
+        <ResizablePanels.Panel value="folders" aria-label="Folders" minSize={96} collapsible>
+          <PaneContent><List><li>Inbox</li><li>Archive</li></List></PaneContent>
+        </ResizablePanels.Panel>
+        <ResizablePanels.Panel value="messages" aria-label="Messages">
+          <PaneContent><Text>Select a conversation</Text></PaneContent>
+        </ResizablePanels.Panel>
+      </ResizablePanels>
+    </Frame>
+  );
+}` } } },
   args: { defaultValue: [40, 60] },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const root = rootOf(canvasElement);

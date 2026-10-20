@@ -57,6 +57,9 @@ function ShortcutHints() {
 ShortcutHints.displayName = 'ShortcutHints';
 
 export const Default: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Kbd } from '@jfrader/ui';
+
+<Kbd>Esc</Kbd>` } } },
   play: async ({ canvasElement }) => {
     const key = within(canvasElement).getByText('Esc');
     await expect(key.tagName).toBe('KBD');
