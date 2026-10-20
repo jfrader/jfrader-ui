@@ -22,6 +22,18 @@ import {
 import { styled } from '../../index';
 
 const NarrowFrame = styled.div({ inlineSize: 240 });
+const VisualGrid = styled.div({
+  display: 'grid',
+  gap: vars.space[6],
+  inlineSize: `min(640px, calc(100vw - ${vars.space[8]}))`,
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))',
+});
+const EdgeFrame = styled.div({
+  position: 'fixed',
+  insetInlineEnd: vars.space[4],
+  insetBlockEnd: vars.space[4],
+  inlineSize: `min(240px, calc(100% - ${vars.space[8]}))`,
+});
 const LABEL = 'Fruit';
 const PLACEHOLDER = 'Pick a fruit';
 const TYPEAHEAD_PAUSE_MS = 550;
@@ -251,6 +263,99 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 type EasyStory = StoryObj<(props: SelectEasyProps) => ReactNode>;
+
+const LONG_LABEL = 'InternationalEnterpriseWorkspaceWithoutWordSeparators';
+
+export const FieldStates: EasyStory = {
+  tags: ['!autodocs'],
+  render: () => (
+    <VisualGrid>
+      <Select label="Small" size="sm" options={FRUITS} defaultValue="apple" />
+      <Select label="Large" size="lg" options={FRUITS} defaultValue="cherry" />
+      <Select label="Unavailable" disabled options={FRUITS} defaultValue="apple" description="Contact the workspace owner." />
+      <Select label="Workspace" options={FRUITS} placeholder="Choose a workspace" description="Choose where to publish." error="Choose a workspace to continue." />
+      <Select label="Empty" options={[]} empty="No workspaces" placeholder="Choose a workspace" />
+      <Select label="Long workspace name" options={[{ value: 'long', label: LONG_LABEL }]} defaultValue="long" />
+    </VisualGrid>
+  ),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    for (const trigger of canvas.getAllByRole('combobox')) {
+      await expect(trigger.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+      await expect(trigger.getBoundingClientRect().right).toBeLessThanOrEqual(canvasElement.ownerDocument.documentElement.clientWidth);
+      await expect(Number.parseFloat(getComputedStyle(trigger).columnGap)).toBeGreaterThanOrEqual(8);
+    }
+    const invalid = canvas.getByRole('combobox', { name: 'Workspace' });
+    await expect(invalid).toHaveAttribute('aria-invalid', 'true');
+    await expect(invalid).toHaveAccessibleDescription('Choose where to publish. Choose a workspace to continue.');
+    await userEvent.click(canvas.getByRole('combobox', { name: 'Empty' }));
+    await expect(bodyOf(canvasElement).getByText('No workspaces')).toBeVisible();
+    await userEvent.keyboard('{Escape}');
+  },
+};
+
+export const Grouped: Story = {
+  tags: ['!autodocs'],
+  render: () => (
+    <Select>
+      <Select.Trigger aria-label="Destination"><Select.Value placeholder="Choose a destination" /></Select.Trigger>
+      <Select.Content>
+        <div role="group" aria-label="Europe">
+          <Select.Item value="madrid">Madrid</Select.Item>
+          <Select.Item value="paris" disabled>Paris</Select.Item>
+        </div>
+        <div role="group" aria-label="Americas">
+          <Select.Item value="lima">Lima</Select.Item>
+          <Select.Item value="quito">Quito</Select.Item>
+        </div>
+      </Select.Content>
+    </Select>
+  ),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(canvas.getByRole('combobox'));
+    await userEvent.keyboard('{ArrowDown}');
+    await expectActive(canvasElement, 'Lima', 'Destination');
+  },
+};
+
+export const ViewportEdge: EasyStory = {
+  tags: ['!autodocs'],
+  args: { label: 'Workspace', options: Array.from({ length: 30 }, (_, i) => ({ value: String(i), label: `${LONG_LABEL} ${i}` })), defaultValue: '0' },
+  render: (args) => <EdgeFrame><Select {...args} /></EdgeFrame>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('combobox');
+    await userEvent.click(trigger);
+    const panel = await bodyOf(canvasElement).findByRole('listbox');
+    await waitFor(async () => {
+      const anchor = trigger.getBoundingClientRect();
+      const rect = panel.getBoundingClientRect();
+      await expect(Math.abs(anchor.top - rect.bottom - 8)).toBeLessThanOrEqual(1);
+      await expect(rect.left).toBeGreaterThanOrEqual(8);
+      await expect(rect.right).toBeLessThanOrEqual(canvasElement.ownerDocument.documentElement.clientWidth - 8);
+      await expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth);
+    });
+    await userEvent.keyboard('{End}');
+    await waitFor(async () => {
+      const active = canvasElement.ownerDocument.getElementById(trigger.getAttribute('aria-activedescendant')!)!;
+      await expect(active.getBoundingClientRect().bottom).toBeLessThanOrEqual(panel.getBoundingClientRect().bottom);
+      await expect(active.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    });
+  },
+};
+
+export const MorphViewportEdge: EasyStory = {
+  ...ViewportEdge,
+  args: { ...ViewportEdge.args, variant: 'morph' },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(canvas.getByRole('combobox'));
+    const panel = await bodyOf(canvasElement).findByRole('listbox');
+    await waitFor(async () => {
+      const anchor = canvas.getByRole('combobox').getBoundingClientRect();
+      const rect = panel.getBoundingClientRect();
+      await expect(Math.abs(anchor.top - rect.bottom)).toBeLessThanOrEqual(1);
+      await expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth);
+    });
+  },
+};
 
 const LONG_OPTIONS = Array.from({ length: 1440 }, (_, index) => ({
   value: String(index), label: `Option ${index}`,
