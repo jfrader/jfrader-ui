@@ -186,6 +186,8 @@ const headingStyle = css({
 });
 
 const triggerStyle = css({
+  boxSizing: 'border-box',
+  overflowWrap: 'anywhere',
   appearance: 'none',
   display: 'flex',
   alignItems: 'center',
@@ -245,6 +247,7 @@ const triggerStyle = css({
 });
 
 const panelStyle = css({
+  overflowWrap: 'anywhere',
   paddingBlock: vars.space[3],
   paddingInline: vars.space[4],
   color: vars.color.textMuted,
