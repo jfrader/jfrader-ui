@@ -463,7 +463,7 @@ export const Sizes: Story = {
       const shell = shellOf(inputs[index]!).getBoundingClientRect();
       await expect(Math.abs(shell.height - heights[size])).toBeLessThan(1);
       const target = canvas.getAllByRole('button')[index]!.getBoundingClientRect();
-      await expect(target.width).toBeGreaterThanOrEqual(24);
+      await expect(target.width).toBeGreaterThanOrEqual(32);
       await expect(target.height).toBeGreaterThanOrEqual(24);
     }
   },
@@ -475,12 +475,16 @@ export const Wrapping: Story = {
     sx: { inlineSize: '220px' },
   },
   play: async ({ canvas }) => {
-    const shell = shellOf(inputOf(canvas));
+    const input = inputOf(canvas);
+    const shell = shellOf(input);
     await expect(shell.scrollWidth).toBeLessThanOrEqual(shell.clientWidth);
     await expect(shell.getBoundingClientRect().height).toBeGreaterThan(heights.md);
-    const right = shell.getBoundingClientRect().right;
-    for (const item of canvas.getAllByRole('listitem')) {
-      await expect(item.getBoundingClientRect().right).toBeLessThanOrEqual(right);
+    const bounds = shell.getBoundingClientRect();
+    for (const item of [...canvas.getAllByRole('listitem'), input]) {
+      const rect = item.getBoundingClientRect();
+      await expect(rect.left).toBeGreaterThanOrEqual(bounds.left);
+      await expect(rect.right).toBeLessThanOrEqual(bounds.right);
+      await expect(rect.bottom).toBeLessThanOrEqual(bounds.bottom);
     }
   },
 };
@@ -488,14 +492,23 @@ export const Wrapping: Story = {
 const LONG_TOKEN = 'interaction-design-for-multilingual-onboarding-flows-across-regions';
 export const LongToken: Story = {
   args: { defaultValue: [LONG_TOKEN, 'ux'], sx: { inlineSize: '240px' } },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
     const shell = shellOf(inputOf(canvas));
     const [long] = canvas.getAllByRole('listitem');
     await expect(long!.getBoundingClientRect().width).toBeLessThanOrEqual(shell.clientWidth);
     await expect(long).toHaveTextContent(LONG_TOKEN);
     const remove = canvas.getByRole('button', { name: `Remove ${LONG_TOKEN}` });
-    await expect(remove.getBoundingClientRect().width).toBeGreaterThanOrEqual(24);
+    await expect(remove.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
+    await expect(remove.getBoundingClientRect().height).toBeGreaterThanOrEqual(24);
     await expect(remove.getBoundingClientRect().right).toBeLessThanOrEqual(shell.getBoundingClientRect().right);
+    await userEvent.click(inputOf(canvas));
+    await userEvent.tab({ shift: true });
+    await userEvent.tab({ shift: true });
+    await expectFocus(remove);
+    await userEvent.keyboard('{Enter}');
+    await expect(canvas.queryByRole('button', { name: `Remove ${LONG_TOKEN}` })).toBeNull();
+    await expect(tokenTexts(canvas.getByRole('list'))).toEqual(['ux']);
+    await expectInputFocus(inputOf(canvas));
   },
 };
 
