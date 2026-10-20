@@ -37,18 +37,6 @@ const SAMPLE_MESSAGES: VoiceMessage[] = [
   },
 ];
 
-const usage = `<VoiceRecorder
-  value={recorderState}
-  onValueChange={setRecorderState}
-  peaks={capture.peaks}
-  elapsed={capture.elapsed}
-  duration={take.duration}
-  onRecordRequest={capture.start}
-  onStopRequest={capture.stop}
-  onSend={sendTake}
-  onDiscard={discardTake}
-/>`;
-
 const StoryFrame = styled('div')({ inlineSize: '100%', maxInlineSize: '48rem' });
 const NarrowFrame = styled(StoryFrame)({ maxInlineSize: '20rem' });
 
@@ -86,10 +74,18 @@ const meta = {
   parameters: {
     layout: 'padded',
     docs: {
-      source: { code: usage },
+      sections: [
+        { title: 'Recorder', stories: ['DefaultIdle', 'Small'] },
+        { title: 'Conversation', stories: ['WithMessages'] },
+      ],
+      usage: `### Audio ownership
+Supply audio capture, MediaRecorder, playback, uploads, message persistence and cleanup in your application. VoiceRecorder does not call browser media APIs. These examples show the controls without capturing or playing audio.
+
+### Keyboard
+Tab follows the controls in order; Enter and Space activate buttons. Escape discards while recording or reviewing. Use the review slider to scrub with the keyboard.`,
       description: {
         component:
-          'Record, review, and send short voice notes with waveform feedback and keyboard scrubbing. Native buttons use normal Tab order and Enter/Space activation; Escape discards while recording or reviewing. The consumer owns audio capture, MediaRecorder, playback, uploads, message persistence, and cleanup. This component never calls browser media APIs.',
+          'Record, review and send voice notes with waveform feedback.',
       },
     },
   },
@@ -100,6 +96,17 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const DefaultIdle: Story = {
+  name: 'Voice note controls',
+  parameters: { docs: {
+    description: { story: 'Start a voice note from the idle recorder controls; audio capture is application-owned.' },
+    source: { language: 'tsx', code: `import { VoiceRecorder, type VoiceRecorderProps } from '@jfrader/ui';
+
+type AudioActions = Pick<VoiceRecorderProps, 'onRecordRequest' | 'onStopRequest' | 'onSend'>;
+
+export function VoiceNote({ onRecordRequest, onStopRequest, onSend }: AudioActions) {
+  return <VoiceRecorder onRecordRequest={onRecordRequest} onStopRequest={onStopRequest} onSend={onSend} />;
+}` },
+  } },
   play: async ({ canvasElement, args, userEvent }) => {
     const canvas = within(canvasElement);
     const root = canvasElement.querySelector('[data-ui="voice-recorder"]');
@@ -117,6 +124,17 @@ export const DefaultIdle: Story = {
 };
 
 export const Small: Story = {
+  name: 'Compact recorder',
+  parameters: { docs: {
+    description: { story: 'Use smaller recorder controls in a message composer.' },
+    source: { language: 'tsx', code: `import { VoiceRecorder, type VoiceRecorderProps } from '@jfrader/ui';
+
+type AudioActions = Pick<VoiceRecorderProps, 'onRecordRequest' | 'onStopRequest' | 'onSend'>;
+
+export function CompactVoiceNote({ onRecordRequest, onStopRequest, onSend }: AudioActions) {
+  return <VoiceRecorder size="sm" onRecordRequest={onRecordRequest} onStopRequest={onStopRequest} onSend={onSend} />;
+}` },
+  } },
   args: { size: 'sm' },
 };
 
@@ -258,6 +276,30 @@ export const UploadError: Story = {
 };
 
 export const WithMessages: Story = {
+  name: 'Voice message history',
+  parameters: { docs: {
+    description: { story: 'Show two previous voice notes with a playback position on the first message.' },
+    source: { language: 'tsx', code: `import { VoiceRecorder, type VoiceMessage, type VoiceRecorderProps } from '@jfrader/ui';
+
+const peaks = [
+  0.1, 0.25, 0.5, 0.8, 0.9, 0.7, 0.4, 0.3,
+  0.6, 0.85, 0.95, 0.6, 0.3, 0.15, 0.4, 0.75,
+  0.8, 0.5, 0.35, 0.6, 0.7, 0.45, 0.2, 0.1,
+  0.3, 0.65, 0.8, 0.6, 0.4, 0.25, 0.15, 0.05,
+];
+const messages: VoiceMessage[] = [
+  { id: 'msg-1', sender: 'Alex Morgan', duration: 14, peaks: peaks.slice(0, 16), metadata: 'Yesterday at 4:15 PM' },
+  { id: 'msg-2', sender: 'Jordan Lee', duration: 32, peaks, metadata: 'Today at 9:30 AM' },
+];
+
+type AudioActions = Pick<VoiceRecorderProps, 'onRecordRequest' | 'onStopRequest' | 'onSend' | 'onMessagePlay' | 'onMessageSeek'>;
+
+export function VoiceConversation({ onRecordRequest, onStopRequest, onSend, onMessagePlay, onMessageSeek }: AudioActions) {
+  return <VoiceRecorder messages={messages} messagePlayback={{ id: 'msg-1', playing: true, currentTime: 5 }}
+    onRecordRequest={onRecordRequest} onStopRequest={onStopRequest} onSend={onSend}
+    onMessagePlay={onMessagePlay} onMessageSeek={onMessageSeek} />;
+}` },
+  } },
   args: {
     messages: SAMPLE_MESSAGES,
     messagePlayback: { id: 'msg-1', playing: true, currentTime: 5 },
