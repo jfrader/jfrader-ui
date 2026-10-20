@@ -8,6 +8,7 @@ import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { GamePanel, type GamePanelProps, type GamePanelCustomization, type GamePanelSlotProps } from '../game-panel/game-panel';
 import { GameHand } from '../game-hand';
+import { DEFAULT_HIDDEN_HAND_RULES } from '../game-hand/hand-layout';
 import { useOptionalGameTableSeat } from '../game-table/game-table';
 import { DeckArtProvider, type DeckArtOptions } from '../deck/art-context';
 
@@ -90,7 +91,7 @@ export interface GameSeatProps extends Omit<GamePanelProps, 'children'>, Omit<Ga
 const rootStyle = css({
   label: 'game-seat', display: 'grid', gridTemplateColumns: 'auto minmax(0, 1fr) auto', alignItems: 'center', columnGap: vars.space[2], rowGap: vars.space[1],
   inlineSize: `calc(4 * ${vars.space[12]})`, blockSize: `calc(${vars.space[12]} + ${vars.space[8]})`, boxSizing: 'border-box',
-  maxInlineSize: '100%', position: 'relative', isolation: 'isolate',
+  maxInlineSize: '100%', position: 'relative', isolation: 'isolate', overflow: 'clip',
   color: vars.color.text, fontSize: vars.textSize.sm,
   fontFamily: vars.font.sans,
   '&[data-variant="panel"]': { gridTemplateColumns: '1fr', justifyItems: 'center', padding: vars.space[4], inlineSize: 'max-content', blockSize: 'auto' },
@@ -105,15 +106,18 @@ const avatarStyle = css({ position: 'relative', isolation: 'isolate', display: '
   '[data-variant="panel"] > &': { gridRow: 'auto' },
   '[data-state="winner"] > &': { outlineStyle: 'double', outlineWidth: '3px' },
 });
-const avatarContentStyle = css({ position: 'relative', zIndex: 1, display: 'grid', placeItems: 'center', inlineSize: '100%', blockSize: '100%', borderRadius: '50%', overflow: 'hidden', backgroundColor: vars.color.surfaceRaised,
+const avatarContentStyle = css({ position: 'relative', zIndex: 1, display: 'grid', placeItems: 'center', inlineSize: '100%', blockSize: '100%', boxSizing: 'border-box', borderRadius: '50%', border: `1px solid ${vars.color.borderControl}`, overflow: 'hidden', backgroundColor: vars.color.surfaceRaised,
   [FORCED_COLORS]: { backgroundColor: 'Canvas' },
 });
 const nameStyle = css({ fontWeight: vars.fontWeight.semibold, gridColumn: 2, minInlineSize: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', '[data-variant="panel"] > &': { gridColumn: 'auto' } });
 const badgesStyle = css({ display: 'flex', gap: vars.space[1], gridColumn: 2, minInlineSize: 0, overflow: 'hidden', whiteSpace: 'nowrap', '[data-variant="panel"] > &': { gridColumn: 'auto', justifyContent: 'center', flexWrap: 'wrap' } });
 const pointsStyle = css({ gridColumn: 3, gridRow: '1 / span 3', maxInlineSize: vars.space[12], overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: vars.fontWeight.bold, fontVariantNumeric: 'tabular-nums', '[data-variant="panel"] > &': { gridColumn: 'auto', gridRow: 'auto', maxInlineSize: 'none' } });
 const handStyle = css({ gridColumn: 2, fontVariantNumeric: 'tabular-nums', '[data-variant="panel"] > &': { gridColumn: 'auto' } });
-const fanStyle = css({ position: 'absolute', insetInlineStart: '50%', insetBlockEnd: '50%', zIndex: 0, pointerEvents: 'none',
-  '& > [data-ui~="game-hand-hidden"]': { position: 'absolute', insetBlockEnd: 0, insetInlineStart: 'calc(-1 * var(--game-card-width) / 2)', transform: 'scale(.85)', transformOrigin: '50% 100%' },
+const avatarFanRules = { ...DEFAULT_HIDDEN_HAND_RULES, fanSpacingPx: 16, fanArcDepthPx: 8, fanSpreadDeg: 32 };
+const AVATAR_FAN_SCALE = 0.54;
+const fanStyle = css({ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
+  '& > [data-ui~="game-hand-hidden"]': { position: 'absolute', insetBlockStart: `calc(50% - ${vars.space[2]})`, insetInlineStart: '50%', transform: `translate(-50%, -50%) scale(${AVATAR_FAN_SCALE})`, transformOrigin: '50% 50%' },
+  '&:dir(rtl) > [data-ui~="game-hand-hidden"]': { transform: `translate(50%, -50%) scale(${AVATAR_FAN_SCALE})` },
 });
 const timerStyle = css({
   position: 'absolute', inset: `calc(-1 * ${vars.space[1]})`,
@@ -193,7 +197,7 @@ export function GameSeat({ name, avatar, badges, points, hand, handCount, chat, 
       'data-variant': variant, 'data-state': state ?? slotProps?.root?.['data-state'] ?? props['data-state'] ?? 'idle', 'data-turned': String(turned), 'data-offline': String(offline), 'data-dimmed': String(dimmed) }}>
     <SeatPart {...slotProps?.avatar} component={slots?.avatar} marker="avatar" styles={avatarStyle} data-timer-only={!isRenderable(avatar) && turn ? 'true' : undefined}>
       {fan && <SeatPart {...slotProps?.hand} component={slots?.hand} marker="hand" styles={fanStyle} aria-hidden="true">
-        <GameHand.Hidden playerKey={seat?.player?.key} count={Math.min(count, 3)} size="sm" label="" aria-hidden="true" artSet={artSet} cardArtSets={cardArtSets} />
+        <GameHand.Hidden playerKey={seat?.player?.key} count={Math.min(count, 3)} size="sm" rules={avatarFanRules} label="" aria-hidden="true" artSet={artSet} cardArtSets={cardArtSets} />
       </SeatPart>}
       <span data-ui="game-seat-avatar-content" css={avatarContentStyle}>{avatar}</span>
       {turn && <TurnRing {...slotProps?.timer} component={slots?.timer} turn={turn} onMilestone={onTurnMilestone} />}

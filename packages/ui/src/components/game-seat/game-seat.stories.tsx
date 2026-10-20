@@ -34,7 +34,7 @@ const meta = {
     usage: `### When to use
 Show a player's identity and turn status on its own or inside a GameTable seat region. GameSeat does not position players around the board or enforce turn rules.
 
-The default chip reserves its avatar footprint. Its hidden-card fan is decorative, capped at three backs and absolutely positioned around the avatar. Changing handCount never resizes the chip. Use handDisplay="count" with formatHandCount for localized count text, or "none" to hide the shorthand. Custom hand content overrides handDisplay. Chat is shown only in variant="panel".
+The default chip reserves its avatar footprint. Its hidden-card fan is decorative, capped at three backs and positioned radially behind the opaque avatar, inside the surface. Changing handCount never resizes the chip. Use handDisplay="count" with formatHandCount for localized count text, or "none" to hide the shorthand. Custom hand content overrides handDisplay. Chat is shown only in variant="panel".
 
 The chip uses a raised pill surface; the panel uses a bordered surface. Set surface="transparent" when composing inside an existing surface. Layout and the opaque avatar are retained.
 
@@ -59,6 +59,42 @@ import { GameSeat } from '@jfrader/ui/game-seat';
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+async function expectAvatarOrbit(seat: HTMLElement) {
+  const bounds = seat.getBoundingClientRect();
+  const avatar = seat.querySelector('[data-ui="game-seat-avatar-content"]')!;
+  const avatarBounds = avatar.getBoundingClientRect();
+  const centerX = avatarBounds.x + avatarBounds.width / 2;
+  const centerY = avatarBounds.y + avatarBounds.height / 2;
+  const backs = [...seat.querySelectorAll('[data-ui="game-hand-hidden-card"]')];
+  await expect(backs).toHaveLength(3);
+  await expect(getComputedStyle(seat).overflow).toBe('clip');
+  await expect(getComputedStyle(avatar).borderTopWidth).toBe('1px');
+  await expect(getComputedStyle(avatar).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+  for (const back of backs) {
+    const card = back.getBoundingClientRect();
+    await expect(card.left).toBeGreaterThanOrEqual(bounds.left + 1);
+    await expect(card.top).toBeGreaterThanOrEqual(bounds.top + 1);
+    await expect(card.right).toBeLessThanOrEqual(bounds.right - 1);
+    await expect(card.bottom).toBeLessThanOrEqual(bounds.bottom - 1);
+    await expect(card.top).toBeLessThan(centerY);
+    await expect(card.bottom).toBeGreaterThan(avatarBounds.top);
+    for (const part of seat.querySelectorAll('[data-ui="game-seat-name"], [data-ui="game-seat-badges"], [data-ui="game-seat-points"]')) {
+      const content = part.getBoundingClientRect();
+      const overlap = card.left < content.right && card.right > content.left && card.top < content.bottom && card.bottom > content.top;
+      await expect(overlap).toBe(false);
+    }
+  }
+  const centers = backs.map(back => { const rect = back.getBoundingClientRect(); return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 }; }).sort((a, b) => a.x - b.x);
+  await expect(centers[0]!.x).toBeLessThan(centerX);
+  await expect(centers[2]!.x).toBeGreaterThan(centerX);
+  await expect(centers[1]!.y).toBeLessThan(centers[0]!.y);
+  await expect(centers[1]!.y).toBeLessThan(centers[2]!.y);
+  for (const back of [backs[0]!, backs[2]!]) {
+    const transform = new DOMMatrix(getComputedStyle(back).transform);
+    await expect(Math.abs(Math.atan2(transform.b, transform.a) * 180 / Math.PI)).toBeGreaterThan(25);
+  }
+}
+
 /** Player identity, hand count and caller-owned remaining time. */
 export const Default: Story = {
   name: 'Player seat',
@@ -78,6 +114,7 @@ export const Default: Story = {
     await expect(Number(getComputedStyle(fan).zIndex)).toBeGreaterThanOrEqual(0);
     await expect(canvasElement.querySelector('[data-ui="game-seat-timer"]')).toHaveAttribute('aria-hidden', 'true');
     await expect(canvasElement.querySelector('circle')).toHaveAttribute('stroke-dashoffset', '25');
+    await expectAvatarOrbit(seat);
   },
 };
 export const Panel: Story = {
@@ -93,6 +130,7 @@ import { GameSeat } from '@jfrader/ui/game-seat';
     await expect(getComputedStyle(seat).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
     await expect(getComputedStyle(seat).borderTopWidth).toBe('1px');
     await expect(seat.querySelector('[data-ui="game-seat-chat"]')).toBeVisible();
+    await expectAvatarOrbit(seat);
   },
 };
 export const Transparent: Story = {
@@ -128,6 +166,7 @@ export const WinnerWithTimer: Story = {
     await expect(timer.querySelector('circle')).toHaveAttribute('stroke-dashoffset', '25');
     const badges = seat.querySelector('[data-ui="game-seat-badges"]')!;
     await expect(badges.scrollWidth).toBeLessThanOrEqual(badges.clientWidth);
+    await expectAvatarOrbit(seat);
   },
 };
 export const ForcedColors: Story = {
@@ -149,6 +188,14 @@ export const ForcedColors: Story = {
 };
 export const Active: Story = {
   tags: ['!autodocs'], args: { state: 'active', turned: true, badges: <Badge>Your turn</Badge> },
+};
+export const RtlOrbit: Story = {
+  tags: ['!autodocs'], args: { dir: 'rtl' },
+  play: async ({ canvas }) => {
+    const seat = canvas.getByRole('group', { name: 'Alex' });
+    await expect(getComputedStyle(seat).direction).toBe('rtl');
+    await expectAvatarOrbit(seat);
+  },
 };
 export const StableFootprint: Story = {
   tags: ['!autodocs'],
