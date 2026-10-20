@@ -15,6 +15,7 @@ import {
 import { styled } from '../../index';
 
 const GUIDE = 'https://example.com/guide';
+const LONG_GUIDE = 'https://example.com/guide/components/media/gallery?collection=september-traverse&view=all-photographs&sort=captured-at';
 function ReplacementRoot(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-testid="replacement-root" />;
 }
@@ -54,7 +55,7 @@ const METADATA: Partial<LinkUnfurlPreview> = {
 const SETTLE_MS = 240;
 const settle = () => new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
 
-const Frame = styled.div({ inlineSize: `min(100vw - ${vars.space[8]}, 36rem)`, minInlineSize: 0 });
+const Frame = styled.div({ inlineSize: '36rem', maxInlineSize: '100%', minInlineSize: 0 });
 const NarrowFrame = styled.div({ inlineSize: '20rem' });
 const Stack = styled.div({ display: 'grid', gap: vars.space[4] });
 const Fixture = styled.button({
@@ -150,15 +151,40 @@ function Unmountable({ children }: { children: ReactNode }) {
   );
 }
 
-const source = `function Composer() {
+const unfurlSource = (status: LinkUnfurlPreviewStatus = 'ready', metadata = `{
+  site: 'example.com', title: 'Design guide',
+  description: 'Spacing, color and type decisions for the product surfaces.',
+  image: { src: new URL('/og-image.png', window.location.href).href, alt: 'React components built from scratch' },
+  favicon: new URL('/og-image.png', window.location.href).href,
+}`, extraProps = '', draft = GUIDE) => `import { useState } from 'react';
+import { LinkUnfurl, type LinkUnfurlPreview } from '@jfrader/ui/link-unfurl';
+
+${status === 'ready' ? `const metadata = ${metadata};\n\n` : ''}function Composer() {
   const [previews, setPreviews] = useState<LinkUnfurlPreview[]>([]);
-  const requestPreview = async (url: string, { linkId, requestId, signal }) => {
-    setPreviews((all) => [...all, { linkId, requestId, url, status: 'pending' }]);
-    const metadata = await fetchPreview(url, { signal }); // your server
-    setPreviews((all) => [...all, { linkId, requestId, url, ...metadata }]);
-  };
-  return <LinkUnfurl label="Message" previews={previews} onPreviewRequest={requestPreview} onSend={post} />;
+  const [expanded, setExpanded] = useState<string[]>([]);
+  return <LinkUnfurl label="Message" defaultValue=${JSON.stringify(draft)}
+    previews={previews} expanded={expanded} onExpandedChange={setExpanded}
+    onPreviewRequest={(url, { linkId, requestId }) => {
+      setPreviews((current) => [...current, {
+        url, linkId, requestId, status: '${status}',${status === 'ready' ? '\n        ...metadata,' : status === 'error' ? "\n        error: 'Site unreachable'," : ''}
+      }]);${status === 'ready' ? '\n      setExpanded((current) => [...current, linkId]);' : ''}
+    }}${extraProps ? ` ${extraProps}` : ''} />;
 }`;
+
+function DraftPreview({ status = 'ready', metadata = METADATA, defaultValue = GUIDE, ...props }: Omit<LinkUnfurlProps, 'label'> & { status?: LinkUnfurlPreviewStatus; metadata?: Partial<LinkUnfurlPreview> }) {
+  const [previews, setPreviews] = useState<LinkUnfurlPreview[]>([]);
+  const [expanded, setExpanded] = useState<string[]>([]);
+  return <LinkUnfurl {...props} label="Message" defaultValue={defaultValue}
+    previews={previews} expanded={expanded} onExpandedChange={setExpanded}
+    onPreviewRequest={(url, { linkId, requestId }) => {
+      setPreviews((current) => [...current, {
+        ...(status === 'ready' ? metadata : {}),
+        url, linkId, requestId, status,
+        ...(status === 'error' ? { error: 'Site unreachable' } : {}),
+      }]);
+      if (status === 'ready') setExpanded((current) => [...current, linkId]);
+    }} />;
+}
 
 const meta = {
   title: 'Inputs/LinkUnfurl',
@@ -180,40 +206,120 @@ const meta = {
   ],
   parameters: {
     docs: {
-      source: { code: source },
+      sections: [
+        { title: 'Basic', stories: ['Draft'] },
+        { title: 'Metadata', stories: ['TextMetadata'] },
+        { title: 'Images', stories: ['UnavailableCover'] },
+        { title: 'Loading and errors', stories: ['PendingMetadata', 'MetadataError', 'UnavailableMetadata'] },
+        { title: 'Long URLs', stories: ['LongDestination', 'LongMetadata'] },
+        { title: 'States', stories: ['Empty'] },
+        { title: 'Composition', stories: ['StyledPreview'] },
+      ],
       description: {
         component: 'Write a plain-text message and preview the links in your draft.',
       },
-      usage: `### Previews
-- Fetch metadata in your app. LinkUnfurl never fetches.
-- \`onPreviewRequest(url, { linkId, requestId, signal })\` runs only after user actions: paste, typing past an address, blur, suggestions, or Retry. Add \`previews\` records with matching \`linkId\` and \`requestId\`. Older request ids are ignored. Retry creates a new request id.
-- The signal aborts when the address disappears through removal or editing, Retry replaces the request, a successful send clears the draft, or the composer unmounts.
-- Preview images and favicons require absolute HTTP(S) URLs. Other schemes are not rendered. For multiple records answering the same request, the latest record wins.
-
-### Values
-- Control text with \`value\` and \`onValueChange\`, or start with \`defaultValue\` (empty by default).
-- Control open link ids separately with \`expanded\` and \`onExpandedChange\`, or start with \`defaultExpanded\` (none by default). Rejected controlled requests keep the committed text and visibility.
-- To open a preview as it resolves, commit its ready record and link id in the same update.
+      usage: `### When to use
+Use a plain-text composer when a message needs previews for detected web links. Use LinkPreview to display a link without editing a draft.
 
 ### Limits
-- Addresses must be complete, whitespace-delimited absolute HTTP(S) URLs accepted by \`URL\`. Paste and blur scan all text. While typing, the address at the caret waits for following whitespace.
-- Duplicate addresses have separate link ids. Remove deletes only that occurrence. Addresses supplied through \`value\` or \`defaultValue\` wait for Retry.
-- The native textarea keeps paste, undo, IME, and mobile editing. Preview items appear beside the field, not as inline tokens.
+Load metadata in your application; the composer does not fetch it. The examples below use metadata already available to the application. Replace that lookup with your server request and honor cancellation when loading over the network.
 
-### Keyboard
-- Tab follows the field, preview actions, suggestions, and Send. Press Enter on a title link to navigate.
-- With \`onSend\`, Enter sends once. It does not send during IME composition or a pending send. Shift+Enter adds a line.
-- Alt+Enter toggles a ready preview when the caret is inside or at the end of its address. It never inserts a line, even without a preview at the caret. Escape is left to the page.
+Addresses must be complete, whitespace-delimited absolute HTTP(S) URLs. Images and favicons also need absolute HTTP(S) URLs. Paste and blur scan the whole draft; typing waits for whitespace after the address. A URL in an initial draft waits for Retry rather than fetching on mount. Duplicate addresses remain separate occurrences.
 
-### Sending
-- Provide \`onSend\` to enable Send for text containing more than whitespace. It receives the text and current matching preview records.
-- A returned promise keeps sending pending until it settles. The field becomes read-only. Remove and suggestions become inactive but stay focusable.
-- Success requests empty text, then no expanded ids. Failure keeps the draft and shows \`labels.error\` as an alert.`,
+The native textarea retains undo, paste, IME, and mobile editing. During a pending send it becomes read-only; failure preserves the draft. Keep application state until a send actually succeeds.
+
+### Keyboard and accessibility
+Tab follows the field, preview actions, suggestions, and Send. Enter follows a title link. When sending is enabled, Enter sends once except during IME composition or a pending send; Shift+Enter inserts a line. Alt+Enter toggles a ready preview at the caret without inserting a line. Escape is left to the surrounding page.`,
     },
   },
 } satisfies Meta<typeof LinkUnfurl>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const Draft: Story = {
+  name: 'Draft with a link',
+  render: () => <DraftPreview />,
+  parameters: { docs: { description: { story: 'Press Retry beside the draft URL to load and expand its preview.' }, source: { language: 'tsx', code: unfurlSource() } } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+    await waitFor(() => expect(canvas.getByRole('link', { name: 'Design guide' })).toBeVisible());
+    await expect(canvas.getByRole('button', { name: 'Collapse' })).toBeVisible();
+  },
+};
+
+export const TextMetadata: Story = {
+  name: 'Text-only preview',
+  render: () => <DraftPreview metadata={{ site: 'example.com', title: 'Design guide', description: 'Spacing, color and type decisions for the product surfaces.' }} />,
+  parameters: { docs: { description: { story: 'Press Retry to show a preview with a title and description but no cover.' }, source: { language: 'tsx', code: unfurlSource('ready', "{ site: 'example.com', title: 'Design guide', description: 'Spacing, color and type decisions for the product surfaces.' }") } } },
+};
+
+export const UnavailableCover: Story = {
+  name: 'Unavailable cover image',
+  render: () => <DraftPreview metadata={{ title: 'Design guide', image: { src: new URL('/missing-link-unfurl.png', window.location.href).href, alt: 'Cover' } }} />,
+  parameters: { docs: { description: { story: 'Press Retry to show a preview whose cover cannot load.' }, source: { language: 'tsx', code: unfurlSource('ready', "{ title: 'Design guide', image: { src: new URL('/missing-link-unfurl.png', window.location.href).href, alt: 'Cover' } }") } } },
+};
+
+export const PendingMetadata: Story = {
+  name: 'Loading a preview',
+  render: () => <DraftPreview status="pending" />,
+  parameters: { docs: { description: { story: 'Press Retry to keep the URL visible while its preview is pending.' }, source: { language: 'tsx', code: unfurlSource('pending', '{}') } } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+    await expect(canvas.getByText('Loading preview')).toBeVisible();
+  },
+};
+
+export const MetadataError: Story = {
+  name: 'Preview request error',
+  render: () => <DraftPreview status="error" />,
+  parameters: { docs: { description: { story: 'Press Retry to show a request error and keep the draft available.' }, source: { language: 'tsx', code: unfurlSource('error', '{}') } } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+    await expect(canvas.getByText('Site unreachable')).toBeVisible();
+    await expect(canvas.getByRole('textbox', { name: 'Message' })).toHaveValue(GUIDE);
+  },
+};
+
+export const UnavailableMetadata: Story = {
+  name: 'No preview metadata',
+  render: () => <DraftPreview status="none" />,
+  parameters: { docs: { description: { story: 'Press Retry to show a destination with no preview metadata.' }, source: { language: 'tsx', code: unfurlSource('none', '{}') } } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+    await expect(canvas.getByText('No preview')).toBeVisible();
+  },
+};
+
+export const LongDestination: Story = {
+  name: 'Long destination URL',
+  render: () => <DraftPreview defaultValue={LONG_GUIDE} metadata={{ title: 'Design guide' }} />,
+  parameters: { docs: { description: { story: 'Edit a long destination, then press Retry to expand its preview.' }, source: { language: 'tsx', code: unfurlSource('ready', "{ title: 'Design guide' }", '', LONG_GUIDE) } } },
+  play: async ({ canvasElement, canvas, userEvent }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="link-unfurl"]')!;
+    const parent = root.parentElement!;
+    const previousWidth = parent.style.inlineSize;
+    parent.style.inlineSize = '280px';
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: 'Retry' }));
+      await expect(canvas.getByRole('link', { name: 'Design guide' })).toHaveAttribute('href', LONG_GUIDE);
+      await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+    } finally {
+      parent.style.inlineSize = previousWidth;
+    }
+  },
+};
+
+export const LongMetadata: Story = {
+  name: 'Long metadata and URL text',
+  render: () => <DraftPreview metadata={{ title: 'A long title with enough words to wrap without hiding content '.repeat(4), description: 'A detailed description with an unbroken address: ' + GUIDE + '/long-path'.repeat(30) }} />,
+  parameters: { docs: { description: { story: 'Press Retry to expand long copy containing an unbroken URL.' }, source: { language: 'tsx', code: unfurlSource('ready', "{ title: 'A long title with enough words to wrap without hiding content '.repeat(4), description: 'A detailed description with an unbroken address: https://example.com/guide' + '/long-path'.repeat(30) }") } } },
+};
+
+export const StyledPreview: Story = {
+  name: 'Preview part styling',
+  render: () => <DraftPreview slotProps={{ chip: { sx: { borderStyle: 'dashed' } }, title: { sx: { textDecoration: 'underline' } } }} />,
+  parameters: { docs: { description: { story: 'Press Retry to expand an underlined title inside a dashed preview chip.' }, source: { language: 'tsx', code: unfurlSource('ready', "{ site: 'example.com', title: 'Design guide', description: 'Spacing, color and type decisions for the product surfaces.', image: { src: new URL('/og-image.png', window.location.href).href, alt: 'React components built from scratch' }, favicon: new URL('/og-image.png', window.location.href).href }", "slotProps={{ chip: { sx: { borderStyle: 'dashed' } }, title: { sx: { textDecoration: 'underline' } } }}") } } },
+};
 
 const items = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>('[data-ui="link-unfurl-item"]')];
 const statusRegion = (root: HTMLElement) => root.querySelector<HTMLElement>('[data-ui="link-unfurl-status"]')!;
@@ -609,6 +715,10 @@ export const BrokenImage: Story = {
 };
 
 export const Empty: Story = {
+  name: 'Empty draft',
+  parameters: { docs: { description: { story: 'Write a message without a send handler or any link previews.' }, source: { language: 'tsx', code: `import { LinkUnfurl } from '@jfrader/ui/link-unfurl';
+
+<LinkUnfurl label="Message" />` } } },
   render: (args) => <LinkUnfurl {...args} />,
   play: async ({ canvasElement, canvas, userEvent }) => {
     const textarea = field(canvasElement);

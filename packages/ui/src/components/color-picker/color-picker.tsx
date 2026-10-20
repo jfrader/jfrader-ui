@@ -57,6 +57,7 @@ export type { ColorFormat } from './color-adapter';
 export interface ColorSwatch {
   id: string;
   color: string;
+  /** Name the saved color in its accessible swatch label. */
   label?: string;
 }
 export interface ColorPickerMessages {
@@ -98,8 +99,17 @@ type Anatomy = {
 export type ColorPickerSlotProps = FieldParts<Anatomy>;
 export type ColorPickerSlots = FieldSlots<Anatomy>;
 type Seed =
-  | { value: string; defaultValue?: string }
-  | { value?: undefined; defaultValue: string };
+  | {
+      /** Control the selected color using hex, RGB, HSL, or OKLCH notation. */
+      value: string;
+      /** Seed the uncontrolled color; ignored when `value` is supplied. */
+      defaultValue?: string;
+    }
+  | {
+      value?: undefined;
+      /** Seed the uncontrolled color in hex, RGB, HSL, or OKLCH notation. Required without `value`. */
+      defaultValue: string;
+    };
 export type ColorPickerProps = Omit<
   ComponentPropsWithRef<'div'>,
   'defaultValue' | 'onChange'
@@ -108,39 +118,64 @@ export type ColorPickerProps = Omit<
   Seed & {
     /** Receive normalized uppercase sRGB hex, including alpha when translucent. */
     onValueChange?: (hex: string) => void;
+    /** Control whether the color dialog is open. */
     open?: boolean;
+    /** Open the uncontrolled color dialog initially. Defaults to `false`. */
     defaultOpen?: boolean;
+    /** Receive requests to open or close the color dialog. */
     onOpenChange?: (open: boolean) => void;
+    /** Control the displayed color notation without changing the callback's hex output. */
     format?: ColorFormat;
+    /** Seed the uncontrolled color notation. Defaults to `hex`. */
     defaultFormat?: ColorFormat;
+    /** Receive requests to change the displayed color notation. */
     onFormatChange?: (format: ColorFormat) => void;
+    /** Control the saved colors and their order. */
     swatches?: ColorSwatch[];
+    /** Seed the uncontrolled saved colors. Defaults to an empty list. */
     defaultSwatches?: ColorSwatch[];
+    /** Receive the saved colors after saving, removing, or reordering. */
     onSwatchesChange?: (swatches: ColorSwatch[]) => void;
     /** Maximum saved colors; saving at capacity removes the oldest. Default: 7. */
     maxSwatches?: number;
     /** Opaque comparison background. Omit to hide the contrast result. */
     background?: string;
+    /** Show opacity controls. Defaults to `true`. */
     alpha?: boolean;
+    /** Offer screen color sampling when the browser supports EyeDropper. Defaults to `true`. */
     eyeDropper?: boolean;
+    /** Label the trigger and color field. */
     label: ReactNode;
+    /** Show supporting text beneath the trigger. */
     description?: ReactNode;
+    /** Show a field error, overriding the generated invalid-color message. */
     error?: ReactNode;
+    /** Disable the trigger and color controls. Defaults to `false`. */
     disabled?: boolean;
+    /** Allow inspection without changing the color or saved swatches. Defaults to `false`. */
     readOnly?: boolean;
+    /** Mark the color field as required. */
     required?: boolean;
+    /** Choose the locale for percentages, angles, and contrast ratios. */
     locale?: string;
+    /** Supply control labels, validation messages, and color announcements. */
     messages: ColorPickerMessages;
+    /** Set the trigger's dimensions. Defaults to `md`. */
     size?: 'sm' | 'md' | 'lg';
+    /** Name the hidden input that submits the selected color. */
     name?: string;
+    /** Replace the saved-color, sampling, and completion action icons. */
     icons?: Partial<
       Record<
         'save' | 'movePrevious' | 'moveNext' | 'remove' | 'eyeDropper' | 'done',
         ReactNode
       >
     >;
+    /** Replace the wrapper element; `slots.root` takes precedence. */
     component?: ColorPickerSlots['root'];
+    /** Replace the generated field and picker elements. */
     slots?: ColorPickerSlots;
+    /** Pass props to the generated field and picker elements. */
     slotProps?: ColorPickerSlotProps;
   };
 

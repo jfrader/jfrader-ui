@@ -5,12 +5,14 @@
 ### Changed
 
 - Library scroll regions use theme-aware native scrollbar colors, retaining browser controls and system colors in forced-colors mode. Host-page scrollbars are unchanged.
+- Breaking pre-1.0 article API cleanup: use `Article` with `Article.Body`, `Article.Kicker`, `Article.Meta` and `Article.Sources` instead of the separate article components. `ArticleList` stays standalone. `ArticleSection` composes ordered articles into mixed editorial layouts, and `SectionHeading` moves to `ArticleSection.Heading`.
 - `CardFlights` now animates the rendered board tree, with `Deck`, custom `Target` destinations, `deal`/`revision`, automatic hand locking and `onBusyChange`. The provider, explicit deal/play hooks, measurement helpers and flight-spec exports are deprecated until the next major release; replace them with `CardFlights` and `useCardFlightStatus`. Piles now retain the newest `maxCards` cards.
 - Breaking pre-1.0 API cleanup: every `slotProps` part accepts `sx` instead of `css`, preserving own styles → slot `sx` → consumer `sx` precedence. Emotion's `css` remains internal.
 
 ### Fixed
 
 - `Dialog` no longer flashes a vertical scrollbar during opening or closing motion; long content remains scrollable, and replacement panels keep their padding inside the shell.
+- `Calendar` keeps localized weekday headers and dates centered in equal columns, fits narrow containers, preserves navigation targets beside wrapping month labels, and shows the full selected range in forced colors.
 - `StretchRefresh` wraps long pull instructions and empty-state text inside narrow feeds; its examples fit phone screens.
 - `SortableDataTable` keeps keyboard-focused row controls below sticky headings when scrolling backward through tall tables.
 - `JsonViewer` wraps long keys and values within tree rows, keeps focused labels and disclosure arrows visible in deeply indented data, and hides inactive selection bars in forced colors.

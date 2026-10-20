@@ -22,14 +22,15 @@ const meta = {
   args: { label: 'Rounds', rounds, outcomeLabels },
   parameters: { docs: {
     description: { component: 'Show each round and its result in play order.' },
+    sections: [
+      { title: 'Round history', stories: ['Default', 'Empty'] },
+      { title: 'Composition', stories: ['RoundReplacement'] },
+    ],
     usage: `### Results
-Pass rounds in display order with stable keys, labels and won, lost or pending outcomes. Supply nonempty outcomeLabels in your game's language. Every result shows that text as well as its tone; pending also has a dashed boundary. No rules or automatic transitions run here.
+Keep rounds in play order and give every result a nonempty name in your game's language. Result text accompanies each tone; pending rounds also have a dashed boundary. Your application owns game rules and result transitions.
 
 ### Accessibility
-The named group contains an ordered list. There is no APG widget, focus target, keyboard binding, animation or live announcement. Choose announcements in your application. The list preserves input order in RTL.
-
-### Customization
-Use slotProps for root, label, list, round and outcome; each accepts sx. Repeated slots apply to every round; data-outcome remains authoritative. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div. Root slot conflicts win; className and style merge. Consumer sx applies after slot sx.`,
+The named group contains an ordered list and preserves input order in RTL. It adds no keyboard commands, animation or live announcements. Announce result changes in your application when needed.`,
     source: { language: 'tsx', code: source },
   } },
 } satisfies Meta<typeof GameRounds>;
@@ -38,7 +39,8 @@ type Story = StoryObj<typeof meta>;
 
 /** Display round history in play order with outcome tags. */
 export const Default: Story = {
-  name: 'Default',
+  name: 'Round outcomes',
+  parameters: { docs: { description: { story: 'Read won, lost and pending rounds in play order.' } } },
   play: async ({ canvasElement }) => {
     const group = within(canvasElement).getByRole('group', { name: 'Rounds' });
     const items = within(group).getAllByRole('listitem');
@@ -73,7 +75,7 @@ export const LightRtl: Story = {
 export const Empty: Story = {
   name: 'No rounds',
   args: { rounds: [] },
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameRounds } from '@jfrader/ui/game-rounds';
+  parameters: { docs: { description: { story: 'Keep the named round history before the first round is played.' }, source: { language: 'tsx', code: `import { GameRounds } from '@jfrader/ui/game-rounds';
 
 <GameRounds label="Rounds" rounds={[]} outcomeLabels={{ won: 'Won', lost: 'Lost', pending: 'Pending' }} />` } } },
   play: async ({ canvasElement }) => {
@@ -90,7 +92,7 @@ function ReplacementRound(props: ComponentPropsWithRef<'li'> & GameRoundsPartPro
 /** Supply a custom round element for won and lost rounds. */
 export const RoundReplacement: Story = {
   name: 'Custom round',
-  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+  parameters: { docs: { description: { story: 'Render each result through a custom round element.' }, source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { GameRounds, type GameRoundsPartProps } from '@jfrader/ui/game-rounds';
 
 function ReplacementRound(props: ComponentPropsWithRef<'li'> & GameRoundsPartProps<'li'>) {

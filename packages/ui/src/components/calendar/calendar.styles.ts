@@ -8,6 +8,8 @@ import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 export const rootStyle = css({
   display: 'inline-flex',
   flexDirection: 'column',
+  inlineSize: `calc(7 * 36px + 6 * ${vars.space[1]})`,
+  maxInlineSize: '100%',
   gap: vars.space[2],
   fontFamily: vars.font.sans,
   color: vars.color.text,
@@ -21,6 +23,8 @@ export const headerStyle = css({
 
 export const labelStyle = css({
   flex: 1,
+  minInlineSize: 0,
+  overflowWrap: 'anywhere',
   textAlign: 'center',
   fontSize: vars.textSize.sm,
   fontWeight: vars.fontWeight.semibold,
@@ -40,6 +44,7 @@ export const navButtonStyle = css({
   alignItems: 'center',
   justifyContent: 'center',
   inlineSize: '32px',
+  flexShrink: 0,
   blockSize: '32px',
   padding: 0,
   border: `1px solid ${vars.color.borderControl}`,
@@ -72,12 +77,15 @@ export const glyphStyle = css({
 });
 
 export const gridStyle = css({
+  tableLayout: 'fixed',
+  inlineSize: `calc(100% + 2 * ${vars.space[1]})`,
   borderCollapse: 'separate',
   borderSpacing: vars.space[1],
   marginInline: `calc(-1 * ${vars.space[1]})`,
 });
 
 export const weekdayStyle = css({
+  overflowWrap: 'anywhere',
   paddingBlock: vars.space[1],
   fontSize: vars.textSize.xs,
   fontWeight: vars.fontWeight.medium,
@@ -87,6 +95,7 @@ export const weekdayStyle = css({
 
 export const cellStyle = css({
   padding: 0,
+  textAlign: 'center',
 });
 
 export const dayStyle = css({
@@ -94,7 +103,7 @@ export const dayStyle = css({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  inlineSize: '36px',
+  inlineSize: '100%',
   blockSize: '36px',
   padding: 0,
   border: '1px solid transparent',
@@ -158,7 +167,7 @@ export const dayStyle = css({
     '&[data-in-range], &[data-preview]': {
       borderColor: 'CanvasText',
     },
-    '&[data-selected], &[data-range-start], &[data-range-end]': {
+    '&[data-selected], &[data-in-range], &[data-range-start], &[data-range-end]': {
       forcedColorAdjust: 'none',
       backgroundColor: 'Highlight',
       borderColor: 'Highlight',

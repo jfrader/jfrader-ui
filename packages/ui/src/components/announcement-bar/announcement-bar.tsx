@@ -52,31 +52,57 @@ type Slot<E extends 'section' | 'div' | 'span' | 'button' | 'a'> = Omit<
 > & { sx?: Interpolation<Theme> };
 export interface AnnouncementBarProps
   extends Omit<ComponentPropsWithRef<'section'>, 'children' | 'dangerouslySetInnerHTML'>, SxProps {
+  /** Defines announcements in display order. An empty list renders nothing. */
   messages: readonly Announcement[];
+  /** Controls whether the bar is visible. */
   open?: boolean;
+  /** Sets initial uncontrolled visibility. Defaults to `true`. */
   defaultOpen?: boolean;
+  /** Receives visibility requests from the dismiss control. */
   onOpenChange?: (open: boolean) => void;
+  /** Controls the active announcement's zero-based index, wrapping within the message list. */
   value?: number;
+  /** Sets the initial uncontrolled announcement index. Defaults to 0. */
   defaultValue?: number;
+  /** Receives the requested zero-based index after navigation or automatic rotation. */
   onValueChange?: (index: number) => void;
+  /** Enables automatic rotation for multiple messages. Defaults to `false`; pauses on hover, hidden pages and reduced motion. */
   autoPlay?: boolean;
+  /** Controls the requested rotation pause state. Focus and reduced motion can also stop rotation. */
   paused?: boolean;
+  /** Sets the initial uncontrolled rotation pause state. Defaults to `false`. */
   defaultPaused?: boolean;
+  /** Receives pause and resume requests from the rotation control. */
   onPausedChange?: (paused: boolean) => void;
+  /** Sets rotation time per message in milliseconds. Defaults to 6000 for nonpositive or nonfinite values. */
   interval?: number;
+  /** Shows previous and next controls for multiple messages. Defaults to `true`; `autoPlay` keeps them visible regardless. */
   controls?: boolean;
+  /** Shows the dismiss control. Defaults to `true`. */
   dismissible?: boolean;
+  /** Sets the bar's surface treatment. Defaults to `subtle`. */
   variant?: AnnouncementBarVariant;
+  /** Sets the bar's semantic color. Defaults to `neutral`. */
   tone?: AnnouncementBarTone;
+  /** Names the announcement region when no ARIA name is supplied. Defaults to `Announcements`. */
   label?: string;
+  /** Sets message live-announcement politeness while rotation is stopped. Defaults to `off`. */
   live?: 'off' | 'polite';
+  /** Sets number and countdown formatting locale. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Overrides individual navigation, rotation and carousel labels. Defaults to English labels. */
   labels?: Partial<AnnouncementBarLabels>;
+  /** Formats the accessible message position from a zero-based index and total count. */
   getMessageLabel?: (index: number, total: number) => string;
+  /** Receives the active announcement after action handlers, unless the event was prevented. */
   onAction?: (announcement: Announcement) => void;
+  /** Receives countdown completion once per announcement ID and target. */
   onCountdownEnd?: (announcement: Announcement) => void;
+  /** Receives focus after dismissal when connected to the same document. */
   dismissFocusRef?: RefObject<HTMLElement | null>;
+  /** Replaces the elements rendering individual announcement parts. */
   slots?: AnnouncementBarSlots;
+  /** Passes props and `sx` to individual announcement parts. */
   slotProps?: {
     /** Outer section element wrapping the announcement bar. */
     root?: Slot<'section'>;

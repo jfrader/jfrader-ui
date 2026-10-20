@@ -70,8 +70,12 @@ const meta = {
     docs: {
       description: {
         component:
-          'Trigger turn actions with an accessible game toolbar. Compose with GameTable.Floating for inline table overlays, or with Dialog for modal call prompts.',
+          'Choose a turn action from a game toolbar.',
       },
+      sections: [
+        { title: 'Turn actions', stories: ['Default', 'DisabledAndPending', 'Vertical'] },
+        { title: 'Prompts', stories: ['InlineTableOverlay', 'ModalCallOverlay'] },
+      ],
       source: {
         language: 'tsx',
         code: `import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
@@ -85,28 +89,13 @@ const actions = [
 
 <GameActions actions={actions} label="Turn actions" />`,
       },
-      usage: `### Setup
-- Import from \`@jfrader/ui/game-actions\`. GameActions is published as an opt-in subpath and is not re-exported from the package root.
+      usage: `### Keyboard
+Tab enters the toolbar at the active action. Left and Right move between horizontal actions, reversed in RTL; Up and Down move between vertical actions. Home and End reach the first and last actions. Enter or Space activates an enabled action.
 
-### Keyboard and navigation
-- Implements the WAI-ARIA APG Toolbar pattern (\`role="toolbar"\`).
-- Tab enters the toolbar and moves focus to the active action.
-- ArrowRight and ArrowLeft (swapped under RTL) or ArrowDown and ArrowUp (vertical) move roving focus between actions.
-- Home and End jump to the first and last actions.
-- Inactive actions receive honest \`aria-disabled="true"\`. They remain focusable and announced by screen readers, but cannot be activated.
-- When an action becomes unavailable while focused, focus remains on the action without falling back to the document body.
-- Space and Enter activate enabled actions.
-- Command shortcuts belong to the consumer; include shortcut hints in each action label. GameActions does not bind them.
+Unavailable and pending actions remain focusable but cannot be activated. An action that becomes unavailable keeps focus. Pending actions announce their busy state. Bind any game shortcuts in your application and include their hints in the labels.
 
-### Values and states
-- Each action specifies a unique \`key\`, a \`label\` in your application language, and optional \`disabled\`, \`pending\`, and \`tone\` properties.
-- State is conveyed by text labels, honest \`aria-disabled\` attributes, and animated spinner rings for \`pending\`, never by color alone.
-- \`pending\` actions display a loading spinner ring, declare \`aria-busy="true"\`, and block activation.
-
-### Call overlays
-- Use CallOverlay from @jfrader/ui/call-overlay for animated scene announcements.
-- For inline overlays inside a table, place \`GameActions\` inside \`GameTable.Floating\`.
-- For modal call overlays, place \`GameActions\` inside \`Dialog.Content\` or \`Popover.Content\`.`,
+### Prompts
+Keep turn actions in the table for non-blocking choices. Use a dialog when the player must answer before continuing.`,
     },
   },
 } satisfies Meta<typeof GameActions>;
@@ -116,12 +105,22 @@ type Story = StoryObj<typeof meta>;
 
 /** Fold, check, call, or raise from a turn toolbar. */
 export const Default: Story = {
-  name: 'Default',
+  name: 'Turn toolbar',
   parameters: {
     docs: {
+      description: { story: 'Fold, check, call or raise from the current turn.' },
       source: {
         language: 'tsx',
-        code: `import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
+        code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { Surface } from '@jfrader/ui/surface';
+import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
+
+const TurnPanel = styled(Surface)({
+  boxSizing: 'border-box', inlineSize: \`calc(\${vars.space[8]} * 20)\`, maxInlineSize: '100%',
+  padding: vars.space[6], display: 'grid', gap: vars.space[5], justifyItems: 'start',
+});
+const TurnLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
 
 const actions = [
   { key: 'fold', label: 'Fold', tone: 'danger', onSelect: () => {} },
@@ -130,7 +129,10 @@ const actions = [
   { key: 'raise', label: 'Raise 50', tone: 'accent', onSelect: () => {} },
 ] satisfies readonly GameActionItem[];
 
-<GameActions actions={actions} label="Turn actions" />`,
+<TurnPanel>
+  <TurnLabel>Your turn · Pot 140 · To call 20</TurnLabel>
+  <GameActions actions={actions} label="Turn actions" />
+</TurnPanel>`,
       },
     },
   },
@@ -148,6 +150,7 @@ export const InlineTableOverlay: Story = {
   name: 'Inline table overlay',
   parameters: {
     docs: {
+      description: { story: 'Place turn actions above a four-player table.' },
       source: {
         language: 'tsx',
         code: `import { GameTable } from '@jfrader/ui/game-table';
@@ -221,6 +224,7 @@ export const ModalCallOverlay: Story = {
   name: 'Modal call overlay',
   parameters: {
     docs: {
+      description: { story: 'Open a challenge prompt to accept, raise or decline.' },
       source: {
         language: 'tsx',
         code: `import { Dialog } from '@jfrader/ui/dialog';
@@ -270,9 +274,19 @@ export const DisabledAndPending: Story = {
   name: 'Disabled and pending',
   parameters: {
     docs: {
+      description: { story: 'Keep unavailable and pending actions visible beside an enabled Fold action.' },
       source: {
         language: 'tsx',
-        code: `import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
+        code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { Surface } from '@jfrader/ui/surface';
+import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
+
+const TurnPanel = styled(Surface)({
+  boxSizing: 'border-box', inlineSize: \`calc(\${vars.space[8]} * 20)\`, maxInlineSize: '100%',
+  padding: vars.space[6], display: 'grid', gap: vars.space[5], justifyItems: 'start',
+});
+const TurnLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
 
 const actions = [
   { key: 'pass', label: 'Pass', disabled: true, onSelect: () => {} },
@@ -280,7 +294,10 @@ const actions = [
   { key: 'fold', label: 'Fold', tone: 'danger', onSelect: () => {} },
 ] satisfies readonly GameActionItem[];
 
-<GameActions actions={actions} label="Turn actions" />`,
+<TurnPanel>
+  <TurnLabel>Your turn · Pot 140 · To call 20</TurnLabel>
+  <GameActions actions={actions} label="Turn actions" />
+</TurnPanel>`,
       },
     },
   },
@@ -306,9 +323,19 @@ export const Vertical: Story = {
   name: 'Vertical',
   parameters: {
     docs: {
+      description: { story: 'Arrange actions vertically and move focus with Up and Down.' },
       source: {
         language: 'tsx',
-        code: `import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
+        code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { Surface } from '@jfrader/ui/surface';
+import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
+
+const TurnPanel = styled(Surface)({
+  boxSizing: 'border-box', inlineSize: \`calc(\${vars.space[8]} * 20)\`, maxInlineSize: '100%',
+  padding: vars.space[6], display: 'grid', gap: vars.space[5], justifyItems: 'start',
+});
+const TurnLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
 
 const actions = [
   { key: 'fold', label: 'Fold', tone: 'danger', onSelect: () => {} },
@@ -317,7 +344,10 @@ const actions = [
   { key: 'raise', label: 'Raise 50', tone: 'accent', onSelect: () => {} },
 ] satisfies readonly GameActionItem[];
 
-<GameActions actions={actions} orientation="vertical" label="Turn actions" />`,
+<TurnPanel>
+  <TurnLabel>Your turn · Pot 140 · To call 20</TurnLabel>
+  <GameActions actions={actions} orientation="vertical" label="Turn actions" />
+</TurnPanel>`,
       },
     },
   },

@@ -25,6 +25,7 @@ export const ReplaceScrollParts: Story = {
   },
 };
 
+const Text = styled.h2({ margin: 0, fontSize: vars.textSize.md });
 const Frame = styled.div({ inlineSize: `min(32rem, calc(100vw - ${vars.space[8]}))`, color: vars.color.text, fontFamily: vars.font.sans, lineHeight: vars.lineHeight.base });
 const ActivityList = styled.ol({ margin: 0, padding: vars.space[4], listStyle: 'none', display: 'grid', gap: vars.space[4] });
 const HorizontalActivityList = styled(ActivityList)({ display: 'flex' });
@@ -39,13 +40,24 @@ const meta = {
   args: { maxBlockSize: '16rem', slotProps: { viewport: { 'aria-label': 'Activity' } } },
   parameters: {
     docs: {
+      sections: [
+        { title: 'Axes', stories: ['Default', 'HorizontalSnap', 'BothAxes'] },
+        { title: 'Sizes', stories: ['ParentConstrained'] },
+        { title: 'Scroll shadows', stories: ['NoFade'] },
+        { title: 'Keyboard', stories: ['KeyboardNavigation'] },
+        { title: 'Composition', stories: ['ActivityPanel'] },
+      ],
       description: {
-        component:
-          'Scroll content within a panel with a height limit.',
+        component: 'Scroll content within a panel with a height limit.',
       },
-      usage: `- Limit the viewport with maxBlockSize or a sized parent. Content is not virtualized.
-- Name the viewport through slotProps.viewport.
-- Tab enters and leaves the viewport. Arrows, PageUp/PageDown, Home/End and Space follow browser scrolling behavior.`,
+      usage: `### When to use
+Keep overflowing content inside a bounded panel. Content is not virtualized; use a virtualized list for large datasets.
+
+### Layout
+Constrain the height with a limit or a sized parent. Horizontal content needs a width larger than the viewport to overflow.
+
+### Keyboard and accessibility
+Give the scrolling region an accessible name. Tab enters and leaves the viewport; arrows, Page Up/Down, Home/End and Space use native browser scrolling. Keep controls inside reachable by Tab.`,
       source: {
         code: '<ScrollArea maxBlockSize="16rem" slotProps={{ viewport: { "aria-label": "Activity" } }}><ActivityList /></ScrollArea>',
       },
@@ -142,6 +154,63 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const TRACK_PAGE_FRACTION = 0.9;
 
 export const Default: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Scroll a height-limited list of activity entries.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { ScrollArea, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ActivityList = styled.ol({
+  margin: 0,
+  padding: vars.space[4],
+  listStyle: 'none',
+  display: 'grid',
+  gap: vars.space[4],
+});
+
+const HorizontalActivityList = styled(ActivityList)({ display: 'flex' });
+
+const ActivityItem = styled.li({
+  padding: vars.space[4],
+  background: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+});
+
+const HorizontalActivityItem = styled(ActivityItem)({
+  minInlineSize: '12rem',
+  scrollSnapAlign: 'start',
+});
+
+function ActivityEntries({
+  count = 30,
+  horizontal = false,
+}: {
+  count?: number;
+  horizontal?: boolean;
+}) {
+  const List = horizontal ? HorizontalActivityList : ActivityList;
+  const Item = horizontal ? HorizontalActivityItem : ActivityItem;
+  return (
+    <List>
+      {Array.from({ length: count }, (_, index) => (
+        <Item key={index}>Activity {index + 1}</Item>
+      ))}
+    </List>
+  );
+}
+
+<ScrollArea maxBlockSize="16rem" slotProps={{ viewport: { 'aria-label': 'Activity' } }}>
+  <ActivityEntries />
+</ScrollArea>;`,
+      },
+    },
+  },
+  name: 'Vertical activity',
   render: (args) => (
     <ScrollArea {...args}>
       <Items />
@@ -159,6 +228,68 @@ export const Default: Story = {
   },
 };
 export const HorizontalSnap: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Scroll sideways through entries that snap to their starting edge.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { ScrollArea, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ActivityList = styled.ol({
+  margin: 0,
+  padding: vars.space[4],
+  listStyle: 'none',
+  display: 'grid',
+  gap: vars.space[4],
+});
+
+const HorizontalActivityList = styled(ActivityList)({ display: 'flex' });
+
+const ActivityItem = styled.li({
+  padding: vars.space[4],
+  background: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+});
+
+const HorizontalActivityItem = styled(ActivityItem)({
+  minInlineSize: '12rem',
+  scrollSnapAlign: 'start',
+});
+
+function ActivityEntries({
+  count = 30,
+  horizontal = false,
+}: {
+  count?: number;
+  horizontal?: boolean;
+}) {
+  const List = horizontal ? HorizontalActivityList : ActivityList;
+  const Item = horizontal ? HorizontalActivityItem : ActivityItem;
+  return (
+    <List>
+      {Array.from({ length: count }, (_, index) => (
+        <Item key={index}>Activity {index + 1}</Item>
+      ))}
+    </List>
+  );
+}
+
+<ScrollArea
+  maxBlockSize="16rem"
+  slotProps={{ viewport: { 'aria-label': 'Activity' } }}
+  orientation="horizontal"
+  snap="x mandatory"
+>
+  <ActivityEntries horizontal />
+</ScrollArea>;`,
+      },
+    },
+  },
+  name: 'Horizontal snapping',
   args: { orientation: 'horizontal', snap: 'x mandatory' },
   render: (args) => (
     <ScrollArea {...args}>
@@ -171,6 +302,71 @@ export const HorizontalSnap: Story = {
   },
 };
 export const BothAxes: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Scroll content that exceeds both the width and height of the viewport.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { ScrollArea, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const WideContent = styled.div({ minInlineSize: '60rem' });
+
+const ActivityList = styled.ol({
+  margin: 0,
+  padding: vars.space[4],
+  listStyle: 'none',
+  display: 'grid',
+  gap: vars.space[4],
+});
+
+const HorizontalActivityList = styled(ActivityList)({ display: 'flex' });
+
+const ActivityItem = styled.li({
+  padding: vars.space[4],
+  background: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+});
+
+const HorizontalActivityItem = styled(ActivityItem)({
+  minInlineSize: '12rem',
+  scrollSnapAlign: 'start',
+});
+
+function ActivityEntries({
+  count = 30,
+  horizontal = false,
+}: {
+  count?: number;
+  horizontal?: boolean;
+}) {
+  const List = horizontal ? HorizontalActivityList : ActivityList;
+  const Item = horizontal ? HorizontalActivityItem : ActivityItem;
+  return (
+    <List>
+      {Array.from({ length: count }, (_, index) => (
+        <Item key={index}>Activity {index + 1}</Item>
+      ))}
+    </List>
+  );
+}
+
+<ScrollArea
+  maxBlockSize="16rem"
+  slotProps={{ viewport: { 'aria-label': 'Activity' } }}
+  orientation="both"
+>
+  <WideContent>
+    <ActivityEntries />
+  </WideContent>
+</ScrollArea>;`,
+      },
+    },
+  },
+  name: 'Two-axis scrolling',
   args: { orientation: 'both' },
   render: (args) => (
     <ScrollArea {...args}>
@@ -207,6 +403,61 @@ export const NativeBars: Story = {
   },
 };
 export const NoFade: Story = {
+  parameters: {
+    docs: {
+      description: { story: 'Keep the list edges unmasked while scrolling.' },
+      source: {
+        language: 'tsx',
+        code: `import { ScrollArea, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ActivityList = styled.ol({
+  margin: 0,
+  padding: vars.space[4],
+  listStyle: 'none',
+  display: 'grid',
+  gap: vars.space[4],
+});
+
+const HorizontalActivityList = styled(ActivityList)({ display: 'flex' });
+
+const ActivityItem = styled.li({
+  padding: vars.space[4],
+  background: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+});
+
+const HorizontalActivityItem = styled(ActivityItem)({
+  minInlineSize: '12rem',
+  scrollSnapAlign: 'start',
+});
+
+function ActivityEntries({
+  count = 30,
+  horizontal = false,
+}: {
+  count?: number;
+  horizontal?: boolean;
+}) {
+  const List = horizontal ? HorizontalActivityList : ActivityList;
+  const Item = horizontal ? HorizontalActivityItem : ActivityItem;
+  return (
+    <List>
+      {Array.from({ length: count }, (_, index) => (
+        <Item key={index}>Activity {index + 1}</Item>
+      ))}
+    </List>
+  );
+}
+
+<ScrollArea maxBlockSize="16rem" slotProps={{ viewport: { 'aria-label': 'Activity' } }} fade={0}>
+  <ActivityEntries />
+</ScrollArea>;`,
+      },
+    },
+  },
+  name: 'Without edge fades',
   ...Default,
   args: { fade: 0 },
   play: async ({ canvasElement }) => {
@@ -390,6 +641,78 @@ const insideActivation = fn();
 // keyboard loop proves the component leaves each key's default action alone and keeps focus. Offset and
 // clamp assertions drive the viewport through scrollTo; real key-scroll offsets are verified in browser QA.
 export const KeyboardNavigation: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Tab into the named viewport, scroll with native keys, then Tab to the controls inside.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { ScrollArea, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ActivityList = styled.ol({
+  margin: 0,
+  padding: vars.space[4],
+  listStyle: 'none',
+  display: 'grid',
+  gap: vars.space[4],
+});
+
+const HorizontalActivityList = styled(ActivityList)({ display: 'flex' });
+
+const ActivityItem = styled.li({
+  padding: vars.space[4],
+  background: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+});
+
+const HorizontalActivityItem = styled(ActivityItem)({
+  minInlineSize: '12rem',
+  scrollSnapAlign: 'start',
+});
+
+function ActivityEntries({
+  count = 30,
+  horizontal = false,
+}: {
+  count?: number;
+  horizontal?: boolean;
+}) {
+  const List = horizontal ? HorizontalActivityList : ActivityList;
+  const Item = horizontal ? HorizontalActivityItem : ActivityItem;
+  return (
+    <List>
+      {Array.from({ length: count }, (_, index) => (
+        <Item key={index}>Activity {index + 1}</Item>
+      ))}
+    </List>
+  );
+}
+
+const ActionButton = styled.button({
+  minHeight: vars.space[6],
+  minWidth: vars.space[6],
+  paddingBlock: vars.space[1],
+  paddingInline: \`calc(\${vars.space[5]} / 2)\`,
+  boxSizing: 'border-box',
+});
+
+<>
+  <ActionButton type="button">Before</ActionButton>
+  <ScrollArea maxBlockSize="16rem" slotProps={{ viewport: { 'aria-label': 'Activity' } }}>
+    <ActivityEntries />
+    <ActionButton type="button">Inside</ActionButton>
+    <textarea aria-label="Notes" defaultValue="Notes" />
+  </ScrollArea>
+  <ActionButton type="button">After</ActionButton>
+</>;`,
+      },
+    },
+  },
+  name: 'Keyboard scrolling',
   args: { onEdgeChange: fn() },
   render: (args) => (
     <>
@@ -694,6 +1017,63 @@ export const RTLWheel: Story = {
 
 const PARENT_BLOCK_SIZE = '12rem';
 export const ParentConstrained: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Keep the scrolling viewport within an explicitly sized panel.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { ScrollArea, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ActivityList = styled.ol({
+  margin: 0,
+  padding: vars.space[4],
+  listStyle: 'none',
+  display: 'grid',
+  gap: vars.space[4],
+});
+
+const HorizontalActivityList = styled(ActivityList)({ display: 'flex' });
+
+const ActivityItem = styled.li({
+  padding: vars.space[4],
+  background: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+});
+
+const HorizontalActivityItem = styled(ActivityItem)({
+  minInlineSize: '12rem',
+  scrollSnapAlign: 'start',
+});
+
+function ActivityEntries({
+  count = 30,
+  horizontal = false,
+}: {
+  count?: number;
+  horizontal?: boolean;
+}) {
+  const List = horizontal ? HorizontalActivityList : ActivityList;
+  const Item = horizontal ? HorizontalActivityItem : ActivityItem;
+  return (
+    <List>
+      {Array.from({ length: count }, (_, index) => (
+        <Item key={index}>Activity {index + 1}</Item>
+      ))}
+    </List>
+  );
+}
+
+<ScrollArea sx={{ blockSize: '12rem' }} slotProps={{ viewport: { 'aria-label': 'Activity' } }}>
+  <ActivityEntries />
+</ScrollArea>;`,
+      },
+    },
+  },
+  name: 'Fixed-height panel',
   args: { maxBlockSize: undefined, sx: { blockSize: PARENT_BLOCK_SIZE } },
   render: Default.render,
   play: async ({ canvasElement }) => {
@@ -766,4 +1146,80 @@ export const AutoHide: Story = {
       await expect(root).not.toHaveAttribute('data-scrolling');
     });
   },
+};
+
+export const ActivityPanel: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Keep the section heading outside the scrolling list.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { ScrollArea, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Text = styled.h2({ margin: 0, fontSize: vars.textSize.md });
+
+const ActivityList = styled.ol({
+  margin: 0,
+  padding: vars.space[4],
+  listStyle: 'none',
+  display: 'grid',
+  gap: vars.space[4],
+});
+
+const HorizontalActivityList = styled(ActivityList)({ display: 'flex' });
+
+const ActivityItem = styled.li({
+  padding: vars.space[4],
+  background: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+});
+
+const HorizontalActivityItem = styled(ActivityItem)({
+  minInlineSize: '12rem',
+  scrollSnapAlign: 'start',
+});
+
+function ActivityEntries({
+  count = 30,
+  horizontal = false,
+}: {
+  count?: number;
+  horizontal?: boolean;
+}) {
+  const List = horizontal ? HorizontalActivityList : ActivityList;
+  const Item = horizontal ? HorizontalActivityItem : ActivityItem;
+  return (
+    <List>
+      {Array.from({ length: count }, (_, index) => (
+        <Item key={index}>Activity {index + 1}</Item>
+      ))}
+    </List>
+  );
+}
+
+<section aria-label="Recent activity">
+  <Text>Recent activity</Text>
+  <ScrollArea maxBlockSize="16rem" slotProps={{ viewport: { 'aria-label': 'Activity entries' } }}>
+    <ActivityEntries />
+  </ScrollArea>
+</section>;`,
+      },
+    },
+  },
+  name: 'Activity section',
+  render: () => (
+    <section aria-label="Recent activity">
+      <Text>Recent activity</Text>
+      <ScrollArea
+        maxBlockSize="16rem"
+        slotProps={{ viewport: { 'aria-label': 'Activity entries' } }}
+      >
+        <Items />
+      </ScrollArea>
+    </section>
+  ),
 };

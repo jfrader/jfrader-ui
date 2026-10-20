@@ -48,4 +48,4 @@ export function ArticleMeta({ variant = 'inline', place, published, updated, pub
     </PresentationSlot>
   );
 }
-ArticleMeta.displayName = 'ArticleMeta';
+ArticleMeta.displayName = 'Article.Meta';

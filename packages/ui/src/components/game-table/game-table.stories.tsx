@@ -271,99 +271,26 @@ const meta = {
     layout: 'fullscreen',
     docs: {
       description: { component: 'Arrange players around a game surface. Add cards, controls and floating content to named regions.' },
-      usage: `## Setup
-- Import from \`@jfrader/ui/game-table\`. GameTable is an opt-in subpath and is not re-exported by the package root.
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Seats and plays', stories: ['PrebuiltSlotsAndEmptyPlaces'] },
+        { title: 'Layout', stories: ['SeatPlacementModes'] },
+        { title: 'Interactions', stories: ['PokerCommunityBoard'] },
+        { title: 'States', stories: ['Lobby'] },
+        { title: 'Composition', stories: ['WithAvatars'] },
+      ],
+      usage: `### When to use
+Use GameTable to arrange players, played cards, community cards, and game actions around an oval or circular playing surface. For standalone card displays or single hands without a table, use GameHand or GameCardStack directly.
 
-\`\`\`tsx
-<GameTable players={6} seats={players}>
-  <GameTable.Header>Poker · 10 / 20</GameTable.Header>
-  <GameTable.Seat><SeatContent /></GameTable.Seat>
-  <GameTable.Play />
-  <GameTable.Center>Pot: 240</GameTable.Center>
-  <GameTable.Dock><Button>Check</Button></GameTable.Dock>
-</GameTable>
-\`\`\`
+### Constraints
+Give the parent container explicit inline and block sizes. GameTable measures its container using container queries and ResizeObserver rather than the browser viewport.
 
-## Regions
-Compose direct \`GameTable.Seat\`, \`GameTable.Play\`, \`GameTable.Center\`, \`GameTable.Header\`, \`GameTable.Dock\`, \`GameTable.Footer\` and \`GameTable.Floating\` children in any order (fragments are accepted). Seat and Play repeat at every place unless you pass \`slotKey\`. Their children read \`{ player, slot, index, geometry }\` with \`useGameTableSeat<Player>()\`. Empty play content reserves nothing. Center holds shared cards, the pot or deck and is measured independently. Keep measured footprints in normal flow; absolute artwork must reserve its footprint in its parent. The node-region props and seat/play callbacks have been replaced by these parts.
+Keep seat and region content in normal document flow so ResizeObserver can measure footprints accurately; absolute elements must reserve their footprint in a parent wrapper. Interactive controls preserve a minimum footprint of 24px on both axes (32px on the primary axis).
 
-Each public part accepts native div props, ref and sx. \`component\` is sugar for \`slots.root\`; \`slotProps.root\` passes root props, with slot conflicts winning except merged className/style. Geometry variables and measurement markers remain table-owned. Use \`seatSlots\` for prebuilt player order; \`slots\` now replaces structure.
+Use at least two places with unique player and slot keys. Team assignments must fit the available places. Keep player chrome concise: it does not reserve layout space. If card and control minimum sizes cannot fit, overflow or collisions may remain; give the parent more space or reduce the composition. Do not scale measured child sizes a second time.
 
-## Geometry
-Give the parent an inline and block size. Container queries derive the CSS frame from that container, independently of the browser viewport. The server renders the CSS frame directly; regions remain hidden until measured. ResizeObserver measures the actual root, shell, surface and intrinsic regions.
-\`seatPlacement\` defaults to \`edge\`: the content centre sits on the felt boundary. \`inside\` keeps content contained with its outer edge inset by the gap; \`outside\` moves the inner edge to the boundary, using the directional box support as an outward offset. This deliberately replaces the previous containment-only default. The felt is a fluid ellipse with 50% border radius that follows container CSS; edge/outside placement follows its measured ellipse. The shell reserves the outboard footprint at each region's minimum scale. If the root cannot hold a placement at its floor, the table declares insufficient space rather than calling an inward fallback fitted.
-The play anchor shares its seat's physical polar direction on an inward ring. Its distance leaves the measured seat/play boxes separated by the content gap on at least one axis, moving farther inward when the surface border requires it. Plays must stay inside the surface, clear of other regions and the measured centre; no invisible centre-size percentage is reserved.
-\`players\` accepts any integer >= 2. \`seats\` fills empty places, distributes teams round-robin and puts your seat first. \`teamCount\` defaults to 2; use 1 for free-for-all. \`seatSlots\` preserves a prebuilt visual order and any team numbers, and must contain exactly \`players\` places; order it with the exported builders when needed. Do not pass both.
-The curve uses θᵢ = π/2 + 2πi/N and Pᵢ = C + (Rx cosθᵢ, Ry sinθᵢ). C is the surface border-box center. In edge/outside modes Rx and Ry are the measured surface half-extents; the ring follows the felt's aspect, including landscape frames. Only inside mode bounds the available-area axis stretch: near-square areas (axis ratio ≤1.15) give a circle, growing continuously up to 1.5. On an ellipse the physical polar-angle gaps differ from the equal parametric gaps; no per-seat angular correction is applied. Content stays upright, with zero seat rotation; RTL mirrors placement only. No table-owned decoration requires rotation.
-\`seats\` defaults missing \`teamIdx\` to \`index % teamCount\`; explicit indices must be in [0, teamCount). Team j has as many places as indices i in [0, players) with i % teamCount === j; odd seat counts can give teams different capacities. Incompatible capacities and duplicate player/slot keys throw. Use \`seatSlots\` or builders as escape hatches for arbitrary orders or teams. \`buildAlternatingSlots(seats, players, direction, teamCount)\` follows the same policy. \`getTablePointSeatIndexes(slots, teamCount)\` selects the occupied rival nearest the bottom seat's antipode (ties use visual order); with teamCount=1 there is no front team leader and its index is -1.
-\`clearance\` requests additional block-axis space. Header, dock and footer remain unscaled, outside the surface. The request is a preference: if the content floors cannot fit, both clearance edges yield to \`GAME_TABLE_LIMITS.minimumClearancePx\` (0). The table retries the requested CSS padding on content/size changes, so the request is restored when space returns. This is a two-step policy (requested, then minimum), not a search for the largest feasible clearance.
-Coordinates are measured from inline-start and mirror with \`dir="rtl"\`. \`data-game-surface="true"\` marks the surface for measuring future card flights.
-
-## Content size
-\`GAME_TABLE_LIMITS.minimumCardWidthPx\` is 32px, matching GameCard sm. Each seat, play and centre has its own minimum scale: max(32 / intrinsic card width), combined with its control-size floor. Chrome is excluded. Regions without cards or controls retain intrinsic size. Custom artwork without GameCard markers is not covered by the card floor.
-The solver chooses the largest shared preferred scale t in [0,1]; each region uses max(t, its minimum scale). It pushes the seat ring outward within placement and measured shell constraints, separates neighbours and plays, and keeps the inward play ring clear of the measured centre. The space-2 gap stays unscaled. Content is never substituted or truncated.
-Precedence: preserve card/control floors → try requested clearance → retry at clearance zero → declare insufficient space if floors still cannot fit. \`data-clearance="requested" | "reduced"\` and numeric \`data-clearance-start/end\` report effective local CSS pixels. \`data-layout-fit="measuring" | "fitted" | "insufficient-space"\` reports geometry. Insufficient space means the composition cannot satisfy all clearances at its floors, including the play-to-centre band; overflow or collisions may remain. Give the parent more space or reduce the composition.
-
-## Seat chrome
-Put names, avatars and non-layout adornments inside \`<GameTable.SeatChrome>…</GameTable.SeatChrome>\` within Seat. The part is absolutely positioned: it reserves no space and its descendants do not constrain card scale. It floats on the outward side; when a side label does not fit horizontally inside the root, only the chrome moves above/below the cards. No card-anchor compensation is applied. Removing the part from the DOM does not move the card block. Unmarked in-flow content still counts as content; the table does not guess which arbitrary text is a player name. Avoid wrappers that reserve padding/gaps for the chrome.
-Chrome is independent of card fit: \`fitted\` does not guarantee arbitrary oversized labels or controls fit. Keep chrome concise and respect control/card minimum sizes within your custom content. The table does not rotate names, avatars, or faces; user-supplied transforms are the consumer's responsibility.
-\`--game-table-content-scale\` on each seat and \`--game-table-center-scale\` on the root expose actual region scales; the root content-scale value is only the preferred t. \`--game-table-radius-x/y\` and \`--game-table-content-gap\` expose local geometry. Each play publishes \`--game-table-play-inline/block\` (logical percentages), \`--game-table-play-scale\`, \`--game-table-play-angle\` (outward physical degrees) and \`--game-table-play-cos/sin\`. \`geometry.scale\` and \`geometry.playScale\` are informational: never multiply child sizes by them again. Floors are local CSS-pixel sizes before external ancestor transforms; a consumer scaling the entire table must account for its own scale.
-Native seat/play/center controls preserve at least 24px on both axes and 32px on their main axis, unless already smaller intrinsically. Regions without GameCards or controls retain their intrinsic size rather than disappearing at a zero floor. \`fitted\` covers normal-flow border boxes, not overflowing artwork, shadows or floating overlays. Keep absolute artwork's full footprint reserved in normal flow.
-
-## Rival-card flight markers
-After commit, GameTable marks each actual \`GameCard\` back in an occupied non-own seat with \`data-seat-hidden-card={player.key}\` and \`data-seat-hidden-card-index={index}\`. Index is current zero-based DOM order within that seat, not seat index. Markers update on card/face/player changes and are removed when a card is revealed or a seat becomes empty/own. No opponent value is exposed. Own-hand markers remain the hand's responsibility; custom card renderers must provide their own markers. The flight consumer example is \`packages/ui/src/components/card-flights/card-flights-fixture.tsx\`.
-
-## Flights
-\`CardFlightsProvider\` measures the destinations the library renders: \`GameHand\`, \`GameHand.Hidden\` and \`GameCardStack.Pile\` register their card nodes, and \`GameTable\` registers its seats and surface. A board composition calls \`useBoardFlights\` with the records it already renders and needs no measurements of its own.
-
-For a composition the library does not describe — a shared board dealt from a deck, for example — \`useCardFlights\` exposes \`launch\` for measured endpoints, and \`CARD_FLIGHT_ATTRIBUTES\` names the markers the built-in pieces emit. Measure the endpoints you own through refs, from the board root rather than the document, and measure them again after viewport, resize, scroll, zoom or ancestor transform changes: they are snapshots, not a cache.
-
-## Keyboard
-The table is a passive layout, not an APG grid or application. It adds no roles, landmarks, focus movement, state or animation; supplied controls keep their own semantics and native tab order. Floating content is table-local, not a dialog or portal.`,
-      source: { language: 'tsx', code: `import { Button, styled } from '@jfrader/ui';
-import { vars } from '@jfrader/tokens/vars';
-import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
-
-const Frame = styled.div({ inlineSize: '100%', blockSize: 'calc(' + vars.space[4] + ' * 51)' });
-
-interface Player extends SeatLike { name: string }
-
-const players: Player[] = [
-  { key: 'alex', name: 'Alex', teamIdx: 0 },
-  { key: 'blair', name: 'Blair', teamIdx: 1 },
-  { key: 'you', name: 'You', teamIdx: 0, isMe: true },
-  { key: 'drew', name: 'Drew', teamIdx: 1 },
-  { key: 'emery', name: 'Emery', teamIdx: 0 },
-  { key: 'frankie', name: 'Frankie', teamIdx: 1 },
-];
-
-function SeatContent() {
-  const { player } = useGameTableSeat<Player>();
-  return (
-    <>
-      <GameTable.SeatChrome>
-        <span>{player?.name ?? 'Open seat'}</span>
-      </GameTable.SeatChrome>
-      <GameCard size="sm" label="First hidden card" />
-      <GameCard size="sm" label="Second hidden card" />
-    </>
-  );
-}
-
-export default function Example() {
-  return (
-    <Frame><GameTable players={6} seats={players}>
-      <GameTable.Header>Poker · 10 / 20</GameTable.Header>
-      <GameTable.Seat><SeatContent /></GameTable.Seat>
-      <GameTable.Play />
-      <GameTable.Center>
-        <span>Pot: 240</span>
-      </GameTable.Center>
-      <GameTable.Dock><Button>Check</Button></GameTable.Dock>
-    </GameTable></Frame>
-  );
-}` },
+### Keyboard and accessibility
+GameTable provides passive layout and adds no custom roles, landmarks, focus traps, or roving tabindex. Supply accessible names for all seats, cards, and buttons. Interactive controls retain their native semantics and natural Tab order. Floating content stays local to the table; it is not a modal dialog.`,
     },
   },
   render: (args: GameTableProps<Player>) => <ViewportFrame viewport={args.viewport}>
@@ -455,7 +382,91 @@ export default function Example() {
 };
 
 export const Default: Story = {
-  name: 'Default',
+  name: 'Poker table',
+  parameters: { docs: {
+    description: { story: 'Show six players with hidden cards, community cards and a check action.' },
+    source: { language: 'tsx', code: `import { Button, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { GameCard } from '@jfrader/ui/game-card';
+import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
+
+const Frame = styled.div({
+  inlineSize: 412,
+  blockSize: 816,
+});
+
+const SeatCards = styled.div({
+  position: 'relative',
+  display: 'flex',
+  gap: vars.space[1],
+});
+
+const CenterContent = styled.div({
+  display: 'grid',
+  justifyItems: 'center',
+  gap: vars.space[2],
+});
+
+const CommunityCards = styled.div({
+  display: 'flex',
+  gap: vars.space[1],
+});
+
+interface Player extends SeatLike {
+  name: string;
+}
+
+const players: Player[] = [
+  { key: 'alex', name: 'Alex', teamIdx: 0 },
+  { key: 'blair', name: 'Blair', teamIdx: 1 },
+  { key: 'you', name: 'You', teamIdx: 0, isMe: true },
+  { key: 'drew', name: 'Drew', teamIdx: 1 },
+  { key: 'emery', name: 'Emery', teamIdx: 0 },
+  { key: 'frankie', name: 'Frankie', teamIdx: 1 },
+];
+
+function SeatContent() {
+  const { player } = useGameTableSeat<Player>();
+  const name = player?.name ?? 'Open seat';
+
+  return (
+    <SeatCards>
+      <GameTable.SeatChrome>
+        <span>{name}</span>
+      </GameTable.SeatChrome>
+      <GameCard size="sm" label={\`\${name}: first hidden card\`} />
+      <GameCard size="sm" label={\`\${name}: second hidden card\`} />
+    </SeatCards>
+  );
+}
+
+export default function Example() {
+  return (
+    <Frame>
+      <GameTable players={6} seats={players}>
+        <GameTable.Header>Poker · 10 / 20</GameTable.Header>
+        <GameTable.Seat>
+          <SeatContent />
+        </GameTable.Seat>
+        <GameTable.Play />
+        <GameTable.Center>
+          <CenterContent>
+            <span>Pot: 240</span>
+            <CommunityCards>
+              <GameCard size="sm" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
+              <GameCard size="sm" label="King of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'K' }} />
+              <GameCard size="sm" label="Queen of clubs" value={{ deck: 'french', suit: 'clubs', rank: 'Q' }} />
+            </CommunityCards>
+          </CenterContent>
+        </GameTable.Center>
+        <GameTable.Dock>
+          <Button>Check</Button>
+        </GameTable.Dock>
+      </GameTable>
+    </Frame>
+  );
+}` },
+  } },
   play: async ({ canvasElement, args, userEvent }) => {
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]');
     if (!table) throw new Error('Missing table');
@@ -1713,82 +1724,90 @@ export const SlotOrderAndGeometry: Story = {
 
 export const PrebuiltSlotsAndEmptyPlaces: Story = {
   name: 'Prebuilt slots and empty places',
-  parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
-import { Button, styled } from '@jfrader/ui';
+  parameters: { docs: {
+    description: { story: 'Reserve five open places around a table with one seated player.' },
+    source: { language: 'tsx', code: `import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, buildAlternatingSlots, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable, buildAlternatingSlots, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
 
-const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
+const Frame = styled.div({
+  inlineSize: 412,
+  blockSize: 816,
+});
 
-const ViewportFrame = styled.div(viewportSize);
+const SeatCards = styled.div({
+  position: 'relative',
+  display: 'flex',
+  gap: vars.space[1],
+});
 
-const SeatCards = styled.div({ position: 'relative', display: 'flex', gap: vars.space[1] });
+const CenterContent = styled.div({
+  display: 'grid',
+  justifyItems: 'center',
+  gap: vars.space[2],
+});
 
-const CardsRow = styled.div({ display: 'flex', gap: vars.space[1] });
+const CommunityCards = styled.div({
+  display: 'flex',
+  gap: vars.space[1],
+});
 
-const BoardCenter = styled.div({ display: 'grid', justifyItems: 'center', gap: vars.space[2] });
-
-type RegionFixture<T extends SeatLike> = (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
-
-function FixtureContent<T extends SeatLike>({ content }: { content?: RegionFixture<T> }) {
-  const { slot, index, geometry } = useGameTableSeat<T>();
-  return content?.(slot, index, geometry);
+interface Player extends SeatLike {
+  name: string;
 }
 
-interface Player extends SeatLike { name: string }
+const seatedPlayer: Player = {
+  key: 'you',
+  name: 'You',
+  teamIdx: 0,
+  isMe: true,
+};
 
-const SEATS: [Player, Player, Player, Player, Player, Player] = [
-  { key: 'alex', teamIdx: 0, name: 'Alex' },
-  { key: 'blair', teamIdx: 1, name: 'Blair' },
-  { key: 'you', teamIdx: 0, isMe: true, name: 'You' },
-  { key: 'drew', teamIdx: 1, name: 'Drew' },
-  { key: 'emery', teamIdx: 0, name: 'Emery' },
-  { key: 'frankie', teamIdx: 1, name: 'Frankie' },
-];
+const prebuiltSlots = buildAlternatingSlots([seatedPlayer], 6, 'clockwise');
 
-const VIEWPORTS = {
-  portraitShort: { width: 412, height: 816 },
-  portrait: { width: 390, height: 844 },
-  wide: { width: 840, height: 360 },
-  square: { width: 834, height: 1112 },
-  squareWide: { width: 1000, height: 900 },
-  wideLarge: { width: 1440, height: 900 },
-} satisfies Record<string, { width: number; height: number }>;
+function SeatContent() {
+  const { player } = useGameTableSeat<Player>();
+  const name = player?.name ?? 'Open seat';
 
-const seatChrome = (slot: GameTableSlot<Player>) => (
-  <SeatCards>
-    <Table.SeatChrome>
-      <span>{slot.player?.name ?? 'Open seat'}</span>
-    </Table.SeatChrome>
-    <GameCard size="sm" label={\`\${slot.player?.name ?? 'Open seat'}: first hidden card\`} />
-    <GameCard size="sm" label={\`\${slot.player?.name ?? 'Open seat'}: second hidden card\`} />
-  </SeatCards>
-);
-
-const center = (
-  <BoardCenter>
-    <span>Pot: 240</span>
-    <CardsRow>
-      <GameCard size="sm" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
-      <GameCard size="sm" label="King of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'K' }} />
-      <GameCard size="sm" label="Queen of clubs" value={{ deck: 'french', suit: 'clubs', rank: 'Q' }} />
-    </CardsRow>
-  </BoardCenter>
-);
+  return (
+    <SeatCards>
+      <GameTable.SeatChrome>
+        <span>{name}</span>
+      </GameTable.SeatChrome>
+      <GameCard size="sm" label={\`\${name}: first hidden card\`} />
+      <GameCard size="sm" label={\`\${name}: second hidden card\`} />
+    </SeatCards>
+  );
+}
 
 export default function Example() {
-  return (<ViewportFrame viewport={VIEWPORTS.portraitShort}>
-<Table players={6} seatSlots={buildAlternatingSlots([SEATS[2]], 6, 'clockwise')}>
-    <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
-    <Table.Play></Table.Play>
-    <Table.Center>{center}</Table.Center>
-    <Table.Header>Poker · 10 / 20</Table.Header>
-    <Table.Dock><Button>Check</Button></Table.Dock>
-
-  </Table>
-</ViewportFrame>);
-}` } } },
+  return (
+    <Frame>
+      <GameTable players={6} seatSlots={prebuiltSlots}>
+        <GameTable.Header>Poker · 10 / 20</GameTable.Header>
+        <GameTable.Seat>
+          <SeatContent />
+        </GameTable.Seat>
+        <GameTable.Play />
+        <GameTable.Center>
+          <CenterContent>
+            <span>Pot: 240</span>
+            <CommunityCards>
+              <GameCard size="sm" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
+              <GameCard size="sm" label="King of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'K' }} />
+              <GameCard size="sm" label="Queen of clubs" value={{ deck: 'french', suit: 'clubs', rank: 'Q' }} />
+            </CommunityCards>
+          </CenterContent>
+        </GameTable.Center>
+        <GameTable.Dock>
+          <Button>Check</Button>
+        </GameTable.Dock>
+      </GameTable>
+    </Frame>
+  );
+}` },
+  } },
   args: { seats: undefined, slots: buildAlternatingSlots([SEATS[2]], 6, 'clockwise') },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelectorAll('[data-ui="game-table-seat"]')).toHaveLength(6);
@@ -1798,86 +1817,90 @@ export default function Example() {
 };
 
 export const Lobby: Story = {
-  name: 'Lobby',
+  name: 'Lobby surface',
   args: { surface: 'lobby', players: 4, seats: seatsFor(4) },
-  parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
-import { Button, styled } from '@jfrader/ui';
+  parameters: { docs: {
+    description: { story: 'Arrange four players around a lobby surface.' },
+    source: { language: 'tsx', code: `import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
 
-const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
+const Frame = styled.div({
+  inlineSize: 412,
+  blockSize: 816,
+});
 
-const ViewportFrame = styled.div(viewportSize);
+const SeatCards = styled.div({
+  position: 'relative',
+  display: 'flex',
+  gap: vars.space[1],
+});
 
-const SeatCards = styled.div({ position: 'relative', display: 'flex', gap: vars.space[1] });
+const CenterContent = styled.div({
+  display: 'grid',
+  justifyItems: 'center',
+  gap: vars.space[2],
+});
 
-const CardsRow = styled.div({ display: 'flex', gap: vars.space[1] });
+const CommunityCards = styled.div({
+  display: 'flex',
+  gap: vars.space[1],
+});
 
-const BoardCenter = styled.div({ display: 'grid', justifyItems: 'center', gap: vars.space[2] });
-
-type RegionFixture<T extends SeatLike> = (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
-
-function FixtureContent<T extends SeatLike>({ content }: { content?: RegionFixture<T> }) {
-  const { slot, index, geometry } = useGameTableSeat<T>();
-  return content?.(slot, index, geometry);
+interface Player extends SeatLike {
+  name: string;
 }
 
-interface Player extends SeatLike { name: string }
-
-const SEATS: [Player, Player, Player, Player, Player, Player] = [
-  { key: 'alex', teamIdx: 0, name: 'Alex' },
-  { key: 'blair', teamIdx: 1, name: 'Blair' },
-  { key: 'you', teamIdx: 0, isMe: true, name: 'You' },
-  { key: 'drew', teamIdx: 1, name: 'Drew' },
-  { key: 'emery', teamIdx: 0, name: 'Emery' },
-  { key: 'frankie', teamIdx: 1, name: 'Frankie' },
+const players: Player[] = [
+  { key: 'alex', name: 'Alex', teamIdx: 0 },
+  { key: 'blair', name: 'Blair', teamIdx: 1 },
+  { key: 'you', name: 'You', teamIdx: 0, isMe: true },
+  { key: 'drew', name: 'Drew', teamIdx: 1 },
 ];
 
-const VIEWPORTS = {
-  portraitShort: { width: 412, height: 816 },
-  portrait: { width: 390, height: 844 },
-  wide: { width: 840, height: 360 },
-  square: { width: 834, height: 1112 },
-  squareWide: { width: 1000, height: 900 },
-  wideLarge: { width: 1440, height: 900 },
-} satisfies Record<string, { width: number; height: number }>;
+function SeatContent() {
+  const { player } = useGameTableSeat<Player>();
+  const name = player?.name ?? 'Open seat';
 
-const seatsFor = (players: number) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
-
-const seatChrome = (slot: GameTableSlot<Player>) => (
-  <SeatCards>
-    <Table.SeatChrome>
-      <span>{slot.player?.name ?? 'Open seat'}</span>
-    </Table.SeatChrome>
-    <GameCard size="sm" label={\`\${slot.player?.name ?? 'Open seat'}: first hidden card\`} />
-    <GameCard size="sm" label={\`\${slot.player?.name ?? 'Open seat'}: second hidden card\`} />
-  </SeatCards>
-);
-
-const center = (
-  <BoardCenter>
-    <span>Pot: 240</span>
-    <CardsRow>
-      <GameCard size="sm" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
-      <GameCard size="sm" label="King of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'K' }} />
-      <GameCard size="sm" label="Queen of clubs" value={{ deck: 'french', suit: 'clubs', rank: 'Q' }} />
-    </CardsRow>
-  </BoardCenter>
-);
+  return (
+    <SeatCards>
+      <GameTable.SeatChrome>
+        <span>{name}</span>
+      </GameTable.SeatChrome>
+      <GameCard size="sm" label={\`\${name}: first hidden card\`} />
+      <GameCard size="sm" label={\`\${name}: second hidden card\`} />
+    </SeatCards>
+  );
+}
 
 export default function Example() {
-  return (<ViewportFrame viewport={VIEWPORTS.portraitShort}>
-<Table players={4} seats={seatsFor(4)} surface="lobby">
-    <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
-    <Table.Play></Table.Play>
-    <Table.Center>{center}</Table.Center>
-    <Table.Header>Poker · 10 / 20</Table.Header>
-    <Table.Dock><Button>Check</Button></Table.Dock>
-
-  </Table>
-</ViewportFrame>);
-}` } } },
+  return (
+    <Frame>
+      <GameTable players={4} seats={players} surface="lobby">
+        <GameTable.Header>Poker · 10 / 20</GameTable.Header>
+        <GameTable.Seat>
+          <SeatContent />
+        </GameTable.Seat>
+        <GameTable.Play />
+        <GameTable.Center>
+          <CenterContent>
+            <span>Pot: 240</span>
+            <CommunityCards>
+              <GameCard size="sm" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
+              <GameCard size="sm" label="King of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'K' }} />
+              <GameCard size="sm" label="Queen of clubs" value={{ deck: 'french', suit: 'clubs', rank: 'Q' }} />
+            </CommunityCards>
+          </CenterContent>
+        </GameTable.Center>
+        <GameTable.Dock>
+          <Button>Check</Button>
+        </GameTable.Dock>
+      </GameTable>
+    </Frame>
+  );
+}` },
+  } },
 };
 
 export const LobbyLandscape: Story = {
@@ -3194,84 +3217,92 @@ const seatWithAvatar = (slot: GameTableSlot<Player>, size: AvatarSize = 'sm') =>
 );
 
 export const WithAvatars: Story = {
-  name: 'With avatars',
-  parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
-import { Avatar, Button, styled, type AvatarSize } from '@jfrader/ui';
+  name: 'Player avatars',
+  parameters: { docs: {
+    description: { story: 'Add upright avatars and names outside each player’s hidden cards.' },
+    source: { language: 'tsx', code: `import { Avatar, Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot } from '@jfrader/ui/game-table';
+import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
 
-const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
+const Frame = styled.div({
+  inlineSize: '100%',
+  blockSize: 900,
+});
 
-const ViewportFrame = styled.div(viewportSize);
+const SeatCards = styled.div({
+  position: 'relative',
+  display: 'flex',
+  gap: vars.space[1],
+});
 
-const SeatCards = styled.div({ position: 'relative', display: 'flex', gap: vars.space[1] });
+const CenterContent = styled.div({
+  display: 'grid',
+  justifyItems: 'center',
+  gap: vars.space[2],
+});
 
-const CardsRow = styled.div({ display: 'flex', gap: vars.space[1] });
+const CommunityCards = styled.div({
+  display: 'flex',
+  gap: vars.space[1],
+});
 
-const BoardCenter = styled.div({ display: 'grid', justifyItems: 'center', gap: vars.space[2] });
-
-type RegionFixture<T extends SeatLike> = (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
-
-function FixtureContent<T extends SeatLike>({ content }: { content?: RegionFixture<T> }) {
-  const { slot, index, geometry } = useGameTableSeat<T>();
-  return content?.(slot, index, geometry);
+interface Player extends SeatLike {
+  name: string;
 }
 
-interface Player extends SeatLike { name: string }
-
-const SEATS: [Player, Player, Player, Player, Player, Player] = [
-  { key: 'alex', teamIdx: 0, name: 'Alex' },
-  { key: 'blair', teamIdx: 1, name: 'Blair' },
-  { key: 'you', teamIdx: 0, isMe: true, name: 'You' },
-  { key: 'drew', teamIdx: 1, name: 'Drew' },
-  { key: 'emery', teamIdx: 0, name: 'Emery' },
-  { key: 'frankie', teamIdx: 1, name: 'Frankie' },
+const players: Player[] = [
+  { key: 'alex', name: 'Alex', teamIdx: 0 },
+  { key: 'blair', name: 'Blair', teamIdx: 1 },
+  { key: 'you', name: 'You', teamIdx: 0, isMe: true },
+  { key: 'drew', name: 'Drew', teamIdx: 1 },
+  { key: 'emery', name: 'Emery', teamIdx: 0 },
+  { key: 'frankie', name: 'Frankie', teamIdx: 1 },
 ];
 
-const VIEWPORTS = {
-  portraitShort: { width: 412, height: 816 },
-  portrait: { width: 390, height: 844 },
-  wide: { width: 840, height: 360 },
-  square: { width: 834, height: 1112 },
-  squareWide: { width: 1000, height: 900 },
-  wideLarge: { width: 1440, height: 900 },
-} satisfies Record<string, { width: number; height: number }>;
+function SeatContent() {
+  const { player } = useGameTableSeat<Player>();
+  const name = player?.name ?? 'Open seat';
 
-const center = (
-  <BoardCenter>
-    <span>Pot: 240</span>
-    <CardsRow>
-      <GameCard size="sm" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
-      <GameCard size="sm" label="King of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'K' }} />
-      <GameCard size="sm" label="Queen of clubs" value={{ deck: 'french', suit: 'clubs', rank: 'Q' }} />
-    </CardsRow>
-  </BoardCenter>
-);
-
-const seatWithAvatar = (slot: GameTableSlot<Player>, size: AvatarSize = 'sm') => (
-  <SeatCards>
-    <Table.SeatChrome>
-      <Avatar size={size} name={slot.player?.name ?? 'Open seat'} />
-      <span>{slot.player?.name ?? 'Open seat'}</span>
-    </Table.SeatChrome>
-    <GameCard size="sm" label={\`\${slot.player?.name ?? 'Open seat'}: first hidden card\`} />
-    <GameCard size="sm" label={\`\${slot.player?.name ?? 'Open seat'}: second hidden card\`} />
-  </SeatCards>
-);
+  return (
+    <SeatCards>
+      <GameTable.SeatChrome>
+        <Avatar size="sm" name={name} />
+        <span>{name}</span>
+      </GameTable.SeatChrome>
+      <GameCard size="sm" label={\`\${name}: first hidden card\`} />
+      <GameCard size="sm" label={\`\${name}: second hidden card\`} />
+    </SeatCards>
+  );
+}
 
 export default function Example() {
-  return (<ViewportFrame viewport={VIEWPORTS.wideLarge}>
-<Table players={6} seats={SEATS} >
-    <Table.Seat><FixtureContent<Player> content={(slot) => seatWithAvatar(slot, 'sm')} /></Table.Seat>
-    <Table.Play></Table.Play>
-    <Table.Center>{center}</Table.Center>
-    <Table.Header>Poker · Avatars</Table.Header>
-    <Table.Dock><Button>Check</Button></Table.Dock>
-
-  </Table>
-</ViewportFrame>);
-}` } } },
+  return (
+    <Frame>
+      <GameTable players={6} seats={players}>
+        <GameTable.Header>Poker · Avatars</GameTable.Header>
+        <GameTable.Seat>
+          <SeatContent />
+        </GameTable.Seat>
+        <GameTable.Play />
+        <GameTable.Center>
+          <CenterContent>
+            <span>Pot: 240</span>
+            <CommunityCards>
+              <GameCard size="sm" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
+              <GameCard size="sm" label="King of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'K' }} />
+              <GameCard size="sm" label="Queen of clubs" value={{ deck: 'french', suit: 'clubs', rank: 'Q' }} />
+            </CommunityCards>
+          </CenterContent>
+        </GameTable.Center>
+        <GameTable.Dock>
+          <Button>Check</Button>
+        </GameTable.Dock>
+      </GameTable>
+    </Frame>
+  );
+}` },
+  } },
   args: {
     players: 6, seats: SEATS, viewport: VIEWPORTS.wideLarge,
     renderSeat: fn((slot, _index, _geometry) => seatWithAvatar(slot, 'sm')),
@@ -4017,112 +4048,78 @@ export default function Example() {
 /** Hidden cards at the edge and played cards toward the centre, at all six sizes. */
 export const TrucoPlayRing: Story = {
   name: 'Truco play ring',
-  parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
-import { Button, styled } from '@jfrader/ui';
+  parameters: { docs: {
+    description: { story: 'Place hidden hands on the edge and played cards on an inward ring.' },
+    source: { language: 'tsx', code: `import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
-import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
+import { CARD_BACK_PATTERNS, GameCard } from '@jfrader/ui/game-card';
+import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
 
-const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
+const Frame = styled.div({
+  inlineSize: 412,
+  blockSize: 816,
+});
 
-const ViewportFrame = styled.div(viewportSize);
+const CardsRow = styled.div({
+  display: 'flex',
+  gap: vars.space[1],
+});
 
-const CardsRow = styled.div({ display: 'flex', gap: vars.space[1] });
-
-const BoardCenter = styled.div({ display: 'grid', justifyItems: 'center', gap: vars.space[2] });
-
-const Matrix = styled.div({ inlineSize: 'max-content' });
-
-const Row = styled.div({ display: 'flex' });
-
-type RegionFixture<T extends SeatLike> = (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
-
-type GameTableProps<T extends SeatLike = SeatLike> = Omit<TableProps<T>, 'slots' | 'seatSlots'> & {
-  slots?: readonly GameTableSlot<T>[];
-  renderSeat: RegionFixture<T>;
-  renderPlay?: RegionFixture<T>;
-  header?: ReactNode; center?: ReactNode; dock?: ReactNode; footer?: ReactNode; floating?: ReactNode;
-};
-
-function FixtureContent<T extends SeatLike>({ content }: { content?: RegionFixture<T> }) {
-  const { slot, index, geometry } = useGameTableSeat<T>();
-  return content?.(slot, index, geometry);
+interface Player extends SeatLike {
+  name: string;
 }
 
-interface Player extends SeatLike { name: string }
-
-const SEATS: [Player, Player, Player, Player, Player, Player] = [
-  { key: 'alex', teamIdx: 0, name: 'Alex' },
-  { key: 'blair', teamIdx: 1, name: 'Blair' },
-  { key: 'you', teamIdx: 0, isMe: true, name: 'You' },
-  { key: 'drew', teamIdx: 1, name: 'Drew' },
-  { key: 'emery', teamIdx: 0, name: 'Emery' },
-  { key: 'frankie', teamIdx: 1, name: 'Frankie' },
+const players: Player[] = [
+  { key: 'alex', name: 'Alex', teamIdx: 0 },
+  { key: 'blair', name: 'Blair', teamIdx: 1 },
+  { key: 'you', name: 'You', teamIdx: 0, isMe: true },
+  { key: 'drew', name: 'Drew', teamIdx: 1 },
 ];
 
-const COUNTS = [2, 4, 6] as const;
+function SeatCards() {
+  const { player } = useGameTableSeat<Player>();
+  const name = player?.name ?? 'Lugar libre';
 
-const VIEWPORTS = {
-  portraitShort: { width: 412, height: 816 },
-  portrait: { width: 390, height: 844 },
-  wide: { width: 840, height: 360 },
-  square: { width: 834, height: 1112 },
-  squareWide: { width: 1000, height: 900 },
-  wideLarge: { width: 1440, height: 900 },
-} satisfies Record<string, { width: number; height: number }>;
-
-const seatsFor = (players: number) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
-
-const center = (
-  <BoardCenter>
-    <span>Pot: 240</span>
+  return (
     <CardsRow>
-      <GameCard size="sm" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
-      <GameCard size="sm" label="King of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'K' }} />
-      <GameCard size="sm" label="Queen of clubs" value={{ deck: 'french', suit: 'clubs', rank: 'Q' }} />
+      <GameCard size="sm" backPattern={CARD_BACK_PATTERNS.spanish} label={\`\${name}: carta oculta\`} />
+      <GameCard size="sm" backPattern={CARD_BACK_PATTERNS.spanish} label={\`\${name}: segunda carta oculta\`} />
     </CardsRow>
-  </BoardCenter>
-);
+  );
+}
 
-const spanishSeat: RegionFixture<Player> = ((slot) => (
-  <CardsRow>
-    <GameCard size="sm" backPattern={CARD_BACK_PATTERNS.spanish} label={\`\${slot.player?.name ?? 'Lugar libre'}: carta oculta\`} />
-    <GameCard size="sm" backPattern={CARD_BACK_PATTERNS.spanish} label={\`\${slot.player?.name ?? 'Lugar libre'}: segunda carta oculta\`} />
-  </CardsRow>
-));
+function PlayCard() {
+  const { index } = useGameTableSeat<Player>();
 
-const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
-  index % 2 === 0
-    ? <GameCard size="sm" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} label="as de oros" />
-    : <GameCard size="sm" value={{ deck: 'spanish', suit: 'copas', rank: 10 }} label="sota de copas" />
-);
+  return index % 2 === 0 ? (
+    <GameCard size="sm" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} label="As de oros" />
+  ) : (
+    <GameCard size="sm" value={{ deck: 'spanish', suit: 'copas', rank: 10 }} label="Sota de copas" />
+  );
+}
 
 export default function Example() {
-  return (<Matrix>{Object.entries(VIEWPORTS).map(([caseName, viewport]) => COUNTS.map((players) => (
-  <Row key={\`\${caseName}-\${players}\`}>
-    <ViewportFrame data-measurement="before" viewport={viewport}>
-      <Table players={players} seats={seatsFor(players)} seatPlacement="inside">
-    <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
-    <Table.Play></Table.Play>
-    <Table.Center><span>Truco</span></Table.Center>
-    <Table.Header>Truco</Table.Header>
-    <Table.Dock><Button>Quiero</Button></Table.Dock>
-
-  </Table>
-    </ViewportFrame>
-    <ViewportFrame data-measurement="after" viewport={viewport}>
-      <Table players={players} seats={seatsFor(players)} seatPlacement="edge">
-    <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
-    <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
-    <Table.Center><span>Truco</span></Table.Center>
-    <Table.Header>Truco</Table.Header>
-    <Table.Dock><Button>Quiero</Button></Table.Dock>
-
-  </Table>
-    </ViewportFrame>
-  </Row>
-)))}</Matrix>);
-}` } } },
+  return (
+    <Frame>
+      <GameTable players={4} seats={players} seatPlacement="edge">
+        <GameTable.Header>Truco</GameTable.Header>
+        <GameTable.Seat>
+          <SeatCards />
+        </GameTable.Seat>
+        <GameTable.Play>
+          <PlayCard />
+        </GameTable.Play>
+        <GameTable.Center>
+          <span>Truco</span>
+        </GameTable.Center>
+        <GameTable.Dock>
+          <Button>Quiero</Button>
+        </GameTable.Dock>
+      </GameTable>
+    </Frame>
+  );
+}` },
+  } },
   args: { seatPlacement: 'edge', renderSeat: spanishSeat, renderPlay: spanishPlay, center: <span>Truco</span>, header: 'Truco', dock: <Button>Quiero</Button> },
   render: (args) => <Matrix>
     {Object.entries(VIEWPORTS).map(([caseName, viewport]) => COUNTS.map((players) => {
@@ -4216,100 +4213,99 @@ export default function Example() {
 /** Compare legacy containment, edge-centred cards and cards outside the felt. */
 export const SeatPlacementModes: Story = {
   name: 'Seat placement modes',
-  parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
-import { Button, styled } from '@jfrader/ui';
+  parameters: { docs: {
+    description: { story: 'Compare inside, edge and outside placement for two, four and six players.' },
+    source: { language: 'tsx', code: `import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
-import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
+import { CARD_BACK_PATTERNS, GameCard } from '@jfrader/ui/game-card';
+import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
 
-const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
+const MatrixRow = styled.div({
+  display: 'flex',
+  gap: vars.space[4],
+  inlineSize: 'max-content',
+});
 
-const ViewportFrame = styled.div(viewportSize);
+const Frame = styled.div({
+  inlineSize: 412,
+  blockSize: 816,
+});
 
-const CardsRow = styled.div({ display: 'flex', gap: vars.space[1] });
+const CardsRow = styled.div({
+  display: 'flex',
+  gap: vars.space[1],
+});
 
-const BoardCenter = styled.div({ display: 'grid', justifyItems: 'center', gap: vars.space[2] });
-
-const Matrix = styled.div({ inlineSize: 'max-content' });
-
-const MatrixRow = styled(Matrix)({ display: 'flex' });
-
-type RegionFixture<T extends SeatLike> = (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
-
-type GameTableProps<T extends SeatLike = SeatLike> = Omit<TableProps<T>, 'slots' | 'seatSlots'> & {
-  slots?: readonly GameTableSlot<T>[];
-  renderSeat: RegionFixture<T>;
-  renderPlay?: RegionFixture<T>;
-  header?: ReactNode; center?: ReactNode; dock?: ReactNode; footer?: ReactNode; floating?: ReactNode;
-};
-
-function FixtureContent<T extends SeatLike>({ content }: { content?: RegionFixture<T> }) {
-  const { slot, index, geometry } = useGameTableSeat<T>();
-  return content?.(slot, index, geometry);
+interface Player extends SeatLike {
+  name: string;
 }
 
-interface Player extends SeatLike { name: string }
-
-const SEATS: [Player, Player, Player, Player, Player, Player] = [
-  { key: 'alex', teamIdx: 0, name: 'Alex' },
-  { key: 'blair', teamIdx: 1, name: 'Blair' },
-  { key: 'you', teamIdx: 0, isMe: true, name: 'You' },
-  { key: 'drew', teamIdx: 1, name: 'Drew' },
-  { key: 'emery', teamIdx: 0, name: 'Emery' },
-  { key: 'frankie', teamIdx: 1, name: 'Frankie' },
+const players: Player[] = [
+  { key: 'alex', name: 'Alex', teamIdx: 0 },
+  { key: 'blair', name: 'Blair', teamIdx: 1 },
+  { key: 'you', name: 'You', teamIdx: 0, isMe: true },
+  { key: 'drew', name: 'Drew', teamIdx: 1 },
+  { key: 'emery', name: 'Emery', teamIdx: 0 },
+  { key: 'frankie', name: 'Frankie', teamIdx: 1 },
 ];
 
-const COUNTS = [2, 4, 6] as const;
+const counts = [2, 4, 6] as const;
+const modes = ['inside', 'edge', 'outside'] as const;
 
-const VIEWPORTS = {
-  portraitShort: { width: 412, height: 816 },
-  portrait: { width: 390, height: 844 },
-  wide: { width: 840, height: 360 },
-  square: { width: 834, height: 1112 },
-  squareWide: { width: 1000, height: 900 },
-  wideLarge: { width: 1440, height: 900 },
-} satisfies Record<string, { width: number; height: number }>;
+function seatsFor(count: number): Player[] {
+  return count === 2 ? [players[1], players[2]] : players.slice(0, count);
+}
 
-const seatsFor = (players: number) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
+function SeatCards() {
+  const { player } = useGameTableSeat<Player>();
+  const name = player?.name ?? 'Lugar libre';
 
-const center = (
-  <BoardCenter>
-    <span>Pot: 240</span>
+  return (
     <CardsRow>
-      <GameCard size="sm" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
-      <GameCard size="sm" label="King of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'K' }} />
-      <GameCard size="sm" label="Queen of clubs" value={{ deck: 'french', suit: 'clubs', rank: 'Q' }} />
+      <GameCard size="sm" backPattern={CARD_BACK_PATTERNS.spanish} label={\`\${name}: carta oculta\`} />
+      <GameCard size="sm" backPattern={CARD_BACK_PATTERNS.spanish} label={\`\${name}: segunda carta oculta\`} />
     </CardsRow>
-  </BoardCenter>
-);
+  );
+}
 
-const spanishSeat: RegionFixture<Player> = ((slot) => (
-  <CardsRow>
-    <GameCard size="sm" backPattern={CARD_BACK_PATTERNS.spanish} label={\`\${slot.player?.name ?? 'Lugar libre'}: carta oculta\`} />
-    <GameCard size="sm" backPattern={CARD_BACK_PATTERNS.spanish} label={\`\${slot.player?.name ?? 'Lugar libre'}: segunda carta oculta\`} />
-  </CardsRow>
-));
+function PlayCard() {
+  const { index } = useGameTableSeat<Player>();
 
-const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
-  index % 2 === 0
-    ? <GameCard size="sm" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} label="as de oros" />
-    : <GameCard size="sm" value={{ deck: 'spanish', suit: 'copas', rank: 10 }} label="sota de copas" />
-);
+  return index % 2 === 0 ? (
+    <GameCard size="sm" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} label="As de oros" />
+  ) : (
+    <GameCard size="sm" value={{ deck: 'spanish', suit: 'copas', rank: 10 }} label="Sota de copas" />
+  );
+}
 
 export default function Example() {
-  return (<MatrixRow>{COUNTS.map((players) => (['inside', 'edge', 'outside'] as const).map((seatPlacement) => (
-  <ViewportFrame key={\`\${players}-\${seatPlacement}\`} data-placement-count={players} viewport={VIEWPORTS.portraitShort}>
-    <Table players={players} seats={seatsFor(players)} seatPlacement={seatPlacement}>
-    <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
-    <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
-    <Table.Center><span>Truco</span></Table.Center>
-    <Table.Header>Truco</Table.Header>
-    <Table.Dock><Button>Quiero</Button></Table.Dock>
-
-  </Table>
-  </ViewportFrame>
-)))}</MatrixRow>);
-}` } } },
+  return (
+    <MatrixRow>
+      {counts.map((playerCount) =>
+        modes.map((mode) => (
+          <Frame key={\`\${playerCount}-\${mode}\`}>
+            <GameTable players={playerCount} seats={seatsFor(playerCount)} seatPlacement={mode}>
+              <GameTable.Header>Truco</GameTable.Header>
+              <GameTable.Seat>
+                <SeatCards />
+              </GameTable.Seat>
+              <GameTable.Play>
+                <PlayCard />
+              </GameTable.Play>
+              <GameTable.Center>
+                <span>Truco</span>
+              </GameTable.Center>
+              <GameTable.Dock>
+                <Button>Quiero</Button>
+              </GameTable.Dock>
+            </GameTable>
+          </Frame>
+        )),
+      )}
+    </MatrixRow>
+  );
+}` },
+  } },
   args: { players: 2, seats: seatsFor(2), renderSeat: spanishSeat, renderPlay: spanishPlay, center: <span>Truco</span>, header: 'Truco', dock: <Button>Quiero</Button> },
   render: (args) => <MatrixRow>
     {COUNTS.map((players) => (['inside', 'edge', 'outside'] as const).map((seatPlacement) => (
@@ -5048,70 +5044,59 @@ function PokerFixture() {
 export const PokerCommunityBoard: Story = {
   name: 'Poker community board',
   render: () => <PokerFixture />,
-  parameters: { a11y: { test: 'error' }, ...{ docs: { source: { language: "tsx", code: `import { useRef, type ComponentProps, type ReactNode } from 'react';
+  parameters: {
+    a11y: { test: 'error' },
+    docs: {
+      description: { story: 'Press Deal board to fly five community cards from the deck into the center.' },
+      source: { language: 'tsx', code: `import { useRef } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
-import { GameCard } from '@jfrader/ui/game-card';
 import { DeckProvider } from '@jfrader/ui/deck';
 import { CardFlightsProvider, measureCardBox, useCardFlights } from '@jfrader/ui/card-flights';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
+import { GameCard } from '@jfrader/ui/game-card';
+import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
 
-const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
+const Frame = styled.div({
+  inlineSize: 412,
+  blockSize: 816,
+});
 
-const FlightsViewport = styled(({ viewport: _viewport, ...props }: { viewport: { width: number; height: number } } & ComponentProps<typeof CardFlightsProvider>) => <CardFlightsProvider {...props} />)(viewportSize);
+const BoardCenter = styled.div({
+  display: 'grid',
+  justifyItems: 'center',
+  gap: vars.space[2],
+});
 
-const CardsRow = styled.div({ display: 'flex', gap: vars.space[1] });
+const PotRow = styled.div({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space[2],
+});
 
-const BoardCenter = styled.div({ display: 'grid', justifyItems: 'center', gap: vars.space[2] });
+const CardsRow = styled.div({
+  display: 'flex',
+  gap: vars.space[1],
+});
 
-const PotRow = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[2] });
+const SeatContent = styled.div({
+  display: 'grid',
+  justifyItems: 'center',
+});
 
-const Matrix = styled.div({ inlineSize: 'max-content' });
+interface Player extends SeatLike {
+  name: string;
+}
 
-const PokerSeatContent = styled.div({ display: 'grid', justifyItems: 'center' });
+const players: Player[] = [
+  { key: 'player-0', name: 'P1', teamIdx: 0 },
+  { key: 'player-1', name: 'P2', teamIdx: 0 },
+  { key: 'player-2', name: 'P3', teamIdx: 0 },
+  { key: 'player-3', name: 'P4', teamIdx: 0 },
+  { key: 'player-4', name: 'P5', teamIdx: 0 },
+  { key: 'player-5', name: 'P6', teamIdx: 0, isMe: true },
+];
 
-type RegionFixture<T extends SeatLike> = (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
-
-type GameTableProps<T extends SeatLike = SeatLike> = Omit<TableProps<T>, 'slots' | 'seatSlots'> & {
-  slots?: readonly GameTableSlot<T>[];
-  renderSeat: RegionFixture<T>;
-  renderPlay?: RegionFixture<T>;
-  header?: ReactNode; center?: ReactNode; dock?: ReactNode; footer?: ReactNode; floating?: ReactNode;
-};
-
-interface Player extends SeatLike { name: string }
-
-const VIEWPORTS = {
-  portraitShort: { width: 412, height: 816 },
-  portrait: { width: 390, height: 844 },
-  wide: { width: 840, height: 360 },
-  square: { width: 834, height: 1112 },
-  squareWide: { width: 1000, height: 900 },
-  wideLarge: { width: 1440, height: 900 },
-} satisfies Record<string, { width: number; height: number }>;
-
-const center = (
-  <BoardCenter>
-    <span>Pot: 240</span>
-    <CardsRow>
-      <GameCard size="sm" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
-      <GameCard size="sm" label="King of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'K' }} />
-      <GameCard size="sm" label="Queen of clubs" value={{ deck: 'french', suit: 'clubs', rank: 'Q' }} />
-    </CardsRow>
-  </BoardCenter>
-);
-import { base } from '@jfrader/tokens';
-
-const motionDurationMs = {
-  cardDeal: Number.parseFloat(base.motion.duration.cardDeal),
-  cardDealStagger: Number.parseFloat(base.motion.duration.cardDealStagger),
-};
-
-const generalSeats = (count: number, teamCount: number): Player[] => Array.from({ length: count }, (_, index) => ({
-  key: \`player-\${index}\`, name: \`P\${index + 1}\`, teamIdx: index % teamCount, isMe: index === count - 1,
-}));
-
-const POKER_BOARD = [
+const communityCards = [
   { id: 'as', label: 'Ace of spades', value: { suit: 'spades', rank: 'A' } },
   { id: 'kh', label: 'King of hearts', value: { suit: 'hearts', rank: 'K' } },
   { id: 'qc', label: 'Queen of clubs', value: { suit: 'clubs', rank: 'Q' } },
@@ -5119,59 +5104,97 @@ const POKER_BOARD = [
   { id: 'ts', label: 'Ten of spades', value: { suit: 'spades', rank: 10 } },
 ] as const;
 
-function PokerTable() {
-  // Low-level escape hatch: the board is not a hand or a seat pile, so this story launches its own
-  // flight. It measures the endpoints it owns through refs; a board composition uses useBoardFlights.
-  const deckRef = useRef<HTMLDivElement>(null);
-  const boardRefs = useRef(new Map<string, HTMLDivElement>());
-  const { launch, landingTargets } = useCardFlights();
-  return <Table players={6} teamCount={1} seats={generalSeats(6, 1)}>
-    <Table.Header>Texas Hold'em · 10 / 20</Table.Header>
-    <Table.Seat><PokerSeat /></Table.Seat>
-    <Table.Center><BoardCenter>
-      <PotRow>
-        <span>Pot: 240</span><div ref={deckRef} data-community-deck><GameCard size="sm" label="Deck" /></div>
-      </PotRow>
-      <CardsRow>
-        {POKER_BOARD.map((card) => <div key={card.id} data-community-card={card.id} ref={(node) => {
-          if (node) boardRefs.current.set(card.id, node); else boardRefs.current.delete(card.id);
-        }}><GameCard size="sm" value={card.value} label={card.label} /></div>)}
-      </CardsRow>
-    </BoardCenter></Table.Center>
-    <Table.Dock><Button disabled={landingTargets.size > 0} onClick={() => {
-      const deck = deckRef.current;
-      if (!deck) return;
-      const from = measureCardBox(deck);
-      launch(POKER_BOARD.flatMap((card, index) => {
-        const destination = boardRefs.current.get(card.id);
-        return destination ? [{ card, target: \`community:\${card.id}\`, destination, from, to: measureCardBox(destination), face: 'reveal' as const,
-          durationMs: motionDurationMs.cardDeal, delayMs: index * motionDurationMs.cardDealStagger }] : [];
-      }));
-    }}>Deal board</Button></Table.Dock>
-  </Table>;
-}
-
 function PokerSeat() {
   const { player } = useGameTableSeat<Player>();
-  return <PokerSeatContent data-poker-seat><span>{player?.name}</span><span>1,200 chips</span></PokerSeatContent>;
+  return (
+    <SeatContent>
+      <span>{player?.name}</span>
+      <span>1,200 chips</span>
+    </SeatContent>
+  );
 }
 
-function PokerViewport({ viewport }: { viewport: ViewportSize }) {
-  return <FlightsViewport viewport={viewport}>
-    <PokerTable />
-  </FlightsViewport>;
-}
+function TexasHoldemTable() {
+  const deckRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef(new Map<string, HTMLDivElement>());
+  const { launch, landingTargets } = useCardFlights();
 
-function PokerFixture() {
-  return <DeckProvider default="french"><Matrix>
-    {(['portraitShort', 'portrait', 'wide', 'wideLarge'] as const).map((caseName) => <PokerViewport key={caseName}
-      viewport={caseName === 'wide' ? { ...VIEWPORTS.wide, height: 480 } : VIEWPORTS[caseName]} />)}
-  </Matrix></DeckProvider>;
+  const handleDeal = () => {
+    const deck = deckRef.current;
+    if (!deck) return;
+    const from = measureCardBox(deck);
+
+    launch(
+      communityCards.flatMap((card, index) => {
+        const destination = cardRefs.current.get(card.id);
+        if (!destination) return [];
+        return [
+          {
+            card,
+            target: \`community:\${card.id}\`,
+            destination,
+            from,
+            to: measureCardBox(destination),
+            face: 'reveal' as const,
+            durationMs: 300,
+            delayMs: index * 60,
+          },
+        ];
+      }),
+    );
+  };
+
+  return (
+    <GameTable players={6} teamCount={1} seats={players}>
+      <GameTable.Header>Texas Hold'em · 10 / 20</GameTable.Header>
+      <GameTable.Seat>
+        <PokerSeat />
+      </GameTable.Seat>
+      <GameTable.Center>
+        <BoardCenter>
+          <PotRow>
+            <span>Pot: 240</span>
+            <div ref={deckRef}>
+              <GameCard size="sm" label="Deck" />
+            </div>
+          </PotRow>
+          <CardsRow>
+            {communityCards.map((card) => (
+              <div
+                key={card.id}
+                ref={(node) => {
+                  if (node) cardRefs.current.set(card.id, node);
+                  else cardRefs.current.delete(card.id);
+                }}
+              >
+                <GameCard size="sm" value={card.value} label={card.label} />
+              </div>
+            ))}
+          </CardsRow>
+        </BoardCenter>
+      </GameTable.Center>
+      <GameTable.Dock>
+        <Button disabled={landingTargets.size > 0} onClick={handleDeal}>
+          Deal board
+        </Button>
+      </GameTable.Dock>
+    </GameTable>
+  );
 }
 
 export default function Example() {
-  return (<PokerFixture />);
-}` } } } },
+  return (
+    <DeckProvider default="french">
+      <CardFlightsProvider>
+        <Frame>
+          <TexasHoldemTable />
+        </Frame>
+      </CardFlightsProvider>
+    </DeckProvider>
+  );
+}` },
+    },
+  },
   play: async ({ canvasElement, userEvent }) => {
     const tables = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]'));
     await expect(tables).toHaveLength(4);

@@ -105,6 +105,14 @@ const meta: Meta<ResizablePanelsCompoundProps> = {
   ),
   parameters: {
     docs: {
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'Sizes', stories: ['MinMax'] },
+        { title: 'Controlled', stories: ['EasyModeControlled'] },
+        { title: 'Collapse', stories: ['Collapsible'] },
+        { title: 'Keyboard', stories: ['KeyboardNavigation'] },
+        { title: 'Composition', stories: ['ThreePanels', 'NestedGroups'] },
+      ],
       source: {
         code: snippet,
       },
@@ -112,22 +120,17 @@ const meta: Meta<ResizablePanelsCompoundProps> = {
         component:
           'Resize or collapse side-by-side panels by dragging a separator or using the keyboard.',
       },
-      usage: `### Composition
-Pass label, panels and optional defaultValue to configure side-by-side resizable panes. Each panel record defines value, label and content, with optional minSize, maxSize and collapsible. Dividers are generated between adjacent panels. Do not combine panels with children. Use slots and slotProps to customize panels, separators or the root container. For custom anatomy, use the compound parts (ResizablePanels.Panel).
+      usage: `### When to use
+Let people divide horizontal workspace between adjacent panes. Give the group a definite height and each pane an accessible name.
 
-### Layout and values
-- Uses the WAI-ARIA window splitter pattern, horizontally only. Give the group a definite block size.
-- value/defaultValue hold one weight per panel. Callbacks return percentages totalling 100 of the usable width (group minus separators).
-- A zero share collapses a collapsible panel. Its content stays mounted but inert.
-- minSize/maxSize are pixels. Minima shrink together when they do not fit; space beyond every maximum stays empty.
-- Separator value text uses an Intl percentage. Supply getValueText to translate state wording.
+### Constraints
+When minimum widths do not fit, they shrink together. Space beyond all maximum widths stays empty. Collapsed content stays mounted but inert.
 
 ### Keyboard and gestures
-- Left/Right move the separator 16px in screen direction (Shift: 64px).
-- At a limit, the next press collapses a collapsible pane; a press back restores it.
-- Home/End reach the smallest/largest open size. Enter collapses or restores.
-- Ctrl/Meta+Home or double click resets the initial layout.
-- Escape cancels a drag, requests the pre-drag layout and does not commit.`,
+Focus a separator with Tab. Left/Right moves it 16px in screen direction; Shift moves it 64px. At a limit, another press collapses a collapsible pane, and pressing back restores it. Home/End reaches the smallest/largest open size; Enter collapses or restores. Ctrl/Meta+Home or double-click resets the initial layout. Escape cancels a drag without committing it.
+
+### Localization
+Percentages follow the selected locale. Translate any custom state wording used for the accessible value text.`,
     },
   },
 };
@@ -211,7 +214,7 @@ function pointerOn(separator: HTMLElement) {
 }
 
 export const Default: EasyStory = {
-  name: 'Easy mode',
+  name: 'Mail workspace',
   args: {
     label: 'Mail',
     panels: PANELS,
@@ -222,7 +225,57 @@ export const Default: EasyStory = {
   },
   parameters: {
     docs: {
-      source: { code: snippet },
+      description: {
+        story: 'Resize the folder list beside the selected conversation.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { ResizablePanels, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Workspace = styled.div({ inlineSize: '24rem', maxInlineSize: '100%', blockSize: '12rem' });
+
+const PaneContent = styled.div({
+  display: 'grid',
+  alignContent: 'start',
+  gap: vars.space[2],
+  padding: vars.space[3],
+});
+
+const List = styled.ul({ margin: 0, paddingInlineStart: vars.space[4] });
+
+function Folders() {
+  return (
+    <PaneContent>
+      <List>
+        <li>Inbox</li>
+        <li>Archive</li>
+      </List>
+    </PaneContent>
+  );
+}
+
+const Text = styled.p({ margin: 0 });
+
+function Messages() {
+  return (
+    <PaneContent>
+      <Text>Select a conversation</Text>
+    </PaneContent>
+  );
+}
+
+<Workspace>
+  <ResizablePanels
+    label="Mail"
+    panels={[
+      { value: 'folders', label: 'Folders', minSize: 96, collapsible: true, content: <Folders /> },
+      { value: 'messages', label: 'Messages', content: <Messages /> },
+    ]}
+    defaultValue={[30, 70]}
+  />
+</Workspace>;`,
+      },
     },
   },
   render: (args) => <ResizablePanels {...args} />,
@@ -260,7 +313,75 @@ export const Default: EasyStory = {
 };
 
 export const EasyModeControlled: EasyStory = {
-  name: 'Easy mode controlled',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Keep the panel shares in React state as the separator moves.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { ResizablePanels, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Workspace = styled.div({ inlineSize: '24rem', maxInlineSize: '100%', blockSize: '12rem' });
+
+const PaneContent = styled.div({
+  display: 'grid',
+  alignContent: 'start',
+  gap: vars.space[2],
+  padding: vars.space[3],
+});
+
+const List = styled.ul({ margin: 0, paddingInlineStart: vars.space[4] });
+
+function Folders() {
+  return (
+    <PaneContent>
+      <List>
+        <li>Inbox</li>
+        <li>Archive</li>
+      </List>
+    </PaneContent>
+  );
+}
+
+const Text = styled.p({ margin: 0 });
+
+function Messages() {
+  return (
+    <PaneContent>
+      <Text>Select a conversation</Text>
+    </PaneContent>
+  );
+}
+
+export function MailWorkspace() {
+  const [value, setValue] = useState([40, 60]);
+  return (
+    <Workspace>
+      <ResizablePanels
+        label="Mail"
+        panels={[
+          {
+            value: 'folders',
+            label: 'Folders',
+            minSize: 96,
+            collapsible: true,
+            content: <Folders />,
+          },
+          { value: 'messages', label: 'Messages', content: <Messages /> },
+        ]}
+        value={value}
+        onValueChange={setValue}
+      />
+    </Workspace>
+  );
+}`,
+      },
+    },
+  },
+  name: 'Controlled layout',
   render: () => {
     function ControlledFixture() {
       const [value, setValue] = useState([40, 60]);
@@ -416,6 +537,62 @@ export const EasyModeKeyboard: EasyStory = {
 };
 
 export const Compound: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Compose named panes directly and let the group insert separators.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { ResizablePanels, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Workspace = styled.div({ inlineSize: '24rem', maxInlineSize: '100%', blockSize: '12rem' });
+
+const PaneContent = styled.div({
+  display: 'grid',
+  alignContent: 'start',
+  gap: vars.space[2],
+  padding: vars.space[3],
+});
+
+const List = styled.ul({ margin: 0, paddingInlineStart: vars.space[4] });
+
+function Folders() {
+  return (
+    <PaneContent>
+      <List>
+        <li>Inbox</li>
+        <li>Archive</li>
+      </List>
+    </PaneContent>
+  );
+}
+
+const Text = styled.p({ margin: 0 });
+
+function Messages() {
+  return (
+    <PaneContent>
+      <Text>Select a conversation</Text>
+    </PaneContent>
+  );
+}
+
+<Workspace>
+  <ResizablePanels aria-label="Mail" defaultValue={[30, 70]}>
+    <ResizablePanels.Panel value="folders" aria-label="Folders" minSize={96} collapsible>
+      <Folders />
+    </ResizablePanels.Panel>
+    <ResizablePanels.Panel value="messages" aria-label="Messages">
+      <Messages />
+    </ResizablePanels.Panel>
+  </ResizablePanels>
+</Workspace>;`,
+      },
+    },
+  },
+  name: 'Compound panels',
   play: async ({ canvas, canvasElement }) => {
     const root = rootOf(canvasElement);
     await expect(root).toHaveAccessibleName('Mail');
@@ -439,6 +616,53 @@ export const Compound: Story = {
 };
 
 export const ThreePanels: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Resize neighboring file, source and preview panes.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import type { ReactNode } from 'react';
+import { ResizablePanels, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Workspace = styled.div({ inlineSize: '24rem', maxInlineSize: '100%', blockSize: '12rem' });
+
+const PaneContent = styled.div({
+  display: 'grid',
+  alignContent: 'start',
+  gap: vars.space[2],
+  padding: vars.space[3],
+});
+
+const Text = styled.p({ margin: 0 });
+
+function Pane({ children }: { children: ReactNode }) {
+  return (
+    <PaneContent>
+      <Text>{children}</Text>
+    </PaneContent>
+  );
+}
+
+<Workspace>
+  <ResizablePanels aria-label="Editor" defaultValue={[30, 40, 30]}>
+    <ResizablePanels.Panel value="files" aria-label="Files">
+      <Pane>Files</Pane>
+    </ResizablePanels.Panel>
+    <ResizablePanels.Panel value="source" aria-label="Source">
+      <Pane>Source</Pane>
+    </ResizablePanels.Panel>
+    <ResizablePanels.Panel value="preview" aria-label="Preview">
+      <Pane>Preview</Pane>
+    </ResizablePanels.Panel>
+  </ResizablePanels>
+</Workspace>;`,
+      },
+    },
+  },
+  name: 'Three-pane editor',
   args: { 'aria-label': 'Editor', defaultValue: [30, 40, 30] },
   render: (args) => (
     <ResizablePanels {...args}>
@@ -478,6 +702,62 @@ export const ThreePanels: Story = {
 };
 
 export const Collapsible: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Press Enter on the separator to hide or restore the folder list.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { ResizablePanels, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Workspace = styled.div({ inlineSize: '24rem', maxInlineSize: '100%', blockSize: '12rem' });
+
+const PaneContent = styled.div({
+  display: 'grid',
+  alignContent: 'start',
+  gap: vars.space[2],
+  padding: vars.space[3],
+});
+
+const List = styled.ul({ margin: 0, paddingInlineStart: vars.space[4] });
+
+function Folders() {
+  return (
+    <PaneContent>
+      <List>
+        <li>Inbox</li>
+        <li>Archive</li>
+      </List>
+    </PaneContent>
+  );
+}
+
+const Text = styled.p({ margin: 0 });
+
+function Messages() {
+  return (
+    <PaneContent>
+      <Text>Select a conversation</Text>
+    </PaneContent>
+  );
+}
+
+<Workspace>
+  <ResizablePanels aria-label="Mail" defaultValue={[30, 70]}>
+    <ResizablePanels.Panel value="folders" aria-label="Folders" minSize={96} collapsible>
+      <Folders />
+    </ResizablePanels.Panel>
+    <ResizablePanels.Panel value="messages" aria-label="Messages">
+      <Messages />
+    </ResizablePanels.Panel>
+  </ResizablePanels>
+</Workspace>;`,
+      },
+    },
+  },
+  name: 'Collapsible folders',
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const root = rootOf(canvasElement);
     const separator = canvas.getByRole('separator', { name: 'Folders' });
@@ -583,6 +863,50 @@ export const CollapsedSecondary: Story = {
 };
 
 export const MinMax: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Resize the outline between its minimum and maximum widths.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import type { ReactNode } from 'react';
+import { ResizablePanels, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Workspace = styled.div({ inlineSize: '24rem', maxInlineSize: '100%', blockSize: '12rem' });
+
+const PaneContent = styled.div({
+  display: 'grid',
+  alignContent: 'start',
+  gap: vars.space[2],
+  padding: vars.space[3],
+});
+
+const Text = styled.p({ margin: 0 });
+
+function Pane({ children }: { children: ReactNode }) {
+  return (
+    <PaneContent>
+      <Text>{children}</Text>
+    </PaneContent>
+  );
+}
+
+<Workspace>
+  <ResizablePanels aria-label="Workspace" defaultValue={[40, 60]}>
+    <ResizablePanels.Panel value="outline" aria-label="Outline" minSize={120} maxSize={200}>
+      <Pane>Outline</Pane>
+    </ResizablePanels.Panel>
+    <ResizablePanels.Panel value="canvas" aria-label="Canvas">
+      <Pane>Canvas</Pane>
+    </ResizablePanels.Panel>
+  </ResizablePanels>
+</Workspace>;`,
+      },
+    },
+  },
+  name: 'Width limits',
   args: { 'aria-label': 'Workspace', defaultValue: [40, 60] },
   render: (args) => (
     <ResizablePanels {...args}>
@@ -779,6 +1103,36 @@ export function Mail() {
 };
 
 export const KeyboardNavigation: Story = {
+  parameters: {
+    docs: {
+      description: { story: 'Focus the separator and try arrows, Shift+arrows, Home and End.' },
+      source: {
+        language: 'tsx',
+        code: `import { ResizablePanels, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Workspace = styled.div({ inlineSize: '24rem', maxInlineSize: '100%', blockSize: '12rem' });
+const Pane = styled.div({
+  display: 'grid',
+  alignContent: 'start',
+  gap: vars.space[2],
+  padding: vars.space[3],
+});
+
+<Workspace>
+  <ResizablePanels aria-label="Split view" defaultValue={[50, 50]}>
+    <ResizablePanels.Panel value="left" aria-label="Left">
+      <Pane>Left</Pane>
+    </ResizablePanels.Panel>
+    <ResizablePanels.Panel value="right" aria-label="Right">
+      <Pane>Right</Pane>
+    </ResizablePanels.Panel>
+  </ResizablePanels>
+</Workspace>;`,
+      },
+    },
+  },
+  name: 'Keyboard resizing',
   args: { 'aria-label': 'Split view', defaultValue: [50, 50] },
   render: (args) => (
     <ResizablePanels {...args}>
@@ -1172,6 +1526,61 @@ export const ReducedMotion: Story = {
 };
 
 export const NestedGroups: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Resize the outer sidebar and the inner code and output split independently.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import type { ReactNode } from 'react';
+import { ResizablePanels, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Workspace = styled.div({ inlineSize: '24rem', maxInlineSize: '100%', blockSize: '12rem' });
+
+const PaneContent = styled.div({
+  display: 'grid',
+  alignContent: 'start',
+  gap: vars.space[2],
+  padding: vars.space[3],
+});
+
+const Text = styled.p({ margin: 0 });
+
+function Pane({ children }: { children: ReactNode }) {
+  return (
+    <PaneContent>
+      <Text>{children}</Text>
+    </PaneContent>
+  );
+}
+
+<Workspace>
+  <ResizablePanels aria-label="Outer" defaultValue={[40, 60]}>
+    <ResizablePanels.Panel value="sidebar" aria-label="Sidebar">
+      <Pane>Sidebar</Pane>
+    </ResizablePanels.Panel>
+    <ResizablePanels.Panel value="main" aria-label="Main">
+      <ResizablePanels
+        aria-label="Inner"
+        defaultValue={[50, 50]}
+        sx={{ border: 'none', borderRadius: 0 }}
+      >
+        <ResizablePanels.Panel value="code" aria-label="Code">
+          <Pane>Code</Pane>
+        </ResizablePanels.Panel>
+        <ResizablePanels.Panel value="output" aria-label="Output">
+          <Pane>Output</Pane>
+        </ResizablePanels.Panel>
+      </ResizablePanels>
+    </ResizablePanels.Panel>
+  </ResizablePanels>
+</Workspace>;`,
+      },
+    },
+  },
+  name: 'Nested workspaces',
   args: { 'aria-label': 'Outer', defaultValue: [40, 60] },
   render: (args) => (
     <ResizablePanels {...args}>

@@ -1,0 +1,815 @@
+import { act, createRef, StrictMode, type ComponentPropsWithRef } from 'react';
+import { createRoot } from 'react-dom/client';
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { expect, fn, fireEvent } from 'storybook/test';
+import { vars } from '@jfrader/tokens/vars';
+import { base } from '@jfrader/tokens';
+import { styled } from '../../styling/styled';
+import { ARTICLE_COLUMNS, ARTICLE_DESKTOP } from '../../styling/article';
+import { Article, type ArticleHeadingLevel } from './index';
+import { ArticleList } from '../article-list';
+import { expectArticleHydration } from '../../testing/article-assertions';
+import { createRefCleanupTracker, expectRootPrecedence, expectSameDomIdentity } from '../../testing/interior-slot-assertions';
+
+const time = { dateTime: '2026-10-19T09:00:00Z', label: '09:00' };
+const headline = 'The river path opens for the weekend';
+const dek = 'The route connects the old station with the northern bridge.';
+const lede = 'Work along the river began at the station. The last section opens this weekend, linking the two bridges with a continuous path.';
+const ArchiveLink = styled.a({ color: vars.color.accentText, textDecoration: 'underline' });
+const meta = {
+  title: 'Media/Article', component: Article, tags: ['autodocs'], args: { headline, href: '#river', dek },
+  parameters: { docs: {
+    description: { component: 'Present an article headline with optional summary, media, kicker and publication details.' },
+    source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';
+
+<Article headline="The river path opens for the weekend" href="#river" dek="The route connects the old station with the northern bridge." />` },
+    sections: [
+      { title: 'Headlines and summaries', stories: ['Standard', 'Lead', 'Secondary', 'Brief'] },
+      { title: 'Editorial layouts', stories: ['Wide', 'TimeColumn', 'RuleTop', 'RuleBottom', 'Centered'] },
+      { title: 'Media', stories: ['Media', 'ImageMedia'] },
+      { title: 'Composition', stories: ['FullArticle', 'Compound', 'ArticleHeader'] },
+      { title: 'Links', stories: ['RouterLink'] },
+    ],
+    usage: `### Content and hierarchy
+Choose heading levels to fit the surrounding page. Supply either generated content or compound children, not both. Generated brief and summary-free treatments omit the summary; the bottom-rule treatment also omits the kicker. Compound content stays caller-controlled.
+
+Choose excerpts that add information rather than repeat the summary. Excerpts can be hidden on smaller screens, so keep essential information in the headline, summary or body. Supply accessible media content; no figure or placeholder appears without media.
+
+### Links and keyboard
+Only the headline becomes a link, not the whole article. Keep linked headline children free of nested links. Tab and Shift+Tab follow native link order; Enter follows links.`,
+  } },
+} satisfies Meta<typeof Article>;
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Standard: Story = { name: 'Headline and summary', parameters: { docs: { description: { story: 'Link a headline and add a short summary beneath it.' } } }, play: async ({ canvas, canvasElement, userEvent }) => {
+  await expect(canvas.getByRole('article').tagName).toBe('ARTICLE');
+  await expect(canvas.getByRole('heading', { level: 2 })).toHaveTextContent(headline);
+  await expect(canvasElement.querySelector('figure')).toBeNull();
+  await expect(canvasElement.querySelector('a a')).toBeNull();
+  const link = canvas.getByRole('link');
+  await expect(getComputedStyle(link).textDecorationLine).toBe('none');
+  await userEvent.tab();
+  await expect(link.ownerDocument.activeElement).toBe(link);
+  await expect(getComputedStyle(link).outlineStyle).not.toBe('none');
+} };
+export const Lead: Story = {
+  name: 'Lead story',
+  args: { size: 'lead', lede },
+  parameters: {
+    docs: {
+      description: { story: 'Lead a page with a large headline, summary and desktop excerpt.' },
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  size="lead"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  lede="Work along the river began at the station. The last section opens this weekend, linking the two bridges with a continuous path."
+/>`,
+      },
+    },
+  },
+};
+export const Secondary: Story = {
+  name: 'Supporting story',
+  args: { size: 'secondary', lede },
+  parameters: {
+    docs: {
+      description: { story: 'Give a supporting story a smaller headline than the lead.' },
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  size="secondary"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  lede="Work along the river began at the station. The last section opens this weekend, linking the two bridges with a continuous path."
+/>`,
+      },
+    },
+  },
+};
+export const Brief: Story = {
+  name: 'Headline brief',
+  args: { size: 'brief' },
+  parameters: {
+    docs: {
+      description: { story: 'Show a compact headline without the generated summary.' },
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  size="brief"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+  play: async ({ canvasElement }) => { await expect(canvasElement.querySelector('[data-ui~="article-dek"]')).toBeNull(); },
+};
+export const Wide: Story = {
+  name: 'Wide summary',
+  args: { variant: 'wide', size: 'lead', slotProps: { dek: { variant: 'columns' } } },
+  parameters: {
+    docs: {
+      description: { story: 'Split the summary into columns on desktop.' },
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  variant="wide"
+  size="lead"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  slotProps={{ dek: { variant: 'columns' } }}
+/>`,
+      },
+    },
+  },
+};
+export const WideNarrow: Story = {
+  args: { variant: 'wide' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  variant="wide"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
+export const TimeColumn: Story = {
+  name: 'Time beside the story',
+  args: { variant: 'time-column', time, kicker: <Article.Kicker items={[{ id: 'city', label: 'The city' }]} />, meta: <Article.Meta published={time} place="Northline" /> },
+  parameters: {
+    docs: {
+      description: { story: 'Set the publication time beside the article on desktop.' },
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  variant="time-column"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  time={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }}
+  kicker={<Article.Kicker items={[{ id: 'city', label: 'The city' }]} />}
+  meta={<Article.Meta published={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }} place="Northline" />}
+/>`,
+      },
+    },
+  },
+};
+export const TimeColumnWithoutTime: Story = {
+  args: { variant: 'time-column' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  variant="time-column"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
+export const RuleTop: Story = {
+  name: 'Top rule',
+  args: { variant: 'rule-top' },
+  parameters: {
+    docs: {
+      description: { story: 'Separate the article from preceding content with a top rule.' },
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  variant="rule-top"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
+export const NoDek: Story = {
+  args: { variant: 'no-dek' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  variant="no-dek"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
+export const RuleBottom: Story = {
+  name: 'Bottom rule',
+  args: { variant: 'rule-bottom', kicker: 'The city', meta: <Article.Meta published={time} /> },
+  parameters: {
+    docs: {
+      description: { story: 'Follow the headline with a short rule and publication time.' },
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  variant="rule-bottom"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  kicker="The city"
+  meta={<Article.Meta published={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }} />}
+/>`,
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelector('[data-ui~="article-dek"]')).toBeNull();
+    await expect(canvasElement.querySelector('[data-ui~="article-kicker"]')).toBeNull();
+    await expect(canvasElement.querySelector('[data-ui~="article-rule"]')).not.toBeNull();
+  },
+};
+export const Centered: Story = {
+  name: 'Centered story',
+  args: { variant: 'centered', size: 'secondary', meta: <Article.Meta place="Northline" published={time} /> },
+  parameters: {
+    docs: {
+      description: { story: 'Center the headline and summary in their reading measure.' },
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  variant="centered"
+  size="secondary"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  meta={<Article.Meta place="Northline" published={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }} />}
+/>`,
+      },
+    },
+  },
+};
+export const MissingOptionals: Story = {
+  args: { dek: undefined },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  headline="The river path opens for the weekend"
+  href="#river"
+/>`,
+      },
+    },
+  },
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelectorAll('p, figure, time')).toHaveLength(0);
+  },
+};
+export const LeadWithoutLede: Story = {
+  args: { size: 'lead' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  size="lead"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
+export const BriefExplicitLede: Story = {
+  args: { size: 'brief', lede, slotProps: { lede: { visibility: 'always' } } },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  size="brief"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  lede="Work along the river began at the station. The last section opens this weekend, linking the two bridges with a continuous path."
+  slotProps={{ lede: { visibility: 'always' } }}
+/>`,
+      },
+    },
+  },
+};
+export const LongHeadlines: Story = {
+  args: { headline: 'Northline'.repeat(30) },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+const headline = 'Northline'.repeat(30);
+
+<Article
+  headline={headline}
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
+export const MultilineHeadline: Story = {
+  args: { headline: 'The river path links the two bridges as the old station prepares to reopen its doors for the weekend' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  headline="The river path links the two bridges as the old station prepares to reopen its doors for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
+export const Zero: Story = {
+  args: { headline: 0, dek: 0, lede: 0, kicker: 0, meta: 0 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article headline={0} href="#river" dek={0} lede={0} kicker={0} meta={0} />`,
+      },
+    },
+  },
+};
+export const Media: Story = {
+  name: 'Captioned media',
+  args: { media: <blockquote cite="https://example.com/river">The river path opens this weekend.</blockquote>, slotProps: { media: { caption: 'The northern river path', credit: <ArchiveLink href="#archive">City archive</ArchiveLink> } } },
+  parameters: {
+    docs: {
+      description: { story: 'Add a media figure with its caption and credit.' },
+      source: {
+        language: 'tsx',
+        code: `import { Article, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ArchiveLink = styled.a({ color: vars.color.accentText, textDecoration: 'underline' });
+
+<Article
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  media={<blockquote cite="https://example.com/river">The river path opens this weekend.</blockquote>}
+  slotProps={{
+    media: {
+      caption: 'The northern river path',
+      credit: <ArchiveLink href="#archive">City archive</ArchiveLink>,
+    },
+  }}
+/>`,
+      },
+    },
+  },
+  play: async ({ canvasElement, canvas }) => {
+    await expect(canvas.getByRole('figure')).toBeInTheDocument();
+    await expect(canvasElement.querySelector('figcaption')).toHaveTextContent('City archive');
+    await expect(canvasElement.querySelector('blockquote')).toHaveAttribute('cite', 'https://example.com/river');
+  },
+};
+export const ImageMedia: Story = {
+  name: 'Article image',
+  args: { media: <img src="/og-image.png" alt="Share card preview" width={1200} height={630} />, slotProps: { media: { caption: 'Share card preview', credit: 'jfrader-ui' } } },
+  parameters: { docs: { description: { story: 'Supply an image with alternative text as the article’s media.' }, source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';
+
+<Article
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  media={<img src="/og-image.png" alt="Share card preview" width={1200} height={630} />}
+  slotProps={{ media: { caption: 'Share card preview', credit: 'jfrader-ui' } }}
+/>` } } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('img', { name: 'Share card preview' })).toHaveAttribute('src', '/og-image.png');
+    await expect(canvas.getByRole('figure')).toBeInTheDocument();
+  },
+};
+export const RTL: Story = {
+  args: { dir: 'rtl', headline: 'Northline المنطقة', variant: 'time-column', time },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  dir="rtl"
+  variant="time-column"
+  headline="Northline المنطقة"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  time={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }}
+/>`,
+      },
+    },
+  },
+};
+export const Light: Story = {
+  globals: { theme: 'light' },
+  args: { variant: 'rule-top' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Article } from '@jfrader/ui';
+
+<Article
+  variant="rule-top"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+/>`,
+      },
+    },
+  },
+};
+export const ReducedMotion: Story = { parameters: { chromatic: { pauseAnimationAtEnd: true } } };
+
+const Column = styled.div({ display: 'grid', gap: vars.space[6], minInlineSize: 0 });
+const FrontGrid = styled.div({ display: 'grid', gap: vars.space[6], [ARTICLE_DESKTOP]: { gridTemplateColumns: 'minmax(0, 7fr) minmax(0, 5fr)' } });
+const InvertedGrid = styled(FrontGrid)({ [ARTICLE_DESKTOP]: { gridTemplateColumns: 'minmax(0, 5fr) minmax(0, 7fr)', '& > [data-ui~="article"]': { order: 1 } } });
+const PairGrid = styled.div({ display: 'grid', gap: vars.space[6], [ARTICLE_DESKTOP]: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' } });
+const Briefs = styled.div({ display: 'grid', gap: vars.space[4], [ARTICLE_COLUMNS]: { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }, [ARTICLE_DESKTOP]: { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' } });
+const Narrow = styled.div({ maxInlineSize: vars.editorial.centeredMeasure, minInlineSize: 0 });
+export const NewspaperFrontPage: Story = {
+  render: () => <Column>
+    <FrontGrid><Article size="lead" headline={headline} href="#river" dek={dek} lede={lede} kicker={<Article.Kicker items={[{ id: 'city', label: 'The city' }]} />} /><Column><Article size="secondary" headline="Work begins at the old station" href="#station" dek={dek} /><Article size="secondary" headline="The northern bridge reopens" href="#bridge" /></Column></FrontGrid>
+    <Briefs>{['The river', 'The station', 'The bridge', 'The path'].map((title) => <Article key={title} size="brief" headline={title} href="#brief" />)}</Briefs>
+    <ArticleList variant="wire" items={[{ id: 'river', headline, href: '#river', time }, { id: 'station', headline: 'Work begins at the old station', href: '#station', time }]} />
+    <FrontGrid><Article size="secondary" headline={headline} dek={dek} /><Column><Article headline="The station" /><Article headline="The bridge" /></Column></FrontGrid>
+    <InvertedGrid><Article size="secondary" headline={headline} dek={dek} /><Column><Article headline="The station" /><Article headline="The bridge" /></Column></InvertedGrid>
+    <PairGrid>{['The river', 'The station', 'The bridge', 'The path'].map((title) => <Article key={title} headline={title} dek={dek} />)}</PairGrid>
+    <FrontGrid><Article headline={headline} dek={dek} /><ArticleList items={[{ id: 'station', headline: 'The station', href: '#station', time }]} /></FrontGrid>
+  </Column>,
+  parameters: { docs: { source: { code: `import { Article, ArticleList } from '@jfrader/ui';
+
+<Article size="lead" headline="The river path opens for the weekend" href="#river" />
+<ArticleList variant="wire" items={[{ id: 'station', headline: 'Work begins at the old station', href: '#station' }]} />` } } },
+};
+export const ArticleHeader: Story = {
+  name: 'Standalone article header',
+  render: () => <Narrow><Article.Kicker items={[{ id: 'city', label: 'The city', href: '#city' }]} /><Article.Headline size="lead" level={1}>{headline}</Article.Headline><Article.Dek size="lead">{dek}</Article.Dek><Article.Meta variant="ruled" place="Northline" published={time} /></Narrow>,
+  parameters: { docs: { description: { story: 'Use the headline parts together without an article wrapper.' }, source: { language: 'tsx', code: `import { vars } from '@jfrader/tokens/vars';
+import { Article, styled } from '@jfrader/ui';
+
+const Header = styled.div({ maxInlineSize: vars.editorial.centeredMeasure, minInlineSize: 0 });
+
+<Header>
+  <Article.Kicker items={[{ id: 'city', label: 'The city', href: '#city' }]} />
+  <Article.Headline size="lead" level={1}>The river path opens for the weekend</Article.Headline>
+  <Article.Dek size="lead">The route connects the old station with the northern bridge.</Article.Dek>
+  <Article.Meta variant="ruled" place="Northline" published={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }} />
+</Header>` } } },
+};
+export const HeadingLevels: Story = {
+  render: () => <Column>{([1, 2, 3, 4, 5, 6] as const).map((level) => <Article.Headline key={level} level={level}>Level {level}</Article.Headline>)}</Column>,
+  parameters: { docs: { source: { code: `import { Article } from '@jfrader/ui';
+
+<Article.Headline level={1}>The river path opens for the weekend</Article.Headline>` } } },
+  play: async ({ canvas }) => { for (const level of [1, 2, 3, 4, 5, 6]) await expect(canvas.getByRole('heading', { level })).toHaveTextContent(`Level ${level}`); },
+};
+
+function Root(props: ComponentPropsWithRef<'article'>) { return <article {...props} data-replacement="root" />; }
+function Div(props: ComponentPropsWithRef<'div'>) { return <div {...props} data-replacement="div" />; }
+function Heading({ level = 2, ...props }: ComponentPropsWithRef<'h2'> & { level?: ArticleHeadingLevel }) { const H = `h${level}` as const; return <H {...props} data-replacement="heading" />; }
+function Paragraph(props: ComponentPropsWithRef<'p'>) { return <p {...props} data-replacement="p" />; }
+function Figure(props: ComponentPropsWithRef<'figure'>) { return <figure {...props} data-replacement="figure" />; }
+function Time(props: ComponentPropsWithRef<'time'>) { return <time {...props} data-replacement="time" />; }
+function Caption(props: ComponentPropsWithRef<'figcaption'>) { return <figcaption {...props} data-replacement="caption" />; }
+function Credit(props: ComponentPropsWithRef<'span'>) { return <span {...props} data-replacement="credit" />; }
+function Link(props: ComponentPropsWithRef<'a'>) { return <a {...props} data-replacement="link" />; }
+const cardRef = createRef<HTMLElement>();
+const headingRef = createRef<HTMLHeadingElement>();
+export const ReplacementSlots: Story = {
+  args: { ref: cardRef, slots: { root: Root, content: Div, time: Time, kicker: Div, headline: Heading, dek: Paragraph, lede: Paragraph, media: Figure, meta: Div }, slotProps: { root: { id: 'slot-card', 'data-ui': 'custom article' }, headline: { ref: headingRef, level: 3 }, lede: { visibility: 'always' } }, time, kicker: 'The city', lede, media: <p>The river path</p>, meta: <Article.Meta published={time} /> },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import type { ComponentPropsWithRef } from 'react';
+import { Article } from '@jfrader/ui';
+
+function Root(props: ComponentPropsWithRef<'article'>) {
+  return <article {...props} />;
+}
+function Div(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+function Heading({ level = 2, ...props }: ComponentPropsWithRef<'h2'> & { level?: 1 | 2 | 3 | 4 | 5 | 6 }) {
+  const H = \`h\${level}\` as const;
+  return <H {...props} />;
+}
+function Paragraph(props: ComponentPropsWithRef<'p'>) {
+  return <p {...props} />;
+}
+function Figure(props: ComponentPropsWithRef<'figure'>) {
+  return <figure {...props} />;
+}
+function Time(props: ComponentPropsWithRef<'time'>) {
+  return <time {...props} />;
+}
+
+<Article
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  lede="Work along the river began at the station. The last section opens this weekend, linking the two bridges with a continuous path."
+  kicker="The city"
+  time={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }}
+  media={<p>The river path</p>}
+  meta={<Article.Meta published={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }} />}
+  slots={{
+    root: Root,
+    content: Div,
+    time: Time,
+    kicker: Div,
+    headline: Heading,
+    dek: Paragraph,
+    lede: Paragraph,
+    media: Figure,
+    meta: Div,
+  }}
+  slotProps={{
+    headline: { level: 3 },
+    lede: { visibility: 'always' },
+  }}
+/>`,
+      },
+    },
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(cardRef.current).toBe(canvas.getByRole('article'));
+    await expect(headingRef.current).toBe(canvas.getByRole('heading', { level: 3 }));
+    await expect(cardRef.current).toHaveAttribute('data-ui', 'article custom');
+    await expectArticleHydration(<Article headline={headline} time={time} meta={<Article.Meta published={time} />} />, canvasElement);
+    const host = canvasElement.ownerDocument.createElement('div'); canvasElement.append(host);
+    const attach = fn(); const cleanup = fn();
+    const root = createRoot(host);
+    try {
+      await act(async () => root.render(<StrictMode><Article headline={headline} ref={(node) => { if (node) attach(); return cleanup; }} /></StrictMode>));
+      await act(async () => root.unmount());
+      await expect(attach.mock.calls.length).toBeGreaterThan(0);
+      await expect(cleanup.mock.calls.length).toBe(attach.mock.calls.length);
+    } finally { host.remove(); }
+  },
+};
+export const RuleReplacement: Story = {
+  args: { variant: 'rule-bottom', slots: { rule: Div } },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import type { ComponentPropsWithRef } from 'react';
+import { Article } from '@jfrader/ui';
+
+function Div(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+
+<Article
+  variant="rule-bottom"
+  headline="The river path opens for the weekend"
+  href="#river"
+  dek="The route connects the old station with the northern bridge."
+  slots={{ rule: Div }}
+/>`,
+      },
+    },
+  },
+};
+export const Compound: Story = {
+  name: 'Composed article',
+  render: () => <Article size="brief"><Article.Headline href="#river">{headline}</Article.Headline><Article.Dek>{dek}</Article.Dek><Article.Lede visibility="always">{lede}</Article.Lede><Article.Media caption="The river path" credit="City archive"><p>The river path</p></Article.Media></Article>,
+  parameters: { docs: { description: { story: 'Compose the headline, summary, excerpt and media explicitly.' }, source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';
+
+<Article size="brief">
+  <Article.Headline href="#river">The river path opens for the weekend</Article.Headline>
+  <Article.Dek>The route connects the old station with the northern bridge.</Article.Dek>
+  <Article.Lede visibility="always">Work along the river began at the station. The last section opens this weekend, linking the two bridges with a continuous path.</Article.Lede>
+  <Article.Media caption="The river path" credit="City archive"><p>The river path</p></Article.Media>
+</Article>` } } },
+};
+export const FullArticle: Story = {
+  name: 'Full reading article',
+  render: () => <Article size="lead">
+    <Article.Kicker items={[{ id: 'city', label: 'The city', href: '#city' }]} />
+    <Article.Headline level={1}>{headline}</Article.Headline>
+    <Article.Dek size="lead">{dek}</Article.Dek>
+    <Article.Meta place="Northline" published={time} />
+    <Article.Body>
+      <Article.Body.Paragraph variant="drop-cap">Work along the river began at the station. The last section opens this weekend.</Article.Body.Paragraph>
+      <Article.Body.Heading>At the northern bridge</Article.Body.Heading>
+      <Article.Body.Fact title="The route" items={[{ id: 'connection', content: 'The path connects the two bridges.' }]} />
+      <Article.Body.Quote speaker="The route inspector" attribution="Station record">The river path is ready to reopen.</Article.Body.Quote>
+      <Article.Body.Split>
+        <Article.Body.Cell label="Before">The path ended at the station.</Article.Body.Cell>
+        <Article.Body.Cell label="After">The two bridges are connected.</Article.Body.Cell>
+      </Article.Body.Split>
+    </Article.Body>
+    <Article.Sources title="Coverage" items={[{ id: 'record', label: 'Station record', href: '#record' }]} />
+  </Article>,
+  parameters: { docs: { description: { story: 'Combine the headline, reading body and source links in a complete article.' }, source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';
+
+<Article size="lead">
+  <Article.Kicker items={[{ id: 'city', label: 'The city', href: '#city' }]} />
+  <Article.Headline level={1}>The river path opens for the weekend</Article.Headline>
+  <Article.Dek size="lead">The route connects the old station with the northern bridge.</Article.Dek>
+  <Article.Meta place="Northline" published={{ dateTime: '2026-10-19T09:00:00Z', label: '09:00' }} />
+  <Article.Body>
+    <Article.Body.Paragraph variant="drop-cap">Work along the river began at the station. The last section opens this weekend.</Article.Body.Paragraph>
+    <Article.Body.Heading>At the northern bridge</Article.Body.Heading>
+    <Article.Body.Fact title="The route" items={[{ id: 'connection', content: 'The path connects the two bridges.' }]} />
+    <Article.Body.Quote speaker="The route inspector" attribution="Station record">The river path is ready to reopen.</Article.Body.Quote>
+    <Article.Body.Split>
+      <Article.Body.Cell label="Before">The path ended at the station.</Article.Body.Cell>
+      <Article.Body.Cell label="After">The two bridges are connected.</Article.Body.Cell>
+    </Article.Body.Split>
+  </Article.Body>
+  <Article.Sources title="Coverage" items={[{ id: 'record', label: 'Station record', href: '#record' }]} />
+</Article>` } } },
+  play: async ({ canvas, canvasElement }) => {
+    const article = canvas.getByRole('article');
+    await expect(article).toHaveAttribute('data-ui', 'article');
+    await expect(canvas.getByRole('heading', { level: 1 })).toHaveTextContent(headline);
+    for (const marker of ['article-body', 'article-kicker', 'article-meta', 'article-sources']) {
+      await expect(article.querySelector(`[data-ui~="${marker}"]`)).not.toBeNull();
+    }
+    await expect(canvasElement.querySelector('article article')).toBeNull();
+    const displayNames = [
+      [Article, 'Article'], [Article.Headline, 'Article.Headline'], [Article.Dek, 'Article.Dek'],
+      [Article.Lede, 'Article.Lede'], [Article.Media, 'Article.Media'], [Article.Body, 'Article.Body'],
+      [Article.Body.Paragraph, 'Article.Body.Paragraph'], [Article.Body.Heading, 'Article.Body.Heading'],
+      [Article.Body.Fact, 'Article.Body.Fact'], [Article.Body.Quote, 'Article.Body.Quote'],
+      [Article.Body.Split, 'Article.Body.Split'], [Article.Body.Cell, 'Article.Body.Cell'],
+      [Article.Kicker, 'Article.Kicker'], [Article.Kicker.Item, 'Article.Kicker.Item'],
+      [Article.Meta, 'Article.Meta'], [Article.Sources, 'Article.Sources'],
+    ] as const;
+    for (const [part, name] of displayNames) await expect(part.displayName).toBe(name);
+  },
+};
+export const PartSlots: Story = {
+  render: () => <Article data-ui="consumer-card article">
+    <Article.Headline level={3} href="#river" slots={{ root: Heading, link: Link }} slotProps={{ link: { target: '_blank', rel: 'author' } }}>{headline}</Article.Headline>
+    <Article.Dek slots={{ root: Paragraph }}>{dek}</Article.Dek>
+    <Article.Lede visibility="always" slots={{ root: Paragraph }}>{lede}</Article.Lede>
+    <Article.Media caption="The river path" credit="City archive" slots={{ root: Figure, caption: Caption, credit: Credit }}><p>The river path</p></Article.Media>
+  </Article>,
+  parameters: { docs: { source: { code: `import type { ComponentPropsWithRef } from 'react';
+import { Article, type ArticleHeadingLevel } from '@jfrader/ui';
+
+function Heading({ level = 2, ...props }: ComponentPropsWithRef<'h2'> & { level?: ArticleHeadingLevel }) {
+  const Element = \`h\${level}\` as const;
+  return <Element {...props} />;
+}
+function Link(props: ComponentPropsWithRef<'a'>) { return <a {...props} />; }
+function Paragraph(props: ComponentPropsWithRef<'p'>) { return <p {...props} />; }
+function Figure(props: ComponentPropsWithRef<'figure'>) { return <figure {...props} />; }
+function Caption(props: ComponentPropsWithRef<'figcaption'>) { return <figcaption {...props} />; }
+function Credit(props: ComponentPropsWithRef<'span'>) { return <span {...props} />; }
+
+<Article>
+  <Article.Headline level={3} href="#river" slots={{ root: Heading, link: Link }} slotProps={{ link: { target: '_blank', rel: 'author' } }}>
+    The river path opens for the weekend
+  </Article.Headline>
+  <Article.Dek slots={{ root: Paragraph }}>The route connects the old station with the northern bridge.</Article.Dek>
+  <Article.Lede visibility="always" slots={{ root: Paragraph }}>Work along the river began at the station. The last section opens this weekend, linking the two bridges with a continuous path.</Article.Lede>
+  <Article.Media caption="The river path" credit="City archive" slots={{ root: Figure, caption: Caption, credit: Credit }}>
+    <p>The river path</p>
+  </Article.Media>
+</Article>` } } },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.getByRole('article')).toHaveAttribute('data-ui', 'article consumer-card');
+    await expect(canvas.getByRole('link')).toHaveAttribute('rel', 'author noopener noreferrer');
+    await expect(canvasElement.querySelectorAll('[data-replacement="p"]')).toHaveLength(2);
+    await expect(canvasElement.querySelector('figcaption')).toHaveAttribute('data-replacement', 'caption');
+    await expect(canvasElement.querySelector('[data-ui~="article-media-credit"]')).toHaveAttribute('data-replacement', 'credit');
+  },
+};
+export const RouterLink: Story = {
+  name: 'Headline link adapter',
+  render: () => <Article.Headline href="#river" renderLink={(props) => <a {...props} data-router="true" />}>{headline}</Article.Headline>,
+  parameters: { docs: { description: { story: 'Connect the headline through an app-owned link adapter.' }, source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';
+
+<Article.Headline href="#river" renderLink={(props) => <a {...props} data-router="true" />}>
+  The river path opens for the weekend
+</Article.Headline>` } } },
+  play: async ({ canvas }) => { await expect(canvas.getByRole('link')).toHaveAttribute('data-router', 'true'); },
+};
+function LoserRoot(props: ComponentPropsWithRef<'article'>) { return <article {...props} data-replacement="loser" />; }
+export const SlotContracts: Story = {
+  play: async ({ canvasElement }) => {
+    const host = canvasElement.ownerDocument.createElement('div');
+    canvasElement.append(host);
+    const root = createRoot(host);
+    const ownRef = createRefCleanupTracker();
+    const slotRef = createRefCleanupTracker();
+    const parentHeadingRef = createRefCleanupTracker<HTMLHeadingElement>();
+    const ownHeadingRef = createRefCleanupTracker<HTMLHeadingElement>();
+    const parentHeadingRootRef = createRefCleanupTracker<HTMLHeadingElement>();
+    const ownHeadingRootRef = createRefCleanupTracker<HTMLHeadingElement>();
+    const ownClick = fn();
+    const slotClick = fn();
+    const render = (muted: boolean) => <StrictMode><Article ref={ownRef.ref} component={LoserRoot} slots={{ root: Root }} onClick={ownClick} data-ui="consumer" className="consumer-root" sx={{ color: muted ? vars.color.textMuted : vars.color.text }} slotProps={{ root: { ref: slotRef.ref, onClick: slotClick, id: 'slot-contract', className: 'slot-root' }, headline: { ref: parentHeadingRef.ref, slotProps: { root: { ref: parentHeadingRootRef.ref } } } }}><Article.Headline ref={ownHeadingRef.ref} slotProps={{ root: { ref: ownHeadingRootRef.ref } }}>{headline}</Article.Headline></Article></StrictMode>;
+    try {
+      await act(async () => root.render(render(false)));
+      const before = await expectRootPrecedence(host, '[data-replacement="root"]', '[data-replacement="loser"]');
+      await expect(before).toHaveClass('consumer-root', 'slot-root');
+      await expect(before).toHaveAttribute('data-ui', 'article consumer');
+      await expect(ownRef.getNode()).toBe(before);
+      await expect(slotRef.getNode()).toBe(before);
+      await expect(parentHeadingRef.getNode()).toBe(ownHeadingRef.getNode());
+      await expect(parentHeadingRootRef.getNode()).toBe(ownHeadingRef.getNode());
+      await expect(ownHeadingRootRef.getNode()).toBe(ownHeadingRef.getNode());
+      await fireEvent.click(before);
+      await expect(slotClick).toHaveBeenCalledTimes(1);
+      await expect(ownClick).not.toHaveBeenCalled();
+      await act(async () => root.render(render(true)));
+      await expectSameDomIdentity(before, host.querySelector('article'));
+    } finally {
+      await act(async () => root.unmount());
+      host.remove();
+    }
+    for (const tracker of [ownRef, slotRef, parentHeadingRef, ownHeadingRef, parentHeadingRootRef, ownHeadingRootRef]) {
+      await expect(tracker.getCleanupCount()).toBe(tracker.getAttachCount());
+      await expect(tracker.isCleanedUp()).toBe(true);
+    }
+  },
+};
+export const StyleOverrides: Story = {
+  render: () => <Article variant="centered">
+    <Article.Kicker sx={{ justifyContent: 'flex-start' }} items={[{ id: 'city', label: 'The city' }]} />
+    <Article.Headline sx={{ lineHeight: vars.lineHeight.relaxed }}>{headline}</Article.Headline>
+    <Article.Dek sx={{ maxInlineSize: 'none' }}>{dek}</Article.Dek>
+    <Article.Meta sx={{ justifyContent: 'flex-start' }} published={time} />
+  </Article>,
+  parameters: { docs: { source: { code: `import { Article } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+<Article variant="centered">
+  <Article.Headline sx={{ lineHeight: vars.lineHeight.relaxed }}>The river path opens for the weekend</Article.Headline>
+  <Article.Dek sx={{ maxInlineSize: 'none' }}>The route connects the old station with the northern bridge.</Article.Dek>
+</Article>` } } },
+  play: async ({ canvas, canvasElement }) => {
+    const headingStyle = getComputedStyle(canvas.getByRole('heading'));
+    await expect(Number.parseFloat(headingStyle.lineHeight) / Number.parseFloat(headingStyle.fontSize)).toBeCloseTo(Number(base.lineHeight.relaxed));
+    await expect(getComputedStyle(canvasElement.querySelector('[data-ui~="article-dek"]')!).maxInlineSize).toBe('none');
+    for (const name of ['article-meta', 'article-kicker']) await expect(getComputedStyle(canvasElement.querySelector(`[data-ui~="${name}"]`)!).justifyContent).toBe('flex-start');
+  },
+};

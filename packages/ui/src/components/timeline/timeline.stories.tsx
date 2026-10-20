@@ -69,7 +69,7 @@ const relative = new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto' });
 const fullDay = (at: number | string, timeZone = 'UTC', locale = LOCALE) =>
   new Intl.DateTimeFormat(locale, { timeZone, dateStyle: 'full' }).format(new Date(at));
 
-const Frame = styled.div({ inlineSize: '34rem', maxInlineSize: '100%' });
+const Frame = styled.div({ inlineSize: '34rem', maxInlineSize: '100%', marginInline: 'auto' });
 const Narrow = styled.div({ inlineSize: '16rem' });
 const StackFrame = styled.div({ display: 'grid', gap: vars.space[6] });
 const Toolbar = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], marginBlockEnd: vars.space[4] });
@@ -245,6 +245,7 @@ const meta = {
     ),
   ],
   parameters: {
+    layout: 'padded',
     docs: {
       source: { code: usage },
       description: {
@@ -1760,5 +1761,40 @@ export const ForcedColors: Story = {
     await expect(mediaDeclarations(part(row, 'trigger'), 'forced-colors', '::after')).toContainEqual(
       expect.objectContaining({ forcedColorAdjust: 'none', color: 'buttontext' }),
     );
+  },
+};
+
+export const MobileLayout: Story = {
+  tags: ['!autodocs'],
+  args: { defaultValue: ['deploy', 'build', 'keys'] },
+  parameters: {
+    viewport: {
+      options: {
+        mobile: { name: 'Mobile', styles: { width: '390px', height: '844px' }, type: 'mobile' },
+      },
+    },
+  },
+  globals: { viewport: { value: 'mobile', isRotated: false } },
+  play: async ({ canvasElement, userEvent }) => {
+    const document = canvasElement.ownerDocument;
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="timeline"]')!;
+    await expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(document.documentElement.clientWidth + 1);
+    const bounds = root.getBoundingClientRect();
+    await expect(bounds.left).toBeGreaterThanOrEqual(0);
+    await expect(bounds.right).toBeLessThanOrEqual(document.documentElement.clientWidth + 1);
+    for (const element of [...parts(root, 'trigger'), ...parts(root, 'detail'), ...parts(root, 'time')]) {
+      await expect(element.scrollWidth).toBeLessThanOrEqual(element.clientWidth + 1);
+      await expect(element.getBoundingClientRect().right).toBeLessThanOrEqual(bounds.right + GEOMETRY_TOLERANCE);
+    }
+    const deploy = triggerOf(root, 'deploy');
+    deploy.focus();
+    await userEvent.keyboard('{Enter}');
+    await expect(deploy).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.keyboard(' ');
+    await expect(deploy).toHaveAttribute('aria-expanded', 'true');
+    await expect(controlled(deploy)).toBeVisible();
+    await expectFocusRing(deploy);
+    for (const trigger of parts(root, 'trigger'))
+      await expect(trigger.getBoundingClientRect().height).toBeGreaterThanOrEqual(MIN_TRIGGER - 0.5);
   },
 };

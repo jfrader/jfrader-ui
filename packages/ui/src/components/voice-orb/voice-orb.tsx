@@ -39,49 +39,76 @@ export interface VoiceOrbLabels {
   speaker?: Record<'user' | 'assistant' | 'system', string>;
 }
 export interface VoiceOrbProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /** Sets the session state shown by the orb and status text. */
   state: VoiceOrbState;
+  /** Controls whether session controls show an active session. */
   active?: boolean;
+  /** Sets the initial uncontrolled active state. Defaults to `false`. */
   defaultActive?: boolean;
+  /** Receives active-state requests from the Start and End controls. */
   onActiveChange?: (active: boolean) => void;
+  /** Controls the displayed mute state without changing microphone access. */
   muted?: boolean;
+  /** Sets the initial uncontrolled mute state. Defaults to `false`. */
   defaultMuted?: boolean;
+  /** Receives mute-state requests. The consumer must apply them to its audio session. */
   onMutedChange?: (muted: boolean) => void;
+  /** Runs after Start requests an active session, even if a controlled request is rejected. */
   onStart?: () => void;
+  /** Runs after End requests an inactive session, even if a controlled request is rejected. */
   onEnd?: () => void;
+  /** Drives input activity from 0 to 1. Defaults to 0, clamps out-of-range values and treats nonfinite values as 0. */
   inputLevel?: number | MotionValue<number>;
+  /** Drives output activity from 0 to 1. Defaults to 0, clamps out-of-range values and treats nonfinite values as 0. */
   outputLevel?: number | MotionValue<number>;
+  /** Sets elapsed session time in seconds. Defaults to 0 and does not advance automatically. */
   elapsed?: number;
+  /** Shows an alert associated with the session container. */
   error?: ReactNode;
+  /** Replaces session, control and speaker labels. Defaults to English labels. */
   labels?: VoiceOrbLabels;
+  /** Sets the elapsed-time formatting locale. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
 }
 type NativeSlot<T extends 'canvas' | 'span'> = ComponentPropsWithRef<T> & {
   sx?: Interpolation<Theme>;
 };
 export interface VoiceOrbVisualProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /** Sets the orb's visual size. Defaults to `md`. */
   size?: VoiceOrbSize;
+  /** Overrides the orb's accessible label. */
   label?: string;
+  /** Replaces the canvas element drawing the orb. */
   slots?: {
     canvas?: ComponentType<NativeSlot<'canvas'>>;
   };
+  /** Passes props and `sx` to the orb canvas. */
   slotProps?: { canvas?: NativeSlot<'canvas'> };
 }
 export interface VoiceOrbStatusProps extends ComponentPropsWithRef<'p'>, SxProps {}
 export interface VoiceOrbTranscriptProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
+  /** Shows transcript text after the speaker label. */
   text: string;
+  /** Identifies a transcript turn for transitions and announcement deduplication. Defaults to 0. */
   turn?: string | number;
+  /** Selects the speaker label. Defaults to `assistant`. */
   speaker?: 'user' | 'assistant' | 'system';
+  /** Announces a completed turn once per turn, text and speaker combination. Defaults to `false`. */
   complete?: boolean;
+  /** Clips visible text to this many lines, rounded down. Omitted, nonfinite or nonpositive values leave text unclipped. */
   maxLines?: number;
 }
 export interface VoiceOrbControlsProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /** Replaces the Start button's visible content. Defaults to the session's start label. */
   startLabel?: ReactNode;
+  /** Replaces the Start, Mute, End and timer elements. */
   slots?: {
     start?: ComponentType<Omit<ButtonProps, 'sx'>>;
     mute?: ComponentType<Omit<ButtonProps, 'sx'>>;
     end?: ComponentType<Omit<ButtonProps, 'sx'>>;
     timer?: ComponentType<NativeSlot<'span'>>;
   };
+  /** Passes props and `sx` to the Start, Mute, End and timer elements. */
   slotProps?: {
     start?: Omit<ButtonProps, 'sx'> & SxProps;
     mute?: Omit<ButtonProps, 'sx'> & SxProps;

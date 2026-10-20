@@ -141,21 +141,37 @@ export type ChatThreadComposerSlotProps = Partial<
   sendButton?: ThreadButtonProps;
 };
 export interface ChatThreadComposerProps extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
+  /** Controls the message text and staged files. */
   value?: ChatDraft;
+  /** Seeds the uncontrolled draft. Defaults to empty text and no files. */
   defaultValue?: ChatDraft;
+  /** Receives draft edits and the cleared draft after a successful send. */
   onValueChange?: (draft: ChatDraft) => void;
+  /** Sends the trimmed draft. Rejection retains it and displays an error. */
   onSend: (draft: ChatDraft) => void | Promise<void>;
+  /** Enables file picking, pasting and dropping. Defaults to `true`. */
   allowAttachments?: boolean;
+  /** Filters attachments by file extension or MIME type using file-input syntax. */
   accept?: string;
+  /** Limits staged attachments. Defaults to 10. */
   maxFiles?: number;
+  /** Limits each attachment's size in bytes. Defaults to no limit. */
   maxFileSize?: number;
+  /** Prevents editing, attachment changes and sending. Defaults to `false`. */
   disabled?: boolean;
+  /** Sets empty-field text. Defaults to `labels.placeholder`. */
   placeholder?: string;
+  /** Names the message field. Defaults to `labels.composer`. */
   label?: string;
+  /** Sets the locale for counts and file sizes. */
   locale?: Intl.LocalesArgument;
+  /** Sets composer spacing and control sizing. Defaults to `md`. */
   size?: ChatThreadSize;
+  /** Overrides composer labels and feedback messages. */
   labels?: Partial<ChatThreadLabels>;
+  /** Passes props to composer parts. */
   slotProps?: ChatThreadComposerSlotProps;
+  /** Replaces composer parts. */
   slots?: ChatThreadComposerSlots;
 }
 
@@ -180,28 +196,51 @@ export interface ChatThreadComposerSlots {
     removeButton?: ComponentType<ThreadButtonProps>;
 }
 export interface ChatThreadProps extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
+  /** Supplies participant names and avatars for messages and presence. */
   participants: readonly ChatParticipant[];
+  /** Identifies outgoing messages and the participant adding reactions. */
   currentUserId: string;
+  /** Controls the conversation messages. */
   value?: readonly ChatMessage[];
+  /** Seeds uncontrolled messages. Defaults to an empty conversation. */
   defaultValue?: readonly ChatMessage[];
+  /** Receives proposed messages and the send or reaction that changed them. */
   onValueChange?: (next: ChatMessage[], event: ChatThreadEvent) => void;
+  /** Sets the current Unix time in milliseconds for timestamps and new messages. */
   now: number;
+  /** Sets the locale for timestamps, counts and participant lists. */
   locale?: Intl.LocalesArgument;
+  /** Sets the time zone for timestamps and day grouping. Defaults to `UTC`. */
   timeZone?: string;
+  /** Lists typing participant IDs. Unknown IDs and the current user are omitted. */
   typing?: readonly string[];
+  /** Maps participant IDs to the last message ID they have read. */
   readBy?: Readonly<Record<string, string>>;
+  /** Sends the draft before accepting an uncontrolled message. Rejection retains the draft. */
   onSend?: (draft: ChatDraft) => void | Promise<void>;
+  /** Receives the message ID and emoji after a reaction change is requested. */
   onReact?: (id: string, emoji: string) => void;
+  /** Retries a failed message by ID. Rejection displays a send error. */
   onRetry?: (id: string) => void | Promise<void>;
+  /** Sets the emoji offered in the reaction picker. */
   reactions?: readonly string[];
+  /** Groups consecutive messages by one author within this many milliseconds. Defaults to 300000. */
   groupWindow?: number;
+  /** Shows the built-in composer. Defaults to `true`. */
   composer?: boolean;
+  /** Prevents sending, retrying and reacting. Defaults to `false`. */
   disabled?: boolean;
+  /** Configures the built-in composer, including its draft and attachment limits. */
   composerProps?: Omit<ChatThreadComposerProps, 'onSend'>;
+  /** Creates a unique ID for each outgoing message. Defaults to `crypto.randomUUID`. */
   getNewId?: () => string;
+  /** Sets thread spacing and control sizing. Defaults to `md`. */
   size?: ChatThreadSize;
+  /** Overrides conversation labels and feedback messages. */
   labels?: Partial<ChatThreadLabels>;
+  /** Passes props to thread parts. */
   slotProps?: ChatThreadSlotProps;
+  /** Replaces thread parts. */
   slots?: ChatThreadSlots;
   /** Shorthand for slots.root; slots.root takes precedence. */
   component?: ChatThreadSlots['root'];

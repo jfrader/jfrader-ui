@@ -69,6 +69,14 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Declare card decks with suits, ranks, card art sets and backs.' },
+      sections: [
+        { title: 'Basic', stories: ['Default', 'SuitsAndRanks'] },
+        { title: 'Faces and backs', stories: ['PatternBacks', 'ArtworkBacks', 'SetBacks'] },
+        { title: 'Sizes', stories: ['SceneBacks'] },
+        { title: 'States', stories: ['UnlistedRankAndSuit'] },
+        { title: 'Custom art', stories: ['CardArt', 'NamedArtSets', 'CardArtSet', 'BuiltInOverride'] },
+        { title: 'Composition', stories: ['BoardInheritance'] },
+      ],
       source: {
         language: 'tsx',
         code: `import { DeckProvider } from '@jfrader/ui/deck';
@@ -78,23 +86,14 @@ import { GameCard } from '@jfrader/ui/game-card';
   <GameCard label="As de oros" value={{ suit: 'oros', rank: 1 }} />
 </DeckProvider>`,
       },
-      usage: `### Import
-Import decks and resolvers from \`@jfrader/ui/deck\`, not the package root.
+      usage: `### When to use
+Share printed suits, ranks and artwork across cards in a game. A deck definition is a visual catalog, not a shuffled pile or a card-count manager; keep dealing and game rules in your application.
 
-### Resolution
-\`defineDeck\` returns the same object without runtime validation.
-The default card id is \`suit-rank\`; supply \`cardId(suit, rank)\` for another scheme.
-Call \`resolveCardArt(deck, { suit, rank, artSet, cardArtSet, mode })\`.
-The selected set is \`cardArtSet ?? artSet ?? deck.defaultArtSet\`.
-A missing set or card falls back to \`art\`, then returns \`undefined\` for a printed face.
-\`mode: 'print'\` skips all artwork. Pass resolved artwork as \`GameCard\` children; omit children for the printed face.
-\`resolveDeckBack(deck, artSet)\` uses the requested set (or \`defaultArtSet\`), then falls back to \`back\`.
+### Constraints
+Keep artwork in client modules and reference decks by string id in card values. Definitions are not runtime-validated. Register custom decks before rendering their cards; an unknown deck id throws. Missing artwork falls back to a printed face, so provide readable rank and suit labels even for illustrated decks.
 
-### Registration
-Register custom definitions with \`DeckProvider decks={[deck]}\` and set \`default\` to their id.
-Explicit \`value.deck\` wins over the provider default, then the built-in French deck. Unknown ids throw \`UnknownDeckError\`.
-Keep artwork in client modules; card values reference decks by string id.
-Set \`backLabel\` on the provider to name hidden cards for \`FlipGameCard\` shorthand.`,
+### Accessibility
+Name each visible card in the player's language and give hidden cards a neutral back label that does not reveal their value. The provider adds no focus target or keyboard behavior.`,
     },
   },
 } satisfies Meta<typeof DeckProvider>;
@@ -105,7 +104,7 @@ type Story = StoryObj<typeof meta>;
 /** Built-in decks print their rank marks and suit glyphs without artwork. */
 export const Default: Story = {
   name: 'Built-in decks',
-  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Show Spanish and French printed faces beside their deck backs.' }, source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
 
@@ -144,7 +143,7 @@ const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center'
 /** Stars and moons print their own glyphs and rank marks. */
 export const SuitsAndRanks: Story = {
   name: 'Suits and ranks',
-  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Define stars and moons with their own glyphs and rank marks.' }, source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -185,7 +184,7 @@ const deck = defineDeck({
 /** One star has card art; the other prints its glyph and mark. */
 export const CardArt: Story = {
   name: 'Card art',
-  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Use artwork for one card and printed marks for another.' }, source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -237,6 +236,7 @@ export const NamedArtSets: Story = {
   name: 'Named art sets',
   parameters: {
     docs: {
+      description: { story: 'Choose a default art set while keeping base artwork as a fallback.' },
       source: {
         language: 'tsx',
         code: `import { styled } from '@jfrader/ui';
@@ -295,7 +295,7 @@ const deck = defineDeck({
 /** The same star wears a different face from each named set. */
 export const CardArtSet: Story = {
   name: 'Choosing a set for a card',
-  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Give two copies of the same card different named artwork.' }, source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -342,7 +342,7 @@ const deck = defineDeck({ id: 'card-sets',
 /** A printed rune and a dotted back share one deck. */
 export const PatternBacks: Story = {
   name: 'Pattern backs',
-  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Pair a printed rune with a dotted deck back.' }, source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -381,7 +381,7 @@ const deck = defineDeck({ id: 'pattern-backs',
 /** Rune artwork fills the hidden card's back. */
 export const ArtworkBacks: Story = {
   name: 'Artwork backs',
-  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Replace a hidden card pattern with deck-wide rune artwork.' }, source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -427,7 +427,7 @@ const deck = defineDeck({
 /** The rare set replaces the deck's default back with its own artwork. */
 export const SetBacks: Story = {
   name: 'Back per art set',
-  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Give the rare art set its own back while retaining the default pattern.' }, source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -472,7 +472,7 @@ const deck = defineDeck({ id: 'set-backs', suits: {}, ranks: {},
 /** A warm dusk scene fills the back at three card sizes. */
 export const SceneBacks: Story = {
   name: 'Scene backs',
-  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Fill small, medium and large card backs with a dusk scene.' }, source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -519,7 +519,7 @@ const deck = defineDeck({ id: 'scene-backs', suits: {}, ranks: {},
 /** Unlisted ranks and suits print their ids as text. */
 export const UnlistedRankAndSuit: Story = {
   name: 'Unlisted rank and suit',
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameCard } from '@jfrader/ui/game-card';
+  parameters: { docs: { description: { story: 'Print unknown rank and suit ids when a deck has no matching labels.' }, source: { language: 'tsx', code: `import { GameCard } from '@jfrader/ui/game-card';
 
 <GameCard label="Unknown card" value={{ suit: 'comets', rank: '99' }} />` } } },
   render: () => <GameCard label="Unknown card" value={{ suit: 'comets', rank: '99' }} />,
@@ -532,7 +532,7 @@ export const UnlistedRankAndSuit: Story = {
 /** One queen uses custom artwork while the king keeps its printed face. */
 export const BuiltInOverride: Story = {
   name: 'Override a built-in card',
-  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Illustrate a French queen without changing the printed king.' }, source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { DeckProvider, defineDeck, frenchDeck } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -644,7 +644,7 @@ export const ResolverContract: Story = {
 /** Cards, a hand and a flip card inherit the board's art choices. */
 export const BoardInheritance: Story = {
   name: 'Board art inheritance',
-  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Share board artwork across cards, a hand and a flip card with a per-card override.' }, source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
 import { GameCard } from '@jfrader/ui/game-card';
