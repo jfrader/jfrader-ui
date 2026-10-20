@@ -21,6 +21,7 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 | `pnpm test` | Generate tokens and run Storybook Vitest browser tests |
 | `pnpm typecheck` | Generate tokens and typecheck every package |
 | `pnpm verify:docs` | Check component documentation coverage (also runs before the Storybook build) |
+| `pnpm --filter @jfrader/storybook audit:docs` | Crawl the docs front and report examples without code and API coverage (`DOCS_URL`, `--only`, `--check`) |
 | `pnpm verify:slots` | Check that every replacement key a family declares is rendered |
 | `pnpm verify:exports` | Check every component's subpath export resolves and matches the index |
 | `pnpm --filter @jfrader/storybook exec vitest run --project=storybook --maxWorkers=2 packages/ui/src/components/<name>/<name>.stories.tsx` | Run one story file from the repo root (fast loop; tokens must already be generated) |
