@@ -82,7 +82,9 @@ const FRUITS: readonly SelectOption[] = [
   { value: 'cherry', label: 'Cherry' },
 ];
 
-const morphSnippet = `<Select variant="morph" label="Fruit" defaultValue="apple"
+const morphSnippet = `import { Select } from '@jfrader/ui';
+
+<Select variant="morph" label="Fruit" defaultValue="apple"
   options={[
     { value: 'apple', label: 'Apple' },
     { value: 'banana', label: 'Banana', disabled: true },
@@ -93,7 +95,7 @@ const morphSnippet = `<Select variant="morph" label="Fruit" defaultValue="apple"
 export const Morph: EasyStory = {
   args: { variant: 'morph', label: LABEL, options: FRUITS, defaultValue: 'apple', onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <Select {...args} />,
-  parameters: { docs: { source: { language: 'tsx', code: morphSnippet } } },
+  parameters: { docs: { description: { story: 'Choose a fruit from a pill trigger with an animated popup.' }, source: { language: 'tsx', code: morphSnippet } } },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const trigger = canvas.getByRole('combobox');
     await userEvent.tab();
@@ -235,26 +237,32 @@ const meta: Meta<SelectCompoundProps> = {
     docs: {
       description: {
         component:
-          'Choose one option from a dropdown list using either a single element with options or compound parts for custom anatomy.',
+          'Choose one option from a dropdown list.',
       },
-      usage: `### Keyboard and focus
+      sections: [
+        { title: 'Choose an option', stories: ['Default', 'Placeholder', 'Morph'] },
+        { title: 'Compose the field', stories: ['Compound'] },
+        { title: 'Unavailable choices', stories: ['DisabledSelect'] },
+        { title: 'Forms', stories: ['EasyFormReset'] },
+        { title: 'Keyboard and dismissal', stories: ['Keyboard', 'TypeaheadAcrossOpening', 'OutsidePress', 'InitialActive'] },
+      ],
+      usage: `### When to use
+- Use Select for one choice from a fixed list. Use MultiSelect for several choices or Combobox for typed search.
+
+### Keyboard and focus
 - The trigger is a select-only combobox with a listbox. DOM focus stays on the trigger; aria-activedescendant identifies the highlighted option.
 - Enter/Space/ArrowDown opens on the selected or first enabled option. ArrowUp opens on the selected or last enabled option.
 - Arrows wrap and skip disabled options; Home/End reach the ends. Enter/Space selects and closes; Escape/Tab closes without selecting. Tab lets focus move on.
 - Printable characters match enabled options by case-insensitive prefix. The 500ms buffer continues across opening; closed-state typeahead opens without changing the value.
 - Pointer selection closes the list. Disabled options remain visible and ignore clicks; pressing inside the list never takes focus from the trigger.
 
-### Values and forms
-- value and open support controlled state independently. Option values must be unique.
-- Set \`initialActiveValue\` to highlight an enabled option when the value has no matching option. Opening by typeahead uses the match instead. Highlighting does not select an option.
-- Long lists scroll inside the popup. Use CSS \`scroll-padding\` on Content to reserve space for sticky content.
-- The list stays mounted and hidden when closed so labels remain available; positioning runs only when open.
-- name adds a hidden form input. Native required validation is not supported.
+### Constraints and forms
+- Option values must be unique. Highlighting an option does not select it.
+- Long lists scroll inside the popup.
+- Named fields submit a single value. Native required validation is not supported.
 
-### Morph presentation
-- Set \`variant="morph"\` for a pill trigger and a measured trigger-to-panel spring. The same option collection, keyboard map and form value apply in easy and compound mode.
-- Reduced motion skips the spring. Closing removes the list from interaction immediately, before its visual collapse finishes.
-- Use item children for icons or trailing details. For typed search use Combobox; this variant does not add search, groups or a second selection model.`,
+### Motion
+- Reduced motion skips the pill presentation's spring. Closing removes the list from interaction immediately, before its visual collapse finishes.`,
     },
   },
 };
@@ -425,6 +433,16 @@ export const LongList: EasyStory = {
 
 /** Seed a highlight without selecting an option. */
 export const InitialActive: EasyStory = {
+  parameters: { docs: {
+    description: { story: 'Open with Cherry highlighted without selecting it, or type a prefix to highlight another option.' },
+    source: { language: 'tsx', code: `import { Select } from '@jfrader/ui';
+
+<Select label="Fruit" initialActiveValue="cherry" options={[
+  { value: 'apple', label: 'Apple' },
+  { value: 'banana', label: 'Banana', disabled: true },
+  { value: 'cherry', label: 'Cherry' },
+]} />` },
+  } },
   args: { label: LABEL, options: FRUITS, initialActiveValue: 'cherry', onValueChange: fn() },
   render: (args) => <Select {...args} />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -626,6 +644,7 @@ async function focusTrigger(canvasElement: HTMLElement) {
 }
 
 export const Default: EasyStory = {
+  name: 'Choose a billing plan',
   args: {
     label: PLAN_LABEL,
     placeholder: 'Pick a plan',
@@ -641,6 +660,7 @@ export const Default: EasyStory = {
   ),
   parameters: {
     docs: {
+      description: { story: 'Choose a billing plan beside an upgrade action; Enterprise is unavailable.' },
       source: {
         language: 'tsx',
         code: snippet,
@@ -676,10 +696,12 @@ export const Default: EasyStory = {
 };
 
 export const Compound: Story = {
+  name: 'Compose a fruit picker',
   args: { defaultValue: 'apple', onValueChange: fn() },
   render: (args) => <SelectExample {...args} />,
   parameters: {
     docs: {
+      description: { story: 'Connect an external label to the trigger and display the selected fruit.' },
       source: {
         language: 'tsx',
         code: `import { useId } from 'react';
@@ -996,7 +1018,10 @@ function ControlledSelect(props: SelectCompoundProps) {
 ControlledSelect.displayName = 'ControlledSelect';
 
 export const EasyFormReset: EasyStory = {
-  parameters: { docs: { source: { language: 'tsx', code: `<form aria-label="Fruit form">
+  name: 'Reset a form',
+  parameters: { docs: { description: { story: 'Choose another fruit, then reset the form to restore Apple.' }, source: { language: 'tsx', code: `import { Button, Select } from '@jfrader/ui';
+
+<form aria-label="Fruit form">
   <Select label="Fruit" name="fruit" defaultValue="apple" options={[
     { value: 'apple', label: 'Apple' },
     { value: 'banana', label: 'Banana', disabled: true },
@@ -1029,7 +1054,10 @@ export const EasyFormReset: EasyStory = {
 };
 
 export const Placeholder: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<Select>
+  name: 'Start without a selection',
+  parameters: { docs: { description: { story: 'Show a prompt until a fruit is selected.' }, source: { language: 'tsx', code: `import { Select } from '@jfrader/ui';
+
+<Select>
   <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
   <Select.Content>
     <Select.Item value="apple">Apple</Select.Item>
@@ -1124,7 +1152,10 @@ export const Controlled: Story = {
 };
 
 export const Keyboard: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<>
+  name: 'Keyboard navigation',
+  parameters: { docs: { description: { story: 'Focus the field, use arrows to skip Banana, and press Enter to select or Escape to cancel.' }, source: { language: 'tsx', code: `import { Button, Select } from '@jfrader/ui';
+
+<>
   <Select defaultValue="apple">
     <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
     <Select.Content>
@@ -1133,7 +1164,7 @@ export const Keyboard: Story = {
       <Select.Item value="cherry">Cherry</Select.Item>
     </Select.Content>
   </Select>
-  <Button>Continue</Button>
+  <Button>After</Button>
 </>` } } },
   args: { defaultValue: 'apple', onValueChange: fn() },
   render: (args) => <SelectExample {...args} />,
@@ -1265,7 +1296,10 @@ export const KeyboardClosed: Story = {
 };
 
 export const TypeaheadAcrossOpening: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<Select>
+  name: 'Find by typing',
+  parameters: { docs: { description: { story: 'Type a fruit prefix on the closed field to open the list without selecting a value.' }, source: { language: 'tsx', code: `import { Select } from '@jfrader/ui';
+
+<Select>
   <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
   <Select.Content>
     <Select.Item value="apple">Apple</Select.Item>
@@ -1307,7 +1341,10 @@ export const TypeaheadAcrossOpening: Story = {
 };
 
 export const OutsidePress: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<>
+  name: 'Dismiss outside the list',
+  parameters: { docs: { description: { story: 'Open the list, then press After to close it without changing the selection.' }, source: { language: 'tsx', code: `import { Button, Select } from '@jfrader/ui';
+
+<>
   <Select defaultValue="apple">
     <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
     <Select.Content>
@@ -1316,7 +1353,7 @@ export const OutsidePress: Story = {
       <Select.Item value="cherry">Cherry</Select.Item>
     </Select.Content>
   </Select>
-  <Button>Continue</Button>
+  <Button>After</Button>
 </>` } } },
   args: { defaultValue: 'apple', onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <SelectExample {...args} />,
@@ -1367,7 +1404,10 @@ export const DisabledItem: Story = {
 };
 
 export const DisabledSelect: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<Select disabled defaultValue="apple">
+  name: 'Disabled field',
+  parameters: { docs: { description: { story: 'Keep the selected fruit visible while preventing interaction with the field.' }, source: { language: 'tsx', code: `import { Select } from '@jfrader/ui';
+
+<Select disabled defaultValue="apple">
   <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
   <Select.Content>
     <Select.Item value="apple">Apple</Select.Item>
