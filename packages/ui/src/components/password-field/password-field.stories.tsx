@@ -228,6 +228,13 @@ export const Disabled: Story = {
 };
 
 export const Uncontrolled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useRef } from 'react';
+import { PasswordField } from '@jfrader/ui';
+
+export function Password() {
+  const inputRef = useRef<HTMLInputElement>(null);
+  return <PasswordField ref={inputRef} label="Password" name="password" autoComplete="current-password" size="md" />;
+}` } } },
   args: { ref: fn() },
   play: async ({ canvasElement, userEvent, args }) => {
     const { input, button } = parts(canvasElement);
@@ -533,6 +540,19 @@ export const Translated: Story = {
 };
 
 export const CustomIcon: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { PasswordField } from '@jfrader/ui';
+
+<PasswordField
+  label="Password"
+  name="password"
+  autoComplete="current-password"
+  size="md"
+  revealIcon={(revealed) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} data-icon={revealed ? 'on' : 'off'}>
+      <circle cx="12" cy="12" r={revealed ? 8 : 4} />
+    </svg>
+  )}
+/>` } } },
   args: {
     revealIcon: (revealed) => (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} data-icon={revealed ? 'on' : 'off'}>
@@ -744,6 +764,14 @@ export const SlotCustomization: Story = {
 
 /** Use component as shorthand for the wrapper's root slot. */
 export const ComponentRoot: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { PasswordField } from '@jfrader/ui';
+
+function PasswordRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+
+<PasswordField component={PasswordRoot} label="Password" name="password" autoComplete="current-password" size="md" />` } } },
   args: { component: FieldSugarRoot },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-slot-root="component"]')).not.toBeNull();

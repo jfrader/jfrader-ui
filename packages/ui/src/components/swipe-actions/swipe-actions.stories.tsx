@@ -458,6 +458,28 @@ export const FullSwipe: Story = {
   },
 };
 export const KeepRow: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { SwipeActions, styled } from '@jfrader/ui';
+
+const Inbox = styled(SwipeActions)({ maxWidth: 480 });
+
+export function Messages({ onAction }: { onAction: (action: 'read' | 'archive' | 'delete') => void }) {
+  return (
+    <Inbox aria-label="Inbox" defaultValue={{ id: 'invoice', side: 'trailing' }}>
+      <SwipeActions.Row
+        id="invoice"
+        label="Invoice"
+        actionsLabel="Actions for Invoice"
+        leading={[{ id: 'read', label: 'Mark as read', tone: 'accent', onSelect: () => onAction('read') }]}
+        trailing={[
+          { id: 'archive', label: 'Archive', keepRow: true, onSelect: () => onAction('archive') },
+          { id: 'delete', label: 'Delete message', tone: 'danger', onSelect: () => onAction('delete') },
+        ]}
+      >
+        Invoice from Morgan
+      </SwipeActions.Row>
+    </Inbox>
+  );
+}` } } },
   args: { defaultValue: { id: 'invoice', side: 'trailing' } },
   play: async ({ canvasElement, userEvent }) => {
     const row = rowOf(canvasElement);
@@ -722,6 +744,28 @@ export const ReducedMotion: Story = {
 export const ForcedColors: Story = {
   parameters: {
     docs: {
+      source: { language: 'tsx', code: `import { SwipeActions, styled } from '@jfrader/ui';
+
+const Inbox = styled(SwipeActions)({ maxWidth: 480 });
+
+export function Messages({ onAction }: { onAction: (action: 'read' | 'archive' | 'delete') => void }) {
+  return (
+    <Inbox aria-label="Inbox" defaultValue={{ id: 'invoice', side: 'leading' }}>
+      <SwipeActions.Row
+        id="invoice"
+        label="Invoice"
+        actionsLabel="Actions for Invoice"
+        leading={[{ id: 'read', label: 'Mark as read', tone: 'accent', onSelect: () => onAction('read') }]}
+        trailing={[
+          { id: 'archive', label: 'Archive', keepRow: true, onSelect: () => onAction('archive') },
+          { id: 'delete', label: 'Delete message', tone: 'danger', onSelect: () => onAction('delete') },
+        ]}
+      >
+        Invoice from Morgan
+      </SwipeActions.Row>
+    </Inbox>
+  );
+}` },
       description: {
         story:
           'Enable forced colors to check borders, command labels and focus outlines. This story checks structure only.',
@@ -1060,6 +1104,28 @@ export const ExternalReset: Story = {
   },
 };
 export const EscapeRail: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { SwipeActions, styled } from '@jfrader/ui';
+
+const Inbox = styled(SwipeActions)({ maxWidth: 480 });
+
+export function Messages({ onAction }: { onAction: (action: 'read' | 'archive' | 'delete') => void }) {
+  return (
+    <Inbox aria-label="Inbox" defaultValue={{ id: 'invoice', side: 'leading' }}>
+      <SwipeActions.Row
+        id="invoice"
+        label="Invoice"
+        actionsLabel="Actions for Invoice"
+        leading={[{ id: 'read', label: 'Mark as read', tone: 'accent', onSelect: () => onAction('read') }]}
+        trailing={[
+          { id: 'archive', label: 'Archive', keepRow: true, onSelect: () => onAction('archive') },
+          { id: 'delete', label: 'Delete message', tone: 'danger', onSelect: () => onAction('delete') },
+        ]}
+      >
+        Invoice from Morgan
+      </SwipeActions.Row>
+    </Inbox>
+  );
+}` } } },
   args: { defaultValue: { id: 'invoice', side: 'leading' } },
   play: async ({ canvasElement, userEvent, args }) => {
     const row = rowOf(canvasElement);

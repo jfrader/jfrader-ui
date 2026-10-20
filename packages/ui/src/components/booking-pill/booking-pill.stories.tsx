@@ -168,6 +168,31 @@ export const ConfirmationRejection: Story = {
   },
 };
 export const AllUnavailable: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { BookingPill, Surface, styled, type BookingPillProps } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: vars.space[6], display: 'grid', gap: vars.space[5] });
+const VenueLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
+
+export function Reservation({ onConfirm }: Pick<BookingPillProps, 'onConfirm'>) {
+  return (
+    <ReservationPanel>
+      <VenueLabel>Modern British · Garden dining</VenueLabel>
+      <BookingPill
+        venue="The Glasshouse"
+        startDate="2026-10-11"
+        times={['18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00']}
+        locale="en-GB"
+        hourCycle="h23"
+        defaultOpen
+        defaultStep="time"
+        defaultValue={{ partySize: 2, date: '2026-10-11', time: '19:00' }}
+        isAvailable={() => false}
+        onConfirm={onConfirm}
+      />
+    </ReservationPanel>
+  );
+}` } } },
   args: { ...Time.args, isAvailable: () => false },
   play: async ({ canvas }) => {
     await expect(
@@ -215,6 +240,30 @@ export const RejectedOpen: Story = {
   },
 };
 export const AtomicInvalidation: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { BookingPill, Surface, styled, type BookingPillProps } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: vars.space[6], display: 'grid', gap: vars.space[5] });
+const VenueLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
+
+export function Reservation({ onConfirm }: Pick<BookingPillProps, 'onConfirm'>) {
+  return (
+    <ReservationPanel>
+      <VenueLabel>Modern British · Garden dining</VenueLabel>
+      <BookingPill
+        venue="The Glasshouse"
+        startDate="2026-10-11"
+        times={['18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00']}
+        locale="en-GB"
+        hourCycle="h23"
+        defaultOpen
+        defaultValue={{ partySize: 2, date: '2026-10-11', time: '19:00' }}
+        isAvailable={(_date, _time, partySize) => partySize <= 2}
+        onConfirm={onConfirm}
+      />
+    </ReservationPanel>
+  );
+}` } } },
   args: {
     defaultOpen: true,
     defaultValue: draft,

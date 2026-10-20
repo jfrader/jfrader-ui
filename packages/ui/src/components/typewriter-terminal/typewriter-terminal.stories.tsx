@@ -454,6 +454,12 @@ export const KeyboardPlayback: Story = {
   },
 };
 export const PlaybackSequence: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { TypewriterTerminal } from '@jfrader/ui';
+
+<TypewriterTerminal
+  steps={[{ command: 'A👩🏽‍💻', output: ['', 'Done'], pauseMs: 0 }]}
+  speed={Number.NaN}
+/>` } } },
   args: { steps: CLOCK_SCRIPT, speed: Number.NaN },
   beforeEach: controlledClock,
   play: async ({ canvas, canvasElement, args }) => {
@@ -486,6 +492,15 @@ export const PlaybackSequence: Story = {
 };
 export const StrictModePlayback: Story = {
   ...PlaybackSequence,
+  parameters: { docs: { source: { language: 'tsx', code: `import { StrictMode } from 'react';
+import { TypewriterTerminal } from '@jfrader/ui';
+
+<StrictMode>
+  <TypewriterTerminal
+    steps={[{ command: 'A👩🏽‍💻', output: ['', 'Done'], pauseMs: 0 }]}
+    speed={Number.NaN}
+  />
+</StrictMode>` } } },
   decorators: [
     (Story) => (
       <StrictMode>
@@ -821,6 +836,22 @@ export const PendingCopyReplacement: Story = {
   },
 };
 export const RefAttachment: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useRef } from 'react';
+import { TypewriterTerminal } from '@jfrader/ui';
+
+export function Terminal() {
+  const terminalRef = useRef<HTMLElement>(null);
+  return (
+    <TypewriterTerminal
+      ref={terminalRef}
+      defaultPaused
+      steps={[
+        { command: 'example init', output: ['Workspace created', '', { text: 'Ready', tone: 'success' }] },
+        { command: 'example --help', output: ['Usage: example [command]', { text: 'Documentation', href: '/docs' }] },
+      ]}
+    />
+  );
+}` } } },
   args: { defaultPaused: true, ref: fn() },
   play: async ({ canvas, args }) => {
     const calls = (args.ref as ReturnType<typeof fn>).mock.calls;

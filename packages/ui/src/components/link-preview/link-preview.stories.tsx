@@ -185,6 +185,22 @@ export const ReducedMotion: Story = {
 
 /** Tab to the title and press Enter to follow the link. */
 export const Keyboard: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { LinkPreview } from '@jfrader/ui';
+
+const cover = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 191 100"><circle cx="60" cy="50" r="24" opacity="0.5"/></svg>');
+const favicon = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7"/></svg>');
+
+<LinkPreview
+  data={{
+    url: 'https://example.com/guide',
+    site: 'Northwind Docs',
+    title: 'Spacing and type guide',
+    description: 'How we size, space and set type across product surfaces.',
+    image: { src: cover, alt: 'Guide cover with a large dot' },
+    favicon,
+  }}
+  slotProps={{ title: { onClick: (event) => event.preventDefault() } }}
+/>` } } },
   args: { slotProps: { title: { onClick: fn((event) => event.preventDefault()) } } },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();

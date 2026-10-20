@@ -243,6 +243,35 @@ export const AllShare: Story = {
 };
 
 export const NoIcons: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { DataFlow, type DataFlowNode, type DataFlowDestinationNode } from '@jfrader/ui';
+
+const sources: readonly DataFlowNode[] = [
+  { id: 'src-events', label: 'Client events', meta: 'Telemetry and clicks', detail: 'HTTPS /v1/events' },
+  { id: 'src-cdc', label: 'Database CDC', meta: 'Postgres change stream', detail: 'WAL logical replication' },
+  { id: 'src-webhooks', label: 'Partner webhooks', meta: 'Inbound integration', detail: 'HMAC-signed JSON' },
+];
+const destinations: readonly DataFlowDestinationNode[] = [
+  { id: 'dst-warehouse', label: 'Data warehouse', meta: 'Analytics cluster', detail: '100% full dataset', share: 1 },
+  { id: 'dst-search', label: 'Search index', meta: 'Elasticsearch', detail: '50% sampled query stream', share: 0.5 },
+  { id: 'dst-cold', label: 'Cold archive', meta: 'S3 glacier storage', detail: '25% compliance sample', share: 0.25 },
+];
+
+<DataFlow
+  sources={sources}
+  destinations={destinations}
+  core={{ id: 'core-transform', label: 'Transformation engine', detail: 'Validation, schema normalization and enrichment', countStart: 0, countLabel: 'records' }}
+  summary={[
+    { id: 'step-ingest', content: 'Client events supplies telemetry and clicks over HTTPS /v1/events. Database CDC supplies a Postgres change stream through WAL logical replication. Partner webhooks supplies HMAC-signed JSON. Hollow circles represent incoming records.' },
+    { id: 'step-transform', content: 'The Transformation engine validates, normalizes schemas and enriches records. Solid squares represent processed records.' },
+    { id: 'step-route', content: 'The Data warehouse analytics cluster receives every record. The Elasticsearch Search index receives 50%. The S3 Glacier Cold archive receives a 25% compliance sample. These shares and the record count are illustrative.' },
+  ]}
+  label="Data processing pipeline illustration"
+  controlLabels={{ pause: 'Pause animation', resume: 'Resume animation', step: 'Step forward', replay: 'Replay animation', group: 'Playback transport controls' }}
+  emptyContent="No sources or destinations configured for this pipeline."
+  invalidContent="Cannot render pipeline: invalid configuration provided."
+  locale="en-US"
+  defaultPaused
+/>` } } },
   args: {
     sources: sources.map(({ icon: _, ...rest }) => rest),
     destinations: destinations.map(({ icon: _, ...rest }) => rest),

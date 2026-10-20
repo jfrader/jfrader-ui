@@ -364,6 +364,13 @@ export const LightTheme: Story = {
   globals: { theme: 'light' },
 };
 export const Vertical: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ButtonGroup } from '@jfrader/ui';
+
+<ButtonGroup aria-label="Document actions" orientation="vertical" variant="outline" tone="neutral" size="md">
+  <ButtonGroup.Item>Share</ButtonGroup.Item>
+  <ButtonGroup.Item>Duplicate</ButtonGroup.Item>
+  <ButtonGroup.Item>Archive</ButtonGroup.Item>
+</ButtonGroup>` } } },
   args: { orientation: 'vertical' },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const items = canvas.getAllByRole('button');
@@ -384,6 +391,13 @@ export const Vertical: Story = {
   },
 };
 export const RTL: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ButtonGroup } from '@jfrader/ui';
+
+<ButtonGroup aria-label="Document actions" dir="rtl" orientation="horizontal" variant="outline" tone="neutral" size="md">
+  <ButtonGroup.Item>Share</ButtonGroup.Item>
+  <ButtonGroup.Item>Duplicate</ButtonGroup.Item>
+  <ButtonGroup.Item>Archive</ButtonGroup.Item>
+</ButtonGroup>` } } },
   args: { dir: 'rtl' },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const items = canvas.getAllByRole('button');
@@ -855,6 +869,20 @@ export const PointerCancel: Story = {
   },
 };
 export const PreventDefault: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { ButtonGroup } from '@jfrader/ui';
+
+<ButtonGroup
+  aria-label="Document actions"
+  orientation="horizontal"
+  variant="outline"
+  tone="neutral"
+  size="md"
+  onKeyDown={(event) => event.preventDefault()}
+>
+  <ButtonGroup.Item>Share</ButtonGroup.Item>
+  <ButtonGroup.Item>Duplicate</ButtonGroup.Item>
+  <ButtonGroup.Item>Archive</ButtonGroup.Item>
+</ButtonGroup>` } } },
   args: { onKeyDown: fn((event) => event.preventDefault()) },
   play: async ({ args, canvas, userEvent }) => {
     const items = canvas.getAllByRole('button');

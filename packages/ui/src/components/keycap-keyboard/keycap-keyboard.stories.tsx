@@ -509,6 +509,26 @@ function KeyboardRow(props: ComponentPropsWithRef<'div'>) {
 }
 
 export const RowSlot: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState, type ComponentPropsWithRef } from 'react';
+import { Button, KeycapKeyboard, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '100%', maxInlineSize: '48rem' });
+
+function KeyboardRow(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-slot="keyboard-row" />;
+}
+
+export function Typing() {
+  const [input, setInput] = useState<HTMLInputElement | null>(null);
+  return (
+    <Stack>
+      <TextField label="Try the keyboard" ref={setInput} />
+      <KeycapKeyboard eventTarget={input} slots={{ row: KeyboardRow }} slotProps={{ row: { className: 'custom-row' } }} />
+      <Button>Continue</Button>
+    </Stack>
+  );
+}` } } },
   args: { slots: { row: KeyboardRow }, slotProps: { row: { className: 'custom-row' } } },
   play: async ({ canvasElement }) => {
     const rows = board(canvasElement).querySelectorAll<HTMLElement>('[data-ui="keycap-keyboard-row"]');

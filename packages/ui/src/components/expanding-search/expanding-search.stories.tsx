@@ -436,6 +436,18 @@ export const SlotCustomization: Story = {
 
 /** Use component as shorthand for the wrapper's root slot. */
 export const ComponentRoot: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { ExpandingSearch, styled } from '@jfrader/ui';
+
+const Toolbar = styled.div({ inlineSize: 420, maxInlineSize: '100%' });
+
+function SearchRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+
+<Toolbar>
+  <ExpandingSearch component={SearchRoot} triggerLabel="Search members" inputProps={{ placeholder: 'Name or email' }} />
+</Toolbar>` } } },
   args: { component: FieldSugarRoot },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-slot-root="component"]')).not.toBeNull();

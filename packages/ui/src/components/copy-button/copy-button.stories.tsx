@@ -1000,6 +1000,24 @@ export const ForcedColors: Story = {
 };
 
 export const IconNodes: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { CopyButton } from '@jfrader/ui';
+
+<CopyButton
+  text="pnpm add @jfrader/ui"
+  label="Copy command"
+  pendingLabel="Copying"
+  copiedLabel="Copied"
+  errorLabel="Could not copy"
+  variant="outline"
+  tone="neutral"
+  size="sm"
+  iconOnly
+  icons={{
+    idle: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 8h10M8 3v10" /></svg>,
+    copied: false,
+    error: 0,
+  }}
+/>` } } },
   args: { iconOnly: true, icons: { idle: <CustomIcon />, copied: false, error: 0 } },
   play: async ({ canvasElement }) => {
     const faces = getButton(canvasElement).querySelectorAll('[data-ui="copy-button-icon"] > span');

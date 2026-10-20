@@ -152,6 +152,17 @@ export const ControlBoundariesLight: Story = {
 };
 
 export const WithIcons: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button } from '@jfrader/ui';
+
+<Button
+  variant="solid"
+  tone="neutral"
+  size="md"
+  startIcon={<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M8 3v10M3 8h10" /></svg>}
+  endIcon={<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4" /></svg>}
+>
+  Button
+</Button>` } } },
   args: { startIcon: <PlusIcon />, endIcon: <ArrowIcon /> },
 };
 
