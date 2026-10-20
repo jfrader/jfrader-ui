@@ -27,13 +27,6 @@ const Fixture = styled.input({
   font: 'inherit',
 });
 const FixtureButton = Fixture.withComponent('button');
-const usage = `<ExpandableCard collapsedInlineSize={400} expandedInlineSize={600}>
-  <ExpandableCard.Trigger>
-    <ExpandableCard.Title>Studio plan</ExpandableCard.Title>
-    <ExpandableCard.Description>Billing and team details</ExpandableCard.Description>
-  </ExpandableCard.Trigger>
-  <ExpandableCard.Content>Plan details</ExpandableCard.Content>
-</ExpandableCard>`;
 function Example({ children, ...args }: ExpandableCardProps) {
   return (
     <ExpandableCard {...args}>
@@ -66,12 +59,23 @@ const meta = {
   render: (args) => <Example {...args} />,
   parameters: {
     docs: {
-      source: { code: usage },
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Composition', stories: ['Compound'] },
+        { title: 'Sizing', stories: ['Small', 'WidthMorph'] },
+      ],
       description: {
         component:
           'Show or hide details inside a card.',
       },
-      usage: '- Pass `title`, optional `description` and `content`, or compose the dotted parts with `children`.\n- Follows the APG disclosure pattern. Enter and Space toggle; Escape requests collapse. Tab and Shift+Tab follow document order.\n- Details remain mounted. Controlled requests take effect when `open` changes.\n- Choose `headingLevel` to match the page hierarchy.\n- Use `slotProps` to customize generated parts. `component` replaces the root, as does `slots.root`. Replacements receive the wired native element props; forward all props and ref to that element. Declare replacements outside render.',
+      usage: `### Keyboard
+Press Enter or Space on the summary to toggle details. Press Escape to request collapse. Tab and Shift+Tab follow document order.
+
+### Content
+Details remain mounted when collapsed, so form values survive reopening. Keep other controls out of the summary button and place them in the details. Choose a heading level that fits the page hierarchy.
+
+### State
+When you control expansion, accept a request by updating the open state.`,
     },
   },
 } satisfies Meta<ExpandableCardProps>;
@@ -118,9 +122,12 @@ async function settledAt(measure: () => number, expected: () => number) {
   );
 }
 export const Default: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
+  name: 'Plan details',
   args: { title: 'Studio plan', description: 'Billing and team details', content: 'Billed annually. 5 seats, renews on 12 Jan.', onOpenChange: fn() },
   render: (args) => <ExpandableCard {...args} />,
-  parameters: { docs: { source: { code: `<ExpandableCard title="Studio plan" description="Billing and team details" content="Billed annually. 5 seats, renews on 12 Jan." />` } } },
+  parameters: { docs: { description: { story: 'Open a plan summary to read its billing details.' }, source: { language: 'tsx', code: `import { ExpandableCard } from '@jfrader/ui';
+
+<ExpandableCard title="Studio plan" description="Billing and team details" content="Billed annually. 5 seats, renews on 12 Jan." />` } } },
   play: async ({ canvas, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: /^Studio plan/ });
     const panel = trigger.ownerDocument.getElementById(trigger.getAttribute('aria-controls')!)!;
@@ -144,6 +151,29 @@ export const GeneratedPartProps: StoryObj<Omit<ExpandableCardEasyProps, 'compone
 };
 
 export const Compound: Story = {
+  name: 'Editable details',
+  parameters: { docs: { description: { story: 'Edit the team name, then collapse and reopen the card to keep editing.' }, source: { language: 'tsx', code: `import { ExpandableCard, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const TeamInput = styled.input({
+  minBlockSize: vars.space[8],
+  padding: vars.space[2],
+  color: vars.color.text,
+  backgroundColor: vars.color.surface,
+  border: \`1px solid \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.sm,
+  font: 'inherit',
+});
+
+<ExpandableCard>
+  <ExpandableCard.Trigger>
+    <ExpandableCard.Title>Studio plan</ExpandableCard.Title>
+    <ExpandableCard.Description>Billing and team details</ExpandableCard.Description>
+  </ExpandableCard.Trigger>
+  <ExpandableCard.Content>
+    <label>Team name <TeamInput aria-label="Team name" defaultValue="Studio" /></label>
+  </ExpandableCard.Content>
+</ExpandableCard>` } } },
   play: async ({ canvas, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: /^Studio plan/ });
     const panel = trigger.ownerDocument.getElementById(trigger.getAttribute('aria-controls')!)!;
@@ -204,8 +234,9 @@ export const ReplacedParts: StoryObj<Omit<ExpandableCardEasyProps, 'component'>>
   },
 };
 export const Small: Story = {
+  name: 'Compact card',
   args: { size: 'sm' },
-  parameters: { docs: { source: { language: 'tsx', code: `import { ExpandableCard, styled } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Use a smaller summary while keeping the editable details.' }, source: { language: 'tsx', code: `import { ExpandableCard, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
 const TeamInput = styled.input({
@@ -284,8 +315,9 @@ export const Disabled: Story = {
   },
 };
 export const WidthMorph: Story = {
+  name: 'Expanding width',
   args: { collapsedInlineSize: 320, expandedInlineSize: 600 },
-  parameters: { docs: { source: { language: 'tsx', code: `import { ExpandableCard, styled } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Grow the card from 320 to 600 pixels as details open, within the available width.' }, source: { language: 'tsx', code: `import { ExpandableCard, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
 const PlanLane = styled.div({ inlineSize: '640px', maxInlineSize: '100%' });

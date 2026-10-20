@@ -90,23 +90,26 @@ const meta = {
   ],
   parameters: {
     docs: {
-      source: {
-        code: '<NowPlaying tracks={tracks} value={index} playing={playing} position={time} onPlayingChange={requestPlayback} onPositionChange={seek} onValueChange={loadTrack} />',
-      },
+      sections: [
+        { title: 'Player', stories: ['DefaultMiniPaused'] },
+        { title: 'Playback indicator', stories: ['LevelsStandalone'] },
+      ],
       description: {
         component:
           'Play, pause, seek and switch tracks through controls connected to your media player.',
       },
       usage: `### Playback
-- The caller handles media loading, timeupdate, ended and play() permission failures. Set playing=true only after play() succeeds.
-- Uncontrolled playing records intent; it never advances time. Volume control and media-key capture are not included.
-- Expand/Collapse are disclosure buttons. Escape closes only the expanded subtree; accepted keyboard disclosure changes restore focus as needed.
+Connect the controls to your media player. Handle media loading, time updates, track endings and playback permission failures in your app. Report playback as active only after the media element's play() promise succeeds.
+
+Without a media connection, Play records intent but never advances time. Volume controls and media-key capture are not included.
+
+### Keyboard
+Expand and Collapse show or hide the full controls. Press Escape inside the expanded controls to close them. Accepted keyboard disclosure changes restore focus as needed.
 
 ### Seeking and artwork
-- Slider arrows move seekStep seconds. Shift+arrows and PageUp/Down use seekLargeStep (30 seconds); Home/End reach the bounds. Horizontal seeking stays left-to-right in RTL.
-- The default seekStep is the largest step of at most one second that divides the duration. A supplied step that does not divide it is rounded to the nearest one that does.
-- Artwork fills a reserved square with object-fit:cover. Set artworkAlt when the image conveys information.
-- Pull artwork down 70px or flick downward to request collapse. Collapse and Escape provide the same action.`,
+Use arrows to seek, Shift+arrows or PageUp/PageDown for larger jumps, and Home/End to reach the bounds. Horizontal seeking stays left-to-right in RTL.
+
+Supply alternative text when artwork conveys information. Pull artwork down 70 pixels or flick downward to request collapse; Collapse and Escape provide the same action.`,
     },
   },
 } satisfies Meta<typeof NowPlaying>;
@@ -120,6 +123,21 @@ const orderedIndex = fn();
 const orderedPosition = fn();
 
 export const DefaultMiniPaused: Story = {
+  name: 'Track controls',
+  parameters: { docs: { description: { story: 'Expand the player to seek or switch tracks; Play changes intent without starting audio.' }, source: { language: 'tsx', code: `import { NowPlaying } from '@jfrader/ui';
+
+const artwork = 'data:image/svg+xml,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300"><rect width="300" height="300" fill="currentColor"/><circle cx="150" cy="150" r="100" fill="none" stroke="white" stroke-width="2"/><circle cx="150" cy="150" r="60" fill="none" stroke="white" stroke-width="2"/><circle cx="150" cy="150" r="12" fill="white"/></svg>',
+);
+
+<NowPlaying
+  locale="en-GB"
+  seekStep={5}
+  tracks={[
+    { id: 'first', title: 'Night Signal', artist: 'Studio Session', duration: 180, artwork },
+    { id: 'second', title: 'Open Water', artist: 'Field Notes', duration: 240, artwork, artworkAlt: 'Concentric grooves on a record' },
+  ]}
+/>` } } },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await expect(canvas.getByRole('region', { name: 'Now playing' })).not.toHaveAttribute(
       'aria-busy',
@@ -755,6 +773,13 @@ export const FalsyError: Story = {
   },
 };
 export const LevelsStandalone: Story = {
+  name: 'Audio levels',
+  parameters: { docs: { description: { story: 'Compare the decorative level animation while playing and paused.' }, source: { language: 'tsx', code: `import { NowPlaying } from '@jfrader/ui';
+
+<>
+  <NowPlaying.Levels playing />
+  <NowPlaying.Levels playing={false} />
+</>` } } },
   render: () => (
     <>
       <NowPlaying.Levels playing />
