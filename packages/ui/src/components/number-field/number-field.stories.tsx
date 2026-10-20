@@ -18,10 +18,14 @@ const meta = {
   args: { label: 'Seats', defaultValue: 5, min: 1, max: 500, locale: 'en-US', onValueChange: fn() },
   parameters: {
     docs: {
-      description: { component: 'Enter an exact quantity or measurement. Use the buttons or arrow keys to change it by a fixed step.' },
+      description: { component: 'Enter an exact quantity or measurement with step controls.' },
+      sections: [
+        { title: 'Quantities', stories: ['Default', 'DecimalStep', 'Unit', 'PrefixSuffix'] },
+        { title: 'State and forms', stories: ['Controlled', 'FormReset'] },
+      ],
       usage: `### Values
 - Typing edits a draft. Press Enter, leave the input, or step to commit it. Invalid or incomplete drafts stay visible with an error; press Escape to discard them.
-- Use \`value\` with \`onValueChange\` for controlled state. A rejected request never changes the committed display, ARIA value, form data, or the next repeat step. \`null\` means empty; the uncontrolled default is \`0\`.
+- A rejected controlled request never changes the committed display, ARIA value, form data, or the next repeat step. Empty values differ from zero.
 - Commits clamp to \`min\`/\`max\` and snap to the \`step\` grid anchored at \`min\`. Ties round toward positive infinity. An off-grid committed amount steps to the next grid line in the requested direction.
 - Stepping from empty starts at zero clamped to the range, then moves one step. Externally supplied out-of-range amounts are shown invalid without changing them.
 - Bounds and values must be finite, within Number.MAX_SAFE_INTEGER, and use at most 12 fraction digits. Steps must be positive. Invalid configuration throws \`NumberFieldConfigError\`.
@@ -32,18 +36,14 @@ const meta = {
 - Tab and Shift+Tab move normally. Enter and Space activate a focused stepper once. Holding a pointer repeats after 400ms, accelerating from 150ms to a 40ms floor. Set \`repeat={false}\` to disable holding.
 
 ### Forms
-- \`name\` submits one hidden canonical number (\`1.5\`, not locale-formatted text). Empty submits an empty string; disabled fields are omitted. \`ref\` targets the visible input, which owns required/custom validation.
+- Forms submit one canonical number (\`1.5\`, not locale-formatted text). Empty submits an empty string; disabled fields are omitted. The visible input owns required/custom validation.
 - Reset restores the initial uncontrolled value without callbacks. Controlled values remain parent-owned.
 
 ### Locale and units
 - Set \`locale\` identically on the server and client. Grouping, digits, separators and units use Intl; parsing accepts locale digits without removing arbitrary characters.
-- Use \`formatOptions={{ style: 'unit', unit: 'liter' }}\` for localized units. Decorative affixes are not announced; supply \`formatValueText\` for custom unit wording.
+- Use localized units for measurements. Decorative affixes are not announced; provide custom spoken unit wording when needed.
 - This field is for quantities, not money, phone numbers, postal codes or numeric identifiers. Currency, percent, compact and significant-digit formatting are not supported.
-- Override \`messages\` to translate complete phrases. Non-text labels require \`incrementLabel\` and \`decrementLabel\`. Without a visible label, supply an ARIA name.
-
-### Customization
-- \`sx\` styles the root after its own styles and \`slotProps.root\`. Use \`slots\` for replacements that forward all supplied props and refs. Direction changes layout, not ArrowUp meaning.`,
-      source: { code: '<NumberField label="Seats" name="seats" defaultValue={5} min={1} max={500}\n  locale={locale} onValueChange={setSeats} />', language: 'tsx' },
+- Translate complete phrases. Non-text labels need named increment and decrement actions. Without a visible label, supply an ARIA name. Direction changes layout, not ArrowUp meaning.`,
     },
   },
 } satisfies Meta<typeof NumberField>;
@@ -56,6 +56,13 @@ function ControlledField(props: NumberFieldProps) {
 }
 
 export const Default: Story = {
+  name: 'Choose a quantity',
+  parameters: { docs: {
+    description: { story: 'Type a seat count or use the step controls within the allowed range.' },
+    source: { language: 'tsx', code: `import { NumberField } from '@jfrader/ui';
+
+<NumberField label="Seats" defaultValue={5} min={1} max={500} locale="en-US" />` },
+  } },
   play: async ({ canvasElement }) => {
     const input = within(canvasElement).getByRole('spinbutton', { name: 'Seats' });
     await expect(input).toHaveValue('5');
@@ -82,6 +89,13 @@ export const Sizes: Story = {
   },
 };
 export const DecimalStep: Story = {
+  name: 'Exact decimal steps',
+  parameters: { docs: {
+    description: { story: 'Step from zero to one in exact tenths.' },
+    source: { language: 'tsx', code: `import { NumberField } from '@jfrader/ui';
+
+<NumberField label="Seats" defaultValue={0} min={0} max={1} step={0.1} locale="en-US" />` },
+  } },
   args: { min: 0, max: 1, step: 0.1, defaultValue: 0 },
   play: async ({ canvasElement, userEvent, args }) => {
     const input = within(canvasElement).getByRole('spinbutton');
@@ -111,10 +125,21 @@ export const Negative: Story = {
     await expect(input).toHaveValue('-0.5');
   },
 };
-export const Unit: Story = { args: { label: 'Volume', min: 0, max: 10, defaultValue: 1.5, step: 0.1, formatOptions: { style: 'unit', unit: 'liter', unitDisplay: 'long' } } };
+export const Unit: Story = {
+  name: 'Localized measurement',
+  parameters: { docs: {
+    description: { story: 'Format a volume in liters while retaining exact decimal stepping.' },
+    source: { language: 'tsx', code: `import { NumberField } from '@jfrader/ui';
+
+<NumberField label="Volume" defaultValue={1.5} min={0} max={10} step={0.1} locale="en-US"
+  formatOptions={{ style: 'unit', unit: 'liter', unitDisplay: 'long' }} />` },
+  } },
+  args: { label: 'Volume', min: 0, max: 10, defaultValue: 1.5, step: 0.1, formatOptions: { style: 'unit', unit: 'liter', unitDisplay: 'long' } },
+};
 export const PrefixSuffix: Story = {
+  name: 'Custom measurement affixes',
   args: { label: 'Length', prefix: <Affix>≈</Affix>, suffix: () => <Affix>m</Affix>, formatValueText: (value, formatted) => value === null ? 'No length' : `${formatted} meters` },
-  parameters: { docs: { source: { language: 'tsx', code: `import { NumberField, styled } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Add visual affixes and an explicit spoken measurement.' }, source: { language: 'tsx', code: `import { NumberField, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
 const Affix = styled.span({ color: vars.color.textMuted });
@@ -231,6 +256,21 @@ function ResetForm(props: NumberFieldProps) {
   return <form><Frame><NumberField {...props} name="seats" /><Button type="reset">Reset</Button></Frame></form>;
 }
 export const FormReset: Story = {
+  name: 'Submit and reset',
+  parameters: { docs: {
+    description: { story: 'Submit a canonical seat count and reset it to the initial value.' },
+    source: { language: 'tsx', code: `import { Button, NumberField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Fields = styled.div({ display: 'grid', gap: vars.space[4], maxInlineSize: '100%' });
+
+<form>
+  <Fields>
+    <NumberField name="seats" label="Seats" defaultValue={5} min={1} max={500} locale="en-US" />
+    <Button type="reset">Reset</Button>
+  </Fields>
+</form>` },
+  } },
   render: (args) => <ResetForm {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
@@ -247,7 +287,21 @@ export const FormReset: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
-export const Controlled: Story = { render: (args) => <ControlledField {...args} />, play: DecimalStep.play, args: DecimalStep.args };
+export const Controlled: Story = {
+  name: 'Own the committed value',
+  parameters: { docs: {
+    description: { story: 'Store the committed decimal value in application state.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { NumberField } from '@jfrader/ui';
+
+export function QuantityField() {
+  const [value, setValue] = useState<number | null>(0);
+  return <NumberField label="Seats" value={value} onValueChange={setValue}
+    min={0} max={1} step={0.1} locale="en-US" />;
+}` },
+  } },
+  render: (args) => <ControlledField {...args} />, play: DecimalStep.play, args: DecimalStep.args,
+};
 export const Uncontrolled: Story = {
   play: async ({ canvasElement, userEvent, args }) => {
     const input = within(canvasElement).getByRole('spinbutton');

@@ -38,6 +38,31 @@ function narrative(args: PaymentFlowProps) {
   ];
 }
 
+const paymentExample = `import { PaymentFlow, Surface, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const PaymentPanel = styled(Surface)({
+  boxSizing: 'border-box', inlineSize: \`calc(\${vars.space[8]} * 30)\`,
+  maxInlineSize: '100%', padding: vars.space[6],
+});
+const nodes = {
+  terminal: { label: 'Terminal' }, processor: { label: 'Processor' },
+  network: { label: 'Network' }, issuer: { label: 'Issuer' }, merchant: { label: 'Merchant' },
+};
+const labels = {
+  authorize: 'Authorize', approve: 'Approve', clear: 'Clear', fee: 'Deduct fee', payout: 'Payout',
+  approval: 'Approved', settlementTime: 'Illustrative settlement: two days',
+};
+const summary = [
+  { id: 'authorize', content: 'Terminal sends $100.00 through Processor and Network to Issuer.' },
+  { id: 'approve', content: 'Issuer returns approval in an illustrative 240 ms.' },
+  { id: 'clear', content: 'Processor clears $100.00.' },
+  { id: 'fee', content: 'A $3.00 fee leaves $97.00 net.' },
+  { id: 'payout', content: 'Merchant balance changes from $20.00 to $117.00. Illustrative settlement: two days.' },
+];
+const controlLabels = { group: 'Playback', pause: 'Pause', resume: 'Resume', step: 'Next phase', replay: 'Replay' };
+`;
+
 const meta = {
   title: 'Showcase/PaymentFlow',
   component: PaymentFlow,
@@ -104,13 +129,23 @@ const meta = {
     docs: {
       description: {
         component:
-          'Explain authorization, approval, clearing, fees and merchant payout. The figure uses supplied actors, amounts and a mandatory ordered narrative.',
+          'Explain how a card payment moves from authorization to merchant payout.',
       },
+      sections: [
+        { title: 'Payment journey', stories: ['Default', 'Vertical'] },
+        { title: 'Playback', stories: ['Paused'] },
+      ],
       usage:
-        '### Values\nThis is an illustration, not checkout, a payment API, a ledger or actual settlement status. Supply at least five summary steps covering actors, gross amount, fee, net, balance and timing. Keep the summary synchronized with the supplied numbers and labels. `summaryVisibility="sr-only"` keeps that narrative available to assistive technology.\n\nCurrency precision comes from Intl. Amount, fee and balance round independently to minor units; net is rounded amount minus rounded fee. Values must be finite, nonnegative safe integers after conversion; fee cannot exceed amount. Invalid currency or unsafe totals render `invalidContent`; missing actors render `emptyContent`. Use an explicit locale for SSR.\n\n### Playback\nPause is controlled or uncontrolled. Replay resets the illustration and supplied initial balance, never pause state. Reduced motion starts at payout; Next phase and Replay select static snapshots. Hidden, offscreen and zero-size figures stop scheduling and resume without catch-up. Each equal phase takes one fifth of a 15-second cycle at speed 1. Stage changes are discrete; no animated money transfer or continuous balance counter is shown.\n\n### Keyboard\nTab and Shift+Tab reach native Pause, Next phase and Replay buttons. Enter and Space activate once. Next phase is disabled while running. No scene shortcuts or focus movement.\n\n### Customization\n`component` aliases `slots.root`. Native slots: root, scene, node, summary, summaryItem, controls and caption. The scene is decorative. Adopted slots: journey ([Stepper](?path=/docs/navigation-stepper--docs)), pauseButton, stepButton and replayButton ([Button](?path=/docs/actions-button--docs)). Forward props/ref to the corresponding primitive when replacing it. [Card](?path=/docs/surfaces-card--docs) frames the visual composition. Slot props accept `css`; root accepts `sx`.',
+        '### Values\nThis is an illustration, not checkout, a payment API, a ledger or actual settlement status. Supply at least five narrative steps covering actors, gross amount, fee, net, balance and timing. Keep the narrative synchronized with the numbers and labels, including when it is visually hidden.\n\nCurrency precision comes from Intl. Amount, fee and balance round independently to minor units; net is rounded amount minus rounded fee. Values must be finite, nonnegative safe integers after conversion; fee cannot exceed amount. Invalid currency or unsafe totals show the invalid fallback; missing actors show the empty fallback. Use the same explicit locale for server and client rendering.\n\n### Playback\nReplay resets the illustration and initial balance, never pause state. Reduced motion starts at payout; Next phase and Replay select static snapshots. Hidden, offscreen and zero-size figures stop scheduling and resume without catch-up. Each equal phase takes one fifth of a 15-second cycle at speed 1. Stage changes are discrete; no animated money transfer or continuous balance counter is shown.\n\n### Keyboard\nTab and Shift+Tab reach Pause, Next phase and Replay. Enter and Space activate once. Next phase is disabled while running. There are no scene shortcuts or automatic focus changes.',
       source: {
         language: 'tsx',
-        code: '<PaymentFlow nodes={actors} amount={100} fee={3} balance={20} currency="USD" locale="en-US" authorizationMs={240} labels={labels} summary={steps} label="Illustrative card payment" controlLabels={playbackLabels} emptyContent="Add all five actors." invalidContent="Check payment illustration values." />',
+        code: `${paymentExample}
+<PaymentPanel>
+  <PaymentFlow orientation="horizontal" nodes={nodes} amount={100} fee={3} balance={20}
+    currency="USD" locale="en-US" authorizationMs={240} labels={labels} summary={summary}
+    label="Illustrative card payment" controlLabels={controlLabels}
+    emptyContent="Add all five actors." invalidContent="Check amounts, currency and steps." />
+</PaymentPanel>`,
       },
     },
   },
@@ -118,6 +153,8 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Default: Story = {
+  name: 'Card payment journey',
+  parameters: { docs: { description: { story: 'Follow authorization, approval, clearing, fees and payout with a readable narrative.' } } },
   play: async ({ canvasElement }) => {
     const figure = canvasElement.querySelector('figure')!;
     await expect(figure.getBoundingClientRect().width).toBeGreaterThan(600);
@@ -126,7 +163,20 @@ export const Default: Story = {
     await expect(journey).toHaveAttribute('data-orientation', 'horizontal');
   },
 };
-export const Paused: Story = { args: { defaultPaused: true } };
+export const Paused: Story = {
+  name: 'Explore payment phases',
+  parameters: { docs: {
+    description: { story: 'Start paused and advance one payment phase at a time.' },
+    source: { language: 'tsx', code: `${paymentExample}
+<PaymentPanel>
+  <PaymentFlow orientation="horizontal" defaultPaused nodes={nodes} amount={100} fee={3} balance={20}
+    currency="USD" locale="en-US" authorizationMs={240} labels={labels} summary={summary}
+    label="Illustrative card payment" controlLabels={controlLabels}
+    emptyContent="Add all five actors." invalidContent="Check amounts, currency and steps." />
+</PaymentPanel>` },
+  } },
+  args: { defaultPaused: true },
+};
 export const LongAuthorization: Story = {
   args: { defaultPaused: true, authorizationMs: 5_000 },
   play: async ({ canvas, args }) => {
@@ -139,7 +189,20 @@ export const LongAuthorization: Story = {
   },
 };
 export const Horizontal: Story = { args: { orientation: 'horizontal' } };
-export const Vertical: Story = { args: { orientation: 'vertical' } };
+export const Vertical: Story = {
+  name: 'Vertical payment journey',
+  parameters: { docs: {
+    description: { story: 'Arrange the same five payment phases vertically.' },
+    source: { language: 'tsx', code: `${paymentExample}
+<PaymentPanel>
+  <PaymentFlow orientation="vertical" nodes={nodes} amount={100} fee={3} balance={20}
+    currency="USD" locale="en-US" authorizationMs={240} labels={labels} summary={summary}
+    label="Illustrative card payment" controlLabels={controlLabels}
+    emptyContent="Add all five actors." invalidContent="Check amounts, currency and steps." />
+</PaymentPanel>` },
+  } },
+  args: { orientation: 'vertical' },
+};
 export const Light: Story = { globals: { theme: 'light' } };
 export const RTL: Story = { args: { dir: 'rtl', locale: 'ar' } };
 export const SummarySrOnly: Story = {
