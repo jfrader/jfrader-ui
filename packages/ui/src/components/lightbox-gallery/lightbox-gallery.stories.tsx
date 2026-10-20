@@ -98,6 +98,22 @@ const Frame = styled.div({
   padding: vars.space[4],
 });
 const Narrow = styled.div({ inlineSize: '8rem', maxInlineSize: '100%' });
+const gallerySource = (example: string) => `import { useState } from 'react';
+import { LightboxGallery } from '@jfrader/ui/lightbox-gallery';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const images = [
+  { id: 'hills', src: sceneSource('trip-highland-pass', { variant: 'landscape' }), width: 800, height: 500, alt: 'Layered hills beneath a low sun', title: 'Highland pass', caption: 'The last light on the hills.' },
+  { id: 'dunes', src: sceneSource('trip-dune-walk', { variant: 'dunes' }), width: 500, height: 750, alt: 'Sun above warm sand dunes', title: 'Dune walk', caption: 'A quiet afternoon beyond the trail.' },
+  { id: 'dusk', src: sceneSource('trip-last-light', { variant: 'dusk' }), width: 600, height: 600, alt: 'Moon above violet hills at dusk', title: 'Blue hour', caption: 'The moon rose before we headed home.' },
+  { id: 'tide', src: sceneSource('trip-tidal-bay', { variant: 'tide' }), width: 900, height: 400, alt: 'Sun over tidal water', title: 'Tidal bay', caption: 'One final stop along the shore.' },
+  { id: 'ridge', src: sceneSource('trip-ridge-walk', { variant: 'landscape' }), width: 600, height: 900, alt: 'Mountain ridges under a cloudy sky', title: 'Ridge walk', caption: 'The trail followed the ridge all morning.' },
+  { id: 'shore', src: sceneSource('trip-north-shore', { variant: 'tide' }), width: 800, height: 800, alt: 'Foam along a sandy shoreline', title: 'North shore', caption: 'Low tide on the walk back.' },
+  { id: 'erg', src: sceneSource('trip-erg-crossing', { variant: 'dunes' }), width: 1000, height: 500, alt: 'Long dunes under a low sun', title: 'Erg crossing', caption: 'Wind had smoothed every crest.' },
+  { id: 'night', src: sceneSource('trip-night-hills', { variant: 'dusk' }), width: 500, height: 700, alt: 'Stars over dark rolling hills', title: 'Night hills', caption: 'The stars came out over camp.' },
+];
+
+${example}`;
 const meta = {
   title: 'Media/LightboxGallery',
   component: LightboxGallery,
@@ -113,36 +129,62 @@ const meta = {
   parameters: {
     layout: 'padded',
     docs: {
-      source: { code: '<LightboxGallery images={photos} label="Trip photos" minColumnWidth={180} />' },
+      sections: [
+        { title: 'Basic', stories: ['DefaultMixedRatios'] },
+        { title: 'Viewer', stories: ['Controlled'] },
+        { title: 'Captions', stories: ['CaptionedCollection'] },
+        { title: 'Controls', stories: ['ViewerControls'] },
+        { title: 'Keyboard', stories: ['KeyboardPlay'] },
+        { title: 'States', stories: ['MissingImage', 'EmptyCollection'] },
+        { title: 'Composition', stories: ['ResponsiveSources', 'GalleryStyling'] },
+      ],
       description: {
         component: 'Browse an image gallery, open a photo, and zoom or move through the collection.',
       },
-      usage: `### Images
-- Images form a row-major masonry list. Open an image to view it in a full-screen native dialog.
-- Supply unique IDs, meaningful alt text and positive intrinsic dimensions.
-- Use \`srcSet\` and \`sizes\` for responsive image sources.
+      usage: `### When to use
+Use a masonry gallery when photos should keep their proportions and open in a full-screen viewer. Choose PhotoGrid for square thumbnails with favorites and density controls.
 
 ### Limits
-- Paginate large collections. Images are not virtualized, and there is no image-provider integration.
+Paginate large collections; images are not virtualized. Supply unique IDs, meaningful alternative text, and positive intrinsic dimensions. Load image assets and metadata in your application. Navigation stops at each end of the collection.
 
-### Selection and visibility
-- Selection (\`value/defaultValue/onValueChange\`) and visibility (\`open/defaultOpen/onOpenChange\`) are independent. Controlled requests take effect only when accepted. \`null\` means no selection; an invalid ID shows an unavailable state without opening a modal. Navigation stops at each end.
+### Keyboard and accessibility
+Tab follows the tiles in reading order. The open modal contains focus and locks page scrolling. Left/Right select in the reading direction; Home/End select endpoints. Plus/minus zoom and 0 resets. When zoomed, arrows pan. These commands work throughout the viewer except in editable fields.
 
-### Keyboard and gestures
-- Tab follows launcher reading order. Left/Right select in the effective direction; Home/End select endpoints. Plus/minus zoom; 0 resets. When zoomed, arrows pan.
-- Momentum swipes select, resistant downward drag closes, pinch and Ctrl+wheel zoom, double-click and touch double-tap zoom around the pointer, and zoomed drag pans.
-- The viewer's controls show icons. Hover or focus one to see its name.
-- Commands work throughout the viewer, except in editable fields. Escape closes even when zoomed and returns focus to the current image's tile.
-
-### Dialog and accessibility
-- Native \`showModal\` contains focus and locks scrolling. Close uses \`requestClose\` with cancel veto where supported. Older engines use a state-close fallback without dispatching cancel. Native close and form closure update visibility.
-- Viewer ARIA merges external IDs with the title/caption. Set \`viewer.withDescription=false\` to exclude structured captions. Keep floating children inside the dialog subtree.
-- Motion respects reduced motion. Forced-colors and ReducedMotion stories require browser media emulation to check rendering. Test screen readers and multi-touch devices manually.`,
+Hover or focus an icon control to read its name. Buttons and the thumbnail strip provide alternatives to swipes, pinch, and dragging. Escape closes even when zoomed and restores focus to the current image's tile. Keep floating content inside the dialog subtree. For structured captions, avoid announcing the whole caption as one description. Reduced motion disables transitions.`,
     },
   },
 } satisfies Meta<typeof LightboxGallery>;
 export default meta;
 type Story = StoryObj<typeof LightboxGallery>;
+
+export const CaptionedCollection: Story = {
+  name: 'Titles and captions',
+  args: { images: images.slice(0, 2) },
+  parameters: { docs: { description: { story: 'Open either photo to read its title and caption.' }, source: { language: 'tsx', code: gallerySource('<LightboxGallery label="Trip photos" images={images.slice(0, 2)} locale="en-GB" />') } } },
+};
+
+export const ViewerControls: Story = {
+  name: 'Viewer toolbar',
+  args: { labels: { next: 'Next photograph', previous: 'Previous photograph' } },
+  parameters: { docs: { description: { story: 'Open an image and focus the toolbar controls to see their action labels.' }, source: { language: 'tsx', code: gallerySource('<LightboxGallery label="Trip photos" images={images} locale="en-GB" labels={{ next: "Next photograph", previous: "Previous photograph" }} />') } } },
+};
+
+export const EmptyCollection: Story = {
+  name: 'Empty gallery',
+  args: { images: [] },
+  parameters: { docs: { description: { story: 'Show an empty gallery before photos are available.' }, source: { language: 'tsx', code: `import { LightboxGallery } from '@jfrader/ui/lightbox-gallery';
+
+<LightboxGallery label="Trip photos" images={[]} locale="en-GB" />` } } },
+};
+
+export const GalleryStyling: Story = {
+  name: 'Viewer part styling',
+  args: { slotProps: { title: { sx: { fontStyle: 'italic' } }, caption: { sx: { fontWeight: vars.fontWeight.semibold } } } },
+  parameters: { docs: { description: { story: 'Open a photo to see an italic title and a heavier caption.' }, source: { language: 'tsx', code: gallerySource(`import { vars } from '@jfrader/tokens/vars';
+
+<LightboxGallery label="Trip photos" images={images} locale="en-GB"
+  slotProps={{ title: { sx: { fontStyle: 'italic' } }, caption: { sx: { fontWeight: vars.fontWeight.semibold } } }} />`) } } },
+};
 
 const tiles = (element: HTMLElement) =>
   Array.from(element.querySelectorAll<HTMLButtonElement>('[data-ui="lightbox-gallery-tile"]'));
@@ -224,6 +266,8 @@ export const ToolbarSlots: Story = {
 };
 
 export const DefaultMixedRatios: Story = {
+  name: 'Mixed image proportions',
+  parameters: { docs: { description: { story: 'Browse landscape, portrait, and square photos, then open one in the viewer.' }, source: { language: 'tsx', code: gallerySource('<LightboxGallery label="Trip photos" images={images} locale="en-GB" />') } } },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('region', { name: 'Trip photos' })).toBeInTheDocument();
     await expect(canvas.getByRole('list')).toBeInTheDocument();
@@ -358,6 +402,8 @@ export const Empty: Story = {
   },
 };
 export const MissingImage: Story = {
+  name: 'Unavailable thumbnail',
+  parameters: { docs: { description: { story: 'Keep the gallery tile available when its image cannot load.' }, source: { language: 'tsx', code: gallerySource('<LightboxGallery label="Trip photos" images={[{ ...images[0]!, src: "data:image/png;base64,broken" }]} locale="en-GB" />') } } },
   args: { images: [{ ...images[0]!, src: 'data:image/png;base64,broken' }] },
   play: async ({ canvasElement }) => {
     await waitFor(async () => {
@@ -459,6 +505,10 @@ export const NarrowTwoColumns: Story = {
   },
 };
 export const ResponsiveSources: Story = {
+  name: 'Responsive image sources',
+  parameters: { docs: { description: { story: 'Supply source candidates and a size hint for each photo.' }, source: { language: 'tsx', code: gallerySource(`<LightboxGallery label="Trip photos" locale="en-GB" images={images.map((image) => ({
+  ...image, srcSet: \`\${image.src} 800w\`, sizes: '(max-width: 600px) 100vw, 50vw',
+}))} />`) } } },
   args: {
     images: images.map((image) => ({
       ...image,
@@ -562,6 +612,8 @@ export const RTL: Story = {
   },
 };
 export const KeyboardPlay: Story = {
+  name: 'Keyboard navigation',
+  parameters: { docs: { description: { story: 'Tab to a photo, press Enter, then use arrows, zoom keys, and Escape in the viewer.' }, source: { language: 'tsx', code: gallerySource('<LightboxGallery label="Trip photos" images={images} locale="en-GB" />') } } },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     const invoker = tiles(canvasElement)[1]!;
     await userEvent.tab();
@@ -618,6 +670,13 @@ export const KeyboardPlay: Story = {
   },
 };
 export const Controlled: Story = {
+  name: 'Controlled viewer',
+  parameters: { docs: { description: { story: 'Keep the selected image and viewer visibility in application state.' }, source: { language: 'tsx', code: gallerySource(`function Gallery() {
+  const [value, setValue] = useState<string | null>('hills');
+  const [open, setOpen] = useState(false);
+  return <LightboxGallery label="Trip photos" images={images} locale="en-GB"
+    value={value} onValueChange={setValue} open={open} onOpenChange={setOpen} />;
+}`) } } },
   render: (args) => {
     const [value, setValue] = useState<string | null>('hills');
     const [open, setOpen] = useState(false);
