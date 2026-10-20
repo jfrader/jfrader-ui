@@ -12,11 +12,22 @@ import { KeycapKeyboard, type KeycapKeyboardProps, type KeycapSpec } from './ind
 import { styled } from '../../index';
 
 const Stack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '100%', maxInlineSize: '48rem' });
-const snippet = `const [input, setInput] = useState<HTMLInputElement | null>(null);
-return <>
-  <TextField label="Try the keyboard" ref={setInput} />
-  <KeycapKeyboard eventTarget={input} />
-</>;`;
+const snippet = `import { useState } from 'react';
+import { Button, KeycapKeyboard, TextField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '100%', maxInlineSize: '48rem' });
+
+export function TypingKeyboard() {
+  const [input, setInput] = useState<HTMLInputElement | null>(null);
+  return (
+    <Stack>
+      <TextField label="Try the keyboard" ref={setInput} />
+      <KeycapKeyboard eventTarget={input} />
+      <Button>Continue</Button>
+    </Stack>
+  );
+}`;
 
 const NarrowStack = styled(Stack)({ maxInlineSize: '320px' });
 const meta = {
@@ -25,7 +36,10 @@ const meta = {
   tags: ['autodocs'],
   args: { onValueChange: fn() },
   parameters: {
-    docs: { source: { code: snippet }, description: { component:
+    docs: { sections: [
+      { title: 'Typing feedback', stories: ['Default', 'Letters'] },
+      { title: 'Shortcut illustrations', stories: ['CustomMacro', 'MacShortcut'] },
+    ], source: { language: 'tsx', code: snippet }, description: { component:
       'Show a keyboard illustration with keys that respond to input.' },
       usage: '- The board uses Kbd caps and is decorative, hidden from assistive technology, with no tab stops or keyboard role.\n- Supply a native input for text and focus. Password inputs, composition and modifier shortcuts are not observed.\n- Supply shortcut text or Kbd.Group outside the board. Built-in rows illustrate ANSI geometry; they do not map an OS keyboard.' },
   },
@@ -77,6 +91,8 @@ function systemColor(container: HTMLElement, color: string) {
 }
 
 export const Default: Story = {
+  name: 'Typing keyboard',
+  parameters: { docs: { description: { story: 'Focus the text field and type to light up its keys.' } } },
   play: async ({ canvasElement, canvas }) => {
     await expect(board(canvasElement)).toHaveAttribute('aria-hidden', 'true');
     await expect(board(canvasElement).querySelectorAll('kbd')).toHaveLength(61);
@@ -119,9 +135,24 @@ export const KeyboardNoTrap: Story = {
 };
 
 export const Letters: Story = {
+  name: 'Letters only',
   args: { layout: 'letters', tone: 'neutral' },
   render: (args) => <LettersExample {...args} />,
-  parameters: { docs: { source: { code: 'const [input, setInput] = useState<HTMLTextAreaElement | null>(null);\nreturn <><Textarea label="Write a note" ref={setInput} /><KeycapKeyboard eventTarget={input} layout="letters" /></>;' } } },
+  parameters: { docs: { description: { story: 'Show letter keys while writing a multiline note.' }, source: { language: 'tsx', code: `import { useState } from 'react';
+import { KeycapKeyboard, Textarea, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '100%', maxInlineSize: '48rem' });
+
+export function NoteKeyboard() {
+  const [input, setInput] = useState<HTMLTextAreaElement | null>(null);
+  return (
+    <Stack>
+      <Textarea label="Write a note" ref={setInput} />
+      <KeycapKeyboard eventTarget={input} layout="letters" tone="neutral" />
+    </Stack>
+  );
+}` } } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('textbox', { name: 'Write a note' }));
     await userEvent.keyboard('a[Enter]b');
@@ -139,14 +170,41 @@ const macroRows: readonly (readonly KeycapSpec[])[] = [[
   { code: 'KeyK', legend: 'K' }, { code: 'Enter', legend: '↵', units: 1.5 },
 ]];
 export const CustomMacro: Story = {
+  name: 'Custom shortcut row',
   args: { rows: macroRows, value: ['ControlLeft', 'ShiftLeft', 'KeyK'] },
   render: (args) => <Stack><p>Search: <Kbd.Group><Kbd>Ctrl</Kbd><Kbd>Shift</Kbd><Kbd>K</Kbd></Kbd.Group></p><KeycapKeyboard {...args} /></Stack>,
-  parameters: { docs: { source: { code: '<KeycapKeyboard rows={macroRows} value={["ControlLeft", "ShiftLeft", "KeyK"]} />' } } },
+  parameters: { docs: { description: { story: 'Pair a highlighted chord with a readable shortcut hint.' }, source: { language: 'tsx', code: `import { Kbd, KeycapKeyboard, styled, type KeycapSpec } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '100%', maxInlineSize: '48rem' });
+const rows: readonly (readonly KeycapSpec[])[] = [[
+  { code: 'ControlLeft', legend: 'Ctrl', units: 1.5 },
+  { code: 'ShiftLeft', legend: '⇧' },
+  { code: 'KeyK', legend: 'K' },
+  { code: 'Enter', legend: '↵', units: 1.5 },
+]];
+
+<Stack>
+  <p>Search: <Kbd.Group><Kbd>Ctrl</Kbd><Kbd>Shift</Kbd><Kbd>K</Kbd></Kbd.Group></p>
+  <KeycapKeyboard rows={rows} value={['ControlLeft', 'ShiftLeft', 'KeyK']} />
+</Stack>` } } },
 };
 export const MacShortcut: Story = {
+  name: 'Command shortcut',
   args: { rows: [[{ code: 'MetaLeft', legend: '⌘', units: 1.5 }, { code: 'KeyK', legend: 'K' }]], value: ['MetaLeft', 'KeyK'] },
   render: (args) => <Stack><p>Search: <Kbd.Group><Kbd>Command</Kbd><Kbd>K</Kbd></Kbd.Group></p><KeycapKeyboard {...args} /></Stack>,
-  parameters: { docs: { source: { code: '<KeycapKeyboard rows={[[{ code: "MetaLeft", legend: "⌘", units: 1.5 }, { code: "KeyK", legend: "K" }]]} value={["MetaLeft", "KeyK"]} />' } } },
+  parameters: { docs: { description: { story: 'Use a Command legend with a full-text shortcut hint.' }, source: { language: 'tsx', code: `import { Kbd, KeycapKeyboard, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '100%', maxInlineSize: '48rem' });
+
+<Stack>
+  <p>Search: <Kbd.Group><Kbd>Command</Kbd><Kbd>K</Kbd></Kbd.Group></p>
+  <KeycapKeyboard
+    rows={[[{ code: 'MetaLeft', legend: '⌘', units: 1.5 }, { code: 'KeyK', legend: 'K' }]]}
+    value={['MetaLeft', 'KeyK']}
+  />
+</Stack>` } } },
 };
 
 export const NoTarget: Story = {
