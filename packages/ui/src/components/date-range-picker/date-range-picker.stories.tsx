@@ -96,17 +96,45 @@ const Stack = styled.div({
   gap: vars.space[4],
 });
 
-const USAGE = `const rangeMessages = {
+const RANGE_MESSAGES_SOURCE = `const rangeMessages: DateRangePickerMessages = {
   apply: 'Apply',
   cancel: 'Cancel',
   empty: 'No dates selected',
   start: 'Start date',
   end: 'End date',
+  presets: 'Quick ranges',
+  error: 'Choose a valid period',
+  required: 'required',
   summary: ({ range, days, formattedDays }) =>
     \`\${range} · \${formattedDays} \${new Intl.PluralRules('en-GB').select(days) === 'one' ? 'day' : 'days'}\`,
-};
+};`;
 
-<DateRangePicker label="Report period" placeholder="Choose dates" locale="en-GB" messages={rangeMessages} />`;
+const PRESETS_SOURCE = `function dateOffset(iso: string, days: number) {
+  const date = new Date(iso + 'T00:00:00Z');
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function monthRange(today: string, offset = 0, length = 1) {
+  const date = new Date(today + 'T00:00:00Z');
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth() + offset;
+  return {
+    start: new Date(Date.UTC(year, month, 1)).toISOString().slice(0, 10),
+    end: new Date(Date.UTC(year, month + length, 0)).toISOString().slice(0, 10),
+  };
+}
+
+const presets = [
+  { id: 'today', label: 'Today', range: (today: string) => ({ start: today, end: today }) },
+  { id: 'yesterday', label: 'Yesterday', range: (today: string) => ({ start: dateOffset(today, -1), end: dateOffset(today, -1) }) },
+  { id: 'last-7', label: 'Last 7 days', range: (today: string) => ({ start: dateOffset(today, -6), end: today }) },
+  { id: 'last-30', label: 'Last 30 days', range: (today: string) => ({ start: dateOffset(today, -29), end: today }) },
+  { id: 'this-month', label: 'This month', range: (today: string) => monthRange(today) },
+  { id: 'last-month', label: 'Last month', range: (today: string) => monthRange(today, -1) },
+  { id: 'this-quarter', label: 'This quarter', range: (today: string) => monthRange(today, -(new Date(today + 'T00:00:00Z').getUTCMonth() % 3), 3) },
+  { id: 'year-to-date', label: 'Year to date', range: (today: string) => ({ start: today.slice(0, 4) + '-01-01', end: today }) },
+];`;
 
 function LightThemeRoot(props: Omit<ComponentPropsWithRef<typeof ThemeRoot>, 'theme'>) {
   return <ThemeRoot {...props} theme="light" />;
@@ -132,8 +160,25 @@ const meta: Meta<DateRangePickerProps> = {
         component:
           'Choose a date range or a preset, then apply it.',
       },
-      usage: '- Values are inclusive `{ start, end }` ranges of `YYYY-MM-DD` dates, without time or time zone.\n- The first day starts a draft; hovering or focusing a day previews it; the second day finishes it. Apply calls `onValueChange`, then `onOpenChange(false)`. Cancel, Escape, outside presses and Tab-out discard the draft.\n- Supply preset labels and `range(today)`. Out-of-bounds presets stay visible but disabled.\n- `months="auto"` shows two months when the boundary leaves at least 712px.\n- Supply copy through `messages`, including a plural-aware `summary`. Dates and numbers use Intl with `locale`. Pass `today` and `locale` for repeatable server rendering.\n- `messages.required` adds the required state to the trigger name. Hidden fields do not enforce native validation.\n- Screen-reader, forced-colors and reduced-motion checks require manual testing.',
-      source: { code: USAGE },
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Compound', 'EasyControlled'] },
+        { title: 'Range constraints', stories: ['Bounds'] },
+        { title: 'Presets', stories: ['CustomPresets'] },
+        { title: 'States', stories: ['Invalid', 'Disabled'] },
+        { title: 'Forms', stories: ['FormFields'] },
+        { title: 'Keyboard and accessibility', stories: ['SpaceAndEnter'] },
+      ],
+      usage: `### When to use
+Choose an inclusive period for a report, booking, or filter. Use DatePicker when you only need one date.
+
+### Selection and limits
+Dates are date-only Gregorian YYYY-MM-DD strings, without a time zone. The first day starts a draft; hovering or focusing another day previews it; the second day finishes it. Apply requests the value change before closure. Cancel, Escape, outside presses, and Tab-out discard the draft.
+Out-of-bounds presets remain visible but unavailable. Automatic month layout needs at least 712px within the boundary to show two months.
+Supply the same current date and locale on the server and client, and translate the messages, including the plural-aware summary.
+
+### Keyboard and accessibility
+Enter, Space, or Down opens the calendar. Arrows move by day or week; Home/End move within a week; Page Up/Down change month and Shift+Page Up/Down change year. Enter or Space selects each endpoint; activate Apply to commit. Escape discards and returns focus to the trigger.
+Presets use a single Tab stop: arrows move between them and Home/End jump to the ends. Give the trigger an accessible name. Required state is announced in its name, but hidden form fields do not enforce native validation.`,
     },
   },
 };
@@ -277,9 +322,19 @@ const summaryText = ({ start, end }: DateRangeValue, days: number) =>
 // ---- Stories.
 
 export const Default: StoryObj<DateRangePickerEasyProps> = {
+  name: 'Choose and apply a range',
   args: { label: LABEL, placeholder: PLACEHOLDER, locale: LOCALE, today: TODAY, messages: rangeMessages, defaultValue: WEEK, months: 1, onValueChange: fn() },
   render: (args) => <DateRangePicker {...args} />,
-  parameters: { docs: { source: { code: USAGE } } },
+  parameters: { docs: {
+    description: { story: 'Select two dates, then Apply to replace the report period.' },
+    source: { language: 'tsx', code: `import { DateRangePicker, type DateRangePickerMessages } from '@jfrader/ui';
+
+${RANGE_MESSAGES_SOURCE}
+
+<DateRangePicker label="Report period" placeholder="Choose dates" locale="en-GB"
+  today="2026-10-11" messages={rangeMessages} months={1}
+  defaultValue={{ start: '2026-10-05', end: '2026-10-09' }} />` },
+  } },
   play: async ({ args, canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await expect(trigger).toHaveAccessibleName(`${LABEL} ${formattedRange(WEEK)}`);
@@ -307,12 +362,24 @@ export const Default: StoryObj<DateRangePickerEasyProps> = {
 
 /** Assemble the range trigger and dialog for a custom layout. */
 export const Compound: Story = {
+  name: 'Compose the trigger and calendar',
   args: { defaultValue: WEEK, onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <RangeExample {...args} />,
-  parameters: { docs: { source: { code: `<DateRangePicker locale="en-GB" messages={rangeMessages}>
-  <DateRangePicker.Trigger aria-label="Report period" placeholder="Choose dates" />
-  <DateRangePicker.Content />
-</DateRangePicker>` } } },
+  parameters: { docs: {
+    description: { story: 'Place the trigger and range dialog explicitly in your layout.' },
+    source: { language: 'tsx', code: `import { Button, DateRangePicker, type DateRangePickerMessages } from '@jfrader/ui';
+
+${RANGE_MESSAGES_SOURCE}
+
+<>
+  <DateRangePicker locale="en-GB" today="2026-10-11" messages={rangeMessages}
+    defaultValue={{ start: '2026-10-05', end: '2026-10-09' }}>
+    <DateRangePicker.Trigger aria-label="Report period" placeholder="Choose dates" />
+    <DateRangePicker.Content />
+  </DateRangePicker>
+  <Button>After</Button>
+</>` },
+  } },
   play: async ({ args, canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await expect(trigger.tagName).toBe('BUTTON');
@@ -417,6 +484,21 @@ export const EasyDisabled: StoryObj<DateRangePickerEasyProps> = {
 };
 
 export const EasyControlled: StoryObj<DateRangePickerEasyProps> = {
+  name: 'Control the applied range',
+  parameters: { docs: {
+    description: { story: 'Keep the applied range and dialog visibility in React state.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { DateRangePicker, type DateRangePickerMessages, type DateRangeValue } from '@jfrader/ui';
+${RANGE_MESSAGES_SOURCE}
+
+export function ReportPeriod() {
+  const [value, setValue] = useState<DateRangeValue | null>({ start: '2026-10-05', end: '2026-10-09' });
+  const [open, setOpen] = useState(false);
+  return <DateRangePicker label="Report period" placeholder="Choose dates" locale="en-GB"
+    today="2026-10-11" messages={rangeMessages} months={1}
+    value={value} onValueChange={setValue} open={open} onOpenChange={setOpen} />;
+}` },
+  } },
   args: { label: LABEL, placeholder: PLACEHOLDER, locale: LOCALE, today: TODAY, messages: rangeMessages, months: 1, onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <EasyControlledRange {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -731,6 +813,22 @@ export const EscapeDiscards: Story = {
 };
 
 export const SpaceAndEnter: Story = {
+  name: 'Select dates with the keyboard',
+  parameters: { docs: {
+    description: { story: 'Open with Space, move with arrows, and select each endpoint before applying.' },
+    source: { language: 'tsx', code: `import { Button, DateRangePicker, type DateRangePickerMessages } from '@jfrader/ui';
+
+${RANGE_MESSAGES_SOURCE}
+
+<>
+  <DateRangePicker locale="en-GB" today="2026-10-11" messages={rangeMessages}
+    months={1} defaultValue={{ start: '2026-10-05', end: '2026-10-09' }}>
+    <DateRangePicker.Trigger aria-label="Report period" placeholder="Choose dates" />
+    <DateRangePicker.Content />
+  </DateRangePicker>
+  <Button>After</Button>
+</>` },
+  } },
   args: { defaultValue: WEEK, months: 1, onValueChange: fn() },
   render: (args) => <RangeExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -787,6 +885,23 @@ export const OutsideAndTabOut: Story = {
 };
 
 export const CustomPresets: Story = {
+  name: 'Choose a preset period',
+  parameters: { docs: {
+    description: { story: 'Choose a relative period such as Last 7 days, then Apply the draft.' },
+    source: { language: 'tsx', code: `import { Button, DateRangePicker, type DateRangePickerMessages } from '@jfrader/ui';
+
+${RANGE_MESSAGES_SOURCE}
+
+${PRESETS_SOURCE}
+
+<>
+  <DateRangePicker locale="en-GB" today="2026-10-11" messages={rangeMessages} presets={presets} months={1}>
+    <DateRangePicker.Trigger aria-label="Report period" placeholder="Choose dates" />
+    <DateRangePicker.Content />
+  </DateRangePicker>
+  <Button>After</Button>
+</>` },
+  } },
   args: { presets: PRESETS, months: 1, onValueChange: fn() },
   render: (args) => <RangeExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -836,6 +951,24 @@ export const CustomPresets: Story = {
 };
 
 export const Bounds: Story = {
+  name: 'Limit dates and presets',
+  parameters: { docs: {
+    description: { story: 'Choose October 3–24; presets extending outside the interval stay unavailable.' },
+    source: { language: 'tsx', code: `import { Button, DateRangePicker, type DateRangePickerMessages } from '@jfrader/ui';
+
+${RANGE_MESSAGES_SOURCE}
+
+${PRESETS_SOURCE}
+
+<>
+  <DateRangePicker locale="en-GB" today="2026-10-11" messages={rangeMessages} presets={presets}
+    months={1} min="2026-10-03" max="2026-10-24">
+    <DateRangePicker.Trigger aria-label="Report period" placeholder="Choose dates" />
+    <DateRangePicker.Content />
+  </DateRangePicker>
+  <Button>After</Button>
+</>` },
+  } },
   args: { presets: PRESETS, months: 1, min: '2026-10-03', max: '2026-10-24', onValueChange: fn() },
   render: (args) => <RangeExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -951,6 +1084,21 @@ export const InvalidValue: Story = {
 };
 
 export const Invalid: Story = {
+  name: 'Show a validation error',
+  parameters: { docs: {
+    description: { story: 'Show a form-owned error alongside the report period.' },
+    source: { language: 'tsx', code: `import { Button, DateRangePicker, type DateRangePickerMessages } from '@jfrader/ui';
+
+${RANGE_MESSAGES_SOURCE}
+
+<>
+  <DateRangePicker locale="en-GB" today="2026-10-11" messages={rangeMessages} months={1}>
+    <DateRangePicker.Trigger aria-label="Report period" placeholder="Choose dates" aria-invalid />
+    <DateRangePicker.Content />
+  </DateRangePicker>
+  <Button>After</Button>
+</>` },
+  } },
   args: { months: 1 },
   render: (args) => <RangeExample {...args} trigger={{ 'aria-invalid': true }} />,
   play: async ({ canvasElement }) => {
@@ -962,6 +1110,7 @@ export const Invalid: Story = {
 
 export const OpenInvalid: Story = {
   ...Invalid,
+  name: 'Open Invalid',
   tags: ['!autodocs'],
   args: { ...Invalid.args, defaultOpen: true, presets: PRESETS },
   play: async ({ canvasElement }) => {
@@ -1299,6 +1448,22 @@ export const ReadOnly: Story = {
 };
 
 export const Disabled: Story = {
+  name: 'Disabled range field',
+  parameters: { docs: {
+    description: { story: 'Keep the period visible but unavailable and omit both dates from form data.' },
+    source: { language: 'tsx', code: `import { Button, DateRangePicker, type DateRangePickerMessages } from '@jfrader/ui';
+
+${RANGE_MESSAGES_SOURCE}
+
+<form aria-label="Report" onSubmit={(event) => event.preventDefault()}>
+  <DateRangePicker locale="en-GB" today="2026-10-11" messages={rangeMessages}
+    disabled startName="from" endName="to" defaultValue={{ start: '2026-10-05', end: '2026-10-09' }}>
+    <DateRangePicker.Trigger aria-label="Report period" placeholder="Choose dates" />
+    <DateRangePicker.Content />
+  </DateRangePicker>
+  <Button>After</Button>
+</form>` },
+  } },
   args: { defaultValue: WEEK, disabled: true, startName: START_FIELD, endName: END_FIELD, onOpenChange: fn() },
   render: (args) => (
     <form aria-label="Report" onSubmit={(event) => event.preventDefault()}>
@@ -1408,6 +1573,23 @@ export const Required: Story = {
 };
 
 export const FormFields: Story = {
+  name: 'Submit and reset a range',
+  parameters: { docs: {
+    description: { story: 'Submit separate ISO dates and reset both to the original report period.' },
+    source: { language: 'tsx', code: `import { Button, DateRangePicker, type DateRangePickerMessages } from '@jfrader/ui';
+
+${RANGE_MESSAGES_SOURCE}
+
+<form aria-label="Report" onSubmit={(event) => event.preventDefault()}>
+  <DateRangePicker locale="en-GB" today="2026-10-11" messages={rangeMessages}
+    months={1} startName="from" endName="to" defaultValue={{ start: '2026-10-05', end: '2026-10-09' }}>
+    <DateRangePicker.Trigger aria-label="Report period" placeholder="Choose dates" />
+    <DateRangePicker.Content />
+  </DateRangePicker>
+  <Button>After</Button>
+  <Button type="reset">Reset</Button>
+</form>` },
+  } },
   args: { defaultValue: WEEK, months: 1, startName: START_FIELD, endName: END_FIELD, onValueChange: fn() },
   render: (args) => (
     <form aria-label="Report" onSubmit={(event) => event.preventDefault()}>
@@ -1456,6 +1638,7 @@ ExternalFormExample.displayName = 'ExternalFormExample';
 
 export const ExternalFormFields: Story = {
   ...FormFields,
+  name: 'External Form Fields',
   render: (args) => <ExternalFormExample {...args} />,
 };
 

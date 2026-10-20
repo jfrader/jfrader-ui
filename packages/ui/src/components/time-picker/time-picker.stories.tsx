@@ -59,24 +59,28 @@ const meta = {
         component:
           'Choose a time of day, stored as HH:mm.',
       },
-      usage: `- Pair with DatePicker and resolve the timestamp, time zone and daylight-saving changes in your app.
-- Supply \`locale\` for matching server and client output.
-- Values between steps display without rounding. \`minuteStep=1\` mounts all 1,440 options; measure performance before using it across many fields.
-- \`required\` is announced to assistive technology. The hidden field does not enforce browser constraint validation.
-- Check screen readers, forced colors and reduced motion manually.
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Controlled'] },
+        { title: 'Format and step', stories: ['EveryStep', 'Hour24', 'OffStepValue', 'Dial'] },
+        { title: 'States', stories: ['Error'] },
+        { title: 'Forms', stories: ['FormReset'] },
+        { title: 'Keyboard', stories: ['Keyboard'] },
+      ],
+      usage: `### When to use
+Choose a time of day for an appointment or schedule. Pair with DatePicker when you also need a date; resolve timestamps, time zones, and daylight-saving changes in your app.
+
+### Limits
+Values are civil HH:mm strings. Values between steps display without rounding. A one-minute step mounts all 1,440 options; measure performance before using it across many fields. Supply the same locale on the server and client.
+Required state is announced to assistive technology, but the hidden field does not enforce browser constraint validation; validate in your form.
 
 ### Dial presentation
-- Set \`presentation="dial"\` to drag a 24-hour face. Release to select the nearest available time and close; cancelling a gesture leaves the value unchanged.
+- Drag the 24-hour face and release to select the nearest available time and close; cancelling a gesture leaves the value unchanged.
 - The dial is a pointer-only enhancement, hidden from assistive technology with \`aria-hidden\`. The parallel listbox and its options stay visible and exposed to screen readers; focus remains on the combobox trigger through \`aria-activedescendant\`.
 - Use the same keyboard keys with either presentation, including in RTL; the clock runs clockwise.
-- Values remain civil HH:mm. Dates, time-zone comparisons, DST conversion and working-hour bands belong to the app.
 
 ### Keyboard
 - Focus stays on the Select trigger. Arrows wrap, Home and End jump, and typing searches.
 - Enter or Space selects. Escape or Tab closes.`,
-      source: {
-        code: '<TimePicker label="Start time" locale="en-GB" minuteStep={30}\n  value={time} onValueChange={setTime} placeholder="Choose a time" />',
-      },
     },
   },
 } satisfies Meta<typeof TimePicker>;
@@ -106,6 +110,13 @@ const format = (value: string, locale = 'en-GB', hourCycle?: 'h12' | 'h23') =>
   }).format(new Date(`2000-01-01T${value}:00Z`));
 
 export const Default: Story = {
+  name: 'Choose a start time',
+  parameters: { docs: {
+    description: { story: 'Open the time list and choose a start time in 15-minute steps.' },
+    source: { language: 'tsx', code: `import { TimePicker } from '@jfrader/ui';
+
+<TimePicker label="Start time" locale="en-GB" />` },
+  } },
   play: async ({ canvas, args, userEvent, canvasElement }) => {
     const trigger = canvas.getByRole('combobox', { name: 'Start time' });
     await expect(trigger).toHaveTextContent(format('09:00'));
@@ -168,6 +179,22 @@ function ControlledExample(args: TimePickerProps) {
   );
 }
 export const Controlled: Story = {
+  name: 'Control the selected time',
+  parameters: { docs: {
+    description: { story: 'Choose a time or use Set noon to update it from the parent.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, TimePicker } from '@jfrader/ui';
+
+export function StartTime() {
+  const [value, setValue] = useState('09:00');
+  const [open, setOpen] = useState(false);
+  return <>
+    <TimePicker label="Start time" locale="en-GB" value={value} onValueChange={setValue}
+      open={open} onOpenChange={setOpen} />
+    <Button onClick={() => setValue('12:00')}>Set noon</Button>
+  </>;
+}` },
+  } },
   render: (args) => <ControlledExample {...args} />,
   play: async ({ canvas, args, userEvent, canvasElement }) => {
     const trigger = canvas.getByRole('combobox');
@@ -184,6 +211,21 @@ export const Controlled: Story = {
 };
 const steps: TimePickerMinuteStep[] = [1, 5, 10, 15, 30];
 export const EveryStep: Story = {
+  name: 'Choose the minute interval',
+  parameters: { docs: {
+    description: { story: 'Compare one-, five-, ten-, fifteen-, and thirty-minute time lists.' },
+    source: { language: 'tsx', code: `import { styled, TimePicker } from '@jfrader/ui';
+import type { TimePickerMinuteStep } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Fields = styled.div({ display: 'grid', gap: vars.space[4] });
+const steps: TimePickerMinuteStep[] = [1, 5, 10, 15, 30];
+
+<Fields>
+  {steps.map((minuteStep) => <TimePicker key={minuteStep} locale="en-GB"
+    label={\`Every \${minuteStep} minutes\`} minuteStep={minuteStep} />)}
+</Fields>` },
+  } },
   render: (args) => (
     <ExampleGrid>
       {steps.map((minuteStep) => (
@@ -223,6 +265,13 @@ export const Hour12: Story = {
   },
 };
 export const Hour24: Story = {
+  name: 'Use a 24-hour clock',
+  parameters: { docs: {
+    description: { story: 'Display hours from 00 to 23 regardless of the locale’s usual clock.' },
+    source: { language: 'tsx', code: `import { TimePicker } from '@jfrader/ui';
+
+<TimePicker label="Start time" locale="en-GB" hourCycle="h23" />` },
+  } },
   args: { hourCycle: 'h23' },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('combobox')).toHaveTextContent(format('09:00', 'en-GB', 'h23'));
@@ -254,6 +303,13 @@ export const Sizes: Story = {
   },
 };
 export const OffStepValue: Story = {
+  name: 'Display a time between steps',
+  parameters: { docs: {
+    description: { story: 'Keep 09:07 visible until you choose a time from the 15-minute list.' },
+    source: { language: 'tsx', code: `import { TimePicker } from '@jfrader/ui';
+
+<TimePicker label="Start time" locale="en-GB" defaultValue="09:07" />` },
+  } },
   args: { defaultValue: '09:07' },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     const trigger = canvas.getByRole('combobox');
@@ -356,6 +412,14 @@ export const Required: Story = {
   },
 };
 export const Error: Story = {
+  name: 'Show a time error',
+  parameters: { docs: {
+    description: { story: 'Show opening hours and a form-owned validation message below the field.' },
+    source: { language: 'tsx', code: `import { TimePicker } from '@jfrader/ui';
+
+<TimePicker label="Start time" locale="en-GB"
+  error="Choose a time during opening hours" description="Opening hours: 09:00–17:00" />` },
+  } },
   args: {
     error: 'Choose a time during opening hours',
     description: 'Opening hours: 09:00–17:00',
@@ -436,6 +500,17 @@ export const ThemeRootPortal: Story = {
   },
 };
 export const Keyboard: Story = {
+  name: 'Navigate the time list',
+  parameters: { docs: {
+    description: { story: 'Use arrows, Home/End, or typing to find a time, then Enter to select or Tab to leave.' },
+    source: { language: 'tsx', code: `import { Button, TimePicker } from '@jfrader/ui';
+
+<>
+  <Button>Before</Button>
+  <TimePicker label="Start time" locale="en-GB" />
+  <Button>After</Button>
+</>` },
+  } },
   render: (args) => (
     <>
       <Button>Before</Button>
@@ -565,6 +640,17 @@ export const AriaComposition: Story = {
   },
 };
 export const FormReset: Story = {
+  name: 'Submit and reset a time',
+  parameters: { docs: {
+    description: { story: 'Submit HH:mm, omit the disabled field, and reset the editable time to 09:00.' },
+    source: { language: 'tsx', code: `import { Button, TimePicker } from '@jfrader/ui';
+
+<form>
+  <TimePicker label="Start time" locale="en-GB" name="time" />
+  <TimePicker label="Disabled time" locale="en-GB" name="disabled-time" disabled />
+  <Button type="reset">Reset</Button>
+</form>` },
+  } },
   render: (args) => (
     <form>
       <TimePicker {...args} name="time" />
@@ -754,8 +840,14 @@ const dialSnippet = '<TimePicker label="Start time" presentation="dial" locale="
 
 /** Drag the clock face or choose a time from the list. */
 export const Dial: Story = {
+  name: 'Choose on a clock face',
   args: { presentation: 'dial' },
-  parameters: { docs: { source: { code: dialSnippet } } },
+  parameters: { docs: {
+    description: { story: 'Drag the clock hand or choose from the accompanying keyboard-accessible time list.' },
+    source: { language: 'tsx', code: `import { TimePicker } from '@jfrader/ui';
+
+<TimePicker label="Start time" locale="en-GB" presentation="dial" />` },
+  } },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const trigger = canvas.getByRole('combobox');
     await userEvent.tab();
@@ -786,6 +878,7 @@ export const Dial: Story = {
 };
 export const DialLight: Story = {
   ...Dial,
+  name: 'Dial Light',
   decorators: [withLightTheme],
   globals: { theme: 'light' },
 };
@@ -805,6 +898,7 @@ export const DialReducedMotion: Story = {
 };
 export const DialRTL: Story = {
   ...Dial,
+  name: 'Dial RTL',
   args: { presentation: 'dial', dir: 'rtl' },
 };
 export const DialControlledGesture: Story = {
