@@ -138,6 +138,14 @@ const meta = {
       description: {
         component: 'Show a French or Spanish playing card with a red-and-paper back or your own artwork.',
       },
+      sections: [
+        { title: 'Basic', stories: ['QueenOfHearts', 'Default'] },
+        { title: 'Faces and suits', stories: ['FrenchDeck', 'SpanishDeck', 'FaceDown'] },
+        { title: 'Sizes', stories: ['Sizes'] },
+        { title: 'States', stories: ['RankLabelAndDimmed'] },
+        { title: 'Custom art', stories: ['CustomArt', 'CustomBackArt'] },
+        { title: 'Composition', stories: ['SceneBack'] },
+      ],
       source: {
         language: 'tsx',
         code: `import { GameCard } from '@jfrader/ui/game-card';
@@ -147,17 +155,14 @@ const meta = {
   value={{ deck: 'french', suit: 'hearts', rank: 'Q' }}
 />`,
       },
-      usage: `## Setup
-- Import from \`@jfrader/ui/game-card\`. GameCard is an opt-in subpath and is not re-exported by the package root.
+      usage: `### When to use
+Display a single playing card in a board, pile or hand. Use GameHand for selecting and confirming a card, rather than making an image behave like a button.
 
-## Faces and artwork
-- Omit \`value\` or set \`face="back"\` to hide built-in rank and suit data. Back patterns come from the deck (e.g. Spanish diagonal, poker checks) or explicit \`backPattern\`, and \`children\` replaces either face’s artwork.
+### Hidden cards and artwork
+Do not send secret card values to a client that should not know them. A face-down card hides its printed data, not information already held by your application. Custom artwork must not reveal a hidden value either.
 
-## Root customization
-- Use \`component\` or \`slots.root\` to replace the root. \`slots.root\` wins when both are supplied.
-- Declare replacements outside render, forward all props and ref to one div, and apply your material before the supplied \`className\`.
-- \`slotProps.root\` overrides root props. ClassName and style merge.
-- Style order is material → slot sx → consumer sx.`,
+### Accessibility
+Give every card a localized accessible name. Use a neutral name for a hidden card and mark nested artwork decorative to avoid duplicate announcements. Cards add no keyboard interaction. Dimming is visual, not a disabled state; enforce play restrictions in the surrounding controls.`,
     },
   },
 } satisfies Meta<typeof GameCard>;
@@ -243,9 +248,10 @@ async function expectDeckGrid(cards: NodeListOf<Element>) {
 
 /** Spanish diagonal backs and poker checks beside their faces. */
 export const Default: Story = {
-  name: 'Default',
+  name: 'Deck faces and backs',
   parameters: {
     docs: {
+      description: { story: 'Compare Spanish diagonal backs and French checks beside printed faces.' },
       source: {
         language: 'tsx',
         code: `import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
@@ -337,6 +343,7 @@ export const QueenOfHearts: Story = {
   name: 'Printed rank and suit',
   parameters: {
     docs: {
+      description: { story: 'Show a French queen with a printed rank and heart suit.' },
       source: {
         language: 'tsx',
         code: `import { GameCard } from '@jfrader/ui/game-card';
@@ -394,6 +401,7 @@ export const FrenchDeck: Story = {
   parameters: {
     layout: 'padded',
     docs: {
+      description: { story: 'Browse all 52 French cards in a responsive grid.' },
       source: {
         language: 'tsx',
         code: `import { GameCard } from '@jfrader/ui/game-card';
@@ -461,6 +469,7 @@ export const SpanishDeck: Story = {
   parameters: {
     layout: 'padded',
     docs: {
+      description: { story: 'Browse all 40 Spanish cards with localized card names.' },
       source: {
         language: 'tsx',
         code: `import { GameCard } from '@jfrader/ui/game-card';
@@ -526,6 +535,7 @@ export const FaceDown: Story = {
   args: { label: BACK_LABEL, value: QUEEN_OF_HEARTS, face: 'back', rankLabel: 'SECRET-RANK' },
   parameters: {
     docs: {
+      description: { story: 'Hide printed values with French and Spanish backs or a value-free card.' },
       source: {
         language: 'tsx',
         code: `import { GameCard } from '@jfrader/ui/game-card';
@@ -594,6 +604,7 @@ export const Sizes: Story = {
   name: 'Sizes',
   parameters: {
     docs: {
+      description: { story: 'Compare the same printed card at small, medium and large sizes.' },
       source: {
         language: 'tsx',
         code: `import { GameCard } from '@jfrader/ui/game-card';
@@ -689,6 +700,7 @@ export const CustomArt: Story = {
   },
   parameters: {
     docs: {
+      description: { story: 'Replace a printed face with decorative SVG artwork.' },
       source: {
         language: 'tsx',
         code: `import { GameCard } from '@jfrader/ui/game-card';
@@ -724,6 +736,7 @@ export const CustomBackArt: Story = {
   args: { label: BACK_LABEL, face: 'back', backPattern: CARD_BACK_PATTERNS.spanish },
   parameters: {
     docs: {
+      description: { story: 'Replace a hidden card pattern with decorative SVG artwork.' },
       source: {
         language: 'tsx',
         code: `import { GameCard } from '@jfrader/ui/game-card';
@@ -759,6 +772,7 @@ export const SceneBack: Story = {
   name: 'Scene back per card',
   parameters: {
     docs: {
+      description: { story: 'Compose three hidden cards with independently seeded dune scenes.' },
       source: {
         language: 'tsx',
         code: `import { GameCard } from '@jfrader/ui/game-card';
@@ -842,6 +856,7 @@ export const RankLabelAndDimmed: Story = {
   name: 'Rank label and dimmed',
   parameters: {
     docs: {
+      description: { story: 'Use a Spanish court-card label beside a visually dimmed ace.' },
       source: {
         language: 'tsx',
         code: `import { GameCard } from '@jfrader/ui/game-card';
