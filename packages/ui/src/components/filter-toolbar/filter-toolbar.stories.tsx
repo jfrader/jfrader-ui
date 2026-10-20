@@ -84,7 +84,9 @@ const ISSUE_DEFAULT: readonly FilterValue[] = [
   { id: 'assignee-ada', label: 'Assignee', value: 'ada', valueLabel: 'Ada Lovelace' },
 ];
 
-const SOURCE = `<FilterToolbar
+const SOURCE = `import { FilterToolbar } from '@jfrader/ui';
+
+<FilterToolbar
   filters={[
     {
       type: 'select',
@@ -109,9 +111,43 @@ const SOURCE = `<FilterToolbar
       ],
     },
   ]}
-  defaultValue={[{ id: 'status', label: 'Status', value: 'open', valueLabel: 'Open' }]}
+  defaultValue={[
+    { id: 'status', label: 'Status', value: 'open', valueLabel: 'Open' },
+    { id: 'assignee-ada', label: 'Assignee', value: 'ada', valueLabel: 'Ada Lovelace' },
+  ]}
   resultCount={12}
 />`;
+
+const definitionsSource = `const filters: FilterToolbarDefinition[] = [
+  { type: 'select', id: 'status', label: 'Status', placeholder: 'Any status', options: [
+    { value: 'open', label: 'Open' }, { value: 'closed', label: 'Closed' },
+  ] },
+  { type: 'multiselect', id: 'owner', label: 'Owner', placeholder: 'Any owner', options: [
+    { id: 'owner-me', value: 'me', label: 'Me' },
+    { id: 'owner-team', value: 'team', label: 'Team' },
+  ] },
+];`;
+const valuesSource = `const activeFilters: FilterValue[] = [
+  { id: 'status', label: 'Status', value: 'open', valueLabel: 'Open' },
+  { id: 'owner', label: 'Owner', value: 'me', valueLabel: 'Me' },
+];`;
+const compoundSource = `import { Button, FilterToolbar, type FilterValue } from '@jfrader/ui';
+
+${valuesSource}
+
+<FilterToolbar defaultValue={activeFilters}>
+  <FilterToolbar.Controls>
+    {({ value, disabled, onValueChange }) => (
+      <Button disabled={disabled} onClick={() => onValueChange([
+        ...value.filter((filter) => filter.id !== 'status'),
+        { id: 'status', label: 'Status', value: 'closed', valueLabel: 'Closed' },
+      ])}>Closed</Button>
+    )}
+  </FilterToolbar.Controls>
+  <FilterToolbar.ActiveFilters empty="No filters" />
+  <FilterToolbar.Clear />
+  <FilterToolbar.ResultCount count={12} locale="en-US" />
+</FilterToolbar>`;
 
 type CheckedFilterToolbar<Props extends FilterToolbarProps> = Props;
 type CheckedMultiOption<Option extends FilterToolbarMultiSelectOption> = Option;
@@ -161,9 +197,24 @@ const meta = {
       description: {
         component: 'Choose filters for a collection, remove them one at a time, or clear them all.',
       },
-      usage:
-        '- Pass `filters` for Select and MultiSelect controls, active chips, Clear and an optional result count. MultiSelect options require stable `id` values, unique across the toolbar; these are chip IDs, not DOM IDs.\n- Use `component` or `slots.root` for the root div, and typed `slotProps` for generated controls, fields, chips, clear and result count.\n- Keep arbitrary controls in the compound `Controls` render function. No date, range or free-text definition schema is included.\n- Tab and Shift+Tab follow control order. Enter and Space activate remove and clear buttons. Each control handles its own editing and Select navigation.\n- Supply filtering and result counts. Configure result-count `locale` through `slotProps.resultCount`.\n- Do not switch between controlled and uncontrolled values.',
-      source: { code: SOURCE },
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Filters and controls', stories: ['EasyActivation', 'SearchTextField', 'Compound'] },
+        { title: 'Result counts', stories: ['ZeroResults', 'CommittedResultCount'] },
+        { title: 'Clear', stories: ['EasyKeyboardRemoveAndClear'] },
+        { title: 'Layout and overflow', stories: ['LongChips'] },
+        { title: 'States', stories: ['Empty', 'LoadingResults', 'EasyDisabled'] },
+      ],
+      usage: `### When to use
+Use a filter toolbar above a collection to edit criteria, review active filters and clear them. Keep the collection and its filtering logic in your application.
+
+### Constraints
+Result counts describe the results your application has committed; changing filters does not calculate a count. Keep the previous count while loading and announce the replacement when the request finishes. Translate the count and control labels for your audience.
+
+Keep multiselect chip IDs stable and unique across the toolbar. Do not switch between controlled and uncontrolled values. Use custom controls for free-text, date or range criteria.
+
+### Keyboard and accessibility
+Tab and Shift+Tab follow control order. Enter and Space activate remove and clear buttons. Each control keeps its own editing and selection keys. Removing a chip moves focus to a neighboring chip, then an available control, or the toolbar when none remain.`,
     },
   },
 } satisfies Meta<FilterToolbarCompoundProps>;
@@ -177,6 +228,11 @@ async function focus(element: HTMLElement) {
 }
 
 export const Default: Story = {
+  name: 'Filter project issues',
+  parameters: { docs: {
+    description: { story: 'Choose issue status and assignees, review active filters and see the result count.' },
+    source: { language: 'tsx', code: SOURCE },
+  } },
   render: () => (
     <FilterToolbar
       filters={ISSUE_FILTERS}
@@ -187,6 +243,15 @@ export const Default: Story = {
 };
 
 export const EasyActivation: Story = {
+  name: 'Single and multiple selection',
+  parameters: { docs: {
+    description: { story: 'Choose a status and one or more owners to add active filter chips.' },
+    source: { language: 'tsx', code: `import { FilterToolbar, type FilterToolbarDefinition } from '@jfrader/ui';
+
+${definitionsSource}
+
+<FilterToolbar filters={filters} defaultValue={[]} resultCount={12} />` },
+  } },
   args: { onValueChange: fn() },
   render: (args) => (
     <FilterToolbar
@@ -222,6 +287,18 @@ export const EasyActivation: Story = {
 };
 
 export const EasyKeyboardRemoveAndClear: Story = {
+  name: 'Remove a filter or clear all',
+  parameters: { docs: {
+    description: { story: 'Remove individual chips with Enter, or use Clear all to reset both controls.' },
+    source: { language: 'tsx', code: `import { FilterToolbar, type FilterToolbarDefinition } from '@jfrader/ui';
+
+${definitionsSource}
+
+<FilterToolbar filters={filters} resultCount={12} defaultValue={[
+  { id: 'status', label: 'Status', value: 'open', valueLabel: 'Open' },
+  { id: 'owner-me', label: 'Owner', value: 'me', valueLabel: 'Me' },
+]} />` },
+  } },
   args: { onValueChange: fn() },
   render: (args) => (
     <FilterToolbar
@@ -253,6 +330,18 @@ export const EasyKeyboardRemoveAndClear: Story = {
 };
 
 export const EasyDisabled: Story = {
+  name: 'Disabled filters',
+  parameters: { docs: {
+    description: { story: 'Keep the active filters and count visible while disabling all editing controls.' },
+    source: { language: 'tsx', code: `import { FilterToolbar, type FilterToolbarDefinition } from '@jfrader/ui';
+
+${definitionsSource}
+
+<FilterToolbar filters={filters} disabled resultCount={12} defaultValue={[
+  { id: 'status', label: 'Status', value: 'open', valueLabel: 'Open' },
+  { id: 'owner-me', label: 'Owner', value: 'me', valueLabel: 'Me' },
+]} />` },
+  } },
   args: { onValueChange: fn() },
   render: (args) => (
     <FilterToolbar
@@ -405,7 +494,14 @@ export const EasySlotPropsOverride: Story = {
   },
 };
 
-export const Compound: Story = { render: (args) => <Example {...args} /> };
+export const Compound: Story = {
+  name: 'Compose a custom filter action',
+  parameters: { docs: {
+    description: { story: 'Add a Closed action that replaces the status filter without removing the owner.' },
+    source: { language: 'tsx', code: compoundSource },
+  } },
+  render: (args) => <Example {...args} />,
+};
 
 const IDENTITY_DEFINITIONS: readonly FilterToolbarDefinition[] = [
   { type: 'multiselect', id: 'a', label: 'First facet', options: [{ id: 'first-chip', value: 'b:c', label: 'First option' }] },
@@ -432,6 +528,11 @@ export const ExplicitChipIdentity: Story = {
 };
 
 export const Empty: Story = {
+  name: 'No active filters',
+  parameters: { docs: {
+    description: { story: 'Show an empty-filter message while keeping the custom filter action available.' },
+    source: { language: 'tsx', code: compoundSource.replace('defaultValue={activeFilters}', 'defaultValue={[]}') },
+  } },
   args: { defaultValue: [] },
   render: (args) => <Example {...args} />,
 };
@@ -549,16 +650,30 @@ function SearchExample(args: FilterToolbarCompoundProps) {
 }
 
 export const SearchTextField: Story = {
+  name: 'Search text as a filter',
   args: { defaultValue: [], onValueChange: fn() },
   render: (args) => <SearchExample {...args} />,
   parameters: {
     docs: {
+      description: { story: 'Keep search text in the filter value and remove its chip to clear the input.' },
       source: {
-        code: `<FilterToolbar>
-  <FilterToolbar.Controls>{({ value, disabled, onValueChange }) => <TextField label="Search" disabled={disabled}
-    value={value.find(filter => filter.id === 'query')?.value ?? ''}
-    onValueChange={query => onValueChange(query ? [{ id: 'query', label: 'Search', value: query }] : [])} />}</FilterToolbar.Controls>
-  <FilterToolbar.ActiveFilters /><FilterToolbar.Clear />
+        language: 'tsx',
+        code: `import { FilterToolbar, TextField } from '@jfrader/ui';
+
+<FilterToolbar defaultValue={[]}>
+  <FilterToolbar.Controls>
+    {({ value, disabled, onValueChange }) => (
+      <TextField label="Search" disabled={disabled}
+        value={value.find((filter) => filter.id === 'query')?.value ?? ''}
+        onValueChange={(query) => onValueChange([
+          ...value.filter((filter) => filter.id !== 'query'),
+          ...(query === '' ? [] : [{ id: 'query', label: 'Search', value: query }]),
+        ])} />
+    )}
+  </FilterToolbar.Controls>
+  <FilterToolbar.ActiveFilters />
+  <FilterToolbar.Clear />
+  <FilterToolbar.ResultCount count={12} />
 </FilterToolbar>`,
       },
     },
@@ -917,6 +1032,18 @@ export const FalsyControlsAndClear: Story = {
 };
 
 export const LoadingResults: Story = {
+  name: 'Loading results',
+  parameters: { docs: {
+    description: { story: 'Announce that results are loading while the current filter chips remain visible.' },
+    source: { language: 'tsx', code: `import { FilterToolbar, type FilterValue } from '@jfrader/ui';
+
+${valuesSource}
+
+<FilterToolbar defaultValue={activeFilters}>
+  <FilterToolbar.ActiveFilters />
+  <FilterToolbar.ResultCount count={12} loading />
+</FilterToolbar>` },
+  } },
   render: (args) => (
     <FilterToolbar {...args}>
       <FilterToolbar.ActiveFilters />
@@ -930,6 +1057,17 @@ export const LoadingResults: Story = {
 };
 
 export const ZeroResults: Story = {
+  name: 'Zero results',
+  parameters: { docs: {
+    description: { story: 'Announce a completed search with no matching results.' },
+    source: { language: 'tsx', code: `import { FilterToolbar, type FilterValue } from '@jfrader/ui';
+
+${valuesSource}
+
+<FilterToolbar defaultValue={activeFilters}>
+  <FilterToolbar.ResultCount count={0} locale="en-US" />
+</FilterToolbar>` },
+  } },
   render: (args) => (
     <FilterToolbar {...args}>
       <FilterToolbar.ResultCount count={0} locale="en-US" />
@@ -971,6 +1109,26 @@ function CommittedCountExample(args: FilterToolbarCompoundProps) {
 }
 
 export const CommittedResultCount: Story = {
+  name: 'Commit a new result count',
+  parameters: { docs: {
+    description: { story: 'Clear the filters, then commit the next count separately from the filter change.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, FilterToolbar, type FilterValue } from '@jfrader/ui';
+
+${valuesSource}
+
+function CollectionFilters() {
+  const [count, setCount] = useState(12);
+  return <FilterToolbar defaultValue={activeFilters}>
+    <FilterToolbar.Controls>
+      <Button onClick={() => setCount(0)}>Commit results</Button>
+    </FilterToolbar.Controls>
+    <FilterToolbar.ActiveFilters />
+    <FilterToolbar.Clear />
+    <FilterToolbar.ResultCount count={count} locale="en-US" />
+  </FilterToolbar>;
+}` },
+  } },
   args: { onValueChange: fn() },
   render: (args) => <CommittedCountExample {...args} />,
   play: async ({ canvas, args, userEvent }) => {
@@ -986,6 +1144,26 @@ export const CommittedResultCount: Story = {
 };
 
 export const LongChips: Story = {
+  name: 'Long filters in a narrow layout',
+  parameters: { docs: {
+    description: { story: 'Truncate long chip text while preserving its full accessible remove label.' },
+    source: { language: 'tsx', code: `import { FilterToolbar, styled } from '@jfrader/ui';
+
+const Frame = styled.div({ inlineSize: 280, maxInlineSize: '100%' });
+
+<Frame>
+  <FilterToolbar defaultValue={[
+    { id: 'status', label: 'Delivery responsibility', value: 'open',
+      valueLabel: 'International collection review and publication'.repeat(3) },
+    { id: 'owner', label: 'Owner', value: 'me', valueLabel: 'Me' },
+  ]}>
+    <FilterToolbar.ActiveFilters />
+    <FilterToolbar.Clear>Clear all collection filters</FilterToolbar.Clear>
+    <FilterToolbar.ResultCount count={123456789} locale="ar-EG"
+      formatCount={(_count, formatted) => \`\${formatted} matching collection entries\`} />
+  </FilterToolbar>
+</Frame>` },
+  } },
   args: {
     defaultValue: [
       {

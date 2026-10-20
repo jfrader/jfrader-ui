@@ -18,7 +18,7 @@ import {
 import { styled } from '../../index';
 
 const NarrowFrame = styled.div({ inlineSize: '14rem' });
-const exportSnippetBase = `import { Button, SplitButton, styled } from '@jfrader/ui';
+const exportSnippetBase = `import { Button, SplitButton, styled, type SplitButtonItemRecord } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
 const Row = styled.div({
@@ -27,6 +27,29 @@ const Row = styled.div({
   alignItems: 'center',
   gap: vars.space[3],
 });`;
+
+const easySource = `${exportSnippetBase}
+
+function ExportActions({ exportPdf, exportCsv, exportJson, deleteExport }: {
+  exportPdf: () => void;
+  exportCsv: () => void;
+  exportJson: () => void;
+  deleteExport: () => void;
+}) {
+  const items = [
+    { label: 'CSV', onSelect: exportCsv },
+    { label: 'Excel', disabled: true },
+    { label: 'JSON', onSelect: exportJson },
+    { type: 'separator' },
+    { label: 'Delete export', tone: 'danger', onSelect: deleteExport },
+  ] satisfies readonly SplitButtonItemRecord[];
+
+  return <Row>
+    <SplitButton label="Export PDF" onClick={exportPdf}
+      menuLabel="Other export formats" aria-label="Export options" items={items} />
+    <Button>After</Button>
+  </Row>;
+}`;
 
 const LightThemeFrame = styled.div({ padding: vars.space[4], backgroundColor: vars.color.bg });
 
@@ -167,12 +190,24 @@ const meta = {
         component:
           'Run an action or choose another action from the menu beside it.',
       },
-      usage: `- Pass label, native onClick, menuLabel and readonly action/separator items, or compose the dotted parts with children. The easy onClick belongs only to the primary action.
-- Use slotProps for generated root, action, trigger, content, item and separator props. component replaces the root, as does slots.root. Other replacements compose the corresponding dotted part and forward received props/ref. Declare replacements outside render.
-- Action and Trigger are buttons in a labelled group. Trigger opens the menu without running Action.
-- Choosing a menu item does not replace the default action.
-- Give Trigger a translated \`aria-label\` or \`aria-labelledby\`; it has no text.
-- Use Menu when there is no default action. Use Button when there are no alternatives.`,
+      sections: [
+        { title: 'Basic', stories: ['Basic'] },
+        { title: 'Menu actions', stories: ['Compound'] },
+        { title: 'Disabled', stories: ['Disabled', 'DisabledParts'] },
+        { title: 'Keyboard', stories: ['KeyboardActivation'] },
+        { title: 'Placement', stories: ['Placement'] },
+        { title: 'Composition', stories: ['WithIcon', 'Controlled'] },
+      ],
+      usage: `### When to use
+Use a split button when one action is the default and related alternatives belong in a menu. Use Menu when there is no default action, or Button when there are no alternatives.
+
+### Constraints
+Opening the menu never runs the primary action. Choosing a menu item does not replace the default action. Keep both halves named: the icon-only opener needs a translated accessible name.
+
+### Keyboard and accessibility
+Tab visits the primary action, then the menu opener. Enter or Space runs the focused action. On the opener, Enter, Space or ArrowDown opens at the first enabled item; ArrowUp opens at the last.
+
+Inside the menu, arrows wrap and skip disabled items; Home and End reach the ends, and typing searches item labels. Enter or Space selects. Escape closes and returns focus to the opener. Tab from the last item closes the menu and moves to the next control.`,
     },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive). Every other
@@ -251,23 +286,10 @@ export const Default: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
   },
   parameters: {
     docs: {
+      description: { story: 'Run Export PDF directly, or open the adjacent menu for another format.' },
       source: {
         language: 'tsx',
-        code: `const items = [
-  { label: 'CSV', onSelect: exportCsv },
-  { label: 'Excel', disabled: true },
-  { label: 'JSON', onSelect: exportJson },
-  { type: 'separator' },
-  { label: 'Delete export', tone: 'danger', onSelect: deleteExport },
-] satisfies readonly SplitButtonItemRecord[];
-
-<SplitButton
-  label="Export PDF"
-  onClick={exportPdf}
-  menuLabel="Other export formats"
-  aria-label="Export options"
-  items={items}
-/>`,
+        code: easySource,
       },
     },
   },
@@ -319,18 +341,46 @@ export const Default: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
   },
 };
 
+export const Basic: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
+  name: 'Export with alternative formats',
+  args: Default.args,
+  render: Default.render,
+  parameters: { docs: {
+    description: { story: 'Run Export PDF directly, or open the adjacent menu for another format.' },
+    source: { language: 'tsx', code: easySource },
+  } },
+};
+
 export const Compound: Story = {
-  name: 'Compound',
+  name: 'Compose menu actions',
   parameters: {
     docs: {
+      description: { story: 'Group export formats above a separator and a destructive action.' },
       source: {
-        code: `<SplitButton aria-label="Export options">
+        language: 'tsx',
+        code: `${exportSnippetBase}
+
+function ExportActions({ exportPdf, exportCsv, exportJson, deleteExport }: {
+  exportPdf: () => void;
+  exportCsv: () => void;
+  exportJson: () => void;
+  deleteExport: () => void;
+}) {
+  return <Row>
+  <SplitButton aria-label="Export options">
   <SplitButton.Action onClick={exportPdf}>Export PDF</SplitButton.Action>
   <SplitButton.Trigger aria-label="Other export formats" />
   <SplitButton.Content>
     <SplitButton.Item onSelect={exportCsv}>CSV</SplitButton.Item>
+    <SplitButton.Item disabled>Excel</SplitButton.Item>
+    <SplitButton.Item onSelect={exportJson}>JSON</SplitButton.Item>
+    <SplitButton.Separator />
+    <SplitButton.Item tone="danger" onSelect={deleteExport}>Delete export</SplitButton.Item>
   </SplitButton.Content>
-</SplitButton>`,
+  </SplitButton>
+  <Button>After</Button>
+  </Row>;
+}`,
       },
     },
   },
@@ -506,10 +556,44 @@ const Roomy = styled.div({
   display: 'flex',
   justifyContent: 'flex-end',
   inlineSize: '24rem',
+  maxInlineSize: '100%',
+  boxSizing: 'border-box',
   paddingInline: vars.space[4],
 });
 
 export const Placement: Story = {
+  name: 'End-aligned menu',
+  parameters: { docs: {
+    description: { story: 'Open a menu aligned with the inline end of its trigger.' },
+    source: { language: 'tsx', code: `import { SplitButton, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Frame = styled.div({
+  display: 'flex', justifyContent: 'flex-end', inlineSize: '24rem',
+  maxInlineSize: '100%', boxSizing: 'border-box', paddingInline: vars.space[4],
+});
+
+function ExportActions({ exportPdf, exportCsv, exportJson, deleteExport }: {
+  exportPdf: () => void;
+  exportCsv: () => void;
+  exportJson: () => void;
+  deleteExport: () => void;
+}) {
+  return <Frame>
+    <SplitButton aria-label="Export options">
+      <SplitButton.Action onClick={exportPdf}>Export PDF</SplitButton.Action>
+      <SplitButton.Trigger aria-label="Other export formats" />
+      <SplitButton.Content>
+        <SplitButton.Item onSelect={exportCsv}>CSV</SplitButton.Item>
+        <SplitButton.Item disabled>Excel</SplitButton.Item>
+        <SplitButton.Item onSelect={exportJson}>JSON</SplitButton.Item>
+        <SplitButton.Separator />
+        <SplitButton.Item tone="danger" onSelect={deleteExport}>Delete export</SplitButton.Item>
+      </SplitButton.Content>
+    </SplitButton>
+  </Frame>;
+}` },
+  } },
   render: (args) => (
     <Roomy>
       <ExportSplitButton {...args} />
@@ -657,6 +741,29 @@ export function ExportRow({
 };
 
 export const WithIcon: Story = {
+  name: 'Primary action with an icon',
+  parameters: { docs: {
+    description: { story: 'Add a decorative file icon without changing the primary action’s accessible name.' },
+    source: { language: 'tsx', code: `import { SplitButton } from '@jfrader/ui';
+
+function PdfIcon() {
+  return <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"
+    strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 1.5h5l3 3v10H4z" />
+    <path d="M8 7v5M6 10l2 2 2-2" />
+  </svg>;
+}
+
+function ExportActions({ exportPdf, exportCsv }: { exportPdf: () => void; exportCsv: () => void }) {
+  return <SplitButton aria-label="Export options">
+    <SplitButton.Action startIcon={<PdfIcon />} onClick={exportPdf}>Export PDF</SplitButton.Action>
+    <SplitButton.Trigger aria-label="Other export formats" />
+    <SplitButton.Content>
+      <SplitButton.Item onSelect={exportCsv}>CSV</SplitButton.Item>
+    </SplitButton.Content>
+  </SplitButton>;
+}` },
+  } },
   render: ({ onAction, onCsv, onJson: _onJson, onDelete: _onDelete, ...args }) => (
     <SplitButton {...args}>
       <SplitButton.Action startIcon={<PdfIcon />} onClick={onAction}>
@@ -705,8 +812,10 @@ export const PersistentOpen: Story = {
 };
 
 export const KeyboardActivation: Story = {
+  name: 'Keyboard activation',
   parameters: {
     docs: {
+      description: { story: 'Tab between both halves, then use Enter, Space or arrows to open the menu.' },
       source: {
         language: 'tsx',
         code: `${exportSnippetBase}
@@ -993,6 +1102,35 @@ function ControlledExport(args: StoryArgs) {
 ControlledExport.displayName = 'ControlledExport';
 
 export const Controlled: Story = {
+  name: 'Controlled menu',
+  parameters: { docs: {
+    description: { story: 'Keep menu visibility in application state and accept open and close requests.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+${exportSnippetBase}
+
+function ExportActions({ exportPdf, exportCsv, exportJson, deleteExport }: {
+  exportPdf: () => void;
+  exportCsv: () => void;
+  exportJson: () => void;
+  deleteExport: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return <Row>
+    <SplitButton aria-label="Export options" open={open} onOpenChange={setOpen}>
+      <SplitButton.Action onClick={exportPdf}>Export PDF</SplitButton.Action>
+      <SplitButton.Trigger aria-label="Other export formats" />
+      <SplitButton.Content>
+        <SplitButton.Item onSelect={exportCsv}>CSV</SplitButton.Item>
+        <SplitButton.Item disabled>Excel</SplitButton.Item>
+        <SplitButton.Item onSelect={exportJson}>JSON</SplitButton.Item>
+        <SplitButton.Separator />
+        <SplitButton.Item tone="danger" onSelect={deleteExport}>Delete export</SplitButton.Item>
+      </SplitButton.Content>
+    </SplitButton>
+    <Button>After</Button>
+  </Row>;
+}` },
+  } },
   render: (args) => <ControlledExport {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
@@ -1101,8 +1239,10 @@ export const ControlledReject: Story = {
 };
 
 export const Disabled: Story = {
+  name: 'Disabled split button',
   parameters: {
     docs: {
+      description: { story: 'Disable both the primary action and the menu opener together.' },
       source: {
         language: 'tsx',
         code: `${exportSnippetBase}
@@ -1165,6 +1305,35 @@ export function ExportRow({
 };
 
 export const DisabledParts: Story = {
+  name: 'Disable one half',
+  parameters: { docs: {
+    description: { story: 'Disable only the primary action or only the menu opener.' },
+    source: { language: 'tsx', code: `import { SplitButton, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({
+  display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: vars.space[3],
+});
+
+function ExportActions({ exportPdf, exportCsv }: { exportPdf: () => void; exportCsv: () => void }) {
+  return <Stack>
+    <SplitButton aria-label="Action disabled">
+      <SplitButton.Action disabled onClick={exportPdf}>Export PDF</SplitButton.Action>
+      <SplitButton.Trigger aria-label="Other export formats" />
+      <SplitButton.Content>
+        <SplitButton.Item onSelect={exportCsv}>CSV</SplitButton.Item>
+      </SplitButton.Content>
+    </SplitButton>
+    <SplitButton aria-label="Trigger disabled">
+      <SplitButton.Action onClick={exportPdf}>Export PDF</SplitButton.Action>
+      <SplitButton.Trigger disabled aria-label="Other export formats" />
+      <SplitButton.Content>
+        <SplitButton.Item onSelect={exportCsv}>CSV</SplitButton.Item>
+      </SplitButton.Content>
+    </SplitButton>
+  </Stack>;
+}` },
+  } },
   render: ({ onAction, onCsv, onJson: _onJson, onDelete: _onDelete, ...args }) => (
     <StackFrame>
       <SplitButton {...args} aria-label="Action disabled">
