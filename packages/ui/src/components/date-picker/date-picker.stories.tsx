@@ -63,24 +63,27 @@ const meta: Meta<DatePickerProps> = {
   parameters: {
     docs: {
       description: { component: 'Choose a date from a calendar.' },
-      usage: `### Values
-- Use date-only \`YYYY-MM-DD\` strings for \`value\`, \`defaultValue\`, \`min\` and \`max\`. The input formats the Gregorian date for \`locale\`, which defaults to \`navigator.language\`; the stored value has no time or time zone.
-- If you control \`value\`, update it from \`onValueChange\`. If you control \`open\`, update it from \`onOpenChange\`. Selecting a day requests a value and a close separately, so rejecting one does not reject the other.
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Compound', 'EasyControlled'] },
+        { title: 'Constraints', stories: ['MinMax'] },
+        { title: 'States', stories: ['Disabled'] },
+        { title: 'Forms', stories: ['FormValue'] },
+        { title: 'Keyboard', stories: ['TabNavigation'] },
+      ],
+      usage: `### When to use
+Choose a single calendar date, such as a departure or appointment day. The field is read-only; select from the calendar rather than typing.
+
+### Values and limits
+Dates are Gregorian date-only \`YYYY-MM-DD\` strings, without a time zone. Supply the same locale on the server and client. Bounds are inclusive and prevent new selections, but do not rewrite an initial or controlled date outside the interval.
+Selecting a date requests a value change before requesting closure; rejecting one request does not reject the other.
 
 ### Keyboard
 - Click the input or press Enter, Down or Space to open and focus a day. Use the Calendar arrow, Home, End and Page Up/Page Down keys to navigate, then Enter or Space to select.
 - Selection or Escape returns focus to the input once the popup closes. Tabbing out or pressing outside closes without returning focus. Reopening discards month navigation and starts on the selected month, or the current month, within the bounds.
 
-### Forms
-- Set \`name\` on \`DatePicker\` to submit the ISO value through a hidden input, or \`''\` when empty. Set \`disabled\` to exclude it from form data and prevent opening even when \`open\` is true.
-- The input is read-only: choose a date from the calendar rather than typing. Native \`required\` on a read-only input does not validate selection; check the selected value in your form.
-
-### Limits
-- \`min\` and \`max\` prevent selecting dates outside their inclusive interval. They do not rewrite a supplied value outside that interval; validate your initial or controlled value too.
-
-### Customization
-- Pass a string \`label\` to generate the input and popup, then use \`slots\` or \`slotProps\` for those parts. For custom layout, use \`DatePicker.Input\` and \`DatePicker.Popup\` as children instead.
-- In compound mode, if your input label is not a string, supply \`aria-label\` on \`DatePicker.Input\` so the popup keeps its name while open.`,
+### Forms and accessibility
+Empty fields submit an empty string; disabled fields are omitted. Native required validation does not validate a read-only input; validate selection in your form.
+Give the field a text label. With a non-string compound label, supply an explicit accessible name so the open popup keeps its name.`,
     },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive). Every other
@@ -191,9 +194,15 @@ async function focusInput(canvasElement: HTMLElement) {
 }
 
 export const Default: StoryObj<DatePickerEasyProps> = {
+  name: 'Choose a date',
   args: { label: LABEL, locale: LOCALE, defaultValue: '2026-10-12', onValueChange: fn() },
   render: (args) => <DatePicker {...args} />,
-  parameters: { docs: { source: { language: 'tsx', code: '<DatePicker label="Departure" locale="en-US" defaultValue="2026-10-12" />' } } },
+  parameters: { docs: {
+    description: { story: 'Open the calendar and choose a departure date.' },
+    source: { language: 'tsx', code: `import { DatePicker } from '@jfrader/ui';
+
+<DatePicker label="Departure" locale="en-US" defaultValue="2026-10-12" />` },
+  } },
   play: async ({ args, canvasElement, userEvent }) => {
     const input = getInput(canvasElement);
     await expect(input).toHaveValue(formatted('2026-10-12'));
@@ -212,16 +221,23 @@ export const Default: StoryObj<DatePickerEasyProps> = {
 
 /** Assemble the date field and popup for a custom layout. */
 export const Compound: Story = {
+  name: 'Compose the field and calendar',
   args: { defaultValue: '2026-10-12', onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <DatePickerExample {...args} />,
   parameters: {
     docs: {
+      description: { story: 'Place the input and popup explicitly when composing a date field.' },
       source: {
         language: 'tsx',
-        code: `<DatePicker locale="en-US" defaultValue="2026-10-12">
-  <DatePicker.Input label="Departure" />
-  <DatePicker.Popup />
-</DatePicker>`,
+        code: `import { Button, DatePicker } from '@jfrader/ui';
+
+<>
+  <DatePicker locale="en-US" defaultValue="2026-10-12">
+    <DatePicker.Input label="Departure" />
+    <DatePicker.Popup />
+  </DatePicker>
+  <Button>After</Button>
+</>`,
       },
     },
   },
@@ -316,6 +332,19 @@ export const EasyDisabled: StoryObj<DatePickerEasyProps> = {
 };
 
 export const EasyControlled: StoryObj<DatePickerEasyProps> = {
+  name: 'Control the selected date',
+  parameters: { docs: {
+    description: { story: 'Keep the date and popup visibility in React state.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { DatePicker } from '@jfrader/ui';
+
+export function DepartureDate() {
+  const [value, setValue] = useState('2026-10-12');
+  const [open, setOpen] = useState(false);
+  return <DatePicker label="Departure" locale="en-US" value={value}
+    onValueChange={setValue} open={open} onOpenChange={setOpen} />;
+}` },
+  } },
   args: { label: LABEL, locale: LOCALE, onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <EasyControlledDatePicker {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
@@ -363,6 +392,19 @@ export const OpenControlled: Story = {
 };
 
 export const MinMax: Story = {
+  name: 'Limit available dates',
+  parameters: { docs: {
+    description: { story: 'Choose within March 5–20; the supplied June date stays visible until you replace it.' },
+    source: { language: 'tsx', code: `import { Button, DatePicker } from '@jfrader/ui';
+
+<>
+  <DatePicker locale="en-US" defaultValue="2025-06-01" min="2025-03-05" max="2025-03-20">
+    <DatePicker.Input label="Departure" />
+    <DatePicker.Popup />
+  </DatePicker>
+  <Button>After</Button>
+</>` },
+  } },
   // The value lies past max: the popup opens on max's month, never beyond it.
   args: { defaultValue: '2025-06-01', min: '2025-03-05', max: '2025-03-20', onValueChange: fn() },
   render: (args) => <DatePickerExample {...args} />,
@@ -530,6 +572,19 @@ export const RejectedControlledOpen: Story = {
 };
 
 export const FormValue: Story = {
+  name: 'Submit a date',
+  parameters: { docs: {
+    description: { story: 'Submit the chosen departure as an ISO date through the named field.' },
+    source: { language: 'tsx', code: `import { Button, DatePicker } from '@jfrader/ui';
+
+<form aria-label="Trip" onSubmit={(event) => event.preventDefault()}>
+  <DatePicker name="departure" locale="en-US" defaultValue="2026-10-12">
+    <DatePicker.Input label="Departure" />
+    <DatePicker.Popup />
+  </DatePicker>
+  <Button>After</Button>
+</form>` },
+  } },
   args: { defaultValue: '2026-10-12', name: FIELD_NAME },
   render: (args) => (
     <form aria-label="Trip" onSubmit={(event) => event.preventDefault()}>
@@ -578,6 +633,19 @@ export const CustomPlaceholder: Story = {
 };
 
 export const TabNavigation: Story = {
+  name: 'Navigate with the keyboard',
+  parameters: { docs: {
+    description: { story: 'Press Down to open, use arrows to move, and Tab to leave without selecting.' },
+    source: { language: 'tsx', code: `import { Button, DatePicker } from '@jfrader/ui';
+
+<>
+  <DatePicker locale="en-US" defaultValue="2026-10-12">
+    <DatePicker.Input label="Departure" />
+    <DatePicker.Popup />
+  </DatePicker>
+  <Button>After</Button>
+</>` },
+  } },
   args: { defaultValue: '2026-10-12', onValueChange: fn() },
   render: (args) => <DatePickerExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -646,6 +714,19 @@ export const ExplicitAccessibleName: Story = {
 };
 
 export const Disabled: Story = {
+  name: 'Disabled date field',
+  parameters: { docs: {
+    description: { story: 'Keep the departure visible but unavailable and omit it from form data.' },
+    source: { language: 'tsx', code: `import { Button, DatePicker } from '@jfrader/ui';
+
+<form aria-label="Trip" onSubmit={(event) => event.preventDefault()}>
+  <DatePicker disabled name="departure" locale="en-US" defaultValue="2026-10-12">
+    <DatePicker.Input label="Departure" />
+    <DatePicker.Popup />
+  </DatePicker>
+  <Button>After</Button>
+</form>` },
+  } },
   args: { defaultValue: '2026-10-12', name: FIELD_NAME, disabled: true, onOpenChange: fn() },
   render: (args) => (
     <form aria-label="Trip" onSubmit={(event) => event.preventDefault()}>

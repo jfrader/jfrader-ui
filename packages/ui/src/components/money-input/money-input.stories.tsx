@@ -30,26 +30,28 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Enter a payment, tip or budget amount and choose its currency.' },
-      usage: `### Values
-All numeric props are integer minor units: USD 12.50 is \`1250\`, JPY 12 is \`12\`, KWD 12.345 is \`12345\`. This includes \`min\`, \`max\`, \`step\` and \`quickAdd\`. Values are limited to 12 minor-unit digits and currencies with zero to three decimal places.
+      sections: [
+        { title: 'Currency', stories: ['Default', 'CurrencyPicker', 'Controlled'] },
+        { title: 'Locale and format', stories: ['GermanLocale', 'JPYZeroDecimals', 'KWDThreeDecimals'] },
+        { title: 'Crypto and decimals', stories: ['CryptoBitcoin'] },
+        { title: 'Quick add', stories: ['QuickAddMinorUnits'] },
+        { title: 'Form reset', stories: ['FormReset'] },
+        { title: 'States', stories: ['Error', 'ReadOnly', 'Disabled'] },
+        { title: 'Constraints', stories: ['Bounds', 'MinOnBlur', 'MaxRejected'] },
+      ],
+      usage: `### When to use
+Enter a payment, tip, or budget in integer minor units, rather than a floating-point amount. Changing currency keeps the integer; it does not convert exchange rates.
 
-Set \`decimals\` to an integer from 0 to 18 for non-ISO assets. Values then use base units at a scale of 10^decimals; \`symbol\` prefixes the locale-formatted amount and defaults to the currency code. The default step is one base unit in this mode, or one major unit for ISO currencies.
-
-Changing currency preserves the integer, without conversion or FX. \`details.major\` and \`details.formatted\` are for display, not storage. Supply the same explicit locale on the server and client. Intl.supportedValuesOf('currency') is required only for ISO currencies.
+### Values and limits
+USD 12.50 is 1250, JPY 12 is 12, and KWD 12.345 is 12345. Bounds, steps, and quick additions use the same units. ISO currencies support zero to three decimal places; non-ISO assets support an explicit scale of zero to eighteen decimals. The stored integer is limited to twelve digits even at higher scales.
+Supply the same explicit locale on the server and client. ISO currency support requires Intl.supportedValuesOf('currency').
 
 ### Editing and keyboard
 The focused field uses ungrouped decimal text. Blur or Enter settles to a full currency string; below-minimum drafts show an error without clamping. Sub-minor precision and over-maximum edits are rejected. Escape discards the draft. ArrowUp/Down changes by \`step\`; Shift+Arrow or PageUp/Down changes by ten steps. Add buttons commit the draft and add once, clamped to the range. The currency picker uses Select's arrows, Home/End, typeahead, Enter/Space, Escape and Tab; focus stays on its trigger.
 
-### Forms and control
-\`name\` submits only integer minor units; empty submits an empty string. Disabled fields are omitted. Native reset restores uncontrolled amount and currency defaults without callbacks. A controlled \`null\` is empty; amount, currency and picker open are independent axes. Rejected requests never change the submitted value or committed ARIA amount. Set \`readOnly\` to lock the editor, picker and add buttons.
-
-### Labels and messages
-Supply \`label\` or an accessible name. \`hideLabel\` keeps the label available to assistive technology. \`messages\` accepts full phrase overrides for translation. \`ref\` targets the native input. \`slotProps\` styles internal elements; \`sx\` styles the root.`,
-      source: {
-        code: `<MoneyInput label="Amount" name="amount" currencies={['USD']} defaultValue={1500}
-  min={100} max={100_000} quickAdd={[500, 1000, 2000]} locale="en-US" />`,
-        language: 'tsx',
-      },
+### Forms and accessibility
+Empty fields submit an empty string; disabled fields are omitted. Native reset restores uncontrolled amount and currency defaults without callbacks. Amount, currency, and picker visibility are independent; rejected requests do not change the submitted amount.
+Give the editor a visible label or accessible name and translate full messages for your locale. Read-only fields lock the editor, currency picker, and add buttons.`,
     },
   },
 } satisfies Meta<typeof MoneyInput>;
@@ -58,13 +60,20 @@ type Story = StoryObj<typeof meta>;
 
 /** Enter bitcoin amounts stored as satoshis. */
 export const CryptoBitcoin: Story = {
-  name: 'Crypto (Bitcoin)',
+  name: 'Enter bitcoin in satoshis',
   args: { currencies: ['BTC'], currency: 'BTC', decimals: 8, symbol: '₿', defaultValue: 1, onValueChange: fn() },
   parameters: {
     docs: {
+      description: { story: 'Enter eight-decimal bitcoin amounts, store integer satoshis, and reset to one satoshi.' },
       source: {
-        code: `<MoneyInput label="Amount" name="amount" currencies={['BTC']} currency="BTC"
-  decimals={8} symbol="₿" defaultValue={1} locale="en-US" />`,
+        language: 'tsx',
+        code: `import { Button, MoneyInput } from '@jfrader/ui';
+
+<form>
+  <MoneyInput label="Amount" name="amount" currencies={['BTC']} currency="BTC"
+    decimals={8} symbol="₿" defaultValue={1} locale="en-US" />
+  <Button type="reset">Reset</Button>
+</form>`,
       },
     },
   },
@@ -151,6 +160,13 @@ export const CryptoContract: Story = {
 
 /** Enter an amount in US dollars. */
 export const Default: Story = {
+  name: 'Enter a dollar amount',
+  parameters: { docs: {
+    description: { story: 'Edit $12.50 as decimal text and keep the stored amount in cents.' },
+    source: { language: 'tsx', code: `import { MoneyInput } from '@jfrader/ui';
+
+<MoneyInput label="Amount" currencies={['USD']} defaultValue={1250} locale="en-US" />` },
+  } },
   play: async ({ canvasElement }) => {
     const input = within(canvasElement).getByRole('spinbutton');
     await expect(input).toHaveValue('$12.50');
@@ -203,11 +219,28 @@ export const Required: Story = {
 /** Add payment instructions below the editor. */
 export const Description: Story = { args: { description: 'Enter the invoice total.' } };
 /** Display a form-owned validation error. */
-export const Error: Story = { args: { error: 'The amount exceeds your remaining budget.' } };
+export const Error: Story = {
+  name: 'Show an amount error',
+  args: { error: 'The amount exceeds your remaining budget.' },
+  parameters: { docs: {
+    description: { story: 'Show a form-owned budget error below the amount.' },
+    source: { language: 'tsx', code: `import { MoneyInput } from '@jfrader/ui';
+
+<MoneyInput label="Amount" currencies={['USD']} defaultValue={1250} locale="en-US"
+  error="The amount exceeds your remaining budget." />` },
+  } },
+};
 /** Store US dollars as cents. */
 export const USD: Story = { args: { currencies: ['USD'] } };
 /** Store Japanese yen without fractional units. */
 export const JPYZeroDecimals: Story = {
+  name: 'Enter whole yen',
+  parameters: { docs: {
+    description: { story: 'Store and display Japanese yen without fractional units.' },
+    source: { language: 'tsx', code: `import { MoneyInput } from '@jfrader/ui';
+
+<MoneyInput label="Amount" currencies={['JPY']} defaultValue={12} locale="en-US" />` },
+  } },
   args: { currencies: ['JPY'], defaultValue: 12 },
   play: async ({ canvasElement }) => {
     const input = within(canvasElement).getByRole('spinbutton');
@@ -220,6 +253,13 @@ export const JPYZeroDecimals: Story = {
 };
 /** Store Kuwaiti dinars with three fractional digits. */
 export const KWDThreeDecimals: Story = {
+  name: 'Enter three-decimal dinars',
+  parameters: { docs: {
+    description: { story: 'Display 12345 minor units as 12.345 Kuwaiti dinars.' },
+    source: { language: 'tsx', code: `import { MoneyInput } from '@jfrader/ui';
+
+<MoneyInput label="Amount" currencies={['KWD']} defaultValue={12345} locale="en-US" />` },
+  } },
   args: { currencies: ['KWD'], defaultValue: 12345 },
   play: async ({ canvasElement }) => {
     const input = within(canvasElement).getByRole('spinbutton');
@@ -232,6 +272,13 @@ export const KWDThreeDecimals: Story = {
 };
 /** Choose a denomination without converting the stored integer. */
 export const CurrencyPicker: Story = {
+  name: 'Choose a currency',
+  parameters: { docs: {
+    description: { story: 'Switch between dollars, yen, and dinars without converting the stored integer.' },
+    source: { language: 'tsx', code: `import { MoneyInput } from '@jfrader/ui';
+
+<MoneyInput label="Amount" currencies={['USD', 'JPY', 'KWD']} defaultValue={1250} locale="en-US" />` },
+  } },
   args: { currencies: ['USD', 'JPY', 'KWD'] },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -252,6 +299,14 @@ export const LockedCurrency: Story = {
 };
 /** Add 500 or 1000 cents to the current amount. */
 export const QuickAddMinorUnits: Story = {
+  name: 'Add fixed amounts',
+  parameters: { docs: {
+    description: { story: 'Add $5 or $10 to the current amount with one press.' },
+    source: { language: 'tsx', code: `import { MoneyInput } from '@jfrader/ui';
+
+<MoneyInput label="Amount" currencies={['USD']} defaultValue={0}
+  quickAdd={[500, 1000]} locale="en-US" />` },
+  } },
   args: { quickAdd: [500, 1000], defaultValue: 0 },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -261,6 +316,13 @@ export const QuickAddMinorUnits: Story = {
 };
 /** Below-minimum drafts remain visible with an error on blur. */
 export const MinOnBlur: Story = {
+  name: 'Validate a minimum amount',
+  parameters: { docs: {
+    description: { story: 'Enter less than $10 and leave the field to see the minimum-amount error.' },
+    source: { language: 'tsx', code: `import { MoneyInput } from '@jfrader/ui';
+
+<MoneyInput label="Amount" currencies={['USD']} defaultValue={1250} min={1000} locale="en-US" />` },
+  } },
   args: { min: 1000 },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -275,6 +337,13 @@ export const MinOnBlur: Story = {
 };
 /** Over-maximum edits leave the previous text and committed amount intact. */
 export const MaxRejected: Story = {
+  name: 'Reject amounts above a maximum',
+  parameters: { docs: {
+    description: { story: 'Try an amount above $20; the previous text remains and an error appears.' },
+    source: { language: 'tsx', code: `import { MoneyInput } from '@jfrader/ui';
+
+<MoneyInput label="Amount" currencies={['USD']} defaultValue={1250} max={2000} locale="en-US" />` },
+  } },
   args: { max: 2000 },
   play: async ({ canvasElement }) => {
     const input = within(canvasElement).getByRole('spinbutton');
@@ -317,6 +386,19 @@ function ControlledExample(args: MoneyInputProps) {
 }
 /** Let the parent own amount and currency independently. */
 export const Controlled: Story = {
+  name: 'Control amount and currency',
+  parameters: { docs: {
+    description: { story: 'Keep integer minor units and the selected currency in separate React state.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { MoneyInput } from '@jfrader/ui';
+
+export function PaymentAmount() {
+  const [value, setValue] = useState<number | null>(1250);
+  const [currency, setCurrency] = useState('USD');
+  return <MoneyInput label="Amount" currencies={['USD', 'JPY']} locale="en-US"
+    value={value} onValueChange={setValue} currency={currency} onCurrencyChange={setCurrency} />;
+}` },
+  } },
   args: { currencies: ['USD', 'JPY'] },
   render: (args) => <ControlledExample {...args} />,
 };
@@ -386,6 +468,17 @@ export const ExternalPairUpdate: Story = {
 };
 /** Native reset restores both uncontrolled defaults without callbacks. */
 export const FormReset: Story = {
+  name: 'Submit and reset an amount',
+  parameters: { docs: {
+    description: { story: 'Submit integer minor units and reset both amount and currency to their defaults.' },
+    source: { language: 'tsx', code: `import { Button, MoneyInput } from '@jfrader/ui';
+
+<form>
+  <MoneyInput label="Amount" name="amount" currencies={['USD', 'JPY']}
+    defaultValue={1250} locale="en-US" />
+  <Button type="reset">Reset</Button>
+</form>` },
+  } },
   args: { currencies: ['USD', 'JPY'], onValueChange: fn(), onCurrencyChange: fn() },
   render: (args) => (
     <Form>
@@ -426,6 +519,13 @@ export const ExternalAria: Story = {
 export const FalsyNodes: Story = { args: { label: 0, description: 0, error: 0 } };
 /** Use decimal commas and euro placement from German Intl formatting. */
 export const GermanLocale: Story = {
+  name: 'Use decimal commas',
+  parameters: { docs: {
+    description: { story: 'Enter euros with German decimal separators and currency placement.' },
+    source: { language: 'tsx', code: `import { MoneyInput } from '@jfrader/ui';
+
+<MoneyInput label="Amount" currencies={['EUR']} defaultValue={1250} locale="de-DE" />` },
+  } },
   args: { currencies: ['EUR'], locale: 'de-DE' },
   play: async ({ canvasElement }) => {
     const input = within(canvasElement).getByRole('spinbutton');
@@ -495,6 +595,14 @@ export const ReducedMotion: Story = {
 };
 /** Lock all amount-changing actions while retaining readable values. */
 export const ReadOnly: Story = {
+  name: 'Read-only amount',
+  parameters: { docs: {
+    description: { story: 'Keep the amount readable while locking editing, currency changes, and quick additions.' },
+    source: { language: 'tsx', code: `import { MoneyInput } from '@jfrader/ui';
+
+<MoneyInput label="Amount" currencies={['USD', 'JPY']} defaultValue={1250}
+  locale="en-US" readOnly quickAdd={[500]} />` },
+  } },
   args: { readOnly: true, currencies: ['USD', 'JPY'], quickAdd: [500] },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -505,6 +613,16 @@ export const ReadOnly: Story = {
 };
 /** Omit disabled amounts from form submission. */
 export const Disabled: Story = {
+  name: 'Disabled amount',
+  parameters: { docs: {
+    description: { story: 'Disable the amount and omit its named value from form submission.' },
+    source: { language: 'tsx', code: `import { MoneyInput } from '@jfrader/ui';
+
+<form>
+  <MoneyInput label="Amount" name="amount" currencies={['USD', 'JPY']}
+    defaultValue={1250} locale="en-US" disabled quickAdd={[500]} />
+</form>` },
+  } },
   args: { disabled: true, quickAdd: [500], currencies: ['USD', 'JPY'] },
   render: (args) => (
     <Form>
@@ -555,6 +673,14 @@ export const Keyboard: Story = {
 };
 /** Clamp button actions to inclusive bounds without repeated amount callbacks. */
 export const Bounds: Story = {
+  name: 'Clamp button actions to a range',
+  parameters: { docs: {
+    description: { story: 'Keep arrow and quick-add actions between $1 and $2, even when adding $5.' },
+    source: { language: 'tsx', code: `import { MoneyInput } from '@jfrader/ui';
+
+<MoneyInput label="Amount" currencies={['USD']} defaultValue={100} locale="en-US"
+  min={100} max={200} quickAdd={[500]} />` },
+  } },
   args: { defaultValue: 100, min: 100, max: 200, quickAdd: [500], onValueChange: fn() },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
