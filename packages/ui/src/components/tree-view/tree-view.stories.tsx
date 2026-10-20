@@ -253,6 +253,7 @@ const nodes: TreeNode[] = [
   },
 };
 export const LazyLoading: Story = {
+  tags: ['!autodocs'],
   args: {
     nodes: lazyNode,
     defaultOpen: ['remote'],

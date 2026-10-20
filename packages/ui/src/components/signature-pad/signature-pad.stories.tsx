@@ -1059,6 +1059,7 @@ const malformed: SignatureStroke[] = [
 ];
 const malformedApi = createRef<SignaturePadHandle>();
 export const MalformedValue: Story = {
+  tags: ['!autodocs'],
   args: { value: malformed, apiRef: malformedApi, download: true },
   beforeEach: () => {
     const warn = spyOn(console, 'warn').mockImplementation(() => {});
@@ -1091,6 +1092,7 @@ export const MalformedValue: Story = {
   },
 };
 export const MalformedPointBudget: Story = {
+  tags: ['!autodocs'],
   args: {
     value: [
       {
@@ -1214,6 +1216,7 @@ export const ExternalReplacement: Story = {
 // The hidden-canvas and customization stories exercise the documented slot `css` API.
 const hiddenApi = createRef<SignaturePadHandle>();
 export const HiddenCanvas: Story = {
+  tags: ['!autodocs'],
   args: {
     defaultValue: seeded,
     apiRef: hiddenApi,

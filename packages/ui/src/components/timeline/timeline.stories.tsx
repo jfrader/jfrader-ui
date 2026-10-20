@@ -875,6 +875,7 @@ const INVALID_EVENTS: TimelineEvent[] = [
 ];
 
 export const InvalidDates: Story = {
+  tags: ['!autodocs'],
   args: { events: INVALID_EVENTS },
   beforeEach: () => {
     const toISOString = spyOn(Date.prototype, 'toISOString');
@@ -893,6 +894,7 @@ export const InvalidDates: Story = {
 };
 
 export const InvalidInputs: Story = {
+  tags: ['!autodocs'],
   args: {
     now: Number.NaN,
     timeZone: 'Mars/Olympus_Mons',
