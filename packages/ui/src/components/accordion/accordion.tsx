@@ -41,19 +41,27 @@ interface AccordionBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'onChang
 }
 
 export interface AccordionSingleProps extends AccordionBaseProps {
+  /** Compose accordion items with their triggers and panels. */
   children?: ReactNode;
   type?: 'single';
+  /** Control the open item by its `value`; an empty string closes all items. */
   value?: string;
+  /** Set the initially open item when uncontrolled. Defaults to all closed. */
   defaultValue?: string;
+  /** Receive the requested open item value, or an empty string when all close. */
   onValueChange?: (value: string) => void;
 }
 
 export interface AccordionMultipleProps extends AccordionBaseProps {
+  /** Compose accordion items with their triggers and panels. */
   children?: ReactNode;
   /** Allow several panels open at once. */
   type: 'multiple';
+  /** Control the open items by their `value` entries. */
   value?: string[];
+  /** Set the initially open items when uncontrolled. Defaults to all closed. */
   defaultValue?: string[];
+  /** Receive the requested array of open item values. */
   onValueChange?: (value: string[]) => void;
 }
 
@@ -91,6 +99,7 @@ export interface AccordionSlotProps {
 
 type AccordionStateProps = Omit<AccordionSingleProps, 'children'> | Omit<AccordionMultipleProps, 'children'>;
 export type AccordionCompoundProps = AccordionStateProps & {
+  /** Compose accordion items with their triggers and panels. */
   children?: ReactNode;
   items?: never;
   component?: never;
@@ -98,16 +107,22 @@ export type AccordionCompoundProps = AccordionStateProps & {
   slotProps?: never;
 };
 export type AccordionEasyProps = AccordionStateProps & {
+  /** Generate sections in this order, using each section's value, label and panel. */
   items: readonly AccordionSection[];
   children?: never;
+  /** Replace the outer wrapper, taking precedence over `slots.root`. */
   component?: AccordionSlots['root'];
+  /** Replace generated wrapper, item, trigger or panel elements. */
   slots?: AccordionSlots;
+  /** Pass props and `sx` to generated accordion parts. */
   slotProps?: AccordionSlotProps;
 };
 export type AccordionProps = AccordionCompoundProps | AccordionEasyProps;
 
 export interface AccordionItemProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /** Identify this item in the root's open values. Must be unique within the accordion. */
   value: string;
+  /** Prevent toggling this item and skip its trigger during keyboard navigation. */
   disabled?: boolean;
 }
 

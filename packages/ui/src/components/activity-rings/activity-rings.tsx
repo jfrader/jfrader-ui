@@ -114,10 +114,12 @@ type LegendMode =
   | {
       /** Legend rows become toggle buttons that isolate one ring. */
       interactiveLegend: true;
+      /** Replace the ring graphic, legend, day picker or summary parts. */
       slots?: ActivityRingsSlots & {
         /** Toggle button isolating an individual metric in the legend. */
         metric?: ComponentType<ComponentPropsWithoutRef<'button'>>;
       };
+      /** Pass props and `sx` to the graphic, legend, day picker and summary. */
       slotProps?: ActivityRingsSlotProps & {
         /** Toggle button isolating an individual metric in the legend. */
         metric?: ActivityRingsPartProps<'button'>;
@@ -125,10 +127,12 @@ type LegendMode =
     }
   | {
       interactiveLegend?: false;
+      /** Replace the ring graphic, legend, day picker or summary parts. */
       slots?: ActivityRingsSlots & {
         /** Row element presenting an individual metric in the legend. */
         metric?: ComponentType<ComponentPropsWithoutRef<'div'>>;
       };
+      /** Pass props and `sx` to the graphic, legend, day picker and summary. */
       slotProps?: ActivityRingsSlotProps & {
         /** Row element presenting an individual metric in the legend. */
         metric?: ActivityRingsPartProps<'div'>;
@@ -136,10 +140,12 @@ type LegendMode =
     }
   | {
       interactiveLegend?: boolean;
+      /** Replace the ring graphic, legend, day picker or summary parts. */
       slots?: ActivityRingsSlots & {
         /** Legend row or toggle button presenting an individual metric. */
         metric?: ComponentType<ComponentPropsWithoutRef<'button'>> | ComponentType<ComponentPropsWithoutRef<'div'>>;
       };
+      /** Pass props and `sx` to the graphic, legend, day picker and summary. */
       slotProps?: ActivityRingsSlotProps & {
         /** Legend row or toggle button presenting an individual metric. */
         metric?: ActivityRingsMetricProps;
@@ -173,13 +179,19 @@ export type ActivityRingsProps = Omit<
     value?: string | null;
     /** Seeds the selected day once; defaults to the last day. */
     defaultValue?: string | null;
+    /** Receive the requested day id when the day selection changes. */
     onValueChange?: (dayId: string) => void;
+    /** Control the isolated metric by id. `null` shows all metrics. */
     focusedMetric?: string | null;
+    /** Set the initially isolated metric when uncontrolled. Defaults to `null`. */
     defaultFocusedMetric?: string | null;
+    /** Receive the requested isolated metric id, or `null` to show all metrics. */
     onFocusedMetricChange?: (metricId: string | null) => void;
     /** Fires once when a same-day value observed below its goal reaches it. */
     onRingClose?: (metricId: string, dayId: string | null) => void;
+    /** Set the ring graphic and summary text size. Defaults to `md`. */
     size?: ActivityRingsSize;
+    /** Format amounts and day labels with this locale. Defaults to the runtime locale. */
     locale?: string;
     /** English defaults. */
     labels?: Partial<ActivityRingsLabels>;

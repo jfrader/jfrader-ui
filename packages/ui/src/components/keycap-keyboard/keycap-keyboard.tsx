@@ -31,15 +31,25 @@ export interface KeycapKeyboardSlots {
 
 export interface KeycapKeyboardProps extends Omit<ComponentPropsWithRef<'div'>,
   'children' | 'defaultValue' | 'onChange' | 'tabIndex' | 'role' | 'onKeyDown' | 'onKeyUp'>, SxProps {
+  /** Choose the built-in key arrangement. Defaults to `compact`; ignored when `rows` is supplied. */
   layout?: 'compact' | 'letters';
+  /** Replace the built-in layout with custom rows of keycaps. */
   rows?: readonly (readonly KeycapSpec[])[];
+  /** Control the pressed keys using keyboard event `code` values. */
   value?: readonly string[];
+  /** Set the initially pressed key codes when uncontrolled. Defaults to none. */
   defaultValue?: readonly string[];
+  /** Receive requested pressed key codes, deduplicated and sorted. */
   onValueChange?: (codes: readonly string[]) => void;
+  /** Observe key events on this input only. Password inputs are ignored; defaults to no target. */
   eventTarget?: HTMLInputElement | HTMLTextAreaElement | null;
+  /** Set the pressed-key colour treatment. Defaults to `accent`. */
   tone?: 'neutral' | 'accent';
+  /** Stop observing key events and clear uncontrolled pressed keys. Defaults to `false`. */
   paused?: boolean;
+  /** Replace row, keycap or legend elements. */
   slots?: KeycapKeyboardSlots;
+  /** Pass props and `sx` to rows, keycaps and legends. */
   slotProps?: {
     /** Horizontal row container grouping keycaps. */
     row?: KeycapKeyboardSlotProps;

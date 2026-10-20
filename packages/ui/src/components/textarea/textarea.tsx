@@ -40,19 +40,27 @@ export type TextareaSlots = FieldSlots<TextareaAnatomy>;
 export type TextareaSlotProps = FieldParts<TextareaAnatomy>;
 
 export interface TextareaProps extends ComponentPropsWithRef<'textarea'>, SxProps {
+  /** Name the textarea with a linked label. */
   label?: ReactNode;
   /** Label placement. `hidden` keeps the accessible name without taking layout space. */
   labelPlacement?: FieldLabelPlacement;
+  /** Show supporting content linked to the textarea's accessible description. */
   description?: ReactNode;
+  /** Show an error linked to the textarea and mark it invalid. */
   error?: ReactNode;
+  /** Set the text size, padding and minimum height. Defaults to `md`. */
   size?: TextareaSize;
+  /** Allow manual vertical resizing or disable it. Defaults to `vertical`. */
   resize?: TextareaResize;
+  /** Grow with content in browsers supporting `field-sizing: content`, which ignores `rows`. Defaults to `false`. */
   autoResize?: boolean;
+  /** Receive the current text after the native `onChange` callback. */
   onValueChange?: (value: string) => void;
   /** Replace the wrapper div; `slots.root` takes precedence. */
   component?: TextareaSlots['root'];
   /** Replace generated parts with components that forward props and ref. */
   slots?: TextareaSlots;
+  /** Pass props and `sx` to the wrapper, control, label and supporting text. */
   slotProps?: TextareaSlotProps;
 }
 

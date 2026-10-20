@@ -23,18 +23,25 @@ export interface TextShimmerSlots {
   text?: ComponentType<ComponentPropsWithRef<'span'>>;
 }
 export interface TextShimmerProps extends Omit<ComponentPropsWithRef<'span'>, 'children'>, SxProps {
+  /** Show the text the shimmer sweeps across. */
   children: string;
   /** Task activity; animation ending does not mark the task complete. */
   active?: boolean;
+  /** Set the text colour treatment. Defaults to `neutral`. */
   tone?: TextShimmerTone;
   /** Full sweep cycle in milliseconds, clamped to 600–10000. */
   durationMs?: number;
   /** Animation-time budget, default 4000ms; may cut off a partial sweep. Nonpositive values disable the budget and require a pause control. */
   maxDurationMs?: number;
+  /** Pause the shimmer without completing the task. Defaults to `false`. */
   paused?: boolean;
+  /** Add root identity tokens alongside `text-shimmer`. */
   'data-ui'?: string;
+  /** Replace the outer span; `slots.root` takes precedence. */
   component?: TextShimmerSlots['root'];
+  /** Replace the wrapper or text element. */
   slots?: TextShimmerSlots;
+  /** Pass props and `sx` to the wrapper and text. */
   slotProps?: { root?: TextShimmerPartProps; text?: TextShimmerPartProps };
 }
 
