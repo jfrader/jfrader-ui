@@ -1,14 +1,14 @@
 import { createRef, type ComponentPropsWithRef, type MouseEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn } from 'storybook/test';
-import { SectionHeading } from './index';
+import { ArticleSection } from './index';
 import { expectArticleHydration } from '../../testing/article-assertions';
 import type { PresentationHeadingProps } from '../../utils/presentation-slot';
 import { createRefCleanupTracker } from '../../testing/interior-slot-assertions';
 
 const meta = {
-  title: 'Media/SectionHeading', component: SectionHeading, tags: ['autodocs'], args: { title: 'Northline' },
-  parameters: { docs: { description: { component: 'Introduce a section with a title, optional kicker and supporting content.' }, source: { code: '<SectionHeading title="Northline" kicker="Morning edition" href="#northline" accessory="Station record" />' }, usage: `### Heading
+  title: 'Media/ArticleSection', component: ArticleSection.Heading, tags: ['!autodocs'], args: { title: 'Northline' },
+  parameters: { docs: { description: { component: 'Introduce a section with a title, optional kicker and supporting content.' }, source: { code: '<ArticleSection.Heading title="Northline" kicker="Morning edition" href="#northline" accessory="Station record" />' }, usage: `### Heading
 Choose level 1–6 to match the page outline; level 2 is the default. Use ruled for a bottom rule or plain for text alone. Kicker and accessory are optional. Accessory adds no heading, navigation or section semantics.
 
 ### Links
@@ -16,39 +16,39 @@ Supply href or renderLink for the title link. A renderLink adapter forwards the 
 
 ### Customization
 Use sx on the header, component or slots.root for root replacement, and matching slots/slotProps for root, kicker, heading, link and accessory. slots.root wins over component. Forward native props, ref, className and data-ui. Inherited --article-font-heading, --article-font-label and --article-rule-color use token fallbacks.` } },
-} satisfies Meta<typeof SectionHeading>;
+} satisfies Meta<typeof ArticleSection.Heading>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const Ruled: Story = { play: async ({ canvasElement }) => {
+export const HeadingRuled: Story = { play: async ({ canvasElement }) => {
   await expect(canvasElement.querySelector('header > h2')).toHaveTextContent('Northline');
-  await expect(canvasElement.querySelector('a, p, [data-ui~="section-heading-accessory"]')).toBeNull();
+  await expect(canvasElement.querySelector('a, p, [data-ui~="article-section-heading-accessory"]')).toBeNull();
   const root = createRefCleanupTracker<HTMLElement>(); const link = createRefCleanupTracker<HTMLAnchorElement>();
-  await expectArticleHydration(<SectionHeading title="Northline" href="#northline" ref={root.ref} slotProps={{ link: { ref: link.ref } }} />, canvasElement);
+  await expectArticleHydration(<ArticleSection.Heading title="Northline" href="#northline" ref={root.ref} slotProps={{ link: { ref: link.ref } }} />, canvasElement);
   for (const tracker of [root, link]) { await expect(tracker.getAttachCount()).toBeGreaterThan(0); await expect(tracker.getCleanupCount()).toBe(tracker.getAttachCount()); }
 } };
-export const Plain: Story = { args: { variant: 'plain', level: 1 } };
-export const Kicker: Story = { args: { kicker: 'Morning edition' } };
-export const Linked: Story = { args: { href: '#northline' } };
-export const Accessory: Story = { args: { accessory: 'Station record' } };
-export const Complete: Story = { args: { kicker: 'Morning edition', href: '#northline', accessory: 'Station record' } };
-export const Zero: Story = { args: { title: 0, kicker: 0, accessory: 0 } };
-export const EmptyOptionals: Story = { args: { kicker: null, accessory: false } };
-export const EmptyTitle: Story = { args: { title: '' }, play: async ({ canvasElement }) => { await expect(canvasElement.querySelector('header, h2')).toBeNull(); } };
-export const LongText: Story = { args: { title: 'Northline'.repeat(60), kicker: 'Morning edition', href: '#northline', accessory: 'Station record' } };
-export const RTL: Story = { args: { dir: 'rtl', kicker: 'Morning edition', href: '#northline', accessory: 'Station record' } };
-export const Light: Story = { globals: { theme: 'light' }, args: { kicker: 'Morning edition', href: '#northline' } };
-export const HeadingLevels: Story = { render: () => <article><SectionHeading title="Edition" level={1} /><SectionHeading title="Northline" level={2} /><SectionHeading title="Station" level={3} /><SectionHeading title="Platform" level={4} /><SectionHeading title="Inspection" level={5} /><SectionHeading title="Record" level={6} /></article>, play: async ({ canvasElement }) => { for (const level of [1, 2, 3, 4, 5, 6]) await expect(canvasElement.querySelector(`h${level}`)).not.toBeNull(); } };
+export const HeadingPlain: Story = { args: { variant: 'plain', level: 1 } };
+export const HeadingKicker: Story = { args: { kicker: 'Morning edition' } };
+export const HeadingLinked: Story = { args: { href: '#northline' } };
+export const HeadingAccessory: Story = { args: { accessory: 'Station record' } };
+export const HeadingComplete: Story = { args: { kicker: 'Morning edition', href: '#northline', accessory: 'Station record' } };
+export const HeadingZero: Story = { args: { title: 0, kicker: 0, accessory: 0 } };
+export const HeadingEmptyOptionals: Story = { args: { kicker: null, accessory: false } };
+export const HeadingEmptyTitle: Story = { args: { title: '' }, play: async ({ canvasElement }) => { await expect(canvasElement.querySelector('header, h2')).toBeNull(); } };
+export const HeadingLongText: Story = { args: { title: 'Northline'.repeat(60), kicker: 'Morning edition', href: '#northline', accessory: 'Station record' } };
+export const HeadingRTL: Story = { args: { dir: 'rtl', kicker: 'Morning edition', href: '#northline', accessory: 'Station record' } };
+export const HeadingLight: Story = { globals: { theme: 'light' }, args: { kicker: 'Morning edition', href: '#northline' } };
+export const HeadingLevels: Story = { render: () => <article><ArticleSection.Heading title="Edition" level={1} /><ArticleSection.Heading title="Northline" level={2} /><ArticleSection.Heading title="Station" level={3} /><ArticleSection.Heading title="Platform" level={4} /><ArticleSection.Heading title="Inspection" level={5} /><ArticleSection.Heading title="Record" level={6} /></article>, play: async ({ canvasElement }) => { for (const level of [1, 2, 3, 4, 5, 6]) await expect(canvasElement.querySelector(`h${level}`)).not.toBeNull(); } };
 const clicked = fn((event: MouseEvent<HTMLAnchorElement>) => event.preventDefault());
 function renderLink(props: ComponentPropsWithRef<'a'>) { return <a {...props} data-adapter="router" />; }
-export const LinkAdapter: Story = {
+export const HeadingLinkAdapter: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
-import { SectionHeading } from '@jfrader/ui';
+import { ArticleSection } from '@jfrader/ui';
 
 function renderLink(props: ComponentPropsWithRef<'a'>) {
   return <a {...props} data-adapter="router" />;
 }
 
-<SectionHeading
+<ArticleSection.Heading
   title="Northline"
   href="#northline"
   renderLink={renderLink}
@@ -66,9 +66,9 @@ function H({ level = 2, ...props }: PresentationHeadingProps) { const Element = 
 function A(props: ComponentPropsWithRef<'a'>) { return <a {...props} data-replacement="link" />; }
 function Div(props: ComponentPropsWithRef<'div'>) { return <div {...props} data-replacement="accessory" />; }
 const rootRef = createRef<HTMLElement>(); const headingRef = createRef<HTMLHeadingElement>(); const linkRef = createRef<HTMLAnchorElement>();
-export const ReplacementSlots: Story = {
+export const HeadingReplacementSlots: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import { useRef, type ComponentPropsWithRef } from 'react';
-import { SectionHeading } from '@jfrader/ui';
+import { ArticleSection } from '@jfrader/ui';
 
 function Header(props: ComponentPropsWithRef<'header'>) {
   return <header {...props} data-replacement="root" />;
@@ -92,7 +92,7 @@ export function StationHeading() {
   const headingRef = useRef<HTMLHeadingElement>(null);
   const linkRef = useRef<HTMLAnchorElement>(null);
   return (
-    <SectionHeading
+    <ArticleSection.Heading
       ref={rootRef}
       title="Northline"
       kicker="Morning edition"
@@ -102,15 +102,15 @@ export function StationHeading() {
       className="consumer"
       id="consumer-heading"
       slotProps={{
-        root: { id: 'slot-heading', className: 'slot', 'data-ui': 'custom section-heading' },
+        root: { id: 'slot-heading', className: 'slot', 'data-ui': 'custom article-section-heading' },
         heading: { ref: headingRef },
         link: { ref: linkRef, target: '_blank', rel: 'author' },
       }}
     />
   );
 }` } } },
-  args: { ref: rootRef, kicker: 'Morning edition', accessory: 'Station record', href: '#northline', slots: { root: Header, kicker: P, heading: H, link: A, accessory: Div }, className: 'consumer', id: 'consumer-heading', slotProps: { root: { id: 'slot-heading', className: 'slot', 'data-ui': 'custom section-heading' }, heading: { ref: headingRef }, link: { ref: linkRef, target: '_blank', rel: 'author' } } }, play: async ({ canvasElement }) => {
-  await expect(rootRef.current).toHaveAttribute('id', 'slot-heading'); await expect(rootRef.current).toHaveClass('slot', 'consumer'); await expect(rootRef.current).toHaveAttribute('data-ui', 'section-heading custom');
+  args: { ref: rootRef, kicker: 'Morning edition', accessory: 'Station record', href: '#northline', slots: { root: Header, kicker: P, heading: H, link: A, accessory: Div }, className: 'consumer', id: 'consumer-heading', slotProps: { root: { id: 'slot-heading', className: 'slot', 'data-ui': 'custom article-section-heading' }, heading: { ref: headingRef }, link: { ref: linkRef, target: '_blank', rel: 'author' } } }, play: async ({ canvasElement }) => {
+  await expect(rootRef.current).toHaveAttribute('id', 'slot-heading'); await expect(rootRef.current).toHaveClass('slot', 'consumer'); await expect(rootRef.current).toHaveAttribute('data-ui', 'article-section-heading custom');
   await expect(headingRef.current?.tagName).toBe('H2'); await expect(linkRef.current).toHaveAttribute('rel', 'author noopener noreferrer');
   await expect(canvasElement.querySelectorAll('[data-replacement]')).toHaveLength(5);
 } };

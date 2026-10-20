@@ -43,7 +43,7 @@ export function ArticleSources({ title, items, level = 2, variant = 'inline', co
   const titleId = slotProps?.heading?.id ?? generatedId;
   const externalName = slotProps?.root?.['aria-label'] ?? props['aria-label'];
   const externalRelationship = [props['aria-labelledby'], slotProps?.root?.['aria-labelledby']].filter(Boolean).join(' ');
-  if (!hasTitle && !externalName?.trim() && !externalRelationship.trim()) throw new Error('ArticleSources requires a title or external accessible name.');
+  if (!hasTitle && !externalName?.trim() && !externalRelationship.trim()) throw new Error('Article.Sources requires a title or external accessible name.');
   return <PresentationSlot {...props} element="section" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-sources" data-variant={variant} aria-labelledby={[hasTitle && titleId, props['aria-labelledby']].filter(Boolean).join(' ') || undefined} styles={rootStyle}>
     {hasTitle && <PresentationSlot element={`h${level}`} component={slots?.heading} slotProps={slotProps?.heading} marker="article-sources-heading" id={titleId} styles={articleLabelStyle} {...(slots?.heading ? { level } : {})}>{title}</PresentationSlot>}
     <PresentationSlot element="ul" component={slots?.list} slotProps={slotProps?.list} marker="article-sources-list" styles={[listStyle, variants[variant]]}>
@@ -53,4 +53,4 @@ export function ArticleSources({ title, items, level = 2, variant = 'inline', co
     </PresentationSlot>
   </PresentationSlot>;
 }
-ArticleSources.displayName = 'ArticleSources';
+ArticleSources.displayName = 'Article.Sources';

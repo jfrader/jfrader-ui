@@ -22,13 +22,9 @@
     "dist"
   ],
   "exports": {
-    "./article-card": { "types": "./src/components/article-card/index.ts", "import": "./src/components/article-card/index.ts" },
-    "./article-body": { "types": "./src/components/article-body/index.ts", "import": "./src/components/article-body/index.ts" },
-    "./article-sources": { "types": "./src/components/article-sources/index.ts", "import": "./src/components/article-sources/index.ts" },
-    "./section-heading": { "types": "./src/components/section-heading/index.ts", "import": "./src/components/section-heading/index.ts" },
+    "./article": { "types": "./src/components/article/index.ts", "import": "./src/components/article/index.ts" },
+    "./article-section": { "types": "./src/components/article-section/index.ts", "import": "./src/components/article-section/index.ts" },
     "./article-list": { "types": "./src/components/article-list/index.ts", "import": "./src/components/article-list/index.ts" },
-    "./article-kicker": { "types": "./src/components/article-kicker/index.ts", "import": "./src/components/article-kicker/index.ts" },
-    "./article-meta": { "types": "./src/components/article-meta/index.ts", "import": "./src/components/article-meta/index.ts" },
     "./person-avatar": { "types": "./src/components/person-avatar/index.ts", "import": "./src/components/person-avatar/index.ts" },
     "./person-avatar/appearance": { "types": "./src/components/person-avatar/appearance.ts", "import": "./src/components/person-avatar/appearance.ts" },
     "./person-avatar/kit": { "types": "./src/components/person-avatar/kit.ts", "import": "./src/components/person-avatar/kit.ts" },

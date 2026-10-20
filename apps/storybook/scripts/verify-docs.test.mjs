@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { loadCsf } from 'storybook/internal/csf-tools';
 import { checkComponentDocs, checkIntroduction, checkSnippets, checkGameStories } from './verify-docs.mjs';
 
 const gameStory = (meta = '', story = '') => `
@@ -140,4 +141,17 @@ test('checks every public component and reports missing stories', (t) => {
   assert.deepEqual(checkComponentDocs(root), { checked: 2, errors: [] });
   writeFileSync(path.join(root, 'missing/missing.stories.tsx'), story('undefined'));
   assert.match(checkComponentDocs(root).errors[0], /missing\/missing.stories.tsx: Add a string literal/);
+});
+
+test('Article and ArticleSection each publish one documentation page', () => {
+  for (const family of ['article', 'article-section']) {
+    const directory = path.resolve(import.meta.dirname, '../../../packages/ui/src/components', family);
+    const published = readdirSync(directory).filter((name) => {
+      if (!name.endsWith('.stories.tsx')) return false;
+      const file = path.join(directory, name);
+      const { meta } = loadCsf(readFileSync(file, 'utf8'), { fileName: file, makeTitle: (title) => title }).parse();
+      return !meta.tags?.includes('!autodocs');
+    });
+    assert.deepEqual(published, [`${family}.stories.tsx`], `${family}: auxiliary story files would create duplicate docs navigation`);
+  }
 });
