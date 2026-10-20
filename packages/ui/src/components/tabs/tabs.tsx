@@ -49,10 +49,15 @@ export type TabsIndicator = 'line' | 'pill' | 'lens';
 export type TabsLabels = 'always' | 'active' | 'none';
 
 interface TabsStateProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue' | 'children'>, SxProps {
+  /** Control the selected tab and matching panel. */
   value?: string;
+  /** Set the initial uncontrolled selection. Omit to start without a selected panel. */
   defaultValue?: string;
+  /** Receive the requested selected tab value. */
   onValueChange?: (value: string) => void;
+  /** Set the tab layout and arrow-key axis. Defaults to `horizontal`. */
   orientation?: TabsOrientation;
+  /** Select on focus with `auto`, or on click, Enter or Space with `manual`. Defaults to `auto`. */
   activation?: TabsActivation;
   /** Material of the tab list. Defaults to `line`. */
   variant?: TabsVariant;
@@ -62,7 +67,9 @@ interface TabsStateProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' |
   labels?: TabsLabels;
   /** Hide labels without changing selection. Pair with `onCompactChange` for controlled use. */
   compact?: boolean;
+  /** Set the initial uncontrolled compact mode. Defaults to `false`. */
   defaultCompact?: boolean;
+  /** Receive compact-mode requests from scrolling or tab focus. */
   onCompactChange?: (compact: boolean) => void;
   /** Locale used to display numeric badges. */
   locale?: Intl.LocalesArgument;
@@ -86,6 +93,7 @@ export interface TabsSection {
 }
 
 export interface TabsCompoundProps extends TabsStateProps {
+  /** Compose `Tabs.List`, `Tabs.Tab` and `Tabs.Panel` parts. */
   children?: ReactNode;
   items?: never;
   label?: never;
@@ -100,8 +108,11 @@ export interface TabsEasyProps extends TabsStateProps {
   /** Pair each tab with its panel by value. */
   items: readonly TabsSection[];
   children?: never;
+  /** Pass props and styles to the generated root, list, tabs and panels. */
   slotProps?: TabsSlotProps;
+  /** Replace generated root, list, tab and panel components. */
   slots?: TabsSlots;
+  /** Replace the root container. `slots.root` takes precedence. */
   component?: TabsSlots['root'];
 }
 
@@ -132,18 +143,22 @@ export type TabsProps = TabsCompoundProps | TabsEasyProps;
 export type TabsListProps = ComponentPropsWithRef<'div'> & SxProps;
 
 export interface TabsTabProps extends ComponentPropsWithRef<'button'>, SxProps {
+  /** Identify this tab and its matching `Tabs.Panel`. */
   value: string;
   /** Decorative leading icon. Supply an icon when hiding visible labels. */
   icon?: ReactNode;
+  /** Replace `icon` while this tab is selected. */
   activeIcon?: ReactNode;
   /** Zero and empty badges are omitted. Supply `badgeLabel` for a spoken description. */
   badge?: number | string;
+  /** Replace the visible badge's spoken text with this description. */
   badgeLabel?: string;
   /** An action-shaped tab still selects a matching panel. */
   variant?: 'default' | 'action';
 }
 
 export interface TabsPanelProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /** Match the tab that reveals this panel. Inactive panels stay mounted but hidden. */
   value: string;
 }
 

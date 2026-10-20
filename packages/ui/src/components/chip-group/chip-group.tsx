@@ -67,33 +67,55 @@ export interface ChipGroupSlots {
 
 interface ChipGroupBaseProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
+  /** Supplies the chips in display and multiple-selection callback order. */
   options: readonly ChipGroupOption[];
+  /** Names the group when no ARIA naming prop is supplied. */
   label?: string;
+  /** Allows clearing the selected chip in `single` mode. Defaults to true; ignored in `multiple` mode. */
   allowEmpty?: boolean;
+  /** Disables all chips and the overflow button. Defaults to false. */
   disabled?: boolean;
+  /** Sets chip height and text size. Defaults to `md`. */
   size?: 'sm' | 'md';
+  /** Limits collapsed chips to this positive integer, retaining selected chips; requires `moreLabel` and `lessLabel`. */
   maxVisible?: number;
+  /** Controls whether overflow chips are visible. */
   expanded?: boolean;
+  /** Shows overflow chips initially when uncontrolled. Defaults to false. */
   defaultExpanded?: boolean;
+  /** Requests expansion or collapse when the overflow button is pressed. */
   onExpandedChange?: (expanded: boolean) => void;
+  /** Formats the overflow count; defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Builds the expand button label from the formatted and raw hidden-chip count. */
   moreLabel?: (formattedCount: string, count: number) => string;
+  /** Labels the button that collapses overflow chips. */
   lessLabel?: string;
+  /** Replaces the frame, chip row and chip presentation parts. */
   slots?: ChipGroupSlots;
+  /** Passes props to the frame, chip row and chip presentation parts. */
   slotProps?: ChipGroupSlotProps;
 }
 
 export interface ChipGroupSingleProps extends ChipGroupBaseProps {
+  /** Restricts selection to one chip. */
   type: 'single';
+  /** Controls the selected chip; an empty string clears selection. */
   value?: string;
+  /** Sets the initial uncontrolled selection. Defaults to an empty string. */
   defaultValue?: string;
+  /** Reports the requested chip value, or an empty string when cleared. */
   onValueChange?: (value: string) => void;
 }
 
 export interface ChipGroupMultipleProps extends ChipGroupBaseProps {
+  /** Allows selecting several chips. Defaults to `multiple`. */
   type?: 'multiple';
+  /** Controls the selected chips; an empty array clears selection. */
   value?: readonly string[];
+  /** Sets the initial uncontrolled selections. Defaults to an empty array. */
   defaultValue?: readonly string[];
+  /** Reports requested selections in option order. */
   onValueChange?: (value: string[]) => void;
 }
 

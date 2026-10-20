@@ -273,3 +273,50 @@ export const ExternalResumeAfterStep: Story = {
     expect(canvas.getByRole('button', { name: 'Step' })).toBeDisabled();
   },
 };
+
+export const LongTransportLabels: Story = {
+  args: {
+    sx: { inlineSize: 360, maxInlineSize: '100%' },
+    controlLabels: {
+      ...controlLabels,
+      resume: 'Resume the data transformation and distribution animation',
+      step: 'Inspect the next processing stage',
+      replay: 'Replay the data transformation and distribution animation',
+    },
+  },
+  play: async ({ canvasElement }) => {
+    const figure = canvasElement.querySelector<HTMLElement>('[data-ui="data-flow"]')!;
+    await waitFor(() => {
+      expect(figure.scrollWidth).toBeLessThanOrEqual(figure.clientWidth + 1);
+      for (const button of figure.querySelectorAll('button')) {
+        expect(button.getBoundingClientRect().width).toBeLessThanOrEqual(figure.clientWidth);
+        expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+      }
+    });
+  },
+};
+
+export const NodeResizeGeometry: Story = {
+  args: { orientation: 'horizontal' },
+  play: async ({ canvasElement }) => {
+    const figure = canvasElement.querySelector<HTMLElement>('[data-ui="data-flow"]')!;
+    const scene = figure.querySelector<HTMLElement>('[data-ui="data-flow-scene"]')!;
+    const nodes = scene.querySelectorAll<HTMLElement>('[data-ui="data-flow-sources"] [data-ui="data-flow-node"]');
+    const first = nodes[0]!;
+    const second = nodes[1]!;
+    const sceneHeight = scene.getBoundingClientRect().height;
+    const previousSize = first.style.blockSize;
+    try {
+      first.style.blockSize = `${first.getBoundingClientRect().height + 12}px`;
+      await waitFor(() => {
+        expect(scene.getBoundingClientRect().height).toBe(sceneHeight);
+        const path = scene.querySelectorAll('path')[1]!;
+        const point = path.getPointAtLength(0).matrixTransform(path.getScreenCTM()!);
+        const rect = second.getBoundingClientRect();
+        expect(Math.abs(point.y - (rect.top + rect.height / 2))).toBeLessThan(1);
+      });
+    } finally {
+      first.style.blockSize = previousSize;
+    }
+  },
+};

@@ -92,8 +92,11 @@ export interface ControlCenterSlots extends FieldSlots<NativeAnatomy> {
 export interface ControlCenterProps
   extends Omit<ComponentPropsWithRef<'section'>, 'children' | 'defaultValue' | 'onChange'>,
     SxProps {
+  /** Names the settings section unless `aria-label` is supplied. */
   label: string;
+  /** Supplies visible labels, descriptions and status message formatters. */
   labels: ControlCenterLabels;
+  /** Defines focus modes and their initial durations in minutes; the first mode is the default. */
   focusModes: readonly {
     value: string;
     label: string;
@@ -101,26 +104,42 @@ export interface ControlCenterProps
     description: string;
     defaultMinutes: number;
   }[];
+  /** Defines notification channels and their initial checked states. */
   channels: readonly {
     value: string;
     label: string;
     description?: string;
     defaultChecked?: boolean;
   }[];
+  /** Lists people who can be allowed through during focus. Defaults to an empty list. */
   people?: readonly { value: string; name: string; avatar?: string }[];
+  /** Controls committed settings; numeric settings are bounded to the supported ranges. */
   value?: ControlCenterValue;
+  /** Seeds uncontrolled settings; omitted values use the built-in settings defaults. */
   defaultValue?: Partial<ControlCenterValue>;
+  /** Requests committed settings after a control changes or focus details are applied. */
   onValueChange?: (value: ControlCenterValue) => void;
+  /** Controls whether the detail dialog is open. */
   open?: boolean;
+  /** Opens the detail dialog initially when uncontrolled. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Requests a change to the detail dialog's open state. */
   onOpenChange?: (open: boolean) => void;
+  /** Chooses the initial detail panel. Defaults to `focus`. */
   defaultDetail?: 'focus' | 'notifications';
+  /** Sets number and focus-end time formatting. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Sets the focus-end time zone. Defaults to the runtime time zone. */
   timeZone?: string;
+  /** Overrides focus-end time formatting, including `locale` and `timeZone`. */
   formatTime?: (date: Date) => string;
+  /** Prevents settings changes and disables controls. Defaults to `false`. */
   disabled?: boolean;
+  /** Replaces generated parts with components that forward supplied props and refs. */
   slots?: ControlCenterSlots;
+  /** Supplies attributes and `sx` to generated parts. */
   slotProps?: ControlCenterSlotProps;
+  /** Replaces the section root; `slots.root` takes precedence. */
   component?: ControlCenterSlots['root'];
 }
 const rootStyle = css({

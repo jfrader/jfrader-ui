@@ -75,21 +75,37 @@ export interface TreeViewSlots {
 }
 export interface TreeViewProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'>, SxProps {
+  /** Render these root nodes and their descendants in order. */
   nodes: readonly TreeNode[];
+  /** Control the selected node id. `null` clears selection. */
   value?: string | null;
+  /** Set the initial uncontrolled selection. Defaults to `null`. */
   defaultValue?: string | null;
+  /** Receive the requested selected node id. */
   onValueChange?: (id: string | null) => void;
+  /** Control which branch ids are expanded. */
   open?: readonly string[];
+  /** Set the initially expanded uncontrolled branches. Defaults to none. */
   defaultOpen?: readonly string[];
+  /** Receive the requested expanded branch ids. */
   onOpenChange?: (ids: readonly string[]) => void;
+  /** Load missing children when a branch opens. Results are cached until remount. Honor the abort signal. */
   loadChildren?: (node: TreeNode, options: { signal: AbortSignal }) => Promise<readonly TreeNode[]>;
+  /** Receive a failed child load and the branch whose children were requested. */
   onLoadError?: (error: unknown, node: TreeNode) => void;
+  /** Name the tree when no `aria-label` or `aria-labelledby` is supplied. Defaults to `Tree`. */
   label?: string;
+  /** Override the loading, load-error and empty messages. Defaults to English. */
   messages?: Partial<TreeViewMessages>;
+  /** Replace the empty-root content. Defaults to `messages.empty`. */
   empty?: ReactNode;
+  /** Access the inner tree list rather than the outer container. */
   treeRef?: Ref<HTMLUListElement>;
+  /** Set the locale for typeahead matching. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Pass props and styles to tree parts. */
   slotProps?: TreeViewSlotProps;
+  /** Replace tree parts with custom components. */
   slots?: TreeViewSlots;
 }
 interface Entry {
