@@ -124,7 +124,9 @@ export interface StepperSlotProps {
 }
 
 export interface StepperBaseProps extends SxProps {
+  /** Replaces the step sequence's container and parts. */
   slots?: StepperSlots;
+  /** Defines the steps in display order. */
   steps: readonly StepperStep[];
   /** Controlled current index, `0..steps.length` (`steps.length` = all complete). */
   value?: number;
@@ -132,6 +134,7 @@ export interface StepperBaseProps extends SxProps {
   defaultValue?: number;
   /** Requested index after a completed step is activated (interactive mode). */
   onValueChange?: (index: number) => void;
+  /** Sets the layout axis and arrow-key navigation axis. Defaults to `'horizontal'`. */
   orientation?: StepperOrientation;
   /** Which descriptions show; errors always show. */
   details?: StepperDetails;
@@ -153,6 +156,7 @@ export interface StepperBaseProps extends SxProps {
   getChangeLabel?: (step: StepperStep | null, index: number, count: number) => string;
   /** Announces accepted value changes in a polite live region. */
   announceChanges?: boolean;
+  /** Passes props and styles to the step sequence's container and parts. */
   slotProps?: StepperSlotProps;
 }
 

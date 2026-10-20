@@ -53,16 +53,21 @@ export interface EmptyStateSlots {
 export interface EmptyStateProps extends Omit<ComponentPropsWithRef<'section'>, 'title' | 'children'>, SxProps {
   /** Visible heading. */
   title: ReactNode;
+  /** Shows supporting text below the heading. */
   description?: ReactNode;
   /** Decorative; hidden from assistive tech. Never put interactive content here. */
   icon?: ReactNode;
   /** Caller-owned controls (Button, link), rendered as given. */
   action?: ReactNode;
+  /** Sets the title's heading level. Defaults to `3`. */
   headingLevel?: CardHeadingLevel;
+  /** Arranges content in a centered column or an inline row that wraps. Defaults to `'centered'`. */
   variant?: EmptyStateVariant;
+  /** Replaces the root and content parts. */
   slots?: EmptyStateSlots;
   /** Shorthand for slots.root; slots.root takes precedence. */
   component?: EmptyStateSlots['root'];
+  /** Passes props and styles to the root and content parts. */
   slotProps?: EmptyStateSlotProps;
 }
 

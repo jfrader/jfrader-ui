@@ -36,14 +36,19 @@ export interface AvatarProps
   name: string;
   /** Shown when src is missing or fails. Noninteractive content only; defaults to initials. */
   children?: ComponentPropsWithRef<'span'>['children'];
+  /** Loads the avatar photo. Missing or failed images show the fallback. */
   src?: string;
+  /** Sets the avatar diameter. Defaults to `'md'`. */
   size?: AvatarSize;
+  /** Shows a presence badge and adds the status to the accessible name. Omit to hide the badge. */
   status?: AvatarStatus;
   /** Pulse the presence ring only when `status="online"`. Defaults to `false`. */
   pulse?: boolean;
   /** Spoken status word; defaults to the `status` value. Pass a translated word for other locales. */
   statusLabel?: string;
+  /** Replaces the photo, fallback and presence badge elements. */
   slots?: AvatarSlots;
+  /** Passes props and styles to the photo, fallback and presence badge. */
   slotProps?: {
     /** Image element displaying the avatar photo. */
     image?: AvatarPartProps & ComponentPropsWithRef<'img'>;

@@ -24,12 +24,15 @@ export interface ProgressSlots {
 export interface ProgressProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   /** Current value in `0..max`; leave undefined for indeterminate progress. */
   value?: number;
+  /** Sets the upper bound. Defaults to `100`, also used for nonpositive or nonfinite values. */
   max?: number;
   /** Accessible name, rendered visually hidden. */
   label?: ReactNode;
   /** Value text for assistive technology (aria-valuetext). */
   getValueLabel?: (value: number, max: number) => string;
+  /** Replaces the progress indicator element. */
   slots?: ProgressSlots;
+  /** Passes props and styles to the progress indicator. */
   slotProps?: {
     /** Indicator bar element displaying the filled progress portion. */
     indicator?: ProgressPartProps;
