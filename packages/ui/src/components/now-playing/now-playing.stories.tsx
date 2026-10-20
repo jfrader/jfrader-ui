@@ -8,6 +8,46 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { NowPlaying, type NowPlayingProps, type NowPlayingTrack } from './index';
 
+function ReplacementRoot(props: ComponentPropsWithRef<'section'>) {
+  return <section {...props} data-testid="replacement-root" />;
+}
+function SugarRoot(props: ComponentPropsWithRef<'section'>) {
+  return <section {...props} data-testid="sugar-root" />;
+}
+
+/** Replace the player section while keeping its card and playback controls. */
+export const RootReplacement: Story = {
+  tags: ['!autodocs'],
+  args: {
+    component: SugarRoot,
+    slots: { root: ReplacementRoot },
+    ref: fn(),
+    className: 'consumer-root',
+    'aria-label': 'Player',
+    slotProps: { root: { ref: fn(), className: 'slot-root', title: 'Music', 'data-ui': 'custom' } },
+  },
+  play: async ({ canvasElement, args }) => {
+    const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(within(canvasElement).queryByTestId('sugar-root')).toBeNull();
+    await expect(root.tagName).toBe('SECTION');
+    await expect(root).toHaveClass('consumer-root', 'slot-root');
+    await expect(root).toHaveAttribute('data-ui', 'now-playing custom');
+    await expect(root).toHaveAttribute('title', 'Music');
+    await expect(root).toHaveAccessibleName('Player');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    await expect(within(root).getAllByText('Night Signal').length).toBeGreaterThan(0);
+  },
+};
+
+export const RootComponent: Story = {
+  tags: ['!autodocs'],
+  args: { component: SugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByTestId('sugar-root')).toHaveAttribute('data-ui', 'now-playing');
+  },
+};
+
 const cover = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300"><rect width="300" height="300" fill="currentColor"/><circle cx="150" cy="150" r="100" fill="none" stroke="white" stroke-width="2"/><circle cx="150" cy="150" r="60" fill="none" stroke="white" stroke-width="2"/><circle cx="150" cy="150" r="12" fill="white"/></svg>')}`;
 const tracks: readonly NowPlayingTrack[] = [
   { id: 'first', title: 'Night Signal', artist: 'Studio Session', duration: 180, artwork: cover },

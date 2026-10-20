@@ -25,7 +25,8 @@ import { styledDialogTransition } from '../../overlay/exit-motion';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION, REDUCED_TRANSPARENCY } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -74,6 +75,8 @@ type Slot<Tag extends keyof React.JSX.IntrinsicElements> = ComponentPropsWithRef
 type ActionSlot = Slot<'button'>;
 
 export interface PhotoGridSlotProps {
+  /** Outer gallery element. */
+  root?: PresentationProps<'div'>;
   presentationStage?: Slot<'div'>;
   main?: ActionSlot;
   thumbnails?: Slot<'div'>;
@@ -112,6 +115,8 @@ export interface PhotoGridSlotProps {
 }
 
 export interface PhotoGridSlots {
+  /** Replaces the outer gallery element. */
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
   presentationStage?: ComponentType<Slot<'div'>>;
   main?: ComponentType<ActionSlot>;
   thumbnails?: ComponentType<Slot<'div'>>;
@@ -190,6 +195,8 @@ export interface PhotoGridProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps {
   /** Photo collection; product colors may supply their own collections instead. */
   photos?: readonly PhotoGridPhoto[];
+  /** Shorthand for slots.root. */
+  component?: PhotoGridSlots['root'];
   title: string;
   /** Keep the grid, show a product detail, or browse a focused cover rail. */
   variant?: 'grid' | 'product' | 'cover-flow';
@@ -1073,6 +1080,7 @@ export function PhotoGrid({
   locale,
   slotProps,
   slots,
+  component,
   className,
   sx,
   onKeyDown,
@@ -1371,13 +1379,16 @@ export function PhotoGrid({
   return (
     <MotionConfig reducedMotion="user">
       <LayoutGroup id={id}>
-        <WithSx className={className} styles={rootStyle} sx={sx}>
-          {(rootClass) => (
-            <div
+            <PresentationSlot
+              element="div"
+              component={slots?.root ?? component}
+              slotProps={slotProps?.root}
+              styles={rootStyle}
+              sx={sx}
               {...rest}
               ref={rootMergedRef}
-              className={rootClass}
-              data-ui="photo-grid"
+              className={className}
+              marker="photo-grid"
               data-variant={variant}
               role="region"
               aria-roledescription={rest['aria-roledescription'] ?? (variant === 'cover-flow' ? labels.carousel : undefined)}
@@ -1649,9 +1660,7 @@ export function PhotoGrid({
                 components={slots}
                 restore={restore}
               />
-            </div>
-          )}
-        </WithSx>
+            </PresentationSlot>
       </LayoutGroup>
     </MotionConfig>
   );

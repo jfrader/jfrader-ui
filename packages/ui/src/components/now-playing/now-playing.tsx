@@ -18,6 +18,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
@@ -39,6 +40,8 @@ type Part<T extends 'div' | 'span' | 'img'> = ComponentPropsWithRef<T> & {
   css?: Interpolation<Theme>;
 };
 export interface NowPlayingSlotProps {
+  /** Outer player section. */
+  root?: PresentationProps<'section'>;
   /** Collapsed mini-player container element. */
   mini?: Part<'div'>;
   /** Expanded full-player container element. */
@@ -97,6 +100,8 @@ export interface NowPlayingLabels {
   position: (elapsed: string, duration: string) => string;
 }
 export interface NowPlayingSlots {
+  /** Replaces the outer player section. */
+  root?: ComponentType<ComponentPropsWithRef<'section'>>;
   /** Replaces the mini-player container. */
   mini?: ComponentType<Part<'div'>>;
   /** Replaces the full-player container. */
@@ -127,6 +132,8 @@ export interface NowPlayingProps
   extends
     Omit<ComponentPropsWithRef<'section'>, 'defaultValue' | 'children' | 'onChange'>,
     SxProps {
+  /** Shorthand for slots.root. */
+  component?: NowPlayingSlots['root'];
   tracks: readonly NowPlayingTrack[];
   value?: number;
   defaultValue?: number;
@@ -422,6 +429,7 @@ function NowPlayingRoot({
   seekLargeStep = 30,
   slots,
   slotProps,
+  component,
   className,
   sx,
   onKeyDown,
@@ -596,13 +604,16 @@ function NowPlayingRoot({
   return (
     <MotionConfig reducedMotion="user">
       <PlayingContext.Provider value={isPlaying && !busy && !!track}>
-        <WithSx className={className} styles={rootStyle} sx={sx}>
-          {(rootClass) => (
-            <section
+            <PresentationSlot
+              element="section"
+              component={slots?.root ?? component}
+              slotProps={slotProps?.root}
+              styles={rootStyle}
+              sx={sx}
               {...rest}
               ref={ref}
-              data-ui="now-playing"
-              className={rootClass}
+              marker="now-playing"
+              className={className}
               aria-label={ariaLabel ?? (!ariaLabelledBy ? label : undefined)}
               aria-labelledby={ariaLabelledBy}
               aria-describedby={joinIds(ariaDescribedBy, errorVisible && `${id}-error`)}
@@ -770,9 +781,7 @@ function NowPlayingRoot({
                     </Error>
                   )}
               </Card>
-            </section>
-          )}
-        </WithSx>
+            </PresentationSlot>
       </PlayingContext.Provider>
     </MotionConfig>
   );

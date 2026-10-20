@@ -10,7 +10,8 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import {
   hasContent,
@@ -38,6 +39,8 @@ import {
 export type { SliderMark, SliderValue } from './use-slider-interaction';
 export type SliderSize = 'sm' | 'md';
 export interface SliderSlots {
+  /** Replaces the outer field element, not the track. */
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
   /** Text naming the slider. */
   label?: ComponentType<Part<'span'>>;
   /** Current formatted value. */
@@ -64,6 +67,8 @@ export interface SliderSlots {
   end?: ComponentType<Part<'div'>>;
 }
 export interface SliderSlotProps {
+  /** Outer field element. */
+  root?: PresentationProps<'div'>;
   /** Text label naming the slider. */
   label?: Part<'span'>;
   /** Text element displaying the current numeric value. */
@@ -91,6 +96,8 @@ export interface SliderSlotProps {
 }
 interface SliderCommonProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
+  /** Shorthand for slots.root. */
+  component?: SliderSlots['root'];
   label: ReactNode;
   description?: ReactNode;
   error?: ReactNode;
@@ -251,6 +258,7 @@ export function Slider(props: SliderProps) {
     size = 'md',
     slotProps,
     slots,
+    component,
     onValueChange,
     onValueCommit,
     className,
@@ -324,13 +332,16 @@ export function Slider(props: SliderProps) {
   const hasError = hasContent(error);
   return (
     <MotionConfig reducedMotion="user">
-      <WithSx className={className} styles={rootStyle} sx={sx}>
-        {(rootClass) => (
-          <div
+          <PresentationSlot
+            element="div"
+            component={slots?.root ?? component}
+            slotProps={slotProps?.root}
+            styles={rootStyle}
+            sx={sx}
             {...rest}
             ref={ref}
-            className={rootClass}
-            data-ui="slider"
+            className={className}
+            marker="slider"
             data-disabled={disabled || undefined}
             onKeyDown={(event) => {
               onKeyDown?.(event);
@@ -518,9 +529,7 @@ export function Slider(props: SliderProps) {
                   value={n}
                 />
               ))}
-          </div>
-        )}
-      </WithSx>
+          </PresentationSlot>
     </MotionConfig>
   );
 }

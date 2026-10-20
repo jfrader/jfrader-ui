@@ -23,7 +23,8 @@ import {
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
-import { WithSx, type SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { raisedSurface, modalShellReset } from '../../styling/surface';
@@ -86,6 +87,8 @@ type Slot<E extends 'button' | 'div' | 'h2' | 'span'> = ComponentPropsWithRef<E>
   css?: Interpolation<Theme>;
 };
 export interface ShareSheetSlotProps {
+  /** Outer sharing widget element, not the dialog panel. */
+  root?: PresentationProps<'div'>;
   /** Button that opens the sharing surface. */
   trigger?: Slot<'button'>;
   /** Native modal shell used for the phone sheet. */
@@ -114,6 +117,8 @@ export interface ShareSheetSlotProps {
   grabber?: Slot<'div'>;
 }
 export interface ShareSheetSlots {
+  /** Replaces the outer sharing widget element. */
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
   /** Replaces the opening button; forward props/ref to Button. */
   trigger?: ComponentType<ComponentPropsWithRef<typeof Button>>;
   /** Replaces the native modal shell; forward props/ref to a dialog. */
@@ -143,6 +148,8 @@ export interface ShareSheetSlots {
 }
 export interface ShareSheetProps
   extends Omit<ComponentPropsWithRef<'div'>, 'title' | 'defaultValue' | 'onCopy'>, SxProps {
+  /** Shorthand for slots.root. */
+  component?: ShareSheetSlots['root'];
   title: string;
   link: string;
   people: readonly ShareSheetPerson[];
@@ -465,6 +472,7 @@ function ShareSheetLayer({
   messages,
   slotProps: slots = {},
   slots: replacementSlots,
+  component,
   children,
   ...props
 }: ShareSheetProps & { nodeId?: string }) {
@@ -1137,18 +1145,32 @@ function ShareSheetLayer({
   };
   if (inline)
     return (
-      <WithSx className={className} styles={[rootStyle, inlineRootStyle]} sx={sx}>
-        {(rootClass) => (
-          <div {...props} ref={rootMergedRef} className={rootClass} data-ui="share-sheet">
-            {surface}
-          </div>
-        )}
-      </WithSx>
+      <PresentationSlot
+        {...props}
+        element="div"
+        component={replacementSlots?.root ?? component}
+        slotProps={slots.root}
+        ref={rootMergedRef}
+        className={className}
+        marker="share-sheet"
+        styles={[rootStyle, inlineRootStyle]}
+        sx={sx}
+      >
+        {surface}
+      </PresentationSlot>
     );
   return (
-    <WithSx className={className} styles={rootStyle} sx={sx}>
-      {(rootClass) => (
-        <div {...props} ref={rootMergedRef} className={rootClass} data-ui="share-sheet">
+    <PresentationSlot
+      {...props}
+      element="div"
+      component={replacementSlots?.root ?? component}
+      slotProps={slots.root}
+      ref={rootMergedRef}
+      className={className}
+      marker="share-sheet"
+      styles={rootStyle}
+      sx={sx}
+    >
           <Trigger
             {...slots.trigger}
             ref={triggerMergedRef}
@@ -1215,9 +1237,7 @@ function ShareSheetLayer({
               </FloatingFocusManager>
             </OverlayPortal>
           )}
-        </div>
-      )}
-    </WithSx>
+    </PresentationSlot>
   );
 }
 
