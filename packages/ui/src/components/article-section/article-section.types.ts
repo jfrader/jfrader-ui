@@ -40,8 +40,12 @@ export type ArticleSectionProps = Omit<ComponentPropsWithRef<'section'>, 'childr
   heading?: ReactNode;
   /** Article headline level. Defaults to one below the section heading, or 2 without a heading. */
   level?: ArticleHeadingLevel;
+  /** Replaces the outer section element. `slots.root` takes precedence. */
   component?: ComponentType<ComponentPropsWithRef<'section'>>;
+  /** Replaces the section, heading, bands, articles and list elements. */
   slots?: ArticleSectionSlots;
+  /** Applies shared props and styles to the generated section parts. */
   slotProps?: ArticleSectionSlotProps;
+  /** Disallows direct children. Supply content through `articles` and `heading`. */
   children?: never;
 };

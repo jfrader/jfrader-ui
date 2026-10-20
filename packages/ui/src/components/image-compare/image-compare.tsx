@@ -99,24 +99,37 @@ export interface ImageCompareProps
   after: ReactNode;
   /** Percentage of Before visible (controlled). */
   value?: number;
+  /** Sets the initial percentage of Before visible, clamped to 0–100. Defaults to `50`. */
   defaultValue?: number;
+  /** Requests a new percentage of Before visible during interaction. */
   onValueChange?: (value: number) => void;
   /** Completed interaction: pointer release, key press, tap, reset. Reports the request, not acceptance. */
   onValueCommit?: (value: number) => void;
+  /** Sets the reveal axis. Defaults to `horizontal`, measured from inline-start. */
   orientation?: ImageCompareOrientation;
+  /** Sets the arrow-key increment in percentage points. Defaults to `1` for omitted or invalid values. */
   step?: number;
+  /** Sets the Page Up/Down and Shift+arrow increment in percentage points. Defaults to `10` for omitted or invalid values. */
   largeStep?: number;
   /** Visible captions for Before and After; `false` hides both. */
   labels?: readonly [string, string] | false;
   /** Accessible name of the slider. */
   label?: string;
+  /** Formats the slider's accessible value text from the percentage and its localized percent string. */
   valueText?: (value: number, formattedPercent: string) => string;
+  /** Sets the locale for the accessible percentage. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Sets the image frame's width-to-height ratio. Defaults to `3 / 2`. */
   aspectRatio?: CSSProperties['aspectRatio'];
+  /** Prevents pointer, keyboard and reset interactions. Defaults to `false`. */
   disabled?: boolean;
+  /** Shows the button that centers the divider at 50%. Defaults to `true`. */
   showReset?: boolean;
+  /** Sets the reset button text. Defaults to "Center divider". */
   resetLabel?: string;
+  /** Replaces the frame, image layers, captions, divider, handle and reset button. */
   slots?: ImageCompareSlots;
+  /** Applies props and styles to the named comparison parts. */
   slotProps?: ImageCompareSlotProps;
 }
 

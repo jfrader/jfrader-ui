@@ -106,12 +106,16 @@ export type ContextMenuSeparatorAction = {
 export type ContextMenuAction = ContextMenuItemAction | ContextMenuSeparatorAction;
 
 export interface ContextMenuStateProps {
+  /** Controls whether the menu is open. */
   open?: boolean;
+  /** Opens the uncontrolled menu initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Requests a new open state when the menu is opened or dismissed. */
   onOpenChange?: (open: boolean) => void;
 }
 
 export interface ContextMenuCompoundProps extends ContextMenuStateProps {
+  /** Composes the target, optional trigger and menu content in compound mode. */
   children?: ReactNode;
   targetLabel?: never;
   items?: never;
@@ -148,8 +152,11 @@ export interface ContextMenuEasyProps extends ContextMenuStateProps, Omit<Genera
   /** Leave the browser's native context menu alone. */
   disabled?: boolean;
   children?: never;
+  /** Applies props and styles to the generated wrapper, target and menu parts. */
   slotProps?: ContextMenuSlotProps;
+  /** Replaces the generated wrapper, target and menu parts. */
   slots?: ContextMenuSlots;
+  /** Replaces the generated wrapper. `slots.root` takes precedence. */
   component?: ContextMenuSlots['root'];
 }
 
@@ -184,15 +191,20 @@ export interface ContextMenuItemProps extends Omit<ComponentPropsWithRef<'button
   /** Called once when the item is activated. The menu then closes unless a click handler called
    * `event.preventDefault()`. */
   onSelect?: () => void;
+  /** Prevents activation and skips the item during keyboard navigation. Defaults to `false`. */
   disabled?: boolean;
+  /** Sets the action's color treatment. Defaults to `neutral`. */
   tone?: ContextMenuItemTone;
   /** Decorative icon before the label. */
   icon?: ReactNode;
 }
 
 export interface ContextMenuCheckboxItemProps extends Omit<ContextMenuItemProps, 'value' | 'defaultValue'> {
+  /** Controls whether the item is checked. */
   value?: boolean;
+  /** Sets the initial checked state when uncontrolled. Defaults to `false`. */
   defaultValue?: boolean;
+  /** Requests the checked state after the item is toggled. */
   onValueChange?: (checked: boolean) => void;
   /** Close the menu after toggling. Off by default so several options can be toggled in a row. */
   closeOnSelect?: boolean;
