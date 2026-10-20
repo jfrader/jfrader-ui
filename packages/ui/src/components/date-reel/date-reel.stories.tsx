@@ -23,32 +23,33 @@ const meta = {
   ],
   parameters: {
     docs: {
+      sections: [
+        { title: 'Choose a date or time', stories: ['Default', 'DateMode', 'TimeMode'] },
+        { title: 'Time entry', stories: ['TwelveHour', 'MinuteSteps'] },
+        { title: 'Shortcuts and confirmation', stories: ['Presets', 'WithConfirm'] },
+      ],
       description: {
         component:
-          'Choose a civil date, time, or datetime with keyboard spinbutton interaction.',
+          'Choose a date, time, or appointment with scrolling reels.',
       },
       usage: `### Values
 - Return Gregorian civil string values: \`YYYY-MM-DDTHH:mm\` for datetime mode, \`YYYY-MM-DD\` for date mode, and \`HH:mm\` for time mode.
 - Both \`min\` and \`max\` are required bounds in the same mode-specific wire format.
-- Use \`defaultValue\` for uncontrolled state or \`value\` and \`onValueChange\` for controlled state. Month and year edits clamp the day to the month's end atomically before committing.
+- Month and year edits clamp the day to the month's end before committing.
 
 ### Keyboard
-- Each visible unit is an accessible spinbutton with \`tabIndex={0}\`.
+- Tab moves between the date and time reels.
 - Press ArrowUp or ArrowDown to step to the previous or next selectable entry without wrapping.
 - Press PageUp or PageDown for larger jumps: 10 years, 3 months, 7 days, 3 hours, or minute jumps (step = ceil(15 / minuteStep)).
 - Press Home or End to jump to the first or last valid entry of the focused reel.
-- Press ArrowLeft or ArrowRight to move focus between neighboring reels (effective direction resolved via \`:dir(rtl)\`).
+- Press ArrowLeft or ArrowRight to move focus between neighboring reels; the order follows the text direction.
 - Type numbers or letters to search within the focused reel with a 500ms typeahead buffer. Modifier combinations and IME composition are guarded and ignored.
 
 ### Limits
 - Invalid configuration or values outside \`[min, max]\` display an accessible alert and disable interactions.
 - Touch gestures use inertial momentum and spring-settle to valid candidates only after release. Drag cancellation resets position.
-- Focused reels support non-passive wheel scrolling with default prevention while preserving slot \`onWheel\`.
-- Opt-in \`intro\` roll animation executes once on mount when not paused, reduced motion is disabled, and the document is visible. No offscreen or IntersectionObserver is attached.
-- Fixed window of at most 11 rendered rows (selected ±5 rows) animated via motion values without per-frame React re-renders.`,
-      source: {
-        code: '<DateReel mode="datetime" defaultValue="2026-10-17T15:30" min="2026-01-01T00:00" max="2026-12-31T23:55" onValueChange={setValue} />',
-      },
+- Scroll the wheel over a focused reel to change its value instead of scrolling the page.
+- Intro motion runs once on mount while the document is visible, unless paused or reduced motion is enabled.`,
     },
   },
   args: {
@@ -66,6 +67,15 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
+  name: 'Schedule an appointment',
+  parameters: { docs: {
+    description: { story: 'Choose an appointment date and time in five-minute steps.' },
+    source: { language: 'tsx', code: `import { DateReel } from '@jfrader/ui';
+
+<DateReel title="Schedule Appointment" mode="datetime" locale="en-US"
+  defaultValue="2026-10-17T15:30" min="2026-01-01T00:00" max="2026-12-31T23:55"
+  minuteStep={5} />` },
+  } },
   args: {
     mode: 'datetime',
     defaultValue: '2026-10-17T15:30',
@@ -114,7 +124,14 @@ export const InvalidLocale: Story = {
 };
 
 export const DateMode: Story = {
-  name: 'Date',
+  name: 'Date of birth',
+  parameters: { docs: {
+    description: { story: 'Choose a date without a time, using British date formatting.' },
+    source: { language: 'tsx', code: `import { DateReel } from '@jfrader/ui';
+
+<DateReel title="Date of Birth" mode="date" locale="en-GB"
+  defaultValue="1996-02-29" min="1900-01-01" max="2026-12-31" minuteStep={5} />` },
+  } },
   args: {
     mode: 'date',
     defaultValue: '1996-02-29',
@@ -126,7 +143,14 @@ export const DateMode: Story = {
 };
 
 export const TimeMode: Story = {
-  name: 'Time',
+  name: 'Meeting time',
+  parameters: { docs: {
+    description: { story: 'Choose a meeting time within working hours.' },
+    source: { language: 'tsx', code: `import { DateReel } from '@jfrader/ui';
+
+<DateReel title="Meeting Time" mode="time" locale="en-US"
+  defaultValue="14:30" min="08:00" max="18:00" minuteStep={5} />` },
+  } },
   args: {
     mode: 'time',
     defaultValue: '14:30',
@@ -138,6 +162,14 @@ export const TimeMode: Story = {
 };
 
 export const TwelveHour: Story = {
+  name: 'Twelve-hour clock',
+  parameters: { docs: {
+    description: { story: 'Choose a time with a separate AM or PM reel.' },
+    source: { language: 'tsx', code: `import { DateReel } from '@jfrader/ui';
+
+<DateReel title="12-Hour Clock" mode="time" locale="en-US" hourCycle="h12"
+  defaultValue="09:15" min="00:00" max="23:45" minuteStep={15} />` },
+  } },
   args: {
     mode: 'time',
     hourCycle: 'h12',
@@ -150,6 +182,14 @@ export const TwelveHour: Story = {
 };
 
 export const MinuteSteps: Story = {
+  name: 'Quarter-hour steps',
+  parameters: { docs: {
+    description: { story: 'Limit the minute reel to quarter-hour appointment slots.' },
+    source: { language: 'tsx', code: `import { DateReel } from '@jfrader/ui';
+
+<DateReel title="Quarter-Hour Steps" mode="time" locale="en-US"
+  defaultValue="12:00" min="09:00" max="17:00" minuteStep={15} />` },
+  } },
   args: {
     mode: 'time',
     defaultValue: '12:00',
@@ -161,6 +201,19 @@ export const MinuteSteps: Story = {
 };
 
 export const Presets: Story = {
+  name: 'Suggested slots',
+  parameters: { docs: {
+    description: { story: 'Pick a morning, noon, or evening shortcut, then adjust the reels.' },
+    source: { language: 'tsx', code: `import { DateReel } from '@jfrader/ui';
+
+<DateReel title="Select Slot" mode="datetime" locale="en-US" minuteStep={5}
+  defaultValue="2026-10-17T09:00" min="2026-10-01T00:00" max="2026-10-31T23:55"
+  presets={[
+    { id: 'morning', label: 'Morning (9:00)', value: '2026-10-17T09:00' },
+    { id: 'noon', label: 'Noon (12:00)', value: '2026-10-17T12:00' },
+    { id: 'evening', label: 'Evening (18:00)', value: '2026-10-17T18:00' },
+  ]} />` },
+  } },
   args: {
     mode: 'datetime',
     defaultValue: '2026-10-17T09:00',
@@ -176,6 +229,16 @@ export const Presets: Story = {
 };
 
 export const WithConfirm: Story = {
+  name: 'Confirm a booking',
+  parameters: { docs: {
+    description: { story: 'Choose a time and confirm it with a separate booking action.' },
+    source: { language: 'tsx', code: `import { DateReel, type DateReelProps } from '@jfrader/ui';
+
+export function BookingTime({ book }: { book: DateReelProps['onConfirm'] }) {
+  return <DateReel title="Confirm Booking" mode="time" locale="en-US" minuteStep={5}
+    defaultValue="10:00" min="08:00" max="18:00" onConfirm={book} />;
+}` },
+  } },
   args: {
     mode: 'time',
     defaultValue: '10:00',
