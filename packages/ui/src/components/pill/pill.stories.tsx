@@ -26,9 +26,13 @@ const meta = {
   component: Pill,
   parameters: {
     docs: {
-      description: { component: 'Show a status or category in a tonal label beside other content. This library calls it Pill rather than the common design-system name Badge; use Badge for a notification count or dot on content.' },
+      sections: [
+        { title: 'Labels', stories: ['InlineWithText', 'Default'] },
+        { title: 'Status colors', stories: ['Tones'] },
+      ],
+      description: { component: 'Show a status or category beside other content.' },
       usage: `### Status
-- \`tone\` defaults to \`neutral\`; choose \`accent\`, \`success\`, \`warning\` or \`danger\` to change its colors. Write the status in \`children\` so color is not the only cue.
+- Write the status in text so color is not the only cue. Use Badge for a notification count or dot on content.
 - Text stays on one line without truncation. Keep the label short or give it room in your layout.
 
 ### Actions
@@ -59,6 +63,10 @@ function ToneRow() {
 ToneRow.displayName = 'ToneRow';
 
 export const Default: Story = {
+  name: 'Status label',
+  parameters: { docs: { description: { story: 'Mark an item as a draft.' }, source: { language: 'tsx', code: `import { Pill } from '@jfrader/ui';
+
+<Pill>Draft</Pill>` } } },
   play: async ({ canvasElement }) => {
     const pill = within(canvasElement).getByText('Draft');
     await expect(pill).toHaveAttribute('data-ui', 'pill');
@@ -67,17 +75,24 @@ export const Default: Story = {
 };
 
 export const Tones: Story = {
+  name: 'Tonal labels',
   parameters: {
     docs: {
+      description: { story: 'Compare the five tones with a text label for each.' },
       source: {
         language: 'tsx',
-        code: `<>
+        code: `import { Pill, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Labels = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[2] });
+
+<Labels>
   <Pill tone="neutral">neutral</Pill>
   <Pill tone="accent">accent</Pill>
   <Pill tone="success">success</Pill>
   <Pill tone="warning">warning</Pill>
   <Pill tone="danger">danger</Pill>
-</>`,
+</Labels>`,
       },
     },
   },
@@ -93,6 +108,15 @@ export const Tones: Story = {
 };
 
 export const InlineWithText: Story = {
+  name: 'Label in text',
+  parameters: { docs: { description: { story: 'Add a release label within an announcement.' }, source: { language: 'tsx', code: `import { Pill, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Announcement = styled.p({ margin: 0, fontSize: vars.textSize.md, color: vars.color.text });
+
+<Announcement>
+  Shared workspaces <Pill tone="accent">Beta</Pill> are rolling out this week.
+</Announcement>` } } },
   args: { tone: 'accent', children: 'Beta' },
   render: (args) => (
     <p style={proseStyle}>

@@ -110,13 +110,22 @@ const SECOND_NAV_LABEL = 'Site language';
 // Regional indicator symbols: the code points flag emoji are made of.
 const FLAG_GLYPHS = /[\u{1F1E6}-\u{1F1FF}]/u;
 
-const usage = `<LocaleSwitcher
-  triggerLabel="Change language"
-  value="en"
-  options={[
+const localeOptionsSource = `const options = [
     { value: 'en', label: 'English', lang: 'en', href: '/en/pricing' },
     { value: 'es', label: 'Español', lang: 'es', href: '/es/precios' },
-  ]}
+    { value: 'fr', label: 'Français', lang: 'fr', href: '/fr/tarifs' },
+    { value: 'ar', label: 'العربية', lang: 'ar', href: '/ar/pricing' },
+];`;
+const localeExample = (variant: 'menu' | 'inline' | 'pills' | 'swap') => `import { LocaleSwitcher } from '@jfrader/ui';
+
+${localeOptionsSource}
+
+<LocaleSwitcher
+  variant="${variant}"
+  triggerLabel="Change language"
+  label="Language"
+  value="en"
+  options={${variant === 'swap' ? 'options.slice(0, 2)' : 'options'}}
 />`;
 
 const stackStyle = {
@@ -155,23 +164,23 @@ const meta = {
   },
   parameters: {
     docs: {
-      source: { code: usage },
+      sections: [
+        { title: 'Language navigation', stories: ['Menu', 'Inline', 'Pills', 'Swap'] },
+        { title: 'App links', stories: ['RouterLinks'] },
+      ],
+      source: { language: 'tsx', code: localeExample('menu') },
       description: {
         component:
           'Open the current page in another language.',
       },
-      usage: `### Options and variants
-- Supply native-name labels, page URLs, and language tags in \`options\`. Each link gets \`lang\`, \`hreflang\`, and \`dir="auto"\`. The current option gets \`aria-current\`.
-- \`value\` identifies the current language. Navigation follows the option's URL, rather than changing a local selection. An unmatched value warns in development.
-- \`menu\` is the default. Its trigger shows the current language. Supply a localized \`triggerLabel\` naming the action, such as "Change language". Assistive technology reads it before the current label, and it names the menu.
-- \`swap\` shows one link to the other language on a two-language site. Other option counts warn in development and use the first noncurrent option. With no noncurrent option, it renders no link.
-- \`inline\` lists all options in a navigation landmark. Supply its accessible name with \`label\`. The current language is plain text, not a tab stop.
-- \`pills\` lists all options like \`inline\`, in a bordered pill group. The current language is filled with the accent.
-- Set an option's \`ariaLabel\` to its native name when \`label\` is a short code, such as \`ES\`. The visible label is then hidden from assistive tech and the native name is what it reads; interactive parts (links, the menu trigger) take it as their accessible name.
-- Use an option's \`render\` callback for router links. Spread every supplied prop, including the ref and event handlers, onto the returned link.
+      usage: `### Navigation
+- Link to the translated version of the current page, not just a language's home page. Navigation follows a URL rather than changing a local selection. An unmatched current language warns in development.
+- Use native language names and localized names for the menu trigger and navigation landmark. When displaying short codes, retain each language's native name as its accessible label.
+- Use the swap presentation for exactly two languages. Other counts warn in development and fall back to the first noncurrent option; no alternative means no link.
+- Inline and pill navigation leave the current language as plain text, outside the Tab order.
 
-### Menu state
-- Control the menu with \`open\` and \`onOpenChange\`, or set its initial state with \`defaultOpen\`.
+### Router links
+Forward every supplied link prop, including the ref and event handlers, to the app's link element.
 
 ### Keyboard
 - On the menu trigger, Enter, Space, or ArrowDown opens on the first item. ArrowUp opens on the last.
@@ -244,6 +253,8 @@ async function expectOptionLink(link: HTMLElement, option: LocaleSwitcherOption,
 }
 
 export const Menu: Story = {
+  name: 'Language menu',
+  parameters: { docs: { description: { story: 'Open the current language to choose a translated page.' } } },
   play: async ({ canvasElement }) => {
     const trigger = getTrigger(canvasElement);
     await expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
@@ -365,6 +376,8 @@ export const MenuInsidePopover: Story = {
 };
 
 export const Swap: Story = {
+  name: 'Two-language link',
+  parameters: { docs: { description: { story: 'Link directly to the other language on a bilingual site.' }, source: { language: 'tsx', code: localeExample('swap') } } },
   args: { variant: 'swap', options: PAIR },
   play: async ({ canvas }) => {
     navigate.mockClear();
@@ -397,6 +410,8 @@ export const SwapWithThreeOptions: Story = {
 };
 
 export const Inline: Story = {
+  name: 'Inline languages',
+  parameters: { docs: { description: { story: 'Keep all language links visible in a navigation landmark.' }, source: { language: 'tsx', code: localeExample('inline') } } },
   args: { variant: 'inline' },
   play: async ({ canvas }) => {
     navigate.mockClear();
@@ -429,6 +444,8 @@ export const Inline: Story = {
 export const InlineLightTheme: Story = { ...Inline, decorators: [withLightTheme] };
 
 export const Pills: Story = {
+  name: 'Language pills',
+  parameters: { docs: { description: { story: 'Group language links with the current language filled.' }, source: { language: 'tsx', code: localeExample('pills') } } },
   args: { variant: 'pills', options: SHORT_PAIR },
   play: async ({ canvas }) => {
     navigate.mockClear();
@@ -583,6 +600,22 @@ const ROUTED_OPTIONS = OPTIONS.map((option) => ({
 })) satisfies LocaleSwitcherOption[];
 
 export const RouterLinks: Story = {
+  name: 'Link adapter',
+  parameters: { docs: { description: { story: 'Share an app-owned link adapter between menu and inline navigation.' }, source: { language: 'tsx', code: `import { LocaleSwitcher, styled, type LocaleSwitcherLinkProps } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Stack = styled.div({ display: 'grid', justifyItems: 'start', gap: vars.space[4] });
+${localeOptionsSource}
+
+function AppLink(props: LocaleSwitcherLinkProps) {
+  return <a {...props} data-router-link="" />;
+}
+const routedOptions = options.map((option) => ({ ...option, render: AppLink }));
+
+<Stack>
+  <LocaleSwitcher options={routedOptions} value="en" triggerLabel="Change language" label="Language" />
+  <LocaleSwitcher options={routedOptions} value="en" triggerLabel="Change language" label="Language" variant="inline" />
+</Stack>` } } },
   args: { options: ROUTED_OPTIONS },
   render: (args) => (
     <div style={stackStyle}>
