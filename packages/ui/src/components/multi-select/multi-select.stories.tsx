@@ -37,22 +37,25 @@ const snippet = `<MultiSelect
   placeholder="Select labels"
   options={[
     { value: 'bug', label: 'Bug' },
+    { value: 'locked', label: 'Locked', disabled: true },
     { value: 'feature', label: 'Feature' },
     { value: 'docs', label: 'Documentation' },
   ]}
   defaultValue={['bug']}
   clearable
-  name="labels"
 />`;
 
 type CheckedMultiSelect<Props extends MultiSelectProps> = Props;
-const compoundSnippet = `<MultiSelect defaultValue={['bug']} name="labels">
+const compoundSnippet = `<MultiSelect defaultValue={['bug']}>
   <MultiSelect.Label>Labels</MultiSelect.Label>
   <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
   <MultiSelect.Clear />
   <MultiSelect.Content>
     <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+    <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
     <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+    <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+    <MultiSelect.Empty />
   </MultiSelect.Content>
 </MultiSelect>`;
 export type MultiSelectTypeRegression = {
@@ -145,6 +148,22 @@ function MultiSelectRootAdapter(props: ComponentPropsWithRef<'div'>) {
 
 /** Restyle the generated label and every option with slotProps. */
 export const SlotProps: EasyStory = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { MultiSelect } from '@jfrader/ui';
+
+function LabelsField(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+
+<MultiSelect label="Labels" component={LabelsField}
+  options={[
+    { value: 'bug', label: 'Bug' },
+    { value: 'locked', label: 'Locked', disabled: true },
+    { value: 'feature', label: 'Feature' },
+    { value: 'docs', label: 'Documentation' },
+  ]}
+  slotProps={{ label: { css: { fontStyle: 'italic' } }, item: { className: 'label-option' } }}
+/>` } } },
   args: {
     label: 'Labels', options: OPTIONS,
     component: MultiSelectRootAdapter,
@@ -188,7 +207,7 @@ export const Default: EasyStory = {
   ),
   parameters: {
     docs: {
-      source: { code: snippet },
+      source: { language: 'tsx', code: snippet },
     },
   },
   play: async ({ canvasElement, userEvent, args }) => {
@@ -215,6 +234,7 @@ export const Compound: Story = {
   parameters: {
     docs: {
       source: {
+        language: 'tsx',
         code: compoundSnippet,
       },
     },
@@ -229,6 +249,21 @@ function CustomTrigger(props: MultiSelectTriggerProps) {
 }
 
 export const CustomSlots: EasyStory = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { MultiSelect, styled } from '@jfrader/ui';
+
+const LabelsLabel = styled(MultiSelect.Label)({ fontStyle: 'italic' });
+const LabelsTrigger = styled(MultiSelect.Trigger)({ fontWeight: 600 });
+
+<MultiSelect label="Labels" defaultValue={['bug']} clearable
+  options={[
+    { value: 'bug', label: 'Bug' },
+    { value: 'locked', label: 'Locked', disabled: true },
+    { value: 'feature', label: 'Feature' },
+    { value: 'docs', label: 'Documentation' },
+  ]}
+  slots={{ label: LabelsLabel, trigger: LabelsTrigger }}
+  slotProps={{ root: { className: 'labels-field' } }}
+/>` } } },
   render: () => (
     <MultiSelect
       label="Labels"
@@ -253,6 +288,12 @@ export const CustomSlots: EasyStory = {
 };
 
 export const EasyClearable: EasyStory = {
+  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect label="Labels" defaultValue={['bug']} clearable options={[
+  { value: 'bug', label: 'Bug' },
+  { value: 'locked', label: 'Locked', disabled: true },
+  { value: 'feature', label: 'Feature' },
+  { value: 'docs', label: 'Documentation' },
+]} />` } } },
   render: () => (
     <MultiSelect
       label="Labels"
@@ -270,6 +311,15 @@ export const EasyClearable: EasyStory = {
 };
 
 export const EasyFormReset: EasyStory = {
+  parameters: { docs: { source: { language: 'tsx', code: `<form aria-label="Labels form">
+  <MultiSelect label="Labels" name="labels" defaultValue={['bug']} options={[
+    { value: 'bug', label: 'Bug' },
+    { value: 'locked', label: 'Locked', disabled: true },
+    { value: 'feature', label: 'Feature' },
+    { value: 'docs', label: 'Documentation' },
+  ]} />
+  <Button type="reset">Reset</Button>
+</form>` } } },
   render: () => (
     <form aria-label="Easy multi-select form">
       <MultiSelect
@@ -304,6 +354,20 @@ function EasyControlledExample(props: MultiSelectEasyProps) {
 }
 
 export const EasyControlled: EasyStory = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { MultiSelect } from '@jfrader/ui';
+
+function LabelsPicker() {
+  const [value, setValue] = useState<readonly string[]>(['bug']);
+  const [open, setOpen] = useState(false);
+  return <MultiSelect label="Labels" value={value} onValueChange={setValue}
+    open={open} onOpenChange={setOpen} options={[
+      { value: 'bug', label: 'Bug' },
+      { value: 'locked', label: 'Locked', disabled: true },
+      { value: 'feature', label: 'Feature' },
+      { value: 'docs', label: 'Documentation' },
+    ]} />;
+}` } } },
   args: { label: LABEL, options: OPTIONS, onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <EasyControlledExample {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
@@ -318,6 +382,12 @@ export const EasyControlled: EasyStory = {
 };
 
 export const EasyRejectedControlled: EasyStory = {
+  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect label="Labels" value={['bug']} options={[
+  { value: 'bug', label: 'Bug' },
+  { value: 'locked', label: 'Locked', disabled: true },
+  { value: 'feature', label: 'Feature' },
+  { value: 'docs', label: 'Documentation' },
+]} />` } } },
   args: { label: LABEL, options: OPTIONS, value: ['bug'], onValueChange: fn() },
   render: (args) => <MultiSelect {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
@@ -382,6 +452,26 @@ function ControlledExample(props: MultiSelectCompoundProps) {
   );
 }
 export const Controlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { MultiSelect } from '@jfrader/ui';
+
+function LabelsPicker() {
+  const [value, setValue] = useState<readonly string[]>(['bug']);
+  const [open, setOpen] = useState(false);
+  return (
+    <MultiSelect value={value} onValueChange={setValue} open={open} onOpenChange={setOpen}>
+      <MultiSelect.Label>Labels</MultiSelect.Label>
+      <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+      <MultiSelect.Clear />
+      <MultiSelect.Content>
+        <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+        <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+        <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+        <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+      </MultiSelect.Content>
+    </MultiSelect>
+  );
+}` } } },
   render: (args) => <ControlledExample {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.click(triggerOf(canvasElement));
@@ -402,6 +492,21 @@ export const ControlledOpen: Story = {
   },
 };
 export const Sizes: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<>
+  {(['sm', 'md', 'lg'] as const).map((size) => (
+    <MultiSelect key={size}>
+      <MultiSelect.Label>Labels ({size})</MultiSelect.Label>
+      <MultiSelect.Trigger size={size}><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+      <MultiSelect.Clear />
+      <MultiSelect.Content>
+        <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+        <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+        <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+        <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+      </MultiSelect.Content>
+    </MultiSelect>
+  ))}
+</>` } } },
   render: (args) => (
     <>
       {(['sm', 'md', 'lg'] as const).map((size) => (
@@ -415,9 +520,40 @@ export const Sizes: Story = {
       await expect(control.getBoundingClientRect().height).toBeGreaterThanOrEqual([32, 40, 48][index]! - 1);
   },
 };
-export const Empty: Story = { render: (args) => <Example {...args} empty /> };
-export const Selected: Story = { args: { defaultValue: ['bug', 'feature'] } };
+export const Empty: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect>
+  <MultiSelect.Label>Labels</MultiSelect.Label>
+  <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+  <MultiSelect.Content><MultiSelect.Empty /></MultiSelect.Content>
+</MultiSelect>` } } },
+  render: (args) => <Example {...args} empty />,
+};
+export const Selected: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect defaultValue={['bug', 'feature']}>
+  <MultiSelect.Label>Labels</MultiSelect.Label>
+  <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+  <MultiSelect.Clear />
+  <MultiSelect.Content>
+    <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+    <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+    <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+    <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+  </MultiSelect.Content>
+</MultiSelect>` } } },
+  args: { defaultValue: ['bug', 'feature'] },
+};
 export const Overflow: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect defaultValue={['bug', 'feature', 'docs']}>
+  <MultiSelect.Label>Labels</MultiSelect.Label>
+  <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" maxVisible={2} /></MultiSelect.Trigger>
+  <MultiSelect.Clear />
+  <MultiSelect.Content>
+    <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+    <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+    <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+    <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+  </MultiSelect.Content>
+</MultiSelect>` } } },
   args: { defaultValue: ['bug', 'feature', 'docs'] },
   play: async ({ canvasElement }) => {
     await expect(triggerOf(canvasElement)).toHaveTextContent('+1');
@@ -427,6 +563,17 @@ export const Overflow: Story = {
   },
 };
 export const OverflowOnly: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect defaultValue={['bug', 'feature', 'docs']}>
+  <MultiSelect.Label>Labels</MultiSelect.Label>
+  <MultiSelect.Trigger><MultiSelect.Value maxVisible={0} /></MultiSelect.Trigger>
+  <MultiSelect.Clear />
+  <MultiSelect.Content>
+    <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+    <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+    <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+    <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+  </MultiSelect.Content>
+</MultiSelect>` } } },
   args: Overflow.args,
   render: (args) => <Example {...args} maxVisible={0} />,
   play: async ({ canvasElement }) => {
@@ -451,6 +598,17 @@ export const Disabled: Story = {
 };
 export const DisabledItems: Story = { tags: ['!autodocs'], args: { defaultOpen: true } };
 export const DisabledSelectedClear: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect defaultValue={['locked', 'bug', 'unknown']}>
+  <MultiSelect.Label>Labels</MultiSelect.Label>
+  <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+  <MultiSelect.Clear />
+  <MultiSelect.Content>
+    <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+    <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+    <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+    <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+  </MultiSelect.Content>
+</MultiSelect>` } } },
   args: { defaultValue: ['locked', 'bug', 'unknown'] },
   play: async ({ canvasElement, canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Clear selection' }));
@@ -461,6 +619,17 @@ export const DisabledSelectedClear: Story = {
   },
 };
 export const UnknownValue: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect value={['missing']}>
+  <MultiSelect.Label>Labels</MultiSelect.Label>
+  <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+  <MultiSelect.Clear />
+  <MultiSelect.Content>
+    <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+    <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+    <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+    <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+  </MultiSelect.Content>
+</MultiSelect>` } } },
   args: { value: ['missing'] },
   play: async ({ canvasElement }) => {
     await expect(triggerOf(canvasElement)).toHaveTextContent('missing');
@@ -484,6 +653,20 @@ export const LongLabels: Story = {
   },
 };
 export const Required: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<form>
+  <MultiSelect name="labels" required>
+    <MultiSelect.Label>Labels</MultiSelect.Label>
+    <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+    <MultiSelect.Clear />
+    <MultiSelect.Content>
+      <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+      <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+      <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+      <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+    </MultiSelect.Content>
+  </MultiSelect>
+  <Button type="submit">Submit</Button>
+</form>` } } },
   args: { required: true, name: 'labels' },
   render: (args) => (
     <form>
@@ -511,6 +694,20 @@ export const Required: Story = {
   },
 };
 export const RequiredSatisfied: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<form>
+  <MultiSelect name="labels" required defaultValue={['bug']}>
+    <MultiSelect.Label>Labels</MultiSelect.Label>
+    <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+    <MultiSelect.Clear />
+    <MultiSelect.Content>
+      <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+      <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+      <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+      <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+    </MultiSelect.Content>
+  </MultiSelect>
+  <Button type="submit">Submit</Button>
+</form>` } } },
   args: { required: true, name: 'labels', defaultValue: ['bug'] },
   render: Required.render,
   play: async ({ canvas, canvasElement }) => {
@@ -524,6 +721,19 @@ export const RequiredSatisfied: Story = {
   },
 };
 export const Error: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect>
+  <MultiSelect.Label>Labels</MultiSelect.Label>
+  <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+  <MultiSelect.Clear />
+  <MultiSelect.Description>Project labels</MultiSelect.Description>
+  <MultiSelect.Error>Choose a label</MultiSelect.Error>
+  <MultiSelect.Content>
+    <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+    <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+    <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+    <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+  </MultiSelect.Content>
+</MultiSelect>` } } },
   render: (args) => <Example {...args} error="Choose a label" description="Project labels" />,
   play: async ({ canvasElement }) => {
     await expect(triggerOf(canvasElement)).toHaveAttribute('aria-invalid', 'true');
@@ -533,6 +743,25 @@ export const Error: Story = {
   },
 };
 export const ExternalAria: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+import { MultiSelect } from '@jfrader/ui';
+
+function LabelsPicker() {
+  const nameId = useId();
+  const descriptionId = useId();
+  return <>
+    <span id={nameId}>Project</span>
+    <span id={descriptionId}>Choose project labels</span>
+    <MultiSelect>
+      <MultiSelect.Label>Labels</MultiSelect.Label>
+      <MultiSelect.Trigger aria-labelledby={nameId} aria-describedby={descriptionId}>
+        <MultiSelect.Value placeholder="Select labels" />
+      </MultiSelect.Trigger>
+      <MultiSelect.Description>Multiple selections allowed</MultiSelect.Description>
+      <MultiSelect.Content><MultiSelect.Item value="bug">Bug</MultiSelect.Item></MultiSelect.Content>
+    </MultiSelect>
+  </>;
+}` } } },
   render: (args) => (
     <>
       <span id="external-name">External</span>
@@ -565,6 +794,20 @@ export const ExternalAria: Story = {
   },
 };
 export const BooleanAndZeroNodes: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<>
+  {([false, null, 0, ''] as const).map((message, index) => (
+    <MultiSelect key={index}>
+      <MultiSelect.Label>Labels</MultiSelect.Label>
+      <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+      <MultiSelect.Description>{message}</MultiSelect.Description>
+      <MultiSelect.Error>{message}</MultiSelect.Error>
+      <MultiSelect.Content>
+        <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+        <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+      </MultiSelect.Content>
+    </MultiSelect>
+  ))}
+</>` } } },
   render: (args) => (
     <>
       {([false, null, 0, ''] as const).map((node, index) => (
@@ -579,6 +822,20 @@ export const BooleanAndZeroNodes: Story = {
   },
 };
 export const FormReset: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<form>
+  <MultiSelect name="labels" defaultValue={['bug']}>
+    <MultiSelect.Label>Labels</MultiSelect.Label>
+    <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+    <MultiSelect.Clear />
+    <MultiSelect.Content>
+      <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+      <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+      <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+      <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+    </MultiSelect.Content>
+  </MultiSelect>
+  <Button type="reset">Reset</Button>
+</form>` } } },
   args: { defaultValue: ['bug'], name: 'labels' },
   render: (args) => (
     <form>
@@ -621,6 +878,17 @@ export const ControlledReject: Story = {
   },
 };
 export const ControlledValueUncontrolledOpen: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect value={[]}>
+  <MultiSelect.Label>Labels</MultiSelect.Label>
+  <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+  <MultiSelect.Clear />
+  <MultiSelect.Content>
+    <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+    <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+    <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+    <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+  </MultiSelect.Content>
+</MultiSelect>` } } },
   args: { value: [] },
   play: async ({ canvasElement, userEvent, args }) => {
     const trigger = triggerOf(canvasElement);
@@ -677,6 +945,28 @@ function ExternalUpdatesExample(props: MultiSelectCompoundProps) {
   );
 }
 export const ExternalUpdates: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, MultiSelect } from '@jfrader/ui';
+
+function LabelsPicker() {
+  const [value, setValue] = useState<readonly string[]>(['bug']);
+  const [open, setOpen] = useState(false);
+  return <>
+    <MultiSelect value={value} open={open}>
+      <MultiSelect.Label>Labels</MultiSelect.Label>
+      <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+      <MultiSelect.Clear />
+      <MultiSelect.Content>
+        <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+        <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+        <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+        <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+      </MultiSelect.Content>
+    </MultiSelect>
+    <Button onClick={() => setValue(['docs', 'feature'])}>Set value</Button>
+    <Button onClick={() => setOpen(true)}>Open list</Button>
+  </>;
+}` } } },
   render: (args) => <ExternalUpdatesExample {...args} />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const trigger = triggerOf(canvasElement);
@@ -690,6 +980,20 @@ export const ExternalUpdates: Story = {
 };
 const duplicatedValue = Object.freeze(['bug', 'feature', 'bug']);
 export const DuplicateValues: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<form>
+  <MultiSelect name="labels" value={['bug', 'feature', 'bug']}>
+    <MultiSelect.Label>Labels</MultiSelect.Label>
+    <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+    <MultiSelect.Clear />
+    <MultiSelect.Content>
+      <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+      <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+      <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+      <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+    </MultiSelect.Content>
+  </MultiSelect>
+  <Button type="submit">Submit</Button>
+</form>` } } },
   args: { value: duplicatedValue, name: 'labels' },
   render: Required.render,
   play: async ({ canvasElement, userEvent, args }) => {
@@ -758,6 +1062,18 @@ export const PersistentOpenEmpty: Story = {
   },
 };
 export const Keyboard: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect>
+  <MultiSelect.Label>Labels</MultiSelect.Label>
+  <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+  <MultiSelect.Clear />
+  <MultiSelect.Content>
+    <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+    <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+    <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+    <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+    <MultiSelect.Empty />
+  </MultiSelect.Content>
+</MultiSelect>` } } },
   play: async ({ canvasElement, canvas, userEvent, args }) => {
     const trigger = triggerOf(canvasElement);
     await userEvent.tab();
@@ -800,6 +1116,17 @@ export const Keyboard: Story = {
   },
 };
 export const Typeahead: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect>
+  <MultiSelect.Label>Labels</MultiSelect.Label>
+  <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+  <MultiSelect.Clear />
+  <MultiSelect.Content>
+    <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+    <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+    <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+    <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+  </MultiSelect.Content>
+</MultiSelect>` } } },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.keyboard('fe');
@@ -892,6 +1219,19 @@ export const ClearRejected: Story = {
   },
 };
 export const DisabledForm: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<form>
+  <MultiSelect name="labels" disabled required defaultValue={['bug', 'bug', 'locked']}>
+    <MultiSelect.Label>Labels</MultiSelect.Label>
+    <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+    <MultiSelect.Clear />
+    <MultiSelect.Content>
+      <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+      <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+      <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+      <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+    </MultiSelect.Content>
+  </MultiSelect>
+</form>` } } },
   args: { name: 'labels', disabled: true, required: true, defaultValue: ['bug', 'bug', 'locked'] },
   render: (args) => (
     <form>
@@ -906,6 +1246,23 @@ export const DisabledForm: Story = {
   },
 };
 export const ItemUpdates: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, MultiSelect } from '@jfrader/ui';
+
+function LabelsPicker() {
+  const [updated, setUpdated] = useState(false);
+  return <>
+    <MultiSelect defaultValue={['bug']}>
+      <MultiSelect.Label>Labels</MultiSelect.Label>
+      <MultiSelect.Trigger><MultiSelect.Value /></MultiSelect.Trigger>
+      <MultiSelect.Content>
+        <MultiSelect.Item value="bug">{updated ? 'Renamed bug' : 'Bug'}</MultiSelect.Item>
+        {!updated && <MultiSelect.Item value="gone">Temporary</MultiSelect.Item>}
+      </MultiSelect.Content>
+    </MultiSelect>
+    <Button onClick={() => setUpdated(true)}>Update options</Button>
+  </>;
+}` } } },
   render: (args) => <DynamicItems {...args} />,
   play: async ({ canvasElement, canvas, userEvent, args }) => {
     await userEvent.click(triggerOf(canvasElement));
@@ -973,6 +1330,14 @@ const captureTrigger = (element: HTMLButtonElement | null) => {
 };
 
 export const ConsumerVeto: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect>
+  <MultiSelect.Trigger aria-label="Labels"
+    onKeyDown={(event) => event.preventDefault()}
+    onClick={(event) => event.preventDefault()}>
+    <MultiSelect.Value placeholder="Select labels" />
+  </MultiSelect.Trigger>
+  <MultiSelect.Content><MultiSelect.Item value="bug">Bug</MultiSelect.Item></MultiSelect.Content>
+</MultiSelect>` } } },
   render: (args) => (
     <MultiSelect {...args}>
       <MultiSelect.Trigger
@@ -996,6 +1361,17 @@ export const ConsumerVeto: Story = {
   },
 };
 export const ToggleTwiceAndRepeat: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect>
+  <MultiSelect.Label>Labels</MultiSelect.Label>
+  <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
+  <MultiSelect.Clear />
+  <MultiSelect.Content>
+    <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+    <MultiSelect.Item value="locked" disabled>Locked</MultiSelect.Item>
+    <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+    <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+  </MultiSelect.Content>
+</MultiSelect>` } } },
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.keyboard('{ArrowDown}{Enter}');
@@ -1026,6 +1402,25 @@ export const ClearPointerOrder: Story = {
 };
 
 export const ExternalForm: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+import { Button, MultiSelect } from '@jfrader/ui';
+
+function LabelsForm() {
+  const formId = useId();
+  return <>
+    <form id={formId}><Button type="reset">Reset</Button></form>
+    <MultiSelect name="labels" required defaultValue={['bug']}>
+      <MultiSelect.Trigger form={formId} aria-label="Labels">
+        <MultiSelect.Value placeholder="Select labels" />
+      </MultiSelect.Trigger>
+      <MultiSelect.Clear />
+      <MultiSelect.Content>
+        <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+        <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+      </MultiSelect.Content>
+    </MultiSelect>
+  </>;
+}` } } },
   args: { name: 'labels', required: true, defaultValue: ['bug'] },
   render: (args) => (
     <>
