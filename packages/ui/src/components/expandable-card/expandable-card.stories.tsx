@@ -203,8 +203,64 @@ export const ReplacedParts: StoryObj<Omit<ExpandableCardEasyProps, 'component'>>
     await expect(panel.inert).toBe(true);
   },
 };
-export const Small: Story = { args: { size: 'sm' } };
-export const Medium: Story = { args: { size: 'md' } };
+export const Small: Story = {
+  args: { size: 'sm' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { ExpandableCard, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const TeamInput = styled.input({
+  minBlockSize: vars.space[8],
+  padding: vars.space[2],
+  color: vars.color.text,
+  backgroundColor: vars.color.surface,
+  border: \`1px solid \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.sm,
+  font: 'inherit',
+});
+
+export function SmallPlan() {
+  return (
+    <ExpandableCard size="sm">
+      <ExpandableCard.Trigger>
+        <ExpandableCard.Title>Studio plan</ExpandableCard.Title>
+        <ExpandableCard.Description>Billing and team details</ExpandableCard.Description>
+      </ExpandableCard.Trigger>
+      <ExpandableCard.Content>
+        <label>Team name <TeamInput aria-label="Team name" defaultValue="Studio" /></label>
+      </ExpandableCard.Content>
+    </ExpandableCard>
+  );
+}` } } },
+};
+export const Medium: Story = {
+  args: { size: 'md' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { ExpandableCard, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const TeamInput = styled.input({
+  minBlockSize: vars.space[8],
+  padding: vars.space[2],
+  color: vars.color.text,
+  backgroundColor: vars.color.surface,
+  border: \`1px solid \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.sm,
+  font: 'inherit',
+});
+
+export function MediumPlan() {
+  return (
+    <ExpandableCard size="md">
+      <ExpandableCard.Trigger>
+        <ExpandableCard.Title>Studio plan</ExpandableCard.Title>
+        <ExpandableCard.Description>Billing and team details</ExpandableCard.Description>
+      </ExpandableCard.Trigger>
+      <ExpandableCard.Content>
+        <label>Team name <TeamInput aria-label="Team name" defaultValue="Studio" /></label>
+      </ExpandableCard.Content>
+    </ExpandableCard>
+  );
+}` } } },
+};
 export const PersistentOpen: Story = { tags: ['!autodocs'], args: { defaultOpen: true } };
 export const LightTheme: Story = {
   decorators: [withLightTheme],
@@ -229,6 +285,35 @@ export const Disabled: Story = {
 };
 export const WidthMorph: Story = {
   args: { collapsedInlineSize: 320, expandedInlineSize: 600 },
+  parameters: { docs: { source: { language: 'tsx', code: `import { ExpandableCard, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const PlanLane = styled.div({ inlineSize: '640px', maxInlineSize: '100%' });
+const TeamInput = styled.input({
+  minBlockSize: vars.space[8],
+  padding: vars.space[2],
+  color: vars.color.text,
+  backgroundColor: vars.color.surface,
+  border: \`1px solid \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.sm,
+  font: 'inherit',
+});
+
+export function ResizingPlan() {
+  return (
+    <PlanLane>
+      <ExpandableCard collapsedInlineSize={320} expandedInlineSize={600}>
+        <ExpandableCard.Trigger>
+          <ExpandableCard.Title>Studio plan</ExpandableCard.Title>
+          <ExpandableCard.Description>Billing and team details</ExpandableCard.Description>
+        </ExpandableCard.Trigger>
+        <ExpandableCard.Content>
+          <label>Team name <TeamInput aria-label="Team name" defaultValue="Studio" /></label>
+        </ExpandableCard.Content>
+      </ExpandableCard>
+    </PlanLane>
+  );
+}` } } },
   decorators: [
     (Story) => (
       <MorphParent>
@@ -390,6 +475,35 @@ export const ControlledReject: Story = {
 };
 export const RapidReversal: Story = {
   ...WidthMorph,
+  parameters: { docs: { source: { language: 'tsx', code: `import { ExpandableCard, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const PlanLane = styled.div({ inlineSize: '640px', maxInlineSize: '100%' });
+const TeamInput = styled.input({
+  minBlockSize: vars.space[8],
+  padding: vars.space[2],
+  color: vars.color.text,
+  backgroundColor: vars.color.surface,
+  border: \`1px solid \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.sm,
+  font: 'inherit',
+});
+
+export function ReversiblePlan() {
+  return (
+    <PlanLane>
+      <ExpandableCard collapsedInlineSize={320} expandedInlineSize={600}>
+        <ExpandableCard.Trigger>
+          <ExpandableCard.Title>Studio plan</ExpandableCard.Title>
+          <ExpandableCard.Description>Billing and team details</ExpandableCard.Description>
+        </ExpandableCard.Trigger>
+        <ExpandableCard.Content>
+          <label>Team name <TeamInput aria-label="Team name" defaultValue="Studio" /></label>
+        </ExpandableCard.Content>
+      </ExpandableCard>
+    </PlanLane>
+  );
+}` } } },
   play: async ({ canvas, userEvent, args }) => {
     const trigger = canvas.getByRole('button');
     await userEvent.click(trigger);

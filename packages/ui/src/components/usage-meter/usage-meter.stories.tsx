@@ -571,6 +571,22 @@ export const InvalidLimit: Story = {
   },
 };
 export const SanitizedValues: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { UsageMeter } from '@jfrader/ui';
+
+export function InvalidUsageValues() {
+  return (
+    <UsageMeter
+      label="Storage"
+      limit={80}
+      locale="en"
+      segments={[
+        { id: 'negative', label: 'Negative', value: -1 },
+        { id: 'nan', label: 'Not a number', value: NaN },
+        { id: 'infinite', label: 'Infinite', value: Infinity },
+      ]}
+    />
+  );
+}` } } },
   args: {
     segments: [
       { id: 'negative', label: 'Negative', value: -1 },
@@ -691,6 +707,39 @@ function ReplacementMeterSpan(props: import('react').ComponentPropsWithRef<'span
 }
 // This story tests the documented css/slot API and native style merging.
 export const SlotStyles: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useRef, type ComponentPropsWithRef } from 'react';
+import { UsageMeter } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const segments = [
+  { id: 'files', label: 'Files', value: 24 },
+  { id: 'photos', label: 'Photos', value: 16 },
+  { id: 'backups', label: 'Backups', value: 8 },
+];
+
+function MeterSpan(props: ComponentPropsWithRef<'span'>) {
+  return <span {...props} data-replacement="meter-span" />;
+}
+
+export function StyledStorageMeter() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  return (
+    <UsageMeter
+      ref={rootRef}
+      label="Storage"
+      segments={segments}
+      limit={80}
+      locale="en"
+      slots={{ segment: MeterSpan, status: MeterSpan }}
+      sx={{ padding: vars.space[4] }}
+      slotProps={{
+        root: { css: { padding: vars.space[1] } },
+        track: { css: { blockSize: vars.space[6] } },
+        item: { css: { paddingBlock: vars.space[3] } },
+      }}
+    />
+  );
+}` } } },
   args: {
     slots: { segment: ReplacementMeterSpan, status: ReplacementMeterSpan },
     sx: { padding: vars.space[4] },

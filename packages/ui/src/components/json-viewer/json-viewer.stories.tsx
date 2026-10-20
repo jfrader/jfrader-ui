@@ -464,6 +464,17 @@ export const TypeColorsLight: Story = {
   play: typeColorsPlay,
 };
 export const CountLabels: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { JsonViewer } from '@jfrader/ui';
+
+export function CollectionCounts() {
+  return (
+    <JsonViewer
+      aria-label="Webhook payload"
+      data={{ list: [1, 2], map: {} }}
+      labels={{ count: (count, type) => \`\${type}:\${count}\` }}
+    />
+  );
+}` } } },
   args: {
     data: { list: [1, 2], map: {} },
     labels: { count: (count, type) => `${type}:${count}` },
@@ -883,6 +894,22 @@ export const ConsumerVeto: Story = {
   },
 };
 export const RootRef: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useRef } from 'react';
+import { JsonViewer } from '@jfrader/ui';
+
+const payload = {
+  active: false,
+  count: 0,
+  empty: '',
+  missing: null,
+  user: { name: 'Ada', roles: ['reader', 'writer'] },
+  'a.b': { 'quoted"key': 'value' },
+};
+
+export function PayloadViewer() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  return <JsonViewer ref={rootRef} data={payload} aria-label="Webhook payload" />;
+}` } } },
   args: { ref: fn() },
   play: async ({ canvasElement, args }) => {
     const root = canvasElement.querySelector('[data-ui="json-viewer"]');

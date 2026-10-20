@@ -259,6 +259,26 @@ export const Keyboard: Story = {
   },
 };
 export const Marks: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Slider } from '@jfrader/ui';
+
+export function VolumePresets() {
+  return (
+    <Slider
+      label="Volume"
+      defaultValue={50}
+      locale="en-GB"
+      marks={[
+        { value: 0, label: 'Silent' },
+        25,
+        { value: 50, label: 'Half' },
+        { value: 100, label: 'Full' },
+        101,
+        NaN,
+        50,
+      ]}
+    />
+  );
+}` } } },
   args: {
     defaultValue: 50,
     marks: [
@@ -314,6 +334,26 @@ export const CoincidentThumbs: Story = {
 };
 export const HiddenReadout: Story = { args: { showValue: false } };
 export const Adornments: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Slider, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const AdornmentButton = styled.button({
+  minBlockSize: vars.space[8],
+  minInlineSize: vars.space[8],
+  padding: vars.space[2],
+});
+
+export function VolumeAdornments() {
+  return (
+    <Slider
+      label="Volume"
+      defaultValue={40}
+      locale="en-GB"
+      start={<AdornmentButton type="button" aria-label="Mute">−</AdornmentButton>}
+      end={<AdornmentButton type="button" aria-label="Maximum volume">+</AdornmentButton>}
+    />
+  );
+}` } } },
   args: {
     start: (
       <Button type="button" aria-label="Mute">
@@ -572,6 +612,23 @@ export const FalsyLabel: Story = {
   },
 };
 export const PreventedKeys: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { Slider } from '@jfrader/ui';
+
+export function PointerVolume() {
+  return (
+    <Slider
+      label="Volume"
+      defaultValue={40}
+      locale="en-GB"
+      slotProps={{
+        thumb: {
+          onKeyDown: (event) => event.preventDefault(),
+          'aria-invalid': 'grammar',
+        },
+      }}
+    />
+  );
+}` } } },
   args: { slotProps: { thumb: { onKeyDown: (event) => event.preventDefault(), 'aria-invalid': 'grammar' } } },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
@@ -686,6 +743,36 @@ function ReplacementSliderTrack(props: import('react').ComponentPropsWithRef<'di
 
 // This story tests the documented css/slot API and native style merging.
 export const SlotStylingAndRefs: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useRef, type ComponentPropsWithRef } from 'react';
+import { Slider } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+function VolumeThumb(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="thumb" />;
+}
+
+function VolumeTrack(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-replacement="track" />;
+}
+
+export function StyledVolume() {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const thumbRef = useRef<HTMLDivElement>(null);
+  return (
+    <Slider
+      ref={rootRef}
+      label="Volume"
+      defaultValue={40}
+      locale="en-GB"
+      slots={{ thumb: VolumeThumb, track: VolumeTrack }}
+      slotProps={{
+        thumb: { ref: thumbRef, css: { borderRadius: vars.radius.md } },
+        track: { css: { blockSize: vars.space[2] } },
+        label: { css: { fontWeight: vars.fontWeight.semibold } },
+      }}
+    />
+  );
+}` } } },
   args: {
     slots: { thumb: ReplacementSliderThumb, track: ReplacementSliderTrack },
     ref: fn(),
