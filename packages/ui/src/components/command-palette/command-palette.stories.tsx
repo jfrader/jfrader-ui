@@ -1,5 +1,5 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
@@ -26,7 +26,10 @@ const COMMANDS: readonly CommandItem[] = [
   { value: 'zoom-in', label: 'Zoom in', group: 'View', id: 'cmd-4' },
 ];
 
-const snippet = `<CommandPalette
+const snippet = `import { CommandPalette } from '@jfrader/ui';
+
+function Commands({ runCommand }: { runCommand: (value: string) => void }) {
+  return <CommandPalette
   triggerLabel="Open commands"
   label="Command palette"
   items={[
@@ -35,8 +38,37 @@ const snippet = `<CommandPalette
     { value: 'toggle-theme', label: 'Toggle theme', keywords: 'dark light', group: 'View', id: 'cmd-3' },
     { value: 'zoom-in', label: 'Zoom in', group: 'View', id: 'cmd-4' },
   ]}
-  onSelect={(item) => runCommand(item)}
-/>`;
+  onSelect={(item) => runCommand(item.value)}
+/>;
+}`;
+
+const compoundSnippet = `import { useState } from 'react';
+import { CommandPalette } from '@jfrader/ui';
+
+function Commands() {
+  const [selections, setSelections] = useState<string[]>([]);
+  const select = (value: string) => () => setSelections((previous) => [...previous, value]);
+  return <>
+    <CommandPalette>
+      <CommandPalette.Trigger>Open commands</CommandPalette.Trigger>
+      <CommandPalette.Content>
+        <CommandPalette.Input placeholder="Type a command" />
+        <CommandPalette.List>
+          <CommandPalette.Group label="Files">
+            <CommandPalette.Item value="open-file" onSelect={select('open-file')}>Open file</CommandPalette.Item>
+            <CommandPalette.Item value="save-file" keywords="write disk" onSelect={select('save-file')}>Save file</CommandPalette.Item>
+          </CommandPalette.Group>
+          <CommandPalette.Group label="View">
+            <CommandPalette.Item value="toggle-theme" keywords="dark light" onSelect={select('toggle-theme')}>Toggle theme</CommandPalette.Item>
+            <CommandPalette.Item value="zoom-in" onSelect={select('zoom-in')}>Zoom in</CommandPalette.Item>
+          </CommandPalette.Group>
+        </CommandPalette.List>
+        <CommandPalette.Empty />
+      </CommandPalette.Content>
+    </CommandPalette>
+    <output aria-label="Selections">{selections.join(',')}</output>
+  </>;
+}`;
 
 const meta: Meta<CommandPaletteCompoundProps> = {
   title: 'Surfaces/CommandPalette',
@@ -46,25 +78,30 @@ const meta: Meta<CommandPaletteCompoundProps> = {
       description: {
         component: 'Search for a command and run it from a modal dialog.',
       },
-      usage: `### Composition
-- Pass \`items\` with unique \`value\` strings and display \`label\` content, plus optional \`keywords\`, \`group\`, \`disabled\` and \`onSelect\`. For custom anatomy, use \`children\` with the compound parts instead; do not combine the two modes.
-- Pass \`triggerLabel\` to generate an opener. If you omit it, control \`open\` from your app and register any shortcut, such as Cmd+K, yourself. The palette starts closed; \`defaultOpen\` seeds its state and \`open\` / \`onOpenChange\` control it.
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Items and groups', stories: ['EasyModeAppAndItemSelect'] },
+        { title: 'Filtering and empty results', stories: ['Filter'] },
+        { title: 'Shortcuts', stories: ['Shortcut'] },
+        { title: 'Controlled', stories: ['EasyModeControlled'] },
+        { title: 'Composition', stories: ['Compound'] },
+        { title: 'Keyboard', stories: ['KeyboardWrap'] },
+      ],
+      usage: `### When to use
+Use a command palette for searchable application actions. Use a menu for a short list that does not need search.
 
-### Actions
-- Run your command in \`onSelect\`. In \`items\` mode, the item's callback runs first, then the root callback receives the selected record, then the palette requests closure. It does not wait for asynchronous command work.
-- If you control \`open\`, update it to accept close requests. Selecting a disabled item does not run callbacks or close the palette.
+### Constraints
+Command values must be unique. Choose generated items or compound content, not both. Register application shortcuts yourself; the palette does not install a global shortcut.
+
+Selection requests closure immediately, without waiting for asynchronous command work. Disabled commands stay visible but cannot run. If application state controls opening, accept close requests to dismiss the palette.
 
 ### Filtering
-- Type to match rendered item text or \`keywords\` using a case-insensitive substring search. Pass \`filter\` to change matching. Nonmatches and groups without matches are hidden, not unmounted.
-- Each query change highlights the first enabled match. Disabled matches remain visible and count toward the result total, but keyboard navigation skips them. Reopening resets the query.
-- Use \`label\`, \`emptyMessage\` and \`formatResultCount\` to translate the dialog name, empty state and count announcement. Their defaults are "Command palette", "No results" and an English result count. In \`items\` mode, \`empty\` supplies empty-state content.
+Matching is case-insensitive and includes keywords. Each query change highlights the first enabled match; reopening resets the query. Disabled matches count toward the result total. Translate the accessible dialog name, empty message and result announcement for your application.
 
 ### Keyboard
 - Opening focuses the input; DOM focus stays there while you navigate options. Use ArrowDown and ArrowUp to move with wrapping, or unmodified Home and End to reach the first and last enabled matches.
 - Press Enter to select the highlighted command. With no enabled match, Enter leaves the palette open. Press Escape to request closure; accepted closure returns focus to the invoker after the exit finishes.
-
-### Customization
-- In \`items\` mode, use \`slotProps\` for generated parts and \`slots\` for replacements. \`slots.root\` takes precedence over \`component\`. Declare adapters outside render and forward every received prop and ref to the corresponding compound part; root adapters forward to a div.`,
+- Tab and Shift+Tab stay inside the modal while it is open.`,
     },
   },
 };
@@ -166,7 +203,7 @@ async function expectClosed(canvasElement: HTMLElement, trigger: HTMLElement) {
 }
 
 export const Default: EasyStory = {
-  name: 'Easy mode',
+  name: 'Search application commands',
   args: {
     triggerLabel: TRIGGER,
     label: LABEL,
@@ -175,6 +212,7 @@ export const Default: EasyStory = {
   },
   parameters: {
     docs: {
+      description: { story: 'Open a searchable command list grouped into Files and View.' },
       source: { language: 'tsx', code: snippet },
     },
   },
@@ -225,6 +263,66 @@ export const EasyModeFilterAndDismiss: EasyStory = {
   },
 };
 
+function ShortcutCommands() {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState('none');
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== 'k' || !(event.metaKey || event.ctrlKey)) return;
+      event.preventDefault();
+      setOpen(true);
+    };
+    document.addEventListener('keydown', handleShortcut);
+    return () => document.removeEventListener('keydown', handleShortcut);
+  }, []);
+  return <>
+    <CommandPalette triggerLabel="Open commands" label="Command palette" open={open}
+      onOpenChange={setOpen} items={[{ value: 'open-file', label: 'Open file' }]}
+      onSelect={(item) => setSelected(item.value)} />
+    <output aria-label="Selected command">{selected}</output>
+  </>;
+}
+
+export const Shortcut: StoryObj = {
+  name: 'Application keyboard shortcut',
+  render: () => <ShortcutCommands />,
+  parameters: { docs: {
+    description: { story: 'Press Ctrl+K or Command+K inside the example to open the palette.' },
+    source: { language: 'tsx', code: `import { useEffect, useState } from 'react';
+import { CommandPalette } from '@jfrader/ui';
+
+function Commands() {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState('none');
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== 'k' || !(event.metaKey || event.ctrlKey)) return;
+      event.preventDefault();
+      setOpen(true);
+    };
+    document.addEventListener('keydown', handleShortcut);
+    return () => document.removeEventListener('keydown', handleShortcut);
+  }, []);
+  return <>
+    <CommandPalette triggerLabel="Open commands" label="Command palette" open={open}
+      onOpenChange={setOpen} items={[{ value: 'open-file', label: 'Open file' }]}
+      onSelect={(item) => setSelected(item.value)} />
+    <output aria-label="Selected command">{selected}</output>
+  </>;
+}` },
+  } },
+  play: async ({ canvasElement }) => {
+    const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
+    trigger.focus();
+    await userEvent.keyboard('{Control>}k{/Control}');
+    const dialog = await within(canvasElement).findByRole('dialog', { name: LABEL });
+    await settleMotion(dialog);
+    await expect(getInput(canvasElement)).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
 function ControlledEasyFixture() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string>('none');
@@ -244,7 +342,30 @@ function ControlledEasyFixture() {
 }
 
 export const EasyModeControlled: StoryObj = {
-  name: 'Easy mode controlled',
+  name: 'Open from application state',
+  parameters: { docs: {
+    description: { story: 'Open the palette from an external button and keep the selected command in state.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { CommandPalette } from '@jfrader/ui';
+
+const commands = [
+  { value: 'open-file', label: 'Open file', group: 'Files', id: 'cmd-1' },
+  { value: 'save-file', label: 'Save file', keywords: 'write disk', group: 'Files', id: 'cmd-2' },
+  { value: 'toggle-theme', label: 'Toggle theme', keywords: 'dark light', group: 'View', id: 'cmd-3' },
+  { value: 'zoom-in', label: 'Zoom in', group: 'View', id: 'cmd-4' },
+];
+
+function Commands() {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState('none');
+  return <>
+    <button type="button" onClick={() => setOpen(true)}>External open</button>
+    <CommandPalette label="Command palette" items={commands} open={open}
+      onOpenChange={setOpen} onSelect={(item) => setSelected(item.value)} />
+    <output aria-label="Selected command">{selected}</output>
+  </>;
+}` },
+  } },
   render: () => <ControlledEasyFixture />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -364,7 +485,23 @@ export const EasyModeOverrides: EasyStory = {
 const itemSelectSpy = fn();
 
 export const EasyModeAppAndItemSelect: EasyStory = {
-  name: 'Easy mode app and item select',
+  name: 'Item actions and unavailable commands',
+  parameters: { docs: {
+    description: { story: 'Run an item action while keeping an unavailable command visible but inactive.' },
+    source: { language: 'tsx', code: `import { CommandPalette } from '@jfrader/ui';
+
+function AuditCommands({ runAudit, recordCommand }: {
+  runAudit: () => void;
+  recordCommand: (value: string) => void;
+}) {
+  return <CommandPalette triggerLabel="Open commands" label="Command palette"
+    items={[
+      { value: 'run-audit', label: 'Run audit', id: 'cmd-audit', onSelect: runAudit },
+      { value: 'delete-all', label: 'Delete all', id: 'cmd-del', disabled: true },
+    ]}
+    onSelect={(item) => recordCommand(item.value)} />;
+}` },
+  } },
   args: {
     triggerLabel: TRIGGER,
     label: LABEL,
@@ -422,30 +559,11 @@ export const EasyModeUncontrolledDismiss: EasyStory = {
 };
 
 export const Compound: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `function Commands() {
-  const [selections, setSelections] = useState<string[]>([]);
-  const select = (value: string) => () => setSelections((previous) => [...previous, value]);
-  return <>
-    <CommandPalette>
-      <CommandPalette.Trigger>Open commands</CommandPalette.Trigger>
-      <CommandPalette.Content>
-        <CommandPalette.Input placeholder="Type a command" />
-        <CommandPalette.List>
-          <CommandPalette.Group label="Files">
-            <CommandPalette.Item value="open-file" onSelect={select('open-file')}>Open file</CommandPalette.Item>
-            <CommandPalette.Item value="save-file" keywords="write disk" onSelect={select('save-file')}>Save file</CommandPalette.Item>
-          </CommandPalette.Group>
-          <CommandPalette.Group label="View">
-            <CommandPalette.Item value="toggle-theme" keywords="dark light" onSelect={select('toggle-theme')}>Toggle theme</CommandPalette.Item>
-            <CommandPalette.Item value="zoom-in" onSelect={select('zoom-in')}>Zoom in</CommandPalette.Item>
-          </CommandPalette.Group>
-        </CommandPalette.List>
-        <CommandPalette.Empty />
-      </CommandPalette.Content>
-    </CommandPalette>
-    <output aria-label="Selections">{selections.join(',')}</output>
-  </>;
-}` } } },
+  name: 'Compose grouped commands',
+  parameters: { docs: {
+    description: { story: 'Compose the input, groups, items and empty state, then record selections.' },
+    source: { language: 'tsx', code: compoundSnippet },
+  } },
   render: (args) => <CommandPaletteExample {...args} />,
   play: async ({ canvasElement }) => {
     const { canvas, trigger, dialog, input } = await openPalette(canvasElement);
@@ -475,6 +593,11 @@ export const Compound: Story = {
 };
 
 export const Filter: Story = {
+  name: 'Search text, keywords and empty results',
+  parameters: { docs: {
+    description: { story: 'Search for disk to match Save file, or enter zzz to show the empty state.' },
+    source: { language: 'tsx', code: compoundSnippet },
+  } },
   render: (args) => <CommandPaletteExample {...args} />,
   play: async ({ canvasElement }) => {
     const { canvas, dialog, input } = await openPalette(canvasElement);
@@ -517,6 +640,11 @@ export const Filter: Story = {
 };
 
 export const KeyboardWrap: Story = {
+  name: 'Navigate across groups',
+  parameters: { docs: {
+    description: { story: 'Use arrows, Home and End to move the highlight while focus stays in the search input.' },
+    source: { language: 'tsx', code: compoundSnippet },
+  } },
   render: (args) => <CommandPaletteExample {...args} />,
   play: async ({ canvasElement }) => {
     const { input } = await openPalette(canvasElement);
