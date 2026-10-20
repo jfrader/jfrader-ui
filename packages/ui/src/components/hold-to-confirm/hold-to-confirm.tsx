@@ -50,6 +50,7 @@ export interface HoldToConfirmProps
   extends Omit<ComponentPropsWithRef<'button'>, 'children' | 'value' | 'defaultValue'>, SxProps {
   /** Displays the button text before confirmation. */
   label: ReactNode;
+  /** Adds root identity tokens alongside `hold-to-confirm`. */
   'data-ui'?: string;
   /** Displays the button text after confirmation. */
   confirmedLabel: ReactNode;

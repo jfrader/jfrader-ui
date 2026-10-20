@@ -101,6 +101,7 @@ export interface ToggleSubscriptionEasyProps extends Omit<ToggleSubscriptionComp
   prices: Readonly<Record<string, ToggleSubscriptionPriceDefinition>>;
   /** Shows a label naming the billing-period switch. */
   label?: ReactNode;
+  /** Not accepted when `options` and `prices` supply the billing choices. */
   children?: never;
   /** Replaces the elements rendering the switch and price parts. */
   slots?: ToggleSubscriptionSlots;

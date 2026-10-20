@@ -100,6 +100,7 @@ export interface CardEasyProps extends CardBaseProps {
   content: ReactNode;
   /** Render actions below the body. */
   footer?: ReactNode;
+  /** Not accepted when `content` supplies the generated card body. */
   children?: never;
 }
 

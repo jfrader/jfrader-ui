@@ -126,6 +126,7 @@ export type ToastProviderProps = ToastProviderBaseProps &
 
 export interface ToastPartProps extends ComponentPropsWithRef<'div'> {
   className?: string;
+  /** Styling overrides applied last. */
   sx?: Interpolation<Theme>;
   style?: CSSProperties;
 }
