@@ -32,6 +32,20 @@ const channels = [
   { id: 'general', name: 'general', description: 'Team updates', members: 1234 },
   { id: 'design', name: 'design', description: 'Design reviews' },
 ];
+const mentionExampleData = `const people = [
+  { id: 'ada', name: 'Ada', role: 'Engineer' },
+  { id: 'grace', name: 'Grace', role: 'Designer' },
+  { id: 'rene', name: 'René', role: 'Researcher' },
+];
+const channels = [
+  { id: 'general', name: 'general', description: 'Team updates', members: 1234 },
+  { id: 'design', name: 'design', description: 'Design reviews' },
+];`;
+const mentionExample = `import { MentionInput } from '@jfrader/ui';
+
+${mentionExampleData}
+
+<MentionInput label="Comment" placeholder="Write a comment" people={people} channels={channels} />`;
 const TOKEN_VALUE: MentionValue = {
   text: '@Ada #general',
   mentions: [
@@ -82,22 +96,31 @@ const meta = {
       description: {
         component: 'Write a message and mention people with @ or channels with #.',
       },
-      usage: `### Keyboard and focus
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Controlled'] },
+        { title: 'People and channels', stories: ['People', 'Channels'] },
+        { title: 'Filtering and empty results', stories: ['SearchSuggestions'] },
+        { title: 'Tokens', stories: ['AtomicTokens'] },
+        { title: 'Long text', stories: ['MinMaxRows'] },
+        { title: 'States', stories: ['MessageStates'] },
+        { title: 'Keyboard and insertion', stories: ['Keyboard', 'Actions'] },
+      ],
+      usage: `### When to use
+Write short messages that refer to people or channels. Use a document editor for long-form content.
+
+### Keyboard and focus
 - @ and # open suggestions at word boundaries.
 - Up/Down moves through suggestions and wraps.
 - Enter or unmodified Tab inserts the active result. Space and punctuation edit text.
 - Shift+Tab leaves backward; Shift+Enter inserts a newline; Escape dismisses suggestions; Home/End move the caret.
-- Without an active suggestion, \`submitOnEnter\` makes unmodified Enter submit nonblank text. Otherwise Enter inserts a newline.
+- Without an active suggestion, Enter inserts a newline unless submission on Enter is enabled. Shift+Enter always inserts a newline.
 - At a mention boundary, unmodified Left/Right jumps across the mention; Backspace/Delete removes it as a unit. Other text editing follows browser behavior.
 - Suggestion and token shortcuts pause during IME composition.
-- Focus stays in the textarea. It exposes a multiline textbox with autocomplete, controls and active descendant. Its combobox wrapper exposes expanded state and cannot receive focus.
+- Give the textarea a visible label. Focus stays there while navigating suggestions.
 
-### Values and forms
-- \`MentionValue\` holds plain text and mention ranges. Ranges use UTF-16 offsets: \`start\` is included; \`end\` is not. Treat ranges as immutable.
-- Invalid ranges are omitted from highlighting and reference serialization. Plain text is preserved.
-- Forms submit the displayed text. Use \`serializeMentions\` to save IDs from validated ranges; escape its output for your storage format.
-- \`ref\` reaches the textarea. \`actionsRef\` provides \`insert\`, \`openSuggestions\` and \`clear\`.
-- When you pass \`value\` or \`open\`, update it in your callback to accept a change. \`onMentionAdd\` reports a request after \`onValueChange\` and before \`onOpenChange\`.
+### Saving messages
+- Forms submit displayed text, not mention IDs. Save validated references separately when identity matters, and escape serialized output for your storage format.
+- Treat text and mention ranges as one immutable value. Invalid ranges do not highlight or serialize as references; their plain text remains.
 
 ### Undo and limits
 - Undo depends on the browser accepting the text insertion. If insertion uses the fallback, undo may not work.
@@ -206,9 +229,75 @@ const boundaryPlay: Story['play'] = async ({ canvas }) => {
   await expect(getComputedStyle(shell).borderTopLeftRadius).toBe(inputStyles.borderTopLeftRadius);
 };
 
-export const Default: Story = { play: boundaryPlay };
-export const People: Story = { args: { channels: undefined } };
-export const Channels: Story = { args: { people: undefined } };
+export const Default: Story = {
+  name: 'Write a comment',
+  parameters: { docs: {
+    description: { story: 'Type @ for people or # for channels, then choose a suggestion.' },
+    source: { language: 'tsx', code: mentionExample },
+  } },
+  play: boundaryPlay,
+};
+export const People: Story = {
+  name: 'Mention people',
+  parameters: { docs: {
+    description: { story: 'Type @ to find a teammate by name and see their role.' },
+    source: { language: 'tsx', code: `import { MentionInput } from '@jfrader/ui';
+
+<MentionInput label="Comment" placeholder="Write a comment" people={[
+  { id: 'ada', name: 'Ada', role: 'Engineer' },
+  { id: 'grace', name: 'Grace', role: 'Designer' },
+  { id: 'rene', name: 'René', role: 'Researcher' },
+]} />` },
+  } },
+  args: { channels: undefined },
+};
+export const Channels: Story = {
+  name: 'Mention channels',
+  parameters: { docs: {
+    description: { story: 'Type # to find a channel with its description and member count.' },
+    source: { language: 'tsx', code: `import { MentionInput } from '@jfrader/ui';
+
+<MentionInput label="Comment" placeholder="Write a comment" channels={[
+  { id: 'general', name: 'general', description: 'Team updates', members: 1234 },
+  { id: 'design', name: 'design', description: 'Design reviews' },
+]} />` },
+  } },
+  args: { people: undefined },
+};
+export const SearchSuggestions: Story = {
+  name: 'Filter suggestions',
+  parameters: { docs: {
+    description: { story: 'Type @a to filter people, then @zzz to see an empty result list.' },
+    source: { language: 'tsx', code: mentionExample },
+  } },
+};
+export const MessageStates: Story = {
+  name: 'Disabled and invalid messages',
+  parameters: { docs: {
+    description: { story: 'Show a disabled message beside an editable message with a validation error.' },
+    source: { language: 'tsx', code: `import { MentionInput, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+${mentionExampleData}
+
+const Fields = styled.div({ display: 'grid', gap: vars.space[4] });
+
+<Fields>
+  <MentionInput label="Archived comment" placeholder="Write a comment" people={people} channels={channels}
+    disabled defaultValue={{ text: 'Thread closed.', mentions: [] }} />
+  <MentionInput label="Comment" placeholder="Write a comment" people={people} channels={channels}
+    description="Mention a teammate with @." error="Write a comment before posting." />
+</Fields>` },
+  } },
+  render: () => (
+    <Stack>
+      <MentionInput label="Archived comment" placeholder="Write a comment" people={people} channels={channels}
+        disabled defaultValue={{ text: 'Thread closed.', mentions: [] }} />
+      <MentionInput label="Comment" placeholder="Write a comment" people={people} channels={channels}
+        description="Mention a teammate with @." error="Write a comment before posting." />
+    </Stack>
+  ),
+};
 export const Both: Story = {};
 export const Metadata: Story = {
   tags: ['!autodocs'],
@@ -233,16 +322,20 @@ export const Metadata: Story = {
   },
 };
 export const Controlled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+  name: 'Controlled comment',
+  parameters: { docs: { description: { story: 'Keep the message text and mention ranges together in application state.' }, source: { language: 'tsx', code: `import { useState } from 'react';
 import { MentionInput, type MentionValue } from '@jfrader/ui';
+
+${mentionExampleData}
 
 function CommentEditor() {
   const [value, setValue] = useState<MentionValue>({ text: '', mentions: [] });
   return (
     <MentionInput
       label="Comment"
-      people={[{ id: 'ada', name: 'Ada', role: 'Engineer' }]}
-      channels={[{ id: 'general', name: 'general' }]}
+      placeholder="Write a comment"
+      people={people}
+      channels={channels}
       value={value}
       onValueChange={setValue}
     />
@@ -280,6 +373,16 @@ export const Sizes: Story = {
   ),
 };
 export const MinMaxRows: Story = {
+  name: 'Scroll a longer message',
+  parameters: { docs: {
+    description: { story: 'Grow from two to three rows, then scroll the remaining message.' },
+    source: { language: 'tsx', code: `import { MentionInput } from '@jfrader/ui';
+
+${mentionExampleData}
+
+<MentionInput label="Comment" placeholder="Write a comment" people={people} channels={channels}
+  minRows={2} maxRows={3} defaultValue={{ text: 'One\\nTwo\\nThree\\nFour\\nFive\\nSix', mentions: [] }} />` },
+  } },
   args: { minRows: 2, maxRows: 3, defaultValue: { text: 'One\nTwo\nThree\nFour\nFive\nSix', mentions: [] } },
   play: async ({ canvas }) => {
     const input = canvas.getByRole('textbox');
@@ -484,15 +587,19 @@ export const BooleanAndZeroNodes: Story = {
 };
 
 export const Keyboard: Story = {
+  name: 'Insert suggestions with the keyboard',
   args: { submitOnEnter: true },
-  parameters: { docs: { source: { language: 'tsx', code: `import { Button, MentionInput } from '@jfrader/ui';
+  parameters: { docs: { description: { story: 'Type @, move with the arrow keys and insert with Enter or Tab without leaving the message.' }, source: { language: 'tsx', code: `import { Button, MentionInput } from '@jfrader/ui';
+
+${mentionExampleData}
 
 <>
   <Button>Before</Button>
   <MentionInput
     label="Comment"
-    people={[{ id: 'ada', name: 'Ada' }, { id: 'grace', name: 'Grace' }]}
-    channels={[{ id: 'general', name: 'general' }, { id: 'design', name: 'design' }]}
+    placeholder="Write a comment"
+    people={people}
+    channels={channels}
     submitOnEnter
     onSubmit={async (value) => {
       await fetch('/api/comments', {
@@ -568,6 +675,22 @@ export const TriggerBoundaries: Story = {
   },
 };
 export const AtomicTokens: Story = {
+  name: 'Edit mention tokens',
+  parameters: { docs: {
+    description: { story: 'Place the caret after @Ada and press Backspace to remove the whole mention.' },
+    source: { language: 'tsx', code: `import { MentionInput } from '@jfrader/ui';
+
+${mentionExampleData}
+
+<MentionInput label="Comment" placeholder="Write a comment" people={people} channels={channels}
+  defaultValue={{
+    text: '@Ada #general',
+    mentions: [
+      { kind: 'person', id: 'ada', label: 'Ada', start: 0, end: 4 },
+      { kind: 'channel', id: 'general', label: 'general', start: 5, end: 13 },
+    ],
+  }} />` },
+  } },
   args: { defaultValue: TOKEN_VALUE },
   play: async ({ canvas, userEvent, args }) => {
     const input = canvas.getByRole('textbox') as HTMLTextAreaElement;
@@ -772,8 +895,11 @@ const customReferenceText = serializeMentions(value, (mention) =>
   },
 };
 export const Actions: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { useRef } from 'react';
+  name: 'Insert text from an action',
+  parameters: { docs: { description: { story: 'Insert text at the caret, clear the message or open people suggestions from a button.' }, source: { language: 'tsx', code: `import { useRef } from 'react';
 import { Button, MentionInput, type MentionInputActions } from '@jfrader/ui';
+
+${mentionExampleData}
 
 function CommentEditor() {
   const actions = useRef<MentionInputActions | null>(null);
@@ -782,15 +908,17 @@ function CommentEditor() {
     <>
       <MentionInput
         label="Comment"
-        people={[{ id: 'ada', name: 'Ada' }]}
+        placeholder="Write a comment"
+        people={people}
+        channels={channels}
         ref={textarea}
         actionsRef={actions}
       />
-      <Button onClick={() => {
+      <Button onMouseDown={(event) => event.preventDefault()} onClick={() => {
         textarea.current?.focus();
         actions.current?.insert('hello');
       }}>Insert text</Button>
-      <Button onClick={() => actions.current?.clear()}>Clear</Button>
+      <Button onMouseDown={(event) => event.preventDefault()} onClick={() => actions.current?.clear()}>Clear</Button>
       <Button onClick={() => {
         textarea.current?.focus();
         actions.current?.openSuggestions('person');
