@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { Pagination, type PaginationProps } from './index';
 import { Card } from '../card';
 
@@ -454,6 +455,21 @@ function ResultsPages() {
     onPageChange={setPage} sx={{ inlineSize: '16rem', maxInlineSize: '100%' }} />;
 }` },
   } },
+};
+
+export const LongCounts: Story = {
+  args: { page: 123456789, totalPages: 987654321, sx: { inlineSize: '16rem', maxInlineSize: '100%' } },
+  render: (args) => <ControlledPagination {...args} />,
+  play: async ({ canvasElement }) => {
+    const nav = getNav(canvasElement);
+    await expect(nav.scrollWidth).toBeLessThanOrEqual(nav.clientWidth);
+    const buttons = within(nav).getAllByRole('button');
+    for (const [index, button] of buttons.entries()) {
+      await expectInside(button, nav);
+      await expect(button.scrollWidth).toBeLessThanOrEqual(button.clientWidth);
+      for (const other of buttons.slice(index + 1)) await expectNoOverlap(button, other);
+    }
+  },
 };
 
 export const TranslatedLabels: Story = {

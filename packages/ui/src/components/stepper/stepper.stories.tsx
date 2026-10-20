@@ -4,6 +4,7 @@ import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside } from '../../testing/geometry-assertions';
 import { Stepper, type StepperProps, type StepperStep } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
@@ -19,9 +20,9 @@ const steps = [
   { id: 'review', label: 'Review', description: 'Confirm and submit' },
 ];`;
 
-const NarrowFrame = styled.div({ inlineSize: '20rem' });
+const NarrowFrame = styled.div({ inlineSize: '20rem', maxInlineSize: '100%' });
 
-const CompactFrame = styled.div({ inlineSize: '320px' });
+const CompactFrame = styled.div({ inlineSize: '320px', maxInlineSize: '100%' });
 
 // Raw fixture buttons must pass the global target-size (WCAG 2.5.8) axe gate in every environment.
 const FixtureButton = styled.button({ minHeight: vars.space[6], minWidth: vars.space[6], padding: `${vars.space[1]} calc(${vars.space[2]} + ${vars.space[1]} / 2)`, boxSizing: 'border-box' });
@@ -49,6 +50,7 @@ const meta = {
   title: 'Navigation/Stepper',
   component: Stepper,
   parameters: {
+    layout: 'padded',
     docs: {
       description: { component: 'Show progress through steps or return to a completed step.' },
       sections: [
@@ -452,6 +454,7 @@ export const ResponsiveNarrow: Story = {
       await expect(getComputedStyle(parts(root, 'caption')[0]!).display).toBe('none');
     }
     for (const root of [auto!, fixed!, vertical!]) await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
+    for (const root of [auto!, fixed!, vertical!]) await expectInside(root, canvasElement);
   },
 };
 

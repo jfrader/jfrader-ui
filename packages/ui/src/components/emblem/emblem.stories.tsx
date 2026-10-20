@@ -323,3 +323,43 @@ export const Rtl: Story = {
     await expect(backgroundOf(canvasElement, 'Right sash')).not.toBe(backgroundOf(canvasElement, 'Left sash'));
   },
 };
+
+export const NarrowRow: Story = {
+  render: (args) => (
+    <div style={{ ...rowStyle, inlineSize: '8rem', maxInlineSize: '100%' }}>
+      <Emblem {...args} size="xl" />
+      <span style={{ minInlineSize: 0, overflowWrap: 'anywhere' }}>InternationalRacingClub</span>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const emblem = within(canvasElement).getByRole('img', { name: NAME });
+    await expect(emblem.getBoundingClientRect().width).toBe(SIZE_PX.xl);
+    await expectInside(emblem, emblem.parentElement!);
+    await expectNoOverlap(emblem, emblem.nextElementSibling!);
+  },
+};
+
+export const LongName: Story = {
+  args: { name: 'World Wide Wanderers' },
+  render: (args) => <div style={rowStyle}>{SHAPES.map((shape) => <Emblem {...args} key={shape} shape={shape} />)}</div>,
+  play: async ({ canvasElement }) => {
+    for (const ink of canvasElement.querySelectorAll<HTMLElement>('[data-ui="emblem-ink"]')) {
+      await expect(ink).toHaveTextContent('WWW');
+      await expect(ink.scrollWidth).toBeLessThanOrEqual(ink.clientWidth);
+      await expectInside(ink, ink.parentElement!);
+    }
+  },
+};
+
+export const ForcedColors: Story = {
+  render: (args) => <div style={rowStyle}>{SHAPES.map((shape) => <Emblem {...args} key={shape} shape={shape} />)}</div>,
+  play: async ({ canvasElement }) => {
+    const plate = canvasElement.querySelector<HTMLElement>('[data-ui="emblem-plate"]')!;
+    const rules = Array.from(plate.ownerDocument.styleSheets).flatMap((sheet) => Array.from(sheet.cssRules))
+      .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule && rule.conditionText.includes('forced-colors: active'))
+      .flatMap((rule) => Array.from(rule.cssRules))
+      .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule && plate.matches(rule.selectorText));
+    await expect(rules.some((rule) => rule.style.forcedColorAdjust === 'none' && rule.style.backgroundColor.toLowerCase() === 'canvastext')).toBe(true);
+    await expect(rules.some((rule) => rule.style.backgroundImage === 'none')).toBe(true);
+  },
+};

@@ -17,7 +17,7 @@ import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
-import { REDUCED_MOTION } from '../../styling/media';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { getInitials } from '../../utils/initials';
 
@@ -91,6 +91,10 @@ export interface EmblemProps
 }
 
 const MAX_INITIALS = 3;
+const FULL_SIZE_INITIALS = 2;
+const MONOGRAM_FONT_RATIO = 0.5;
+const MONOGRAM_WIDTH_RATIO = 0.85;
+const graphemes = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
 const PLATE = '[data-ui="emblem-plate"]';
 /** The crest geometry, 8 units wide for every 7 of height. */
 const SHIELD_PATH = 'polygon(50% 0, 91% 16%, 84% 73%, 50% 100%, 16% 73%, 9% 16%)';
@@ -112,6 +116,7 @@ const rootStyle = css({
   '--emblem-brightness': '1',
   position: 'relative',
   display: 'inline-block',
+  flexShrink: 0,
   inlineSize: 'var(--emblem-size)',
   blockSize: 'var(--emblem-size)',
   fontSize: 'var(--emblem-size)',
@@ -121,6 +126,7 @@ const rootStyle = css({
   [SUPPORTS_DERIVED_COLORS]: {
     '--emblem-highlight': `oklch(from var(--emblem-fill) calc(l + ${HIGHLIGHT_STEP}) calc(c * ${HIGHLIGHT_CHROMA}) h)`,
   },
+  [FORCED_COLORS]: { filter: 'none' },
 });
 
 const plateStyle = css({
@@ -131,6 +137,11 @@ const plateStyle = css({
   overflow: 'hidden',
   backgroundImage:
     'var(--emblem-pattern), linear-gradient(135deg, var(--emblem-highlight), var(--emblem-fill))',
+  [FORCED_COLORS]: {
+    forcedColorAdjust: 'none',
+    backgroundImage: 'none',
+    backgroundColor: 'CanvasText',
+  },
   // Hairline inset that keeps the plate's radius and clips to its shape.
   '&::after': {
     content: '""',
@@ -147,7 +158,7 @@ const monogramStyle = css({
   maxInlineSize: '100%',
   overflow: 'hidden',
   fontFamily: vars.font.sans,
-  fontSize: '0.5em',
+  fontSize: 'calc(1em * var(--emblem-monogram-scale))',
   fontWeight: vars.fontWeight.semibold,
   letterSpacing: '-0.03em',
   lineHeight: 1,
@@ -161,6 +172,7 @@ const inkStyle = css({
   [SUPPORTS_CONTRAST_INK]: {
     color: 'var(--emblem-ink, contrast-color(var(--emblem-highlight)))',
   },
+  [FORCED_COLORS]: { color: 'Canvas' },
 });
 
 const imageStyle = css({
@@ -261,11 +273,13 @@ export function Emblem({
   // screen. An image shows no text, so it needs the name alone.
   const renderLabel = showImage ? name : `${name} — ${monogram}`;
 
-  const colors: Record<string, string> = {};
-  if (color !== undefined) colors['--emblem-fill'] = color;
-  if (secondaryColor !== undefined) colors['--emblem-secondary'] = secondaryColor;
-  if (inkColor !== undefined) colors['--emblem-ink'] = inkColor;
-  const colorStyle = { ...colors, ...style } as CSSProperties;
+  const initialCount = Array.from(graphemes.segment(monogram)).length;
+  const monogramScale = initialCount > FULL_SIZE_INITIALS ? MONOGRAM_WIDTH_RATIO / initialCount : MONOGRAM_FONT_RATIO;
+  const customProperties: Record<string, string> = { '--emblem-monogram-scale': String(monogramScale) };
+  if (color !== undefined) customProperties['--emblem-fill'] = color;
+  if (secondaryColor !== undefined) customProperties['--emblem-secondary'] = secondaryColor;
+  if (inkColor !== undefined) customProperties['--emblem-ink'] = inkColor;
+  const colorStyle = { ...customProperties, ...style } as CSSProperties;
 
   const content = (
     <span data-ui="emblem-plate" aria-hidden="true" css={plateStyle}>
