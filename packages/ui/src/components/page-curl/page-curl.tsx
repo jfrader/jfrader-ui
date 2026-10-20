@@ -73,19 +73,31 @@ export interface PageCurlProps
       'children' | 'defaultValue' | 'onChange'
     >,
     SxProps {
+  /** Supplies pages in reading order, with the first page shown alone. */
   pages: readonly PageCurlPage[];
+  /** Controls the zero-based spread index, truncated and clamped to the available spreads. */
   value?: number;
+  /** Sets the initial uncontrolled spread index. Defaults to `0`. */
   defaultValue?: number;
+  /** Receives the requested zero-based spread index when a page turn changes the spread. */
   onValueChange?: (spread: number) => void;
   /** Page inline/block ratio. Defaults to 0.72. */
   pageAspect?: number;
+  /** Names the book region for assistive technology. Defaults to `"Book"`. */
   label?: string;
+  /** Describes the book region's role to assistive technology. Defaults to `"book"`. */
   roleDescription?: string;
+  /** Adds content below the page controls. Omitted by default. */
   hint?: ReactNode;
+  /** Overrides navigation labels, empty text, and the page-count formatter. */
   labels?: Partial<PageCurlLabels>;
+  /** Sets the locale passed to the page-count formatter. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Replaces the root `div`. `slots.root` takes precedence. */
   component?: PageCurlSlots['root'];
+  /** Replaces the book, page, fold, and control elements. */
   slots?: PageCurlSlots;
+  /** Passes props to generated parts. `page` also accepts a per-page callback. */
   slotProps?: PageCurlSlotProps;
 }
 
