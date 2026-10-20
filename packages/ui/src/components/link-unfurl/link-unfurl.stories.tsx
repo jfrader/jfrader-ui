@@ -15,6 +15,32 @@ import {
 import { styled } from '../../index';
 
 const GUIDE = 'https://example.com/guide';
+function ReplacementRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="replacement-root" />;
+}
+function SugarRoot(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-testid="sugar-root" />;
+}
+export const RootComponent: StoryObj<typeof LinkUnfurl> = {
+  tags: ['!autodocs'], args: { label: 'Message', component: SugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByTestId('sugar-root')).toHaveAttribute('data-ui', 'link-unfurl');
+  },
+};
+export const RootReplacement: StoryObj<typeof LinkUnfurl> = {
+  tags: ['!autodocs'],
+  args: { label: 'Message', component: SugarRoot, slots: { root: ReplacementRoot }, ref: fn(), className: 'consumer-root', title: 'consumer', slotProps: { root: { ref: fn(), title: 'slot', className: 'slot-root', 'data-ui': 'custom' } } },
+  play: async ({ canvasElement, args }) => {
+    const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(root.tagName).toBe('DIV');
+    await expect(root).toHaveClass('consumer-root', 'slot-root');
+    await expect(root).toHaveAttribute('title', 'slot');
+    await expect(root).toHaveAttribute('data-ui', 'link-unfurl custom');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    await expect(within(root).getByRole('textbox', { name: 'Message' })).toBeInTheDocument();
+  },
+};
 const CHANGELOG = 'https://example.org/changelog';
 const COVER = new URL('/og-image.png', window.location.href).href;
 const FAVICON = COVER;

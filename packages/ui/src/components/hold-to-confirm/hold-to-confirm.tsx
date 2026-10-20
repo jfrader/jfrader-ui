@@ -12,6 +12,7 @@ import { motionDurationMs } from '../../styling/motion-timings';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { numberFormatter } from '../../utils/intl';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useLatestCallback } from '../../utils/use-latest-callback';
@@ -25,6 +26,8 @@ export interface HoldToConfirmPartProps {
   css?: Interpolation<Theme>;
 }
 export interface HoldToConfirmSlots {
+  /** Replaces the native button. */
+  root?: ComponentType<ComponentPropsWithRef<'button'>>;
   /** Displays the button face. */
   face?: ComponentType<HoldToConfirmPartProps>;
   /** Clips the progress face over the button. */
@@ -46,6 +49,7 @@ export interface HoldToConfirmSlots {
 export interface HoldToConfirmProps
   extends Omit<ComponentPropsWithRef<'button'>, 'children' | 'value' | 'defaultValue'>, SxProps {
   label: ReactNode;
+  'data-ui'?: string;
   confirmedLabel: ReactNode;
   confirmationAnnouncement: string;
   getHoldDescription: (formattedDuration: string) => string;
@@ -63,6 +67,8 @@ export interface HoldToConfirmProps
   icon?: ReactNode;
   confirmedIcon?: ReactNode;
   slots?: HoldToConfirmSlots;
+  /** Shorthand for slots.root; slots.root takes precedence. */
+  component?: HoldToConfirmSlots['root'];
   slotProps?: Partial<
     Record<
       | /** Face layer displaying the button icon and label. */
@@ -83,7 +89,7 @@ export interface HoldToConfirmProps
         'status',
       HoldToConfirmPartProps
     >
-  >;
+  > & { root?: Omit<PresentationProps<'button'>, 'children' | 'value' | 'defaultValue'> };
 }
 
 const DEFAULT_DURATION = 1200;
@@ -192,9 +198,11 @@ const hintStyle = css([
 const morphStyle = css({ borderRadius: vars.radius.full });
 function ButtonElement({
   nativeProps,
+  rootComponent,
+  rootIdentity,
   ...props
-}: ComponentPropsWithRef<'button'> & { nativeProps: ComponentPropsWithRef<'button'> }) {
-  return <button {...nativeProps} {...props} style={{ ...nativeProps.style, ...props.style }} />;
+}: ComponentPropsWithRef<'button'> & { nativeProps: ComponentPropsWithRef<'button'>; rootComponent?: HoldToConfirmSlots['root']; rootIdentity?: unknown }) {
+  return <PresentationSlot element="button" component={rootComponent} marker="hold-to-confirm" slotProps={{ 'data-ui': typeof rootIdentity === 'string' ? rootIdentity : undefined }} {...nativeProps} {...props} style={{ ...nativeProps.style, ...props.style }} />;
 }
 const MotionButton = motion.create(ButtonElement);
 const morphTransition = { duration: motionDurationMs.base / 1000 };
@@ -229,6 +237,7 @@ function HoldToConfirmRoot({
   disabled = false,
   slotProps,
   slots,
+  component,
   className,
   sx,
   onPointerDown,
@@ -432,15 +441,17 @@ function HoldToConfirmRoot({
 
   return (
     <>
-      <WithSx className={className} styles={[rootStyle, sizeStyles[size], toneStyles[tone], variant === 'morph' && morphStyle]} sx={sx}>
+      <WithSx className={className} styles={[rootStyle, sizeStyles[size], toneStyles[tone], variant === 'morph' && morphStyle, slotProps?.root?.css]} sx={sx}>
         {(rootClassName) => (
           <MotionButton
+            rootComponent={slots?.root ?? component}
+            rootIdentity={slotProps?.root?.['data-ui']}
             nativeProps={rest}
             ref={mergedRef}
             className={rootClassName}
             type="button"
             disabled={disabled}
-            data-ui="hold-to-confirm"
+            data-ui={rest['data-ui'] ?? 'hold-to-confirm'}
             data-variant={variant}
             layout={variant === 'morph' && !reducedMotion}
             transition={morphTransition}
@@ -553,10 +564,16 @@ function HoldToConfirmRoot({
   );
 }
 
-export function HoldToConfirm(props: HoldToConfirmProps) {
+export function HoldToConfirm({ ref, className, style, ...props }: HoldToConfirmProps) {
+  const root = props.slotProps?.root;
+  const rootRef = useMergeRefs([ref, root?.ref]);
+  const { css: _css, ...rootProps } = root ?? {};
   return (
     <MotionConfig reducedMotion="user">
-      <HoldToConfirmRoot {...props} />
+      <HoldToConfirmRoot {...props} {...rootProps} ref={rootRef}
+        className={[className, root?.className].filter(Boolean).join(' ') || undefined}
+        style={{ ...style, ...root?.style }}
+        data-ui={props['data-ui']} />
     </MotionConfig>
   );
 }

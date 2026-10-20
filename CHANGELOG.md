@@ -23,6 +23,7 @@
 
 ### Added
 
+- `LinkUnfurl`, `ChatMessage`, `HoldToConfirm` and `AttachmentList` accept `slots.root`, `slotProps.root` and `component` to replace their native root while retaining generated content, props, refs and styling.
 - `CodeBlock`, `TypewriterTerminal` and `JsonViewer` share Surface panel material and support inherited or contrast appearance. Root replacements own their panel material.
 - `CommentThread`, `TypewriterTerminal`, `CodeBlock` and `JsonViewer` accept `slots.root`, `slotProps.root` and `component` to replace their outer element while retaining generated content and existing panel styling.
 - `Timeline`, `MetricCard`, `EmptyState` and `ChatThread` accept `slots.root`, `slotProps.root` and `component` to replace their outer element while retaining generated content, props, refs and styling.

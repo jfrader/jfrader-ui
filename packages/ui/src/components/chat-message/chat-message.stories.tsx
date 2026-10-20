@@ -10,6 +10,33 @@ import { ChatMessage, type ChatMessageProps } from './index';
 import { ChatThread } from '../chat-thread';
 
 const NOW = Date.parse('2026-10-12T12:00:00Z');
+function ReplacementRoot(props: ComponentPropsWithRef<'article'>) {
+  return <article {...props} data-testid="replacement-root" />;
+}
+function SugarRoot(props: ComponentPropsWithRef<'article'>) {
+  return <article {...props} data-testid="sugar-root" />;
+}
+export const RootComponent: StoryObj<typeof ChatMessage> = {
+  tags: ['!autodocs'], args: { author: 'Alex', text: 'Ready.', component: SugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByTestId('sugar-root')).toHaveAttribute('data-ui', 'chat-message');
+  },
+};
+export const RootReplacement: StoryObj<typeof ChatMessage> = {
+  tags: ['!autodocs'],
+  args: { author: 'Alex', text: 'Ready to review.', component: SugarRoot, slots: { root: ReplacementRoot }, ref: fn(), className: 'consumer-root', title: 'consumer', slotProps: { root: { ref: fn(), title: 'slot', className: 'slot-root', 'data-ui': 'custom' } } },
+  play: async ({ canvasElement, args }) => {
+    const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(root.tagName).toBe('ARTICLE');
+    await expect(root).toHaveClass('consumer-root', 'slot-root');
+    await expect(root).toHaveAttribute('title', 'slot');
+    await expect(root).toHaveAttribute('data-ui', 'chat-message custom');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    await expect(root).toHaveTextContent('Ready to review.');
+    await expect(root).toHaveAccessibleName(/Alex/);
+  },
+};
 const MINUTE = 60_000;
 const DAY = 24 * 60 * MINUTE;
 
