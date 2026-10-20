@@ -65,24 +65,43 @@ type FocusTarget = 'search' | 'number' | 'trigger' | null;
 export interface PhoneInputProps extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'type' | 'value' | 'defaultValue'>, SxProps {
   /** Store a `+`-prefixed candidate, including incomplete numbers. */
   value?: string;
+  /** Sets the initial international number candidate. Defaults to empty. */
   defaultValue?: string;
+  /** Receives the international candidate, including incomplete numbers, with parsing and validation details. */
   onValueChange?: (value: string, details: PhoneInputDetails) => void;
+  /** Controls the country used for national-number entry. `null` leaves it unselected. */
   country?: PhoneCountryCode | null;
+  /** Sets the initial country for national-number entry. Defaults to `null`. */
   defaultCountry?: PhoneCountryCode | null;
+  /** Receives the selected or inferred country, or `null` when unknown. */
   onCountryChange?: (country: PhoneCountryCode | null) => void;
+  /** Controls whether the country picker is open. */
   open?: boolean;
+  /** Opens the uncontrolled country picker initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receives changes to the country picker's open state. */
   onOpenChange?: (open: boolean) => void;
+  /** Limits picker choices to these countries. Defaults to all supported countries. */
   countries?: readonly PhoneCountryCode[];
+  /** Lists matching countries first in a suggested group. Defaults to none. */
   preferredCountries?: readonly PhoneCountryCode[];
+  /** Names the phone-number field with a linked label. */
   label?: ReactNode;
+  /** Adds supporting text associated with the number field. */
   description?: ReactNode;
+  /** Displays an error instead of the generated validation message. */
   error?: ReactNode;
+  /** Visually hides the label while retaining its accessible name. Defaults to `false`. */
   hideLabel?: boolean;
+  /** Shows validation errors for nonempty invalid numbers after blur. Defaults to `true`. */
   validateOnBlur?: boolean;
+  /** Sets the control height and text size. Defaults to `md`. */
   size?: 'sm' | 'md' | 'lg';
+  /** Selects country names, sorting, search and count locale. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
+  /** Overrides picker labels and validation announcements. Defaults to English. */
   messages?: Partial<PhoneInputMessages>;
+  /** Renders a decorative icon beside the selected country in the trigger. */
   renderCountryIcon?: (country: PhoneCountryCode) => ReactNode;
   /** Style internal parts without replacing their semantics or behavior. */
   slotProps?: Partial<Record<Part, FieldPartProps>>;

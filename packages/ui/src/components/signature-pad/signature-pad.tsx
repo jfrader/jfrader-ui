@@ -130,32 +130,59 @@ export interface SignaturePadProps
       'onChange' | 'defaultValue' | 'width' | 'height' | 'color' | 'children'
     >,
     SxProps {
+  /** Controls the recorded strokes. */
   value?: SignatureStroke[];
+  /** Sets the initial uncontrolled strokes. Defaults to an empty signature. */
   defaultValue?: SignatureStroke[];
+  /** Receives requested strokes after drawing, undo, redo, clear or import. */
   onValueChange?: (value: SignatureStroke[]) => void;
+  /** Controls the ink color for new strokes. */
   color?: InkColor;
+  /** Sets the initial uncontrolled ink color. Defaults to `black`. */
   defaultColor?: InkColor;
+  /** Receives the requested ink color. */
   onColorChange?: (color: InkColor) => void;
+  /** Controls the nib width for new strokes, not the canvas width. */
   width?: InkWidth;
+  /** Sets the initial uncontrolled nib width. Defaults to `medium`. */
   defaultWidth?: InkWidth;
+  /** Receives the requested nib width. */
   onWidthChange?: (width: InkWidth) => void;
+  /** Names the drawing canvas with a visible label. */
   label?: ReactNode;
+  /** Shows supporting text associated with the canvas. */
   description?: ReactNode;
+  /** Shows an error associated with the canvas. */
   error?: ReactNode;
+  /** Shows the signer's name beside the signature guide. */
   signer?: ReactNode;
+  /** Shows a drawing hint while the signature is empty. */
   hint?: ReactNode;
+  /** Disables drawing and toolbar actions. Defaults to `false`. */
   disabled?: boolean;
+  /** Prevents stroke edits while allowing replay and export. Defaults to `false`. */
   readOnly?: boolean;
+  /** Adds the required-signature message to the canvas description. Defaults to `false`. */
   required?: boolean;
+  /** Shows the replay action. Defaults to `true`. */
   replay?: boolean;
+  /** Shows PNG and SVG download actions. Defaults to `false`. */
   download?: boolean;
+  /** Sets the download filename without its extension. Defaults to `signature`. */
   fileName?: string;
+  /** Limits stored undo and redo snapshots. Defaults to 60 for nonpositive or nonfinite values. */
   historyLimit?: number;
+  /** Supplies toolbar labels and accessible status messages. */
   messages: SignaturePadMessages;
+  /** Replaces the glyphs for individual toolbar actions. */
   icons?: Partial<Record<SignatureAction, ReactNode>>;
+  /** Sets export cropping and scale unless an imperative export supplies its own options. */
   exportOptions?: SignatureExportOptions;
+  /** Exposes undo, redo, clear, replay, import and export methods. */
   apiRef?: Ref<SignaturePadHandle>;
+  /** Passes props and `sx` to individual pad parts. */
   slotProps?: SignaturePadSlotProps;
+  /** Replaces the elements rendering individual pad parts. */
   slots?: SignaturePadSlots;
 }
 

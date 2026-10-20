@@ -198,9 +198,13 @@ export interface UserMenuSlots {
 }
 
 export interface UserMenuBaseProps {
+  /** Supplies the identity shown in the trigger and identity section. */
   user: UserMenuUser;
+  /** Controls whether the account menu is open. */
   open?: boolean;
+  /** Opens the uncontrolled account menu initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Receives changes to the account menu's open state. */
   onOpenChange?: (open: boolean) => void;
   /** Desktop placement next to the Trigger; flips when there is no room. */
   placement?: Placement;
@@ -209,6 +213,7 @@ export interface UserMenuBaseProps {
 }
 
 export interface UserMenuCompoundProps extends UserMenuBaseProps {
+  /** Composes the trigger, content and account-menu parts. */
   children?: ReactNode;
   messages?: never;
   items?: never;
@@ -241,8 +246,11 @@ export interface UserMenuEasyProps extends UserMenuBaseProps, Omit<GeneratedRoot
   /** Surface presentation variant (adaptive, menu, or sheet). */
   variant?: UserMenuVariant;
   children?: never;
+  /** Passes props and style overrides to generated account-menu parts. */
   slotProps?: UserMenuSlotProps;
+  /** Replaces generated account-menu parts. */
   slots?: UserMenuSlots;
+  /** Replaces the generated root. `slots.root` takes precedence. */
   component?: UserMenuSlots['root'];
 }
 
@@ -253,12 +261,14 @@ export interface UserMenuTriggerProps extends Omit<ComponentPropsWithRef<'button
   'aria-label': string;
   /** Shows the user's name next to the avatar outside compact viewports. */
   showName?: boolean;
+  /** Sets the avatar's presence indicator. */
   status?: AvatarStatus;
   /** Translated status word, exposed as the Trigger's description. */
   statusLabel?: string;
 }
 
 interface UserMenuContentBaseProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /** Replaces the menu panel, sheet handle or sheet close button. */
   slots?: {
     /** Replaces the menu content panel container. */
     menu?: ComponentType<ComponentPropsWithRef<'div'>>;
@@ -267,6 +277,7 @@ interface UserMenuContentBaseProps extends ComponentPropsWithRef<'div'>, SxProps
     /** Replaces the sheet close button element. */
     close?: ComponentType<ComponentPropsWithRef<'button'>>;
   };
+  /** Passes props and style overrides to the menu panel and sheet controls. */
   slotProps?: {
     /** Menu content panel container element. */
     menu?: UserMenuPartProps;
@@ -279,8 +290,13 @@ interface UserMenuContentBaseProps extends ComponentPropsWithRef<'div'>, SxProps
 
 export type UserMenuContentProps = UserMenuContentBaseProps &
   (
-    | { variant: 'menu'; closeLabel?: string }
     | {
+        /** Keeps the content in an anchored menu at every viewport width. */
+        variant: 'menu';
+        closeLabel?: string;
+      }
+    | {
+        /** Uses a sheet always or only in compact viewports. Defaults to `adaptive`. */
         variant?: 'adaptive' | 'sheet';
         /** Translated name of the sheet's Close button. */
         closeLabel: string;
@@ -293,6 +309,7 @@ export interface UserMenuItemProps extends Omit<ComponentPropsWithRef<'button'>,
   /** Called once on activation. The menu closes unless a click handler called `event.preventDefault()`. */
   onSelect?: () => void;
   disabled?: boolean;
+  /** Sets the action's color emphasis. Defaults to `neutral`. */
   tone?: UserMenuItemTone;
   /** Decorative icon before the label. */
   icon?: ReactNode;
@@ -314,12 +331,17 @@ export interface UserMenuGroupSlots {
 }
 
 interface ChoiceGroupProps<V extends string> extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue'>, SxProps {
+  /** Replaces the choice group's label and radio-option buttons. */
   slots?: UserMenuGroupSlots;
+  /** Controls the selected preference without changing the application theme or presence itself. */
   value?: V;
+  /** Sets the initial preference. Defaults to `system` for theme and `available` for status. */
   defaultValue?: V;
+  /** Receives the selected preference. The menu stays open. */
   onValueChange?: (value: V) => void;
   /** Translated group name and option labels. */
   labels: { group: string } & Record<V, string>;
+  /** Passes props and style overrides to the group label and options. */
   slotProps?: UserMenuGroupSlotProps;
 }
 

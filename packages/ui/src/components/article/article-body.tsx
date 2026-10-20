@@ -22,19 +22,49 @@ type QuoteAnatomy = {
 };
 type CellAnatomy = { root: 'div'; label: 'p'; content: 'div' };
 type Customization<A extends Record<string, 'div' | 'p' | 'h2' | 'aside' | 'ul' | 'li' | 'blockquote' | 'span' | 'footer'>> = {
-  component?: PresentationSlots<A>['root']; slots?: PresentationSlots<A>; slotProps?: PresentationParts<A>;
+  /** Replaces the root element. `slots.root` takes precedence. */
+  component?: PresentationSlots<A>['root'];
+  /** Replaces the part's elements. */
+  slots?: PresentationSlots<A>;
+  /** Passes props to the part's elements. */
+  slotProps?: PresentationParts<A>;
 };
 export type ArticleBodyProps = ComponentPropsWithRef<'div'> & SxProps & Customization<Anatomy>;
-export type ArticleBodyParagraphProps = ComponentPropsWithRef<'p'> & SxProps & Customization<ParagraphAnatomy> & { variant?: 'standard' | 'drop-cap' };
-export type ArticleBodyHeadingProps = PresentationHeadingProps & SxProps & Omit<Customization<HeadingAnatomy>, 'component' | 'slots'> & { component?: ComponentType<PresentationHeadingProps>; slots?: { root?: ComponentType<PresentationHeadingProps> } };
+export type ArticleBodyParagraphProps = ComponentPropsWithRef<'p'> & SxProps & Customization<ParagraphAnatomy> & {
+  /** Enlarges the first letter with `drop-cap`. Defaults to `standard`. */
+  variant?: 'standard' | 'drop-cap';
+};
+export type ArticleBodyHeadingProps = PresentationHeadingProps & SxProps & Omit<Customization<HeadingAnatomy>, 'component' | 'slots'> & {
+  /** Replaces the heading root and receives its `level`. `slots.root` takes precedence. */
+  component?: ComponentType<PresentationHeadingProps>;
+  /** Replaces the heading root with a component receiving its `level`. */
+  slots?: { root?: ComponentType<PresentationHeadingProps> };
+};
 export type ArticleBodyFactItem = { id: string; content: ReactNode };
 export type ArticleBodyFactProps = Omit<ComponentPropsWithRef<'aside'>, 'title'> & SxProps & Omit<Customization<FactAnatomy>, 'slots'> & {
+  /** Replaces the fact box, title and list elements. */
   slots?: Omit<PresentationSlots<FactAnatomy>, 'title'> & { title?: ComponentType<ComponentPropsWithRef<'p'> & { level?: ArticleHeadingLevel }> };
-  title?: ReactNode; level?: ArticleHeadingLevel;
-} & ({ items: readonly ArticleBodyFactItem[]; children?: never } | { items?: never; children?: ReactNode });
-export type ArticleBodyQuoteProps = ComponentPropsWithRef<'blockquote'> & SxProps & Customization<QuoteAnatomy> & { speaker?: ReactNode; attribution?: ReactNode };
-export type ArticleBodyCellProps = ComponentPropsWithRef<'div'> & SxProps & Customization<CellAnatomy> & { label?: ReactNode };
+  /** Adds a title above the supporting facts. */
+  title?: ReactNode;
+  /** Renders the fact title as a heading at this level. Omit to use a paragraph. */
+  level?: ArticleHeadingLevel;
+} & ({
+  /** Renders supporting facts as a keyed list instead of custom `children`. */
+  items: readonly ArticleBodyFactItem[];
+  children?: never;
+} | { items?: never; children?: ReactNode });
+export type ArticleBodyQuoteProps = ComponentPropsWithRef<'blockquote'> & SxProps & Customization<QuoteAnatomy> & {
+  /** Names the speaker beneath the quotation. */
+  speaker?: ReactNode;
+  /** Adds source or credit content beneath the speaker. */
+  attribution?: ReactNode;
+};
+export type ArticleBodyCellProps = ComponentPropsWithRef<'div'> & SxProps & Customization<CellAnatomy> & {
+  /** Adds a label above the cell content. */
+  label?: ReactNode;
+};
 export type ArticleBodySplitProps = Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps & Customization<Anatomy> & {
+  /** Supplies exactly two cells, stacked on narrow screens and side by side on wider screens. */
   children: readonly [ReactElement<ArticleBodyCellProps>, ReactElement<ArticleBodyCellProps>];
 };
 
