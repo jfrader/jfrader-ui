@@ -31,6 +31,20 @@ const FIT_TOLERANCE_PX = 0.02;
 const along = (distance: number, direction: number) =>
   Math.abs(direction) < AXIS_EPSILON ? Infinity : distance / Math.abs(direction);
 
+function ellipseRectangleRadius(radiusX: number, radiusY: number, ux: number, uy: number, halfWidth: number, halfHeight: number) {
+  if (radiusX <= 0 || radiusY <= 0) return -1;
+  // The farthest corner follows (x + distance * dx)² + (y + distance * dy)² = 1.
+  const x = halfWidth / radiusX;
+  const y = halfHeight / radiusY;
+  const dx = Math.abs(ux) / radiusX;
+  const dy = Math.abs(uy) / radiusY;
+  const a = dx * dx + dy * dy;
+  const b = 2 * (x * dx + y * dy);
+  const c = x * x + y * y - 1;
+  if (c > 0) return -1;
+  return -2 * c / (b + Math.sqrt(b * b - 4 * a * c));
+}
+
 export function fitBoardContent(measurement: BoardMeasurements) {
   const { width, height, centerX, centerY, seats, center, gap } = measurement;
   const placement = measurement.seatPlacement ?? 'inside';
@@ -129,10 +143,11 @@ export function fitBoardContent(measurement: BoardMeasurements) {
       const separation = Math.min(along((seat.width + seat.playWidth) / 2 + gap, ux),
         along((seat.height + seat.playHeight) / 2 + gap, uy));
       const distance = Math.min(seatDistance - separation,
-        along(halfWidth - seat.playWidth / 2 - gap, ux), along(halfHeight - seat.playHeight / 2 - gap, uy));
+        ellipseRectangleRadius(halfWidth, halfHeight, ux, uy, seat.playWidth / 2 + gap, seat.playHeight / 2 + gap));
       const play = { x: ux * distance, y: uy * distance, width: seat.playWidth, height: seat.playHeight };
       if (active) {
-        contained &&= distance >= 0 && Math.abs(play.x) + play.width / 2 <= halfWidth && Math.abs(play.y) + play.height / 2 <= halfHeight;
+        contained &&= distance >= 0 && Math.hypot((Math.abs(play.x) + play.width / 2) / halfWidth,
+          (Math.abs(play.y) + play.height / 2) / halfHeight) <= 1;
       }
       return { ...play, scale: seat.playScale, active, index };
     });

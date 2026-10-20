@@ -869,7 +869,7 @@ const spanishPiles: readonly GameCardStackPile[] = [
 export function TrucoTable() {
   return (
     <GameTable
-      players={2}
+      places={2}
       seats={[{ key: 'Ana', teamIdx: 0, isMe: true }, { key: 'Luis', teamIdx: 1 }]}
     >
       {spanishPiles.map((pile) => (
