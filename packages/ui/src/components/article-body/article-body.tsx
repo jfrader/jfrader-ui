@@ -64,16 +64,19 @@ function ArticleBodyRoot({ component, slots, slotProps, ...props }: ArticleBodyP
   return <PresentationSlot {...props} element="div" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-body" styles={[proseTypography, bodyStyle]} />;
 }
 ArticleBodyRoot.displayName = 'ArticleBody';
+/** Render a paragraph with an optional drop cap. */
 function Paragraph({ variant = 'standard', component, slots, slotProps, ...props }: ArticleBodyParagraphProps) {
   return <PresentationSlot {...props} element="p" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-body-paragraph" data-variant={variant} styles={[paragraphStyle, variant === 'drop-cap' && dropCapStyle]} />;
 }
 Paragraph.displayName = 'ArticleBody.Paragraph';
+/** Introduce a section of the article. */
 function Heading({ level = 2, component, slots, slotProps, children, ...props }: ArticleBodyHeadingProps) {
   if (!isRenderable(children) || children === '') return null;
   const Root = slots?.root ?? component;
   return <PresentationSlot {...props} element={`h${level}`} component={Root} slotProps={slotProps?.root} marker="article-body-heading" styles={headingStyle} {...(Root ? { level } : {})}>{children}</PresentationSlot>;
 }
 Heading.displayName = 'ArticleBody.Heading';
+/** Set aside supporting facts with an optional title and list. */
 function Fact({ title, level, items, children, component, slots, slotProps, ...props }: ArticleBodyFactProps) {
   return <PresentationSlot {...props} element="aside" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-body-fact" styles={factStyle}>
     {isRenderable(title) && title !== '' && <PresentationSlot element={level ? `h${level}` : 'p'} component={slots?.title} slotProps={slotProps?.title} marker="article-body-fact-title" styles={articleLabelStyle} {...(slots?.title ? { level } : {})}>{title}</PresentationSlot>}
@@ -81,6 +84,7 @@ function Fact({ title, level, items, children, component, slots, slotProps, ...p
   </PresentationSlot>;
 }
 Fact.displayName = 'ArticleBody.Fact';
+/** Present a quotation with its speaker and attribution. */
 function Quote({ children, speaker, attribution, component, slots, slotProps, ...props }: ArticleBodyQuoteProps) {
   if (!isRenderable(children)) return null;
   return <PresentationSlot {...props} element="blockquote" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-body-quote" styles={quoteStyle}>
@@ -90,12 +94,14 @@ function Quote({ children, speaker, attribution, component, slots, slotProps, ..
   </PresentationSlot>;
 }
 Quote.displayName = 'ArticleBody.Quote';
+/** Arrange two article elements in a responsive split layout. */
 function Split({ children, component, slots, slotProps, ...props }: ArticleBodySplitProps) {
   const cells = Children.toArray(children);
   if (cells.length !== 2 || cells.some((child) => !isValidElement(child))) throw new Error('ArticleBody.Split requires exactly two elements.');
   return <PresentationSlot {...props} element="div" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-body-split" styles={splitStyle}>{children}</PresentationSlot>;
 }
 Split.displayName = 'ArticleBody.Split';
+/** Hold one side of a split with an optional label. */
 function Cell({ label, children, component, slots, slotProps, ...props }: ArticleBodyCellProps) {
   return <PresentationSlot {...props} element="div" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article-body-cell" styles={cellStyle}>
     {isRenderable(label) && <PresentationSlot element="p" component={slots?.label} slotProps={slotProps?.label} marker="article-body-cell-label" styles={articleLabelStyle}>{label}</PresentationSlot>}
@@ -103,4 +109,5 @@ function Cell({ label, children, component, slots, slotProps, ...props }: Articl
   </PresentationSlot>;
 }
 Cell.displayName = 'ArticleBody.Cell';
+/** Compose article prose, headings, facts and quotations. */
 export const ArticleBody = Object.assign(ArticleBodyRoot, { Paragraph, Heading, Fact, Quote, Split, Cell });

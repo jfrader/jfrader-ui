@@ -48,6 +48,7 @@ const toneStyles: Record<PillTone, SerializedStyles> = {
   danger: css({ backgroundColor: vars.color.dangerSoft, color: vars.color.dangerText }),
 };
 
+/** Display a short label with a semantic tone. */
 export function Pill({ ref, tone = 'neutral', className, sx, ...rest }: PillProps) {
   return (
     <WithSx className={className} styles={[rootStyle, toneStyles[tone]]} sx={sx}>

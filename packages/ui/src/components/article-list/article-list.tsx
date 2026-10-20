@@ -68,6 +68,7 @@ function ArticleListRoot({ items, children, variant = 'headlines', size, compone
 }
 ArticleListRoot.displayName = 'ArticleList';
 
+/** Present an article headline with optional time, label and place. */
 function ArticleListItem(allProps: ArticleListItemProps) {
   const parent = useContext(ListContext);
   const template = repeatedTemplate(parent.slotProps?.item);
@@ -96,4 +97,5 @@ function ArticleListItem(allProps: ArticleListItemProps) {
   </PresentationSlot>;
 }
 ArticleListItem.displayName = 'ArticleList.Item';
+/** List article headlines with their publication details. */
 export const ArticleList = Object.assign(ArticleListRoot, { Item: ArticleListItem });

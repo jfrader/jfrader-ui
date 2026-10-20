@@ -433,6 +433,7 @@ function SegmentedControlRoot({
 }
 SegmentedControlRoot.displayName = 'SegmentedControl';
 
+/** Choose one option in the segmented control. */
 function SegmentedControlItem({
   ref,
   value,

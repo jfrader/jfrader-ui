@@ -338,6 +338,7 @@ function VoiceOrbRoot({
 }
 VoiceOrbRoot.displayName = 'VoiceOrb';
 
+/** Visualize voice activity and session state as an animated orb. */
 function VoiceOrbVisual({
   size = 'md',
   label,
@@ -530,6 +531,7 @@ function VoiceOrbStatus({ ref, className, sx, children, ...rest }: VoiceOrbStatu
   );
 }
 VoiceOrbStatus.displayName = 'VoiceOrb.Status';
+/** Show a speaker's transcript and announce completed turns. */
 function VoiceOrbTranscript({
   text,
   turn = 0,
@@ -583,6 +585,7 @@ function VoiceOrbTranscript({
   );
 }
 VoiceOrbTranscript.displayName = 'VoiceOrb.Transcript';
+/** Start, mute or end a voice session and show elapsed time. */
 function VoiceOrbControls({
   startLabel,
   slots,
@@ -703,6 +706,7 @@ function VoiceOrbControls({
   );
 }
 VoiceOrbControls.displayName = 'VoiceOrb.Controls';
+/** Compose a voice session's activity visual, transcript and controls. */
 export const VoiceOrb = Object.assign(VoiceOrbRoot, {
   Visual: VoiceOrbVisual,
   Status: VoiceOrbStatus,

@@ -320,6 +320,7 @@ function AccordionRoot({
 
 AccordionRoot.displayName = 'Accordion';
 
+/** Group a section's trigger and collapsible panel. */
 function AccordionItem({ ref, value, disabled = false, className, sx, ...rest }: AccordionItemProps) {
   const { openValues, slots } = useAccordionContext('Item');
   const Root = slots?.item ?? 'div';

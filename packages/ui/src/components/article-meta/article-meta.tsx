@@ -26,6 +26,7 @@ export type ArticleMetaProps = Omit<ComponentPropsWithRef<'p'>, 'children'> & Sx
 const rootStyle = css({ display: 'flex', flexWrap: 'wrap', justifyContent: 'var(--_article-inline-justify, normal)', alignItems: 'baseline', gap: vars.space[2] });
 const ruledStyle = css({ borderBlock: `${vars.editorial.rule.thin} solid ${articleRule}`, paddingBlock: vars.space[3] });
 
+/** Show an article's location, publication time and latest update. */
 export function ArticleMeta({ variant = 'inline', place, published, updated, publishedLabel, updatedLabel, component, slots, slotProps, ...props }: ArticleMetaProps) {
   const hasPlace = isRenderable(place);
   const hasPublished = published !== undefined && isRenderable(published.label);

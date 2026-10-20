@@ -768,6 +768,7 @@ function MultiSelectTrigger({
 }
 MultiSelectTrigger.displayName = 'MultiSelect.Trigger';
 
+/** Show selected labels and a count of any remaining selections. */
 function MultiSelectValue({
   ref,
   maxVisible = 2,
@@ -876,6 +877,7 @@ function MultiSelectContent({
 }
 MultiSelectContent.displayName = 'MultiSelect.Content';
 
+/** Toggle one option in the selection list. */
 function MultiSelectItem({
   ref,
   id: idProp,

@@ -50,6 +50,7 @@ function ArticleKickerRoot({ items, children, tone = 'accent', component, slots,
 }
 ArticleKickerRoot.displayName = 'ArticleKicker';
 
+/** Label an article topic or link to its coverage. */
 function ArticleKickerItem(allProps: ArticleKickerItemProps) {
   const parent = useContext(ItemContext);
   const template = repeatedTemplate(parent.slotProps?.item);
@@ -66,4 +67,5 @@ function ArticleKickerItem(allProps: ArticleKickerItemProps) {
   return <PresentationSlot {...props as ComponentPropsWithRef<'span'>} element="span" component={slots?.root ?? component ?? parent.slots?.item} slotProps={slotProps?.root} marker="article-kicker-item">{children}</PresentationSlot>;
 }
 ArticleKickerItem.displayName = 'ArticleKicker.Item';
+/** Group topic labels and links above an article headline. */
 export const ArticleKicker = Object.assign(ArticleKickerRoot, { Item: ArticleKickerItem });

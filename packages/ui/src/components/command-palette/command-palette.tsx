@@ -744,6 +744,7 @@ function CommandPaletteEmpty({ ref, children, className, sx, ...rest }: CommandP
 
 CommandPaletteEmpty.displayName = 'CommandPalette.Empty';
 
+/** Group matching commands under a visible heading. */
 function CommandPaletteGroup({
   ref,
   label,

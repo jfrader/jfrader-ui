@@ -122,6 +122,7 @@ function ArticleCardRoot({ size = 'standard', variant = 'standard', component, s
 }
 ArticleCardRoot.displayName = 'ArticleCard';
 
+/** Name the article with an optionally linked headline. */
 function ArticleCardHeadline({ level: ownLevel, size: ownSize, href, renderLink, component, slots, slotProps, children, ...props }: ArticleCardHeadlineProps) {
   const parent = useContext(CardContext);
   const { level = ownLevel ?? 2, size = ownSize ?? parent.size, href: slotHref, renderLink: slotRenderLink, component: parentComponent, slots: parentSlots, slotProps: parentParts, sx: parentSx, ...parentProps } = parent.slotProps?.headline ?? {};
@@ -136,6 +137,7 @@ function ArticleCardHeadline({ level: ownLevel, size: ownSize, href, renderLink,
 }
 ArticleCardHeadline.displayName = 'ArticleCard.Headline';
 
+/** Summarize the article beneath its headline. */
 function ArticleCardDek({ variant: ownVariant, size: ownSize, component, slots, slotProps, children, ...props }: ArticleCardDekProps) {
   const parent = useContext(CardContext);
   const { variant = ownVariant ?? 'standard', size = ownSize ?? 'standard', component: parentComponent, slots: parentSlots, slotProps: parentParts, sx: parentSx, ...parentProps } = parent.slotProps?.dek ?? {};
@@ -144,6 +146,7 @@ function ArticleCardDek({ variant: ownVariant, size: ownSize, component, slots, 
 }
 ArticleCardDek.displayName = 'ArticleCard.Dek';
 
+/** Show a line-clamped opening excerpt of the article. */
 function ArticleCardLede({ visibility: ownVisibility, clampLines: ownClamp, component, slots, slotProps, children, style, ...props }: ArticleCardLedeProps) {
   const parent = useContext(CardContext);
   const { visibility = ownVisibility ?? 'desktop', clampLines = ownClamp ?? 4, component: parentComponent, slots: parentSlots, slotProps: parentParts, sx: parentSx, ...parentProps } = parent.slotProps?.lede ?? {};
@@ -152,6 +155,7 @@ function ArticleCardLede({ visibility: ownVisibility, clampLines: ownClamp, comp
 }
 ArticleCardLede.displayName = 'ArticleCard.Lede';
 
+/** Frame article media with an optional caption and credit. */
 function ArticleCardMedia({ caption: ownCaption, credit: ownCredit, component, slots, slotProps, children, ...props }: ArticleCardMediaProps) {
   const parent = useContext(CardContext);
   const { caption = ownCaption, credit = ownCredit, component: parentComponent, slots: parentSlots, slotProps: parentParts, sx: parentSx, ...parentProps } = parent.slotProps?.media ?? {};
@@ -166,5 +170,6 @@ function ArticleCardMedia({ caption: ownCaption, credit: ownCredit, component, s
 }
 ArticleCardMedia.displayName = 'ArticleCard.Media';
 
+/** Preview an article with a headline, summary and media. */
 export const ArticleCard = Object.assign(ArticleCardRoot, { Headline: ArticleCardHeadline, Dek: ArticleCardDek, Lede: ArticleCardLede, Media: ArticleCardMedia });
 export type { ArticleHeadingLevel, PrintedTime, RenderArticleLink };

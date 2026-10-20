@@ -542,6 +542,7 @@ const messageMetadataStyle = css({
   overflowWrap: 'anywhere',
 });
 
+/** Record, review and send voice messages using app-owned audio. */
 export function VoiceRecorder({
   value: valueProp,
   defaultValue: defaultValueProp,
