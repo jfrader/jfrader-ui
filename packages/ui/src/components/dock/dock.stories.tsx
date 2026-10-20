@@ -26,24 +26,97 @@ const grouped: readonly DockItem[] = [
   ] },
   tools[1]!,
 ];
-const usage = `<Dock items={tools} value={tool} onValueChange={setTool}
-  reorderable order={order} onOrderChange={setOrder} />`;
-
 const meta = {
-  title: 'Inputs/Dock', component: Dock, tags: ['autodocs'],
+  title: 'Inputs/Dock',
+  component: Dock,
+  tags: ['autodocs'],
   args: {
-    items: tools, defaultValue: 'select', onValueChange: fn(), onOrderChange: fn(),
-    onOpenChange: fn(), onTrayChange: fn(),
-    ref: fn((node: HTMLDivElement | null) => node ? fn() : undefined),
+    items: tools,
+    defaultValue: 'select',
+    onValueChange: fn(),
+    onOrderChange: fn(),
+    onOpenChange: fn(),
+    onTrayChange: fn(),
+    ref: fn((node: HTMLDivElement | null) => (node ? fn() : undefined)),
   },
-  parameters: { docs: {
-    source: { code: usage },
-    description: { component:
-      'A toolbar for canvas tools with optional one-level grouped trays. Left/Right wrap through enabled controls (reversed in RTL); Home/End jump. Enter/Space choose a tool; a group also toggles its tray. Up opens a group and focuses its shown child. In a tray, Left/Right/Home/End navigate, Down/Escape close and return focus, and Tab/Shift+Tab close without taking focus back. Alt+Left/Right move a toolbar item one position when reorderable; the adjacent options menu provides Move before/Move after without dragging. Shortcut hints are display-only. Selection, order, open and tray identity are independent controlled or uncontrolled axes. IDs must be unique across tools and groups; nested groups are not supported.' },
-  } },
+  parameters: {
+    docs: {
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Items', stories: ['AlwaysLabelsTouch', 'BadgesLarge', 'BadgesZero', 'LongLabels'] },
+        { title: 'Groups', stories: ['Grouped', 'DisabledEmptyGroups'] },
+        { title: 'Selection', stories: ['NoSelection', 'RemovedOrDisabledSelection'] },
+        { title: 'Reorder', stories: ['Reorderable', 'MoveOptions'] },
+        { title: 'Overflow', stories: ['NarrowOverflow'] },
+        { title: 'States', stories: ['Controlled', 'Empty'] },
+        { title: 'Composition', stories: ['WorkspaceTools'] },
+      ],
+      description: {
+        component: 'Select tools and actions from a dock toolbar with expandable trays.',
+      },
+      usage: `### When to use
+Use Dock for persistent or floating toolbars that hold creative canvas tools, drawing modes, and quick actions. Group related sub-tools into trays to keep primary navigation compact.
+
+### Constraints
+- Each item and group requires a unique \`id\` across the dock. Nested groups are not supported.
+- Trays support one level of grouping and open above or adjacent to their trigger.
+- Shortcut badges are visual hints and do not register global keyboard shortcuts.
+
+### Keyboard and accessibility
+- Left and Right arrow keys move focus through toolbar items and wrap at ends (direction reverses in RTL); Home and End jump to the first and last item.
+- Enter or Space activates a tool; on a group, it activates the active child and toggles the tray.
+- Arrow Up opens a group tray and focuses the active child item.
+- Inside a tray, Left, Right, Home, and End navigate items. Arrow Down or Escape closes the tray and restores focus to the group trigger. Tab or Shift+Tab closes the tray without refocusing the trigger.
+- When \`reorderable\` is enabled, Alt+Left and Alt+Right shift the focused item, and the item options menu provides non-drag Move Before and Move After actions.`,
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const tools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
+
+<Dock items={tools} defaultValue="select" />`,
+      },
+    },
+  },
 } satisfies Meta<typeof Dock>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const WorkspaceTools: Story = {
+  name: 'Tools in a dialog',
+  parameters: { docs: {
+    description: { story: 'Open a task dialog containing a named tool dock.' },
+    source: { language: 'tsx', code: `import { Dialog, Dock, type DockItem } from '@jfrader/ui';
+
+const icon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+</svg>;
+const tools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
+
+<Dialog triggerLabel="Open drawing tools" title="Drawing tools"
+  content={<Dock label="Drawing tools" items={tools} defaultValue="select" />}
+  closeLabel="Close" />` },
+  } },
+  render: () => <Dialog triggerLabel="Open drawing tools" title="Drawing tools"
+    content={<Dock label="Drawing tools" items={tools} defaultValue="select" />}
+    closeLabel="Close" />,
+};
 
 async function assertFocus(button: HTMLElement) {
   await expect(button.ownerDocument.activeElement).toBe(button);
@@ -56,6 +129,33 @@ function ids(toolbar: HTMLElement) {
 }
 
 export const Default: Story = {
+  name: 'Tool dock',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Select canvas tools with keyboard navigation and shortcut hints.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const tools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
+
+<Dock items={tools} defaultValue="select" />`,
+      },
+    },
+  },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('toolbar', { name: 'Tools' })).toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: 'Select, V, Selected' })).toHaveAttribute('aria-pressed', 'true');
@@ -66,11 +166,13 @@ export const Default: Story = {
     }
   },
 };
-export const Light: Story = { ...Default, decorators: [withLightTheme] };
+export const Light: Story = { ...Default, name: 'Light theme', decorators: [withLightTheme] };
 export const Grouped: Story = {
+  name: 'Grouped tools',
   args: { items: grouped, defaultValue: 'rectangle' },
   parameters: {
     docs: {
+      description: { story: 'Open a tray to choose a tool from a related group.' },
       source: {
         language: 'tsx',
         code: `import { Dock, type DockItem } from '@jfrader/ui';
@@ -102,9 +204,11 @@ const items: readonly DockItem[] = [
   },
 };
 export const NoSelection: Story = {
+  name: 'No selected tool',
   args: { value: null },
   parameters: {
     docs: {
+      description: { story: 'Keep tools available without marking a current selection.' },
       source: {
         language: 'tsx',
         code: `import { Dock, type DockItem } from '@jfrader/ui';
@@ -132,9 +236,13 @@ const tools: readonly DockItem[] = [
   },
 };
 export const AlwaysLabelsTouch: Story = {
+  name: 'Persistent labels',
   args: { items: grouped, labels: 'always' },
   parameters: {
     docs: {
+      description: {
+        story: 'Display persistent text labels beneath tool icons.',
+      },
       source: {
         language: 'tsx',
         code: `import { Dock, type DockItem } from '@jfrader/ui';
@@ -166,12 +274,16 @@ const items: readonly DockItem[] = [
   },
 };
 export const LongLabels: Story = {
+  name: 'Long item labels',
   args: { labels: 'always', items: [
     { id: 'selection', label: 'Select all visible objects on the current drawing canvas', icon },
     { id: 'comment', label: 'Add a comment for the review team', icon },
   ] },
   parameters: {
     docs: {
+      description: {
+        story: 'Wrap long tool label text without breaking the dock container bounds.',
+      },
       source: {
         language: 'tsx',
         code: `import { Dock, type DockItem } from '@jfrader/ui';
@@ -187,22 +299,24 @@ const items: readonly DockItem[] = [
   { id: 'comment', label: 'Add a comment for the review team', icon },
 ];
 
-<Dock items={items} defaultValue="select" labels="always" />`,
+<Dock items={items} labels="always" />`,
       },
     },
   },
 };
 export const NarrowOverflow: Story = {
-  args: { style: { width: 320 }, items: Array.from({ length: 10 }, (_, index) => ({
+  name: 'Overflow scrolling',
+  args: { sx: { inlineSize: 320, maxInlineSize: '100%' }, items: Array.from({ length: 10 }, (_, index) => ({
     id: `tool-${index}`, label: `Tool ${new Intl.NumberFormat('en').format(index + 1)}`, icon,
   })) },
   parameters: {
     docs: {
+      description: {
+        story: 'Scroll overflowing tools horizontally with arrow navigation and end-key jumps.',
+      },
       source: {
         language: 'tsx',
-        code: `import { Dock, styled, type DockItem } from '@jfrader/ui';
-
-const NarrowDock = styled(Dock)({ inlineSize: 320 });
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
 
 const icon = (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -216,7 +330,7 @@ const items: readonly DockItem[] = Array.from({ length: 10 }, (_, index) => ({
   icon,
 }));
 
-<NarrowDock items={items} defaultValue="select" />`,
+<Dock items={items} sx={{ inlineSize: 320, maxInlineSize: '100%' }} />`,
       },
     },
   },
@@ -233,9 +347,13 @@ const items: readonly DockItem[] = Array.from({ length: 10 }, (_, index) => ({
   },
 };
 export const BadgesZero: Story = {
+  name: 'Zero badge count',
   args: { items: [{ id: 'zero', label: 'Comments', icon, badge: 0 }] },
   parameters: {
     docs: {
+      description: {
+        story: 'Omit numeric badge indicators when count value is zero.',
+      },
       source: {
         language: 'tsx',
         code: `import { Dock, type DockItem } from '@jfrader/ui';
@@ -250,7 +368,7 @@ const items: readonly DockItem[] = [
   { id: 'zero', label: 'Comments', icon, badge: 0 },
 ];
 
-<Dock items={items} />`,
+<Dock items={items} defaultValue="zero" />`,
       },
     },
   },
@@ -260,9 +378,13 @@ const items: readonly DockItem[] = [
   },
 };
 export const BadgesLarge: Story = {
+  name: 'Formatted badge count',
   args: { locale: 'de-DE', items: [{ id: 'large', label: 'Comments', icon, badge: 1234567890, badgeLabel: 'comments' }] },
   parameters: {
     docs: {
+      description: {
+        story: 'Format large numeric notification badges using locale formatting.',
+      },
       source: {
         language: 'tsx',
         code: `import { Dock, type DockItem } from '@jfrader/ui';
@@ -277,7 +399,7 @@ const items: readonly DockItem[] = [
   { id: 'large', label: 'Comments', icon, badge: 1234567890, badgeLabel: 'comments' },
 ];
 
-<Dock items={items} defaultValue="select" locale="de-DE" />`,
+<Dock items={items} defaultValue="large" locale="de-DE" />`,
       },
     },
   },
@@ -295,12 +417,16 @@ const items: readonly DockItem[] = [
   },
 };
 export const DisabledEmptyGroups: Story = {
+  name: 'Disabled and empty groups',
   args: { items: [...tools,
     { id: 'empty', label: 'Empty shapes', items: [] },
     { id: 'disabled-group', label: 'Disabled shapes', disabled: true, items: [{ id: 'shape', label: 'Shape', icon }] },
   ] },
   parameters: {
     docs: {
+      description: {
+        story: 'Disable group triggers when child items are disabled or absent.',
+      },
       source: {
         language: 'tsx',
         code: `import { Dock, type DockItem } from '@jfrader/ui';
@@ -332,9 +458,13 @@ const items: readonly DockItem[] = [
   },
 };
 export const Empty: Story = {
+  name: 'Empty dock',
   args: { items: [] },
   parameters: {
     docs: {
+      description: {
+        story: 'Render an empty toolbar shell without items.',
+      },
       source: {
         language: 'tsx',
         code: `import { Dock } from '@jfrader/ui';
@@ -345,9 +475,13 @@ export const Empty: Story = {
   },
 };
 export const RemovedOrDisabledSelection: Story = {
+  name: 'Disabled item selection',
   args: { value: 'locked' },
   parameters: {
     docs: {
+      description: {
+        story: 'Handle selection targeting an inactive or disabled tool.',
+      },
       source: {
         language: 'tsx',
         code: `import { Dock, type DockItem } from '@jfrader/ui';
@@ -611,9 +745,11 @@ export const ControlledRejectOpen: Story = {
 };
 
 export const Reorderable: Story = {
+  name: 'Reorder tools',
   args: { reorderable: true },
   parameters: {
     docs: {
+      description: { story: 'Move a focused toolbar item with Alt+Left or Alt+Right.' },
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
@@ -729,9 +865,11 @@ const tools: readonly DockItem[] = [
   },
 };
 export const MoveOptions: Story = {
+  name: 'Move options menu',
   args: { reorderable: true },
   parameters: {
     docs: {
+      description: { story: 'Move tools before or after their neighbors without dragging.' },
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
@@ -1150,6 +1288,36 @@ function ControlledExample(args: DockProps) {
     onTrayChange={(next) => { args.onTrayChange?.(next); setTray(next); }} />;
 }
 export const Controlled: Story = {
+  name: 'Controlled toolbar state',
+  parameters: { docs: {
+    description: { story: 'Own selection, order and tray state in the surrounding application.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+</svg>;
+const items: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'shapes', label: 'Shapes', items: [
+    { id: 'rectangle', label: 'Rectangle', icon, shortcut: 'R' },
+    { id: 'unavailable', label: 'Unavailable shape', icon, disabled: true },
+    { id: 'ellipse', label: 'Ellipse', icon, shortcut: 'O' },
+    { id: 'line', label: 'Line', icon },
+  ] },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+];
+
+export function DrawingTools() {
+  const [value, setValue] = useState<string | null>(null);
+  const [order, setOrder] = useState<readonly string[]>(['select', 'shapes', 'hand']);
+  const [open, setOpen] = useState(false);
+  const [tray, setTray] = useState<string | null>(null);
+  return <Dock items={items} reorderable value={value} onValueChange={setValue}
+    order={order} onOrderChange={setOrder} open={open} onOpenChange={setOpen}
+    tray={tray} onTrayChange={setTray} />;
+}` },
+  } },
   args: { items: grouped, reorderable: true }, render: (args) => <ControlledExample {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab(); await userEvent.keyboard('{ArrowRight}{Enter}');

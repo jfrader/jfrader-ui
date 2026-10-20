@@ -11,6 +11,7 @@ import { styled } from '../../styling/styled';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
 import { Avatar } from '../avatar';
+import { AvatarGroup } from '../avatar-group';
 import { Button } from '../button';
 import { Flex } from '../flex';
 import { Stack } from '../stack';
@@ -77,24 +78,23 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Show a pixel-art person from a seed.' },
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Kits and artwork', stories: ['FullKit', 'KitVariants', 'Staff', 'Crops'] },
+        { title: 'Fill a frame', stories: ['FullSize'] },
+        { title: 'Fallback and group composition', stories: ['InAvatar', 'TeamPortraits'] },
+      ],
       usage: `
-### Identity
-Pass a durable string as \`seed\`. A nonblank \`appearanceId\` takes precedence after trimming;
-blank overrides use the original, untrimmed seed. Empty seeds are valid. Appearance signatures are not IDs.
+### When to use
+Generate person artwork when a photo is unavailable. Use Avatar for identity, initials and presence; PersonAvatar supplies only the artwork.
 
-### Clothing
-Pass a resolved \`kit\` with all garment colors and patterns, or use \`primary\` and \`secondary\` for solid clothing.
-Kit inputs win over simple colors. Staff uses the same identity with a jacket and tie.
+### Identity and layout
+Keep the seed tied to a durable member id, not a display name or list position. Clothing changes do not change the person's identity. Appearance signatures are not identifiers.
 
-### Naming
-Omit \`alt\` for decorative artwork. Use \`alt\` for a name or \`aria-labelledby\` for an external label.
-An empty \`alt\` or explicit \`aria-hidden\` makes the artwork decorative, even with other name inputs.
-The SVG is not a keyboard target; wrap decorative artwork in a named button or link for actions.
+A full-size portrait needs a parent with explicit dimensions. Circular portraits clip peripheral hair and clothing without zooming; full kits stay letterboxed in square frames. Artwork colors stay fixed across themes and forced colors.
 
-### Size and crop
-Sizes are square: \`sm\` 32px, \`md\` 48px, \`lg\` 72px. Use \`size="full"\` to fill an Avatar frame or set custom dimensions with \`sx\`.
-Portrait \`crop="circle"\` clips peripheral hair and clothing without zooming. Full kits remain square letterboxed viewports.
-Artwork fills stay fixed across themes and forced colors; the forced-colors boundary uses a CanvasText outline.
+### Accessibility
+Name standalone artwork when it conveys a person's identity. Keep it decorative inside a named Avatar to avoid duplicate announcements. The SVG is not a keyboard target; put profile actions in named buttons or links.
 `,
     },
   },
@@ -102,7 +102,39 @@ Artwork fills stay fixed across themes and forced colors; the forced-colors boun
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+export const TeamPortraits: Story = {
+  name: 'Portraits in a group',
+  parameters: { docs: {
+    description: { story: 'Give each group member a stable portrait without repeating accessible names.' },
+    source: { language: 'tsx', code: `import { AvatarGroup, PersonAvatar } from '@jfrader/ui';
+
+<AvatarGroup label="Project team" members={[
+  { id: 'alex', name: 'Alex', avatarProps: {
+    children: <PersonAvatar seed="alex" alt="" size="full" crop="circle" />,
+  } },
+  { id: 'blair', name: 'Blair', avatarProps: {
+    children: <PersonAvatar seed="blair" alt="" size="full" crop="circle" />,
+  } },
+]} />` },
+  } },
+  render: () => <AvatarGroup label="Project team" members={[
+    { id: 'alex', name: 'Alex', avatarProps: {
+      children: <PersonAvatar seed="alex" alt="" size="full" crop="circle" />,
+    } },
+    { id: 'blair', name: 'Blair', avatarProps: {
+      children: <PersonAvatar seed="blair" alt="" size="full" crop="circle" />,
+    } },
+  ]} />,
+};
+
 export const Default: Story = {
+  name: 'Seeded portrait',
+  parameters: { docs: {
+    description: { story: 'Generate the same portrait whenever the member seed stays the same.' },
+    source: { language: 'tsx', code: `import { PersonAvatar } from '@jfrader/ui';
+
+<PersonAvatar seed="stable-visual-seed" alt="Alex" />` },
+  } },
   play: async ({ canvasElement }) => {
     const avatar = within(canvasElement).getByRole('img', { name: 'Alex' });
     await expect(avatar).toHaveAttribute('data-ui', 'person-avatar');
@@ -113,12 +145,13 @@ export const Default: Story = {
     await expect(avatar).toHaveAttribute('focusable', 'false');
   },
 };
-export const LightTheme: Story = { ...Default, decorators: [withLightTheme], globals: { theme: 'light' } };
-export const DarkTheme: Story = { ...Default, globals: { theme: 'dark' } };
+export const LightTheme: Story = { ...Default, name: 'Light theme', decorators: [withLightTheme], globals: { theme: 'light' } };
+export const DarkTheme: Story = { ...Default, name: 'Dark theme', globals: { theme: 'dark' } };
 
 /** A decorative portrait inside Avatar's named identity and presence frame. */
 export const InAvatar: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, PersonAvatar } from '@jfrader/ui';
+  name: 'Portrait fallback',
+  parameters: { docs: { description: { story: 'Use decorative artwork as the fallback inside a named Avatar with presence.' }, source: { language: 'tsx', code: `import { Avatar, PersonAvatar } from '@jfrader/ui';
 
 <Avatar name="Alex" status="online">
   <PersonAvatar seed="member-alex" alt="" size="full" crop="circle" />
@@ -221,12 +254,13 @@ const LargePortrait = styled(PersonAvatar)({
 };
 
 export const Crops: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { PersonAvatar } from '@jfrader/ui';
+  name: 'Square and circular portraits',
+  parameters: { docs: { description: { story: 'Compare the square portrait with a circular crop of the same person.' }, source: { language: 'tsx', code: `import { Flex, PersonAvatar } from '@jfrader/ui';
 
-<>
+<Flex wrap align="center" gap="md">
   <PersonAvatar seed="stable-visual-seed" alt="Alex" size="lg" />
   <PersonAvatar seed="stable-visual-seed" alt="Alex" size="lg" crop="circle" />
-</>` } } },
+</Flex>` } } },
   render: (args) => <Flex wrap align="center" gap="md"><PersonAvatar {...args} size="lg" /><PersonAvatar {...args} size="lg" fullKit={false} crop="circle" /></Flex>,
   play: async ({ canvasElement }) => {
     const plain = canvasElement.querySelectorAll('svg')[0]!;
@@ -239,7 +273,8 @@ export const Crops: Story = {
 };
 
 export const FullKit: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${kitSource}<PersonAvatar seed="stable-visual-seed" alt="Alex" fullKit kit={kit} size="lg" />` } } },
+  name: 'Full kit',
+  parameters: { docs: { description: { story: 'Render a full-body kit with explicit garment colors and patterns.' }, source: { language: 'tsx', code: `${kitSource}<PersonAvatar seed="stable-visual-seed" alt="Alex" fullKit kit={kit} size="lg" />` } } },
   args: { fullKit: true, kit: ARTWORK_KIT, size: 'lg' },
   play: async ({ canvasElement }) => {
     const avatar = canvasElement.querySelector('svg')!;
@@ -250,6 +285,13 @@ export const FullKit: Story = {
   },
 };
 export const Staff: Story = {
+  name: 'Staff attire',
+  parameters: { docs: {
+    description: { story: 'Dress the same person in a staff jacket and tie.' },
+    source: { language: 'tsx', code: `import { PersonAvatar } from '@jfrader/ui';
+
+<PersonAvatar seed="stable-visual-seed" alt="Alex" attire="staff" fullKit size="lg" />` },
+  } },
   args: { attire: 'staff', fullKit: true, size: 'lg' },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('svg')).toHaveAttribute('viewBox', '0 0 48 48');
@@ -365,7 +407,9 @@ const patternKits: PersonAvatarKit[] = PERSON_SHIRT_PATTERNS.map((shirtPattern, 
   socksPattern: PERSON_SOCKS_PATTERNS[index % PERSON_SOCKS_PATTERNS.length]!,
 }));
 export const KitVariants: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `${kitSource}import { PERSON_SHIRT_PATTERNS, PERSON_SHORTS_PATTERNS, PERSON_SOCKS_PATTERNS } from '@jfrader/ui/person-avatar/kit';
+  name: 'Garment patterns',
+  parameters: { docs: { description: { story: 'Compare shirt, shorts and sock patterns while keeping the person unchanged.' }, source: { language: 'tsx', code: `${kitSource}import { Flex } from '@jfrader/ui';
+import { PERSON_SHIRT_PATTERNS, PERSON_SHORTS_PATTERNS, PERSON_SOCKS_PATTERNS } from '@jfrader/ui/person-avatar/kit';
 
 const kits: PersonAvatarKit[] = PERSON_SHIRT_PATTERNS.map((shirtPattern, index) => ({
   ...kit,
@@ -378,9 +422,9 @@ const kits: PersonAvatarKit[] = PERSON_SHIRT_PATTERNS.map((shirtPattern, index) 
   socksPattern: PERSON_SOCKS_PATTERNS[index % PERSON_SOCKS_PATTERNS.length]!,
 }));
 
-<>{kits.map((kit, index) => (
-  <PersonAvatar key={index} seed="stable-visual-seed" alt="Alex" kit={kit} size="lg" fullKit />
-))}</>` } } },
+<Flex wrap align="center" gap="md">{kits.map((kit, index) => (
+  <PersonAvatar key={index} seed="stable-visual-seed" alt="Alex" kit={kit} size="lg" fullKit crop="none" primary="currentColor" secondary="currentColor" />
+))}</Flex>` } } },
   render: (args) => <Flex wrap align="center" gap="md">{patternKits.map((kit, index) => <PersonAvatar {...args} key={index} kit={kit} size="lg" fullKit crop="none"
     primary="currentColor" secondary="currentColor" />)}</Flex>,
   play: async ({ canvasElement }) => {
@@ -656,6 +700,19 @@ export const Refs: Story = {
 };
 
 export const FullSize: Story = {
+  name: 'Fill a sized frame',
+  parameters: { docs: {
+    description: { story: 'Fill equal-sized parent frames with a portrait and a letterboxed full kit.' },
+    source: { language: 'tsx', code: `import { Flex, PersonAvatar, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const PortraitFrame = styled.div({ inlineSize: vars.space[10], blockSize: vars.space[10] });
+
+<Flex wrap align="center" gap="md">
+  <PortraitFrame><PersonAvatar seed="stable-visual-seed" size="full" alt="Portrait" /></PortraitFrame>
+  <PortraitFrame><PersonAvatar seed="stable-visual-seed" size="full" fullKit crop="none" alt="Full kit" /></PortraitFrame>
+</Flex>` },
+  } },
   render: args => <Flex wrap align="center" gap="md">
     <FullSizeFrame><PersonAvatar {...args} size="full" alt="Portrait" /></FullSizeFrame>
     <FullSizeFrame><PersonAvatar {...args} size="full" fullKit crop="none" alt="Full kit" /></FullSizeFrame>

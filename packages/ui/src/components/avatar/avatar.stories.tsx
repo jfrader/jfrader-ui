@@ -8,6 +8,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Avatar, type AvatarSize, type AvatarStatus } from './index';
 import { PersonAvatar } from '../person-avatar';
+import { AvatarGroup } from '../avatar-group';
 import { Flex } from '../flex';
 import { Button } from '../button';
 import { sceneSource } from '../scene';
@@ -27,7 +28,22 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Show a person’s portrait, photo or initials, with an optional status.' },
-      usage: '### Fallback content\nPass noninteractive children to show artwork when `src` is missing or fails. Use a durable member id as the PersonAvatar seed, with `alt=""`, `size="full"` and portrait `crop="circle"`. With no renderable children, Avatar shows initials.\n\n### Images\nThe native image examples use procedural Scene artwork from `sceneSource`, not photographs. You can pass a photo URL through the same `src` prop.\n\n### Presence\nSet `pulse` with `status="online"` for an expanding ring. The default is static; reduced motion and forced colors hide the ring.\n\n### Naming\nAn external `aria-labelledby` takes precedence over the generated name and status label.',
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Images and fallbacks', stories: ['SceneImage', 'PhotoWithArtworkFallback', 'Initials'] },
+        { title: 'Sizes', stories: ['Sizes'] },
+        { title: 'Status', stories: ['Status', 'OnlinePulse'] },
+        { title: 'Group composition', stories: ['Team'] },
+      ],
+      usage: `### When to use
+Identify a person beside a message, task or profile. Use AvatarGroup for a compact list of people and PersonAvatar for generated portrait artwork.
+
+### Content and accessibility
+Keep fallback artwork noninteractive and decorative so the identity is announced once. Use a durable member id for generated portraits. Provide a separate named button or link for profile actions; the avatar itself is not a keyboard target.
+
+An external accessible label takes precedence over the generated name and status. Localize presence labels with the surrounding interface. Presence is not a live announcement; use a separate status message for changes that need attention.
+
+Reduced motion and forced colors hide the pulsing ring. The image examples use generated Scene artwork; a photo URL uses the same image path.`,
     },
   },
   args: { name: NAME, size: 'md' },
@@ -42,7 +58,8 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, PersonAvatar } from '@jfrader/ui';
+  name: 'Person portrait',
+  parameters: { docs: { description: { story: 'Frame a generated portrait with one accessible person name.' }, source: { language: 'tsx', code: `import { Avatar, PersonAvatar } from '@jfrader/ui';
 
 <Avatar name="Ada Lovelace">
   <PersonAvatar seed="member-ada" alt="" size="full" crop="circle" />
@@ -59,7 +76,9 @@ export const Default: Story = {
 
 /** Procedural Scene artwork loaded through the native image path. */
 export const SceneImage: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, sceneSource } from '@jfrader/ui';
+  name: 'Native image',
+  parameters: { docs: { description: { story: 'Load an image URL through the native image path; this image is generated Scene artwork.' }, source: { language: 'tsx', code: `import { Avatar } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
 
 <Avatar name="Ada Lovelace" src={sceneSource('avatar-ada')} />` } } },
   args: { src: PHOTO_SRC },
@@ -77,6 +96,13 @@ export const SceneImage: Story = {
 };
 
 export const Initials: Story = {
+  name: 'Initials fallback',
+  parameters: { docs: {
+    description: { story: 'Show initials when no image or portrait is provided.' },
+    source: { language: 'tsx', code: `import { Avatar } from '@jfrader/ui';
+
+<Avatar name="Ada Lovelace" />` },
+  } },
   play: async ({ canvasElement }) => {
     const avatar = within(canvasElement).getByRole('img', { name: NAME });
     await expect(avatar).toHaveTextContent('AL');
@@ -125,9 +151,11 @@ export const Artwork: Story = {
 };
 
 export const PhotoWithArtworkFallback: Story = {
+  name: 'Image with portrait fallback',
   parameters: { docs: {
-    description: { story: 'Pass a photo URL as src and a procedural portrait as fallback. This example uses Scene artwork in place of a photo.' },
-    source: { language: 'tsx', code: `import { Avatar, PersonAvatar, sceneSource } from '@jfrader/ui';
+    description: { story: 'Show a loaded image with a generated portrait ready as its fallback.' },
+    source: { language: 'tsx', code: `import { Avatar, PersonAvatar } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
 
 const imageSource = sceneSource('avatar-ada'); // Replace with your photo URL.
 
@@ -145,6 +173,7 @@ const imageSource = sceneSource('avatar-ada'); // Replace with your photo URL.
 
 export const BrokenPhotoWithArtwork: Story = {
   ...PhotoWithArtworkFallback,
+  name: 'Broken image with artwork',
   args: { ...PhotoWithArtworkFallback.args, src: BROKEN_SRC },
   play: async ({ canvasElement }) => {
     const avatar = within(canvasElement).getByRole('img', { name: NAME });
@@ -285,13 +314,14 @@ export const BrokenImage: Story = {
 };
 
 export const Sizes: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar } from '@jfrader/ui';
+  name: 'Avatar sizes',
+  parameters: { docs: { description: { story: 'Compare small, medium and large identity frames.' }, source: { language: 'tsx', code: `import { Avatar, Flex } from '@jfrader/ui';
 
-<>
+<Flex align="center" gap="sm" wrap>
   <Avatar name="Size sm" size="sm" />
   <Avatar name="Size md" size="md" />
   <Avatar name="Size lg" size="lg" />
-</>` } } },
+</Flex>` } } },
   render: (args) => (
     <Flex align="center" gap="sm" wrap>
       {SIZES.map((size) => (
@@ -310,15 +340,17 @@ export const Sizes: Story = {
 };
 
 export const Status: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, sceneSource } from '@jfrader/ui';
+  name: 'Presence labels',
+  parameters: { docs: { description: { story: 'Compare presence indicators and a localized online label.' }, source: { language: 'tsx', code: `import { Avatar, Flex } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
 
-<>
+<Flex align="center" gap="sm" wrap>
   <Avatar name="Ada Lovelace" status="online" />
   <Avatar name="Ada Lovelace" status="away" />
   <Avatar name="Ada Lovelace" status="busy" />
   <Avatar name="Ada Lovelace" status="offline" />
   <Avatar name="Ada Lovelace" src={sceneSource('avatar-ada')} size="lg" status="online" statusLabel="en línea" />
-</>` } } },
+</Flex>` } } },
   render: (args) => (
     <Flex align="center" gap="sm" wrap>
       {STATUSES.map((status) => (
@@ -388,6 +420,7 @@ export const LightTheme: Story = {
 
 export const ForcedColorsRule: Story = {
   ...Status,
+  name: 'Forced colors rule',
   play: async ({ canvasElement }) => {
     const avatars = canvasElement.querySelectorAll<HTMLElement>('[data-ui="avatar"]');
     await expect(avatars).toHaveLength(5);
@@ -452,17 +485,19 @@ async function expectPresenceCycle(badge: HTMLElement) {
 }
 
 export const OnlinePulse: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { Fragment } from 'react';
-import { Avatar, sceneSource } from '@jfrader/ui';
+  name: 'Pulsing online presence',
+  parameters: { docs: { description: { story: 'Add an online ring to image and initials avatars at each size.' }, source: { language: 'tsx', code: `import { Fragment } from 'react';
+import { Avatar, Flex } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
 
-<>
+<Flex align="center" gap="sm" wrap>
   {(['sm', 'md', 'lg'] as const).map((size) => (
     <Fragment key={size}>
       <Avatar name={\`Photo \${size}\`} src={sceneSource('avatar-ada')} size={size} status="online" pulse />
       <Avatar name={\`Initials \${size}\`} size={size} status="online" pulse />
     </Fragment>
   ))}
-</>` } } },
+</Flex>` } } },
   args: { status: 'online', pulse: true },
   render: (args) => (
     <Flex align="center" gap="sm" wrap>
@@ -512,6 +547,7 @@ import { Avatar, sceneSource } from '@jfrader/ui';
 
 export const OnlinePulseLight: Story = {
   ...OnlinePulse,
+  name: 'Online pulse in light theme',
   parameters: { docs: { source: { language: 'tsx', code: `import { Fragment } from 'react';
 import { Avatar, ThemeRoot, sceneSource } from '@jfrader/ui';
 
@@ -599,6 +635,27 @@ export const PulseForcedColorsRule: Story = {
 };
 
 const ProfileButton = styled(Button)({ padding: vars.space[6] });
+
+export const Team: Story = {
+  name: 'Team portraits',
+  parameters: { docs: {
+    description: { story: 'Combine portrait artwork and initials in a named team group.' },
+    source: { language: 'tsx', code: `import { AvatarGroup, PersonAvatar } from '@jfrader/ui';
+
+<AvatarGroup label="Project team" members={[
+  { id: 'ada', name: 'Ada Lovelace', status: 'online', avatarProps: {
+    children: <PersonAvatar seed="ada" alt="" size="full" crop="circle" />,
+  } },
+  { id: 'grace', name: 'Grace Hopper' },
+]} />` },
+  } },
+  render: () => <AvatarGroup label="Project team" members={[
+    { id: 'ada', name: 'Ada Lovelace', status: 'online', avatarProps: {
+      children: <PersonAvatar seed="ada" alt="" size="full" crop="circle" />,
+    } },
+    { id: 'grace', name: 'Grace Hopper' },
+  ]} />,
+};
 
 export const PulsePointerPassthrough: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, Button, sceneSource, styled } from '@jfrader/ui';

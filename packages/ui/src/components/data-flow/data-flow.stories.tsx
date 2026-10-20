@@ -115,6 +115,25 @@ function RenderFixture(args: DataFlowProps) {
   return <DataFlow {...args} summary={summary} />;
 }
 
+const defaultSummarySource = `const summary: readonly DataFlowSummaryStep[] = [
+  { id: 'step-ingest', content: 'Client events supplies telemetry and clicks over HTTPS /v1/events. Database CDC supplies a Postgres change stream through WAL logical replication. Partner webhooks supplies HMAC-signed JSON. Hollow circles represent incoming records.' },
+  { id: 'step-transform', content: 'The Transformation engine validates, normalizes schemas and enriches records. Solid squares represent processed records.' },
+  { id: 'step-route', content: 'The Data warehouse analytics cluster receives every record. The Elasticsearch Search index receives 50%. The S3 Glacier Cold archive receives a 25% compliance sample. These shares and the record count are illustrative.' },
+];`;
+
+const nodeSummarySource = `const percent = new Intl.NumberFormat('en-US', { style: 'percent' });
+const summary: DataFlowSummaryStep[] = [
+  { id: 'sources', content: sources.map(node => [node.label, node.meta, node.detail].filter(Boolean).join(': ')).join('. ') || 'No sources configured.' },
+  { id: 'core', content: [core.label, core.detail].filter(Boolean).join(': ') },
+  { id: 'destinations', content: destinations.map(node => \`\${[node.label, node.meta, node.detail].filter(Boolean).join(': ')}; illustrative share \${percent.format(node.share ?? 1)}\`).join('. ') || 'No destinations configured.' },
+];`;
+
+const pipelineLabelsSource = `  label="Data processing pipeline illustration"
+  controlLabels={{ pause: 'Pause animation', resume: 'Resume animation', step: 'Step forward', replay: 'Replay animation', group: 'Playback transport controls' }}
+  emptyContent="No sources or destinations configured for this pipeline."
+  invalidContent="Cannot render pipeline: invalid configuration provided."
+  locale="en-US"`;
+
 const meta = {
   title: 'Showcase/DataFlow',
   component: DataFlow,
@@ -135,41 +154,76 @@ const meta = {
   parameters: {
     layout: 'padded',
     docs: {
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Nodes and edges', stories: ['CustomNodes', 'PartialShare', 'NoIcons'] },
+        { title: 'States', stories: ['Paused', 'Empty'] },
+        { title: 'Layout', stories: ['Horizontal', 'Vertical', 'NarrowContainer'] },
+        { title: 'Long content', stories: ['LongLabels'] },
+        { title: 'Composition', stories: ['AcceptedPause'] },
+      ],
+      description: {
+        component: 'Illustrate data moving from sources through core transformation to destinations.',
+      },
+      usage: `### When to use
+Use DataFlow to illustrate data pipelines, ingest topologies, and transform flows with synthetic particles and a semantic summary. It is an illustration for documentation and overviews, not a real-time monitoring dashboard or live pipeline controller.
+
+### Constraints
+- Destination routing shares range from 0 (receives no emitted records) to 1 (receives every emitted record). Fractional shares accumulate across cycles.
+- Playback supports controlled and uncontrolled pause states. Pausing freezes the animation immediately.
+- When paused, at speed 0, or under reduced motion, the Step control advances through ingest, transform, and route snapshots. Replay resets the cycle and counter to countStart.
+- Every pipeline requires an ordered summary describing sources, core transformation, and destination shares.
+
+### Keyboard and accessibility
+Native transport controls (Pause/Resume, Step, Replay) sit in standard tab order and activate with Enter or Space. The Step control is disabled during active playback. The animated canvas is hidden from assistive technology; screen readers navigate the structured summary list.`,
       source: {
         language: 'tsx',
-        code: `import { DataFlow } from '@jfrader/ui/data-flow';
+        code: `import { DataFlow, type DataFlowCore, type DataFlowDestinationNode, type DataFlowNode, type DataFlowSummaryStep } from '@jfrader/ui';
+
+const sources: readonly DataFlowNode[] = [
+  { id: 'src-events', label: 'Client events', meta: 'Telemetry and clicks', detail: 'HTTPS /v1/events' },
+  { id: 'src-cdc', label: 'Database CDC', meta: 'Postgres change stream', detail: 'WAL logical replication' },
+  { id: 'src-webhooks', label: 'Partner webhooks', meta: 'Inbound integration', detail: 'HMAC-signed JSON' },
+];
+
+const destinations: readonly DataFlowDestinationNode[] = [
+  { id: 'dst-warehouse', label: 'Data warehouse', meta: 'Analytics cluster', detail: '100% full dataset', share: 1 },
+  { id: 'dst-search', label: 'Search index', meta: 'Elasticsearch', detail: '50% sampled query stream', share: 0.5 },
+  { id: 'dst-cold', label: 'Cold archive', meta: 'S3 glacier storage', detail: '25% compliance sample', share: 0.25 },
+];
+
+const core: DataFlowCore = {
+  id: 'core-transform',
+  label: 'Transformation engine',
+  detail: 'Validation, schema normalization and enrichment',
+  countStart: 0,
+  countLabel: 'records',
+};
+
+const summary: readonly DataFlowSummaryStep[] = [
+  { id: 'step-ingest', content: 'Client events supplies telemetry and clicks over HTTPS /v1/events. Database CDC supplies a Postgres change stream through WAL logical replication. Partner webhooks supplies HMAC-signed JSON. Hollow circles represent incoming records.' },
+  { id: 'step-transform', content: 'The Transformation engine validates, normalizes schemas and enriches records. Solid squares represent processed records.' },
+  { id: 'step-route', content: 'The Data warehouse analytics cluster receives every record. The Elasticsearch Search index receives 50%. The S3 Glacier Cold archive receives a 25% compliance sample. These shares and the record count are illustrative.' },
+];
 
 <DataFlow
-  sources={[{ id: 'source', label: 'Events' }]}
-  core={{ id: 'core', label: 'Validate', countLabel: 'illustrative records' }}
-  destinations={[{ id: 'store', label: 'Archive', share: 1 }]}
-  summary={[
-    { id: 'input', content: 'Events supplies incoming records.' },
-    { id: 'process', content: 'Validate checks every record.' },
-    { id: 'output', content: 'Archive receives every illustrative record.' },
-  ]}
+  sources={sources}
+  core={core}
+  destinations={destinations}
+  summary={summary}
   label="Data processing pipeline illustration"
-  controlLabels={{ pause: 'Pause', resume: 'Resume', step: 'Step', replay: 'Replay', group: 'Playback' }}
+  controlLabels={{
+    pause: 'Pause animation',
+    resume: 'Resume animation',
+    step: 'Step forward',
+    replay: 'Replay animation',
+    group: 'Playback transport controls',
+  }}
   emptyContent="No sources or destinations configured for this pipeline."
   invalidContent="Cannot render pipeline: invalid configuration provided."
   defaultPaused
 />`,
       },
-      description: {
-        component:
-          'Illustrate data ingestion from sources through core transformation to destinations with animated particles and a semantic summary. This is an illustration, not a real-time monitoring dashboard or live pipeline controller.',
-      },
-      usage: `### Routing and shares
-Destinations receive records based on their illustrative share from 0 to 1. A share of 1 receives every emitted record, while a share of 0 receives none. Fractional shares accumulate across cycles.
-
-### Snapshots and playback
-Playback supports controlled and uncontrolled pause states. Pausing freezes the frame immediately. When paused, at speed 0, or under reduced motion, the Step control is enabled to advance through ingest, transform, and route snapshots. Replay resets the local illustrative cycle and counter to countStart.
-
-### Keyboard
-Native transport buttons follow standard tab order (pause, step, replay) and activate once on Enter or Space. The step button is disabled during active playback.
-
-### Summary and accessibility
-Write the required ordered summary to identify every source, transformation, destination, routing share and node detail. The animated scene is hidden from assistive technology. Counts and particles are synthetic, not measured telemetry.`,
     },
   },
 } satisfies Meta<typeof DataFlow>;
@@ -177,9 +231,111 @@ Write the required ordered summary to identify every source, transformation, des
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  name: 'Pipeline overview',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Illustrate data moving from sources through a central transform to weighted destinations.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DataFlow, type DataFlowCore, type DataFlowDestinationNode, type DataFlowNode, type DataFlowSummaryStep } from '@jfrader/ui';
+
+const sources: readonly DataFlowNode[] = [
+  { id: 'src-events', label: 'Client events', meta: 'Telemetry and clicks', detail: 'HTTPS /v1/events' },
+  { id: 'src-cdc', label: 'Database CDC', meta: 'Postgres change stream', detail: 'WAL logical replication' },
+  { id: 'src-webhooks', label: 'Partner webhooks', meta: 'Inbound integration', detail: 'HMAC-signed JSON' },
+];
+
+const destinations: readonly DataFlowDestinationNode[] = [
+  { id: 'dst-warehouse', label: 'Data warehouse', meta: 'Analytics cluster', detail: '100% full dataset', share: 1 },
+  { id: 'dst-search', label: 'Search index', meta: 'Elasticsearch', detail: '50% sampled query stream', share: 0.5 },
+  { id: 'dst-cold', label: 'Cold archive', meta: 'S3 glacier storage', detail: '25% compliance sample', share: 0.25 },
+];
+
+const core: DataFlowCore = {
+  id: 'core-transform',
+  label: 'Transformation engine',
+  detail: 'Validation, schema normalization and enrichment',
+  countStart: 0,
+  countLabel: 'records',
+};
+
+const summary: readonly DataFlowSummaryStep[] = [
+  { id: 'step-ingest', content: 'Client events supplies telemetry and clicks over HTTPS /v1/events. Database CDC supplies a Postgres change stream through WAL logical replication. Partner webhooks supplies HMAC-signed JSON. Hollow circles represent incoming records.' },
+  { id: 'step-transform', content: 'The Transformation engine validates, normalizes schemas and enriches records. Solid squares represent processed records.' },
+  { id: 'step-route', content: 'The Data warehouse analytics cluster receives every record. The Elasticsearch Search index receives 50%. The S3 Glacier Cold archive receives a 25% compliance sample. These shares and the record count are illustrative.' },
+];
+
+<DataFlow
+  sources={sources}
+  core={core}
+  destinations={destinations}
+  summary={summary}
+  label="Data processing pipeline illustration"
+  controlLabels={{
+    pause: 'Pause animation',
+    resume: 'Resume animation',
+    step: 'Step forward',
+    replay: 'Replay animation',
+    group: 'Playback transport controls',
+  }}
+  emptyContent="No sources or destinations configured for this pipeline."
+  invalidContent="Cannot render pipeline: invalid configuration provided."
+  locale="en-US"
+  defaultPaused
+/>`,
+      },
+    },
+  },
+};
 
 export const Horizontal: Story = {
+  name: 'Horizontal layout',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Align pipeline stages horizontally from sources on the inline start to destinations on the inline end.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DataFlow, type DataFlowCore, type DataFlowDestinationNode, type DataFlowNode, type DataFlowSummaryStep } from '@jfrader/ui';
+
+const sources: readonly DataFlowNode[] = [
+  { id: 'src-events', label: 'Client events', meta: 'Telemetry and clicks', detail: 'HTTPS /v1/events' },
+  { id: 'src-cdc', label: 'Database CDC', meta: 'Postgres change stream', detail: 'WAL logical replication' },
+  { id: 'src-webhooks', label: 'Partner webhooks', meta: 'Inbound integration', detail: 'HMAC-signed JSON' },
+];
+
+const destinations: readonly DataFlowDestinationNode[] = [
+  { id: 'dst-warehouse', label: 'Data warehouse', meta: 'Analytics cluster', detail: '100% full dataset', share: 1 },
+  { id: 'dst-search', label: 'Search index', meta: 'Elasticsearch', detail: '50% sampled query stream', share: 0.5 },
+  { id: 'dst-cold', label: 'Cold archive', meta: 'S3 glacier storage', detail: '25% compliance sample', share: 0.25 },
+];
+
+const core: DataFlowCore = {
+  id: 'core-transform',
+  label: 'Transformation engine',
+  detail: 'Validation, schema normalization and enrichment',
+  countStart: 0,
+  countLabel: 'records',
+};
+
+${defaultSummarySource}
+
+<DataFlow
+  orientation="horizontal"
+  sources={sources}
+  core={core}
+  destinations={destinations}
+  summary={summary}
+${pipelineLabelsSource}
+  defaultPaused
+/>`,
+      },
+    },
+  },
   args: { orientation: 'horizontal' },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const figure = canvasElement.querySelector<HTMLElement>('[data-ui="data-flow"]')!;
@@ -207,10 +363,97 @@ export const Horizontal: Story = {
 };
 
 export const Vertical: Story = {
+  name: 'Vertical layout',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Stack pipeline stages vertically from sources at the top to destinations at the bottom.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DataFlow, type DataFlowCore, type DataFlowDestinationNode, type DataFlowNode, type DataFlowSummaryStep } from '@jfrader/ui';
+
+const sources: readonly DataFlowNode[] = [
+  { id: 'src-events', label: 'Client events', meta: 'Telemetry and clicks', detail: 'HTTPS /v1/events' },
+  { id: 'src-cdc', label: 'Database CDC', meta: 'Postgres change stream', detail: 'WAL logical replication' },
+  { id: 'src-webhooks', label: 'Partner webhooks', meta: 'Inbound integration', detail: 'HMAC-signed JSON' },
+];
+
+const destinations: readonly DataFlowDestinationNode[] = [
+  { id: 'dst-warehouse', label: 'Data warehouse', meta: 'Analytics cluster', detail: '100% full dataset', share: 1 },
+  { id: 'dst-search', label: 'Search index', meta: 'Elasticsearch', detail: '50% sampled query stream', share: 0.5 },
+  { id: 'dst-cold', label: 'Cold archive', meta: 'S3 glacier storage', detail: '25% compliance sample', share: 0.25 },
+];
+
+const core: DataFlowCore = {
+  id: 'core-transform',
+  label: 'Transformation engine',
+  detail: 'Validation, schema normalization and enrichment',
+  countStart: 0,
+  countLabel: 'records',
+};
+
+${defaultSummarySource}
+
+<DataFlow
+  orientation="vertical"
+  sources={sources}
+  core={core}
+  destinations={destinations}
+  summary={summary}
+${pipelineLabelsSource}
+  defaultPaused
+/>`,
+      },
+    },
+  },
   args: { orientation: 'vertical' },
 };
 
 export const PartialShare: Story = {
+  name: 'Weighted routing shares',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Route records proportionally across destinations with fractional share ratios.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DataFlow, type DataFlowCore, type DataFlowDestinationNode, type DataFlowNode, type DataFlowSummaryStep } from '@jfrader/ui';
+
+const sources: readonly DataFlowNode[] = [
+  { id: 'src-events', label: 'Client events', meta: 'Telemetry and clicks', detail: 'HTTPS /v1/events' },
+  { id: 'src-cdc', label: 'Database CDC', meta: 'Postgres change stream', detail: 'WAL logical replication' },
+  { id: 'src-webhooks', label: 'Partner webhooks', meta: 'Inbound integration', detail: 'HMAC-signed JSON' },
+];
+
+const destinations: readonly DataFlowDestinationNode[] = [
+  { id: 'd-full', label: 'Primary store', share: 1 },
+  { id: 'd-half', label: 'Secondary replica', share: 0.5 },
+  { id: 'd-quarter', label: 'Audit trail', share: 0.25 },
+];
+
+const core: DataFlowCore = {
+  id: 'core-transform',
+  label: 'Transformation engine',
+  detail: 'Validation, schema normalization and enrichment',
+  countStart: 0,
+  countLabel: 'records',
+};
+
+${nodeSummarySource}
+
+<DataFlow
+  sources={sources}
+  core={core}
+  destinations={destinations}
+  summary={summary}
+${pipelineLabelsSource}
+  defaultPaused
+/>`,
+      },
+    },
+  },
   render: RenderFixture,
   args: {
     destinations: [
@@ -222,6 +465,52 @@ export const PartialShare: Story = {
 };
 
 export const ZeroShare: Story = {
+  name: 'Unrouted destination',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Set a destination share to zero to represent an inactive or standby endpoint.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DataFlow, type DataFlowCore, type DataFlowDestinationNode, type DataFlowNode, type DataFlowSummaryStep } from '@jfrader/ui';
+
+const sources: readonly DataFlowNode[] = [
+  { id: 'src-events', label: 'Client events', meta: 'Telemetry and clicks', detail: 'HTTPS /v1/events' },
+  { id: 'src-cdc', label: 'Database CDC', meta: 'Postgres change stream', detail: 'WAL logical replication' },
+  { id: 'src-webhooks', label: 'Partner webhooks', meta: 'Inbound integration', detail: 'HMAC-signed JSON' },
+];
+
+const destinations: readonly DataFlowDestinationNode[] = [
+  { id: 'd-active', label: 'Active cluster', share: 1 },
+  { id: 'd-disabled', label: 'Maintenance standby', share: 0 },
+];
+
+const core: DataFlowCore = {
+  id: 'core-transform',
+  label: 'Transformation engine',
+  detail: 'Validation, schema normalization and enrichment',
+  countStart: 0,
+  countLabel: 'records',
+};
+
+const summary: readonly DataFlowSummaryStep[] = [
+  { id: 'sources', content: 'Sources stream incoming records.' },
+  { id: 'core', content: 'Transformation engine normalizes records.' },
+  { id: 'destinations', content: 'Active cluster receives all records; Maintenance standby is inactive at zero share.' },
+];
+
+<DataFlow
+  sources={sources}
+  core={core}
+  destinations={destinations}
+  summary={summary}
+${pipelineLabelsSource}
+  defaultPaused
+/>`,
+      },
+    },
+  },
   render: RenderFixture,
   args: {
     destinations: [
@@ -243,7 +532,15 @@ export const AllShare: Story = {
 };
 
 export const NoIcons: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { DataFlow, type DataFlowNode, type DataFlowDestinationNode } from '@jfrader/ui';
+  name: 'Text-only nodes',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Display pipeline nodes without icon adornments.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DataFlow, type DataFlowNode, type DataFlowDestinationNode } from '@jfrader/ui';
 
 const sources: readonly DataFlowNode[] = [
   { id: 'src-events', label: 'Client events', meta: 'Telemetry and clicks', detail: 'HTTPS /v1/events' },
@@ -271,7 +568,10 @@ const destinations: readonly DataFlowDestinationNode[] = [
   invalidContent="Cannot render pipeline: invalid configuration provided."
   locale="en-US"
   defaultPaused
-/>` } } },
+/>`,
+      },
+    },
+  },
   args: {
     sources: sources.map(({ icon: _, ...rest }) => rest),
     destinations: destinations.map(({ icon: _, ...rest }) => rest),
@@ -280,6 +580,66 @@ const destinations: readonly DataFlowDestinationNode[] = [
 };
 
 export const CustomNodes: Story = {
+  name: 'Custom node icons',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Configure custom icons, labels, and initial record counters for pipeline nodes.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DataFlow, type DataFlowCore, type DataFlowDestinationNode, type DataFlowNode, type DataFlowSummaryStep } from '@jfrader/ui';
+
+const sources: readonly DataFlowNode[] = [
+  {
+    id: 's-api',
+    label: 'Public Gateway',
+    meta: '20,000 req/sec',
+    detail: 'Rate-limited edge reverse proxy',
+    icon: <span>🌐</span>,
+  },
+  {
+    id: 's-iot',
+    label: 'Sensor Mesh',
+    meta: 'MQTT broker',
+    detail: 'Binary sensor telemetry packets',
+    icon: <span>📡</span>,
+  },
+];
+
+const destinations: readonly DataFlowDestinationNode[] = [
+  {
+    id: 'd-db',
+    label: 'Timescale DB',
+    meta: 'Continuous aggregates',
+    detail: 'Partitioned hypertable',
+    share: 1,
+    icon: <span>💾</span>,
+  },
+];
+
+const core: DataFlowCore = {
+  id: 'core-transform',
+  label: 'Stream Processor',
+  detail: 'Apache Flink windowed aggregation',
+  icon: <span>⚙️</span>,
+  countStart: 1000,
+  countLabel: 'records',
+};
+
+${nodeSummarySource}
+
+<DataFlow
+  sources={sources}
+  core={core}
+  destinations={destinations}
+  summary={summary}
+${pipelineLabelsSource}
+  defaultPaused
+/>`,
+      },
+    },
+  },
   render: RenderFixture,
   args: {
     sources: [
@@ -325,6 +685,31 @@ export const CaptionZero: Story = {
 };
 
 export const Empty: Story = {
+  name: 'Empty pipeline',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Render a fallback message when no sources or destinations are configured.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DataFlow } from '@jfrader/ui';
+
+<DataFlow
+  sources={[]}
+  destinations={[]}
+  core={{ id: 'core-transform', label: 'Transformation engine', detail: 'Validation, schema normalization and enrichment', countStart: 0, countLabel: 'records' }}
+  summary={[
+    { id: 'sources', content: 'No sources configured.' },
+    { id: 'core', content: 'Transformation engine: Validation, schema normalization and enrichment' },
+    { id: 'destinations', content: 'No destinations configured.' },
+  ]}
+${pipelineLabelsSource}
+  defaultPaused
+/>`,
+      },
+    },
+  },
   render: RenderFixture,
   args: {
     sources: [],
@@ -350,6 +735,56 @@ export const DuplicateIds: Story = {
 };
 
 export const LongLabels: Story = {
+  name: 'Long text wrapping',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Wrap verbose node labels, metadata, and detailed URLs without overflowing container bounds.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DataFlow, type DataFlowCore, type DataFlowDestinationNode, type DataFlowNode, type DataFlowSummaryStep } from '@jfrader/ui';
+
+const sources: readonly DataFlowNode[] = [
+  {
+    id: 's-long',
+    label: 'Extremely long data ingestion source service endpoint with verbose naming conventions',
+    meta: 'Very long metadata description that wraps gracefully without breaking layout bounds',
+    detail: 'Detailed long URL string https://api.subdomain.internal.company.production.service.com/v1/long-endpoint-path',
+  },
+];
+
+const destinations: readonly DataFlowDestinationNode[] = [
+  {
+    id: 'd-long',
+    label: 'Enterprise long-term archival data warehouse retention policy sink',
+    meta: 'Compliance partition replicated across multiple geographical availability zones',
+    detail: 'Encrypted at rest with dedicated customer-managed encryption keys',
+    share: 1,
+  },
+];
+
+const core: DataFlowCore = {
+  id: 'core-transform',
+  label: 'Transformation engine',
+  detail: 'Validation, schema normalization and enrichment',
+  countStart: 0,
+  countLabel: 'records',
+};
+
+${nodeSummarySource}
+
+<DataFlow
+  sources={sources}
+  core={core}
+  destinations={destinations}
+  summary={summary}
+${pipelineLabelsSource}
+  defaultPaused
+/>`,
+      },
+    },
+  },
   render: RenderFixture,
   args: {
     sources: [
@@ -387,6 +822,53 @@ export const LongLabels: Story = {
 };
 
 export const EightByEightBudget: Story = {
+  name: 'High-density pipeline',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Render an eight-source, eight-destination topology at maximum node budget.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DataFlow, type DataFlowCore, type DataFlowDestinationNode, type DataFlowNode, type DataFlowSummaryStep } from '@jfrader/ui';
+
+const sources: readonly DataFlowNode[] = Array.from({ length: 8 }, (_, i) => ({
+  id: \`src-\${i + 1}\`,
+  label: \`Ingest \${i + 1}\`,
+  meta: \`Source #\${i + 1}\`,
+}));
+
+const destinations: readonly DataFlowDestinationNode[] = Array.from({ length: 8 }, (_, i) => ({
+  id: \`dst-\${i + 1}\`,
+  label: \`Egress \${i + 1}\`,
+  share: (i + 1) / 8,
+}));
+
+const core: DataFlowCore = {
+  id: 'core-transform',
+  label: 'Transformation engine',
+  detail: 'Validation, schema normalization and enrichment',
+  countStart: 0,
+  countLabel: 'records',
+};
+
+const summary: readonly DataFlowSummaryStep[] = [
+  { id: 'step-ingest', content: 'Eight sources feed incoming records.' },
+  { id: 'step-transform', content: 'Transformation engine enriches records.' },
+  { id: 'step-route', content: 'Eight destinations receive apportioned egress shares.' },
+];
+
+<DataFlow
+  sources={sources}
+  core={core}
+  destinations={destinations}
+  summary={summary}
+${pipelineLabelsSource}
+  defaultPaused
+/>`,
+      },
+    },
+  },
   render: RenderFixture,
   args: {
     sources: Array.from({ length: 8 }, (_, i) => ({
@@ -403,12 +885,102 @@ export const EightByEightBudget: Story = {
 };
 
 export const SpeedZero: Story = {
+  name: 'Zero speed',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Hold playback at zero speed to inspect topology while enabling step controls.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DataFlow, type DataFlowCore, type DataFlowDestinationNode, type DataFlowNode, type DataFlowSummaryStep } from '@jfrader/ui';
+
+const sources: readonly DataFlowNode[] = [
+  { id: 'src-events', label: 'Client events', meta: 'Telemetry and clicks', detail: 'HTTPS /v1/events' },
+  { id: 'src-cdc', label: 'Database CDC', meta: 'Postgres change stream', detail: 'WAL logical replication' },
+  { id: 'src-webhooks', label: 'Partner webhooks', meta: 'Inbound integration', detail: 'HMAC-signed JSON' },
+];
+
+const destinations: readonly DataFlowDestinationNode[] = [
+  { id: 'dst-warehouse', label: 'Data warehouse', meta: 'Analytics cluster', detail: '100% full dataset', share: 1 },
+  { id: 'dst-search', label: 'Search index', meta: 'Elasticsearch', detail: '50% sampled query stream', share: 0.5 },
+  { id: 'dst-cold', label: 'Cold archive', meta: 'S3 glacier storage', detail: '25% compliance sample', share: 0.25 },
+];
+
+const core: DataFlowCore = {
+  id: 'core-transform',
+  label: 'Transformation engine',
+  detail: 'Validation, schema normalization and enrichment',
+  countStart: 0,
+  countLabel: 'records',
+};
+
+const summary: readonly DataFlowSummaryStep[] = [
+  { id: 'step-ingest', content: 'Sources supply initial records.' },
+  { id: 'step-transform', content: 'Core transformation processes records.' },
+  { id: 'step-route', content: 'Destinations receive routed records.' },
+];
+
+<DataFlow
+  sources={sources}
+  core={core}
+  destinations={destinations}
+  summary={summary}
+${pipelineLabelsSource}
+  speed={0}
+/>`,
+      },
+    },
+  },
   args: {
     speed: 0,
   },
 };
 
 export const Paused: Story = {
+  name: 'Paused playback',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Freeze particle animation to display a static snapshot of pipeline traffic.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DataFlow, type DataFlowCore, type DataFlowDestinationNode, type DataFlowNode, type DataFlowSummaryStep } from '@jfrader/ui';
+
+const sources: readonly DataFlowNode[] = [
+  { id: 'src-events', label: 'Client events', meta: 'Telemetry and clicks', detail: 'HTTPS /v1/events' },
+  { id: 'src-cdc', label: 'Database CDC', meta: 'Postgres change stream', detail: 'WAL logical replication' },
+  { id: 'src-webhooks', label: 'Partner webhooks', meta: 'Inbound integration', detail: 'HMAC-signed JSON' },
+];
+
+const destinations: readonly DataFlowDestinationNode[] = [
+  { id: 'dst-warehouse', label: 'Data warehouse', meta: 'Analytics cluster', detail: '100% full dataset', share: 1 },
+  { id: 'dst-search', label: 'Search index', meta: 'Elasticsearch', detail: '50% sampled query stream', share: 0.5 },
+  { id: 'dst-cold', label: 'Cold archive', meta: 'S3 glacier storage', detail: '25% compliance sample', share: 0.25 },
+];
+
+const core: DataFlowCore = {
+  id: 'core-transform',
+  label: 'Transformation engine',
+  detail: 'Validation, schema normalization and enrichment',
+  countStart: 0,
+  countLabel: 'records',
+};
+
+${defaultSummarySource}
+
+<DataFlow
+  sources={sources}
+  core={core}
+  destinations={destinations}
+  summary={summary}
+${pipelineLabelsSource}
+  paused
+/>`,
+      },
+    },
+  },
   args: {
     paused: true,
   },
@@ -460,6 +1032,50 @@ export const ReducedMotion: Story = {
 export const ForcedColors: Story = {};
 
 export const NarrowContainer: Story = {
+  name: 'Narrow container',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Adapt pipeline nodes and connectors gracefully within a constrained layout width.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { DataFlow, type DataFlowCore, type DataFlowDestinationNode, type DataFlowNode, type DataFlowSummaryStep } from '@jfrader/ui';
+
+const sources: readonly DataFlowNode[] = [
+  { id: 'src-events', label: 'Client events', meta: 'Telemetry and clicks', detail: 'HTTPS /v1/events' },
+  { id: 'src-cdc', label: 'Database CDC', meta: 'Postgres change stream', detail: 'WAL logical replication' },
+  { id: 'src-webhooks', label: 'Partner webhooks', meta: 'Inbound integration', detail: 'HMAC-signed JSON' },
+];
+
+const destinations: readonly DataFlowDestinationNode[] = [
+  { id: 'dst-warehouse', label: 'Data warehouse', meta: 'Analytics cluster', detail: '100% full dataset', share: 1 },
+  { id: 'dst-search', label: 'Search index', meta: 'Elasticsearch', detail: '50% sampled query stream', share: 0.5 },
+  { id: 'dst-cold', label: 'Cold archive', meta: 'S3 glacier storage', detail: '25% compliance sample', share: 0.25 },
+];
+
+const core: DataFlowCore = {
+  id: 'core-transform',
+  label: 'Transformation engine',
+  detail: 'Validation, schema normalization and enrichment',
+  countStart: 0,
+  countLabel: 'records',
+};
+
+${defaultSummarySource}
+
+<DataFlow
+  sources={sources}
+  core={core}
+  destinations={destinations}
+  summary={summary}
+${pipelineLabelsSource}
+  defaultPaused
+  sx={{ inlineSize: 360, maxInlineSize: '100%' }}
+/>`,
+      },
+    },
+  },
   render: (args) => (
     <NarrowFrame>
       <DataFlow {...args} />
@@ -537,6 +1153,57 @@ export const ControlledPauseRejects: Story = {
 };
 
 export const AcceptedPause: Story = {
+  name: 'Controlled playback',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Bind playback pause state to external application state and transport handlers.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { DataFlow, type DataFlowCore, type DataFlowDestinationNode, type DataFlowNode, type DataFlowSummaryStep } from '@jfrader/ui';
+
+const sources: readonly DataFlowNode[] = [
+  { id: 'src-events', label: 'Client events', meta: 'Telemetry and clicks', detail: 'HTTPS /v1/events' },
+  { id: 'src-cdc', label: 'Database CDC', meta: 'Postgres change stream', detail: 'WAL logical replication' },
+  { id: 'src-webhooks', label: 'Partner webhooks', meta: 'Inbound integration', detail: 'HMAC-signed JSON' },
+];
+
+const destinations: readonly DataFlowDestinationNode[] = [
+  { id: 'dst-warehouse', label: 'Data warehouse', meta: 'Analytics cluster', detail: '100% full dataset', share: 1 },
+  { id: 'dst-search', label: 'Search index', meta: 'Elasticsearch', detail: '50% sampled query stream', share: 0.5 },
+  { id: 'dst-cold', label: 'Cold archive', meta: 'S3 glacier storage', detail: '25% compliance sample', share: 0.25 },
+];
+
+const core: DataFlowCore = {
+  id: 'core-transform',
+  label: 'Transformation engine',
+  detail: 'Validation, schema normalization and enrichment',
+  countStart: 0,
+  countLabel: 'records',
+};
+
+${defaultSummarySource}
+
+function ControlledPipeline() {
+  const [paused, setPaused] = useState(false);
+
+  return (
+    <DataFlow
+      sources={sources}
+      core={core}
+      destinations={destinations}
+      summary={summary}
+${pipelineLabelsSource}
+      paused={paused}
+      onPausedChange={setPaused}
+    />
+  );
+}`,
+      },
+    },
+  },
   render: (args) => {
     const [isPaused, setIsPaused] = useState(false);
     return (
