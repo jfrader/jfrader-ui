@@ -138,7 +138,7 @@ const Frame = styled.div({ inlineSize: `min(42rem, calc(100vw - 2 * ${vars.space
 
 const FixtureButton = styled.button({ minBlockSize: vars.space[8], minInlineSize: vars.space[8], padding: vars.space[2], backgroundColor: vars.color.surface, color: vars.color.text, border: `1px solid ${vars.color.borderControl}`, borderRadius: vars.radius.sm });
 
-const Stack = styled.div({ display: 'grid', gap: vars.space[6] });
+const Stack = styled.div({ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: vars.space[6] });
 
 const NarrowFrame = styled.div({ inlineSize: '20rem', maxInlineSize: '100%', blockSize: '32rem' });
 
