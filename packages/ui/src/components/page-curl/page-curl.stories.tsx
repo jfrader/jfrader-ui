@@ -188,19 +188,233 @@ export const RootRefs: Story = {
     }
   },
 };
-export const Interior: Story = { args: { defaultValue: 1 } };
-export const BackCover: Story = { args: { defaultValue: 2 } };
+const standalonePagesSource = `import { PageCurl, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const JournalLabel = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
+});
+const Heading = styled.h2({
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.lg,
+  margin: 0,
+  color: vars.color.text,
+});
+const Paragraph = styled.p({
+  fontFamily: vars.font.sans,
+  lineHeight: vars.lineHeight.base,
+  fontSize: vars.textSize.sm,
+  color: vars.color.textMuted,
+});
+const Landscape = styled.svg({
+  display: 'block',
+  inlineSize: '100%',
+  marginBlock: vars.space[5],
+  color: vars.color.accentText,
+});
+
+function TrailDrawing() {
+  return (
+    <Landscape
+      viewBox="0 0 240 180"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      aria-hidden="true"
+    >
+      <circle cx="180" cy="38" r="18" />
+      <path d="M10 130 72 48 120 110 154 74 230 140M10 148Q70 126 120 148T230 148M10 163Q70 141 120 163T230 163M50 102 72 73 95 103" />
+    </Landscape>
+  );
+}
+
+const pages = [
+  {
+    id: 'cover',
+    label: 'Cover',
+    content: (
+      <>
+        <JournalLabel>VOL. 04 / AUTUMN</JournalLabel>
+        <TrailDrawing />
+        <Heading>Field notes</Heading>
+        <Paragraph>A walking journal from the coast to the river.</Paragraph>
+      </>
+    ),
+  },
+  {
+    id: 'coast',
+    label: 'Coast',
+    content: (
+      <>
+        <Heading>Coast</Heading>
+        <TrailDrawing />
+        <Paragraph>Low tide leaves a new shoreline.</Paragraph>
+        <Paragraph>
+          At the headland, the trail turns inland. Salt grass gives way to pine
+          and the sound of the sea falls behind us.
+        </Paragraph>
+      </>
+    ),
+  },
+  {
+    id: 'forest',
+    label: 'Forest',
+    content: (
+      <>
+        <Heading>Forest</Heading>
+        <TrailDrawing />
+        <Paragraph>The path follows the river.</Paragraph>
+        <Paragraph>
+          We stop beneath the canopy to sketch the ridge. The last light catches
+          the water between the trees.
+        </Paragraph>
+      </>
+    ),
+  },
+  {
+    id: 'back',
+    label: 'Back cover',
+    content: (
+      <>
+        <TrailDrawing />
+        <Heading>End of the trail</Heading>
+        <Paragraph>Four days. Two coastlines. One notebook filled.</Paragraph>
+      </>
+    ),
+  },
+];`;
+
+export const Interior: Story = {
+  args: { defaultValue: 1 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${standalonePagesSource}
+
+<PageCurl
+  label="Field notes"
+  locale="en-GB"
+  pages={pages}
+  defaultValue={1}
+/>`,
+      },
+    },
+  },
+};
+export const BackCover: Story = {
+  args: { defaultValue: 2 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${standalonePagesSource}
+
+<PageCurl
+  label="Field notes"
+  locale="en-GB"
+  pages={pages}
+  defaultValue={2}
+/>`,
+      },
+    },
+  },
+};
 export const OddPages: Story = {
   args: { pages: pages.slice(0, 3), defaultValue: 1 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${standalonePagesSource}
+
+<PageCurl
+  label="Field notes"
+  locale="en-GB"
+  pages={pages.slice(0, 3)}
+  defaultValue={1}
+/>`,
+      },
+    },
+  },
 };
 export const Empty: Story = { args: { pages: [] } };
-export const OnePage: Story = { args: { pages: pages.slice(0, 1) } };
-export const HintZero: Story = { args: { hint: 0 } };
+export const OnePage: Story = {
+  args: { pages: pages.slice(0, 1) },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${standalonePagesSource}
+
+<PageCurl
+  label="Field notes"
+  locale="en-GB"
+  pages={pages.slice(0, 1)}
+/>`,
+      },
+    },
+  },
+};
+export const HintZero: Story = {
+  args: { hint: 0 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${standalonePagesSource}
+
+<PageCurl
+  label="Field notes"
+  locale="en-GB"
+  pages={pages}
+  hint={0}
+/>`,
+      },
+    },
+  },
+};
 export const LightTheme: Story = {
   globals: { theme: 'light' },
   args: { defaultValue: 1 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${standalonePagesSource}
+
+<PageCurl
+  label="Field notes"
+  locale="en-GB"
+  pages={pages}
+  defaultValue={1}
+/>`,
+      },
+    },
+  },
 };
-export const RightToLeft: Story = { args: { dir: 'rtl', defaultValue: 1 } };
+export const RightToLeft: Story = {
+  args: { dir: 'rtl', defaultValue: 1 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${standalonePagesSource}
+
+<PageCurl
+  label="Field notes"
+  locale="en-GB"
+  pages={pages}
+  dir="rtl"
+  defaultValue={1}
+/>`,
+      },
+    },
+  },
+};
 export const KeyboardNavigation: Story = {
   tags: ['!autodocs'],
   play: async ({ canvas, userEvent, args }) => {
@@ -254,6 +468,21 @@ export const RtlKeyboard: Story = {
   },
 };
 export const ClampedValue: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${standalonePagesSource}
+
+<PageCurl
+  label="Field notes"
+  locale="en-GB"
+  pages={pages}
+  value={100}
+/>`,
+      },
+    },
+  },
   args: { value: 100 },
   play: async ({ canvas, args }) => {
     await expect(canvas.getByRole('button', { name: 'Next' })).toBeDisabled();

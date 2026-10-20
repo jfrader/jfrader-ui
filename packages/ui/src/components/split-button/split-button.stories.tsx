@@ -18,6 +18,15 @@ import {
 import { styled } from '../../index';
 
 const NarrowFrame = styled.div({ inlineSize: '14rem' });
+const exportSnippetBase = `import { Button, SplitButton, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[3],
+});`;
 
 const LightThemeFrame = styled.div({ padding: vars.space[4], backgroundColor: vars.color.bg });
 
@@ -585,6 +594,56 @@ export const Sizes: Story = {
 };
 
 export const Secondary: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${exportSnippetBase}
+
+export function ExportRow({
+  exportPdf,
+  exportCsv,
+  exportJson,
+  deleteExport,
+}: {
+  exportPdf?: () => void;
+  exportCsv?: () => void;
+  exportJson?: () => void;
+  deleteExport?: () => void;
+}) {
+  return (
+    <Row>
+      <SplitButton
+        aria-label="Export options"
+        variant="outline"
+        tone="neutral"
+        size="sm"
+      >
+        <SplitButton.Action onClick={exportPdf}>
+          Export PDF
+        </SplitButton.Action>
+        <SplitButton.Trigger aria-label="Other export formats" />
+        <SplitButton.Content>
+          <SplitButton.Item onSelect={exportCsv}>
+            CSV
+          </SplitButton.Item>
+          <SplitButton.Item disabled>Excel</SplitButton.Item>
+          <SplitButton.Item onSelect={exportJson}>
+            JSON
+          </SplitButton.Item>
+          <SplitButton.Separator />
+          <SplitButton.Item tone="danger" onSelect={deleteExport}>
+            Delete export
+          </SplitButton.Item>
+        </SplitButton.Content>
+      </SplitButton>
+      <Button>After</Button>
+    </Row>
+  );
+}`,
+      },
+    },
+  },
   args: { variant: 'outline', tone: 'neutral', size: 'sm' },
   play: async ({ canvasElement }) => {
     const action = getAction(canvasElement);
@@ -646,6 +705,51 @@ export const PersistentOpen: Story = {
 };
 
 export const KeyboardActivation: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${exportSnippetBase}
+
+export function ExportRow({
+  exportPdf,
+  exportCsv,
+  exportJson,
+  deleteExport,
+}: {
+  exportPdf?: () => void;
+  exportCsv?: () => void;
+  exportJson?: () => void;
+  deleteExport?: () => void;
+}) {
+  return (
+    <Row>
+      <SplitButton aria-label="Export options">
+        <SplitButton.Action onClick={exportPdf}>
+          Export PDF
+        </SplitButton.Action>
+        <SplitButton.Trigger aria-label="Other export formats" />
+        <SplitButton.Content>
+          <SplitButton.Item onSelect={exportCsv}>
+            CSV
+          </SplitButton.Item>
+          <SplitButton.Item disabled>Excel</SplitButton.Item>
+          <SplitButton.Item onSelect={exportJson}>
+            JSON
+          </SplitButton.Item>
+          <SplitButton.Separator />
+          <SplitButton.Item tone="danger" onSelect={deleteExport}>
+            Delete export
+          </SplitButton.Item>
+        </SplitButton.Content>
+      </SplitButton>
+      <Button>After</Button>
+    </Row>
+  );
+}`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const action = getAction(canvasElement);
     const trigger = getTrigger(canvasElement);
@@ -689,6 +793,51 @@ export const KeyboardActivation: Story = {
 };
 
 export const MenuNavigation: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${exportSnippetBase}
+
+export function ExportRow({
+  exportPdf,
+  exportCsv,
+  exportJson,
+  deleteExport,
+}: {
+  exportPdf?: () => void;
+  exportCsv?: () => void;
+  exportJson?: () => void;
+  deleteExport?: () => void;
+}) {
+  return (
+    <Row>
+      <SplitButton aria-label="Export options">
+        <SplitButton.Action onClick={exportPdf}>
+          Export PDF
+        </SplitButton.Action>
+        <SplitButton.Trigger aria-label="Other export formats" />
+        <SplitButton.Content>
+          <SplitButton.Item onSelect={exportCsv}>
+            CSV
+          </SplitButton.Item>
+          <SplitButton.Item disabled>Excel</SplitButton.Item>
+          <SplitButton.Item onSelect={exportJson}>
+            JSON
+          </SplitButton.Item>
+          <SplitButton.Separator />
+          <SplitButton.Item tone="danger" onSelect={deleteExport}>
+            Delete export
+          </SplitButton.Item>
+        </SplitButton.Content>
+      </SplitButton>
+      <Button>After</Button>
+    </Row>
+  );
+}`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await userEvent.tab();
@@ -748,6 +897,51 @@ export const MenuNavigation: Story = {
 };
 
 export const FocusReturn: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${exportSnippetBase}
+
+export function ExportRow({
+  exportPdf,
+  exportCsv,
+  exportJson,
+  deleteExport,
+}: {
+  exportPdf?: () => void;
+  exportCsv?: () => void;
+  exportJson?: () => void;
+  deleteExport?: () => void;
+}) {
+  return (
+    <Row>
+      <SplitButton aria-label="Export options">
+        <SplitButton.Action onClick={exportPdf}>
+          Export PDF
+        </SplitButton.Action>
+        <SplitButton.Trigger aria-label="Other export formats" />
+        <SplitButton.Content>
+          <SplitButton.Item onSelect={exportCsv}>
+            CSV
+          </SplitButton.Item>
+          <SplitButton.Item disabled>Excel</SplitButton.Item>
+          <SplitButton.Item onSelect={exportJson}>
+            JSON
+          </SplitButton.Item>
+          <SplitButton.Separator />
+          <SplitButton.Item tone="danger" onSelect={deleteExport}>
+            Delete export
+          </SplitButton.Item>
+        </SplitButton.Content>
+      </SplitButton>
+      <Button>After</Button>
+    </Row>
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvasElement, userEvent }) => {
     const { ownerDocument } = canvasElement;
     const trigger = getTrigger(canvasElement);
@@ -812,6 +1006,60 @@ export const Controlled: Story = {
 };
 
 export const RejectedOpen: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+${exportSnippetBase}
+
+export function ExportRow({
+  exportPdf,
+  exportCsv,
+  exportJson,
+  deleteExport,
+}: {
+  exportPdf?: () => void;
+  exportCsv?: () => void;
+  exportJson?: () => void;
+  deleteExport?: () => void;
+}) {
+  const [open] = useState(false);
+
+  return (
+    <Row>
+      <SplitButton
+        aria-label="Export options"
+        open={open}
+        onOpenChange={(next) => {
+          // Prevent opening the menu
+        }}
+      >
+        <SplitButton.Action onClick={exportPdf}>
+          Export PDF
+        </SplitButton.Action>
+        <SplitButton.Trigger aria-label="Other export formats" />
+        <SplitButton.Content>
+          <SplitButton.Item onSelect={exportCsv}>
+            CSV
+          </SplitButton.Item>
+          <SplitButton.Item disabled>Excel</SplitButton.Item>
+          <SplitButton.Item onSelect={exportJson}>
+            JSON
+          </SplitButton.Item>
+          <SplitButton.Separator />
+          <SplitButton.Item tone="danger" onSelect={deleteExport}>
+            Delete export
+          </SplitButton.Item>
+        </SplitButton.Content>
+      </SplitButton>
+      <Button>After</Button>
+    </Row>
+  );
+}`,
+      },
+    },
+  },
   args: { open: false },
   play: async ({ args, canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
@@ -853,6 +1101,51 @@ export const ControlledReject: Story = {
 };
 
 export const Disabled: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `${exportSnippetBase}
+
+export function ExportRow({
+  exportPdf,
+  exportCsv,
+  exportJson,
+  deleteExport,
+}: {
+  exportPdf?: () => void;
+  exportCsv?: () => void;
+  exportJson?: () => void;
+  deleteExport?: () => void;
+}) {
+  return (
+    <Row>
+      <SplitButton aria-label="Export options" disabled>
+        <SplitButton.Action onClick={exportPdf}>
+          Export PDF
+        </SplitButton.Action>
+        <SplitButton.Trigger aria-label="Other export formats" />
+        <SplitButton.Content>
+          <SplitButton.Item onSelect={exportCsv}>
+            CSV
+          </SplitButton.Item>
+          <SplitButton.Item disabled>Excel</SplitButton.Item>
+          <SplitButton.Item onSelect={exportJson}>
+            JSON
+          </SplitButton.Item>
+          <SplitButton.Separator />
+          <SplitButton.Item tone="danger" onSelect={deleteExport}>
+            Delete export
+          </SplitButton.Item>
+        </SplitButton.Content>
+      </SplitButton>
+      <Button>After</Button>
+    </Row>
+  );
+}`,
+      },
+    },
+  },
   args: { disabled: true },
   play: async ({ args, canvasElement, userEvent }) => {
     const action = getAction(canvasElement);
@@ -1455,6 +1748,47 @@ export const ForcedColors: Story = {
       description: {
         story:
           'Enable forced colors to check both buttons in the browser. This story checks CSS rules only.',
+      },
+      source: {
+        language: 'tsx',
+        code: `${exportSnippetBase}
+
+export function ExportRow({
+  exportPdf,
+  exportCsv,
+  exportJson,
+  deleteExport,
+}: {
+  exportPdf?: () => void;
+  exportCsv?: () => void;
+  exportJson?: () => void;
+  deleteExport?: () => void;
+}) {
+  return (
+    <Row>
+      <SplitButton aria-label="Export options">
+        <SplitButton.Action onClick={exportPdf}>
+          Export PDF
+        </SplitButton.Action>
+        <SplitButton.Trigger aria-label="Other export formats" />
+        <SplitButton.Content>
+          <SplitButton.Item onSelect={exportCsv}>
+            CSV
+          </SplitButton.Item>
+          <SplitButton.Item disabled>Excel</SplitButton.Item>
+          <SplitButton.Item onSelect={exportJson}>
+            JSON
+          </SplitButton.Item>
+          <SplitButton.Separator />
+          <SplitButton.Item tone="danger" onSelect={deleteExport}>
+            Delete export
+          </SplitButton.Item>
+        </SplitButton.Content>
+      </SplitButton>
+      <Button>After</Button>
+    </Row>
+  );
+}`,
       },
     },
   },

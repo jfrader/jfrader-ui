@@ -217,6 +217,27 @@ export const Default: Story = {
 
 export const Horizontal: Story = {
   args: { orientation: 'horizontal', defaultValue: 35 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  orientation="horizontal"
+  defaultValue={35}
+/>`,
+      },
+    },
+  },
 };
 
 const dragRender = fn();
@@ -296,6 +317,27 @@ export const FadingCaptions: Story = {
 
 export const Vertical: Story = {
   args: { orientation: 'vertical', defaultValue: 30 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  orientation="vertical"
+  defaultValue={30}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const slider = canvas.getByRole('slider');
     await expect(slider).toHaveAttribute('aria-orientation', 'vertical');
@@ -315,6 +357,26 @@ export const Vertical: Story = {
 
 export const LabelsHidden: Story = {
   args: { labels: false },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  labels={false}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement }) => {
     const slider = canvas.getByRole('slider');
     await expect(slider).not.toHaveAttribute('aria-describedby');
@@ -327,6 +389,28 @@ export const CustomLabels: Story = {
     labels: ['Original', 'Graded'],
     valueText: (_value, percent) => `${percent} original visible`,
     defaultValue: 40,
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  labels={['Original', 'Graded']}
+  valueText={(_value, percent) => \`\${percent} original visible\`}
+  defaultValue={40}
+/>`,
+      },
+    },
   },
   play: async ({ canvas }) => {
     const slider = canvas.getByRole('slider');
@@ -346,6 +430,31 @@ export const LocalizedPercent: Story = {
     dir: 'rtl',
     lang: 'ar',
   },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  locale="ar-EG"
+  labels={['قبل', 'بعد']}
+  label="مقارنة الصور"
+  resetLabel="توسيط الفاصل"
+  valueText={(_value, percent) => \`\${percent} من الصورة الأصلية\`}
+  defaultValue={25}
+  dir="rtl"
+  lang="ar"
+/>`,
+      },
+    },
+  },
   play: async ({ canvas }) => {
     const percent = new Intl.NumberFormat('ar-EG', { style: 'percent' }).format(0.25);
     await expect(canvas.getByRole('slider', { name: 'مقارنة الصور' })).toHaveAttribute(
@@ -358,6 +467,26 @@ export const LocalizedPercent: Story = {
 
 export const CustomAspectRatio: Story = {
   args: { aspectRatio: '1 / 1' },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  aspectRatio="1 / 1"
+/>`,
+      },
+    },
+  },
   play: async ({ canvasElement }) => {
     const frame = part(canvasElement, 'image-compare-frame').getBoundingClientRect();
     await expect(Math.abs(frame.width - frame.height)).toBeLessThan(1.1);
@@ -398,6 +527,33 @@ export const Controlled: Story = {
 
 export const RejectedControlled: Story = {
   args: { value: 40 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+function RejectedControlledCompare() {
+  return (
+    <ImageCompare
+      before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+      after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+      label="Landscape grading comparison"
+      locale="en-GB"
+      value={40}
+      onValueChange={(next) => {
+        // Value change rejected by controller
+      }}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const slider = canvas.getByRole('slider');
     await userEvent.tab();
@@ -448,6 +604,28 @@ export const Endpoints: Story = {
 
 export const Steps: Story = {
   args: { step: 5, largeStep: 25, defaultValue: 50 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  step={5}
+  largeStep={25}
+  defaultValue={50}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     const slider = canvas.getByRole('slider');
     await userEvent.tab();
@@ -463,6 +641,27 @@ export const Steps: Story = {
 
 export const FractionalStep: Story = {
   args: { step: 0.1, defaultValue: 0 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  step={0.1}
+  defaultValue={0}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent }) => {
     const slider = canvas.getByRole('slider');
     await userEvent.tab();
@@ -474,6 +673,28 @@ export const FractionalStep: Story = {
 
 export const InvalidSteps: Story = {
   args: { step: 0, largeStep: Number.NaN, defaultValue: 50 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  step={0}
+  largeStep={Number.NaN}
+  defaultValue={50}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent }) => {
     const slider = canvas.getByRole('slider');
     await userEvent.tab();
@@ -486,6 +707,27 @@ export const InvalidSteps: Story = {
 
 export const Disabled: Story = {
   args: { disabled: true, defaultValue: 30 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  disabled
+  defaultValue={30}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const slider = canvas.getByRole('slider');
     await expect(slider).toHaveAttribute('aria-disabled', 'true');
@@ -508,6 +750,26 @@ export const Disabled: Story = {
 
 export const KeyboardAdjustment: Story = {
   args: { defaultValue: 50 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  defaultValue={50}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const slider = canvas.getByRole('slider');
     const reset = canvas.getByRole('button', { name: 'Center divider' });
@@ -559,6 +821,26 @@ export const KeyboardAdjustment: Story = {
 
 export const DoubleClickReset: Story = {
   args: { defaultValue: 20 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  defaultValue={20}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent, args }) => {
     const slider = canvas.getByRole('slider');
     await userEvent.dblClick(slider);
@@ -572,6 +854,26 @@ export const DoubleClickReset: Story = {
 
 export const PointerInteraction: Story = {
   args: { defaultValue: 50 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  defaultValue={50}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, args }) => {
     const slider = canvas.getByRole('slider');
     const frame = part(canvasElement, 'image-compare-frame');
@@ -621,6 +923,26 @@ export const PointerInteraction: Story = {
 
 export const TouchAxisLock: Story = {
   args: { defaultValue: 50 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  defaultValue={50}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, args }) => {
     const slider = canvas.getByRole('slider');
     const frame = part(canvasElement, 'image-compare-frame');
@@ -652,6 +974,26 @@ export const TouchAxisLock: Story = {
 
 export const LostCaptureEndsDrag: Story = {
   args: { defaultValue: 50 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  defaultValue={50}
+/>`,
+      },
+    },
+  },
   play: async ({ canvasElement, args }) => {
     const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
     pointer.fire('pointerdown', 0.5);
@@ -668,6 +1010,26 @@ export const LostCaptureEndsDrag: Story = {
 
 export const ReleaseOutsideFrame: Story = {
   args: { defaultValue: 50 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  defaultValue={50}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, args }) => {
     const slider = canvas.getByRole('slider');
     const frame = part(canvasElement, 'image-compare-frame');
@@ -706,6 +1068,34 @@ export const PreventedPointerUp: Story = {
   args: {
     defaultValue: 50,
     slotProps: { frame: { onPointerUp: preventPointerUp } },
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  defaultValue={50}
+  slotProps={{
+    frame: {
+      onPointerUp: (event) => {
+        // Prevent default pointer release behavior
+        event.preventDefault();
+      },
+    },
+  }}
+/>`,
+      },
+    },
   },
   play: async ({ canvas, canvasElement, args }) => {
     const slider = canvas.getByRole('slider');
@@ -862,6 +1252,46 @@ export const InteractiveDescendantIgnored: Story = {
       </Status>
     ),
   },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare, styled } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+import { vars } from '@jfrader/tokens/vars';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+
+const RetryButton = styled.button({
+  minBlockSize: vars.space[8],
+  minInlineSize: vars.space[8],
+  paddingInline: vars.space[3],
+});
+
+const Status = styled.div({
+  display: 'grid',
+  placeItems: 'center',
+  blockSize: '100%',
+  padding: vars.space[4],
+  boxSizing: 'border-box',
+  color: vars.color.text,
+  background: vars.color.surface,
+  fontSize: vars.textSize.sm,
+});
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={
+    <Status>
+      <RetryButton type="button">Retry</RetryButton>
+    </Status>
+  }
+  label="Landscape grading comparison"
+  locale="en-GB"
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, args }) => {
     const pointer = pointerOn(part(canvasElement, 'image-compare-frame'));
     const retry = canvas.getByRole('button', { name: 'Retry' });
@@ -884,6 +1314,36 @@ export const ImageLoading: Story = {
       </Status>
     ),
   },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare, styled } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+import { vars } from '@jfrader/tokens/vars';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+
+const Status = styled.div({
+  display: 'grid',
+  placeItems: 'center',
+  blockSize: '100%',
+  padding: vars.space[4],
+  boxSizing: 'border-box',
+  color: vars.color.text,
+  background: vars.color.surface,
+  fontSize: vars.textSize.sm,
+});
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<Status role="status">Loading graded landscape…</Status>}
+  label="Landscape grading comparison"
+  locale="en-GB"
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent }) => {
     await expect(canvas.getByRole('status')).toHaveTextContent('Loading graded landscape…');
     await userEvent.tab();
@@ -904,6 +1364,46 @@ function BrokenAfter() {
 }
 export const ImageError: Story = {
   args: { after: <BrokenAfter /> },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { ImageCompare, styled } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+import { vars } from '@jfrader/tokens/vars';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+
+const Status = styled.div({
+  display: 'grid',
+  placeItems: 'center',
+  blockSize: '100%',
+  padding: vars.space[4],
+  boxSizing: 'border-box',
+  color: vars.color.text,
+  background: vars.color.surface,
+  fontSize: vars.textSize.sm,
+});
+
+function BrokenAfter() {
+  const [failed, setFailed] = useState(false);
+  return failed ? (
+    <Status role="alert">Graded landscape failed to load</Status>
+  ) : (
+    <img src="data:image/png;base64,broken" alt="Mountain landscape with a warm grade" onError={() => setFailed(true)} />
+  );
+}
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<BrokenAfter />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, userEvent }) => {
     await expect(await canvas.findByRole('alert')).toHaveTextContent('Graded landscape failed to load');
     await userEvent.tab();
@@ -949,6 +1449,27 @@ export const Dimensions: Story = {
 
 export const RTL: Story = {
   args: { dir: 'rtl', defaultValue: 30 },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  dir="rtl"
+  defaultValue={30}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const slider = canvas.getByRole('slider');
     // Before sits at inline-start, which is the right edge in RTL.
@@ -1060,6 +1581,31 @@ export const UnresolvedLabelledBy: Story = {
       handle: {
         'aria-labelledby': 'missing-reference',
         'aria-label': 'Handle name',
+      },
+    },
+  },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  slotProps={{
+    handle: {
+      'aria-labelledby': 'missing-reference',
+      'aria-label': 'Handle name',
+    },
+  }}
+/>`,
       },
     },
   },
@@ -1183,6 +1729,39 @@ export const PreventedHandlers: Story = {
       resetButton: { onClick: (event) => event.preventDefault() },
     },
   },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  defaultValue={30}
+  onKeyDown={(event) => {
+    if (event.key === 'Home') event.preventDefault();
+  }}
+  slotProps={{
+    handle: {
+      onKeyDown: (event) => {
+        if (event.key === 'End') event.preventDefault();
+      },
+      onDoubleClick: (event) => event.preventDefault(),
+    },
+    frame: { onPointerDown: (event) => event.preventDefault() },
+    resetButton: { onClick: (event) => event.preventDefault() },
+  }}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const slider = canvas.getByRole('slider');
     await userEvent.tab();
@@ -1203,6 +1782,26 @@ export const PreventedHandlers: Story = {
 
 export const WithoutReset: Story = {
   args: { showReset: false },
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ImageCompare } from '@jfrader/ui';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const raw = sceneSource('image-compare-alpine', { variant: 'landscape' });
+const graded = sceneSource('image-compare-alpine', { variant: 'landscape', grade: 'warm' });
+
+<ImageCompare
+  before={<img src={raw} alt="Mountain landscape before grading" width={1200} height={800} />}
+  after={<img src={graded} alt="Mountain landscape with a warm grade" width={1200} height={800} />}
+  label="Landscape grading comparison"
+  locale="en-GB"
+  showReset={false}
+/>`,
+      },
+    },
+  },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole('button')).toBeNull();
   },
