@@ -1444,6 +1444,9 @@ function TopicEditor() {
     await expect(root).toHaveClass('consumer-root');
     const sxPadding = tokenProbe(root, 'paddingInlineStart', vars.space[3]);
     await expect(getComputedStyle(root).paddingInlineStart).toBe(sxPadding);
+    await expect(root.getBoundingClientRect().width).toBeLessThanOrEqual(
+      root.parentElement!.getBoundingClientRect().width,
+    );
     await expect(getComputedStyle(canvas.getByRole('listitem')).paddingInlineStart).toBe(sxPadding);
     await expect(getComputedStyle(canvas.getByRole('button', { name: 'Delete design' })).color).toBe(
       tokenProbe(root, 'color', vars.color.dangerText),
