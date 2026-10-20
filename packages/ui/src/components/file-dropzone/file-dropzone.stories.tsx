@@ -25,6 +25,7 @@ import {
 import { styled } from '../../index';
 
 const NarrowFrame = styled.div({ inlineSize: '18rem', maxInlineSize: '100%' });
+const AttachmentComment = styled.input({ boxSizing: 'border-box', inlineSize: '10rem', maxInlineSize: '100%' });
 
 const messages: FileDropzoneMessages = {
   browse: 'Browse files',
@@ -1596,9 +1597,16 @@ export function ReceiptUpload({ upload }: { upload: FileDropzoneUpload }) {
 export const PasteExcludesEditing: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `${messagesSource}
 
+import { styled } from '@jfrader/ui';
+
+const AttachmentComment = styled.input({
+  boxSizing: 'border-box', inlineSize: '10rem', maxInlineSize: '100%',
+});
+
 <FileDropzone label="Add receipts" messages={messages}
-  description={<input aria-label="Attachment comment" />} />` } } },
-  args: { description: <input aria-label="Attachment comment" /> },
+  sx={{ maxInlineSize: '14rem' }}
+  description={<AttachmentComment aria-label="Attachment comment" />} />` } } },
+  args: { description: <AttachmentComment aria-label="Attachment comment" />, sx: css({ maxInlineSize: '14rem' }) },
   play: async ({ canvasElement, userEvent, args }) => {
     const comment = within(canvasElement).getByRole('textbox', { name: 'Attachment comment' });
     await userEvent.click(comment);
@@ -1608,6 +1616,8 @@ export const PasteExcludesEditing: Story = {
     await expect(comment.ownerDocument.activeElement).toBe(inputOf(canvasElement));
     await dispatchFiles(rootOf(canvasElement), 'paste', [file()]);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    const root = rootOf(canvasElement);
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
   },
 };
 export const PasteDisabled: Story = {
