@@ -566,6 +566,21 @@ Manual gates before calling a component 1.0 (record what was and wasn't tested):
 Write for someone choosing and using a component. Say what it does and what to do next.
 This applies to Storybook, public JSDoc, examples, READMEs, and consumer guides.
 
+**Page structure**
+
+- One line in `description.component` says what the component is for. Keep the introduction to that.
+- `usage` carries behaviour, constraints and accessibility only. Props, slots, anatomy and
+  root-replacement mechanics belong in the API, sourced from TSDoc, never restated here.
+- Curate the examples with `parameters.docs.sections`: ordered `{ title, stories }` using story
+  export names. The first listed story is the featured example above Usage; stories not listed
+  stay in Storybook as QA. Group by capability, not by fixture name.
+- Every listed example needs a usable code sample. Author `source.code` when the derived snippet
+  cannot reproduce a compound, a custom render or non-serializable data. The code must match the
+  canvas, read like a consumer wrote it, and include the import.
+- Props, parts and slot descriptions are written once as TSDoc on the source contract; the
+  generated API renders them with Slots and Also uses. Do not describe them a second time in prose.
+- `packages/ui/src/components/dialog/dialog.stories.tsx` is the reference page.
+
 **Component introduction**
 
 - Explain enough for the reader to choose and use the component. Keep the purpose easy to find.
