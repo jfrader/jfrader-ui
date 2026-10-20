@@ -63,12 +63,19 @@ const meta = {
     }
   },
   parameters: { docs: {
-    description: { component: 'Announce a game event without moving focus or blocking play. Supply the call text from your game.' },
-    usage: `Import from \`@jfrader/ui/call-overlay\`. The status region announces content politely; there is no modal or keyboard interaction. Focus stays on the active control.
+    description: { component: 'Announce a game event without moving focus or blocking play.' },
+    sections: [
+      { title: 'Announcements', stories: ['Default'] },
+      { title: 'During play', stories: ['DuringPlay'] },
+    ],
+    usage: `### Accessibility
+The status region announces content politely; there is no modal or keyboard interaction. Focus stays on the active control.
 
-Use \`defaultOpen\` for a single announcement, or \`open\` and \`onOpenChange\` for controlled visibility. After three seconds the component requests closure. Reopen or remount to replay; no state callback fires on mount. Reduced motion keeps only the fade and the same closure lifecycle.
+### Timing
+After three seconds the component requests closure. Reopen or remount to replay; no state callback fires on mount. Reduced motion keeps only the fade and the same closure lifecycle.
 
-Place it in \`GameTable.Floating\` to announce over a table, or render standalone. \`slots.root\` (or \`component\`) replaces the status div; forward its props and ref. \`slotProps.root\`, \`className\` and \`sx\` customize it.`,
+### Placement
+Keep announcements clear of turn controls so play can continue.`,
     source: { code: `import { CallOverlay } from '@jfrader/ui/call-overlay';
 
 <CallOverlay defaultOpen label="Round started" />`, language: 'tsx' },
@@ -79,18 +86,24 @@ type Story = StoryObj<typeof meta>;
 
 /** A round-start announcement closes automatically. */
 export const Default: Story = {
-  name: 'Default',
+  name: 'Announce a round',
   render: (args) => <ControlledExample {...args} />,
   parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
 import { Button } from '@jfrader/ui/button';
 import { CallOverlay } from '@jfrader/ui/call-overlay';
+import { Surface, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Panel = styled(Surface)({ boxSizing: 'border-box', inlineSize: \`calc(\${vars.space[8]} * 22)\`, maxInlineSize: '100%', minBlockSize: \`calc(\${vars.space[8]} * 10)\`, padding: vars.space[6], display: 'grid', alignContent: 'space-between', justifyItems: 'center', gap: vars.space[6] });
+const Label = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
 
 export function RoundAnnouncement() {
   const [open, setOpen] = useState(false);
-  return <>
-    <Button onClick={() => setOpen(true)} aria-disabled={open}>Announce</Button>
+  return <Panel>
+    <Label>North table · Round 2</Label>
     <CallOverlay open={open} onOpenChange={setOpen} label="Round started" />
-  </>;
+    <Button onClick={() => setOpen(true)} aria-disabled={open}>Announce</Button>
+  </Panel>;
 }` } } },
   args: { defaultOpen: false, onOpenChange: fn() },
   play: async ({ canvasElement, args }) => {

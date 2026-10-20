@@ -25,8 +25,6 @@ const DocumentLabel = styled.p({
 });
 const ButtonRow = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[3] });
 
-const snippet = `<ActionButton label="Publish" pendingLabel="Publishing" successLabel="Published"
-  errorLabel="Publish failed" onAction={publish} />`;
 const meta = {
   title: 'Actions/ActionButton',
   component: ActionButton,
@@ -42,18 +40,18 @@ const meta = {
       description: {
         component: 'Run an action and show its pending, success or error result in the same button.',
       },
-      source: { code: snippet, language: 'tsx' },
+      sections: [
+        { title: 'Async actions', stories: ['Default', 'ControlledAccept'] },
+        { title: 'Appearance', stories: ['Variants', 'Sizes'] },
+      ],
       usage: `### Actions
 Return the real promise from \`onAction\`. Use \`Button loading\` when you do not need a result label. Use a confirmation dialog for destructive work.
 
 ### State
-\`value\` controls the displayed face; \`defaultValue\` seeds an uncontrolled face. A rejected controlled request does not cancel the action. Concurrent activations are blocked until its promise settles. Errors remain until retry or an external update. \`resetAfterMs\` defaults to 2400ms and resets success only; 0 keeps success.
+A rejected controlled state request does not cancel the action. Concurrent activations are blocked until its promise settles. Errors remain until retry or an external update. Success normally returns to idle after 2400ms; these examples keep the result visible.
 
 ### Keyboard and accessibility
-Tab reaches the native button. Enter and Space activate once. Pending keeps focus and sets \`aria-busy\` and \`aria-disabled\`. The default accessible name starts with the idle label and appends the visible pending or result label. A persistent sibling status announces results. Consumer names and descriptions are preserved; a custom name must include the visible label in every state. Reduced motion makes width and pending feedback static.
-
-### Customization
-\`component\` is sugar for \`slots.root\`. Root replacements forward button props and ref; icon, label and status replacements forward span props. \`slotProps.root\` wins native conflicts; className and style merge. \`sx\` applies last.`,
+Tab reaches the native button. Enter and Space activate once. Pending keeps focus and announces the busy state. The default accessible name starts with the idle label and appends the visible pending or result label. A persistent sibling status announces results. A custom name must include the visible label in every state. Reduced motion makes width and pending feedback static.`,
     },
   },
   args: {
@@ -76,13 +74,48 @@ Tab reaches the native button. Enter and Space activate once. Pending keeps focu
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  name: 'Publish a document',
+  parameters: { docs: {
+    description: { story: 'Publish release notes and keep the result visible in the button.' },
+    source: { language: 'tsx', code: `import { ActionButton, Surface, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Panel = styled(Surface)({ boxSizing: 'border-box', inlineSize: \`calc(\${vars.space[8]} * 16)\`, maxInlineSize: '100%', padding: vars.space[6], display: 'grid', justifyItems: 'start', gap: vars.space[5] });
+const Label = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.md, fontWeight: vars.fontWeight.semibold, color: vars.color.text });
+
+export function PublishDocument({ publish }: { publish: () => Promise<void> }) {
+  return <Panel>
+    <Label>Release notes · October update</Label>
+    <ActionButton label="Publish" pendingLabel="Publishing" successLabel="Published"
+      errorLabel="Publish failed" resetAfterMs={0} onAction={publish} />
+  </Panel>;
+}` },
+  } },
+};
 export const Light: Story = { globals: { theme: 'light' } };
 export const Pending: Story = { args: { value: 'pending' } };
 export const Success: Story = { args: { value: 'success', successIcon: '✓' } };
 export const Error: Story = { args: { value: 'error', errorIcon: '×' } };
 export const Disabled: Story = { args: { disabled: true } };
 export const Variants: Story = {
+  name: 'Button treatments',
+  parameters: { docs: {
+    description: { story: 'Choose the visual emphasis of a publish action.' },
+    source: { language: 'tsx', code: `import { ActionButton, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[3] });
+
+export function PublishActions({ publish }: { publish: () => Promise<void> }) {
+  return <Row>
+    {(['solid', 'soft', 'outline', 'ghost'] as const).map((variant) => (
+      <ActionButton key={variant} variant={variant} label="Publish" pendingLabel="Publishing"
+        successLabel="Published" errorLabel="Publish failed" resetAfterMs={0} onAction={publish} />
+    ))}
+  </Row>;
+}` },
+  } },
   render: (args) => (
     <ButtonRow>
       <ActionButton {...args} variant="solid" />
@@ -93,6 +126,22 @@ export const Variants: Story = {
   ),
 };
 export const Sizes: Story = {
+  name: 'Button sizes',
+  parameters: { docs: {
+    description: { story: 'Fit an asynchronous action into small, medium or large controls.' },
+    source: { language: 'tsx', code: `import { ActionButton, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[3] });
+
+export function ActionSizes({ publish }: { publish: () => Promise<void> }) {
+  return <Row>
+    <ActionButton size="sm" label="Small" pendingLabel="Publishing" successLabel="Published" errorLabel="Publish failed" resetAfterMs={0} onAction={publish} />
+    <ActionButton size="md" label="Medium" pendingLabel="Publishing" successLabel="Published" errorLabel="Publish failed" resetAfterMs={0} onAction={publish} />
+    <ActionButton size="lg" label="Large" pendingLabel="Publishing" successLabel="Published" errorLabel="Publish failed" resetAfterMs={0} onAction={publish} />
+  </Row>;
+}` },
+  } },
   render: (args) => (
     <ButtonRow>
       <ActionButton {...args} size="sm" label="Small" />
@@ -173,6 +222,19 @@ export const ControlledReject: Story = {
   },
 };
 export const ControlledAccept: Story = {
+  name: 'Controlled action state',
+  parameters: { docs: {
+    description: { story: 'Accept state changes while an asynchronous publish action runs.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { ActionButton, type ActionButtonValue } from '@jfrader/ui';
+
+export function PublishAction({ publish }: { publish: () => Promise<void> }) {
+  const [value, setValue] = useState<ActionButtonValue>('idle');
+  return <ActionButton value={value} onValueChange={setValue} label="Publish"
+    pendingLabel="Publishing" successLabel="Published" errorLabel="Publish failed"
+    resetAfterMs={0} onAction={publish} />;
+}` },
+  } },
   render: function Controlled(args) {
     const [value, setValue] = useState<ActionButtonValue>('idle');
     return <ActionButton {...args} value={value} onValueChange={setValue} />;
