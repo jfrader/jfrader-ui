@@ -548,6 +548,7 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
         return (
           <SelectPart
             key={def.id}
+            empty={def.empty}
             {...selectRest}
             disabled={disabled || def.disabled || selectRest.disabled}
             size="sm"
@@ -609,6 +610,7 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
         return (
           <MultiSelectPart
             key={def.id}
+            empty={def.empty}
             {...multiRest}
             disabled={disabled || def.disabled || multiRest.disabled}
             size="sm"
