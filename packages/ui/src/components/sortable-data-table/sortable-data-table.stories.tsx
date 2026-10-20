@@ -43,18 +43,25 @@ const meta = {
         component:
           'Sort rows by column and select rows in a table.',
       },
-      usage: `- Sorting alternates between ascending and descending. Set the controlled sort value to \`null\` to reset it.
-- Manual mode requires a controlled sort value.
-- Accessors that return multiple types need a comparator. Sortable headings without text need \`sortLabel\`.
-- Set \`locale\` and \`timeZone\` for server rendering.
-- Use this table for bounded collections. Add Pagination outside it. Grid navigation, editing and virtualization are not supported.
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Sizes'] },
+        { title: 'Sorting', stories: ['Ascending', 'CustomComparator'] },
+        { title: 'Row selection', stories: ['Selection', 'MixedSelection'] },
+        { title: 'Formatting', stories: ['CustomCells', 'LocaleNumbersAndDates'] },
+        { title: 'States', stories: ['Loading', 'Empty'] },
+      ],
+      usage: `### Sorting and data
+- Sorting alternates between ascending and descending on activation. Reset controlled sorting to null to clear it.
+- Manual sorting delegates row ordering to the caller and requires controlled state.
+- Columns with non-text headings require an accessible sort label. Columns returning mixed accessor types require an explicit comparator.
+- Multi-row selection supports individual rows, range selection with Shift, and a header select-all toggle with indeterminate state.
+- Specify an explicit locale and time zone for deterministic date and number formatting across SSR and hydration.
+- Use bounded collections and add Pagination outside the table. Grid navigation, editing, and virtualization are not supported.
 
 ### Keyboard
-- Tab and Shift+Tab visit the scroller and controls.
-- Enter or Space sorts a column. Space toggles row selection.`,
-      source: {
-        code: `<SortableDataTable rows={projects} getRowId={row => row.id} caption="Projects" columns={[{ id: 'name', header: 'Name', accessor: row => row.name }, { id: 'budget', header: 'Budget', accessor: row => row.budget, numeric: true }]} />`,
-      },
+- Tab traverses the scroller container, sortable column headers, and selection checkboxes.
+- Press Enter or Space on a column header to toggle sort direction.
+- Press Space on a row checkbox to toggle selection, or on the header checkbox to select or clear all rows.`,
     },
   },
 } satisfies Meta<typeof Table>;
@@ -68,6 +75,49 @@ const names = (element: HTMLElement) =>
 const sortedHeader = (element: HTMLElement) => element.querySelector('th[aria-sort]');
 
 export const Default: Story = {
+  name: 'Projects table',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Display tabular data with column sorting and a table caption.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const projects: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns: DataColumn<Project>[] = [
+  { id: 'name', header: 'Name', accessor: (row) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
+];
+
+export function ProjectsTable() {
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="en-US"
+      timeZone="UTC"
+      rows={projects}
+      columns={columns}
+      getRowId={(row) => row.id}
+    />
+  );
+}`,
+      },
+    },
+  },
   play: async ({ canvasElement, canvas }) => {
     await expect(canvas.getByRole('table', { name: 'Projects' }).tagName).toBe('TABLE');
     await expect(canvasElement.querySelector('thead')?.tagName).toBe('THEAD');
@@ -129,11 +179,15 @@ const columns = [
   args: { value: null },
 };
 export const Ascending: Story = {
+  name: 'Initial sort order',
   parameters: {
     docs: {
+      description: {
+        story: 'Set an initial sort column and direction with defaultValue.',
+      },
       source: {
         language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
+        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -141,27 +195,31 @@ interface Project {
   budget: number | null;
 }
 
-const rows: Project[] = [
+const projects: Project[] = [
   { id: 'c', name: 'Cedar', budget: 40 },
   { id: 'a', name: 'Atlas', budget: 0 },
   { id: 'b', name: 'Birch', budget: 40 },
   { id: 'd', name: 'Delta', budget: null },
 ];
 
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+const columns: DataColumn<Project>[] = [
+  { id: 'name', header: 'Name', accessor: (row) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
 ];
 
-<SortableDataTable
-  caption="Projects"
-  locale="en-US"
-  timeZone="UTC"
-  rows={rows}
-  columns={columns}
-  getRowId={(row) => row.id}
-  defaultValue={{ columnId: 'name', direction: 'asc' }}
-/>`,
+export function InitialSortTable() {
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="en-US"
+      timeZone="UTC"
+      rows={projects}
+      columns={columns}
+      getRowId={(row) => row.id}
+      defaultValue={{ columnId: 'name', direction: 'asc' }}
+    />
+  );
+}`,
       },
     },
   },
@@ -207,6 +265,67 @@ const columns = [
   args: { defaultValue: { columnId: 'name', direction: 'desc' } },
 };
 export const Sizes: Story = {
+  name: 'Table sizes',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Render tables in compact (sm) and regular (md) row padding densities.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable, type DataColumn, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+}
+
+const projects: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40 },
+  { id: 'a', name: 'Atlas', budget: 0 },
+  { id: 'b', name: 'Birch', budget: 40 },
+  { id: 'd', name: 'Delta', budget: null },
+];
+
+const columns: DataColumn<Project>[] = [
+  { id: 'name', header: 'Name', accessor: (row) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
+];
+
+const Stack = styled.div({
+  display: 'grid',
+  gap: vars.space[4],
+});
+
+export function TableSizes() {
+  return (
+    <Stack>
+      <SortableDataTable
+        size="sm"
+        caption="Compact projects"
+        locale="en-US"
+        timeZone="UTC"
+        rows={projects}
+        columns={columns}
+        getRowId={(row) => row.id}
+      />
+      <SortableDataTable
+        size="md"
+        caption="Projects"
+        locale="en-US"
+        timeZone="UTC"
+        rows={projects}
+        columns={columns}
+        getRowId={(row) => row.id}
+      />
+    </Stack>
+  );
+}`,
+      },
+    },
+  },
   render: (args) => (
     <SizeGrid>
       <Table {...args} size="sm" caption="Compact projects" messages={{ scrollLabel: 'Compact projects scroller' }} />
@@ -388,12 +507,16 @@ export const ManualServerSort: Story = {
   },
 };
 export const Selection: Story = {
+  name: 'Row selection',
   parameters: {
     docs: {
+      description: {
+        story: 'Enable row checkboxes and a select-all header control for batch actions.',
+      },
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
-import { SortableDataTable } from '@jfrader/ui';
+import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -401,19 +524,19 @@ interface Project {
   budget: number | null;
 }
 
-const rows: Project[] = [
+const projects: Project[] = [
   { id: 'c', name: 'Cedar', budget: 40 },
   { id: 'a', name: 'Atlas', budget: 0 },
   { id: 'b', name: 'Birch', budget: 40 },
   { id: 'd', name: 'Delta', budget: null },
 ];
 
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+const columns: DataColumn<Project>[] = [
+  { id: 'name', header: 'Name', accessor: (row) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
 ];
 
-function Example() {
+export function SelectableTable() {
   const [selectedKeys, setSelectedKeys] = useState<readonly string[]>([]);
 
   return (
@@ -421,7 +544,7 @@ function Example() {
       caption="Projects"
       locale="en-US"
       timeZone="UTC"
-      rows={rows}
+      rows={projects}
       columns={columns}
       getRowId={(row) => row.id}
       getRowLabel={(row) => row.name}
@@ -454,11 +577,15 @@ function Example() {
   },
 };
 export const MixedSelection: Story = {
+  name: 'Pre-selected rows',
   parameters: {
     docs: {
+      description: {
+        story: 'Initialize row selections with an indeterminate state on the select-all checkbox.',
+      },
       source: {
         language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
+        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -466,29 +593,33 @@ interface Project {
   budget: number | null;
 }
 
-const rows: Project[] = [
+const projects: Project[] = [
   { id: 'c', name: 'Cedar', budget: 40 },
   { id: 'a', name: 'Atlas', budget: 0 },
   { id: 'b', name: 'Birch', budget: 40 },
   { id: 'd', name: 'Delta', budget: null },
 ];
 
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+const columns: DataColumn<Project>[] = [
+  { id: 'name', header: 'Name', accessor: (row) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
 ];
 
-<SortableDataTable
-  caption="Projects"
-  locale="en-US"
-  timeZone="UTC"
-  rows={rows}
-  columns={columns}
-  getRowId={(row) => row.id}
-  getRowLabel={(row) => row.name}
-  selectable
-  defaultSelectedKeys={['a']}
-/>`,
+export function PreselectedTable() {
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="en-US"
+      timeZone="UTC"
+      rows={projects}
+      columns={columns}
+      getRowId={(row) => row.id}
+      getRowLabel={(row) => row.name}
+      selectable
+      defaultSelectedKeys={['a']}
+    />
+  );
+}`,
       },
     },
   },
@@ -683,11 +814,15 @@ function Example() {
   },
 };
 export const Empty: Story = {
+  name: 'Empty records',
   parameters: {
     docs: {
+      description: {
+        story: 'Show an empty state message across all table columns when rows is empty.',
+      },
       source: {
         language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
+        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -695,21 +830,25 @@ interface Project {
   budget: number | null;
 }
 
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+const columns: DataColumn<Project>[] = [
+  { id: 'name', header: 'Name', accessor: (row) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
 ];
 
-<SortableDataTable
-  caption="Projects"
-  locale="en-US"
-  timeZone="UTC"
-  rows={[]}
-  columns={columns}
-  getRowId={(row) => row.id}
-  getRowLabel={(row) => row.name}
-  selectable
-/>`,
+export function EmptyTable() {
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="en-US"
+      timeZone="UTC"
+      rows={[]}
+      columns={columns}
+      getRowId={(row: Project) => row.id}
+      getRowLabel={(row: Project) => row.name}
+      selectable
+    />
+  );
+}`,
       },
     },
   },
@@ -720,11 +859,15 @@ const columns = [
   },
 };
 export const Loading: Story = {
+  name: 'Loading state',
   parameters: {
     docs: {
+      description: {
+        story: 'Indicate data fetching with an accessible busy state on the table.',
+      },
       source: {
         language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
+        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -732,27 +875,31 @@ interface Project {
   budget: number | null;
 }
 
-const rows: Project[] = [
+const projects: Project[] = [
   { id: 'c', name: 'Cedar', budget: 40 },
   { id: 'a', name: 'Atlas', budget: 0 },
   { id: 'b', name: 'Birch', budget: 40 },
   { id: 'd', name: 'Delta', budget: null },
 ];
 
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+const columns: DataColumn<Project>[] = [
+  { id: 'name', header: 'Name', accessor: (row) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
 ];
 
-<SortableDataTable
-  caption="Projects"
-  locale="en-US"
-  timeZone="UTC"
-  rows={rows}
-  columns={columns}
-  getRowId={(row) => row.id}
-  loading
-/>`,
+export function LoadingTable() {
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="en-US"
+      timeZone="UTC"
+      rows={projects}
+      columns={columns}
+      getRowId={(row) => row.id}
+      loading
+    />
+  );
+}`,
       },
     },
   },
@@ -762,11 +909,15 @@ const columns = [
   },
 };
 export const CustomCells: Story = {
+  name: 'Custom cell content',
   parameters: {
     docs: {
+      description: {
+        story: 'Format cell values with custom components, formatted typography, and currency symbols.',
+      },
       source: {
         language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
+        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -774,38 +925,42 @@ interface Project {
   budget: number | null;
 }
 
-const rows: Project[] = [
+const projects: Project[] = [
   { id: 'c', name: 'Cedar', budget: 40 },
   { id: 'a', name: 'Atlas', budget: 0 },
   { id: 'b', name: 'Birch', budget: 40 },
   { id: 'd', name: 'Delta', budget: null },
 ];
 
-const columns = [
+const columns: DataColumn<Project>[] = [
   {
     id: 'name',
     header: 'Name',
-    accessor: (row: Project) => row.name,
-    cell: (row: Project) => <strong>{row.name}</strong>,
+    accessor: (row) => row.name,
+    cell: (row) => <strong>{row.name}</strong>,
   },
   {
     id: 'budget',
     header: 'Budget',
-    accessor: (row: Project) => row.budget,
+    accessor: (row) => row.budget,
     numeric: true,
-    cell: (row: Project) =>
+    cell: (row) =>
       new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(row.budget ?? 0),
   },
 ];
 
-<SortableDataTable
-  caption="Projects"
-  locale="en-US"
-  timeZone="UTC"
-  rows={rows}
-  columns={columns}
-  getRowId={(row) => row.id}
-/>`,
+export function CustomCellTable() {
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="en-US"
+      timeZone="UTC"
+      rows={projects}
+      columns={columns}
+      getRowId={(row) => row.id}
+    />
+  );
+}`,
       },
     },
   },
@@ -823,11 +978,15 @@ const columns = [
   },
 };
 export const CustomComparator: Story = {
+  name: 'Custom comparator',
   parameters: {
     docs: {
+      description: {
+        story: 'Sort rows using a custom comparison function for complex or computed criteria.',
+      },
       source: {
         language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
+        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -835,32 +994,36 @@ interface Project {
   budget: number | null;
 }
 
-const rows: Project[] = [
+const projects: Project[] = [
   { id: 'c', name: 'Cedar gardens', budget: 40 },
   { id: 'a', name: 'Atlas', budget: 0 },
   { id: 'b', name: 'Birch', budget: 40 },
   { id: 'd', name: 'Delta', budget: null },
 ];
 
-const columns = [
+const columns: DataColumn<Project>[] = [
   {
     id: 'name',
     header: <span>Project length</span>,
     sortLabel: 'Project length',
-    compare: (a: Project, b: Project) => a.name.length - b.name.length,
-    cell: (row: Project) => row.name,
+    compare: (a, b) => a.name.length - b.name.length,
+    cell: (row) => row.name,
   },
 ];
 
-<SortableDataTable
-  caption="Projects"
-  locale="en-US"
-  timeZone="UTC"
-  rows={rows}
-  columns={columns}
-  getRowId={(row) => row.id}
-  defaultValue={{ columnId: 'name', direction: 'asc' }}
-/>`,
+export function CustomComparatorTable() {
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="en-US"
+      timeZone="UTC"
+      rows={projects}
+      columns={columns}
+      getRowId={(row) => row.id}
+      defaultValue={{ columnId: 'name', direction: 'asc' }}
+    />
+  );
+}`,
       },
     },
   },
@@ -882,11 +1045,15 @@ const columns = [
   },
 };
 export const LocaleNumbersAndDates: Story = {
+  name: 'Locale date and number formatting',
   parameters: {
     docs: {
+      description: {
+        story: 'Format dates and numbers automatically according to the specified locale.',
+      },
       source: {
         language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
+        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -895,28 +1062,32 @@ interface Project {
   date: Date;
 }
 
-const rows: Project[] = [
+const projects: Project[] = [
   { id: 'c', name: 'Cedar', budget: 40, date: new Date('2026-03-03T12:00:00Z') },
   { id: 'a', name: 'Atlas', budget: 0, date: new Date('2026-01-01T12:00:00Z') },
   { id: 'b', name: 'Birch', budget: 40, date: new Date('2026-02-02T12:00:00Z') },
   { id: 'd', name: 'Delta', budget: null, date: new Date('2026-04-04T12:00:00Z') },
 ];
 
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
-  { id: 'date', header: 'Date', accessor: (row: Project) => row.date },
+const columns: DataColumn<Project>[] = [
+  { id: 'name', header: 'Name', accessor: (row) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
+  { id: 'date', header: 'Date', accessor: (row) => row.date },
 ];
 
-<SortableDataTable
-  caption="Projects"
-  locale="de-DE"
-  timeZone="UTC"
-  rows={rows}
-  columns={columns}
-  getRowId={(row) => row.id}
-  defaultValue={{ columnId: 'date', direction: 'asc' }}
-/>`,
+export function LocalizedTable() {
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="de-DE"
+      timeZone="UTC"
+      rows={projects}
+      columns={columns}
+      getRowId={(row) => row.id}
+      defaultValue={{ columnId: 'date', direction: 'asc' }}
+    />
+  );
+}`,
       },
     },
   },
@@ -1719,12 +1890,16 @@ const columns = [
 };
 
 export const RefsAndHiddenCaption: Story = {
+  name: 'DOM refs and hidden caption',
   parameters: {
     docs: {
+      description: {
+        story: 'Forward refs to the container and table elements while visually hiding the caption.',
+      },
       source: {
         language: 'tsx',
         code: `import { useRef } from 'react';
-import { SortableDataTable } from '@jfrader/ui';
+import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -1732,19 +1907,19 @@ interface Project {
   budget: number | null;
 }
 
-const rows: Project[] = [
+const projects: Project[] = [
   { id: 'c', name: 'Cedar', budget: 40 },
   { id: 'a', name: 'Atlas', budget: 0 },
   { id: 'b', name: 'Birch', budget: 40 },
   { id: 'd', name: 'Delta', budget: null },
 ];
 
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
+const columns: DataColumn<Project>[] = [
+  { id: 'name', header: 'Name', accessor: (row) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
 ];
 
-function Example() {
+export function TableRefsExample() {
   const containerRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
 
@@ -1754,9 +1929,7 @@ function Example() {
       tableRef={tableRef}
       caption="Projects"
       captionHidden
-      locale="en-US"
-      timeZone="UTC"
-      rows={rows}
+      rows={projects}
       columns={columns}
       getRowId={(row) => row.id}
     />
