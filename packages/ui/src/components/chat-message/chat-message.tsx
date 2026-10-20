@@ -13,6 +13,7 @@ import { css, keyframes } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
 import { type SxProps } from '../../styling/sx';
 import { partId } from '../../utils/part-id';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
 import { Card } from '../card';
@@ -93,6 +94,8 @@ export type ChatMessagePart =
     'avatar';
 
 export type ChatMessageSlotProps = Partial<Record<ChatMessagePart, ThreadPartProps>> & {
+  /** Props for the root article; takes precedence over article props. */
+  root?: Omit<PresentationProps<'article'>, 'children'>;
   /** Root article element representing the message shell. */
   article?: ThreadPartProps & ComponentPropsWithRef<'article'>;
   /** Delivery receipt container displaying message status. */
@@ -102,6 +105,8 @@ export type ChatMessageSlotProps = Partial<Record<ChatMessagePart, ThreadPartPro
 };
 
 export interface ChatMessageSlots {
+  /** Replaces the root article; takes precedence over article. */
+  root?: ComponentType<ComponentPropsWithRef<'article'>>;
   /** Replaces the attachment list. */
   attachments?: ComponentType<ThreadPartProps & ComponentPropsWithRef<'ul'>>;
   /** Replaces the message article. */
@@ -121,6 +126,7 @@ export interface ChatMessageSlots {
 }
 
 export interface ChatMessageProps extends Omit<ComponentPropsWithRef<'article'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
+  'data-ui'?: string;
   /** Optional message data record to seed defaults. */
   message?: ChatMessage;
   /** Author details or display name. Defaults to message.authorId or "Unknown author". */
@@ -178,6 +184,8 @@ export interface ChatMessageProps extends Omit<ComponentPropsWithRef<'article'>,
   /** Localized string overrides. */
   labels?: Partial<ChatMessageLabels>;
   slots?: ChatMessageSlots;
+  /** Shorthand for slots.root; slots.root takes precedence. */
+  component?: ChatMessageSlots['root'];
   /** Props forwarded to internal parts. */
   slotProps?: ChatMessageSlotProps;
   /** Text after the time, e.g. "(edited)". */
@@ -297,6 +305,15 @@ export function defaultChatMessageLabels(format: ThreadFormatters): ChatMessageL
 }
 
 
+function ChatMessageArticle({ rootComponent, rootSlotProps, rootSx, rootMarker, ...props }: ComponentPropsWithRef<'article'> & {
+  rootComponent?: ChatMessageSlots['root'];
+  rootSlotProps?: ChatMessageSlotProps['root'];
+  rootSx?: SxProps['sx'];
+  rootMarker?: string;
+}) {
+  return <PresentationSlot element="article" component={rootComponent} marker={rootMarker} slotProps={rootSlotProps} sx={rootSx} {...props} />;
+}
+
 export function ChatMessageView({
   ref,
   message,
@@ -329,6 +346,7 @@ export function ChatMessageView({
   readOnly = false,
   labels: labelProps,
   slots,
+  component,
   slotProps,
   meta,
   className,
@@ -430,6 +448,8 @@ export function ChatMessageView({
   const Bubble = slots?.bubble ?? Card;
   const Receipt = slots?.receipt ?? 'div';
   const RetryButton = slots?.retryButton ?? Button;
+  const rootMarker = owner === 'chat-message' ? 'chat-message' : `${owner}-article chat-message`;
+  const rootConfig = { rootComponent: slots?.root ?? component ?? slots?.article, rootSlotProps: slotProps?.root, rootSx: sx, rootMarker };
 
   return (
     <ThreadMessageView
@@ -448,17 +468,18 @@ export function ChatMessageView({
         ...restProps,
         id: idProp,
         ...slotProps?.article,
+        ...slotProps?.root,
+        ...rootConfig,
         ref: articleRef,
-        'data-ui': owner === 'chat-message' ? 'chat-message' : `${owner}-article chat-message`,
+        'data-ui': restProps['data-ui'] ?? rootMarker,
         'data-own': isOwn,
         'data-size': size,
         style: { ...restProps.style, ...slotProps?.article?.style },
         className: [className, slotProps?.article?.className].filter(Boolean).join(' ') || undefined,
         css: [messageShellStyle, owner === 'chat-message' && [typographyStyle, threadSizeStyles[size]], isOwn && ownShellStyle, slotProps?.article?.css],
-        sx,
       }}
       slots={{ time: slotProps?.time, avatar: slotProps?.avatar }}
-      components={{ article: slots?.article, time: slots?.time, avatar: slots?.avatar }}
+      components={{ article: ChatMessageArticle, time: slots?.time, avatar: slots?.avatar }}
     >
       <Bubble
         {...slotProps?.bubble}

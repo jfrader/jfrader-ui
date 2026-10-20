@@ -9,7 +9,7 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 ## Counts
 
 - Public callable families: **166**; public callable parts: **177**.
-- Families exposing `slots.root`: **109**; remaining without a family-level root slot: **57** (includes DOM-less providers).
+- Families exposing `slots.root`: **113**; remaining without a family-level root slot: **53** (includes DOM-less providers).
 - Families exposing any non-root replacement slot: **128**; remaining without family-level interior slots: **38** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
@@ -63,7 +63,7 @@ panel material. The section has no background, border or radius to migrate.
 | [ArticleList.Item](../packages/ui/src/components/article-list/article-list.tsx) | yes | `headline`, `label`, `link`, `meta`, `place`, `root`, `time` | `headline`, `label`, `link`, `meta`, `place`, `root`, `time` | — | — | — |
 | [ArticleMeta](../packages/ui/src/components/article-meta/article-meta.tsx) | yes | `place`, `placeSeparator`, `published`, `publishedLabel`, `root`, `updateSeparator`, `updated`, `updatedLabel` | `place`, `placeSeparator`, `published`, `publishedLabel`, `root`, `updateSeparator`, `updated`, `updatedLabel` | — | — | — |
 | [ArticleSources](../packages/ui/src/components/article-sources/article-sources.tsx) | yes | `heading`, `item`, `link`, `list`, `root` | `heading`, `item`, `link`, `list`, `root` | — | — | — |
-| [AttachmentList](../packages/ui/src/components/attachment-list/attachment-list.tsx) | — | `expandButton`, `item`, `link` | `expandButton`, `item`, `link` | — | — | — |
+| [AttachmentList](../packages/ui/src/components/attachment-list/attachment-list.tsx) | yes | `expandButton`, `item`, `link`, `root` | `expandButton`, `item`, `link`, `root` | — | — | — |
 | [Avatar](../packages/ui/src/components/avatar/avatar.tsx) | — | `fallback`, `image`, `status` | `fallback`, `image`, `status` | — | — | — |
 | [AvatarGroup](../packages/ui/src/components/avatar-group/avatar-group.tsx) | — | `member`, `overflow`, `summary` | `member`, `overflow`, `summary` | — | `avatarProps` | — |
 | [Badge](../packages/ui/src/components/badge/badge.tsx) | — | `badge`, `root` | `badge`, `root` | — | — | — |
@@ -103,7 +103,7 @@ panel material. The section has no background, border or radius to migrate.
 | [CardFlightsProvider](../packages/ui/src/components/card-flights/card-flights.tsx) | yes | `root` | `root` | — | — | — |
 | [CardStack](../packages/ui/src/components/card-stack/card-stack.tsx) | — | `card`, `content`, `controls`, `empty`, `emptyResetButton`, `hint`, `leftButton`, `leftStamp`, `resetButton`, `rightButton`, `rightStamp`, `stage`, `status`, `undoButton` | `card`, `content`, `controls`, `empty`, `emptyResetButton`, `hint`, `leftButton`, `leftStamp`, `resetButton`, `rightButton`, `rightStamp`, `stage`, `status`, `undoButton` | — | — | — |
 | [Carousel](../packages/ui/src/components/carousel/carousel.tsx) | — | `controls`, `empty`, `indicator`, `nextButton`, `previousButton`, `rotationButton`, `slide`, `status`, `tabList`, `track`, `viewport` | `controls`, `empty`, `indicator`, `nextButton`, `previousButton`, `rotationButton`, `slide`, `status`, `tabList`, `track`, `viewport` | — | — | — |
-| [ChatMessage](../packages/ui/src/components/chat-message/chat-message.tsx) | — | `article`, `attachments`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `time` | `article`, `attachments`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `time` | — | — | — |
+| [ChatMessage](../packages/ui/src/components/chat-message/chat-message.tsx) | yes | `article`, `attachments`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `root`, `time` | `article`, `attachments`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `root`, `time` | — | — | — |
 | [ChatThread](../packages/ui/src/components/chat-thread/chat-thread.tsx) | yes | `attachments`, `bubble`, `jumpButton`, `list`, `log`, `message`, `reaction`, `receipt`, `root`, `scroller`, `time`, `viewport` | `attachments`, `bubble`, `jumpButton`, `list`, `log`, `message`, `reaction`, `receipt`, `root`, `scroller`, `time`, `viewport` | — | `composerProps` | `Composer` |
 | [ChatThread.Composer](../packages/ui/src/components/chat-thread/chat-thread.tsx) | — | `attachButton`, `error`, `file`, `fileInput`, `form`, `removeButton`, `sendButton`, `textarea`, `tray` | `attachButton`, `error`, `file`, `fileInput`, `form`, `removeButton`, `sendButton`, `textarea`, `tray` | — | — | — |
 | [Checkbox](../packages/ui/src/components/checkbox/checkbox.tsx) | — | `control`, `description`, `label` | `control`, `description`, `label`, `root` | `root` | — | — |
@@ -222,7 +222,7 @@ panel material. The section has no background, border or radius to migrate.
 | [GameTableSeat](../packages/ui/src/components/game-table/game-table.tsx) | yes | `root` | `root` | — | — | — |
 | [GameTableSeatChrome](../packages/ui/src/components/game-table/game-table.tsx) | yes | `root` | `root` | — | — | — |
 | [GravityWell](../packages/ui/src/components/gravity-well/gravity-well.tsx) | yes | `controls`, `field`, `pauseButton`, `root`, `scene`, `tile` | `controls`, `field`, `pauseButton`, `root`, `scene`, `tile` | — | — | — |
-| [HoldToConfirm](../packages/ui/src/components/hold-to-confirm/hold-to-confirm.tsx) | — | `face`, `fill`, `fillIcon`, `fillLabel`, `hint`, `icon`, `label`, `status` | `face`, `fill`, `fillIcon`, `fillLabel`, `hint`, `icon`, `label`, `status` | — | — | — |
+| [HoldToConfirm](../packages/ui/src/components/hold-to-confirm/hold-to-confirm.tsx) | yes | `face`, `fill`, `fillIcon`, `fillLabel`, `hint`, `icon`, `label`, `root`, `status` | `face`, `fill`, `fillIcon`, `fillLabel`, `hint`, `icon`, `label`, `root`, `status` | — | — | — |
 | [HoverCard](../packages/ui/src/components/hover-card/hover-card.tsx) | — | `content`, `profile`, `trigger` | `content`, `profile`, `trigger` | — | — | `Content`, `Group`, `Profile`, `Trigger` |
 | [HoverCard.Content](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | — | — | — | — |
 | [HoverCard.Group](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | — | — | — | — |
@@ -240,7 +240,7 @@ panel material. The section has no background, border or radius to migrate.
 | [KeycapKeyboard](../packages/ui/src/components/keycap-keyboard/keycap-keyboard.tsx) | — | `key`, `legend`, `row` | `key`, `legend`, `row` | — | — | — |
 | [LightboxGallery](../packages/ui/src/components/lightbox-gallery/lightbox-gallery.tsx) | — | `caption`, `controls`, `grid`, `image`, `stage`, `status`, `thumbnails`, `tile`, `title`, `viewer` | `caption`, `controls`, `grid`, `image`, `stage`, `status`, `thumbnails`, `tile`, `title`, `viewer` | — | — | — |
 | [LinkPreview](../packages/ui/src/components/link-preview/link-preview.tsx) | — | `body`, `image`, `title` | `body`, `image`, `title` | — | — | — |
-| [LinkUnfurl](../packages/ui/src/components/link-unfurl/link-unfurl.tsx) | — | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `send`, `status`, `title` | — | — | — |
+| [LinkUnfurl](../packages/ui/src/components/link-unfurl/link-unfurl.tsx) | yes | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `root`, `send`, `status`, `title` | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `root`, `send`, `status`, `title` | — | — | — |
 | [LocaleSwitcher](../packages/ui/src/components/locale-switcher/locale-switcher.tsx) | — | `content`, `option`, `trigger` | `content`, `option`, `trigger` | — | — | — |
 | [LogoOrbit](../packages/ui/src/components/logo-orbit/logo-orbit.tsx) | yes | `center`, `closeButton`, `connectButton`, `detail`, `docsLink`, `filterButton`, `filters`, `item`, `list`, `logoButton`, `nextButton`, `pauseButton`, `previousButton`, `root`, `stage`, `status` | `center`, `closeButton`, `connectButton`, `detail`, `docsLink`, `filterButton`, `filters`, `item`, `list`, `logoButton`, `nextButton`, `pauseButton`, `previousButton`, `root`, `stage`, `status` | — | — | — |
 | [MentionInput](../packages/ui/src/components/mention-input/mention-input.tsx) | yes | `control`, `description`, `empty`, `error`, `input`, `label`, `list`, `mirror`, `option`, `panel`, `root`, `status`, `token` | `control`, `description`, `empty`, `error`, `input`, `label`, `list`, `mirror`, `option`, `panel`, `root`, `status`, `token` | — | — | — |

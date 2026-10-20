@@ -1,6 +1,6 @@
 import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, waitFor } from 'storybook/test';
+import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -9,6 +9,36 @@ import { HoldToConfirm, type HoldToConfirmProps } from './index';
 import { styled } from '../../index';
 
 const NarrowFrame = styled.div({ maxInlineSize: '18rem' });
+function ReplacementRoot(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-testid="replacement-root" />;
+}
+function SugarRoot(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-testid="sugar-root" />;
+}
+export const RootComponent: StoryObj<typeof HoldToConfirm> = {
+  tags: ['!autodocs'], args: { label: 'Hold', confirmedLabel: 'Confirmed', confirmationAnnouncement: 'Confirmed', getHoldDescription: (duration) => `Hold for ${duration}.`, onConfirm: fn(), component: SugarRoot },
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByTestId('sugar-root')).toHaveAttribute('data-ui', 'hold-to-confirm');
+  },
+};
+export const RootReplacement: StoryObj<typeof HoldToConfirm> = {
+  tags: ['!autodocs'],
+  args: { label: 'Hold to confirm', confirmedLabel: 'Confirmed', confirmationAnnouncement: 'Confirmed', getHoldDescription: (duration) => `Hold for ${duration}.`, duration: 100, onConfirm: fn(), component: SugarRoot, slots: { root: ReplacementRoot }, ref: fn(), className: 'consumer-root', title: 'consumer', slotProps: { root: { ref: fn(), title: 'slot', className: 'slot-root', 'data-ui': 'custom' } } },
+  play: async ({ canvasElement, args, userEvent }) => {
+    const root = within(canvasElement).getByTestId('replacement-root');
+    await expect(root.tagName).toBe('BUTTON');
+    await expect(root).toHaveClass('consumer-root', 'slot-root');
+    await expect(root).toHaveAttribute('title', 'slot');
+    await expect(root).toHaveAttribute('data-ui', 'hold-to-confirm custom');
+    await expect(args.ref).toHaveBeenCalledWith(root);
+    await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
+    await expect(root).toHaveAccessibleDescription(/Hold for/);
+    root.focus();
+    await userEvent.keyboard('{Enter>}');
+    await waitFor(() => expect(args.onConfirm).toHaveBeenCalledTimes(1));
+    await userEvent.keyboard('{/Enter}');
+  },
+};
 
 const TEST_DURATION = 240;
 const settle = (ms = TEST_DURATION + 80) => new Promise((resolve) => setTimeout(resolve, ms));

@@ -5,7 +5,7 @@ import { useMergeRefs } from '@floating-ui/react';
 import { WithSx, type SxProps } from '../styling/sx';
 import type { Interpolation, Theme } from '../styling/css';
 
-type PresentationElement = 'article' | 'aside' | 'section' | 'header' | 'footer' | 'blockquote' | 'div' | 'p' | 'span' | 'a' | 'time' | 'figure' | 'figcaption' | 'ul' | 'li' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+type PresentationElement = 'button' | 'article' | 'aside' | 'section' | 'header' | 'footer' | 'blockquote' | 'div' | 'p' | 'span' | 'a' | 'time' | 'figure' | 'figcaption' | 'ul' | 'li' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 export type PresentationProps<E extends PresentationElement> = ComponentPropsWithRef<E> & {
   css?: Interpolation<Theme>;
   'data-ui'?: string;

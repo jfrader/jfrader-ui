@@ -5,7 +5,8 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { type SxProps } from '../../styling/sx';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { fileSize, safeUrl } from '../../utils/attachment';
 import { numberFormatter } from '../../utils/intl';
 import { Button, type ButtonProps } from '../button';
@@ -35,6 +36,8 @@ export interface AttachmentListLabels {
 type PartProps = { className?: string; css?: Interpolation<Theme> };
 
 export interface AttachmentListSlots {
+  /** Replaces the outer ul. */
+  root?: ComponentType<ComponentPropsWithRef<'ul'>>;
   /** Replaces the list item wrapping an individual attachment; renders `li` by default. */
   item?: ComponentType<ComponentPropsWithRef<'li'>>;
   /** Replaces the anchor element wrapping a downloadable attachment link; renders `a` by default. */
@@ -44,6 +47,8 @@ export interface AttachmentListSlots {
 }
 
 export interface AttachmentListSlotProps {
+  /** Props for the outer ul. */
+  root?: Omit<PresentationProps<'ul'>, 'children'>;
   /** List item wrapping an individual attachment. */
   item?: PartProps;
   /** Anchor element wrapping a downloadable attachment link. */
@@ -63,6 +68,8 @@ export interface AttachmentListProps extends Omit<ComponentPropsWithRef<'ul'>, '
   previewCount?: number;
   /** Replacement components for interior parts. */
   slots?: AttachmentListSlots;
+  /** Shorthand for slots.root; slots.root takes precedence. */
+  component?: AttachmentListSlots['root'];
   /** Style items and links, or pass props to the expand button. */
   slotProps?: AttachmentListSlotProps;
 }
@@ -105,7 +112,6 @@ export function AttachmentListView({
   attachments, locale, labels: labelProps, previewCount = DEFAULT_PREVIEW_COUNT,
   owner, partProps, component, slots, slotProps, className, sx, ...rootProps
 }: AttachmentListViewProps) {
-  const Root = component ?? 'ul';
   const { css: _partCss, ...partRootProps } = partProps ?? {};
   const Item = slots?.item ?? 'li';
   const Link = slots?.link ?? 'a';
@@ -125,11 +131,11 @@ export function AttachmentListView({
 
   return (
     <>
-      <WithSx className={[className, partProps?.className].filter(Boolean).join(' ') || undefined}
-        styles={[attachmentsStyle, !owner && typographyStyle, partProps?.css]} sx={sx}>
-        {(rootClass) => (
-          <Root {...partRootProps} role="list" aria-label={labels.attachments} {...rootProps}
-            data-ui={owner ? `${owner}-attachments` : 'attachment-list'} className={rootClass}>
+      <PresentationSlot element="ul" component={slots?.root ?? component} slotProps={slotProps?.root}
+        inheritedSlotProps={partRootProps}
+        styles={[attachmentsStyle, !owner && typographyStyle, partProps?.css]} sx={sx}
+        role="list" aria-label={labels.attachments} {...rootProps}
+        marker={owner ? `${owner}-attachments` : 'attachment-list'} className={className}>
             {shown.map((attachment) => {
               const url = safeUrl(attachment.url);
               const content = (
@@ -156,9 +162,7 @@ export function AttachmentListView({
                 </Item>
               );
             })}
-          </Root>
-        )}
-      </WithSx>
+      </PresentationSlot>
       {!expanded && attachments.length > limit ? (
         <ExpandButton size="sm" variant="outline" data-ui="attachment-list-expand" {...slotProps?.expandButton} onClick={(event) => {
           slotProps?.expandButton?.onClick?.(event);

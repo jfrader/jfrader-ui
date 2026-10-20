@@ -41,7 +41,8 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { inputControlStyle } from '../../styling/input-control';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { type SxProps } from '../../styling/sx';
+import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
 import {
@@ -105,6 +106,8 @@ type PartProps<E extends 'div' | 'a' | 'img' | 'p' | 'button'> = Omit<
   SlotStyle;
 
 export interface LinkUnfurlSlotProps {
+  /** Props for the outer div. */
+  root?: Omit<PresentationProps<'div'>, 'children'>;
   /** Multiline textarea input for entering message text. */
   field?: Omit<
     ComponentPropsWithRef<'textarea'>,
@@ -132,6 +135,8 @@ export interface LinkUnfurlSlotProps {
 }
 
 export interface LinkUnfurlSlots {
+  /** Replaces the outer div. */
+  root?: ComponentType<ComponentPropsWithRef<'div'>>;
   /** Replaces the message field. */
   field?: ComponentType<NonNullable<LinkUnfurlSlotProps['field']> & ComponentPropsWithRef<'textarea'>>;
   /** Replaces the preview lane. */
@@ -185,6 +190,8 @@ export interface LinkUnfurlProps
   /** Sets animation behavior. Defaults to `'auto'`, respecting reduced motion. `'none'` disables animation. */
   motion?: 'auto' | 'none';
   slots?: LinkUnfurlSlots;
+  /** Shorthand for slots.root; slots.root takes precedence. */
+  component?: LinkUnfurlSlots['root'];
   slotProps?: LinkUnfurlSlotProps;
 }
 
@@ -577,6 +584,7 @@ export function LinkUnfurl({
   locale,
   motion: motionMode = 'auto',
   slots,
+  component,
   slotProps,
   className,
   sx,
@@ -840,9 +848,9 @@ export function LinkUnfurl({
 
   return (
     <MotionConfig reducedMotion={motionMode === 'none' ? 'always' : 'user'}>
-      <WithSx className={className} styles={rootStyle} sx={sx}>
-        {(rootClassName) => (
-          <div {...rest} ref={ref} data-ui="link-unfurl" data-motion={motionMode} className={rootClassName}>
+      <PresentationSlot element="div" component={slots?.root ?? component}
+        slotProps={{ ...slotProps?.root, 'data-motion': motionMode }}
+        {...rest} ref={ref} marker="link-unfurl" className={className} styles={rootStyle} sx={sx}>
             <label id={labelId} htmlFor={fieldId} css={labelStyle}>
               {label}
             </label>
@@ -958,9 +966,7 @@ export function LinkUnfurl({
             >
               {announcement}
             </Status>
-          </div>
-        )}
-      </WithSx>
+      </PresentationSlot>
     </MotionConfig>
   );
 }
