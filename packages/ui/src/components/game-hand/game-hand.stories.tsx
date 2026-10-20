@@ -671,10 +671,17 @@ export const RadialHiddenHands: Story = {
 
 /** Pick a card without adding a play action. */
 export const SelectOnly: Story = {
+  name: 'Select without confirming',
   args: { playLabel: undefined, onPlayIntent: undefined },
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+  parameters: { docs: { description: { story: 'Select a card without rendering a play action.' }, source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 
-<GameHand cards={cards} onValueChange={setSelectedCard} />` } } },
+const cards = [
+  { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+  { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
+  { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
+];
+
+<GameHand cards={cards} onValueChange={console.log} />` } } },
   play: async ({ canvas, userEvent, args }) => {
     await expect(canvas.getAllByRole('button')).toHaveLength(3);
     await userEvent.tab();
@@ -688,13 +695,20 @@ export const SelectOnly: Story = {
 
 /** Compose a confirmation action with a separate play handler. */
 export const ConfirmPart: Story = {
+  name: 'Compose confirmation',
   render: (args) => <GameHand {...args} onPlayIntent={undefined}>
     <GameHand.Confirm onPlay={args.onPlayIntent}>Confirm card</GameHand.Confirm>
   </GameHand>,
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+  parameters: { docs: { description: { story: 'Add a confirmation part with its own play callback.' }, source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+
+const cards = [
+  { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+  { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
+  { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
+];
 
 <GameHand cards={cards}>
-  <GameHand.Confirm onPlay={playCard}>Confirm card</GameHand.Confirm>
+  <GameHand.Confirm onPlay={console.log}>Confirm card</GameHand.Confirm>
 </GameHand>` } } },
   play: async ({ canvas, userEvent, args }) => {
     await expect(canvas.queryByRole('button', { name: 'Play card' })).toBeNull();
@@ -743,6 +757,7 @@ export const LegacyConfirmation: Story = {
 
 /** One unavailable card remains focusable while the other cards can be selected. */
 export const DisabledCards: Story = {
+  name: 'Unavailable and dimmed cards',
   args: {
     cards: CARDS.slice(0, 3).map((card, index) => ({ ...card,
       disabled: index === 0, disabledReason: index === 0 ? 'Follow the leading suit' : undefined, dimmed: index === 2 })),
@@ -750,12 +765,16 @@ export const DisabledCards: Story = {
     slotProps: { card: { 'aria-describedby': 'hand-description' } },
   },
   render: (args) => <><p id="hand-description">Choose one card</p><GameHand {...args} /></>,
-  parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+  parameters: { docs: { description: { story: 'Block an unavailable card with an accessible reason while a dimmed card remains playable.' }, source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 
-<GameHand cards={[
-  { id: 'ace', label: 'Ace of spades', value: { suit: 'spades', rank: 'A' }, disabled: true, disabledReason: 'Follow the leading suit' },
-  { id: 'king', label: 'King of hearts', value: { suit: 'hearts', rank: 'K' } },
-]}><GameHand.Confirm onPlay={playCard}>Play card</GameHand.Confirm></GameHand>` } } },
+<>
+  <p id="hand-description">Choose one card</p>
+  <GameHand defaultValue="ace-spades" slotProps={{ card: { 'aria-describedby': 'hand-description' } }} cards={[
+    { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' }, disabled: true, disabledReason: 'Follow the leading suit' },
+    { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
+    { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' }, dimmed: true },
+  ]} playLabel="Play card" onPlayIntent={console.log} />
+</>` } } },
   play: async ({ canvas, userEvent, args }) => {
     const first = canvas.getByRole('button', { name: CARDS[0]!.label });
     const confirm = canvas.getByRole('button', { name: 'Play card' });
