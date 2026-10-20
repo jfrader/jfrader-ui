@@ -65,13 +65,19 @@ const meta = {
   parameters: {
     layout: 'fullscreen',
     docs: {
-      description: { component: 'Center page content and limit its width. Set the space on either side.' },
-      usage: `### Width
-- The container fills its parent up to \`size\`: \`sm\` 640px, \`md\` 768px, \`lg\` 1024px, or \`xl\` 1280px. The default is \`lg\`. Choose a cap, not a viewport breakpoint.
-- \`paddingInline\` defaults to \`md\` (16px) and is included in the width cap. Use \`none\`, \`xs\`, \`sm\`, \`md\`, \`lg\` or \`xl\` to change the inset.
+      sections: [
+        { title: 'Widths and sizes', stories: ['Sizes'] },
+        { title: 'Padding', stories: ['Padding'] },
+        { title: 'Composition', stories: ['CenteredPage'] },
+      ],
+      description: {
+        component: 'Center page content and limit its width. Set the space on either side.',
+      },
+      usage: `### When to use
+Center page content within a width cap. Use the available parent width, not viewport breakpoints, to choose a readable measure.
 
 ### Layout
-- Container adds no vertical spacing or landmark role. Put a \`Stack\` inside for spacing and provide page semantics yourself.`,
+The side inset is included in the width cap. Add vertical spacing with a layout component; provide page landmarks and headings in the content.`,
     },
   },
   argTypes: {
@@ -102,15 +108,18 @@ async function expectCentred(element: HTMLElement) {
 }
 
 export const Sizes: Story = {
+  name: 'Width caps',
   parameters: {
     docs: {
+      description: {
+        story: 'Compare the four width caps as the available space changes.',
+      },
       source: {
         language: 'tsx',
-        code: `import type { CSSProperties } from 'react';
+        code: `import { Container, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
-import { Container } from '@jfrader/ui';
 
-const boxStyle = {
+const ItemSurface = styled.div({
   boxSizing: 'border-box',
   paddingBlock: vars.space[2],
   paddingInline: vars.space[3],
@@ -120,14 +129,15 @@ const boxStyle = {
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   color: vars.color.text,
-} satisfies CSSProperties;
+});
 
 <>
-  <Container size="sm"><div style={boxStyle}>Container sm</div></Container>
-  <Container size="md"><div style={boxStyle}>Container md</div></Container>
-  <Container size="lg"><div style={boxStyle}>Container lg</div></Container>
-  <Container size="xl"><div style={boxStyle}>Container xl</div></Container>
-</>`,
+  {(['sm', 'md', 'lg', 'xl'] as const).map((size) => (
+    <Container key={size} size={size}>
+      <ItemSurface>Container {size}</ItemSurface>
+    </Container>
+  ))}
+</>;`,
       },
     },
   },
@@ -177,6 +187,42 @@ export const Centering: Story = {
 };
 
 export const Padding: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Compare the default inset with each spacing step.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Container, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ItemSurface = styled.div({
+  boxSizing: 'border-box',
+  paddingBlock: vars.space[2],
+  paddingInline: vars.space[3],
+  backgroundColor: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.text,
+});
+
+<>
+  <Container>
+    <ItemSurface>Default padding</ItemSurface>
+  </Container>
+  {(['none', 'xs', 'sm', 'md', 'lg', 'xl'] as const).map((space) => (
+    <Container key={space} paddingInline={space}>
+      <ItemSurface>Padding {space}</ItemSurface>
+    </Container>
+  ))}
+</>;`,
+      },
+    },
+  },
+  name: 'Side padding',
   render: (args) => (
     <>
       <Container {...args} data-padding="default">
@@ -221,20 +267,58 @@ function Page() {
 Page.displayName = 'Page';
 
 export const CenteredPage: Story = {
+  name: 'Settings page',
   parameters: {
     docs: {
+      description: {
+        story: 'Center a settings heading and place its actions at the end of the content.',
+      },
       source: {
         language: 'tsx',
-        code: `<Container size="sm">
-  <Stack gap="lg">
-    <h2>Workspace settings</h2>
-    <p>Rename the workspace or move it to another team.</p>
-    <Flex gap="sm" justify="end">
-      <Button variant="outline">Cancel</Button>
-      <Button tone="accent">Save</Button>
-    </Flex>
-  </Stack>
-</Container>`,
+        code: `import { Container, Stack, Flex, Button, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const PageFrame = styled.div({
+  minBlockSize: '100vh',
+  paddingBlock: vars.space[10],
+  backgroundColor: vars.color.bg,
+});
+
+const Heading = styled.h2({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize['2xl'],
+  fontWeight: vars.fontWeight.semibold,
+  lineHeight: vars.lineHeight.tight,
+  color: vars.color.text,
+});
+
+const Prose = styled.p({
+  margin: 0,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.md,
+  lineHeight: vars.lineHeight.base,
+  color: vars.color.textMuted,
+});
+
+function Page() {
+  return (
+    <PageFrame>
+      <Container size="sm">
+        <Stack gap="lg">
+          <Heading>Workspace settings</Heading>
+          <Prose>Rename the workspace or move it to another team.</Prose>
+          <Flex gap="sm" justify="end">
+            <Button variant="outline">Cancel</Button>
+            <Button tone="accent">Save</Button>
+          </Flex>
+        </Stack>
+      </Container>
+    </PageFrame>
+  );
+}
+
+<Page />;`,
       },
     },
   },

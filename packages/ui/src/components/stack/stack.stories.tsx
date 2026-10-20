@@ -1,3 +1,6 @@
+import { Flex } from '../flex';
+import { Divider } from '../divider';
+import { Button } from '../button';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect } from 'storybook/test';
 import { base } from '@jfrader/tokens';
@@ -21,6 +24,7 @@ const Frame = styled.div({
   display: 'grid',
   gap: vars.space[6],
   inlineSize: '360px',
+  maxInlineSize: '100%',
 });
 
 const Box = styled.div({
@@ -40,11 +44,23 @@ const meta = {
   component: Stack,
   parameters: {
     docs: {
-      description: { component: 'Arrange items in a column and set the space between them.' },
-      usage: `### Layout
-- Stack is a block-level column with \`gap="md"\` (16px) and \`align="stretch"\` by default. Set \`align="start"\`, \`center\` or \`end\` when children should not fill its width.
-- \`gap\` accepts \`none\`, \`xs\`, \`sm\`, \`md\`, \`lg\` or \`xl\`. It spaces children, not the outside of the stack; add outer spacing through \`sx\`.
-- Stack has no \`direction\` or \`inline\` prop. Use \`Flex\` for a row or inline layout, and \`sx\` for breakpoint-specific styles.`,
+      sections: [
+        { title: 'Spacing', stories: ['Default', 'GapSteps'] },
+        { title: 'Direction', stories: ['NestedLayouts'] },
+        { title: 'Dividers', stories: ['WithDividers'] },
+        { title: 'Composition', stories: ['Align'] },
+      ],
+      description: {
+        component: 'Arrange items in a column and set the space between them.',
+      },
+      usage: `### When to use
+Space content vertically without adding margins to individual children. Use Flex for horizontal or inline groups.
+
+### Layout
+Spacing applies between children, not outside the group. Insert separators as children when content needs a visible boundary.
+
+### Accessibility
+Stack adds no landmark or heading semantics. Keep content in reading order and choose semantic elements for each section.`,
     },
   },
   argTypes: {
@@ -86,15 +102,18 @@ function getBoxes(element: HTMLElement) {
 }
 
 export const Default: Story = {
+  name: 'Vertical spacing',
   parameters: {
     docs: {
+      description: {
+        story: 'Arrange three items in a column with the default spacing.',
+      },
       source: {
         language: 'tsx',
-        code: `import type { CSSProperties } from 'react';
+        code: `import { Stack, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
-import { Stack } from '@jfrader/ui';
 
-const boxStyle = {
+const ItemSurface = styled.div({
   boxSizing: 'border-box',
   paddingBlock: vars.space[2],
   paddingInline: vars.space[3],
@@ -104,13 +123,21 @@ const boxStyle = {
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   color: vars.color.text,
-} satisfies CSSProperties;
+});
+
+function LayoutItems({ count = 3 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, index) => (
+        <ItemSurface key={index}>Item {index + 1}</ItemSurface>
+      ))}
+    </>
+  );
+}
 
 <Stack>
-  <div style={boxStyle}>Item 1</div>
-  <div style={boxStyle}>Item 2</div>
-  <div style={boxStyle}>Item 3</div>
-</Stack>`,
+  <LayoutItems />
+</Stack>;`,
       },
     },
   },
@@ -137,6 +164,49 @@ const boxStyle = {
 };
 
 export const Align: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Compare children that stretch with children aligned to an edge or the center.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Stack, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ItemSurface = styled.div({
+  boxSizing: 'border-box',
+  paddingBlock: vars.space[2],
+  paddingInline: vars.space[3],
+  backgroundColor: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.text,
+});
+
+function LayoutItems({ count = 3 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, index) => (
+        <ItemSurface key={index}>Item {index + 1}</ItemSurface>
+      ))}
+    </>
+  );
+}
+
+<>
+  {(['start', 'center', 'end', 'stretch'] as const).map((align) => (
+    <Stack key={align} align={align}>
+      <LayoutItems count={2} />
+    </Stack>
+  ))}
+</>;`,
+      },
+    },
+  },
+  name: 'Content alignment',
   render: (args) => (
     <>
       {(Object.keys(ALIGNS) as StackAlign[]).map((align) => (
@@ -158,6 +228,47 @@ export const Align: Story = {
 };
 
 export const GapSteps: Story = {
+  parameters: {
+    docs: {
+      description: { story: 'Compare the available gaps between two items.' },
+      source: {
+        language: 'tsx',
+        code: `import { Stack, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ItemSurface = styled.div({
+  boxSizing: 'border-box',
+  paddingBlock: vars.space[2],
+  paddingInline: vars.space[3],
+  backgroundColor: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.text,
+});
+
+function LayoutItems({ count = 3 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, index) => (
+        <ItemSurface key={index}>Item {index + 1}</ItemSurface>
+      ))}
+    </>
+  );
+}
+
+<>
+  {(['none', 'xs', 'sm', 'md', 'lg', 'xl'] as const).map((gap) => (
+    <Stack key={gap} gap={gap}>
+      <LayoutItems count={2} />
+    </Stack>
+  ))}
+</>;`,
+      },
+    },
+  },
+  name: 'Spacing steps',
   render: (args) => (
     <>
       {LAYOUT_SPACES.map((gap) => (
@@ -193,4 +304,90 @@ export const LightTheme: Story = {
   play: async ({ canvasElement }) => {
     await expect(getStacks(canvasElement)).toHaveLength(2);
   },
+};
+
+export const NestedLayouts: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Group horizontal actions inside a vertical layout.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Stack, Flex, Button, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ItemSurface = styled.div({
+  boxSizing: 'border-box',
+  paddingBlock: vars.space[2],
+  paddingInline: vars.space[3],
+  backgroundColor: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.text,
+});
+
+<Stack>
+  <ItemSurface>Workspace</ItemSurface>
+  <Flex gap="sm">
+    <Button variant="outline">Cancel</Button>
+    <Button>Save</Button>
+  </Flex>
+</Stack>;`,
+      },
+    },
+  },
+  name: 'Rows within a column',
+  render: () => (
+    <Stack>
+      <Box>Workspace</Box>
+      <Flex gap="sm">
+        <Button variant="outline">Cancel</Button>
+        <Button>Save</Button>
+      </Flex>
+    </Stack>
+  ),
+};
+
+export const WithDividers: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Insert a divider between two vertically spaced sections.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Stack, Divider, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ItemSurface = styled.div({
+  boxSizing: 'border-box',
+  paddingBlock: vars.space[2],
+  paddingInline: vars.space[3],
+  backgroundColor: vars.color.surfaceRaised,
+  border: \`1px solid \${vars.color.border}\`,
+  borderRadius: vars.radius.sm,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  color: vars.color.text,
+});
+
+<Stack>
+  <ItemSurface>Account</ItemSurface>
+  <Divider />
+  <ItemSurface>Sessions</ItemSurface>
+</Stack>;`,
+      },
+    },
+  },
+  name: 'Separated content',
+  render: () => (
+    <Stack>
+      <Box>Account</Box>
+      <Divider />
+      <Box>Sessions</Box>
+    </Stack>
+  ),
 };

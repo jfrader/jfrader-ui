@@ -5,11 +5,13 @@ import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Divider } from './index';
+import { Card } from '../card';
 
 const Stack = styled.div({
   display: 'grid',
   gap: vars.space[4],
   inlineSize: '360px',
+  maxInlineSize: '100%',
   fontSize: vars.textSize.sm,
   color: vars.color.text,
 });
@@ -29,13 +31,21 @@ const meta = {
   component: Divider,
   parameters: {
     docs: {
+      sections: [
+        { title: 'Orientation', stories: ['Default', 'Vertical'] },
+        { title: 'Labels', stories: ['Labeled'] },
+        { title: 'Variants', stories: ['LineStyles'] },
+        { title: 'Composition', stories: ['SectionGroups'] },
+      ],
       description: { component: 'Separate sections with a line or a label.' },
-      usage: `### Orientation
-- The default is \`horizontal\`. For \`orientation="vertical"\`, place the divider in a flex or grid row whose content or height gives it a block size. It has no height of its own.
+      usage: `### When to use
+Separate related sections or groups of actions without adding a heading.
 
-### Labels
-- \`label\` is available only on horizontal dividers and supplies the separator's accessible name. Use text, not a control, inside the label.
-- Divider adds no surrounding margin. Set the spacing on its parent.`,
+### Layout
+Give vertical separators a row with content or an explicit height; they have no intrinsic height. Set surrounding spacing on the parent.
+
+### Accessibility
+Keep labels textual, not interactive. A separator is not a control and is skipped by Tab.`,
     },
   },
   decorators: [
@@ -86,15 +96,30 @@ function Toolbar() {
 Toolbar.displayName = 'Toolbar';
 
 export const Default: Story = {
+  name: 'Horizontal separator',
   parameters: {
     docs: {
+      description: {
+        story: 'Separate account information from its session count.',
+      },
       source: {
         language: 'tsx',
-        code: `<>
-  <p>Signed in as ana@example.com</p>
-  <Divider />
-  <p>3 active sessions</p>
-</>`,
+        code: `import { Divider, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Prose = styled.p({ margin: 0 });
+
+function Sections() {
+  return (
+    <>
+      <Prose>Signed in as ana@example.com</Prose>
+      <Divider />
+      <Prose>3 active sessions</Prose>
+    </>
+  );
+}
+
+<Sections />;`,
       },
     },
   },
@@ -112,14 +137,28 @@ export const Default: Story = {
 };
 
 export const Labeled: Story = {
+  name: 'Text label',
   parameters: {
     docs: {
+      description: { story: 'Place a short label between sign-in options.' },
       source: {
-        code: `<>
-  <p>Continue with GitHub</p>
-  <Divider label="or" />
-  <p>Continue with email</p>
-</>`,
+        language: 'tsx',
+        code: `import { Divider, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Prose = styled.p({ margin: 0 });
+
+function SignInOptions() {
+  return (
+    <>
+      <Prose>Continue with GitHub</Prose>
+      <Divider label="or" />
+      <Prose>Continue with email</Prose>
+    </>
+  );
+}
+
+<SignInOptions />;`,
       },
     },
   },
@@ -251,17 +290,35 @@ export const KeyboardFocus: Story = {
 };
 
 export const Vertical: Story = {
+  name: 'Vertical separator',
   parameters: {
     docs: {
+      description: { story: 'Split groups in a toolbar row.' },
       source: {
-        code: `const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[3] });
+        language: 'tsx',
+        code: `import { Divider, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
 
-<Row>
-  <span>Bold</span>
-  <span>Italic</span>
-  <Divider orientation="vertical" />
-  <span>Link</span>
-</Row>`,
+const Row = styled.div({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space[3],
+  fontSize: vars.textSize.sm,
+  color: vars.color.text,
+});
+
+function Toolbar() {
+  return (
+    <Row>
+      <span>Bold</span>
+      <span>Italic</span>
+      <Divider orientation="vertical" />
+      <span>Link</span>
+    </Row>
+  );
+}
+
+<Toolbar />;`,
       },
     },
   },
@@ -304,4 +361,68 @@ export const LightTheme: Story = {
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getAllByRole('separator')).toHaveLength(3);
   },
+};
+
+export const LineStyles: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Change the thickness or inset of a horizontal line with sx.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Divider } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+<>
+  <Divider sx={{ blockSize: vars.space[1] }} />
+  <Divider sx={{ marginInline: vars.space[6] }} />
+</>;`,
+      },
+    },
+  },
+  name: 'Line treatments',
+  render: () => (
+    <>
+      <Divider sx={{ blockSize: vars.space[1] }} />
+      <Divider sx={{ marginInline: vars.space[6] }} />
+    </>
+  ),
+};
+
+export const SectionGroups: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Compose a heading and two content groups with a separator.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { Card, Divider, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Prose = styled.p({ margin: 0 });
+
+<Card>
+  <Card.Header><Card.Title>Account</Card.Title></Card.Header>
+  <Card.Content sx={{ display: 'grid', gap: vars.space[4] }}>
+    <Prose>Signed in as ana@example.com</Prose>
+    <Divider />
+    <Prose>3 active sessions</Prose>
+  </Card.Content>
+</Card>;`,
+      },
+    },
+  },
+  name: 'Grouped sections',
+  render: () => (
+    <Card>
+      <Card.Header><Card.Title>Account</Card.Title></Card.Header>
+      <Card.Content sx={{ display: 'grid', gap: vars.space[4] }}>
+        <Prose>Signed in as ana@example.com</Prose>
+        <Divider />
+        <Prose>3 active sessions</Prose>
+      </Card.Content>
+    </Card>
+  ),
 };
