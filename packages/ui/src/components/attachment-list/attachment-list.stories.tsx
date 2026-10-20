@@ -90,6 +90,30 @@ export const ImagePreview: Story = {
 };
 
 export const MissingAndUnsafeURLs: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AttachmentList } from '@jfrader/ui';
+
+export function Example() {
+  return (
+    <AttachmentList
+      attachments={[
+        { id: 'missing', name: 'Missing URL.txt', kind: 'file' },
+        { id: 'script', name: 'Script link.txt', kind: 'file', url: 'javascript:alert(1)' },
+        { id: 'data', name: 'Inline image.png', kind: 'image', url: 'data:image/png;base64,AA==' },
+        { id: 'space', name: 'Whitespace URL.txt', kind: 'file', url: ' https://example.com/file' },
+        { id: 'slash', name: 'Backslash URL.txt', kind: 'file', url: 'https:\\\\example.com/file' },
+      ]}
+      locale="en-US"
+      previewCount={Infinity}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { previewCount: Infinity, attachments: [
     { id: 'missing', name: 'Missing URL.txt', kind: 'file' },
     { id: 'script', name: 'Script link.txt', kind: 'file', url: 'javascript:alert(1)' },
@@ -106,6 +130,48 @@ export const MissingAndUnsafeURLs: Story = {
 };
 
 export const MoreFiles: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AttachmentList, type Attachment } from '@jfrader/ui';
+
+const FILES: readonly Attachment[] = [
+  {
+    id: 'launch-brief',
+    name: 'Launch brief.pdf',
+    kind: 'file',
+    size: 2400000,
+    url: '/launch-brief.pdf',
+  },
+  { id: 'notes', name: 'Pricing notes.txt', kind: 'file', size: 4200, url: '/pricing-notes.txt' },
+];
+
+export function Example() {
+  return (
+    <AttachmentList
+      attachments={[
+        ...FILES,
+        ...Array.from({ length: 4 }, (_, index): Attachment => ({
+          id: \`file-\${index}\`,
+          name: \`Invoice 2026-0\${index + 1}.pdf\`,
+          kind: 'file',
+        })),
+      ]}
+      locale="en-US"
+      slotProps={{
+        expandButton: {
+          onClick: () => {
+            console.info('Action selected');
+          },
+        },
+      }}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     attachments: [...FILES, ...Array.from({ length: 4 }, (_, index): Attachment => ({ id: `file-${index}`, name: `Invoice 2026-0${index + 1}.pdf`, kind: 'file' }))],
     slotProps: { expandButton: { onClick: fn() } },
@@ -136,6 +202,36 @@ export const CustomLimit: Story = {
 };
 
 export const CancelExpansion: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AttachmentList, type Attachment } from '@jfrader/ui';
+
+const FILES: readonly Attachment[] = [
+  {
+    id: 'launch-brief',
+    name: 'Launch brief.pdf',
+    kind: 'file',
+    size: 2400000,
+    url: '/launch-brief.pdf',
+  },
+  { id: 'notes', name: 'Pricing notes.txt', kind: 'file', size: 4200, url: '/pricing-notes.txt' },
+];
+
+export function Example() {
+  return (
+    <AttachmentList
+      attachments={FILES}
+      locale="en-US"
+      previewCount={1}
+      slotProps={{ expandButton: { onClick: (event) => event.preventDefault() } }}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { previewCount: 1, slotProps: { expandButton: { onClick: fn((event) => event.preventDefault()) } } },
   play: async ({ canvas, args, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Show 1 more attachment' }));
@@ -171,6 +267,35 @@ export const LinkTarget: Story = {
 };
 
 export const Localized: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { AttachmentList, type Attachment } from '@jfrader/ui';
+
+const FILES: readonly Attachment[] = [
+  {
+    id: 'launch-brief',
+    name: 'Launch brief.pdf',
+    kind: 'file',
+    size: 2400000,
+    url: '/launch-brief.pdf',
+  },
+  { id: 'notes', name: 'Pricing notes.txt', kind: 'file', size: 4200, url: '/pricing-notes.txt' },
+];
+
+export function Example() {
+  return (
+    <AttachmentList
+      attachments={[{ ...FILES[0]!, size: 1234 }]}
+      locale="de-DE"
+      labels={{ attachments: 'Anhänge', showAttachments: (count) => \`\${count} weitere Anhänge\` }}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { locale: 'de-DE', labels: { attachments: 'Anhänge', showAttachments: (count) => `${count} weitere Anhänge` }, attachments: [{ ...FILES[0]!, size: 1234 }] },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('list', { name: 'Anhänge' })).toBeInTheDocument();

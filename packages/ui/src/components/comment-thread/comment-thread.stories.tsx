@@ -475,6 +475,75 @@ export const ReplyComposer: Story = {
 };
 
 export const MaxDepthZero: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CommentThread, type ThreadComment, type CommentAuthor } from '@jfrader/ui';
+
+const GRACE: CommentAuthor = { id: 'grace', name: 'Grace Hopper' };
+
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const MINUTE = 60000;
+
+const HOUR = 60 * MINUTE;
+
+const ADA: CommentAuthor = { id: 'ada', name: 'Ada Lovelace' };
+
+const ALAN: CommentAuthor = { id: 'alan', name: 'Alan Turing' };
+
+const COMMENTS: readonly ThreadComment[] = Object.freeze([
+  {
+    id: 'c1',
+    author: GRACE,
+    body: 'Can we tighten the header spacing?',
+    createdAt: NOW - 3 * HOUR,
+    reactions: [{ emoji: '👍', users: ['ada', 'alan'] }],
+    replies: [
+      {
+        id: 'c1r1',
+        author: ADA,
+        body: 'Yes, dropping it to 16px.',
+        createdAt: new Date(NOW - 2 * HOUR),
+        edited: true,
+        replies: [
+          {
+            id: 'c1r1r1',
+            author: ALAN,
+            body: 'Check the narrow layout too.',
+            createdAt: NOW - 90 * MINUTE,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'c2',
+    author: ADA,
+    body: 'Shipped the new icons.',
+    createdAt: '2026-10-11T11:55:00Z',
+    reactions: [{ emoji: '🎉', users: ['grace'] }],
+  },
+] satisfies ThreadComment[]);
+
+const LOCALE = 'en-US';
+
+export function Example() {
+  return (
+    <CommentThread
+      defaultValue={COMMENTS}
+      currentUser={ADA}
+      now={NOW}
+      locale={LOCALE}
+      title="Review"
+      maxDepth={0}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { maxDepth: 0 },
   play: async ({ args, canvasElement, userEvent }) => {
     await userEvent.click(action(canvasElement, 'c1r1', 'reply')!);
@@ -502,6 +571,55 @@ const DEEP_CHAIN = DEEP_IDS.reduceRight<ThreadComment[]>(
 );
 
 export const DeepNesting: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CommentThread, type ThreadComment, type CommentAuthor } from '@jfrader/ui';
+
+const DEEP_IDS = Array.from({ length: 6 }, (_, depth) => \`deep-\${depth}\`);
+
+const GRACE: CommentAuthor = { id: 'grace', name: 'Grace Hopper' };
+
+const ALAN: CommentAuthor = { id: 'alan', name: 'Alan Turing' };
+
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const MINUTE = 60000;
+
+const HOUR = 60 * MINUTE;
+
+const DEEP_CHAIN = DEEP_IDS.reduceRight<ThreadComment[]>(
+  (replies, id, depth) => [
+    {
+      id,
+      author: depth % 2 ? GRACE : ALAN,
+      body: \`Level \${depth}\`,
+      createdAt: NOW - HOUR,
+      replies,
+    },
+  ],
+  [],
+);
+
+const ADA: CommentAuthor = { id: 'ada', name: 'Ada Lovelace' };
+
+const LOCALE = 'en-US';
+
+export function Example() {
+  return (
+    <CommentThread
+      defaultValue={DEEP_CHAIN}
+      currentUser={ADA}
+      now={NOW}
+      locale={LOCALE}
+      title="Review"
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { defaultValue: DEEP_CHAIN },
   play: async ({ canvas, canvasElement }) => {
     // Trees deeper than maxDepth are shown as given.
@@ -535,6 +653,75 @@ export const DeepNesting: Story = {
 };
 
 export const CollapsedReplies: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CommentThread, type ThreadComment, type CommentAuthor } from '@jfrader/ui';
+
+const GRACE: CommentAuthor = { id: 'grace', name: 'Grace Hopper' };
+
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const MINUTE = 60000;
+
+const HOUR = 60 * MINUTE;
+
+const ADA: CommentAuthor = { id: 'ada', name: 'Ada Lovelace' };
+
+const ALAN: CommentAuthor = { id: 'alan', name: 'Alan Turing' };
+
+const COMMENTS: readonly ThreadComment[] = Object.freeze([
+  {
+    id: 'c1',
+    author: GRACE,
+    body: 'Can we tighten the header spacing?',
+    createdAt: NOW - 3 * HOUR,
+    reactions: [{ emoji: '👍', users: ['ada', 'alan'] }],
+    replies: [
+      {
+        id: 'c1r1',
+        author: ADA,
+        body: 'Yes, dropping it to 16px.',
+        createdAt: new Date(NOW - 2 * HOUR),
+        edited: true,
+        replies: [
+          {
+            id: 'c1r1r1',
+            author: ALAN,
+            body: 'Check the narrow layout too.',
+            createdAt: NOW - 90 * MINUTE,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'c2',
+    author: ADA,
+    body: 'Shipped the new icons.',
+    createdAt: '2026-10-11T11:55:00Z',
+    reactions: [{ emoji: '🎉', users: ['grace'] }],
+  },
+] satisfies ThreadComment[]);
+
+const LOCALE = 'en-US';
+
+export function Example() {
+  return (
+    <CommentThread
+      defaultValue={COMMENTS}
+      currentUser={ADA}
+      now={NOW}
+      locale={LOCALE}
+      title="Review"
+      defaultExpandedValue={[]}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { defaultExpandedValue: [] },
   play: async ({ args, canvasElement, userEvent }) => {
     const toggle = toggleOf(canvasElement, 'c1')!;
@@ -711,6 +898,75 @@ export const Reactions: Story = {
 };
 
 export const NoReactionPicker: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CommentThread, type ThreadComment, type CommentAuthor } from '@jfrader/ui';
+
+const GRACE: CommentAuthor = { id: 'grace', name: 'Grace Hopper' };
+
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const MINUTE = 60000;
+
+const HOUR = 60 * MINUTE;
+
+const ADA: CommentAuthor = { id: 'ada', name: 'Ada Lovelace' };
+
+const ALAN: CommentAuthor = { id: 'alan', name: 'Alan Turing' };
+
+const COMMENTS: readonly ThreadComment[] = Object.freeze([
+  {
+    id: 'c1',
+    author: GRACE,
+    body: 'Can we tighten the header spacing?',
+    createdAt: NOW - 3 * HOUR,
+    reactions: [{ emoji: '👍', users: ['ada', 'alan'] }],
+    replies: [
+      {
+        id: 'c1r1',
+        author: ADA,
+        body: 'Yes, dropping it to 16px.',
+        createdAt: new Date(NOW - 2 * HOUR),
+        edited: true,
+        replies: [
+          {
+            id: 'c1r1r1',
+            author: ALAN,
+            body: 'Check the narrow layout too.',
+            createdAt: NOW - 90 * MINUTE,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'c2',
+    author: ADA,
+    body: 'Shipped the new icons.',
+    createdAt: '2026-10-11T11:55:00Z',
+    reactions: [{ emoji: '🎉', users: ['grace'] }],
+  },
+] satisfies ThreadComment[]);
+
+const LOCALE = 'en-US';
+
+export function Example() {
+  return (
+    <CommentThread
+      defaultValue={COMMENTS}
+      currentUser={ADA}
+      now={NOW}
+      locale={LOCALE}
+      title="Review"
+      reactions={[]}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { reactions: [] },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[data-action="react"]')).toBeNull();
@@ -817,6 +1073,75 @@ export const KeyboardFlow: Story = {
 };
 
 export const RejectedResolve: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CommentThread, type ThreadComment, type CommentAuthor } from '@jfrader/ui';
+
+const GRACE: CommentAuthor = { id: 'grace', name: 'Grace Hopper' };
+
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const MINUTE = 60000;
+
+const HOUR = 60 * MINUTE;
+
+const ADA: CommentAuthor = { id: 'ada', name: 'Ada Lovelace' };
+
+const ALAN: CommentAuthor = { id: 'alan', name: 'Alan Turing' };
+
+const COMMENTS: readonly ThreadComment[] = Object.freeze([
+  {
+    id: 'c1',
+    author: GRACE,
+    body: 'Can we tighten the header spacing?',
+    createdAt: NOW - 3 * HOUR,
+    reactions: [{ emoji: '👍', users: ['ada', 'alan'] }],
+    replies: [
+      {
+        id: 'c1r1',
+        author: ADA,
+        body: 'Yes, dropping it to 16px.',
+        createdAt: new Date(NOW - 2 * HOUR),
+        edited: true,
+        replies: [
+          {
+            id: 'c1r1r1',
+            author: ALAN,
+            body: 'Check the narrow layout too.',
+            createdAt: NOW - 90 * MINUTE,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'c2',
+    author: ADA,
+    body: 'Shipped the new icons.',
+    createdAt: '2026-10-11T11:55:00Z',
+    reactions: [{ emoji: '🎉', users: ['grace'] }],
+  },
+] satisfies ThreadComment[]);
+
+const LOCALE = 'en-US';
+
+export function Example() {
+  return (
+    <CommentThread
+      defaultValue={COMMENTS}
+      currentUser={ADA}
+      now={NOW}
+      locale={LOCALE}
+      title="Review"
+      resolvedValue={false}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { resolvedValue: false },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     const resolve = canvas.getByRole('button', { name: 'Resolve' });
@@ -835,6 +1160,75 @@ export const RejectedResolve: Story = {
 };
 
 export const Resolved: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CommentThread, type ThreadComment, type CommentAuthor } from '@jfrader/ui';
+
+const GRACE: CommentAuthor = { id: 'grace', name: 'Grace Hopper' };
+
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const MINUTE = 60000;
+
+const HOUR = 60 * MINUTE;
+
+const ADA: CommentAuthor = { id: 'ada', name: 'Ada Lovelace' };
+
+const ALAN: CommentAuthor = { id: 'alan', name: 'Alan Turing' };
+
+const COMMENTS: readonly ThreadComment[] = Object.freeze([
+  {
+    id: 'c1',
+    author: GRACE,
+    body: 'Can we tighten the header spacing?',
+    createdAt: NOW - 3 * HOUR,
+    reactions: [{ emoji: '👍', users: ['ada', 'alan'] }],
+    replies: [
+      {
+        id: 'c1r1',
+        author: ADA,
+        body: 'Yes, dropping it to 16px.',
+        createdAt: new Date(NOW - 2 * HOUR),
+        edited: true,
+        replies: [
+          {
+            id: 'c1r1r1',
+            author: ALAN,
+            body: 'Check the narrow layout too.',
+            createdAt: NOW - 90 * MINUTE,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'c2',
+    author: ADA,
+    body: 'Shipped the new icons.',
+    createdAt: '2026-10-11T11:55:00Z',
+    reactions: [{ emoji: '🎉', users: ['grace'] }],
+  },
+] satisfies ThreadComment[]);
+
+const LOCALE = 'en-US';
+
+export function Example() {
+  return (
+    <CommentThread
+      defaultValue={COMMENTS}
+      currentUser={ADA}
+      now={NOW}
+      locale={LOCALE}
+      title="Review"
+      defaultResolvedValue
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { defaultResolvedValue: true },
   play: async ({ canvas, canvasElement }) => {
     const summary = part(canvasElement, 'resolved')!;
@@ -862,6 +1256,26 @@ export const ResolvedKeepsDraft: Story = {
 };
 
 export const Empty: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CommentThread, type CommentAuthor } from '@jfrader/ui';
+
+const ADA: CommentAuthor = { id: 'ada', name: 'Ada Lovelace' };
+
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const LOCALE = 'en-US';
+
+export function Example() {
+  return (
+    <CommentThread defaultValue={[]} currentUser={ADA} now={NOW} locale={LOCALE} title="Review" />
+  );
+}`,
+      },
+    },
+  },
   args: { defaultValue: [] },
   play: async ({ canvas, canvasElement }) => {
     const region = canvas.getByRole('region', { name: 'Review' });
@@ -873,6 +1287,76 @@ export const Empty: Story = {
 };
 
 export const ReadOnly: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CommentThread, type ThreadComment, type CommentAuthor } from '@jfrader/ui';
+
+const GRACE: CommentAuthor = { id: 'grace', name: 'Grace Hopper' };
+
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const MINUTE = 60000;
+
+const HOUR = 60 * MINUTE;
+
+const ADA: CommentAuthor = { id: 'ada', name: 'Ada Lovelace' };
+
+const ALAN: CommentAuthor = { id: 'alan', name: 'Alan Turing' };
+
+const COMMENTS: readonly ThreadComment[] = Object.freeze([
+  {
+    id: 'c1',
+    author: GRACE,
+    body: 'Can we tighten the header spacing?',
+    createdAt: NOW - 3 * HOUR,
+    reactions: [{ emoji: '👍', users: ['ada', 'alan'] }],
+    replies: [
+      {
+        id: 'c1r1',
+        author: ADA,
+        body: 'Yes, dropping it to 16px.',
+        createdAt: new Date(NOW - 2 * HOUR),
+        edited: true,
+        replies: [
+          {
+            id: 'c1r1r1',
+            author: ALAN,
+            body: 'Check the narrow layout too.',
+            createdAt: NOW - 90 * MINUTE,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'c2',
+    author: ADA,
+    body: 'Shipped the new icons.',
+    createdAt: '2026-10-11T11:55:00Z',
+    reactions: [{ emoji: '🎉', users: ['grace'] }],
+  },
+] satisfies ThreadComment[]);
+
+const LOCALE = 'en-US';
+
+export function Example() {
+  return (
+    <CommentThread
+      defaultValue={COMMENTS}
+      currentUser={ADA}
+      now={NOW}
+      locale={LOCALE}
+      title="Review"
+      readOnly
+      defaultExpandedValue={[]}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { readOnly: true, defaultExpandedValue: [] },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await expect(canvasElement.querySelector('[data-action]')).toBeNull();
@@ -889,6 +1373,75 @@ export const ReadOnly: Story = {
 };
 
 export const Disabled: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CommentThread, type ThreadComment, type CommentAuthor } from '@jfrader/ui';
+
+const GRACE: CommentAuthor = { id: 'grace', name: 'Grace Hopper' };
+
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const MINUTE = 60000;
+
+const HOUR = 60 * MINUTE;
+
+const ADA: CommentAuthor = { id: 'ada', name: 'Ada Lovelace' };
+
+const ALAN: CommentAuthor = { id: 'alan', name: 'Alan Turing' };
+
+const COMMENTS: readonly ThreadComment[] = Object.freeze([
+  {
+    id: 'c1',
+    author: GRACE,
+    body: 'Can we tighten the header spacing?',
+    createdAt: NOW - 3 * HOUR,
+    reactions: [{ emoji: '👍', users: ['ada', 'alan'] }],
+    replies: [
+      {
+        id: 'c1r1',
+        author: ADA,
+        body: 'Yes, dropping it to 16px.',
+        createdAt: new Date(NOW - 2 * HOUR),
+        edited: true,
+        replies: [
+          {
+            id: 'c1r1r1',
+            author: ALAN,
+            body: 'Check the narrow layout too.',
+            createdAt: NOW - 90 * MINUTE,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'c2',
+    author: ADA,
+    body: 'Shipped the new icons.',
+    createdAt: '2026-10-11T11:55:00Z',
+    reactions: [{ emoji: '🎉', users: ['grace'] }],
+  },
+] satisfies ThreadComment[]);
+
+const LOCALE = 'en-US';
+
+export function Example() {
+  return (
+    <CommentThread
+      defaultValue={COMMENTS}
+      currentUser={ADA}
+      now={NOW}
+      locale={LOCALE}
+      title="Review"
+      disabled
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { disabled: true },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await expect(field(canvasElement)).toBeDisabled();
@@ -989,6 +1542,45 @@ export const ImeComposition: Story = {
 };
 
 export const InvalidDate: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CommentThread, type CommentAuthor } from '@jfrader/ui';
+
+const GRACE: CommentAuthor = { id: 'grace', name: 'Grace Hopper' };
+
+const ALAN: CommentAuthor = { id: 'alan', name: 'Alan Turing' };
+
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const MINUTE = 60000;
+
+const HOUR = 60 * MINUTE;
+
+const ADA: CommentAuthor = { id: 'ada', name: 'Ada Lovelace' };
+
+const LOCALE = 'en-US';
+
+export function Example() {
+  return (
+    <CommentThread
+      defaultValue={[
+        { id: 'bad', author: GRACE, body: 'Unreadable string', createdAt: 'yesterday' },
+        { id: 'rolled', author: GRACE, body: 'Impossible date', createdAt: '2026-02-30T10:00:00Z' },
+        { id: 'nan', author: ALAN, body: 'Not a number', createdAt: Number.NaN },
+        { id: 'future', author: ALAN, body: 'Scheduled', createdAt: NOW + 2 * 24 * HOUR },
+      ]}
+      currentUser={ADA}
+      now={NOW}
+      locale={LOCALE}
+      title="Review"
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     defaultValue: [
       { id: 'bad', author: GRACE, body: 'Unreadable string', createdAt: 'yesterday' },
@@ -1040,6 +1632,48 @@ export const InvalidInputs: Story = {
 };
 
 export const LongText: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CommentThread, type CommentAuthor, styled } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const MINUTE = 60000;
+
+const ADA: CommentAuthor = { id: 'ada', name: 'Ada Lovelace' };
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '20rem', maxInlineSize: '100%' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <CommentThread
+        defaultValue={[
+          {
+            id: 'long',
+            author: { id: 'long-name', name: 'Maximiliana Wolfeschlegelsteinhausenbergerdorff' },
+            body: \`\${'Supercalifragilisticexpialidocious'.repeat(4)}\\nSecond line\\n\\n\${'A sentence that keeps going. '.repeat(8)}\`,
+            createdAt: NOW - MINUTE,
+            reactions: [
+              { emoji: '👀', users: Array.from({ length: 12345 }, (_, index) => \`user-\${index}\`) },
+            ],
+          },
+        ]}
+        currentUser={ADA}
+        now={NOW}
+        locale={LOCALE}
+        title="Review"
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: {
     defaultValue: [
       {
@@ -1208,6 +1842,79 @@ export const CollapseRestoresFocus: Story = {
 };
 
 export const Localized: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CommentThread, type ThreadComment, type CommentAuthor } from '@jfrader/ui';
+
+const GRACE: CommentAuthor = { id: 'grace', name: 'Grace Hopper' };
+
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const MINUTE = 60000;
+
+const HOUR = 60 * MINUTE;
+
+const ADA: CommentAuthor = { id: 'ada', name: 'Ada Lovelace' };
+
+const ALAN: CommentAuthor = { id: 'alan', name: 'Alan Turing' };
+
+const COMMENTS: readonly ThreadComment[] = Object.freeze([
+  {
+    id: 'c1',
+    author: GRACE,
+    body: 'Can we tighten the header spacing?',
+    createdAt: NOW - 3 * HOUR,
+    reactions: [{ emoji: '👍', users: ['ada', 'alan'] }],
+    replies: [
+      {
+        id: 'c1r1',
+        author: ADA,
+        body: 'Yes, dropping it to 16px.',
+        createdAt: new Date(NOW - 2 * HOUR),
+        edited: true,
+        replies: [
+          {
+            id: 'c1r1r1',
+            author: ALAN,
+            body: 'Check the narrow layout too.',
+            createdAt: NOW - 90 * MINUTE,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'c2',
+    author: ADA,
+    body: 'Shipped the new icons.',
+    createdAt: '2026-10-11T11:55:00Z',
+    reactions: [{ emoji: '🎉', users: ['grace'] }],
+  },
+] satisfies ThreadComment[]);
+
+export function Example() {
+  return (
+    <CommentThread
+      defaultValue={COMMENTS}
+      currentUser={ADA}
+      now={NOW}
+      locale="es"
+      title="Revisión"
+      labels={{
+        thread: 'Comentarios',
+        reply: 'Responder',
+        composer: 'Añadir un comentario',
+        commentCount: (count: number) =>
+          \`\${new Intl.NumberFormat('es').format(count)} \${new Intl.PluralRules('es').select(count) === 'one' ? 'comentario' : 'comentarios'}\`,
+      }}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     locale: 'es',
     title: 'Revisión',
@@ -1233,6 +1940,75 @@ export const Localized: Story = {
 };
 
 export const TimeZone: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CommentThread, type ThreadComment, type CommentAuthor } from '@jfrader/ui';
+
+const GRACE: CommentAuthor = { id: 'grace', name: 'Grace Hopper' };
+
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const MINUTE = 60000;
+
+const HOUR = 60 * MINUTE;
+
+const ADA: CommentAuthor = { id: 'ada', name: 'Ada Lovelace' };
+
+const ALAN: CommentAuthor = { id: 'alan', name: 'Alan Turing' };
+
+const COMMENTS: readonly ThreadComment[] = Object.freeze([
+  {
+    id: 'c1',
+    author: GRACE,
+    body: 'Can we tighten the header spacing?',
+    createdAt: NOW - 3 * HOUR,
+    reactions: [{ emoji: '👍', users: ['ada', 'alan'] }],
+    replies: [
+      {
+        id: 'c1r1',
+        author: ADA,
+        body: 'Yes, dropping it to 16px.',
+        createdAt: new Date(NOW - 2 * HOUR),
+        edited: true,
+        replies: [
+          {
+            id: 'c1r1r1',
+            author: ALAN,
+            body: 'Check the narrow layout too.',
+            createdAt: NOW - 90 * MINUTE,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'c2',
+    author: ADA,
+    body: 'Shipped the new icons.',
+    createdAt: '2026-10-11T11:55:00Z',
+    reactions: [{ emoji: '🎉', users: ['grace'] }],
+  },
+] satisfies ThreadComment[]);
+
+const LOCALE = 'en-US';
+
+export function Example() {
+  return (
+    <CommentThread
+      defaultValue={COMMENTS}
+      currentUser={ADA}
+      now={NOW}
+      locale={LOCALE}
+      title="Review"
+      timeZone="Asia/Tokyo"
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { timeZone: 'Asia/Tokyo' },
   play: async ({ canvasElement }) => {
     const first = articleOf(canvasElement, 'c1');
@@ -1315,6 +2091,75 @@ export const LightTheme: Story = {
 };
 
 export const RTL: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { CommentThread, type ThreadComment, type CommentAuthor } from '@jfrader/ui';
+
+const GRACE: CommentAuthor = { id: 'grace', name: 'Grace Hopper' };
+
+const NOW = Date.parse('2026-10-11T12:00:00Z');
+
+const MINUTE = 60000;
+
+const HOUR = 60 * MINUTE;
+
+const ADA: CommentAuthor = { id: 'ada', name: 'Ada Lovelace' };
+
+const ALAN: CommentAuthor = { id: 'alan', name: 'Alan Turing' };
+
+const COMMENTS: readonly ThreadComment[] = Object.freeze([
+  {
+    id: 'c1',
+    author: GRACE,
+    body: 'Can we tighten the header spacing?',
+    createdAt: NOW - 3 * HOUR,
+    reactions: [{ emoji: '👍', users: ['ada', 'alan'] }],
+    replies: [
+      {
+        id: 'c1r1',
+        author: ADA,
+        body: 'Yes, dropping it to 16px.',
+        createdAt: new Date(NOW - 2 * HOUR),
+        edited: true,
+        replies: [
+          {
+            id: 'c1r1r1',
+            author: ALAN,
+            body: 'Check the narrow layout too.',
+            createdAt: NOW - 90 * MINUTE,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'c2',
+    author: ADA,
+    body: 'Shipped the new icons.',
+    createdAt: '2026-10-11T11:55:00Z',
+    reactions: [{ emoji: '🎉', users: ['grace'] }],
+  },
+] satisfies ThreadComment[]);
+
+const LOCALE = 'en-US';
+
+export function Example() {
+  return (
+    <CommentThread
+      defaultValue={COMMENTS}
+      currentUser={ADA}
+      now={NOW}
+      locale={LOCALE}
+      title="Review"
+      dir="rtl"
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { dir: 'rtl' },
   play: async ({ canvasElement, userEvent }) => {
     const article = articleOf(canvasElement, 'c1');

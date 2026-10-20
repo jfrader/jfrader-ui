@@ -163,6 +163,40 @@ function focusCanvasStart(canvasElement: HTMLElement) {
 }
 
 export const Default: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { EmptyState } from '@jfrader/ui';
+
+function FolderIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    >
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </svg>
+  );
+}
+
+export function Example() {
+  return (
+    <EmptyState
+      title="No projects yet"
+      description="Create a project to start tracking work."
+      variant="centered"
+      headingLevel={3}
+      icon={<FolderIcon />}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { icon: <FolderIcon /> },
   play: async ({ canvas, canvasElement }) => {
     const root = getRoot(canvasElement);
@@ -196,6 +230,40 @@ export const WithoutIcon: Story = {
 };
 
 export const Icon: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { EmptyState } from '@jfrader/ui';
+
+function FolderIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    >
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </svg>
+  );
+}
+
+export function Example() {
+  return (
+    <EmptyState
+      title="No projects yet"
+      description="Create a project to start tracking work."
+      variant="centered"
+      headingLevel={3}
+      icon={<FolderIcon />}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { icon: <FolderIcon /> },
   play: async ({ canvasElement }) => {
     const icon = getPart(getRoot(canvasElement), 'icon');
@@ -211,6 +279,45 @@ export const Icon: Story = {
 };
 
 export const WithAction: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { EmptyState, Button } from '@jfrader/ui';
+
+function FolderIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    >
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </svg>
+  );
+}
+
+export function Example() {
+  return (
+    <EmptyState
+      title="No projects yet"
+      description="Create a project to start tracking work."
+      variant="centered"
+      headingLevel={3}
+      icon={<FolderIcon />}
+      action={
+        <Button tone="accent" onClick={() => {}}>
+          Create project
+        </Button>
+      }
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     icon: <FolderIcon />,
     action: (
@@ -230,6 +337,46 @@ export const WithAction: Story = {
 };
 
 export const MultipleActions: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { EmptyState, Button } from '@jfrader/ui';
+
+function FolderIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    >
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </svg>
+  );
+}
+
+export function Example() {
+  return (
+    <EmptyState
+      title="No projects yet"
+      description="Create a project to start tracking work."
+      variant="centered"
+      headingLevel={3}
+      icon={<FolderIcon />}
+      action={
+        <>
+          <Button tone="accent">Create project</Button>
+          <Button variant="outline">Import</Button>
+        </>
+      }
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     icon: <FolderIcon />,
     action: (
@@ -289,6 +436,41 @@ export const Inline: Story = {
 };
 
 export const Centered: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { EmptyState, Button } from '@jfrader/ui';
+
+function FolderIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    >
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </svg>
+  );
+}
+
+export function Example() {
+  return (
+    <EmptyState
+      title="No projects yet"
+      description="Create a project to start tracking work."
+      variant="centered"
+      headingLevel={3}
+      icon={<FolderIcon />}
+      action={<Button tone="accent">Create project</Button>}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { icon: <FolderIcon />, action: <Button tone="accent">Create project</Button> },
   play: async ({ canvasElement }) => {
     const root = getRoot(canvasElement);
@@ -339,6 +521,48 @@ export const NoMatches: Story = {
 };
 
 export const FirstRun: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { EmptyState, Button } from '@jfrader/ui';
+
+function FolderIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    >
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </svg>
+  );
+}
+
+export function Example() {
+  return (
+    <EmptyState
+      title="Create your first board"
+      description="Boards group tasks by stage."
+      variant="centered"
+      headingLevel={3}
+      icon={<FolderIcon />}
+      action={
+        <>
+          <Button tone="accent">New board</Button>
+          <Button variant="ghost" render={(props) => <a {...props} href="#templates" />}>
+            Browse templates
+          </Button>
+        </>
+      }
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     title: 'Create your first board',
     description: 'Boards group tasks by stage.',
@@ -675,6 +899,41 @@ export const RTL: Story = {
 };
 
 export const PanelEdgeAndFocusRing: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { EmptyState, Button } from '@jfrader/ui';
+
+function FolderIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    >
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </svg>
+  );
+}
+
+export function Example() {
+  return (
+    <EmptyState
+      title="No projects yet"
+      description="Create a project to start tracking work."
+      variant="centered"
+      headingLevel={3}
+      icon={<FolderIcon />}
+      action={<Button variant="outline">Create project</Button>}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { icon: <FolderIcon />, action: <Button variant="outline">Create project</Button> },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const root = getRoot(canvasElement);
@@ -691,6 +950,41 @@ export const PanelEdgeAndFocusRing: Story = {
 };
 
 export const StaticContent: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { EmptyState, Button } from '@jfrader/ui';
+
+function FolderIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    >
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </svg>
+  );
+}
+
+export function Example() {
+  return (
+    <EmptyState
+      title="No projects yet"
+      description="Create a project to start tracking work."
+      variant="centered"
+      headingLevel={3}
+      icon={<FolderIcon />}
+      action={<Button tone="accent">Create project</Button>}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { icon: <FolderIcon />, action: <Button tone="accent">Create project</Button> },
   play: async ({ canvas, canvasElement }) => {
     const root = getRoot(canvasElement);
@@ -708,6 +1002,54 @@ const createProject = fn();
 const importProject = fn();
 
 export const KeyboardActions: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { EmptyState, Button } from '@jfrader/ui';
+
+function FolderIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    >
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </svg>
+  );
+}
+
+const createProject = () => {};
+
+const importProject = () => {};
+
+export function Example() {
+  return (
+    <EmptyState
+      title="No projects yet"
+      description="Create a project to start tracking work."
+      variant="centered"
+      headingLevel={3}
+      icon={<FolderIcon />}
+      action={
+        <>
+          <Button tone="accent" onClick={createProject}>
+            Create project
+          </Button>
+          <Button variant="outline" onClick={importProject}>
+            Import
+          </Button>
+        </>
+      }
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     icon: <FolderIcon />,
     action: (

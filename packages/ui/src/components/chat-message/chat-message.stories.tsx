@@ -49,6 +49,45 @@ function ReplacementAttachments(props: ComponentPropsWithRef<'ul'>) {
 }
 
 export const AttachmentsReplacement: StoryObj<typeof ChatMessage> = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { type ComponentPropsWithRef } from 'react';
+import { ChatMessage } from '@jfrader/ui';
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const LOCALE = 'en-US';
+
+function ReplacementAttachments(props: ComponentPropsWithRef<'ul'>) {
+  return <ul {...props} />;
+}
+
+export function Example() {
+  return (
+    <ChatMessage
+      author="Ada"
+      createdAt={NOW}
+      now={NOW + 5 * MINUTE}
+      locale={LOCALE}
+      timeZone="UTC"
+      onRetry={() => {
+        console.info('Retry');
+      }}
+      attachments={[
+        { id: 'attachment', name: 'Notes', kind: 'file', url: 'https://example.com/notes' },
+      ]}
+      slots={{ attachments: ReplacementAttachments }}
+      slotProps={{ attachments: { className: 'attachment-slot' } }}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: {
     author: 'Ada',
     createdAt: NOW,

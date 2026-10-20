@@ -203,6 +203,61 @@ export const GroupedMessages: Story = {
   },
 };
 export const DaySeparators: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={[
+          {
+            id: 'dst-before',
+            authorId: 'grace',
+            text: 'Before midnight',
+            createdAt: '2026-03-08T04:59:00Z',
+          },
+          {
+            id: 'dst-after',
+            authorId: 'grace',
+            text: 'After midnight',
+            createdAt: '2026-03-08T05:01:00Z',
+          },
+          {
+            id: 'dst-later',
+            authorId: 'grace',
+            text: 'After the clock change',
+            createdAt: '2026-03-08T07:01:00Z',
+          },
+        ]}
+        now={NOW}
+        locale="es-ES"
+        timeZone="America/New_York"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { locale: 'es-ES', timeZone: 'America/New_York', defaultValue: [
     { id: 'dst-before', authorId: 'grace', text: 'Before midnight', createdAt: '2026-03-08T04:59:00Z' },
     { id: 'dst-after', authorId: 'grace', text: 'After midnight', createdAt: '2026-03-08T05:01:00Z' },
@@ -216,6 +271,68 @@ export const DaySeparators: Story = {
   },
 };
 export const KeyboardFlow: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={MESSAGES.map((message) => ({ ...message, reactions: [] }))}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+        reactions={[]}
+        composerProps={{ allowAttachments: false }}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { reactions: [], defaultValue: MESSAGES.map((message) => ({ ...message, reactions: [] })), composerProps: { allowAttachments: false } },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.tab();
@@ -280,6 +397,67 @@ export const ReactionsOpen: Story = {
   },
 };
 export const ReadReceipts: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={MESSAGES}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+        readBy={{ grace: 'own', alan: 'own', me: 'own', unknown: 'own' }}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { readBy: { grace: 'own', alan: 'own', me: 'own', unknown: 'own' } },
   play: async ({ canvasElement }) => {
     await expect(part(item(canvasElement, 'own'), 'receipt')).toHaveTextContent('Read by Grace Hopper and Alan Turing');
@@ -287,6 +465,67 @@ export const ReadReceipts: Story = {
   },
 };
 export const Typing: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={MESSAGES}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+        typing={['grace', 'grace', 'me', 'missing']}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { typing: ['grace', 'grace', 'me', 'missing'] },
   play: async ({ canvas }) => {
     await expect(canvas.getAllByRole('status').filter((status) => status.textContent)).toHaveLength(1);
@@ -294,6 +533,55 @@ export const Typing: Story = {
   },
 };
 export const AllDeliveryStates: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={(['sending', 'sent', 'delivered', 'read', 'failed'] as const).map(
+          (status, index) => ({
+            id: status,
+            authorId: 'me',
+            text: \`Message \${index + 1}\`,
+            createdAt: NOW - index * MINUTE,
+            status,
+          }),
+        )}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+        readBy={{ grace: 'failed' }}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { defaultValue: (['sending', 'sent', 'delivered', 'read', 'failed'] as const).map((status, index) => ({ id: status, authorId: 'me', text: `Message ${index + 1}`, createdAt: NOW - index * MINUTE, status })), readBy: { grace: 'failed' } },
   play: async ({ canvasElement }) => {
     await expect(part(item(canvasElement, 'failed'), 'receipt')).toHaveTextContent('Failed');
@@ -301,6 +589,69 @@ export const AllDeliveryStates: Story = {
   },
 };
 export const Retry: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={[{ ...MESSAGES[2]!, status: 'failed' }]}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+        onRetry={(id) => {
+          console.info('Retry', id);
+        }}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { defaultValue: [{ ...MESSAGES[2]!, status: 'failed' }], onRetry: fn() },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
      await userEvent.click(canvas.getByRole('button', { name: /^Retry/ }));
@@ -312,6 +663,65 @@ export const Retry: Story = {
   },
 };
 export const ContextualActions: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={[
+          {
+            id: 'failed-one',
+            authorId: 'grace',
+            text: 'First draft',
+            createdAt: NOW,
+            status: 'failed',
+            reactions: [{ emoji: '👍', count: 1 }],
+          },
+          {
+            id: 'failed-two',
+            authorId: 'grace',
+            text: 'Second draft',
+            createdAt: NOW,
+            status: 'failed',
+            reactions: [{ emoji: '👍', count: 1 }],
+          },
+        ]}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+        onRetry={(id) => {
+          console.info('Retry', id);
+        }}
+        labels={{ addReaction: 'Añadir reacción', retry: 'Reintentar' }}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: {
     defaultValue: [
       { id: 'failed-one', authorId: 'grace', text: 'First draft', createdAt: NOW, status: 'failed', reactions: [{ emoji: '👍', count: 1 }] },
@@ -336,6 +746,67 @@ export const ContextualActions: Story = {
   },
 };
 export const RetryFailure: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={[{ ...MESSAGES[2]!, status: 'failed' }]}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+        onRetry={() => Promise.reject(new Error('offline'))}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { defaultValue: [{ ...MESSAGES[2]!, status: 'failed' }], onRetry: fn(() => Promise.reject(new Error('offline'))) },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await expect(part(canvasElement, 'retry-error')).toBeNull();
@@ -350,6 +821,83 @@ export const RetryFailure: Story = {
 };
 const ATTACHMENTS = Array.from({ length: 7 }, (_, index) => ({ id: `file-${index}`, name: `Design ${index + 1}.pdf`, kind: 'file' as const, size: 12345, url: `/design-${index + 1}.pdf` }));
 export const Attachments: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const ATTACHMENTS = Array.from({ length: 7 }, (_, index) => ({
+  id: \`file-\${index}\`,
+  name: \`Design \${index + 1}.pdf\`,
+  kind: 'file' as const,
+  size: 12345,
+  url: \`/design-\${index + 1}.pdf\`,
+}));
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={[
+          {
+            ...MESSAGES[0]!,
+            attachments: [
+              ATTACHMENTS[0]!,
+              { id: 'unsafe', name: 'Unsafe link', kind: 'file', url: 'javascript:alert(1)' },
+              { id: 'missing', name: 'No URL', kind: 'file' },
+            ],
+          },
+        ]}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { defaultValue: [{ ...MESSAGES[0]!, attachments: [ATTACHMENTS[0]!, { id: 'unsafe', name: 'Unsafe link', kind: 'file', url: 'javascript:alert(1)' }, { id: 'missing', name: 'No URL', kind: 'file' }] }] },
   play: async ({ canvas }) => {
     await expect(canvas.getAllByRole('link')).toHaveLength(1);
@@ -360,6 +908,74 @@ export const Attachments: Story = {
   },
 };
 export const AttachmentOverflow: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const ATTACHMENTS = Array.from({ length: 7 }, (_, index) => ({
+  id: \`file-\${index}\`,
+  name: \`Design \${index + 1}.pdf\`,
+  kind: 'file' as const,
+  size: 12345,
+  url: \`/design-\${index + 1}.pdf\`,
+}));
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={[{ ...MESSAGES[0]!, attachments: ATTACHMENTS }]}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { defaultValue: [{ ...MESSAGES[0]!, attachments: ATTACHMENTS }] },
   play: async ({ canvas, userEvent }) => {
     await expect(canvas.getAllByRole('link')).toHaveLength(4);
@@ -368,6 +984,81 @@ export const AttachmentOverflow: Story = {
   },
 };
 export const ImageAttachments: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={[
+          {
+            ...MESSAGES[0]!,
+            attachments: [
+              {
+                id: 'image',
+                name: 'Project card.png',
+                kind: 'image',
+                url: '/og-image.png',
+                alt: 'Project share card',
+                width: 1200,
+                height: 630,
+              },
+            ],
+          },
+        ]}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { defaultValue: [{ ...MESSAGES[0]!, attachments: [{ id: 'image', name: 'Project card.png', kind: 'image', url: '/og-image.png', alt: 'Project share card', width: 1200, height: 630 }] }] },
   play: async ({ canvas }) => {
     const image = canvas.getByRole('img', { name: 'Project share card' });
@@ -386,9 +1077,170 @@ export const StandaloneComposer: Story = {
     await expect(args.onSend).toHaveBeenLastCalledWith({ text: 'Standalone', files: [] });
   },
 };
-export const TranscriptOnly: Story = { args: { composer: false, reactions: [] } };
-export const Empty: Story = { args: { defaultValue: [] } };
+export const TranscriptOnly: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={MESSAGES}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+        composer={false}
+        reactions={[]}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  }, args: { composer: false, reactions: [] } };
+export const Empty: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={[]}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  }, args: { defaultValue: [] } };
 export const Disabled: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={MESSAGES}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+        disabled
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { disabled: true },
   play: async ({ canvas, args, userEvent }) => {
     await expect(canvas.getByRole('textbox')).toBeDisabled();
@@ -450,6 +1302,67 @@ export const RejectedDraft: Story = {
   },
 };
 export const RejectedReaction: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={MESSAGES}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+        value={MESSAGES}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { value: MESSAGES },
   play: async ({ canvas, args, userEvent }) => {
      const reaction = canvas.getByRole('button', { name: /^👍 2 reactions, including you/ });
@@ -483,6 +1396,51 @@ export const PendingAndFailedSend: Story = {
   },
 };
 export const InvalidDate: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={[
+          { id: 'bad', authorId: 'missing', text: 'Invalid date', createdAt: 'yesterday' },
+          { id: 'future', authorId: 'grace', text: 'Future', createdAt: NOW + DAY },
+        ]}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { defaultValue: [{ id: 'bad', authorId: 'missing', text: 'Invalid date', createdAt: 'yesterday' }, { id: 'future', authorId: 'grace', text: 'Future', createdAt: NOW + DAY }] },
   play: async ({ canvasElement }) => {
     await expect(item(canvasElement, 'bad').querySelector('time')).toBeNull();
@@ -492,6 +1450,72 @@ export const InvalidDate: Story = {
   },
 };
 export const LongContent: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '20rem', maxInlineSize: '100%', blockSize: '32rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={[
+          {
+            ...MESSAGES[0]!,
+            text: 'LongUnbrokenWord'.repeat(30),
+            reactions: [{ emoji: '👀', count: 12345 }],
+          },
+        ]}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { defaultValue: [{ ...MESSAGES[0]!, text: 'LongUnbrokenWord'.repeat(30), reactions: [{ emoji: '👀', count: 12345 }] }] },
   decorators: [(Story) => <NarrowFrame><Story /></NarrowFrame>],
   play: async ({ canvasElement, canvas }) => {
@@ -503,6 +1527,67 @@ export const LongContent: Story = {
 };
 const FILE = new File(['hello'], 'notes.txt', { type: 'text/plain' });
 export const FileValidation: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={MESSAGES}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+        composerProps={{ accept: '.txt', maxFiles: 2, maxFileSize: 8 }}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { composerProps: { accept: '.txt', maxFiles: 2, maxFileSize: 8 } },
   play: async ({ canvas, canvasElement, args, userEvent }) => {
     const input = canvasElement.querySelector<HTMLInputElement>('input[type="file"]')!;
@@ -565,6 +1650,66 @@ export const UrlOwnership: Story = {
   },
 };
 export const FailedSendReleasesUrls: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={MESSAGES}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={async () => {
+          throw new Error('offline');
+        }}
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { onSend: fn(async () => { throw new Error('offline'); }) },
   beforeEach: UrlOwnership.beforeEach,
   play: async ({ canvas, canvasElement, args, userEvent }) => {
@@ -681,6 +1826,67 @@ export const RefAndStyling: Story = {
 };
 export const LightTheme: Story = { decorators: [withLightTheme] };
 export const RTL: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={MESSAGES}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+        dir="rtl"
+      />
+    </ExampleFrame>
+  );
+}`,
+      },
+    },
+  },
   args: { dir: 'rtl' },
   play: async ({ canvasElement, userEvent }) => {
     const own = item(canvasElement, 'own').querySelector('article')!.getBoundingClientRect();
@@ -697,7 +1903,64 @@ export const RTL: Story = {
 };
 export const ReducedMotion: Story = {
   args: { typing: ['grace'] },
-  parameters: { docs: { description: { story: 'This story does not enable reduced motion. Set it in the browser to check media styles and jumps without animation.' } } },
+  parameters: { docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ChatThread, type ChatMessage, styled } from '@jfrader/ui';
+
+const PEOPLE = [
+  { id: 'me', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'alan', name: 'Alan Turing' },
+];
+
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+
+const MINUTE = 60000;
+
+const DAY = 24 * 60 * MINUTE;
+
+const MESSAGES: readonly ChatMessage[] = [
+  { id: 'first', authorId: 'grace', text: 'The build is ready to review.', createdAt: NOW - DAY },
+  {
+    id: 'second',
+    authorId: 'grace',
+    text: 'I included the mobile layout.',
+    createdAt: NOW - DAY + MINUTE,
+    reactions: [{ emoji: '👍', count: 2, mine: true }],
+  },
+  {
+    id: 'own',
+    authorId: 'me',
+    text: 'Thanks! I’ll take a look.',
+    createdAt: NOW - MINUTE,
+    status: 'delivered',
+  },
+];
+
+const LOCALE = 'en-US';
+
+const ExampleFrame = styled.div({ inlineSize: '42rem', maxInlineSize: '100%', blockSize: '34rem' });
+
+export function Example() {
+  return (
+    <ExampleFrame>
+      <ChatThread
+        participants={PEOPLE}
+        currentUserId="me"
+        defaultValue={MESSAGES}
+        now={NOW}
+        locale={LOCALE}
+        timeZone="UTC"
+        onSend={(draft) => {
+          console.info('Send', draft);
+        }}
+        typing={['grace']}
+      />
+    </ExampleFrame>
+  );
+}`,
+      }, description: { story: 'This story does not enable reduced motion. Set it in the browser to check media styles and jumps without animation.' } } },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
     await expect(getComputedStyle(part(canvasElement, 'list')).animationName).toBe('none');

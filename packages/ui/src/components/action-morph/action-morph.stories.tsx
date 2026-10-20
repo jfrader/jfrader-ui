@@ -286,6 +286,87 @@ function Title(props: ComponentPropsWithRef<'h3'>) {
   return <h3 {...props} data-custom-title />;
 }
 export const Customization: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { type ComponentPropsWithRef } from 'react';
+import { ActionMorph, type ActionMorphAction } from '@jfrader/ui';
+
+const actions: readonly ActionMorphAction[] = [
+  {
+    id: 'note',
+    label: 'Note',
+    shortcut: 'n',
+    composer: {
+      title: 'New note',
+      label: 'Note text',
+      submitLabel: 'Save note',
+      successLabel: 'Note saved',
+    },
+  },
+  {
+    id: 'locked',
+    label: 'Locked action',
+    disabled: true,
+    composer: {
+      title: 'Unavailable',
+      submitLabel: 'Save',
+      successLabel: 'Saved',
+    },
+  },
+  {
+    id: 'message',
+    label: 'Message',
+    shortcut: 'm',
+    composer: {
+      title: 'New message',
+      label: 'Message text',
+      multiline: true,
+      submitLabel: 'Send message',
+      successLabel: 'Message sent',
+      choices: {
+        label: 'Audience',
+        options: [
+          { value: 'team', label: 'Team' },
+          { value: 'all', label: 'Everyone' },
+        ],
+      },
+    },
+  },
+];
+
+function Root(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-custom-root />;
+}
+
+function Title(props: ComponentPropsWithRef<'h3'>) {
+  return <h3 {...props} data-custom-title />;
+}
+
+export function Example() {
+  return (
+    <ActionMorph
+      actions={actions}
+      label="Create"
+      onSubmit={async (submission) => {
+        console.info(submission);
+      }}
+      resetAfter={0}
+      component={Root}
+      slots={{ title: Title }}
+      slotProps={{
+        root: { title: 'Root override' },
+        trigger: { title: 'Trigger override' },
+        title: { title: 'Title override' },
+        item: { ref: () => () => {}, onFocus: () => {} },
+      }}
+    />
+  );
+}`,
+      },
+    },
+  },
   decorators: [
     (Story) => (
       <StrictMode>
