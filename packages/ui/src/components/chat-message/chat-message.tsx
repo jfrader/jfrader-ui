@@ -126,6 +126,7 @@ export interface ChatMessageSlots {
 }
 
 export interface ChatMessageProps extends Omit<ComponentPropsWithRef<'article'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
+  /** Add space-separated article markers alongside `chat-message`. */
   'data-ui'?: string;
   /** Optional message data record to seed defaults. */
   message?: ChatMessage;
@@ -183,6 +184,7 @@ export interface ChatMessageProps extends Omit<ComponentPropsWithRef<'article'>,
   readOnly?: boolean;
   /** Localized string overrides. */
   labels?: Partial<ChatMessageLabels>;
+  /** Replace the message root and interior parts. */
   slots?: ChatMessageSlots;
   /** Shorthand for slots.root; slots.root takes precedence. */
   component?: ChatMessageSlots['root'];

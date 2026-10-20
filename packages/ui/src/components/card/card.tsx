@@ -64,6 +64,7 @@ interface CardBaseProps
   extends Omit<SurfacePartProps, 'children' | 'title' | 'content'>,
     SxProps,
     Omit<SurfaceRootCustomization, 'slots' | 'slotProps'> {
+  /** Override the root's `data-variant` attribute without changing the visual `variant`. */
   'data-variant'?: string;
   /** Choose a flat surface or a raised surface with a shadow. Defaults to `raised`. */
   variant?: CardVariant;
@@ -82,6 +83,7 @@ interface CardBaseProps
 }
 
 export interface CardCompoundProps extends CardBaseProps {
+  /** Compose the card with `Card.Header`, `Card.Content` and other parts instead of generated content. */
   children?: ReactNode;
   title?: string;
   description?: never;

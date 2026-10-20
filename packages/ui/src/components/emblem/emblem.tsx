@@ -71,7 +71,9 @@ export interface EmblemProps
   size?: EmblemSize;
   /** Pattern over the fill. `none` leaves the plain gradient. */
   pattern?: EmblemPattern;
+  /** Replace the crest image or fallback monogram element. */
   slots?: EmblemSlots;
+  /** Style the crest image or fallback monogram. */
   slotProps?: {
     /** Image element displaying the crest artwork. */
     image?: EmblemPartProps;

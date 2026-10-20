@@ -69,6 +69,7 @@ interface DialogStateProps {
 
 /** Compose a modal dialog from its trigger and content parts. */
 export interface DialogCompoundProps extends DialogStateProps {
+  /** Compose the dialog with `Dialog.Trigger`, `Dialog.Content` and other parts. */
   children?: ReactNode;
   triggerLabel?: never;
   title?: never;
