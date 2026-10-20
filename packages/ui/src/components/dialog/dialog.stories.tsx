@@ -74,21 +74,22 @@ const meta = {
   component: Dialog,
   parameters: { docs: {
     description: { component: 'Open a dialog to show content or ask for a decision.' },
-    usage: `### Composition
-Pass triggerLabel, title, content and closeLabel for a standard dialog; description is optional. Do not combine these props with children. Use slotProps.trigger/content/panel/header/title/description/close for part props. component aliases slots.root; slots.root wins. slots.root and slotProps.root customize the panel div; content targets the native shell. Use the compound parts for custom hierarchy.
+    sections: [
+      { title: 'Basic', stories: ['Default', 'Compound'] },
+      { title: 'Composition', stories: ['SlotProps', 'CustomRoot', 'TriggerAsButton'] },
+      { title: 'Behavior', stories: ['Controlled', 'CancelVeto', 'BackdropClick', 'NestedDialog', 'NativeClose'] },
+      { title: 'Content', stories: ['LongContent', 'NarrowLayout'] },
+      { title: 'Appearance', stories: ['ContrastPanel'] },
+    ],
+    usage: `### When to use
+Use a dialog for a task or decision that needs attention before returning to the page. Keep non-blocking information in the page instead.
 
-### Panel and shell
-Plain Dialog.Content children get one default Dialog.Panel. For contrast or custom material, supply one direct Dialog.Panel child; fragments and whitespace are allowed, other substantive siblings are not. Put providers inside Panel or outside Content. Panel outside Content throws.
+### Keyboard and accessibility
+Tab and Shift+Tab stay inside the open dialog; the rest of the page is inert. Escape, the close button, and a backdrop click request closure. An onCancel handler can prevent all three; provide another way to finish the task if you veto closure. Native form submission with method="dialog" cannot be vetoed this way.
 
-Dialog.Content ref, css, sx and native callbacks target the real dialog shell, which owns the size limits. Dialog.Panel ref targets its div. Panel has inherited appearance by default; appearance="contrast" establishes fixed charcoal. Panel fills the shell and keeps padding and enter/exit motion.
+Give every dialog an accessible name. For structured or long content, set withDescription={false} so assistive technology can read the content in order rather than as one description.
 
-### Root replacement
-On Panel, component is sugar for slots.root; only root is adopted, and slots.root wins. slotProps.root accepts div props and css (no sx). Declare adapters outside render, render one div, and forward all supplied props and ref. Apply material before the supplied className. A changed component identity remounts children and loses focus and uncontrolled input state.
-
-Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → panel structure → slot css/classes → consumer css/classes → sx. Use [data-ui~="dialog-panel"] for composed roots.
-
-### Keyboard
-Tab and Shift+Tab stay inside. Escape and Close request closure through the shell; onCancel can veto cancelable requests. Accepted closure restores focus after exit motion. Reduced motion makes entry and exit instant.`,
+Accepted closure restores focus after exit motion. Reduced motion makes entry and exit instant.`,
   } },
 } satisfies Meta<typeof Dialog>;
 
@@ -166,6 +167,27 @@ export const ShellAndPanelSlots: EasyStory = {
 
 /** Restyle the generated header and replace the panel's material root. */
 export const SlotProps: EasyStory = {
+  name: 'Part props',
+  parameters: { docs: {
+    description: { story: 'Set header, title, close button, and panel props in easy mode.' },
+    source: { language: 'tsx', code: `import { Dialog, Surface, TextField } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+<Dialog
+  triggerLabel="Open profile"
+  title="Edit profile"
+  description="Update your display name and avatar."
+  content={<TextField label="Display name" defaultValue="Maya" />}
+  closeLabel="Close"
+  slots={{ root: Surface }}
+  slotProps={{
+    root: { className: 'custom-dialog-panel', css: { borderRadius: vars.radius.sm } },
+    header: { className: 'custom-dialog-header', css: { fontStyle: 'italic' } },
+    title: { className: 'custom-dialog-title' },
+    close: { css: { marginBlockStart: vars.space[4] } },
+  }}
+/>` },
+  } },
   args: {
     triggerLabel: 'Open profile', title: TITLE, description: DESCRIPTION,
     content: <TextField label="Display name" defaultValue="Maya" />, closeLabel: 'Close',
@@ -194,7 +216,7 @@ export const SlotProps: EasyStory = {
 };
 
 export const Default: EasyStory = {
-  name: 'Easy mode',
+  name: 'Profile editor',
   args: {
     triggerLabel: 'Open profile',
     title: TITLE,
@@ -213,9 +235,14 @@ export const Default: EasyStory = {
       close: { style: { marginBlockStart: vars.space[4] } },
     },
   },
-  parameters: { docs: { source: { language: 'tsx', code: `<Dialog
+  parameters: { docs: {
+    description: { story: 'Open a profile editor with generated title, description, and close button.' },
+    source: { language: 'tsx', code: `import { Dialog, TextField } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+<Dialog
   triggerLabel="Open profile"
-  title="Profile"
+  title="Edit profile"
   description="Update your display name and avatar."
   content={
     <>
@@ -224,6 +251,11 @@ export const Default: EasyStory = {
     </>
   }
   closeLabel="Close"
+  slotProps={{
+    content: { className: 'easy-dialog-shell' },
+    title: { className: 'easy-dialog-title' },
+    close: { style: { marginBlockStart: vars.space[4] } },
+  }}
 />` } } },
   render: (args) => <Dialog {...args} />,
   play: async ({ canvasElement, canvas, args, userEvent }) => {
@@ -322,7 +354,7 @@ function easyModeTypeContracts() {
 }
 void easyModeTypeContracts;
 
-const AdapterMaterial = styled.div({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, boxShadow: 'none' });
+const AdapterMaterial = styled.div({ boxSizing: 'border-box', backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, boxShadow: 'none' });
 // Shell and panel override stories exercise the documented slot css and sx APIs.
 const shellStyleOverride = css({ outlineOffset: vars.space[3] });
 const panelSizeOverride = css({ inlineSize: '240px' });
@@ -538,6 +570,25 @@ async function expectClosed(canvasElement: HTMLElement, trigger: HTMLElement) {
 }
 
 export const Compound: Story = {
+  name: 'Compound anatomy',
+  parameters: { docs: {
+    description: { story: 'Arrange the trigger, title, description, body, and close button with compound parts.' },
+    source: { language: 'tsx', code: `import { Dialog, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Body = styled.p({ margin: 0, fontSize: vars.textSize.sm });
+const Footer = styled.div({ display: 'flex', justifyContent: 'flex-end', marginBlockStart: vars.space[5] });
+
+<Dialog>
+  <Dialog.Trigger>Open profile</Dialog.Trigger>
+  <Dialog.Content>
+    <Dialog.Title>Edit profile</Dialog.Title>
+    <Dialog.Description>Update your display name and avatar.</Dialog.Description>
+    <Body>Your display name appears on comments and mentions.</Body>
+    <Footer><Dialog.Close>Close</Dialog.Close></Footer>
+  </Dialog.Content>
+</Dialog>` },
+  } },
   render: (args) => <DialogExample {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -703,6 +754,31 @@ export const NarrowContent: Story = {
 };
 
 export const Controlled: Story = {
+  name: 'Controlled open state',
+  parameters: { docs: {
+    description: { story: 'Keep open state in the parent with open and onOpenChange.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Dialog, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Body = styled.p({ margin: 0, fontSize: vars.textSize.sm });
+const Footer = styled.div({ display: 'flex', justifyContent: 'flex-end', marginBlockStart: vars.space[5] });
+
+function ProfileDialog() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog.Trigger>Open profile</Dialog.Trigger>
+      <Dialog.Content>
+        <Dialog.Title>Edit profile</Dialog.Title>
+        <Dialog.Description>Update your display name and avatar.</Dialog.Description>
+        <Body>Your display name appears on comments and mentions.</Body>
+        <Footer><Dialog.Close>Close</Dialog.Close></Footer>
+      </Dialog.Content>
+    </Dialog>
+  );
+}` },
+  } },
   args: { onOpenChange: fn() },
   render: (args) => <ControlledDialog {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -740,6 +816,25 @@ export const ControlledRejectedDismissal: Story = {
 };
 
 export const BackdropClick: Story = {
+  name: 'Backdrop dismissal',
+  parameters: { docs: {
+    description: { story: 'Click outside the panel to close; clicks inside the panel leave it open.' },
+    source: { language: 'tsx', code: `import { Dialog, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Body = styled.p({ margin: 0, fontSize: vars.textSize.sm });
+const Footer = styled.div({ display: 'flex', justifyContent: 'flex-end', marginBlockStart: vars.space[5] });
+
+<Dialog>
+  <Dialog.Trigger>Open profile</Dialog.Trigger>
+  <Dialog.Content>
+    <Dialog.Title>Edit profile</Dialog.Title>
+    <Dialog.Description>Update your display name and avatar.</Dialog.Description>
+    <Body>Your display name appears on comments and mentions.</Body>
+    <Footer><Dialog.Close>Close</Dialog.Close></Footer>
+  </Dialog.Content>
+</Dialog>` },
+  } },
   render: (args) => <DialogExample {...args} />,
   play: async ({ canvasElement }) => {
     const { canvas, trigger, dialog } = await openDialog(canvasElement);
@@ -753,6 +848,21 @@ export const BackdropClick: Story = {
 };
 
 export const NativeClose: Story = {
+  name: 'Native form submission',
+  parameters: { docs: {
+    description: { story: 'Submit a method="dialog" form to close the native dialog.' },
+    source: { language: 'tsx', code: `import { Dialog } from '@jfrader/ui';
+
+<Dialog>
+  <Dialog.Trigger>Open form</Dialog.Trigger>
+  <Dialog.Content>
+    <Dialog.Title>Sign out</Dialog.Title>
+    <form method="dialog">
+      <button type="submit">Confirm</button>
+    </form>
+  </Dialog.Content>
+</Dialog>` },
+  } },
   args: { onOpenChange: fn() },
   render: (args) => <FormDialog {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -795,19 +905,39 @@ export const ControlledRejectedNativeClose: Story = {
 };
 
 export const CancelVeto: Story = {
+  name: 'Veto close requests',
+  parameters: { docs: {
+    description: { story: 'Veto Escape, backdrop, and close-button requests; submit Done to close.' },
+    source: { language: 'tsx', code: `import { Dialog } from '@jfrader/ui';
+
+<Dialog>
+  <Dialog.Trigger>Open profile</Dialog.Trigger>
+  <Dialog.Content onCancel={(event) => event.preventDefault()}>
+    <Dialog.Title>Edit profile</Dialog.Title>
+    <Dialog.Close>Close</Dialog.Close>
+    <form method="dialog"><button type="submit">Done</button></form>
+  </Dialog.Content>
+</Dialog>` },
+  } },
   render: (args) => (
     <Dialog {...args}>
       <Dialog.Trigger>Open profile</Dialog.Trigger>
       <Dialog.Content onCancel={(event) => event.preventDefault()}>
         <Dialog.Title>{TITLE}</Dialog.Title>
         <Dialog.Close>Close</Dialog.Close>
+        <form method="dialog"><button type="submit">Done</button></form>
       </Dialog.Content>
     </Dialog>
   ),
   play: async ({ canvasElement }) => {
-    const { dialog } = await openDialog(canvasElement);
+    const { canvas, trigger, dialog } = await openDialog(canvasElement);
     requestEscape(dialog);
     await expect(dialog).toHaveAttribute('open');
+    fireEvent.click(dialog);
+    await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
+    await expect(dialog).toHaveAttribute('open');
+    await userEvent.click(canvas.getByRole('button', { name: 'Done' }));
+    await expectClosed(canvasElement, trigger);
   },
 };
 
@@ -829,6 +959,29 @@ export const ScrollLock: Story = {
 };
 
 export const TriggerAsButton: Story = {
+  name: 'Button trigger and close',
+  parameters: { docs: {
+    description: { story: 'Render the trigger and close control as Button components.' },
+    source: { language: 'tsx', code: `import { Button, Dialog, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Footer = styled.div({ display: 'flex', justifyContent: 'flex-end', marginBlockStart: vars.space[5] });
+
+<Dialog>
+  <Dialog.Trigger render={(props) => (
+    <Button {...props} tone="danger">Delete account</Button>
+  )} />
+  <Dialog.Content>
+    <Dialog.Title>Delete account</Dialog.Title>
+    <Dialog.Description>Your profile and saved drafts are removed.</Dialog.Description>
+    <Footer>
+      <Dialog.Close render={(props) => (
+        <Button {...props} variant="outline">Cancel</Button>
+      )} />
+    </Footer>
+  </Dialog.Content>
+</Dialog>` },
+  } },
   render: (args) => <ComposedDialog {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -898,6 +1051,27 @@ const outerCancel = fn<(event: SyntheticEvent<HTMLDialogElement>) => void>();
 const outerClose = fn<(event: SyntheticEvent<HTMLDialogElement>) => void>();
 
 export const NestedDialog: Story = {
+  name: 'Nested dialogs',
+  parameters: { docs: {
+    description: { story: 'Open a second dialog and return focus to its trigger when it closes.' },
+    source: { language: 'tsx', code: `import { Dialog } from '@jfrader/ui';
+
+<Dialog>
+  <Dialog.Trigger>Open profile</Dialog.Trigger>
+  <Dialog.Content>
+    <Dialog.Title>Edit profile</Dialog.Title>
+    <Dialog>
+      <Dialog.Trigger>Discard changes</Dialog.Trigger>
+      <Dialog.Content>
+        <Dialog.Title>Discard changes?</Dialog.Title>
+        <form method="dialog">
+          <button type="submit">Keep editing</button>
+        </form>
+      </Dialog.Content>
+    </Dialog>
+  </Dialog.Content>
+</Dialog>` },
+  } },
   args: { onOpenChange: fn() },
   render: (args) => (
     <Dialog {...args}>
@@ -987,4 +1161,168 @@ export const ClosingWithPausedChild: Story = {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(dialog).not.toHaveAttribute('open'), { timeout: 700 });
   },
+};
+
+export const CustomRoot: Story = {
+  name: 'Custom panel root',
+  parameters: { docs: {
+    description: { story: 'Replace the panel root with a styled div that forwards its props and ref.' },
+    source: { language: 'tsx', code: `import { Dialog, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Paper = styled.div({
+  boxSizing: 'border-box',
+  backgroundColor: vars.color.surfaceRaised,
+  color: vars.color.text,
+  border: \`1px dashed \${vars.color.border}\`,
+  boxShadow: 'none',
+});
+
+<Dialog>
+  <Dialog.Trigger>Open export</Dialog.Trigger>
+  <Dialog.Content>
+    <Dialog.Panel component={Paper}>
+      <Dialog.Title>Export profile</Dialog.Title>
+      <Dialog.Description>Download your profile details.</Dialog.Description>
+      <Dialog.Close>Close export</Dialog.Close>
+    </Dialog.Panel>
+  </Dialog.Content>
+</Dialog>` },
+  } },
+  render: () => (
+    <Dialog>
+      <Dialog.Trigger>Open export</Dialog.Trigger>
+      <Dialog.Content>
+        <Dialog.Panel component={AdapterMaterial}>
+          <Dialog.Title>Export profile</Dialog.Title>
+          <Dialog.Description>Download your profile details.</Dialog.Description>
+          <Dialog.Close>Close export</Dialog.Close>
+        </Dialog.Panel>
+      </Dialog.Content>
+    </Dialog>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Open export' }));
+    const dialog = await canvas.findByRole('dialog', { name: 'Export profile' });
+    await settleMotion(dialog);
+    await expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close export' }));
+    await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
+  },
+};
+
+const ScrollableContent = styled(Dialog.Content)({ maxBlockSize: '240px' });
+const NarrowDialogContent = styled(Dialog.Content)({ inlineSize: '280px', minInlineSize: 0 });
+const exportNotes = [
+  'Your export includes your display name, email address, and profile settings. Saved drafts are included in a separate file.',
+  'Comments and mentions retain the display name used when they were posted. Downloaded files do not update when your profile changes.',
+  'Keep the downloaded archive somewhere private. Anyone with access to the archive can read the profile details it contains.',
+  'You can request another export after updating your profile. Each archive contains the details available at the time of the request.',
+];
+
+export const LongContent: Story = {
+  name: 'Long content',
+  parameters: { docs: {
+    description: { story: 'Scroll long content inside a height-limited dialog without flattening it into an accessible description.' },
+    source: { language: 'tsx', code: `import { Dialog, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ScrollableContent = styled(Dialog.Content)({ maxBlockSize: '240px' });
+const Body = styled.p({ margin: 0, fontSize: vars.textSize.sm });
+const exportNotes = [
+  'Your export includes your display name, email address, and profile settings. Saved drafts are included in a separate file.',
+  'Comments and mentions retain the display name used when they were posted. Downloaded files do not update when your profile changes.',
+  'Keep the downloaded archive somewhere private. Anyone with access to the archive can read the profile details it contains.',
+  'You can request another export after updating your profile. Each archive contains the details available at the time of the request.',
+];
+
+<Dialog>
+  <Dialog.Trigger>Read export notes</Dialog.Trigger>
+  <ScrollableContent withDescription={false}>
+    <Dialog.Title tabIndex={-1} autoFocus>Before you export</Dialog.Title>
+    {exportNotes.map((note) => <Body key={note}>{note}</Body>)}
+    <Dialog.Close>Done</Dialog.Close>
+  </ScrollableContent>
+</Dialog>` },
+  } },
+  render: () => (
+    <Dialog>
+      <Dialog.Trigger>Read export notes</Dialog.Trigger>
+      <ScrollableContent withDescription={false}>
+        <Dialog.Title tabIndex={-1} autoFocus>Before you export</Dialog.Title>
+        {exportNotes.map((note) => <Body key={note}>{note}</Body>)}
+        <Dialog.Close>Done</Dialog.Close>
+      </ScrollableContent>
+    </Dialog>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Read export notes' }));
+    const dialog = await canvas.findByRole('dialog', { name: 'Before you export' });
+    await settleMotion(dialog);
+    await expect(within(dialog).getByRole('heading', { name: 'Before you export' })).toHaveFocus();
+    await expect(dialog.scrollTop).toBe(0);
+    await expect(dialog.scrollHeight).toBeGreaterThan(dialog.clientHeight);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
+    await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
+  },
+};
+
+export const NarrowLayout: Story = {
+  name: 'Narrow content',
+  parameters: { docs: {
+    description: { story: 'Set a narrow shell width for a short confirmation.' },
+    source: { language: 'tsx', code: `import { Dialog, styled } from '@jfrader/ui';
+
+const NarrowContent = styled(Dialog.Content)({ inlineSize: '280px', minInlineSize: 0 });
+
+<Dialog>
+  <Dialog.Trigger>View confirmation</Dialog.Trigger>
+  <NarrowContent>
+    <Dialog.Title>Saved</Dialog.Title>
+    <Dialog.Description>Profile updated.</Dialog.Description>
+    <Dialog.Close>Done</Dialog.Close>
+  </NarrowContent>
+</Dialog>` },
+  } },
+  render: () => (
+    <Dialog>
+      <Dialog.Trigger>View confirmation</Dialog.Trigger>
+      <NarrowDialogContent>
+        <Dialog.Title>Saved</Dialog.Title>
+        <Dialog.Description>Profile updated.</Dialog.Description>
+        <Dialog.Close>Done</Dialog.Close>
+      </NarrowDialogContent>
+    </Dialog>
+  ),
+};
+
+export const ContrastPanel: Story = {
+  name: 'Contrast panel',
+  parameters: { docs: {
+    description: { story: 'Use a contrast panel for fixed charcoal material inside either theme.' },
+    source: { language: 'tsx', code: `import { Dialog } from '@jfrader/ui';
+
+<Dialog>
+  <Dialog.Trigger>Open export</Dialog.Trigger>
+  <Dialog.Content>
+    <Dialog.Panel appearance="contrast">
+      <Dialog.Title>Export profile</Dialog.Title>
+      <Dialog.Description>Download your profile details.</Dialog.Description>
+      <Dialog.Close>Close export</Dialog.Close>
+    </Dialog.Panel>
+  </Dialog.Content>
+</Dialog>` },
+  } },
+  render: () => (
+    <Dialog>
+      <Dialog.Trigger>Open export</Dialog.Trigger>
+      <Dialog.Content>
+        <Dialog.Panel appearance="contrast">
+          <Dialog.Title>Export profile</Dialog.Title>
+          <Dialog.Description>Download your profile details.</Dialog.Description>
+          <Dialog.Close>Close export</Dialog.Close>
+        </Dialog.Panel>
+      </Dialog.Content>
+    </Dialog>
+  ),
 };
