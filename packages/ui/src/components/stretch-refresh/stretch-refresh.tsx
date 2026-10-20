@@ -186,6 +186,7 @@ const feedStyle = css({
 });
 const indicatorStyle = css({
   padding: vars.space[2],
+  overflowWrap: 'anywhere',
   fontSize: vars.textSize.sm,
   color: vars.color.accentText,
   [FORCED_COLORS]: { color: 'CanvasText' },
@@ -211,7 +212,11 @@ const statusStyle = css({
   fontSize: vars.textSize.sm,
   overflowWrap: 'anywhere',
 });
-const emptyStyle = css({ padding: vars.space[4], color: vars.color.textMuted });
+const emptyStyle = css({
+  padding: vars.space[4],
+  color: vars.color.textMuted,
+  overflowWrap: 'anywhere',
+});
 const ids = (...values: (string | undefined)[]) => values.filter(Boolean).join(' ') || undefined;
 type Result = { phase: 'done' | 'error'; message: string };
 type Gesture = {
