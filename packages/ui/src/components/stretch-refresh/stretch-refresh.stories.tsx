@@ -123,11 +123,89 @@ function pointer(feed: HTMLElement) {
 }
 
 export const Default: Story = {};
-export const FullHeightSidebar: Story = { args: { subtitle: 'Team updates' } };
+export const FullHeightSidebar: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  { id: 'review', title: 'Mira reviewed the launch checklist' },
+  { id: 'draft', title: 'Owen saved a new draft' },
+  { id: 'invite', title: 'A team invitation arrived' },
+];
+
+<FeedFrame>
+  <StretchRefresh
+    title="Activity"
+    subtitle="Team updates"
+    items={items}
+    getKey={(item) => item.id}
+    renderItem={(item) => item.title}
+    onRefresh={async () => {}}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
+  args: { subtitle: 'Team updates' },
+};
 export const Empty: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+
+<FeedFrame>
+  <StretchRefresh
+    title="Activity"
+    items={[]}
+    emptyContent="No activity yet"
+    getKey={(item: { id: string; title: string }) => item.id}
+    renderItem={(item) => item.title}
+    onRefresh={async () => {}}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: { items: [], emptyContent: 'No activity yet' },
 };
 export const SubtitleZero: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  { id: 'review', title: 'Mira reviewed the launch checklist' },
+  { id: 'draft', title: 'Owen saved a new draft' },
+  { id: 'invite', title: 'A team invitation arrived' },
+];
+
+<FeedFrame>
+  <StretchRefresh
+    title={0}
+    subtitle={0}
+    items={items}
+    getKey={(item) => item.id}
+    renderItem={() => 0}
+    onRefresh={async () => {}}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: { title: 0, subtitle: 0, renderItem: () => 0 },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('heading')).toHaveTextContent('0');
@@ -136,6 +214,37 @@ export const SubtitleZero: Story = {
   },
 };
 export const LongItems: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  {
+    id: 'long',
+    title:
+      'A detailed notification with a very long uninterrupted identifier: abcdefghijklmnopqrstuvwxyz'.repeat(
+        4,
+      ),
+  },
+];
+
+<FeedFrame>
+  <StretchRefresh
+    title="Activity"
+    items={items}
+    labels={{ refresh: 'Actualizar las novedades del equipo' }}
+    getKey={(item) => item.id}
+    renderItem={(item) => item.title}
+    onRefresh={async () => {}}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: {
     items: [
       {
@@ -156,6 +265,33 @@ export const LongItems: Story = {
   },
 };
 export const Disabled: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  { id: 'review', title: 'Mira reviewed the launch checklist' },
+  { id: 'draft', title: 'Owen saved a new draft' },
+  { id: 'invite', title: 'A team invitation arrived' },
+];
+
+<FeedFrame>
+  <StretchRefresh
+    title="Activity"
+    items={items}
+    disabled
+    getKey={(item) => item.id}
+    renderItem={(item) => item.title}
+    onRefresh={async () => {}}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: { disabled: true },
   play: async ({ canvas, args, userEvent }) => {
     await userEvent.click(canvas.getByRole('button'));
@@ -163,6 +299,33 @@ export const Disabled: Story = {
   },
 };
 export const Busy: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  { id: 'review', title: 'Mira reviewed the launch checklist' },
+  { id: 'draft', title: 'Owen saved a new draft' },
+  { id: 'invite', title: 'A team invitation arrived' },
+];
+
+<FeedFrame>
+  <StretchRefresh
+    title="Activity"
+    items={items}
+    defaultRefreshing
+    getKey={(item) => item.id}
+    renderItem={(item) => item.title}
+    onRefresh={async () => {}}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: { defaultRefreshing: true },
   play: async ({ canvas, args, userEvent }) => {
     await expect(canvas.getByRole('list')).toHaveAttribute('aria-busy', 'true');
@@ -173,6 +336,32 @@ export const Busy: Story = {
   },
 };
 export const Success: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  { id: 'review', title: 'Mira reviewed the launch checklist' },
+  { id: 'draft', title: 'Owen saved a new draft' },
+  { id: 'invite', title: 'A team invitation arrived' },
+];
+
+<FeedFrame>
+  <StretchRefresh
+    title="Activity"
+    items={items}
+    getKey={(item) => item.id}
+    renderItem={(item) => item.title}
+    onRefresh={async () => 'All caught up'}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: { onRefresh: fn(async () => 'All caught up') },
   play: async ({ canvas, args, userEvent }) => {
     await userEvent.click(canvas.getByRole('button'));
@@ -186,6 +375,34 @@ export const Success: Story = {
   },
 };
 export const Error: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  { id: 'review', title: 'Mira reviewed the launch checklist' },
+  { id: 'draft', title: 'Owen saved a new draft' },
+  { id: 'invite', title: 'A team invitation arrived' },
+];
+
+<FeedFrame>
+  <StretchRefresh
+    title="Activity"
+    items={items}
+    getKey={(item) => item.id}
+    renderItem={(item) => item.title}
+    onRefresh={async () => {
+      throw new Error('Offline');
+    }}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: {
     onRefresh: fn(async () => {
       throw new globalThis.Error('Offline');
@@ -227,6 +444,34 @@ export const ErrorRetry: Story = {
 };
 export const SyncThrow: Story = {
   ...Error,
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  { id: 'review', title: 'Mira reviewed the launch checklist' },
+  { id: 'draft', title: 'Owen saved a new draft' },
+  { id: 'invite', title: 'A team invitation arrived' },
+];
+
+<FeedFrame>
+  <StretchRefresh
+    title="Activity"
+    items={items}
+    getKey={(item) => item.id}
+    renderItem={(item) => item.title}
+    onRefresh={() => {
+      throw new Error('Offline');
+    }}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: {
     onRefresh: fn(() => {
       throw new globalThis.Error('Offline');
@@ -234,6 +479,32 @@ export const SyncThrow: Story = {
   },
 };
 export const EmptyResult: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  { id: 'review', title: 'Mira reviewed the launch checklist' },
+  { id: 'draft', title: 'Owen saved a new draft' },
+  { id: 'invite', title: 'A team invitation arrived' },
+];
+
+<FeedFrame>
+  <StretchRefresh
+    title="Activity"
+    items={items}
+    getKey={(item) => item.id}
+    renderItem={(item) => item.title}
+    onRefresh={async () => ''}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: { onRefresh: fn(async () => '') },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button'));
@@ -265,6 +536,34 @@ export const ControlledBusy: Story = {
   play: Success.play,
 };
 export const RejectedBusy: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  { id: 'review', title: 'Mira reviewed the launch checklist' },
+  { id: 'draft', title: 'Owen saved a new draft' },
+  { id: 'invite', title: 'A team invitation arrived' },
+];
+
+<FeedFrame>
+  <StretchRefresh
+    title="Activity"
+    items={items}
+    refreshing={false}
+    onRefreshingChange={() => {}}
+    getKey={(item) => item.id}
+    renderItem={(item) => item.title}
+    onRefresh={async () => {}}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: { refreshing: false },
   play: async ({ canvas, args, userEvent }) => {
     await userEvent.click(canvas.getByRole('button'));
@@ -278,6 +577,34 @@ export const RejectedBusy: Story = {
   },
 };
 export const ExternalBusyDisplayOnly: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  { id: 'review', title: 'Mira reviewed the launch checklist' },
+  { id: 'draft', title: 'Owen saved a new draft' },
+  { id: 'invite', title: 'A team invitation arrived' },
+];
+
+<FeedFrame>
+  <StretchRefresh
+    title="Activity"
+    items={items}
+    refreshing
+    onRefreshingChange={() => {}}
+    getKey={(item) => item.id}
+    renderItem={(item) => item.title}
+    onRefresh={async () => {}}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: { refreshing: true },
   play: Busy.play,
 };
@@ -334,6 +661,36 @@ export const PrematureBusyFalse: Story = {
   },
 };
 export const PreventedActivation: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  { id: 'review', title: 'Mira reviewed the launch checklist' },
+  { id: 'draft', title: 'Owen saved a new draft' },
+  { id: 'invite', title: 'A team invitation arrived' },
+];
+
+<FeedFrame>
+  <StretchRefresh
+    title="Activity"
+    items={items}
+    slotProps={{
+      refreshButton: { onClick: (event) => event.preventDefault() },
+      feed: { onPointerDown: (event) => event.preventDefault() },
+    }}
+    getKey={(item) => item.id}
+    renderItem={(item) => item.title}
+    onRefresh={async () => {}}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: {
     slotProps: {
       refreshButton: { onClick: (event) => event.preventDefault() },
@@ -404,6 +761,33 @@ export const KeyboardRefresh: Story = {
   },
 };
 export const Threshold: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  { id: 'review', title: 'Mira reviewed the launch checklist' },
+  { id: 'draft', title: 'Owen saved a new draft' },
+  { id: 'invite', title: 'A team invitation arrived' },
+];
+
+<FeedFrame>
+  <StretchRefresh
+    title="Activity"
+    items={items}
+    threshold={40}
+    getKey={(item) => item.id}
+    renderItem={(item) => item.title}
+    onRefresh={async () => {}}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: { threshold: 40 },
   play: async ({ canvas, canvasElement, args }) => {
     const feed = canvas.getByRole('region');
@@ -490,6 +874,31 @@ export const PullSelection: Story = {
   },
 };
 export const ScrollAndInteractive: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { Button, StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = Array.from({ length: 15 }, (_, index) => ({
+  id: String(index),
+  title: 'Update ' + index,
+}));
+
+<FeedFrame>
+  <StretchRefresh
+    title="Activity"
+    items={items}
+    getKey={(item) => item.id}
+    renderItem={(item) => <Button>{item.title}</Button>}
+    onRefresh={async () => {}}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: {
     items: Array.from({ length: 15 }, (_, index) => ({
       id: `${index}`,
@@ -555,6 +964,33 @@ export const AriaMerge: Story = {
   },
 };
 export const FeedAriaLabel: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  { id: 'review', title: 'Mira reviewed the launch checklist' },
+  { id: 'draft', title: 'Owen saved a new draft' },
+  { id: 'invite', title: 'A team invitation arrived' },
+];
+
+<FeedFrame>
+  <StretchRefresh
+    title="Activity"
+    items={items}
+    slotProps={{ feed: { 'aria-label': 'Custom activity' } }}
+    getKey={(item) => item.id}
+    renderItem={(item) => item.title}
+    onRefresh={async () => {}}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: { slotProps: { feed: { 'aria-label': 'Custom activity' } } },
   play: async ({ canvas }) => {
     const feed = canvas.getByRole('region');
@@ -634,6 +1070,34 @@ export const LightTheme: Story = {
   globals: { theme: 'light' },
 };
 export const RTL: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { StretchRefresh, styled } from '@jfrader/ui';
+
+const FeedFrame = styled.div({ blockSize: '24rem', display: 'flex', flexDirection: 'column' });
+const items = [
+  { id: 'review', title: 'Mira reviewed the launch checklist' },
+  { id: 'draft', title: 'Owen saved a new draft' },
+  { id: 'invite', title: 'A team invitation arrived' },
+];
+
+<FeedFrame>
+  <StretchRefresh
+    dir="rtl"
+    title="Actividad"
+    labels={{ refresh: 'Actualizar' }}
+    items={items}
+    getKey={(item) => item.id}
+    renderItem={(item) => item.title}
+    onRefresh={async () => {}}
+    sx={{ flex: 1 }}
+  />
+</FeedFrame>`,
+      },
+    },
+  },
   args: { dir: 'rtl', title: 'Actividad', labels: { refresh: 'Actualizar' } },
 };
 export const NarrowContainer: Story = {

@@ -124,12 +124,200 @@ export const EveryFormat: Story = {
   ),
 };
 export const Transparent: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ColorPicker, type ColorPickerMessages } from '@jfrader/ui';
+
+const messages: ColorPickerMessages = {
+  dialog: 'Choose a color',
+  saturation: 'Saturation',
+  value: 'Value',
+  hue: 'Hue',
+  opacity: 'Opacity',
+  format: 'Format',
+  color: 'Color',
+  invalid: 'Enter a HEX, RGB, HSL or OKLCH color.',
+  gamutWarning: 'Mapped to the sRGB gamut. The original OKLCH color is not preserved.',
+  save: 'Save color',
+  savedColors: 'Saved colors',
+  movePrevious: 'Move previous',
+  moveNext: 'Move next',
+  remove: 'Remove color',
+  eyeDropper: 'Pick from screen',
+  eyeDropperError: 'Could not read the screen color.',
+  done: 'Done',
+  empty: 'No valid color',
+  grades: {
+    aaa: 'AAA normal text',
+    aa: 'AA normal text',
+    large: 'AA large text only',
+    fail: 'Below AA text thresholds',
+  },
+  contrast: (ratio, grade) => \`\${ratio}:1 — \${grade}\`,
+  result: (hex, contrast) => (contrast ? \`Color: \${hex}. \${contrast}\` : \`Color: \${hex}\`),
+  swatch: (hex, label) => (label ? \`\${label} \${hex}\` : hex),
+};
+
+<ColorPicker label="Accent" defaultValue="#A78BFF80" background="#08090A" messages={messages} />`,
+      },
+    },
+  },
   args: { defaultValue: '#A78BFF80', background: '#08090A' },
 };
-export const AchromaticHue: Story = { args: { defaultValue: '#808080' } };
-export const CustomBackground: Story = { args: { background: '#FFFFFF' } };
-export const SavedColors: Story = { args: { defaultSwatches: palette } };
+export const AchromaticHue: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { ColorPicker, type ColorPickerMessages } from '@jfrader/ui';
+
+const messages: ColorPickerMessages = {
+  dialog: 'Choose a color',
+  saturation: 'Saturation',
+  value: 'Value',
+  hue: 'Hue',
+  opacity: 'Opacity',
+  format: 'Format',
+  color: 'Color',
+  invalid: 'Enter a HEX, RGB, HSL or OKLCH color.',
+  gamutWarning: 'Mapped to the sRGB gamut. The original OKLCH color is not preserved.',
+  save: 'Save color',
+  savedColors: 'Saved colors',
+  movePrevious: 'Move previous',
+  moveNext: 'Move next',
+  remove: 'Remove color',
+  eyeDropper: 'Pick from screen',
+  eyeDropperError: 'Could not read the screen color.',
+  done: 'Done',
+  empty: 'No valid color',
+  grades: {
+    aaa: 'AAA normal text',
+    aa: 'AA normal text',
+    large: 'AA large text only',
+    fail: 'Below AA text thresholds',
+  },
+  contrast: (ratio, grade) => \`\${ratio}:1 — \${grade}\`,
+  result: (hex, contrast) => (contrast ? \`Color: \${hex}. \${contrast}\` : \`Color: \${hex}\`),
+  swatch: (hex, label) => (label ? \`\${label} \${hex}\` : hex),
+};
+
+<ColorPicker label="Accent" defaultValue="#808080" messages={messages} />` } } }, args: { defaultValue: '#808080' } };
+export const CustomBackground: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { ColorPicker, type ColorPickerMessages } from '@jfrader/ui';
+
+const messages: ColorPickerMessages = {
+  dialog: 'Choose a color',
+  saturation: 'Saturation',
+  value: 'Value',
+  hue: 'Hue',
+  opacity: 'Opacity',
+  format: 'Format',
+  color: 'Color',
+  invalid: 'Enter a HEX, RGB, HSL or OKLCH color.',
+  gamutWarning: 'Mapped to the sRGB gamut. The original OKLCH color is not preserved.',
+  save: 'Save color',
+  savedColors: 'Saved colors',
+  movePrevious: 'Move previous',
+  moveNext: 'Move next',
+  remove: 'Remove color',
+  eyeDropper: 'Pick from screen',
+  eyeDropperError: 'Could not read the screen color.',
+  done: 'Done',
+  empty: 'No valid color',
+  grades: {
+    aaa: 'AAA normal text',
+    aa: 'AA normal text',
+    large: 'AA large text only',
+    fail: 'Below AA text thresholds',
+  },
+  contrast: (ratio, grade) => \`\${ratio}:1 — \${grade}\`,
+  result: (hex, contrast) => (contrast ? \`Color: \${hex}. \${contrast}\` : \`Color: \${hex}\`),
+  swatch: (hex, label) => (label ? \`\${label} \${hex}\` : hex),
+};
+
+<ColorPicker label="Accent" defaultValue="#A78BFF" background="#FFFFFF" messages={messages} />` } } }, args: { background: '#FFFFFF' } };
+export const SavedColors: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { ColorPicker, type ColorPickerMessages, type ColorSwatch } from '@jfrader/ui';
+
+const messages: ColorPickerMessages = {
+  dialog: 'Choose a color',
+  saturation: 'Saturation',
+  value: 'Value',
+  hue: 'Hue',
+  opacity: 'Opacity',
+  format: 'Format',
+  color: 'Color',
+  invalid: 'Enter a HEX, RGB, HSL or OKLCH color.',
+  gamutWarning: 'Mapped to the sRGB gamut. The original OKLCH color is not preserved.',
+  save: 'Save color',
+  savedColors: 'Saved colors',
+  movePrevious: 'Move previous',
+  moveNext: 'Move next',
+  remove: 'Remove color',
+  eyeDropper: 'Pick from screen',
+  eyeDropperError: 'Could not read the screen color.',
+  done: 'Done',
+  empty: 'No valid color',
+  grades: {
+    aaa: 'AAA normal text',
+    aa: 'AA normal text',
+    large: 'AA large text only',
+    fail: 'Below AA text thresholds',
+  },
+  contrast: (ratio, grade) => \`\${ratio}:1 — \${grade}\`,
+  result: (hex, contrast) => (contrast ? \`Color: \${hex}. \${contrast}\` : \`Color: \${hex}\`),
+  swatch: (hex, label) => (label ? \`\${label} \${hex}\` : hex),
+};
+
+const palette: ColorSwatch[] = [
+  { id: 'violet', color: '#A78BFF', label: 'Violet' },
+  { id: 'white', color: '#FFFFFF', label: 'White' },
+  { id: 'black', color: '#000000', label: 'Black' },
+];
+
+<ColorPicker label="Accent" defaultValue="#A78BFF" defaultSwatches={palette} messages={messages} />` } } }, args: { defaultSwatches: palette } };
 export const Capacity: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ColorPicker, type ColorPickerMessages, type ColorSwatch } from '@jfrader/ui';
+
+const messages: ColorPickerMessages = {
+  dialog: 'Choose a color',
+  saturation: 'Saturation',
+  value: 'Value',
+  hue: 'Hue',
+  opacity: 'Opacity',
+  format: 'Format',
+  color: 'Color',
+  invalid: 'Enter a HEX, RGB, HSL or OKLCH color.',
+  gamutWarning: 'Mapped to the sRGB gamut. The original OKLCH color is not preserved.',
+  save: 'Save color',
+  savedColors: 'Saved colors',
+  movePrevious: 'Move previous',
+  moveNext: 'Move next',
+  remove: 'Remove color',
+  eyeDropper: 'Pick from screen',
+  eyeDropperError: 'Could not read the screen color.',
+  done: 'Done',
+  empty: 'No valid color',
+  grades: {
+    aaa: 'AAA normal text',
+    aa: 'AA normal text',
+    large: 'AA large text only',
+    fail: 'Below AA text thresholds',
+  },
+  contrast: (ratio, grade) => \`\${ratio}:1 — \${grade}\`,
+  result: (hex, contrast) => (contrast ? \`Color: \${hex}. \${contrast}\` : \`Color: \${hex}\`),
+  swatch: (hex, label) => (label ? \`\${label} \${hex}\` : hex),
+};
+
+const palette: ColorSwatch[] = [
+  { id: 'violet', color: '#A78BFF', label: 'Violet' },
+  { id: 'white', color: '#FFFFFF', label: 'White' },
+  { id: 'black', color: '#000000', label: 'Black' },
+];
+
+<ColorPicker label="Accent" defaultValue="#A78BFF" defaultSwatches={palette} maxSwatches={3} messages={messages} />`,
+      },
+    },
+  },
   args: { defaultSwatches: palette, maxSwatches: 3 },
 };
 export const OutOfGamut: Story = {
@@ -141,15 +329,127 @@ export const OutOfGamut: Story = {
   tags: ['!autodocs'],
 };
 export const UnsupportedInput: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ColorPicker, type ColorPickerMessages } from '@jfrader/ui';
+
+const messages: ColorPickerMessages = {
+  dialog: 'Choose a color',
+  saturation: 'Saturation',
+  value: 'Value',
+  hue: 'Hue',
+  opacity: 'Opacity',
+  format: 'Format',
+  color: 'Color',
+  invalid: 'Enter a HEX, RGB, HSL or OKLCH color.',
+  gamutWarning: 'Mapped to the sRGB gamut. The original OKLCH color is not preserved.',
+  save: 'Save color',
+  savedColors: 'Saved colors',
+  movePrevious: 'Move previous',
+  moveNext: 'Move next',
+  remove: 'Remove color',
+  eyeDropper: 'Pick from screen',
+  eyeDropperError: 'Could not read the screen color.',
+  done: 'Done',
+  empty: 'No valid color',
+  grades: {
+    aaa: 'AAA normal text',
+    aa: 'AA normal text',
+    large: 'AA large text only',
+    fail: 'Below AA text thresholds',
+  },
+  contrast: (ratio, grade) => \`\${ratio}:1 — \${grade}\`,
+  result: (hex, contrast) => (contrast ? \`Color: \${hex}. \${contrast}\` : \`Color: \${hex}\`),
+  swatch: (hex, label) => (label ? \`\${label} \${hex}\` : hex),
+};
+
+<ColorPicker label="Accent" defaultValue="currentColor" messages={messages} />`,
+      },
+    },
+  },
   args: { defaultValue: 'currentColor' },
 };
 export const NoBackground: Story = {};
-export const Disabled: Story = { args: { disabled: true, defaultOpen: true } };
+export const Disabled: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { ColorPicker, type ColorPickerMessages } from '@jfrader/ui';
+
+const messages: ColorPickerMessages = {
+  dialog: 'Choose a color',
+  saturation: 'Saturation',
+  value: 'Value',
+  hue: 'Hue',
+  opacity: 'Opacity',
+  format: 'Format',
+  color: 'Color',
+  invalid: 'Enter a HEX, RGB, HSL or OKLCH color.',
+  gamutWarning: 'Mapped to the sRGB gamut. The original OKLCH color is not preserved.',
+  save: 'Save color',
+  savedColors: 'Saved colors',
+  movePrevious: 'Move previous',
+  moveNext: 'Move next',
+  remove: 'Remove color',
+  eyeDropper: 'Pick from screen',
+  eyeDropperError: 'Could not read the screen color.',
+  done: 'Done',
+  empty: 'No valid color',
+  grades: {
+    aaa: 'AAA normal text',
+    aa: 'AA normal text',
+    large: 'AA large text only',
+    fail: 'Below AA text thresholds',
+  },
+  contrast: (ratio, grade) => \`\${ratio}:1 — \${grade}\`,
+  result: (hex, contrast) => (contrast ? \`Color: \${hex}. \${contrast}\` : \`Color: \${hex}\`),
+  swatch: (hex, label) => (label ? \`\${label} \${hex}\` : hex),
+};
+
+<ColorPicker label="Accent" defaultValue="#A78BFF" messages={messages} disabled />` } } }, args: { disabled: true, defaultOpen: true } };
 export const ReadOnly: Story = {
   args: { readOnly: true, defaultSwatches: palette, defaultOpen: true },
   tags: ['!autodocs'],
 };
 export const Required: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { ColorPicker, type ColorPickerMessages } from '@jfrader/ui';
+
+const messages: ColorPickerMessages = {
+  dialog: 'Choose a color',
+  saturation: 'Saturation',
+  value: 'Value',
+  hue: 'Hue',
+  opacity: 'Opacity',
+  format: 'Format',
+  color: 'Color',
+  invalid: 'Enter a HEX, RGB, HSL or OKLCH color.',
+  gamutWarning: 'Mapped to the sRGB gamut. The original OKLCH color is not preserved.',
+  save: 'Save color',
+  savedColors: 'Saved colors',
+  movePrevious: 'Move previous',
+  moveNext: 'Move next',
+  remove: 'Remove color',
+  eyeDropper: 'Pick from screen',
+  eyeDropperError: 'Could not read the screen color.',
+  done: 'Done',
+  empty: 'No valid color',
+  grades: {
+    aaa: 'AAA normal text',
+    aa: 'AA normal text',
+    large: 'AA large text only',
+    fail: 'Below AA text thresholds',
+  },
+  contrast: (ratio, grade) => \`\${ratio}:1 — \${grade}\`,
+  result: (hex, contrast) => (contrast ? \`Color: \${hex}. \${contrast}\` : \`Color: \${hex}\`),
+  swatch: (hex, label) => (label ? \`\${label} \${hex}\` : hex),
+};
+
+<ColorPicker label="Accent" defaultValue="#A78BFF" description="Brand color" messages={messages} required />`,
+      },
+    },
+  },
   args: { required: true, description: 'Brand color' },
 };
 export const Sizes: Story = {

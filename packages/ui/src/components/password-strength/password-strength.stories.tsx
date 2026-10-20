@@ -72,16 +72,151 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = { args: { defaultValue: 'Harbor2' } };
-export const Empty: Story = { args: { defaultValue: '' } };
+export const Default: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const policy: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'At least 8 characters',
+    test: (value) => Array.from(value).length >= 8,
+    remaining: (value) => Math.max(0, 8 - Array.from(value).length),
+  },
+  { id: 'upper', label: 'An uppercase letter', test: (value) => /[A-Z]/.test(value) },
+  { id: 'number', label: 'A number', test: (value) => /[0-9]/.test(value) },
+  { id: 'symbol', label: 'A symbol', test: (value) => /[^a-zA-Z0-9]/.test(value) },
+];
+
+<PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="Harbor2" />` } } }, args: { defaultValue: 'Harbor2' } };
+export const Empty: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const policy: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'At least 8 characters',
+    test: (value) => Array.from(value).length >= 8,
+    remaining: (value) => Math.max(0, 8 - Array.from(value).length),
+  },
+  { id: 'upper', label: 'An uppercase letter', test: (value) => /[A-Z]/.test(value) },
+  { id: 'number', label: 'A number', test: (value) => /[0-9]/.test(value) },
+  { id: 'symbol', label: 'A symbol', test: (value) => /[^a-zA-Z0-9]/.test(value) },
+];
+
+<PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="" />` } } }, args: { defaultValue: '' } };
 export const TooShort: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const policy: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'At least 8 characters',
+    test: (value) => Array.from(value).length >= 8,
+    remaining: (value) => Math.max(0, 8 - Array.from(value).length),
+  },
+  { id: 'upper', label: 'An uppercase letter', test: (value) => /[A-Z]/.test(value) },
+  { id: 'number', label: 'A number', test: (value) => /[0-9]/.test(value) },
+  { id: 'symbol', label: 'A symbol', test: (value) => /[^a-zA-Z0-9]/.test(value) },
+];
+
+<PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="A1!" shortLength={8} />`,
+      },
+    },
+  },
   args: { defaultValue: 'A1!', shortLength: 8 },
 };
-export const Weak: Story = { args: { defaultValue: 'a' } };
-export const Fair: Story = { args: { defaultValue: 'A1' } };
-export const Good: Story = { args: { defaultValue: 'A1!' } };
-export const Strong: Story = { args: { defaultValue: 'Abcdef1!' } };
+export const Weak: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const policy: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'At least 8 characters',
+    test: (value) => Array.from(value).length >= 8,
+    remaining: (value) => Math.max(0, 8 - Array.from(value).length),
+  },
+  { id: 'upper', label: 'An uppercase letter', test: (value) => /[A-Z]/.test(value) },
+  { id: 'number', label: 'A number', test: (value) => /[0-9]/.test(value) },
+  { id: 'symbol', label: 'A symbol', test: (value) => /[^a-zA-Z0-9]/.test(value) },
+];
+
+<PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="a" />` } } }, args: { defaultValue: 'a' } };
+export const Fair: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const policy: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'At least 8 characters',
+    test: (value) => Array.from(value).length >= 8,
+    remaining: (value) => Math.max(0, 8 - Array.from(value).length),
+  },
+  { id: 'upper', label: 'An uppercase letter', test: (value) => /[A-Z]/.test(value) },
+  { id: 'number', label: 'A number', test: (value) => /[0-9]/.test(value) },
+  { id: 'symbol', label: 'A symbol', test: (value) => /[^a-zA-Z0-9]/.test(value) },
+];
+
+<PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="A1" />` } } }, args: { defaultValue: 'A1' } };
+export const Good: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const policy: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'At least 8 characters',
+    test: (value) => Array.from(value).length >= 8,
+    remaining: (value) => Math.max(0, 8 - Array.from(value).length),
+  },
+  { id: 'upper', label: 'An uppercase letter', test: (value) => /[A-Z]/.test(value) },
+  { id: 'number', label: 'A number', test: (value) => /[0-9]/.test(value) },
+  { id: 'symbol', label: 'A symbol', test: (value) => /[^a-zA-Z0-9]/.test(value) },
+];
+
+<PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="A1!" />` } } }, args: { defaultValue: 'A1!' } };
+export const Strong: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const policy: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'At least 8 characters',
+    test: (value) => Array.from(value).length >= 8,
+    remaining: (value) => Math.max(0, 8 - Array.from(value).length),
+  },
+  { id: 'upper', label: 'An uppercase letter', test: (value) => /[A-Z]/.test(value) },
+  { id: 'number', label: 'A number', test: (value) => /[0-9]/.test(value) },
+  { id: 'symbol', label: 'A symbol', test: (value) => /[^a-zA-Z0-9]/.test(value) },
+];
+
+<PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="Abcdef1!" />` } } }, args: { defaultValue: 'Abcdef1!' } };
 export const Error: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const policy: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'At least 8 characters',
+    test: (value) => Array.from(value).length >= 8,
+    remaining: (value) => Math.max(0, 8 - Array.from(value).length),
+  },
+  { id: 'upper', label: 'An uppercase letter', test: (value) => /[A-Z]/.test(value) },
+  { id: 'number', label: 'A number', test: (value) => /[0-9]/.test(value) },
+  { id: 'symbol', label: 'A symbol', test: (value) => /[^a-zA-Z0-9]/.test(value) },
+];
+
+<PasswordStrength
+  label="New password"
+  rules={policy}
+  locale="en-GB"
+  defaultValue="Abcdef1!"
+  error="Choose a password you have not used before."
+  required
+/>`,
+      },
+    },
+  },
   args: {
     defaultValue: 'Abcdef1!',
     error: 'Choose a password you have not used before.',
@@ -89,23 +224,143 @@ export const Error: Story = {
   },
 };
 export const Disabled: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const policy: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'At least 8 characters',
+    test: (value) => Array.from(value).length >= 8,
+    remaining: (value) => Math.max(0, 8 - Array.from(value).length),
+  },
+  { id: 'upper', label: 'An uppercase letter', test: (value) => /[A-Z]/.test(value) },
+  { id: 'number', label: 'A number', test: (value) => /[0-9]/.test(value) },
+  { id: 'symbol', label: 'A symbol', test: (value) => /[^a-zA-Z0-9]/.test(value) },
+];
+
+<PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="Abcdef1!" disabled />`,
+      },
+    },
+  },
   args: { disabled: true, defaultValue: 'Abcdef1!' },
 };
 export const ReadOnly: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const policy: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'At least 8 characters',
+    test: (value) => Array.from(value).length >= 8,
+    remaining: (value) => Math.max(0, 8 - Array.from(value).length),
+  },
+  { id: 'upper', label: 'An uppercase letter', test: (value) => /[A-Z]/.test(value) },
+  { id: 'number', label: 'A number', test: (value) => /[0-9]/.test(value) },
+  { id: 'symbol', label: 'A symbol', test: (value) => /[^a-zA-Z0-9]/.test(value) },
+];
+
+<PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="Abcdef1!" readOnly />`,
+      },
+    },
+  },
   args: { readOnly: true, defaultValue: 'Abcdef1!' },
 };
 export const Revealed: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const policy: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'At least 8 characters',
+    test: (value) => Array.from(value).length >= 8,
+    remaining: (value) => Math.max(0, 8 - Array.from(value).length),
+  },
+  { id: 'upper', label: 'An uppercase letter', test: (value) => /[A-Z]/.test(value) },
+  { id: 'number', label: 'A number', test: (value) => /[0-9]/.test(value) },
+  { id: 'symbol', label: 'A symbol', test: (value) => /[^a-zA-Z0-9]/.test(value) },
+];
+
+<PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="Abcdef1!" defaultRevealed />`,
+      },
+    },
+  },
   args: { defaultRevealed: true, defaultValue: 'Abcdef1!' },
 };
 export const LightTheme: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const policy: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'At least 8 characters',
+    test: (value) => Array.from(value).length >= 8,
+    remaining: (value) => Math.max(0, 8 - Array.from(value).length),
+  },
+  { id: 'upper', label: 'An uppercase letter', test: (value) => /[A-Z]/.test(value) },
+  { id: 'number', label: 'A number', test: (value) => /[0-9]/.test(value) },
+  { id: 'symbol', label: 'A symbol', test: (value) => /[^a-zA-Z0-9]/.test(value) },
+];
+
+<PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="Abcdef1!" />`,
+      },
+    },
+  },
   args: Strong.args,
   globals: { theme: 'light' },
 };
-export const RTL: Story = { args: { ...Strong.args, dir: 'rtl' } };
+export const RTL: Story = { parameters: { docs: { source: { language: 'tsx', code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const policy: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'At least 8 characters',
+    test: (value) => Array.from(value).length >= 8,
+    remaining: (value) => Math.max(0, 8 - Array.from(value).length),
+  },
+  { id: 'upper', label: 'An uppercase letter', test: (value) => /[A-Z]/.test(value) },
+  { id: 'number', label: 'A number', test: (value) => /[0-9]/.test(value) },
+  { id: 'symbol', label: 'A symbol', test: (value) => /[^a-zA-Z0-9]/.test(value) },
+];
+
+<PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="Abcdef1!" dir="rtl" />` } } }, args: { ...Strong.args, dir: 'rtl' } };
 export const ReducedMotion: Story = {
   args: Good.args,
   parameters: {
     docs: {
+      source: {
+        language: 'tsx',
+        code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const policy: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'At least 8 characters',
+    test: (value) => Array.from(value).length >= 8,
+    remaining: (value) => Math.max(0, 8 - Array.from(value).length),
+  },
+  { id: 'upper', label: 'An uppercase letter', test: (value) => /[A-Z]/.test(value) },
+  { id: 'number', label: 'A number', test: (value) => /[0-9]/.test(value) },
+  { id: 'symbol', label: 'A symbol', test: (value) => /[^a-zA-Z0-9]/.test(value) },
+];
+
+<PasswordStrength label="New password" rules={policy} locale="en-GB" defaultValue="A1!" />`,
+      },
       description: {
         story:
           'Enable reduced motion in your browser to update feedback without transitions.',
@@ -114,6 +369,29 @@ export const ReducedMotion: Story = {
   },
 };
 export const CustomRules: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const rules: readonly PasswordRule[] = [
+  {
+    id: 'phrase',
+    label: 'Use a passphrase',
+    test: (value) => value.includes(' '),
+  },
+];
+
+<PasswordStrength
+  label="New password"
+  rules={rules}
+  locale="en-GB"
+  defaultValue="four ordinary words here"
+/>`,
+      },
+    },
+  },
   args: {
     rules: [
       {
@@ -126,6 +404,25 @@ export const CustomRules: Story = {
   },
 };
 export const FalsyNodes: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const rules: readonly PasswordRule[] = [{ id: 'zero', label: 0, test: () => true }];
+
+<PasswordStrength
+  label="New password"
+  rules={rules}
+  locale="en-GB"
+  description={0}
+  error={false}
+  defaultValue="example"
+/>`,
+      },
+    },
+  },
   args: {
     rules: [{ id: 'zero', label: 0, test: () => true }],
     description: 0,
@@ -134,6 +431,24 @@ export const FalsyNodes: Story = {
   },
 };
 export const UnicodeCounting: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const rules: readonly PasswordRule[] = [
+  {
+    id: 'entry',
+    label: 'Enter at least two characters',
+    test: (value) => Array.from(value).length >= 2,
+  },
+];
+
+<PasswordStrength label="New password" rules={rules} locale="en-GB" defaultValue="😀" shortLength={2} />`,
+      },
+    },
+  },
   args: {
     rules: [
       {
@@ -147,6 +462,39 @@ export const UnicodeCounting: Story = {
   },
 };
 export const Translated: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const rules: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'Al menos 8 caracteres',
+    test: (value) => Array.from(value).length >= 8,
+  },
+];
+
+<PasswordStrength
+  label="Nueva contraseña"
+  locale="es-ES"
+  fieldMessages={{ reveal: 'Mostrar contraseña' }}
+  rules={rules}
+  defaultValue="ejemplo1"
+  messages={{
+    levels: { strong: 'Cumple la política' },
+    meterLabel: 'Requisitos cumplidos',
+    rulesLabel: 'Requisitos de la contraseña',
+    ruleMet: 'Cumplido',
+    ruleNotMet: 'Pendiente',
+    summary: ({ formattedMet, formattedTotal }) =>
+      \`\${formattedMet} de \${formattedTotal} requisitos cumplidos.\`,
+  }}
+/>`,
+      },
+    },
+  },
   args: {
     label: 'Nueva contraseña',
     locale: 'es-ES',
@@ -209,6 +557,41 @@ export const Keyboard: Story = {
   },
 };
 export const RejectedControlled: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { PasswordStrength, type PasswordRule } from '@jfrader/ui';
+
+const policy: readonly PasswordRule[] = [
+  {
+    id: 'length',
+    label: 'At least 8 characters',
+    test: (value) => Array.from(value).length >= 8,
+    remaining: (value) => Math.max(0, 8 - Array.from(value).length),
+  },
+  { id: 'upper', label: 'An uppercase letter', test: (value) => /[A-Z]/.test(value) },
+  { id: 'number', label: 'A number', test: (value) => /[0-9]/.test(value) },
+  { id: 'symbol', label: 'A symbol', test: (value) => /[^a-zA-Z0-9]/.test(value) },
+];
+
+export function ControlledPasswordStrength() {
+  const [value] = useState('A');
+
+  return (
+    <PasswordStrength
+      label="New password"
+      rules={policy}
+      locale="en-GB"
+      value={value}
+      onValueChange={() => {}}
+    />
+  );
+}`,
+      },
+    },
+  },
   args: { value: 'A' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.type(canvas.getByLabelText('New password'), '1');

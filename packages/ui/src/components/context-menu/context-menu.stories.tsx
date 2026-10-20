@@ -519,6 +519,76 @@ export const Compound: Story = {
 };
 
 export const PointerAnchor: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { vars } from '@jfrader/tokens/vars';
+import { Button, ContextMenu, styled } from '@jfrader/ui';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-start',
+  gap: vars.space[3],
+});
+
+const TargetBox = styled(ContextMenu.Target)({
+  boxSizing: 'border-box',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: vars.space[2],
+  inlineSize: '16rem',
+  maxInlineSize: '100%',
+  minBlockSize: '6rem',
+  padding: vars.space[4],
+  border: \`1px dashed \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.md,
+  color: vars.color.text,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+});
+
+<Row>
+  <ContextMenu>
+    <TargetBox aria-label="report.pdf actions">
+      <strong>report.pdf</strong>
+      <Button size="sm" variant="outline" onClick={() => {}}>
+        Open
+      </Button>
+    </TargetBox>
+    <ContextMenu.Content>
+      <ContextMenu.Item
+        icon={
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+          </svg>
+        }
+        onSelect={() => {}}
+      >
+        Copy link
+      </ContextMenu.Item>
+      <ContextMenu.Item onSelect={() => {}}>Rename</ContextMenu.Item>
+      <ContextMenu.Item disabled>Move</ContextMenu.Item>
+      <ContextMenu.Separator />
+      <ContextMenu.Item tone="danger" onSelect={() => {}}>
+        Delete file
+      </ContextMenu.Item>
+    </ContextMenu.Content>
+  </ContextMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
     const box = target.getBoundingClientRect();
@@ -555,6 +625,76 @@ export const PointerAnchor: Story = {
 };
 
 export const KeyboardAnchor: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { vars } from '@jfrader/tokens/vars';
+import { Button, ContextMenu, styled } from '@jfrader/ui';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-start',
+  gap: vars.space[3],
+});
+
+const TargetBox = styled(ContextMenu.Target)({
+  boxSizing: 'border-box',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: vars.space[2],
+  inlineSize: '16rem',
+  maxInlineSize: '100%',
+  minBlockSize: '6rem',
+  padding: vars.space[4],
+  border: \`1px dashed \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.md,
+  color: vars.color.text,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+});
+
+<Row>
+  <ContextMenu>
+    <TargetBox aria-label="report.pdf actions">
+      <strong>report.pdf</strong>
+      <Button size="sm" variant="outline" onClick={() => {}}>
+        Open
+      </Button>
+    </TargetBox>
+    <ContextMenu.Content>
+      <ContextMenu.Item
+        icon={
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+          </svg>
+        }
+        onSelect={() => {}}
+      >
+        Copy link
+      </ContextMenu.Item>
+      <ContextMenu.Item onSelect={() => {}}>Rename</ContextMenu.Item>
+      <ContextMenu.Item disabled>Move</ContextMenu.Item>
+      <ContextMenu.Separator />
+      <ContextMenu.Item tone="danger" onSelect={() => {}}>
+        Delete file
+      </ContextMenu.Item>
+    </ContextMenu.Content>
+  </ContextMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
     await userEvent.tab();
@@ -591,6 +731,76 @@ export const KeyboardAnchor: Story = {
 };
 
 export const Keyboard: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { vars } from '@jfrader/tokens/vars';
+import { Button, ContextMenu, styled } from '@jfrader/ui';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-start',
+  gap: vars.space[3],
+});
+
+const TargetBox = styled(ContextMenu.Target)({
+  boxSizing: 'border-box',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: vars.space[2],
+  inlineSize: '16rem',
+  maxInlineSize: '100%',
+  minBlockSize: '6rem',
+  padding: vars.space[4],
+  border: \`1px dashed \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.md,
+  color: vars.color.text,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+});
+
+<Row>
+  <ContextMenu>
+    <TargetBox aria-label="report.pdf actions">
+      <strong>report.pdf</strong>
+      <Button size="sm" variant="outline" onClick={() => {}}>
+        Open
+      </Button>
+    </TargetBox>
+    <ContextMenu.Content>
+      <ContextMenu.Item
+        icon={
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+          </svg>
+        }
+        onSelect={() => {}}
+      >
+        Copy link
+      </ContextMenu.Item>
+      <ContextMenu.Item onSelect={() => {}}>Rename</ContextMenu.Item>
+      <ContextMenu.Item disabled>Move</ContextMenu.Item>
+      <ContextMenu.Separator />
+      <ContextMenu.Item tone="danger" onSelect={() => {}}>
+        Delete file
+      </ContextMenu.Item>
+    </ContextMenu.Content>
+  </ContextMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
     await userEvent.tab();
@@ -646,6 +856,76 @@ export const Keyboard: Story = {
 };
 
 export const TabOut: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { vars } from '@jfrader/tokens/vars';
+import { Button, ContextMenu, styled } from '@jfrader/ui';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-start',
+  gap: vars.space[3],
+});
+
+const TargetBox = styled(ContextMenu.Target)({
+  boxSizing: 'border-box',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: vars.space[2],
+  inlineSize: '16rem',
+  maxInlineSize: '100%',
+  minBlockSize: '6rem',
+  padding: vars.space[4],
+  border: \`1px dashed \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.md,
+  color: vars.color.text,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+});
+
+<Row>
+  <ContextMenu>
+    <TargetBox aria-label="report.pdf actions">
+      <strong>report.pdf</strong>
+      <Button size="sm" variant="outline" onClick={() => {}}>
+        Open
+      </Button>
+    </TargetBox>
+    <ContextMenu.Content>
+      <ContextMenu.Item
+        icon={
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+          </svg>
+        }
+        onSelect={() => {}}
+      >
+        Copy link
+      </ContextMenu.Item>
+      <ContextMenu.Item onSelect={() => {}}>Rename</ContextMenu.Item>
+      <ContextMenu.Item disabled>Move</ContextMenu.Item>
+      <ContextMenu.Separator />
+      <ContextMenu.Item tone="danger" onSelect={() => {}}>
+        Delete file
+      </ContextMenu.Item>
+    </ContextMenu.Content>
+  </ContextMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
     await userEvent.tab();
@@ -673,6 +953,76 @@ export const TabOut: Story = {
 };
 
 export const OutsidePress: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { vars } from '@jfrader/tokens/vars';
+import { Button, ContextMenu, styled } from '@jfrader/ui';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-start',
+  gap: vars.space[3],
+});
+
+const TargetBox = styled(ContextMenu.Target)({
+  boxSizing: 'border-box',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: vars.space[2],
+  inlineSize: '16rem',
+  maxInlineSize: '100%',
+  minBlockSize: '6rem',
+  padding: vars.space[4],
+  border: \`1px dashed \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.md,
+  color: vars.color.text,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+});
+
+<Row>
+  <ContextMenu>
+    <TargetBox aria-label="report.pdf actions">
+      <strong>report.pdf</strong>
+      <Button size="sm" variant="outline" onClick={() => {}}>
+        Open
+      </Button>
+    </TargetBox>
+    <ContextMenu.Content>
+      <ContextMenu.Item
+        icon={
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+          </svg>
+        }
+        onSelect={() => {}}
+      >
+        Copy link
+      </ContextMenu.Item>
+      <ContextMenu.Item onSelect={() => {}}>Rename</ContextMenu.Item>
+      <ContextMenu.Item disabled>Move</ContextMenu.Item>
+      <ContextMenu.Separator />
+      <ContextMenu.Item tone="danger" onSelect={() => {}}>
+        Delete file
+      </ContextMenu.Item>
+    </ContextMenu.Content>
+  </ContextMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
     const after = getAfter(canvasElement);
@@ -756,6 +1106,76 @@ export const VisibleTrigger: Story = {
 };
 
 export const OpenOnClickOptIn: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { vars } from '@jfrader/tokens/vars';
+import { Button, ContextMenu, styled } from '@jfrader/ui';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-start',
+  gap: vars.space[3],
+});
+
+const TargetBox = styled(ContextMenu.Target)({
+  boxSizing: 'border-box',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: vars.space[2],
+  inlineSize: '16rem',
+  maxInlineSize: '100%',
+  minBlockSize: '6rem',
+  padding: vars.space[4],
+  border: \`1px dashed \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.md,
+  color: vars.color.text,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+});
+
+<Row>
+  <ContextMenu>
+    <TargetBox aria-label="report.pdf actions" openOnClick>
+      <strong>report.pdf</strong>
+      <Button size="sm" variant="outline" onClick={() => {}}>
+        Open
+      </Button>
+    </TargetBox>
+    <ContextMenu.Content>
+      <ContextMenu.Item
+        icon={
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+          </svg>
+        }
+        onSelect={() => {}}
+      >
+        Copy link
+      </ContextMenu.Item>
+      <ContextMenu.Item onSelect={() => {}}>Rename</ContextMenu.Item>
+      <ContextMenu.Item disabled>Move</ContextMenu.Item>
+      <ContextMenu.Separator />
+      <ContextMenu.Item tone="danger" onSelect={() => {}}>
+        Delete file
+      </ContextMenu.Item>
+    </ContextMenu.Content>
+  </ContextMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   args: { targetProps: { openOnClick: true } },
   play: async ({ args, canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
@@ -960,6 +1380,82 @@ export const PreventDefaultSelection: Story = {
 };
 
 export const NativeEventVeto: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { vars } from '@jfrader/tokens/vars';
+import { Button, ContextMenu, styled } from '@jfrader/ui';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-start',
+  gap: vars.space[3],
+});
+
+const TargetBox = styled(ContextMenu.Target)({
+  boxSizing: 'border-box',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: vars.space[2],
+  inlineSize: '16rem',
+  maxInlineSize: '100%',
+  minBlockSize: '6rem',
+  padding: vars.space[4],
+  border: \`1px dashed \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.md,
+  color: vars.color.text,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+});
+
+<Row>
+  <ContextMenu>
+    <TargetBox
+      aria-label="report.pdf actions"
+      onContextMenu={(event) => event.preventDefault()}
+      onKeyDown={(event) => {
+        if (event.key === 'F10') event.preventDefault();
+      }}
+    >
+      <strong>report.pdf</strong>
+      <Button size="sm" variant="outline" onClick={() => {}}>
+        Open
+      </Button>
+    </TargetBox>
+    <ContextMenu.Content>
+      <ContextMenu.Item
+        icon={
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+          </svg>
+        }
+        onSelect={() => {}}
+      >
+        Copy link
+      </ContextMenu.Item>
+      <ContextMenu.Item onSelect={() => {}}>Rename</ContextMenu.Item>
+      <ContextMenu.Item disabled>Move</ContextMenu.Item>
+      <ContextMenu.Separator />
+      <ContextMenu.Item tone="danger" onSelect={() => {}}>
+        Delete file
+      </ContextMenu.Item>
+    </ContextMenu.Content>
+  </ContextMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   args: {
     targetProps: {
       onContextMenu: (event) => event.preventDefault(),
@@ -1048,6 +1544,76 @@ export const AllDisabled: Story = {
 };
 
 export const DisabledTarget: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { vars } from '@jfrader/tokens/vars';
+import { Button, ContextMenu, styled } from '@jfrader/ui';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-start',
+  gap: vars.space[3],
+});
+
+const TargetBox = styled(ContextMenu.Target)({
+  boxSizing: 'border-box',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: vars.space[2],
+  inlineSize: '16rem',
+  maxInlineSize: '100%',
+  minBlockSize: '6rem',
+  padding: vars.space[4],
+  border: \`1px dashed \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.md,
+  color: vars.color.text,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+});
+
+<Row>
+  <ContextMenu>
+    <TargetBox aria-label="report.pdf actions" disabled>
+      <strong>report.pdf</strong>
+      <Button size="sm" variant="outline" onClick={() => {}}>
+        Open
+      </Button>
+    </TargetBox>
+    <ContextMenu.Content>
+      <ContextMenu.Item
+        icon={
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+          </svg>
+        }
+        onSelect={() => {}}
+      >
+        Copy link
+      </ContextMenu.Item>
+      <ContextMenu.Item onSelect={() => {}}>Rename</ContextMenu.Item>
+      <ContextMenu.Item disabled>Move</ContextMenu.Item>
+      <ContextMenu.Separator />
+      <ContextMenu.Item tone="danger" onSelect={() => {}}>
+        Delete file
+      </ContextMenu.Item>
+    </ContextMenu.Content>
+  </ContextMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   args: { targetProps: { disabled: true } },
   play: async ({ args, canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
@@ -1133,6 +1699,76 @@ export const ManyItems: Story = {
 };
 
 export const ViewportCorners: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { vars } from '@jfrader/tokens/vars';
+import { Button, ContextMenu, styled } from '@jfrader/ui';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-start',
+  gap: vars.space[3],
+});
+
+const TargetBox = styled(ContextMenu.Target)({
+  boxSizing: 'border-box',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: vars.space[2],
+  inlineSize: '16rem',
+  maxInlineSize: '100%',
+  minBlockSize: '6rem',
+  padding: vars.space[4],
+  border: \`1px dashed \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.md,
+  color: vars.color.text,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+});
+
+<Row>
+  <ContextMenu>
+    <TargetBox aria-label="report.pdf actions">
+      <strong>report.pdf</strong>
+      <Button size="sm" variant="outline" onClick={() => {}}>
+        Open
+      </Button>
+    </TargetBox>
+    <ContextMenu.Content>
+      <ContextMenu.Item
+        icon={
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+          </svg>
+        }
+        onSelect={() => {}}
+      >
+        Copy link
+      </ContextMenu.Item>
+      <ContextMenu.Item onSelect={() => {}}>Rename</ContextMenu.Item>
+      <ContextMenu.Item disabled>Move</ContextMenu.Item>
+      <ContextMenu.Separator />
+      <ContextMenu.Item tone="danger" onSelect={() => {}}>
+        Delete file
+      </ContextMenu.Item>
+    </ContextMenu.Content>
+  </ContextMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   play: async ({ canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
     const view = canvasElement.ownerDocument.defaultView!;
@@ -1184,6 +1820,76 @@ export const ScrollAndResize: Story = {
 };
 
 export const ScrollCloses: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { vars } from '@jfrader/tokens/vars';
+import { Button, ContextMenu, styled } from '@jfrader/ui';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-start',
+  gap: vars.space[3],
+});
+
+const TargetBox = styled(ContextMenu.Target)({
+  boxSizing: 'border-box',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: vars.space[2],
+  inlineSize: '16rem',
+  maxInlineSize: '100%',
+  minBlockSize: '6rem',
+  padding: vars.space[4],
+  border: \`1px dashed \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.md,
+  color: vars.color.text,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+});
+
+<Row>
+  <ContextMenu>
+    <TargetBox aria-label="report.pdf actions">
+      <strong>report.pdf</strong>
+      <Button size="sm" variant="outline" onClick={() => {}}>
+        Open
+      </Button>
+    </TargetBox>
+    <ContextMenu.Content>
+      <ContextMenu.Item
+        icon={
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+          </svg>
+        }
+        onSelect={() => {}}
+      >
+        Copy link
+      </ContextMenu.Item>
+      <ContextMenu.Item onSelect={() => {}}>Rename</ContextMenu.Item>
+      <ContextMenu.Item disabled>Move</ContextMenu.Item>
+      <ContextMenu.Separator />
+      <ContextMenu.Item tone="danger" onSelect={() => {}}>
+        Delete file
+      </ContextMenu.Item>
+    </ContextMenu.Content>
+  </ContextMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   play: async ({ args, canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
     const box = target.getBoundingClientRect();
@@ -1359,6 +2065,76 @@ export const ControlledAccept: Story = {
 };
 
 export const RejectedOpen: Story = {
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { vars } from '@jfrader/tokens/vars';
+import { Button, ContextMenu, styled } from '@jfrader/ui';
+
+const Row = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-start',
+  gap: vars.space[3],
+});
+
+const TargetBox = styled(ContextMenu.Target)({
+  boxSizing: 'border-box',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: vars.space[2],
+  inlineSize: '16rem',
+  maxInlineSize: '100%',
+  minBlockSize: '6rem',
+  padding: vars.space[4],
+  border: \`1px dashed \${vars.color.borderControl}\`,
+  borderRadius: vars.radius.md,
+  color: vars.color.text,
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+});
+
+<Row>
+  <ContextMenu open={false} onOpenChange={() => {}}>
+    <TargetBox aria-label="report.pdf actions">
+      <strong>report.pdf</strong>
+      <Button size="sm" variant="outline" onClick={() => {}}>
+        Open
+      </Button>
+    </TargetBox>
+    <ContextMenu.Content>
+      <ContextMenu.Item
+        icon={
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M6.5 9.5l3-3M7 4.5l1-1a2.5 2.5 0 013.5 3.5l-1 1M9 11.5l-1 1A2.5 2.5 0 014.5 9l1-1" />
+          </svg>
+        }
+        onSelect={() => {}}
+      >
+        Copy link
+      </ContextMenu.Item>
+      <ContextMenu.Item onSelect={() => {}}>Rename</ContextMenu.Item>
+      <ContextMenu.Item disabled>Move</ContextMenu.Item>
+      <ContextMenu.Separator />
+      <ContextMenu.Item tone="danger" onSelect={() => {}}>
+        Delete file
+      </ContextMenu.Item>
+    </ContextMenu.Content>
+  </ContextMenu>
+  <Button>After</Button>
+</Row>`,
+      },
+    },
+  },
   args: { open: false },
   play: async ({ args, canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
