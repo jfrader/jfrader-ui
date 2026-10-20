@@ -230,6 +230,7 @@ const scrimStyle = css({
   opacity: 'var(--sheet-scrim, 1)',
 });
 const panelStyle = css({
+  overflowWrap: 'anywhere',
   boxSizing: 'border-box',
   position: 'absolute',
   insetBlockStart: 0,

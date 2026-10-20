@@ -9,6 +9,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
+import { expectInside } from '../../testing/geometry-assertions';
 import { Button } from '../button';
 import { TextField } from '../text-field';
 import { TextShimmer } from '../text-shimmer';
@@ -21,6 +22,7 @@ import { useNativeDialog, useNativeDialogRoot } from '../../overlay/use-native-d
 import { Dialog, type DialogPanelProps, type DialogCompoundProps, type DialogEasyProps } from './index';
 
 const TITLE = 'Edit profile';
+const LONG_REFERENCE = 'CustomerAccountExportConfirmationReference'.repeat(3);
 const DESCRIPTION = 'Update your display name and avatar.';
 const DELETE_LABEL = 'Delete account';
 const composedTriggerClick = fn();
@@ -97,6 +99,29 @@ export default meta;
 
 type Story = StoryObj<(props: DialogCompoundProps) => ReactNode>;
 type EasyStory = StoryObj<(props: DialogEasyProps) => ReactNode>;
+
+export const UnbrokenContent: EasyStory = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    triggerLabel: 'Open export',
+    title: LONG_REFERENCE,
+    content: <p>{LONG_REFERENCE}</p>,
+    closeLabel: 'Close',
+    slotProps: { content: { sx: { inlineSize: '320px' } } },
+  },
+  render: (args) => <Dialog {...args} />,
+  play: async ({ canvas }) => {
+    const dialog = await canvas.findByRole('dialog');
+    await settleMotion(dialog);
+    for (const direction of ['ltr', 'rtl']) {
+      dialog.dir = direction;
+      await expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth + 1);
+      await expectInside(within(dialog).getByRole('button', { name: 'Close' }), dialog);
+    }
+    dialog.removeAttribute('dir');
+  },
+};
 // @ts-expect-error Generated-part slot keys are closed.
 type UnknownSlot = NonNullable<DialogEasyProps['slotProps']>['unknown'];
 // @ts-expect-error Replacement keys are closed.

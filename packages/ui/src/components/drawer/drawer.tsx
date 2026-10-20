@@ -279,6 +279,7 @@ const dialogSideStyles: Record<DrawerSide, SerializedStyles> = {
 };
 
 const panelStyle = css({
+  overflowWrap: 'anywhere',
   display: 'flex',
   flexDirection: 'column',
   minBlockSize: 0,

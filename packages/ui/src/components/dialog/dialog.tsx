@@ -230,6 +230,7 @@ const dialogStyle = css(modalShellReset, modalBackdropMotion, {
 });
 
 const panelStyle = css({
+  overflowWrap: 'anywhere',
   padding: vars.space[5],
   inlineSize: '100%',
   ...modalPanelMotion(MODAL_ENTER_SCALE),

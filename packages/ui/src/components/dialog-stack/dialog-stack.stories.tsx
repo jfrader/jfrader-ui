@@ -363,6 +363,35 @@ const EASY_PAGES: readonly DialogStackPageRecord[] = [
   },
 ];
 
+const LONG_REFERENCE = 'CustomerAccountExportConfirmationReference'.repeat(3);
+
+export const UnbrokenContent: StoryObj<(props: DialogStackEasyProps) => ReactNode> = {
+  tags: ['!autodocs'],
+  args: {
+    defaultValue: ['export'],
+    pages: [{
+      value: 'export',
+      title: LONG_REFERENCE,
+      content: <p>{LONG_REFERENCE}</p>,
+      close: 'Close',
+    }],
+    slotProps: { content: { sx: { maxInlineSize: '320px' } } },
+  },
+  render: (args) => <DialogStack {...args} />,
+  play: async ({ canvasElement }) => {
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog');
+    const title = within(dialog).getByRole('heading');
+    const body = dialog.querySelector<HTMLElement>('[data-ui="dialog-stack-body"]')!;
+    for (const direction of ['ltr', 'rtl']) {
+      dialog.dir = direction;
+      for (const part of [title, body]) {
+        await expect(part.scrollWidth).toBeLessThanOrEqual(part.clientWidth + 1);
+      }
+    }
+    dialog.removeAttribute('dir');
+  },
+};
+
 export const Default: StoryObj<(props: DialogStackEasyProps) => ReactNode> = {
   name: 'Easy mode',
   parameters: {

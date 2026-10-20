@@ -12,6 +12,7 @@
 
 - `InputGroup` wraps long addons without collapsing the editable control. `RadioCards` wraps long validation messages within narrow groups.
 - `LogoOrbit` centers its rings and mark in RTL, wraps long integration labels and details, and preserves selection in forced colors. `Emblem` fits longer monograms, keeps its size beside long text and preserves its silhouette in forced colors. `Stepper` gives narrow horizontal labels and errors room to wrap; Stepper and LogoOrbit examples fit phone screens.
+- `Dialog`, `Drawer`, `BottomSheet` and `DialogStack` wrap unbroken titles and content inside narrow panels without covering close controls.
 - `Slider` centers marks on its track in RTL. `SegmentedControl` and `ToggleGroup` keep compact choices at least 32px wide, and `ToggleGroup` contains long options in a scrollable group.
 - `Article` keeps responsive picture images inside their media figure in narrow layouts.
 - `SearchField`, `PasswordField` and `NumberField` give small inline actions a 32px-wide target. `NumberField` wraps long messages without overflowing narrow fields.

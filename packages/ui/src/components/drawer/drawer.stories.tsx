@@ -334,6 +334,34 @@ async function expectInlineSize(panel: HTMLElement, dialog: HTMLElement, size: D
   await expect(rect(panel).height).toBeCloseTo(rect(dialog).height, 0);
 }
 
+const LONG_REFERENCE = 'CustomerAccountExportConfirmationReference'.repeat(3);
+
+export const UnbrokenContent: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    triggerLabel: 'Open export',
+    title: LONG_REFERENCE,
+    content: <p>{LONG_REFERENCE}</p>,
+    closeLabel: 'Close',
+    sx: { inlineSize: '320px' },
+  },
+  render: (args) => <Drawer {...args} />,
+  play: async ({ canvas }) => {
+    const dialog = await canvas.findByRole('dialog');
+    await settle(dialog);
+    const title = within(dialog).getByRole('heading');
+    const body = dialog.querySelector<HTMLElement>('[data-ui="drawer-body"]')!;
+    for (const direction of ['ltr', 'rtl']) {
+      dialog.dir = direction;
+      for (const part of [title, body]) {
+        await expect(part.scrollWidth).toBeLessThanOrEqual(part.clientWidth + 1);
+      }
+    }
+    dialog.removeAttribute('dir');
+  },
+};
+
 export const Default: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
   name: 'Easy mode',
   args: {
