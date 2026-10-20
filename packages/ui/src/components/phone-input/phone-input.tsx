@@ -115,7 +115,7 @@ const defaults: Omit<PhoneInputMessages, 'results'> = {
   suggestedLabel: 'Suggested countries', allCountriesLabel: 'All countries', clearSearchLabel: 'Clear search', closeLabel: 'Close countries', empty: 'No countries found',
   countryChanged: (name) => `Country: ${name}`, valid: (name) => `Valid phone number for ${name}`, invalid: (name) => name ? `Enter a valid phone number for ${name}` : 'Enter a valid international phone number',
 };
-const shellStyle = css({ display: 'flex', alignItems: 'center', borderRadius: vars.radius.sm, overflow: 'visible' });
+const shellStyle = css({ display: 'flex', alignItems: 'center', minInlineSize: 0, borderRadius: vars.radius.sm, overflow: 'visible' });
 const sizes: Record<NonNullable<PhoneInputProps['size']>, SerializedStyles> = {
   sm: css({ blockSize: vars.space[8], fontSize: vars.textSize.sm }),
   md: css({ blockSize: vars.space[10], fontSize: vars.textSize.sm }),
@@ -144,7 +144,7 @@ const panelStyle = css({
 });
 const searchRowStyle = css({ display: 'flex', gap: vars.space[1], flexShrink: 0 });
 const searchStyle = css({ minInlineSize: 0, blockSize: vars.space[10], fontSize: vars.textSize.sm, paddingInline: vars.space[2] });
-const listStyle = css({ overflow: 'auto', minBlockSize: 0, padding: vars.space[1], scrollPaddingBlock: vars.space[1] });
+const listStyle = css({ overflow: 'auto', overscrollBehavior: 'contain', minBlockSize: 0, padding: vars.space[1], scrollPaddingBlock: vars.space[1] });
 const headingStyle = css({ color: vars.color.textMuted, fontSize: vars.textSize.sm, paddingInline: vars.space[2], paddingBlock: vars.space[1] });
 const optionStyle = css({ justifyContent: 'space-between', gap: vars.space[2], [FORCED_COLORS]: { '&[data-active]': { outlineColor: 'Highlight' } } });
 const checkStyle = css({ color: vars.color.success, paddingInlineEnd: vars.space[3] });
@@ -396,7 +396,7 @@ export function PhoneInput({
                   {group.map((code) => {
                     const index = rows.indexOf(code);
                     return <div {...getItemProps({ onClick: () => selectCountry(code), onMouseMove: () => setActiveIndex(index) })} {...withoutSx(slotProps?.option)} onMouseDown={(event) => event.preventDefault()} ref={(element) => { listRef.current[index] = element; }} key={code} id={optionId(code)} role="option" aria-selected={code === currentCountry} data-active={code === activeCountry ? '' : undefined} css={[listboxItemStyle, listboxItemStateStyle, listboxOptionStyle, optionStyle, slotProps?.option?.sx]}>
-                      <span>{countryName(code)}</span><span>+{getCountryCallingCode(code)}{code === currentCountry ? ' ✓' : ''}</span>
+                      <span>{countryName(code)}</span><span dir="ltr">+{getCountryCallingCode(code)}{code === currentCountry ? ' ✓' : ''}</span>
                     </div>;
                   })}
                 </div>;

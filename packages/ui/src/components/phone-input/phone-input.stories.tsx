@@ -6,6 +6,7 @@ import { styled } from '../../styling/styled';
 import { ThemeRoot } from '../theme-root';
 import { withLightTheme } from '../../testing/story-decorators';
 import { settleMotion } from '../../testing/motion-assertions';
+import { expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { PhoneInput, type PhoneInputProps, type PhoneCountryCode } from './index';
 
 const Stack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: 'min(100%, 400px)', fontFamily: vars.font.sans, color: vars.color.text });
@@ -13,6 +14,7 @@ const Action = styled.button({ font: 'inherit', color: vars.color.text, backgrou
 const Hidden = styled.span({ position: 'absolute', inlineSize: 1, blockSize: 1, overflow: 'hidden', clipPath: 'inset(50%)' });
 const Form = styled.form({ display: 'grid', gap: vars.space[3] });
 const ScopedSurface = styled.div({ backgroundColor: vars.color.bg, padding: vars.space[4] });
+const Narrow = styled.div({ inlineSize: 'min(100%, 16rem)' });
 const meta = {
   title: 'Inputs/PhoneInput', component: PhoneInput, tags: ['autodocs'],
   args: { label: 'Phone number', defaultCountry: 'GB', locale: 'en-GB' },
@@ -88,6 +90,37 @@ export const PanelPlacement: Story = {
     await expect(panelBox.top).toBeGreaterThan(16);
     // The panel never grows past 20rem, so it stays anchored instead of being clamped to the edge.
     await expect(panelBox.height).toBeLessThanOrEqual(321);
+  },
+};
+export const NarrowCountryPicker: Story = {
+  args: { defaultCountry: 'CC', defaultValue: '+61891621234', dir: 'rtl' },
+  render: (args) => <Narrow><PhoneInput {...args} /></Narrow>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const input = canvas.getByRole('textbox');
+    const trigger = canvas.getByRole('button');
+    await expectInside(input.parentElement!, input.closest('[data-ui="phone-input"]')!);
+    await expectNoOverlap(trigger, input);
+    await userEvent.click(trigger);
+    const page = portal(canvasElement);
+    const panel = page.getByRole('dialog', { name: 'Countries' });
+    const search = page.getByRole('combobox');
+    await settleMotion(panel);
+    await expectInside(search, panel);
+    await userEvent.keyboard('{End}');
+    const list = page.getByRole('listbox');
+    await expect(getComputedStyle(list).overscrollBehaviorY).toBe('contain');
+    const active = canvasElement.ownerDocument.getElementById(search.getAttribute('aria-activedescendant')!)!;
+    await expectInside(active, list);
+    await expectInside(list, panel);
+    await expect(list.scrollTop).toBeGreaterThan(0);
+    await userEvent.type(search, 'Cocos');
+    await expectInside(page.getByRole('button', { name: 'Clear search' }), panel);
+    await expectInside(page.getByRole('button', { name: 'Close countries' }), panel);
+    const option = page.getByRole('option', { name: /Cocos/ });
+    await expect(option).toBeVisible();
+    await expect(getComputedStyle(option.lastElementChild!).direction).toBe('ltr');
+    await userEvent.keyboard('{Enter}');
+    await expect(input.ownerDocument.activeElement).toBe(input);
   },
 };
 export const Default: Story = {
