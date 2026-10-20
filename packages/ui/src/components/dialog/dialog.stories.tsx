@@ -760,19 +760,60 @@ export const BodyProfileEditor: EasyStory = {
   args: { ...Default.args, scroll: 'body' },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const { dialog, trigger } = await openDialog(canvasElement);
-    await expect(canvas.getByRole('textbox', { name: 'Display name' })).toHaveFocus();
+    const displayName = canvas.getByRole('textbox', { name: 'Display name' });
+    await expect(displayName).toHaveFocus();
+    await settleMotion(dialog);
+    const panel = dialog.querySelector('[data-ui~="dialog-panel"]')!.getBoundingClientRect();
+    const viewport = dialog.getBoundingClientRect();
+    const viewportStyle = getComputedStyle(dialog);
+    const gutterStart = Number.parseFloat(viewportStyle.paddingBlockStart);
+    const gutterEnd = Number.parseFloat(viewportStyle.paddingBlockEnd);
+    const availableHeight = dialog.clientHeight - gutterStart - gutterEnd;
+    const availableTop = viewport.top + dialog.clientTop + gutterStart;
+    const fits = panel.height <= availableHeight;
+    const expectControlVisible = async (control: HTMLElement) => {
+      const rect = control.getBoundingClientRect();
+      await expect(rect.top).toBeGreaterThanOrEqual(viewport.top + dialog.clientTop);
+      await expect(rect.bottom).toBeLessThanOrEqual(viewport.top + dialog.clientTop + dialog.clientHeight);
+    };
+    await expectControlVisible(displayName);
+    if (fits) {
+      await expect(Math.abs((panel.top + panel.bottom) / 2 - (availableTop + availableHeight / 2))).toBeLessThanOrEqual(1);
+      await expect(dialog.scrollHeight).toBe(dialog.clientHeight);
+    } else {
+      await expect(Math.abs(panel.top - availableTop)).toBeLessThanOrEqual(1);
+      await expect(dialog.scrollTop).toBe(0);
+      await expect(dialog.scrollHeight).toBeGreaterThan(dialog.clientHeight);
+      await expect(viewportStyle.overflowY).toBe('auto');
+    }
     await userEvent.tab();
-    await expect(canvas.getByRole('textbox', { name: 'Email' })).toHaveFocus();
+    const email = canvas.getByRole('textbox', { name: 'Email' });
+    await expect(email).toHaveFocus();
+    await expectControlVisible(email);
     await userEvent.tab();
     const close = canvas.getByRole('button', { name: 'Close' });
     await expect(close).toHaveFocus();
-    await settleMotion(dialog);
-    const panel = dialog.querySelector('[data-ui~="dialog-panel"]')!.getBoundingClientRect();
-    const viewportHeight = canvasElement.ownerDocument.defaultView!.innerHeight;
-    await expect(Math.abs((panel.top + panel.bottom) / 2 - viewportHeight / 2)).toBeLessThanOrEqual(1);
-    await expect(dialog.scrollHeight).toBe(dialog.clientHeight);
+    await expectControlVisible(close);
+    if (!fits) {
+      dialog.scrollTop = dialog.scrollHeight;
+      await expect(dialog.scrollTop).toBeGreaterThan(0);
+      await expectControlVisible(close);
+    }
     await userEvent.click(close);
     await expectClosed(canvasElement, trigger);
+  },
+};
+
+export const BodyProfileEditorShortViewport: EasyStory = {
+  ...BodyProfileEditor,
+  parameters: {
+    viewport: { options: { shortPhone: { name: 'Short phone', styles: { width: '390px', height: '320px' } } } },
+  },
+  globals: { viewport: { value: 'shortPhone' } },
+  play: async (context) => {
+    await expect(context.canvasElement.ownerDocument.defaultView!.innerWidth).toBe(390);
+    await expect(context.canvasElement.ownerDocument.defaultView!.innerHeight).toBe(320);
+    await BodyProfileEditor.play!(context);
   },
 };
 
@@ -1584,7 +1625,7 @@ export const CrampedPaper: EasyStory = {
 };
 
 const ScrollNote = styled.p({ marginBlock: vars.space[3], fontSize: vars.textSize.sm });
-const scrollingNotes = Array.from({ length: 12 }, (_, index) => (
+const scrollingNotes = Array.from({ length: 20 }, (_, index) => (
   <ScrollNote key={index}>Your export includes your profile settings and saved drafts. Keep the archive somewhere private.</ScrollNote>
 ));
 
@@ -1596,7 +1637,7 @@ export const ScrollModes: Story = {
 import { vars } from '@jfrader/tokens/vars';
 
 const ScrollNote = styled.p({ marginBlock: vars.space[3], fontSize: vars.textSize.sm });
-const notes = Array.from({ length: 12 }, (_, index) => (
+const notes = Array.from({ length: 20 }, (_, index) => (
   <ScrollNote key={index}>Your export includes your profile settings and saved drafts. Keep the archive somewhere private.</ScrollNote>
 ));
 
@@ -1609,6 +1650,17 @@ const notes = Array.from({ length: 12 }, (_, index) => (
     <Dialog triggerLabel="Scroll inside" title="Export notes" closeLabel="Done" content={scrollingNotes} />
     <Dialog scroll="body" triggerLabel="Scroll whole panel" title="Export notes" closeLabel="Done" content={scrollingNotes} />
   </>,
+  play: async ({ canvas, userEvent }) => {
+    for (const [mode, label] of Object.entries({ paper: 'Scroll inside', body: 'Scroll whole panel' })) {
+      await userEvent.click(canvas.getByRole('button', { name: label }));
+      const dialog = await canvas.findByRole('dialog', { name: 'Export notes' });
+      await settleMotion(dialog);
+      const viewport = mode === 'paper' ? dialog.querySelector<HTMLElement>('[data-ui="dialog-body"]')! : dialog;
+      await expect(viewport.scrollHeight).toBeGreaterThan(viewport.clientHeight);
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
+      await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
+    }
+  },
 };
 
 function ChangingScrollMode() {

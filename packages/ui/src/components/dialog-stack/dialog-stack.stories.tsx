@@ -7,6 +7,7 @@ import type { Mock } from 'storybook/test';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { findConditionalStyle } from '../../testing/conditional-style';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button as FixtureButton } from '../button';
 import { Dialog } from '../dialog';
@@ -320,23 +321,6 @@ async function expectStackClosed(canvasElement: HTMLElement, trigger: HTMLElemen
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   await waitFor(() => expect(trigger).toHaveFocus());
   await expect(canvasElement.ownerDocument.documentElement.style.overflow).toBe('');
-}
-
-/** The authored rule inside `condition` that targets one of `element`'s classes. */
-function findConditionalRule(element: HTMLElement, condition: string, suffix = '') {
-  for (const sheet of Array.from(element.ownerDocument.styleSheets)) {
-    for (const rule of Array.from(sheet.cssRules)) {
-      if (!(rule instanceof CSSMediaRule) || !rule.conditionText.includes(condition)) continue;
-      for (const inner of Array.from(rule.cssRules)) {
-        if (!(inner instanceof CSSStyleRule)) continue;
-        const matches = Array.from(element.classList).some((name) =>
-          inner.selectorText.split(',').some((selector) => selector.trim() === `.${name}${suffix}`),
-        );
-        if (matches) return inner;
-      }
-    }
-  }
-  return undefined;
 }
 
 const EASY_PAGES: readonly DialogStackPageRecord[] = [
@@ -2277,9 +2261,8 @@ export const ReducedMotion: Story = {
     await waitFor(() => expect(shell).toHaveAttribute('open'));
     const panel = activePanel(canvasElement)!;
     const handle = panel.querySelector<HTMLElement>('[data-ui="dialog-stack-handle"]')!;
-    const rule = findConditionalRule(panel, 'prefers-reduced-motion: reduce');
-    await expect(rule?.style.animationName).toBe('none');
-    await expect(rule?.style.transitionDuration).toBe('0s');
+    await expect(findConditionalStyle(panel, 'prefers-reduced-motion: reduce', 'animation-name')).toBe('none');
+    await expect(findConditionalStyle(panel, 'prefers-reduced-motion: reduce', 'transition-duration')).toBe('0s');
 
     const win = handle.ownerDocument.defaultView!;
     const realMatchMedia = win.matchMedia.bind(win);
@@ -2318,11 +2301,10 @@ export const ForcedColors: Story = {
   play: async ({ canvasElement }) => {
     await waitFor(() => expect(layer(canvasElement)).toHaveAttribute('open'));
     const panel = activePanel(canvasElement)!;
-    const panelRule = findConditionalRule(panel, 'forced-colors: active');
-    await expect(panelRule?.style.boxShadow).toBe('none');
-    await expect(panelRule?.style.borderColor.toLowerCase()).toBe('canvastext');
+    await expect(findConditionalStyle(panel, 'forced-colors: active', 'box-shadow')).toBe('none');
+    await expect(findConditionalStyle(panel, 'forced-colors: active', 'border-color')?.toLowerCase()).toBe('canvastext');
     const back = within(panel).getByRole('button', { name: 'Back to Settings' });
-    await expect(findConditionalRule(back, 'forced-colors: active')?.style.borderColor.toLowerCase()).toBe('buttonborder');
+    await expect(findConditionalStyle(back, 'forced-colors: active', 'border-color')?.toLowerCase()).toBe('buttonborder');
   },
 };
 

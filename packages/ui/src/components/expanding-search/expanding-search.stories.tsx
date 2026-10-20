@@ -10,6 +10,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { findConditionalStyle } from '../../testing/conditional-style';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { ExpandingSearch, type ExpandingSearchProps } from './index';
@@ -59,19 +60,6 @@ function resolvePx(host: HTMLElement, radius: string) {
   probe.remove();
   return value;
 }
-/** The authored rule inside `condition` that targets one of `element`'s classes. */
-function findConditionalRule(element: Element, condition: string) {
-  for (const sheet of Array.from(element.ownerDocument.styleSheets)) {
-    for (const rule of Array.from(sheet.cssRules)) {
-      if (!(rule instanceof CSSMediaRule) || !rule.conditionText.includes(condition)) continue;
-      for (const inner of Array.from(rule.cssRules)) {
-        if (inner instanceof CSSStyleRule && Array.from(element.classList).some((name) => inner.selectorText.split(',').some((selector) => selector.trim() === `.${name}`))) return inner;
-      }
-    }
-  }
-  return undefined;
-}
-
 async function expectFocus(element: HTMLElement, ring = element) {
   await expect(element.ownerDocument.activeElement).toBe(element);
   await expect(getComputedStyle(ring).outlineStyle).not.toBe('none');
@@ -333,8 +321,8 @@ export const ForcedColors: Story = {
   parameters: { docs: { description: { story: 'Checks CSS rules without emulating forced colors. Enable forced colors in the browser to check rendering.' } } },
   play: async ({ canvas }) => {
     const trigger = canvas.getByRole('button', { name: 'Search members', hidden: true });
-    await expect(findConditionalRule(trigger, 'forced-colors: active')?.style.borderColor.toLowerCase()).toBe('buttontext');
-    await expect(findConditionalRule(canvas.getByRole('searchbox').parentElement!, 'forced-colors: active')?.style.borderColor.toLowerCase()).toBe('canvastext');
+    await expect(findConditionalStyle(trigger, 'forced-colors: active', 'border-color')?.toLowerCase()).toBe('buttontext');
+    await expect(findConditionalStyle(canvas.getByRole('searchbox').parentElement!, 'forced-colors: active', 'border-color')?.toLowerCase()).toBe('canvastext');
   },
 };
 export const ReducedMotion: Story = {
