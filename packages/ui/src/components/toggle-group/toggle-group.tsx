@@ -38,23 +38,35 @@ export type ToggleGroupOrientation = 'horizontal' | 'vertical';
 type ToggleGroupValue = string | string[];
 
 interface ToggleGroupBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
+  /** Sets item layout and arrow-key navigation. Defaults to `horizontal`. */
   orientation?: ToggleGroupOrientation;
+  /** Disables every item. Defaults to `false`. */
   disabled?: boolean;
+  /** Allows clearing the pressed item in single mode to `''`. Defaults to `false`; ignored in multiple mode. */
   allowEmpty?: boolean;
+  /** Names the group, taking precedence over `aria-label`. */
   label?: string;
 }
 
 export interface ToggleGroupSingleProps extends ToggleGroupBaseProps {
+  /** Allows one pressed item at a time. Defaults to `single`. */
   type?: 'single';
+  /** Controls the pressed item; `''` leaves every item unpressed. */
   value?: string;
+  /** Initial uncontrolled pressed item. Defaults to no selection. */
   defaultValue?: string;
+  /** Requests the pressed item's value, or `''` when cleared with `allowEmpty`. */
   onValueChange?: (value: string) => void;
 }
 
 export interface ToggleGroupMultipleProps extends ToggleGroupBaseProps {
+  /** Allows items to be pressed and cleared independently. */
   type: 'multiple';
+  /** Controls the pressed item values. */
   value?: string[];
+  /** Initial uncontrolled pressed values. Defaults to no selection. */
   defaultValue?: string[];
+  /** Requests pressed values in the order they were selected. */
   onValueChange?: (value: string[]) => void;
 }
 
@@ -80,12 +92,23 @@ export interface ToggleGroupSlotProps {
   item?: Omit<ToggleGroupItemProps, 'value' | 'children' | 'disabled' | 'id'>;
 }
 type ToggleGroupComposition =
-  | { options?: never; children?: ReactNode; component?: never; slots?: never; slotProps?: never }
   | {
+      options?: never;
+      /** Supplies compound `ToggleGroup.Item` elements instead of `options`. */
+      children?: ReactNode;
+      component?: never;
+      slots?: never;
+      slotProps?: never;
+    }
+  | {
+      /** Generates items from nonempty values, labels and optional disabled states. */
       options: readonly ToggleGroupOption[];
       children?: never;
+      /** Replaces the generated root; `slots.root` takes precedence. */
       component?: ToggleGroupSlots['root'];
+      /** Replaces the generated root and items with components that forward props and refs. */
       slots?: ToggleGroupSlots;
+      /** Supplies attributes and `sx` to the generated root and items. */
       slotProps?: ToggleGroupSlotProps;
     };
 export type ToggleGroupCompoundProps = ToggleGroupSingleProps | ToggleGroupMultipleProps;
@@ -93,6 +116,7 @@ export type ToggleGroupProps = (Omit<ToggleGroupSingleProps, 'children'> | Omit<
 export type ToggleGroupEasyProps = Extract<ToggleGroupProps, { options: readonly ToggleGroupOption[] }>;
 
 export interface ToggleGroupItemProps extends Omit<ComponentPropsWithRef<'button'>, 'value'>, SxProps {
+  /** Identifies this item in the group's selection; must be nonempty. */
   value: string;
 }
 
