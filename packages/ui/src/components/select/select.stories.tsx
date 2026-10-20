@@ -81,7 +81,7 @@ const morphSnippet = `<Select variant="morph" label="Fruit" defaultValue="apple"
 export const Morph: EasyStory = {
   args: { variant: 'morph', label: LABEL, options: FRUITS, defaultValue: 'apple', onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <Select {...args} />,
-  parameters: { docs: { source: { code: morphSnippet } } },
+  parameters: { docs: { source: { language: 'tsx', code: morphSnippet } } },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const trigger = canvas.getByRole('combobox');
     await userEvent.tab();
@@ -105,6 +105,13 @@ export const Morph: EasyStory = {
 };
 export const MorphLight: EasyStory = {
   ...Morph,
+  parameters: { docs: { source: { language: 'tsx', code: `<ThemeRoot theme="light">
+  <Select variant="morph" label="Fruit" defaultValue="apple" options={[
+    { value: 'apple', label: 'Apple' },
+    { value: 'banana', label: 'Banana', disabled: true },
+    { value: 'cherry', label: 'Cherry' },
+  ]} />
+</ThemeRoot>` } } },
   decorators: [withLightTheme],
   globals: { theme: 'light' },
 };
@@ -125,6 +132,13 @@ export const MorphReducedMotion: EasyStory = {
 };
 export const MorphRTL: EasyStory = {
   ...Morph,
+  parameters: { docs: { source: { language: 'tsx', code: `<div dir="rtl">
+  <Select variant="morph" label="Fruit" defaultValue="apple" options={[
+    { value: 'apple', label: 'Apple' },
+    { value: 'banana', label: 'Banana', disabled: true },
+    { value: 'cherry', label: 'Cherry' },
+  ]} />
+</div>` } } },
   render: (args) => <div dir="rtl"><Select {...args} /></div>,
 };
 export const MorphOpen: EasyStory = {
@@ -166,15 +180,28 @@ const PLANS: readonly SelectOption[] = [
   { value: 'pro', label: 'Pro' },
 ];
 
-const snippet = `<Select
-  label="Billing plan"
-  options={[
-    { value: 'free', label: 'Free' },
-    { value: 'enterprise', label: 'Enterprise', disabled: true },
-    { value: 'pro', label: 'Pro' },
-  ]}
-  defaultValue="free"
-/>`;
+const snippet = `import { Button, Select, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const PlanActions = styled.div({
+  display: 'flex',
+  alignItems: 'flex-end',
+  gap: vars.space[3],
+});
+
+<PlanActions>
+  <Select
+    label="Billing plan"
+    placeholder="Pick a plan"
+    options={[
+      { value: 'free', label: 'Free' },
+      { value: 'enterprise', label: 'Enterprise', disabled: true },
+      { value: 'pro', label: 'Pro' },
+    ]}
+    defaultValue="free"
+  />
+  <Button>Upgrade</Button>
+</PlanActions>`;
 
 const Row = styled.div({
   display: 'flex',
@@ -389,6 +416,21 @@ type UnknownReplacement = NonNullable<SelectEasyProps['slots']>['unknown'];
 
 /** Restyle the generated label and every option with slotProps. */
 export const SlotProps: EasyStory = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { Select } from '@jfrader/ui';
+
+function FruitField(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+
+<Select label="Fruit" defaultValue="apple" component={FruitField}
+  options={[
+    { value: 'apple', label: 'Apple' },
+    { value: 'banana', label: 'Banana', disabled: true },
+    { value: 'cherry', label: 'Cherry' },
+  ]}
+  slotProps={{ label: { css: { fontStyle: 'italic' } }, item: { className: 'fruit-option' } }}
+/>` } } },
   args: {
     label: 'Fruit', options: FRUITS, defaultValue: 'apple',
     component: CustomSelectRoot,
@@ -495,6 +537,7 @@ export const Default: EasyStory = {
   parameters: {
     docs: {
       source: {
+        language: 'tsx',
         code: snippet,
       },
     },
@@ -533,7 +576,11 @@ export const Compound: Story = {
   parameters: {
     docs: {
       source: {
-        code: `function FruitPicker() {
+        language: 'tsx',
+        code: `import { useId } from 'react';
+import { Select } from '@jfrader/ui';
+
+function FruitPicker() {
   const labelId = useId();
 
   return (
@@ -568,6 +615,25 @@ function CustomSelectTrigger(props: SelectTriggerProps) {
 }
 
 export const CustomSlots: EasyStory = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { Select, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const FruitLabel = styled(Select.Label)({ fontStyle: 'italic' });
+const FruitTrigger = styled(Select.Trigger)({ fontWeight: 600 });
+function FruitField(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+
+<Select label="Fruit" defaultValue="apple"
+  options={[
+    { value: 'apple', label: 'Apple' },
+    { value: 'banana', label: 'Banana', disabled: true },
+    { value: 'cherry', label: 'Cherry' },
+  ]}
+  slots={{ root: FruitField, label: FruitLabel, trigger: FruitTrigger }}
+  slotProps={{ root: { sx: { border: '1px solid ' + vars.color.danger } } }}
+/>` } } },
   render: () => (
     <Select
       label="Fruit"
@@ -825,6 +891,14 @@ function ControlledSelect(props: SelectCompoundProps) {
 ControlledSelect.displayName = 'ControlledSelect';
 
 export const EasyFormReset: EasyStory = {
+  parameters: { docs: { source: { language: 'tsx', code: `<form aria-label="Fruit form">
+  <Select label="Fruit" name="fruit" defaultValue="apple" options={[
+    { value: 'apple', label: 'Apple' },
+    { value: 'banana', label: 'Banana', disabled: true },
+    { value: 'cherry', label: 'Cherry' },
+  ]} />
+  <Button type="reset">Reset</Button>
+</form>` } } },
   render: () => (
     <form aria-label="Fruit form">
       <Select
@@ -850,6 +924,14 @@ export const EasyFormReset: EasyStory = {
 };
 
 export const Placeholder: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Select>
+  <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
+  <Select.Content>
+    <Select.Item value="apple">Apple</Select.Item>
+    <Select.Item value="banana" disabled>Banana</Select.Item>
+    <Select.Item value="cherry">Cherry</Select.Item>
+  </Select.Content>
+</Select>` } } },
   render: (args) => <SelectExample {...args} />,
   play: async ({ canvasElement }) => {
     const trigger = getTrigger(canvasElement);
@@ -937,6 +1019,17 @@ export const Controlled: Story = {
 };
 
 export const Keyboard: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<>
+  <Select defaultValue="apple">
+    <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
+    <Select.Content>
+      <Select.Item value="apple">Apple</Select.Item>
+      <Select.Item value="banana" disabled>Banana</Select.Item>
+      <Select.Item value="cherry">Cherry</Select.Item>
+    </Select.Content>
+  </Select>
+  <Button>Continue</Button>
+</>` } } },
   args: { defaultValue: 'apple', onValueChange: fn() },
   render: (args) => <SelectExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -1009,6 +1102,14 @@ export const Keyboard: Story = {
 };
 
 export const ArrowUpOpensLast: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Select>
+  <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
+  <Select.Content>
+    <Select.Item value="apple">Apple</Select.Item>
+    <Select.Item value="banana" disabled>Banana</Select.Item>
+    <Select.Item value="cherry">Cherry</Select.Item>
+  </Select.Content>
+</Select>` } } },
   render: (args) => <SelectExample {...args} />,
   play: async ({ canvasElement }) => {
     // Without a selection, ArrowUp opens on the last enabled option.
@@ -1020,6 +1121,14 @@ export const ArrowUpOpensLast: Story = {
 };
 
 export const KeyboardClosed: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Select defaultValue="apple">
+  <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
+  <Select.Content>
+    <Select.Item value="apple">Apple</Select.Item>
+    <Select.Item value="banana" disabled>Banana</Select.Item>
+    <Select.Item value="cherry">Cherry</Select.Item>
+  </Select.Content>
+</Select>` } } },
   args: { defaultValue: 'apple', onValueChange: fn() },
   render: (args) => <SelectExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -1051,6 +1160,14 @@ export const KeyboardClosed: Story = {
 };
 
 export const TypeaheadAcrossOpening: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Select>
+  <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
+  <Select.Content>
+    <Select.Item value="apple">Apple</Select.Item>
+    <Select.Item value="apricot">Apricot</Select.Item>
+    <Select.Item value="peach">Peach</Select.Item>
+  </Select.Content>
+</Select>` } } },
   args: { onValueChange: fn() },
   render: (args) => (
     <Select {...args}>
@@ -1085,6 +1202,17 @@ export const TypeaheadAcrossOpening: Story = {
 };
 
 export const OutsidePress: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<>
+  <Select defaultValue="apple">
+    <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
+    <Select.Content>
+      <Select.Item value="apple">Apple</Select.Item>
+      <Select.Item value="banana" disabled>Banana</Select.Item>
+      <Select.Item value="cherry">Cherry</Select.Item>
+    </Select.Content>
+  </Select>
+  <Button>Continue</Button>
+</>` } } },
   args: { defaultValue: 'apple', onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <SelectExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -1103,6 +1231,14 @@ export const OutsidePress: Story = {
 };
 
 export const DisabledItem: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Select defaultValue="apple">
+  <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
+  <Select.Content>
+    <Select.Item value="apple">Apple</Select.Item>
+    <Select.Item value="banana" disabled>Banana</Select.Item>
+    <Select.Item value="cherry">Cherry</Select.Item>
+  </Select.Content>
+</Select>` } } },
   args: { defaultValue: 'apple', onValueChange: fn() },
   render: (args) => <SelectExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -1126,6 +1262,14 @@ export const DisabledItem: Story = {
 };
 
 export const DisabledSelect: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Select disabled defaultValue="apple">
+  <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
+  <Select.Content>
+    <Select.Item value="apple">Apple</Select.Item>
+    <Select.Item value="banana" disabled>Banana</Select.Item>
+    <Select.Item value="cherry">Cherry</Select.Item>
+  </Select.Content>
+</Select>` } } },
   args: { defaultValue: 'apple', disabled: true },
   render: (args) => <SelectExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -1137,6 +1281,16 @@ export const DisabledSelect: Story = {
 };
 
 export const FormValue: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<form aria-label="Order">
+  <Select name="fruit">
+    <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
+    <Select.Content>
+      <Select.Item value="apple">Apple</Select.Item>
+      <Select.Item value="banana" disabled>Banana</Select.Item>
+      <Select.Item value="cherry">Cherry</Select.Item>
+    </Select.Content>
+  </Select>
+</form>` } } },
   render: (args) => (
     <form aria-label="Order" onSubmit={(event) => event.preventDefault()}>
       <SelectExample {...args} name="fruit" />
@@ -1154,6 +1308,14 @@ export const FormValue: Story = {
 };
 
 export const RejectedControlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Select value="apple">
+  <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
+  <Select.Content>
+    <Select.Item value="apple">Apple</Select.Item>
+    <Select.Item value="banana" disabled>Banana</Select.Item>
+    <Select.Item value="cherry">Cherry</Select.Item>
+  </Select.Content>
+</Select>` } } },
   args: { value: 'apple', onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <SelectExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -1178,6 +1340,14 @@ export const RejectedControlled: Story = {
 };
 
 export const RejectedControlledOpen: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Select open={false}>
+  <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
+  <Select.Content>
+    <Select.Item value="apple">Apple</Select.Item>
+    <Select.Item value="banana" disabled>Banana</Select.Item>
+    <Select.Item value="cherry">Cherry</Select.Item>
+  </Select.Content>
+</Select>` } } },
   args: { open: false, onOpenChange: fn() },
   render: (args) => <SelectExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -1235,6 +1405,16 @@ export const LightThemeOpen: Story = {
 };
 
 export const LightTheme: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<ThemeRoot theme="light">
+  <Select defaultValue="apple">
+    <Select.Trigger aria-label="Fruit"><Select.Value placeholder="Pick a fruit" /></Select.Trigger>
+    <Select.Content>
+      <Select.Item value="apple">Apple</Select.Item>
+      <Select.Item value="banana" disabled>Banana</Select.Item>
+      <Select.Item value="cherry">Cherry</Select.Item>
+    </Select.Content>
+  </Select>
+</ThemeRoot>` } } },
   decorators: [withLightTheme],
   args: { defaultValue: 'apple' },
   render: (args) => <SelectExample {...args} />,

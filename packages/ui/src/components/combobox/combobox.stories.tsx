@@ -124,6 +124,27 @@ type UnknownReplacement = NonNullable<ComboboxEasyProps['slots']>['unknown'];
 
 /** Restyle the generated field label without nesting input slotProps. */
 export const SlotProps: EasyStory = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { Combobox } from '@jfrader/ui';
+
+function FruitField(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+
+<Combobox label="Fruit" description="Type to search" component={FruitField}
+  options={[
+    { value: 'apple', label: 'Apple' },
+    { value: 'apricot', label: 'Apricot' },
+    { value: 'banana', label: 'Banana', disabled: true },
+    { value: 'cherry', label: 'Cherry' },
+  ]}
+  slotProps={{
+    label: { css: { fontStyle: 'italic' } },
+    description: { className: 'fruit-description' },
+    input: { slotProps: { label: { css: { fontStyle: 'normal' } }, control: { className: 'fruit-input' } } },
+    item: { className: 'fruit-option' },
+  }}
+/>` } } },
   args: {
     label: 'Fruit', description: 'Type to search', options: FRUITS,
     component: CustomComboboxRoot,
@@ -310,7 +331,9 @@ export const Compound: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `function FruitPicker() {
+        code: `import { Combobox } from '@jfrader/ui';
+
+function FruitPicker() {
   return (
     <Combobox>
       <Combobox.Input label="Fruit" description="Type to search" />
@@ -354,6 +377,29 @@ function CustomComboboxError(props: ComponentPropsWithRef<'span'>) {
 }
 
 export const CustomSlots: EasyStory = {
+  parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { Combobox, styled } from '@jfrader/ui';
+
+function FruitField(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} />;
+}
+const FruitInput = styled(Combobox.Input)({ fontWeight: 600 });
+const FruitList = styled(Combobox.List)({ fontStyle: 'italic' });
+const FruitLabel = styled.label({ fontWeight: 600 });
+const FruitDescription = styled.span({ fontStyle: 'italic' });
+const FruitError = styled.span({ fontWeight: 600 });
+
+<Combobox label="Fruit" description="Pick a fruit" error="Required" defaultValue="apple"
+  options={[
+    { value: 'apple', label: 'Apple' },
+    { value: 'apricot', label: 'Apricot' },
+    { value: 'banana', label: 'Banana', disabled: true },
+    { value: 'cherry', label: 'Cherry' },
+  ]}
+  slots={{ root: FruitField, input: FruitInput, list: FruitList,
+    label: FruitLabel, description: FruitDescription, error: FruitError }}
+  slotProps={{ root: { className: 'fruit-field' } }}
+/>` } } },
   render: () => (
     <Combobox
       label="Fruit"
@@ -561,6 +607,15 @@ export const ReadOnlySelection: Story = {
 };
 
 export const EasyFormReset: EasyStory = {
+  parameters: { docs: { source: { language: 'tsx', code: `<form aria-label="Fruit form">
+  <Combobox label="Fruit" name="fruit" defaultValue="apple" options={[
+    { value: 'apple', label: 'Apple' },
+    { value: 'apricot', label: 'Apricot' },
+    { value: 'banana', label: 'Banana', disabled: true },
+    { value: 'cherry', label: 'Cherry' },
+  ]} />
+  <Button type="reset">Reset</Button>
+</form>` } } },
   render: () => (
     <form aria-label="Fruit form">
       <Combobox
@@ -657,6 +712,16 @@ export const AssociatedFormReset: Story = {
 };
 
 export const Clear: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Combobox defaultValue="apple">
+  <Combobox.Input label="Fruit" />
+  <Combobox.List>
+    <Combobox.Item value="apple">Apple</Combobox.Item>
+    <Combobox.Item value="apricot">Apricot</Combobox.Item>
+    <Combobox.Item value="banana" disabled>Banana</Combobox.Item>
+    <Combobox.Item value="cherry">Cherry</Combobox.Item>
+    <Combobox.Empty />
+  </Combobox.List>
+</Combobox>` } } },
   args: { defaultValue: 'apple', onValueChange: fn() },
   render: (args) => <ComboboxExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -680,6 +745,16 @@ export const Clear: Story = {
 };
 
 export const Composition: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Combobox>
+  <Combobox.Input label="Fruit" />
+  <Combobox.List>
+    <Combobox.Item value="apple">Apple</Combobox.Item>
+    <Combobox.Item value="apricot">Apricot</Combobox.Item>
+    <Combobox.Item value="banana" disabled>Banana</Combobox.Item>
+    <Combobox.Item value="cherry">Cherry</Combobox.Item>
+    <Combobox.Empty />
+  </Combobox.List>
+</Combobox>` } } },
   args: { onValueChange: fn(), onInputChange: fn() },
   render: (args) => <ComboboxExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -702,6 +777,25 @@ export const Composition: Story = {
 };
 
 export const ExternalForm: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { useId } from 'react';
+import { Combobox } from '@jfrader/ui';
+
+function FruitForm() {
+  const formId = useId();
+  return <>
+    <form id={formId} aria-label="Order" />
+    <Combobox name="fruit" defaultValue="apple">
+      <Combobox.Input label="Fruit" form={formId} />
+      <Combobox.List>
+        <Combobox.Item value="apple">Apple</Combobox.Item>
+        <Combobox.Item value="apricot">Apricot</Combobox.Item>
+        <Combobox.Item value="banana" disabled>Banana</Combobox.Item>
+        <Combobox.Item value="cherry">Cherry</Combobox.Item>
+        <Combobox.Empty />
+      </Combobox.List>
+    </Combobox>
+  </>;
+}` } } },
   render: (args) => (
     <>
       <form id="combobox-order" aria-label="Order" />
@@ -718,6 +812,16 @@ export const ExternalForm: Story = {
 };
 
 export const EscapeRestores: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Combobox defaultValue="cherry">
+  <Combobox.Input label="Fruit" />
+  <Combobox.List>
+    <Combobox.Item value="apple">Apple</Combobox.Item>
+    <Combobox.Item value="apricot">Apricot</Combobox.Item>
+    <Combobox.Item value="banana" disabled>Banana</Combobox.Item>
+    <Combobox.Item value="cherry">Cherry</Combobox.Item>
+    <Combobox.Empty />
+  </Combobox.List>
+</Combobox>` } } },
   args: { defaultValue: 'cherry', onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <ComboboxExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -739,6 +843,16 @@ export const EscapeRestores: Story = {
 };
 
 export const DisabledItem: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Combobox>
+  <Combobox.Input label="Fruit" />
+  <Combobox.List>
+    <Combobox.Item value="apple">Apple</Combobox.Item>
+    <Combobox.Item value="apricot">Apricot</Combobox.Item>
+    <Combobox.Item value="banana" disabled>Banana</Combobox.Item>
+    <Combobox.Item value="cherry">Cherry</Combobox.Item>
+    <Combobox.Empty />
+  </Combobox.List>
+</Combobox>` } } },
   args: { onValueChange: fn() },
   render: (args) => <ComboboxExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -772,6 +886,16 @@ export const DisabledItem: Story = {
 };
 
 export const Empty: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Combobox>
+  <Combobox.Input label="Fruit" />
+  <Combobox.List>
+    <Combobox.Item value="apple">Apple</Combobox.Item>
+    <Combobox.Item value="apricot">Apricot</Combobox.Item>
+    <Combobox.Item value="banana" disabled>Banana</Combobox.Item>
+    <Combobox.Item value="cherry">Cherry</Combobox.Item>
+    <Combobox.Empty>No results</Combobox.Empty>
+  </Combobox.List>
+</Combobox>` } } },
   render: (args) => <ComboboxExample {...args} />,
   play: async ({ canvasElement }) => {
     const input = await focusInput(canvasElement);
@@ -796,6 +920,18 @@ export const Empty: Story = {
 };
 
 export const FormValue: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<form aria-label="Order">
+  <Combobox name="fruit">
+    <Combobox.Input label="Fruit" />
+    <Combobox.List>
+      <Combobox.Item value="apple">Apple</Combobox.Item>
+      <Combobox.Item value="apricot">Apricot</Combobox.Item>
+      <Combobox.Item value="banana" disabled>Banana</Combobox.Item>
+      <Combobox.Item value="cherry">Cherry</Combobox.Item>
+      <Combobox.Empty />
+    </Combobox.List>
+  </Combobox>
+</form>` } } },
   render: (args) => (
     <form aria-label="Order" onSubmit={(event) => event.preventDefault()}>
       <ComboboxExample {...args} name="fruit" />
@@ -818,6 +954,16 @@ export const FormValue: Story = {
 };
 
 export const RejectedControlled: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Combobox value="apple">
+  <Combobox.Input label="Fruit" />
+  <Combobox.List>
+    <Combobox.Item value="apple">Apple</Combobox.Item>
+    <Combobox.Item value="apricot">Apricot</Combobox.Item>
+    <Combobox.Item value="banana" disabled>Banana</Combobox.Item>
+    <Combobox.Item value="cherry">Cherry</Combobox.Item>
+    <Combobox.Empty />
+  </Combobox.List>
+</Combobox>` } } },
   args: { value: 'apple', onValueChange: fn() },
   render: (args) => <ComboboxExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -843,6 +989,16 @@ export const RejectedControlled: Story = {
 };
 
 export const RejectedControlledText: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Combobox>
+  <Combobox.Input label="Fruit" inputValue="ap" />
+  <Combobox.List>
+    <Combobox.Item value="apple">Apple</Combobox.Item>
+    <Combobox.Item value="apricot">Apricot</Combobox.Item>
+    <Combobox.Item value="banana" disabled>Banana</Combobox.Item>
+    <Combobox.Item value="cherry">Cherry</Combobox.Item>
+    <Combobox.Empty />
+  </Combobox.List>
+</Combobox>` } } },
   args: { onInputChange: fn() },
   render: (args) => <ComboboxExample {...args} inputProps={{ inputValue: 'ap' }} />,
   play: async ({ args, canvasElement }) => {
@@ -861,6 +1017,16 @@ export const RejectedControlledText: Story = {
 };
 
 export const SameOptionReselection: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<Combobox defaultValue="apple">
+  <Combobox.Input label="Fruit" />
+  <Combobox.List>
+    <Combobox.Item value="apple">Apple</Combobox.Item>
+    <Combobox.Item value="apricot">Apricot</Combobox.Item>
+    <Combobox.Item value="banana" disabled>Banana</Combobox.Item>
+    <Combobox.Item value="cherry">Cherry</Combobox.Item>
+    <Combobox.Empty />
+  </Combobox.List>
+</Combobox>` } } },
   args: { defaultValue: 'apple', onInputChange: fn(), onValueChange: fn() },
   render: (args) => <ComboboxExample {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -899,7 +1065,11 @@ export const RejectedThenAcceptedSelection: Story = {
   parameters: {
     docs: {
       source: {
-        code: `function FruitPicker() {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Combobox } from '@jfrader/ui';
+
+function FruitPicker() {
   const [value, setValue] = useState<string | null>('apple');
   const [reject, setReject] = useState(true);
 
@@ -962,6 +1132,18 @@ export const CustomListId: Story = {
 };
 
 export const DisabledFormValue: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `<form aria-label="Order">
+  <Combobox name="fruit" defaultValue="apple">
+    <Combobox.Input label="Fruit" disabled />
+    <Combobox.List>
+      <Combobox.Item value="apple">Apple</Combobox.Item>
+      <Combobox.Item value="apricot">Apricot</Combobox.Item>
+      <Combobox.Item value="banana" disabled>Banana</Combobox.Item>
+      <Combobox.Item value="cherry">Cherry</Combobox.Item>
+      <Combobox.Empty />
+    </Combobox.List>
+  </Combobox>
+</form>` } } },
   args: { defaultValue: 'apple', name: 'fruit' },
   render: (args) => (
     <form aria-label="Order" onSubmit={(event) => event.preventDefault()}>
