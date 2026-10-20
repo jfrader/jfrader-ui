@@ -17,7 +17,7 @@ import { animate, MotionConfig, motion, useInView, useMotionValue, useReducedMot
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { numberFormatter } from '../../utils/intl';
@@ -37,7 +37,7 @@ export interface NowPlayingTrack {
   artworkAlt?: string;
 }
 type Part<T extends 'div' | 'span' | 'img'> = ComponentPropsWithRef<T> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 export interface NowPlayingSlotProps {
   /** Outer player section. */
@@ -333,17 +333,17 @@ function Artwork({ track, slot, component }: { track: NowPlayingTrack; slot?: Pa
     <Placeholder
       className={slot?.className}
       style={slot?.style}
-      css={[artworkStyle, slot?.css]}
+      css={[artworkStyle, slot?.sx]}
       aria-hidden={!track.artworkAlt || undefined}
       role={track.artworkAlt ? 'img' : undefined}
       aria-label={track.artworkAlt}
     />
   ) : (
     <Image
-      {...slot}
+      {...withoutSx(slot)}
       draggable={false}
       data-ui="now-playing-artwork-image"
-      css={[artworkStyle, slot?.css]}
+      css={[artworkStyle, slot?.sx]}
       src={track.artwork}
       alt={track.artworkAlt ?? ''}
       onError={(e) => {
@@ -552,11 +552,11 @@ function NowPlayingRoot({
   const Error = slots?.error ?? 'div';
   const metadata = (
     <div css={metadataStyle}>
-      <Title {...slotProps?.title} css={[titleStyle, slotProps?.title?.css]}>
+      <Title {...withoutSx(slotProps?.title)} css={[titleStyle, slotProps?.title?.sx]}>
         {track?.title ?? labels.empty}
       </Title>
       {track && (
-        <Artist {...slotProps?.artist} css={[artistStyle, slotProps?.artist?.css]}>
+        <Artist {...withoutSx(slotProps?.artist)} css={[artistStyle, slotProps?.artist?.sx]}>
           {track.artist}
         </Artist>
       )}
@@ -635,7 +635,7 @@ function NowPlayingRoot({
               <Card css={surfaceStyle}>
                   <motion.div style={faceReady ? { height: faceHeight } : undefined} css={faceStyle}>
                     <div>
-                  <Mini {...slotProps?.mini} ref={miniRef} css={[miniStyle, slotProps?.mini?.css]} hidden={isOpen}>
+                  <Mini {...withoutSx(slotProps?.mini)} ref={miniRef} css={[miniStyle, slotProps?.mini?.sx]} hidden={isOpen}>
                     {!isOpen && artwork(true)}
                     {!isOpen && metadata}
                     <NowPlayingLevels />
@@ -660,12 +660,12 @@ function NowPlayingRoot({
                     </Expand>
                   </Mini>
                   <Full
-                    {...slotProps?.full}
+                    {...withoutSx(slotProps?.full)}
                     ref={fullRef}
                     id={id}
                     hidden={!isOpen}
                     inert={!isOpen}
-                    css={[fullStyle, slotProps?.full?.css]}
+                    css={[fullStyle, slotProps?.full?.sx]}
                     onFocusCapture={(e) => {
                       focusInFull.current = true;
                       slotProps?.full?.onFocusCapture?.(e);
@@ -694,10 +694,10 @@ function NowPlayingRoot({
                     {isOpen && artwork(false)}
                     {isOpen && metadata}
                     <Waveform
-                      {...slotProps?.waveform}
+                      {...withoutSx(slotProps?.waveform)}
                       data-ui="now-playing-waveform"
                       aria-hidden="true"
-                      css={[waveformStyle, slotProps?.waveform?.css]}
+                      css={[waveformStyle, slotProps?.waveform?.sx]}
                     >
                       {(waveform?.length ? waveform : FALLBACK_WAVEFORM).map((level, i) => (
                         <span
@@ -746,7 +746,7 @@ function NowPlayingRoot({
                           : formatDuration(duration - bounded, locale)}
                       </output>
                     </div>
-                    <Controls {...slotProps?.controls} css={[controlsStyle, slotProps?.controls?.css]}>
+                    <Controls {...withoutSx(slotProps?.controls)} css={[controlsStyle, slotProps?.controls?.sx]}>
                       <Button disabled={!track || busy} onClick={() => skip(-1)}>
                         {labels.previous}
                       </Button>
@@ -761,11 +761,11 @@ function NowPlayingRoot({
                   </motion.div>
                   {busy && <Progress label={labels.busy} />}
                   <Status
-                    {...slotProps?.status}
+                    {...withoutSx(slotProps?.status)}
                     role="status"
                     aria-live="polite"
                     aria-atomic="true"
-                    css={[visuallyHiddenStyle, slotProps?.status?.css]}
+                    css={[visuallyHiddenStyle, slotProps?.status?.sx]}
                   >
                     {track
                       ? `${track.title} — ${isPlaying ? labels.playing : labels.paused}`
@@ -773,10 +773,10 @@ function NowPlayingRoot({
                   </Status>
                   {errorVisible && (
                     <Error
-                      {...slotProps?.error}
+                      {...withoutSx(slotProps?.error)}
                       id={`${id}-error`}
                       role="alert"
-                      css={[errorStyle, slotProps?.error?.css]}
+                      css={[errorStyle, slotProps?.error?.sx]}
                     >
                       {error}
                     </Error>

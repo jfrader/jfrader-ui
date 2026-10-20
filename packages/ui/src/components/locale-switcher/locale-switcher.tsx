@@ -69,7 +69,7 @@ export interface LocaleSwitcherOption {
   render?: (props: LocaleSwitcherLinkProps) => ReactNode;
 }
 
-type SlotStyle = { className?: string; css?: Interpolation<Theme> };
+type SlotStyle = { className?: string; sx?: Interpolation<Theme> };
 
 export interface LocaleSwitcherSlotProps {
   /** Menu variant's trigger button. */
@@ -332,7 +332,7 @@ interface StyledOptionProps extends Omit<OptionElementProps, 'data-ui' | 'classN
 
 function StyledOption({ styles, slot, ...props }: StyledOptionProps) {
   return (
-    <WithSx className={slot?.className} styles={[optionStyle, styles, slot?.css]}>
+    <WithSx className={slot?.className} styles={[optionStyle, styles, slot?.sx]}>
       {(className) => <OptionElement {...props} data-ui="locale-switcher-option" className={className} />}
     </WithSx>
   );
@@ -364,8 +364,8 @@ function MenuVariant({
   const id = useId();
   const actionId = `${id}-action`;
   const currentId = `${id}-current`;
-  const { className: triggerClassName, css: triggerCss, ...triggerAttributes } = slotProps?.trigger ?? {};
-  const { className: contentClassName, css: contentCss, ...contentAttributes } = slotProps?.content ?? {};
+  const { className: triggerClassName, sx: triggerCss, ...triggerAttributes } = slotProps?.trigger ?? {};
+  const { className: contentClassName, sx: contentCss, ...contentAttributes } = slotProps?.content ?? {};
   const optionSlot = slotProps?.option;
 
   return (
@@ -420,7 +420,7 @@ function MenuVariant({
               key={option.value}
               family={FAMILY}
               marker="locale-switcher-option"
-              styles={[menuItemStyles, menuOptionStyle, optionSlot?.css]}
+              styles={[menuItemStyles, menuOptionStyle, optionSlot?.sx]}
               className={optionSlot?.className}
               render={(itemProps) => (
                 <OptionElement

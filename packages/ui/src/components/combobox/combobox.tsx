@@ -54,7 +54,7 @@ import {
   type UseInteractionsReturn,
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css } from '../../styling/css';
 import {
   listboxItemStateStyle,
   listboxItemStyle,
@@ -131,17 +131,17 @@ export interface ComboboxSlotProps {
   /** Root wrapper element around the input and listbox. */
   root?: ComponentPropsWithRef<'div'> &
     SxProps & {
-      css?: Interpolation<Theme>;
+
       [attribute: `data-${string}`]: unknown;
     };
   /** Text input field that controls the query. */
-  input?: Partial<ComboboxInputProps> & { css?: Interpolation<Theme> };
+  input?: Partial<ComboboxInputProps>;
   /** Listbox container for popup suggestions. */
-  list?: Partial<ComboboxListProps> & { css?: Interpolation<Theme> };
+  list?: Partial<ComboboxListProps>;
   /** Each suggestion item in the popup listbox. */
-  item?: Partial<Omit<ComboboxItemProps, 'value' | 'id' | 'disabled' | 'textValue'>> & { css?: Interpolation<Theme> };
+  item?: Partial<Omit<ComboboxItemProps, 'value' | 'id' | 'disabled' | 'textValue'>>;
   /** Container displayed when no suggestions match. */
-  empty?: Partial<ComboboxEmptyProps> & { css?: Interpolation<Theme> };
+  empty?: Partial<ComboboxEmptyProps>;
 }
 
 export interface ComboboxBaseProps {
@@ -506,7 +506,6 @@ function ComboboxOverlay({ nodeId, ...props }: ComboboxProps & { nodeId: string 
     const hasRootSlot = slots?.root !== undefined || component !== undefined || slotProps?.root !== undefined;
     const {
       className: rootClassName,
-      css: rootCss,
       sx: rootSx,
       'data-ui': rootDataUi,
       ...rootRest
@@ -553,7 +552,7 @@ function ComboboxOverlay({ nodeId, ...props }: ComboboxProps & { nodeId: string 
     );
 
     renderedContent = hasRootSlot ? (
-      <WithSx className={rootClassName} styles={rootCss} sx={rootSx}>
+      <WithSx className={rootClassName} styles={rootSx}>
         {(className) => (
           <RootPart
             {...rootRest}

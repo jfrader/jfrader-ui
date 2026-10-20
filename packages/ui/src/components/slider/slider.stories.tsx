@@ -766,9 +766,9 @@ export function StyledVolume() {
       locale="en-GB"
       slots={{ thumb: VolumeThumb, track: VolumeTrack }}
       slotProps={{
-        thumb: { ref: thumbRef, css: { borderRadius: vars.radius.md } },
-        track: { css: { blockSize: vars.space[2] } },
-        label: { css: { fontWeight: vars.fontWeight.semibold } },
+        thumb: { ref: thumbRef, sx: { borderRadius: vars.radius.md } },
+        track: { sx: { blockSize: vars.space[2] } },
+        label: { sx: { fontWeight: vars.fontWeight.semibold } },
       }}
     />
   );
@@ -777,9 +777,9 @@ export function StyledVolume() {
     slots: { thumb: ReplacementSliderThumb, track: ReplacementSliderTrack },
     ref: fn(),
     slotProps: {
-      thumb: { ref: fn(), css: css({ borderRadius: vars.radius.md }) },
-      track: { css: css({ blockSize: vars.space[2] }) },
-      label: { css: css({ fontWeight: vars.fontWeight.semibold }) },
+      thumb: { ref: fn(), sx: css({ borderRadius: vars.radius.md }) },
+      track: { sx: css({ blockSize: vars.space[2] }) },
+      label: { sx: css({ fontWeight: vars.fontWeight.semibold }) },
     },
   },
   play: async ({ canvas, canvasElement, args }) => {

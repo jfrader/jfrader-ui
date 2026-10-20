@@ -7,13 +7,13 @@ import { useId, type ComponentPropsWithRef, type ComponentType, type ReactNode }
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 
 export interface ProgressPartProps extends ComponentPropsWithRef<'div'> {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface ProgressSlots {
@@ -143,11 +143,11 @@ export function Progress({
             </span>
           )}
           <Indicator
-            {...slotProps?.indicator}
+            {...withoutSx(slotProps?.indicator)}
             data-ui="progress-indicator"
             className={slotProps?.indicator?.className}
             style={{ ...slotProps?.indicator?.style, ...(isIndeterminate ? {} : { width: `${percent}%` }) }}
-            css={[indicatorStyle, isIndeterminate && indeterminateIndicatorStyle, slotProps?.indicator?.css]}
+            css={[indicatorStyle, isIndeterminate && indeterminateIndicatorStyle, slotProps?.indicator?.sx]}
           />
         </div>
       )}

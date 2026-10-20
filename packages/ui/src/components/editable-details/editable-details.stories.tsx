@@ -642,14 +642,14 @@ const StyledDetailsSection = styled(EditableDetails.Section)(blueprints.consumer
 const StyledDetailsList = styled(EditableDetails.List)(blueprints.consumer);
 const StyledDetailsItem = styled(EditableDetails.Item)(blueprints.consumer);
 export const StylingPrecedence: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `<EditableDetails sx={{ paddingInline: theme.space[3] }} slotProps={{ root: { css: { paddingInline: theme.space[2] } } }}>
+  parameters: { docs: { source: { language: 'tsx', code: `<EditableDetails sx={{ paddingInline: theme.space[3] }} slotProps={{ root: { sx: { paddingInline: theme.space[2] } } }}>
   <EditableDetails.Section title="Styled section" defaultOpen sx={{ paddingInline: theme.space[3] }}>
     <EditableDetails.List sx={{ paddingInline: theme.space[3] }}>
       <EditableDetails.Item label="Styled item" sx={{ paddingInline: theme.space[3] }}>Value</EditableDetails.Item>
     </EditableDetails.List>
   </EditableDetails.Section>
 </EditableDetails>` } } },
-  render: () => <StyledDetails sx={blueprints.sx} slotProps={{ root: { css: blueprints.consumer } }}>
+  render: () => <StyledDetails sx={blueprints.sx} slotProps={{ root: { sx: blueprints.consumer } }}>
   <StyledDetailsSection title="Styled section" defaultOpen sx={blueprints.sx}>
     <StyledDetailsList sx={blueprints.sx}>
       <StyledDetailsItem label="Styled item" sx={blueprints.sx}>Value</StyledDetailsItem>

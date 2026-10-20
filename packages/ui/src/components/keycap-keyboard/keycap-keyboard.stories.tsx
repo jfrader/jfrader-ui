@@ -382,7 +382,7 @@ export const StylingAndRef: Story = {
     slots: { key: SlotKey, legend: SlotLegend },
     ref: fn(), 'aria-label': 'Consumer label', 'aria-labelledby': 'external-label missing-label', 'aria-describedby': 'external-description',
     sx: { padding: vars.space[4] },
-    slotProps: { row: { css: { rowGap: vars.space[3] } }, key: { css: { borderRadius: 0 } }, legend: { css: { fontWeight: vars.fontWeight.semibold } } },
+    slotProps: { row: { sx: { rowGap: vars.space[3] } }, key: { sx: { borderRadius: 0 } }, legend: { sx: { fontWeight: vars.fontWeight.semibold } } },
   },
   render: (args) => <Stack><p id="external-label">Keyboard illustration</p><p id="external-description">Physical keys</p><KeycapKeyboard {...args} /></Stack>,
   play: async ({ canvasElement, args }) => {

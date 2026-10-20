@@ -1260,7 +1260,7 @@ export const SlotStyles: Story = {
   args: {
     slots: { status: SlotStatus, face: SlotFace, fill: SlotFill, fillLabel: SlotFillLabel },
     icon: '×',
-    slotProps: { face: { css: faceOverride }, fill: { css: faceOverride }, label: { css: labelOverride }, fillLabel: { css: labelOverride } },
+    slotProps: { face: { sx: faceOverride }, fill: { sx: faceOverride }, label: { sx: labelOverride }, fillLabel: { sx: labelOverride } },
     sx: { borderRadius: vars.radius.sm },
   },
   parameters: {
@@ -1306,10 +1306,10 @@ export function RevokeKeyButton({
         fillLabel: SlotFillLabel,
       }}
       slotProps={{
-        face: { css: { columnGap: vars.space[5] } },
-        fill: { css: { columnGap: vars.space[5] } },
-        label: { css: { fontWeight: vars.fontWeight.semibold } },
-        fillLabel: { css: { fontWeight: vars.fontWeight.semibold } },
+        face: { sx: { columnGap: vars.space[5] } },
+        fill: { sx: { columnGap: vars.space[5] } },
+        label: { sx: { fontWeight: vars.fontWeight.semibold } },
+        fillLabel: { sx: { fontWeight: vars.fontWeight.semibold } },
       }}
       sx={{ borderRadius: vars.radius.sm }}
       onConfirm={revokeKey}

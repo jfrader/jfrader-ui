@@ -891,10 +891,10 @@ export const SlotStyling: Story = {
   args: {
     sx: { paddingInline: vars.space[4] },
     slotProps: {
-      label: { css: slotLabelStyle },
-      number: { css: slotNumberStyle },
-      content: { css: slotContentStyle },
-      unit: { css: slotUnitStyle },
+      label: { sx: slotLabelStyle },
+      number: { sx: slotNumberStyle },
+      content: { sx: slotContentStyle },
+      unit: { sx: slotUnitStyle },
     },
   },
   play: async ({ canvasElement }) => {

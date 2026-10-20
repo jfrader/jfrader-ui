@@ -20,7 +20,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -70,7 +70,7 @@ export interface SignaturePadMessages {
 }
 export interface SignaturePadPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 export interface SignaturePadSlotProps {
   /** Outer container wrapping the pad and toolbar. */
@@ -921,12 +921,12 @@ export function SignaturePad({
   return (
     <WithSx
       className={[className, slotProps?.root?.className].filter(Boolean).join(' ')}
-      styles={[rootStyle, slotProps?.root?.css]}
+      styles={[rootStyle, slotProps?.root?.sx]}
       sx={sx}
     >
       {(rootClass) => (
         <Root
-          {...slotProps?.root}
+          {...withoutSx(slotProps?.root)}
           data-ui="signature-pad"
           data-state={current.length ? 'signed' : 'empty'}
           className={rootClass}
@@ -936,10 +936,10 @@ export function SignaturePad({
         >
           {hasContent(label) && (
             <Label
-              {...slotProps?.label}
+              {...withoutSx(slotProps?.label)}
               id={`${id}-label`}
               className={slotProps?.label?.className}
-              css={[labelStyle, slotProps?.label?.css]}
+              css={[labelStyle, slotProps?.label?.sx]}
             >
               {label}
             </Label>
@@ -952,7 +952,7 @@ export function SignaturePad({
           </span>
           <div css={surfaceStyle}>
             <Canvas
-              {...slotProps?.canvas}
+              {...withoutSx(slotProps?.canvas)}
               {...rest}
               ref={mergedRef}
               role="img"
@@ -977,7 +977,7 @@ export function SignaturePad({
                 .filter(Boolean)
                 .join(' ')}
               className={slotProps?.canvas?.className}
-              css={[canvasStyle, slotProps?.canvas?.css]}
+              css={[canvasStyle, slotProps?.canvas?.sx]}
               onPointerDown={(event) => {
                 onPointerDown?.(event);
                 if (
@@ -1065,11 +1065,11 @@ export function SignaturePad({
             </Canvas>
             {(hasContent(hint) || hasContent(signer)) && (
               <Guide
-                {...slotProps?.guide}
+                {...withoutSx(slotProps?.guide)}
                 aria-hidden="true"
                 data-ui="signature-pad-guide"
                 className={slotProps?.guide?.className}
-                css={[guideStyle, slotProps?.guide?.css]}
+                css={[guideStyle, slotProps?.guide?.sx]}
               >
                 {!current.length && hasContent(hint) && <span css={guideTextStyle}>{hint}</span>}
                 {hasContent(signer) && <span css={signerStyle}>{signer}</span>}
@@ -1077,10 +1077,10 @@ export function SignaturePad({
             )}
           </div>
           <Toolbar
-            {...slotProps?.toolbar}
+            {...withoutSx(slotProps?.toolbar)}
             data-ui="signature-pad-toolbar"
             className={slotProps?.toolbar?.className}
-            css={[toolbarStyle, slotProps?.toolbar?.css]}
+            css={[toolbarStyle, slotProps?.toolbar?.sx]}
           >
             <RadioGroup
               aria-label={messages.ink}
@@ -1108,14 +1108,14 @@ export function SignaturePad({
             </RadioGroup>
             {actions.map(({ action, disabled: inactive, run }) => (
               <Action
-                {...slotProps?.action}
+                {...withoutSx(slotProps?.action)}
                 key={action}
                 size="sm"
                 variant="outline"
                 disabled={inactive}
                 onClick={run}
                 className={slotProps?.action?.className}
-                css={slotProps?.action?.css}
+                css={slotProps?.action?.sx}
               >
                 {hasContent(icons?.[action]) && <span aria-hidden="true">{icons?.[action]}</span>}
                 {messages.actions[action]}
@@ -1129,32 +1129,32 @@ export function SignaturePad({
           )}
           {hasContent(description) && (
             <Description
-              {...slotProps?.description}
+              {...withoutSx(slotProps?.description)}
               id={`${id}-description`}
               className={slotProps?.description?.className}
-              css={[descriptionStyle, slotProps?.description?.css]}
+              css={[descriptionStyle, slotProps?.description?.sx]}
             >
               {description}
             </Description>
           )}
           {hasContent(error) && (
             <Error
-              {...slotProps?.error}
+              {...withoutSx(slotProps?.error)}
               id={`${id}-error`}
               role="alert"
               className={slotProps?.error?.className}
-              css={[errorStyle, slotProps?.error?.css]}
+              css={[errorStyle, slotProps?.error?.sx]}
             >
               {error}
             </Error>
           )}
           <Status
-            {...slotProps?.status}
+            {...withoutSx(slotProps?.status)}
             role="status"
             aria-live="polite"
             aria-atomic="true"
             className={slotProps?.status?.className}
-            css={[visuallyHiddenStyle, slotProps?.status?.css]}
+            css={[visuallyHiddenStyle, slotProps?.status?.sx]}
           >
             {announcement.text && <span key={announcement.revision}>{announcement.text}</span>}
           </Status>

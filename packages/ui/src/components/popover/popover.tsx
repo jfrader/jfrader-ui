@@ -60,7 +60,7 @@ export interface PopoverCompoundProps extends PopoverBaseProps {
   component?: never;
 }
 
-type PopoverGeneratedPartProps<Props> = Omit<Props, 'children'> & { css?: Interpolation<Theme> };
+type PopoverGeneratedPartProps<Props> = Omit<Props, 'children'> & { sx?: Interpolation<Theme> };
 
 export interface PopoverEasyProps extends Omit<PopoverBaseProps, 'children'>, Omit<GeneratedRootProps, 'children' | 'content'> {
   /** Name the generated trigger button. */

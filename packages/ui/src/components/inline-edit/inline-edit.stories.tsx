@@ -1542,7 +1542,7 @@ export function Project({ save }: { save: InlineEditProps['onSave'] }) {
   const control = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   return <ProjectName label="Project name" defaultValue="Apollo" onSave={save} ref={root} controlRef={control}
     className="consumer-root"
-    slotProps={{ trigger: { css: { color: theme.color.accentText }, className: 'consumer-trigger' } }} />;
+    slotProps={{ trigger: { sx: { color: theme.color.accentText }, className: 'consumer-trigger' } }} />;
 }` } } },
   args: { ref: fn(), controlRef: fn() },
   render: (args) => (
@@ -1550,7 +1550,7 @@ export function Project({ save }: { save: InlineEditProps['onSave'] }) {
       {...args}
       sx={rootSxStyle}
       className="consumer-root"
-      slotProps={{ root: { css: rootCssStyle }, trigger: { css: triggerSlotStyle, className: 'consumer-trigger' } }}
+      slotProps={{ root: { sx: rootCssStyle }, trigger: { sx: triggerSlotStyle, className: 'consumer-trigger' } }}
     />
   ),
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -1689,7 +1689,7 @@ export const SlotCustomization: Story = {
         className: 'slot-root',
         title: 'slot title',
         style: fieldRootStyles.slot,
-        css: { borderRadius: '8px' },
+        sx: { borderRadius: '8px' },
       },
       label: { ref: fn(), title: 'generated part' },
     },
@@ -1698,7 +1698,7 @@ export const SlotCustomization: Story = {
   parameters: {
     docs: {
       source: {
-        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<InlineEdit label=\"Project name\" onSave={saveName} defaultOpen\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { css: { borderRadius: '8px' } }, label: { title: 'Name' } }}\n  sx={{ borderRadius: '11px' }}\n/>",
+        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<InlineEdit label=\"Project name\" onSave={saveName} defaultOpen\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { sx: { borderRadius: '8px' } }, label: { title: 'Name' } }}\n  sx={{ borderRadius: '11px' }}\n/>",
       },
     },
   },

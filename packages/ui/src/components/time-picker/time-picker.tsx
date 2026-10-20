@@ -18,7 +18,7 @@ import { animate, motion, MotionConfig, useMotionValue } from 'motion/react';
 import { useReducedMotion } from '../../utils/use-reduced-motion';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
@@ -31,7 +31,7 @@ export type TimePickerSize = 'sm' | 'md' | 'lg';
 export type TimePickerMinuteStep = 1 | 5 | 10 | 15 | 30;
 export type TimePickerHourCycle = 'h12' | 'h23';
 type Slot<Tag extends 'div' | 'span' | 'label' | 'button'> = ComponentPropsWithRef<Tag> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 export interface TimePickerSlotProps {
   /** Field container wrapping the label, control and messages. */
@@ -526,12 +526,12 @@ export function TimePicker({
   return (
     <WithSx
       className={[className, slotProps?.root?.className].filter(Boolean).join(' ')}
-      styles={[rootStyle, slotProps?.root?.css]}
+      styles={[rootStyle, slotProps?.root?.sx]}
       sx={sx}
     >
       {(rootClassName) => (
         <Root
-          {...slotProps?.root}
+          {...withoutSx(slotProps?.root)}
           css={undefined}
           className={rootClassName}
           dir={dir ?? slotProps?.root?.dir}
@@ -539,10 +539,10 @@ export function TimePicker({
         >
           {isRenderable(label) && (
             <Label
-              {...slotProps?.label}
+              {...withoutSx(slotProps?.label)}
               id={labelId}
               htmlFor={field.id}
-              css={[labelStyle, labelPlacement === 'hidden' && visuallyHiddenStyle, slotProps?.label?.css]}
+              css={[labelStyle, labelPlacement === 'hidden' && visuallyHiddenStyle, slotProps?.label?.sx]}
             >
               {label}
               {required && (
@@ -564,7 +564,7 @@ export function TimePicker({
             disabled={effectiveDisabled}
           >
             <Control
-              {...control}
+              {...withoutSx(control)}
               {...rest}
               ref={mergedRef}
               id={field.id}
@@ -576,7 +576,7 @@ export function TimePicker({
               aria-invalid={field.ariaInvalid}
               aria-readonly={readOnly || rest['aria-readonly'] || control?.['aria-readonly']}
               aria-required={required || rest['aria-required'] || control?.['aria-required']}
-              css={[controlStyle, sizeStyles[size], control?.css]}
+              css={[controlStyle, sizeStyles[size], control?.sx]}
               onClick={undefined}
               onKeyDown={undefined}
               // Capture evaluates consumer vetoes before Select's interaction prop getters.
@@ -602,7 +602,7 @@ export function TimePicker({
               }}
             >
               {isRenderable(icon) && (
-                <Icon {...slotProps?.icon} aria-hidden css={[iconWrapperStyle, slotProps?.icon?.css]}>
+                <Icon {...withoutSx(slotProps?.icon)} aria-hidden css={[iconWrapperStyle, slotProps?.icon?.sx]}>
                   {icon}
                 </Icon>
               )}
@@ -612,10 +612,10 @@ export function TimePicker({
               <span aria-hidden>▾</span>
             </Control>
             <Content
-              {...slotProps?.content}
+              {...withoutSx(slotProps?.content)}
               ref={mergedContentRef}
               dir={dir}
-              css={[contentStyle, presentation === 'dial' && dialContentStyle, slotProps?.content?.css]}
+              css={[contentStyle, presentation === 'dial' && dialContentStyle, slotProps?.content?.sx]}
             >
               {presentation === 'dial' && (
                 <div data-time-dial-frame css={dialFrameStyle}>
@@ -633,11 +633,11 @@ export function TimePicker({
               )}
               {times.map((time) => (
                 <Option
-                  {...slotProps?.option}
+                  {...withoutSx(slotProps?.option)}
                   key={time.value}
                   value={time.value}
                   data-time={time.value}
-                  css={[optionStyle, slotProps?.option?.css]}
+                  css={[optionStyle, slotProps?.option?.sx]}
                 >
                   {time.label}
                 </Option>
@@ -655,19 +655,19 @@ export function TimePicker({
           )}
           {isRenderable(description) && (
             <Description
-              {...slotProps?.description}
+              {...withoutSx(slotProps?.description)}
               id={field.descriptionId}
-              css={[descriptionStyle, slotProps?.description?.css]}
+              css={[descriptionStyle, slotProps?.description?.sx]}
             >
               {description}
             </Description>
           )}
           {isRenderable(error) && (
             <Error
-              {...slotProps?.error}
+              {...withoutSx(slotProps?.error)}
               id={field.errorId}
               role="alert"
-              css={[errorStyle, slotProps?.error?.css]}
+              css={[errorStyle, slotProps?.error?.sx]}
             >
               {error}
             </Error>

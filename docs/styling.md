@@ -143,13 +143,13 @@ export function ProjectName() {
     <TextField
       label="Project name"
       placeholder="Untitled"
-      slotProps={{ label: { css: labelStyle }, control: { css: inputStyle } }}
+      slotProps={{ label: { sx: labelStyle }, control: { sx: inputStyle } }}
     />
   );
 }
 ```
 
-Slot names vary by component. Internal slots take `css`, not `sx`; this nested `css` value is consumed by the component and needs no app JSX configuration. For TextField, the top-level `sx` styles the input wrapper, not the label or input itself.
+Slot names vary by component. Every slot takes `sx`, with the same values as the public component root. Styles apply in order: own styles, slot `sx`, then consumer `sx`. For TextField, the top-level `sx` styles the input wrapper, not the label or input itself.
 
 ## Compose styles with `css()`
 

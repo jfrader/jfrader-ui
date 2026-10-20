@@ -2571,8 +2571,8 @@ export const AriaAndStyling: Story = {
       tabList: { 'aria-labelledby': 'carousel-heading' },
       viewport: { 'aria-label': 'Suite photos' },
       slide: { 'aria-describedby': 'carousel-hint', 'aria-labelledby': 'missing-id' },
-      status: { css: slotStatusStyle },
-      indicator: { css: slotIndicatorStyle },
+      status: { sx: slotStatusStyle },
+      indicator: { sx: slotIndicatorStyle },
     },
   },
   render: (args) => (

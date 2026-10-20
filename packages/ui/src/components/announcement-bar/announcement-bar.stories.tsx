@@ -942,9 +942,9 @@ export function Example() {
       messages={messages}
       slots={{ root: SlotRoot, content: SlotContent, next: SlotNext, previous: SlotPrevious }}
       slotProps={{
-        root: { css: { paddingInline: vars.space[2] } },
-        message: { css: { fontWeight: vars.fontWeight.semibold } },
-        next: { css: { borderRadius: 0 } },
+        root: { sx: { paddingInline: vars.space[2] } },
+        message: { sx: { fontWeight: vars.fontWeight.semibold } },
+        next: { sx: { borderRadius: 0 } },
       }}
       sx={{ paddingInline: vars.space[4] }}
     />
@@ -956,9 +956,9 @@ export function Example() {
   args: {
     slots: { root: SlotRoot, content: SlotContent, next: SlotNext, previous: SlotPrevious },
     slotProps: {
-      root: { css: { paddingInline: vars.space[2] } },
-      message: { css: { fontWeight: vars.fontWeight.semibold } },
-      next: { css: { borderRadius: 0 } },
+      root: { sx: { paddingInline: vars.space[2] } },
+      message: { sx: { fontWeight: vars.fontWeight.semibold } },
+      next: { sx: { borderRadius: 0 } },
     },
     sx: { paddingInline: vars.space[4] },
   },

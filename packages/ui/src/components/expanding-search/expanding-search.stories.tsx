@@ -311,7 +311,7 @@ export const RefAndStyles: Story = {
   args: {
     defaultOpen: true, ref: fn(), inputRef: fn(), id: 'member-search', title: 'Member search', style: { letterSpacing: '0.1em' },
     sx: { paddingBlock: vars.space[3] }, inputProps: { style: { wordSpacing: '0.2em' } },
-    slotProps: { control: { css: { fontWeight: vars.fontWeight.medium } }, shell: { css: { borderRadius: 0 } } },
+    slotProps: { control: { sx: { fontWeight: vars.fontWeight.medium } }, shell: { sx: { borderRadius: 0 } } },
   },
   play: async ({ canvas, canvasElement, args }) => {
     const { root } = parts(canvasElement);
@@ -406,7 +406,7 @@ export const SlotCustomization: Story = {
         className: 'slot-root',
         title: 'slot title',
         style: fieldRootStyles.slot,
-        css: { borderRadius: '8px' },
+        sx: { borderRadius: '8px' },
       },
       control: { ref: fn(), title: 'generated part' },
     },
@@ -415,7 +415,7 @@ export const SlotCustomization: Story = {
   parameters: {
     docs: {
       source: {
-        code: 'function MyRoot(props) { return <div {...props} />; }\nfunction MyInput(props) { return <input {...props} />; }\n\n<ExpandingSearch label="Name" triggerLabel="Search members" defaultOpen\n  component={MyRoot}\n  slots={{ control: MyInput }}\n  slotProps={{ root: { css: { borderRadius: \'8px\' } }, control: { title: \'Name\' } }}\n  sx={{ borderRadius: \'11px\' }}\n/>',
+        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyInput(props) { return <input {...props} />; }\n\n<ExpandingSearch label=\"Name\" triggerLabel=\"Search members\" defaultOpen\n  component={MyRoot}\n  slots={{ control: MyInput }}\n  slotProps={{ root: { sx: { borderRadius: '8px' } }, control: { title: 'Name' } }}\n  sx={{ borderRadius: '11px' }}\n/>",
       },
     },
   },

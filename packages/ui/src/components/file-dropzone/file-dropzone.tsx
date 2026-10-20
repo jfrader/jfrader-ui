@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 import {
   useEffect,
   useId,
@@ -13,7 +14,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { focusRingOutset } from '../../styling/focus-ring';
-import type { SlotCss, SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
@@ -57,9 +58,9 @@ export interface FileDropzoneMessages {
 }
 export type FileDropzoneSlotProps = FieldParts<FileDropzoneAnatomy> & {
   /** Action button for removing a file item. Default: `Button`. */
-  action?: ButtonProps & SlotCss;
+  action?: ButtonProps & SxProps;
   /** Action button for retrying a failed upload. Default: `Button`. */
-  retry?: ButtonProps & SlotCss;
+  retry?: ButtonProps & SxProps;
   /** Progress bar indicating upload completion. Default: `Progress`. */
   progress?: Omit<ProgressProps, 'value' | 'max'>;
 };
@@ -631,7 +632,7 @@ export function FileDropzone({
               <span>{messages.status(status, item.name)}</span>
               {status === 'uploading' && (
                 <UploadProgress
-                  {...slotProps?.progress}
+                  {...withoutSx(slotProps?.progress)}
                   value={attempt?.progress}
                   max={MAX_PERCENT}
                   aria-label={slotProps?.progress?.['aria-label'] ?? item.name}
@@ -639,7 +640,7 @@ export function FileDropzone({
                     slotProps?.progress?.getValueLabel ??
                     ((percent) => numberFormatter(locale, { style: 'percent' }).format(percent / MAX_PERCENT))
                   }
-                  css={[instantProgressStyle, slotProps?.progress?.css]}
+                  css={[instantProgressStyle, slotProps?.progress?.sx]}
                 />
               )}
               {attempt?.error && <span css={errorStyle}>{attempt.error}</span>}
@@ -649,8 +650,8 @@ export function FileDropzone({
                 <Retry
                   variant="outline"
                   size="sm"
-                  {...slotProps?.retry}
-                  css={[actionStyle, slotProps?.retry?.css]}
+                  {...withoutSx(slotProps?.retry)}
+                  css={[actionStyle, slotProps?.retry?.sx]}
                   disabled={disabled}
                   aria-disabled={readOnly || slotProps?.retry?.['aria-disabled']}
                   data-action="retry"
@@ -671,8 +672,8 @@ export function FileDropzone({
               <Action
                 variant="outline"
                 size="sm"
-                {...slotProps?.action}
-                css={[actionStyle, slotProps?.action?.css]}
+                {...withoutSx(slotProps?.action)}
+                css={[actionStyle, slotProps?.action?.sx]}
                 disabled={disabled}
                 aria-disabled={readOnly || slotProps?.action?.['aria-disabled']}
                 data-action="remove"

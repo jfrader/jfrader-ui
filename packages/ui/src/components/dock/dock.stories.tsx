@@ -1039,10 +1039,10 @@ function AriaExample(args: DockProps) {
     <span id={`${id}-name`}>Drawing</span><span id={`${id}-description`}>Current canvas</span>
     <Dock {...args} aria-label="Canvas" aria-labelledby={`${id}-name`} aria-describedby={`${id}-description`}
       slotProps={{
-        toolbar: { 'aria-label': 'Tools', 'aria-labelledby': `${id}-name`, css: { padding: 12 } },
+        toolbar: { 'aria-label': 'Tools', 'aria-labelledby': `${id}-name`, sx: { padding: 12 } },
         item: (item) => ({ 'aria-label': item.id === 'select' ? 'Selection' : item.label,
           'aria-labelledby': item.id === 'select' ? `${id}-name missing-dock-reference` : undefined,
-          'aria-describedby': `${id}-description`, css: { borderRadius: 16 } }),
+          'aria-describedby': `${id}-description`, sx: { borderRadius: 16 } }),
       }} sx={{ gap: 12 }} />
   </>;
 }
@@ -1076,12 +1076,12 @@ export const ReplacementSlots: Story = {
     defaultValue: null, defaultOpen: true, defaultTray: 'group', reorderable: true,
     slots: replacementSlots,
     slotProps: {
-      toolbar: { css: { padding: 12 } },
-      item: () => ({ css: { borderRadius: 16 } }),
-      tray: { css: { padding: 14 } },
-      trayItem: () => ({ css: { borderRadius: 18 } }),
-      floatingLabel: { css: { padding: 10 } },
-      badge: { css: { fontWeight: 700 } },
+      toolbar: { sx: { padding: 12 } },
+      item: () => ({ sx: { borderRadius: 16 } }),
+      tray: { sx: { padding: 14 } },
+      trayItem: () => ({ sx: { borderRadius: 18 } }),
+      floatingLabel: { sx: { padding: 10 } },
+      badge: { sx: { fontWeight: 700 } },
       status: { title: 'Reorder announcements' },
     },
   },

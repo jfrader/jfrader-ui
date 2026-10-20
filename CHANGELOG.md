@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Breaking pre-1.0 API cleanup: every `slotProps` part accepts `sx` instead of `css`, preserving own styles → slot `sx` → consumer `sx` precedence. Emotion's `css` remains internal.
+
 ### Fixed
 
 - `JsonViewer` wraps long keys and values within tree rows, keeps focused labels and disclosure arrows visible in deeply indented data, and hides inactive selection bars in forced colors.

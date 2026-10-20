@@ -1800,8 +1800,8 @@ export const RefAndStyling: Story = {
           className={className({ outlineStyle: 'dotted' })}
           sx={{ outlineStyle: 'dashed' }}
           slotProps={{
-            list: { css: css({ gap: vars.space[8] }) },
-            bubble: { css: css({ textDecorationLine: 'underline' }) },
+            list: { sx: css({ gap: vars.space[8] }) },
+            bubble: { sx: css({ textDecorationLine: 'underline' }) },
           }}
           composerProps={{ ref: composerSpy, sx: { outlineStyle: 'dashed' }, slotProps: { textarea: { ref: fieldSpy } } }}
         />

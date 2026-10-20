@@ -920,9 +920,9 @@ export const AriaAndStyling: Story = {
         'aria-label': 'Sharing',
         'aria-labelledby': 'external-name missing-name',
         'aria-describedby': 'external-description missing-description',
-        css: { paddingInline: '32px' },
+        sx: { paddingInline: '32px' },
       },
-      copyButton: { css: { borderWidth: '2px' } },
+      copyButton: { sx: { borderWidth: '2px' } },
     },
   },
   render: (args) => (

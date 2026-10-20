@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 import { useId, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
@@ -212,13 +213,13 @@ export function GalleryPresentation({
       <div css={product ? productStyle : undefined}>
         <div css={mediaStyle}>
           <Stage
-            {...slotProps?.presentationStage}
+            {...withoutSx(slotProps?.presentationStage)}
             data-ui="photo-grid-presentation-stage"
             role="group"
             aria-label={slotProps?.presentationStage?.['aria-label'] ?? labels.filmstrip}
             aria-describedby={[slotProps?.presentationStage?.['aria-describedby'], !product && `${id}-keys`].filter(Boolean).join(' ') || undefined}
             tabIndex={0}
-            css={[stageStyle, !product && railStyle, slotProps?.presentationStage?.css]}
+            css={[stageStyle, !product && railStyle, slotProps?.presentationStage?.sx]}
             onKeyDown={(event) => { slotProps?.presentationStage?.onKeyDown?.(event); if (event.target === event.currentTarget) handleKey(event); }}
             onPointerDown={(event) => {
               slotProps?.presentationStage?.onPointerDown?.(event);
@@ -262,10 +263,10 @@ export function GalleryPresentation({
             {product ? photos.map((item, itemIndex) => (
               <div key={item.id} role="tabpanel" id={`${id}-panel-${itemIndex}`} aria-labelledby={`${id}-tab-${itemIndex}`} hidden={item.id !== selected} css={imageWrapStyle}>
                 <Main
-                  {...slotProps?.main} type="button" data-ui="photo-grid-main"
+                  {...withoutSx(slotProps?.main)} type="button" data-ui="photo-grid-main"
                   aria-label={`${labels.inspect}: ${labels.position(format.format(itemIndex + 1), format.format(photos.length), labels.openPhoto(item.title, item.alt, false))}`}
                   data-magnifier={magnifier}
-                  css={[mainStyle, slotProps?.main?.css]}
+                  css={[mainStyle, slotProps?.main?.sx]}
                   style={{ ...slotProps?.main?.style, '--gallery-ratio': Number.isFinite(aspectRatio) && aspectRatio > 0 ? aspectRatio : PRODUCT_ASPECT_RATIO } as CSSProperties}
                   onClick={(event) => { slotProps?.main?.onClick?.(event); if (!event.defaultPrevented && !swiped.current) onOpen(); swiped.current = false; }}
                   onPointerMove={(event) => {
@@ -294,36 +295,36 @@ export function GalleryPresentation({
             })}
             {!photo && <span>{photos.length || (product && colors.length > 0 && !colors.some((item) => item.value === color)) ? labels.unavailable : labels.empty}</span>}
           </Stage>
-          <Navigation {...slotProps?.navigation} css={[navigationStyle, slotProps?.navigation?.css]}>
+          <Navigation {...withoutSx(slotProps?.navigation)} css={[navigationStyle, slotProps?.navigation?.sx]}>
             <ChromeAction portaled label={labels.previous} icon={chromeIcons.previous} disabled={!photo || index <= 0} onClick={() => navigate(index - 1)} />
             {product && <ChromeAction portaled label={labels.inspect} icon={chromeIcons.zoomIn} disabled={!photo} onClick={onOpen} />}
             <ChromeAction portaled label={labels.next} icon={chromeIcons.next} disabled={!photo || index >= photos.length - 1} onClick={() => navigate(index + 1)} />
           </Navigation>
-          {photos.length > 0 && <Thumbnails {...slotProps?.thumbnails} role={product ? 'tablist' : 'group'} aria-label={slotProps?.thumbnails?.['aria-label'] ?? labels.filmstrip} css={[filmstripStyle, slotProps?.thumbnails?.css]}>
+          {photos.length > 0 && <Thumbnails {...withoutSx(slotProps?.thumbnails)} role={product ? 'tablist' : 'group'} aria-label={slotProps?.thumbnails?.['aria-label'] ?? labels.filmstrip} css={[filmstripStyle, slotProps?.thumbnails?.sx]}>
             {photos.map((item, itemIndex) => <Position
-              {...slotProps?.position} key={item.id} type="button"
+              {...withoutSx(slotProps?.position)} key={item.id} type="button"
               role={product ? 'tab' : undefined} id={`${id}-tab-${itemIndex}`}
               aria-controls={product ? `${id}-panel-${itemIndex}` : undefined}
               aria-selected={product ? item.id === selected : undefined}
               aria-current={!product && item.id === selected ? 'true' : undefined}
               tabIndex={product ? item.id === selected || (!photo && itemIndex === 0) ? 0 : -1 : undefined}
-              aria-label={position(item, itemIndex)} css={[thumbStyle, selectedThumbStyle, slotProps?.position?.css]}
+              aria-label={position(item, itemIndex)} css={[thumbStyle, selectedThumbStyle, slotProps?.position?.sx]}
               onKeyDown={(event) => { slotProps?.position?.onKeyDown?.(event); if (product) handleKey(event, true); }}
               onClick={(event) => { slotProps?.position?.onClick?.(event); if (!event.defaultPrevented) select(item.id); }}
             ><PhotoImage key={`${item.src}\u0000${item.srcSet ?? ''}`} photo={item} unavailable={labels.imageUnavailable} /></Position>)}
           </Thumbnails>}
-          {isRenderable(caption) && <Caption {...slotProps?.caption} css={[captionStyle, slotProps?.caption?.css]}>{caption}</Caption>}
+          {isRenderable(caption) && <Caption {...withoutSx(slotProps?.caption)} css={[captionStyle, slotProps?.caption?.sx]}>{caption}</Caption>}
         </div>
-        {product && <Details {...slotProps?.details} css={[detailsStyle, slotProps?.details?.css]}>
+        {product && <Details {...withoutSx(slotProps?.details)} css={[detailsStyle, slotProps?.details?.sx]}>
           {isRenderable(header) && header}
-          {colors.length > 0 && <Colors {...slotProps?.colors} css={[choicesStyle, slotProps?.colors?.css]}>
+          {colors.length > 0 && <Colors {...withoutSx(slotProps?.colors)} css={[choicesStyle, slotProps?.colors?.sx]}>
             <legend>{labels.colors}</legend>
             {colors.map((item) => <label key={item.value} css={choiceStyle}>
               <input css={radioStyle} type="radio" name={`${id}-color`} value={item.value} checked={color === item.value} disabled={item.soldOut} onChange={() => onColorChange(item.value)} />
               {item.label}{item.soldOut && ` — ${labels.soldOut}`}
             </label>)}
           </Colors>}
-          {options.length > 0 && <Options {...slotProps?.options} css={[choicesStyle, slotProps?.options?.css]}>
+          {options.length > 0 && <Options {...withoutSx(slotProps?.options)} css={[choicesStyle, slotProps?.options?.sx]}>
             <legend>{labels.options}</legend>
             {options.map((item) => {
               const unavailable = isPhotoGridOptionSoldOut(item, color);

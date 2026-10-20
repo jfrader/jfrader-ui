@@ -30,7 +30,7 @@ export const fieldColumnStyle = css({
 export interface FieldPartProps {
   [attribute: `data-${string}`]: unknown;
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 const rootStyle = css({

@@ -23,10 +23,10 @@ import { Spinner } from '../spinner';
 
 export type ActionButtonValue = 'idle' | 'pending' | 'success' | 'error';
 export type ActionButtonPartProps = ComponentPropsWithRef<'span'> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 export type ActionButtonRootProps = ComponentPropsWithRef<'button'> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
   'data-ui'?: string;
 };
 export interface ActionButtonSlots {
@@ -191,7 +191,7 @@ export function ActionButton({
     return () => clearTimeout(timer);
   }, [current, delay, inFlight]);
   const {
-    css: rootCss,
+    sx: rootCss,
     className: rootClass,
     style: rootInline,
     ref: rootRef,
@@ -203,9 +203,9 @@ export function ActionButton({
   const Icon = slots?.icon ?? 'span';
   const Label = slots?.label ?? 'span';
   const Status = slots?.status ?? 'span';
-  const { css: iconCss, ...iconProps } = slotProps?.icon ?? {};
-  const { css: labelCss, ...labelProps } = slotProps?.label ?? {};
-  const { css: statusCss, ...statusProps } = slotProps?.status ?? {};
+  const { sx: iconCss, ...iconProps } = slotProps?.icon ?? {};
+  const { sx: labelCss, ...labelProps } = slotProps?.label ?? {};
+  const { sx: statusCss, ...statusProps } = slotProps?.status ?? {};
   const labels = {
     idle: label,
     pending: pendingLabel,
@@ -271,11 +271,10 @@ export function ActionButton({
             }
           }
         }}
-        render={({ css: buttonCss, ...buttonProps }) => (
+        render={(buttonProps) => (
           <WithSx
-            styles={[buttonCss, rootStyle, heights[size], rootCss]}
             className={buttonProps.className}
-            sx={sx}
+            sx={[rootStyle, heights[size], rootCss, sx]}
           >
             {(resolved) => (
               <Root

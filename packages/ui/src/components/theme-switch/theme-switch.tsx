@@ -4,7 +4,7 @@ import { useId, useState, type ComponentPropsWithRef, type ComponentType, type R
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx } from '../../styling/sx';
+import { withoutSx, WithSx } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -38,7 +38,7 @@ export interface ThemeSwitchProps extends Omit<
   loading?: boolean;
   slotProps?: SwitchProps['slotProps'] & {
     /** Circle holding the visible theme icon. */
-    iconFrame?: Omit<ComponentPropsWithRef<'label'>, 'css'> & { css?: SwitchPartProps['css'] };
+    iconFrame?: Omit<ComponentPropsWithRef<'label'>, 'css'> & { sx?: SwitchPartProps['sx'] };
     /** Sun icon drawn in the light theme. */
     lightIcon?: SwitchPartProps;
     /** Moon icon drawn in the dark theme. */
@@ -160,35 +160,35 @@ export function ThemeSwitch({
         >
           {(hasLight || hasDark) && (
             <IconFrame
-              {...iconFrameSlot}
+              {...withoutSx(iconFrameSlot)}
               htmlFor={inputId}
               aria-hidden="true"
               data-ui="theme-switch-icon-frame"
               data-value={value}
               data-animated={animated}
               className={iconFrameSlot?.className}
-              css={[frameStyle, cueStyles[transition], iconFrameSlot?.css]}
+              css={[frameStyle, cueStyles[transition], iconFrameSlot?.sx]}
             >
               {hasLight && (
                 <LightIcon
-                  {...lightIconSlot}
+                  {...withoutSx(lightIconSlot)}
                   data-ui="theme-switch-light-icon"
                   data-active={value === 'light'}
                   data-animated={animated}
                   className={lightIconSlot?.className}
-                  css={[iconStyle, lightIconSlot?.css]}
+                  css={[iconStyle, lightIconSlot?.sx]}
                 >
                   {lightIcon}
                 </LightIcon>
               )}
               {hasDark && (
                 <DarkIcon
-                  {...darkIconSlot}
+                  {...withoutSx(darkIconSlot)}
                   data-ui="theme-switch-dark-icon"
                   data-active={value === 'dark'}
                   data-animated={animated}
                   className={darkIconSlot?.className}
-                  css={[iconStyle, darkIconSlot?.css]}
+                  css={[iconStyle, darkIconSlot?.sx]}
                 >
                   {darkIcon}
                 </DarkIcon>
@@ -206,7 +206,7 @@ export function ThemeSwitch({
             description={rest.description === '' ? undefined : rest.description}
             slotProps={{
               ...switchSlotProps,
-              root: { ...switchSlotProps.root, css: [switchRootStyle, switchSlotProps.root?.css] },
+              root: { ...switchSlotProps.root, sx: [switchRootStyle, switchSlotProps.root?.sx] },
             }}
             onClick={(event) => {
               onClick?.(event);

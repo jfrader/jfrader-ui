@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 // APG horizontal single/multi-thumb slider: arrows, Shift+arrows, PageUp/Down,
@@ -352,18 +353,18 @@ export function Slider(props: SliderProps) {
               <div css={sliderHeaderStyle}>
                 {hasLabel && (
                   <Label
-                    {...slotProps?.label}
+                    {...withoutSx(slotProps?.label)}
                     id={`${id}-label`}
-                    css={[sliderLabelStyle, slotProps?.label?.css]}
+                    css={[sliderLabelStyle, slotProps?.label?.sx]}
                   >
                     {label}
                   </Label>
                 )}
                 {showValue && (
                   <Readout
-                    {...slotProps?.readout}
+                    {...withoutSx(slotProps?.readout)}
                     aria-hidden="true"
-                    css={[sliderReadoutStyle, slotProps?.readout?.css]}
+                    css={[sliderReadoutStyle, slotProps?.readout?.sx]}
                   >
                     {readout}
                   </Readout>
@@ -372,19 +373,19 @@ export function Slider(props: SliderProps) {
             )}
             {hasDescription && (
               <Description
-                {...slotProps?.description}
+                {...withoutSx(slotProps?.description)}
                 id={`${id}-description`}
-                css={[sliderDescriptionStyle, slotProps?.description?.css]}
+                css={[sliderDescriptionStyle, slotProps?.description?.sx]}
               >
                 {description}
               </Description>
             )}
             {hasError && (
               <Error
-                {...slotProps?.error}
+                {...withoutSx(slotProps?.error)}
                 id={`${id}-error`}
                 role="alert"
-                css={[sliderErrorStyle, slotProps?.error?.css]}
+                css={[sliderErrorStyle, slotProps?.error?.sx]}
               >
                 {error}
               </Error>
@@ -392,22 +393,22 @@ export function Slider(props: SliderProps) {
             <div css={sliderRowStyle}>
               {hasContent(start) && <Start {...slotProps?.start}>{start}</Start>}
               <Control
-                {...slotProps?.control}
+                {...withoutSx(slotProps?.control)}
                 {...slider.controlHandlers(slotProps?.control)}
-                css={[sliderControlStyle, sliderSizeStyles[size], slotProps?.control?.css]}
+                css={[sliderControlStyle, sliderSizeStyles[size], slotProps?.control?.sx]}
                 data-ui="slider-control"
                 data-disabled={disabled || undefined}
               >
                 <Track
-                  {...slotProps?.track}
+                  {...withoutSx(slotProps?.track)}
                   data-ui="slider-track"
                   aria-hidden="true"
-                  css={[trackStyle, slotProps?.track?.css]}
+                  css={[trackStyle, slotProps?.track?.sx]}
                 >
                   <Fill
-                    {...slotProps?.fill}
+                    {...withoutSx(slotProps?.fill)}
                     data-ui="slider-fill"
-                    css={[fillStyle, slotProps?.fill?.css]}
+                    css={[fillStyle, slotProps?.fill?.sx]}
                     style={{
                       ...slotProps?.fill?.style,
                       insetInlineStart: `${startPercent}%`,
@@ -428,7 +429,7 @@ export function Slider(props: SliderProps) {
                   const [low, high] = bounds(index);
                   return (
                     <Thumb
-                      {...part}
+                      {...withoutSx(part)}
                       key={index}
                       id={`${id}-thumb-${index}`}
                       data-slider-thumb={index}
@@ -454,7 +455,7 @@ export function Slider(props: SliderProps) {
                         hasDescription && `${id}-description`,
                         hasError && `${id}-error`,
                       )}
-                      css={[thumbStyle, part?.css]}
+                      css={[thumbStyle, part?.sx]}
                       style={{ ...part?.style, insetInlineStart: `${percent(n)}%` }}
                       onFocus={(e) => {
                         slider.noteFocus(index);
@@ -479,10 +480,10 @@ export function Slider(props: SliderProps) {
                         </span>
                       )}
                       <Bubble
-                        {...slotProps?.bubble}
+                        {...withoutSx(slotProps?.bubble)}
                         data-ui="slider-bubble"
                         aria-hidden="true"
-                        css={[bubbleStyle, slotProps?.bubble?.css]}
+                        css={[bubbleStyle, slotProps?.bubble?.sx]}
                         style={{
                           ...slotProps?.bubble?.style,
                           ...(percent(n) <= 50 ? { insetInlineStart: 0 } : { insetInlineEnd: 0 }),
@@ -503,11 +504,11 @@ export function Slider(props: SliderProps) {
                   const part = indexedPart(slotProps?.mark, index);
                   return (
                     <Mark
-                      {...part}
+                      {...withoutSx(part)}
                       key={index}
                       type="button"
                       disabled={disabled}
-                      css={[sliderMarkStyle, part?.css]}
+                      css={[sliderMarkStyle, part?.sx]}
                       onClick={(e) => {
                         part?.onClick?.(e);
                         if (!e.defaultPrevented) slider.selectMark(mark.value);

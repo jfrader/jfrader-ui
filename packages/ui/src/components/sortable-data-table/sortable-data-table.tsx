@@ -20,7 +20,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -61,7 +61,7 @@ export interface DataTableMessages {
 }
 export interface DataTablePartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 export interface SortableDataTableSlots {
   /** Scrollable container wrapping the table. */
@@ -376,7 +376,7 @@ export function SortableDataTable<T>({
     <Checkbox
       aria-label={messages.selectRow(getRowLabel!(row))}
       checked={keySet.has(key)}
-      slotProps={{ root: { css: checkboxStyle } }}
+      slotProps={{ root: { sx: checkboxStyle } }}
       onChange={(event) => {
         if (event.defaultPrevented || event.nativeEvent.defaultPrevented) return;
         const native = event.nativeEvent as MouseEvent;
@@ -394,7 +394,7 @@ export function SortableDataTable<T>({
       {(rootClass) => (
         <div {...rest} ref={ref} className={rootClass} data-ui="sortable-data-table">
           <Scroller
-            {...slotProps?.scroller}
+            {...withoutSx(slotProps?.scroller)}
             ref={mergedScrollerRef}
             role="region"
             aria-label={messages.scrollLabel}
@@ -402,21 +402,21 @@ export function SortableDataTable<T>({
             tabIndex={0}
             data-ui="sortable-data-table-scroller"
             className={slotProps?.scroller?.className}
-            css={[scrollerStyle, slotProps?.scroller?.css]}
+            css={[scrollerStyle, slotProps?.scroller?.sx]}
           >
             <Table
-              {...slotProps?.table}
+              {...withoutSx(slotProps?.table)}
               ref={mergedTableRef}
               aria-busy={loading || undefined}
               className={slotProps?.table?.className}
-              css={[tableStyle, slotProps?.table?.css]}
+              css={[tableStyle, slotProps?.table?.sx]}
             >
               {isRenderable(caption) && (
               <Caption
-                {...slotProps?.caption}
+                {...withoutSx(slotProps?.caption)}
                   id={captionId}
                   className={slotProps?.caption?.className}
-                  css={[captionStyle, captionHidden && visuallyHiddenStyle, slotProps?.caption?.css]}
+                  css={[captionStyle, captionHidden && visuallyHiddenStyle, slotProps?.caption?.sx]}
                 >
                   {caption}
               </Caption>
@@ -437,7 +437,7 @@ export function SortableDataTable<T>({
                         checked={allSelected}
                         indeterminate={mixed}
                         disabled={!visibleKeys.length}
-                        slotProps={{ root: { css: checkboxStyle } }}
+                        slotProps={{ root: { sx: checkboxStyle } }}
                         onChange={(event) => {
                           if (!event.defaultPrevented && !event.nativeEvent.defaultPrevented)
                             toggleRows(visibleKeys, event.currentTarget.checked);
@@ -447,7 +447,7 @@ export function SortableDataTable<T>({
                   )}
                   {columns.map((column) => (
                     <HeaderCell
-                      {...slotProps?.headerCell}
+                      {...withoutSx(slotProps?.headerCell)}
                       key={column.id}
                       scope="col"
                       data-numeric={column.numeric || undefined}
@@ -459,18 +459,18 @@ export function SortableDataTable<T>({
                           : undefined
                       }
                       className={slotProps?.headerCell?.className}
-                      css={[cellStyle, densityStyles[size], headerStyle, slotProps?.headerCell?.css]}
+                      css={[cellStyle, densityStyles[size], headerStyle, slotProps?.headerCell?.sx]}
                     >
                       {sortable(column) ? (
                         <SortButton
-                          {...slotProps?.sortButton}
+                          {...withoutSx(slotProps?.sortButton)}
                           type="button"
                           aria-label={messages.sortButton(
                             columnLabel(column),
                             sort?.columnId === column.id ? sort.direction : null,
                           )}
                           className={slotProps?.sortButton?.className}
-                          css={[sortStyle, slotProps?.sortButton?.css]}
+                          css={[sortStyle, slotProps?.sortButton?.sx]}
                           onClick={(event) => {
                             if (!event.defaultPrevented)
                               requestSort({
@@ -508,11 +508,11 @@ export function SortableDataTable<T>({
                     const key = getRowId(row);
                     return (
                     <Row
-                      {...slotProps?.row}
+                      {...withoutSx(slotProps?.row)}
                       key={key}
                         data-selected={(selectable && keySet.has(key)) || undefined}
                         className={slotProps?.row?.className}
-                        css={[rowStyle, slotProps?.row?.css]}
+                        css={[rowStyle, slotProps?.row?.sx]}
                         onFocusCapture={(event) => {
                           const controls = Array.from(
                             event.currentTarget.querySelectorAll<HTMLElement>(
@@ -529,11 +529,11 @@ export function SortableDataTable<T>({
                         {selectable && <td css={[cellStyle, densityStyles[size]]}>{selectionCheckbox(row, key)}</td>}
                         {columns.map((column) => (
                         <Cell
-                          {...slotProps?.cell}
+                          {...withoutSx(slotProps?.cell)}
                           key={column.id}
                             data-numeric={column.numeric || undefined}
                             className={slotProps?.cell?.className}
-                            css={[cellStyle, densityStyles[size], slotProps?.cell?.css]}
+                            css={[cellStyle, densityStyles[size], slotProps?.cell?.sx]}
                           >
                             {formatCell(column, row)}
                         </Cell>
@@ -544,10 +544,10 @@ export function SortableDataTable<T>({
                 ) : (
                   <tr>
                   <Cell
-                    {...slotProps?.cell}
+                    {...withoutSx(slotProps?.cell)}
                     colSpan={columns.length + Number(selectable)}
                       className={slotProps?.cell?.className}
-                      css={[cellStyle, densityStyles[size], slotProps?.cell?.css]}
+                      css={[cellStyle, densityStyles[size], slotProps?.cell?.sx]}
                     >
                       {empty === undefined ? messages.empty : isRenderable(empty) && empty}
                   </Cell>
@@ -557,7 +557,7 @@ export function SortableDataTable<T>({
             </Table>
           </Scroller>
           {selectable && (
-            <Footer {...slotProps?.footer} className={slotProps?.footer?.className} css={[footerStyle, slotProps?.footer?.css]}>
+            <Footer {...withoutSx(slotProps?.footer)} className={slotProps?.footer?.className} css={[footerStyle, slotProps?.footer?.sx]}>
               <span>{summary}</span>
               {keys.length > 0 && (
                 <Button
@@ -579,12 +579,12 @@ export function SortableDataTable<T>({
             </Footer>
           )}
           <Status
-            {...slotProps?.status}
+            {...withoutSx(slotProps?.status)}
             role="status"
             aria-live="polite"
             aria-atomic="true"
             className={slotProps?.status?.className}
-            css={[visuallyHiddenStyle, slotProps?.status?.css]}
+            css={[visuallyHiddenStyle, slotProps?.status?.sx]}
           >
             {status}
           </Status>

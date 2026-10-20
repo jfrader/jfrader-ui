@@ -5,7 +5,7 @@ import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { focusRingOutset } from '../../styling/focus-ring';
@@ -430,8 +430,8 @@ function ChatComposer({
   return (
     <WithSx className={className} styles={[composerRootStyle, threadSizeStyles[size]]} sx={sx}>
       {(rootClass) => <div {...rest} ref={mergedRef} className={rootClass} data-ui={`${UI}-composer`}>
-        {draft.files.length > 0 ? <Tray {...slotProps?.tray} role="list" aria-label={labels.attachments} data-ui={`${UI}-tray`} className={slotProps?.tray?.className} css={[trayStyle, fadeStyle, slotProps?.tray?.css]}>
-          {draft.files.map((file, index) => <File {...slotProps?.file} key={index} className={slotProps?.file?.className} css={[fileStyle, slotProps?.file?.css]}>
+        {draft.files.length > 0 ? <Tray {...withoutSx(slotProps?.tray)} role="list" aria-label={labels.attachments} data-ui={`${UI}-tray`} className={slotProps?.tray?.className} css={[trayStyle, fadeStyle, slotProps?.tray?.sx]}>
+          {draft.files.map((file, index) => <File {...withoutSx(slotProps?.file)} key={index} className={slotProps?.file?.className} css={[fileStyle, slotProps?.file?.sx]}>
             {preview.get(file) ? <img src={preview.get(file)} alt="" css={previewStyle} /> : null}
             <span>{file.name} · {fileSize(file.size, locale)}</span>
             <RemoveButton size="sm" variant="ghost" {...slotProps?.removeButton} aria-label={labels.removeFile(file.name)} disabled={disabled || pending || slotProps?.removeButton?.disabled} data-action="remove-file" onClick={(event) => { slotProps?.removeButton?.onClick?.(event); if (!event.defaultPrevented) remove(index); }}>×</RemoveButton>
@@ -484,7 +484,7 @@ function ChatComposer({
               'aria-describedby': [textarea?.['aria-describedby'], error ? errorId : undefined].filter(Boolean).join(' ') || undefined,
               slotProps: {
                 ...textarea?.slotProps,
-                control: { ...textarea?.slotProps?.control, css: [textareaControlStyle, textarea?.slotProps?.control?.css] },
+                control: { ...textarea?.slotProps?.control, sx: [textareaControlStyle, textarea?.slotProps?.control?.sx] },
               },
               onPaste: (event) => {
                 textarea?.onPaste?.(event);
@@ -524,7 +524,7 @@ function ChatComposer({
             </AttachButton>
           </div> : null}
         </Form>
-        <Error {...slotProps?.error} id={errorId} role="status" aria-atomic="true" data-ui={`${UI}-error`} className={slotProps?.error?.className} css={[errorStyle, slotProps?.error?.css]}>{error}</Error>
+        <Error {...withoutSx(slotProps?.error)} id={errorId} role="status" aria-atomic="true" data-ui={`${UI}-error`} className={slotProps?.error?.className} css={[errorStyle, slotProps?.error?.sx]}>{error}</Error>
       </div>}
     </WithSx>
   );
@@ -795,8 +795,8 @@ function ChatThreadRoot({
   const Message = slots?.message ?? 'li';
   const JumpButton = slots?.jumpButton ?? Button;
   return <PresentationSlot element="div" component={slots?.root ?? component} slotProps={{ ...slotProps?.root, 'data-size': size }} styles={[rootStyle, threadSizeStyles[size]]} sx={sx} {...rest} ref={rootRefs} className={className} marker={UI}>
-      <Viewport {...slotProps?.viewport} data-ui={`${UI}-viewport`} className={slotProps?.viewport?.className} css={[viewportStyle, slotProps?.viewport?.css]}>
-        <Scroller {...slotProps?.scroller} ref={scrollerRef} tabIndex={0} role="group" aria-label={labels.transcript} data-ui={`${UI}-scroller`} className={slotProps?.scroller?.className} css={[scrollerStyle, slotProps?.scroller?.css]} onScroll={(event) => {
+      <Viewport {...withoutSx(slotProps?.viewport)} data-ui={`${UI}-viewport`} className={slotProps?.viewport?.className} css={[viewportStyle, slotProps?.viewport?.sx]}>
+        <Scroller {...withoutSx(slotProps?.scroller)} ref={scrollerRef} tabIndex={0} role="group" aria-label={labels.transcript} data-ui={`${UI}-scroller`} className={slotProps?.scroller?.className} css={[scrollerStyle, slotProps?.scroller?.sx]} onScroll={(event) => {
           const el = event.currentTarget;
           const nearBottom = el.scrollHeight - el.clientHeight - el.scrollTop <= PIN_THRESHOLD;
           if (nearBottom) jumping.current = false;
@@ -807,7 +807,7 @@ function ChatThreadRoot({
           if (pinned.current) setUnread(0);
         }} onWheel={() => { jumping.current = false; }}>
           <Log
-            {...slotProps?.log}
+            {...withoutSx(slotProps?.log)}
             role="log"
             aria-label={labels.conversation}
             aria-live={live && !prepending ? 'polite' : 'off'}
@@ -815,10 +815,10 @@ function ChatThreadRoot({
             aria-atomic="false"
             data-ui={`${UI}-log`}
             className={slotProps?.log?.className}
-            css={slotProps?.log?.css}
+            css={slotProps?.log?.sx}
           >
             {rendered.length === 0 ? <p>{labels.empty}</p> : null}
-            <List {...slotProps?.list} ref={listRef} role="list" data-ui={`${UI}-list`} className={slotProps?.list?.className} css={[listStyle, size === 'sm' && compactListStyle, slotProps?.list?.css]}>
+            <List {...withoutSx(slotProps?.list)} ref={listRef} role="list" data-ui={`${UI}-list`} className={slotProps?.list?.className} css={[listStyle, size === 'sm' && compactListStyle, slotProps?.list?.sx]}>
               {rendered.map((message, index) => {
                 const epoch = toEpoch(message.createdAt);
                 const previous = rendered[index - 1];
@@ -828,7 +828,7 @@ function ChatThreadRoot({
                 const own = message.authorId === currentUserId;
                 const author = people.get(message.authorId) ?? { id: message.authorId, name: labels.unknownAuthor };
                 const readers = Object.entries(readBy ?? {}).filter(([id, last]) => id !== currentUserId && people.has(id) && last === message.id).map(([id]) => people.get(id)!.name);
-                return <Message {...slotProps?.message} key={message.id} data-ui={`${UI}-message`} data-message-id={message.id} data-own={own} data-grouped={grouped} className={slotProps?.message?.className} css={[messageStyle, entering.has(message.id) && message.status !== 'failed' && fadeStyle, slotProps?.message?.css]}>
+                return <Message {...withoutSx(slotProps?.message)} key={message.id} data-ui={`${UI}-message`} data-message-id={message.id} data-own={own} data-grouped={grouped} className={slotProps?.message?.className} css={[messageStyle, entering.has(message.id) && message.status !== 'failed' && fadeStyle, slotProps?.message?.sx]}>
                   {!sameDay ? <h3 data-ui={`${UI}-day`} css={dateStyle}>{epoch === null ? labels.invalidTime : dateFormat.format(epoch)}</h3> : null}
                   <ChatMessageView
                     _ui={UI}
@@ -866,7 +866,7 @@ function ChatThreadRoot({
             </List>
           </Log>
         </Scroller>
-        {away ? <JumpButton variant="outline" size="sm" {...slotProps?.jumpButton} css={jumpStyle} onClick={(event) => { slotProps?.jumpButton?.onClick?.(event); if (!event.defaultPrevented) jump(); }}>{unread ? labels.newMessages(unread) : labels.jumpToLatest}</JumpButton> : null}
+        {away ? <JumpButton variant="outline" size="sm" {...withoutSx(slotProps?.jumpButton)} css={jumpStyle} onClick={(event) => { slotProps?.jumpButton?.onClick?.(event); if (!event.defaultPrevented) jump(); }}>{unread ? labels.newMessages(unread) : labels.jumpToLatest}</JumpButton> : null}
       </Viewport>
       <div aria-hidden="true" css={typingStyle}>{typingText}</div>
       <div role="status" aria-atomic="true" css={visuallyHiddenStyle}>{typingText}</div>

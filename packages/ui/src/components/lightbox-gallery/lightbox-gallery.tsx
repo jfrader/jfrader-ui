@@ -34,7 +34,7 @@ import {
   MODAL_ENTER_SCALE,
   modalBackdropMotion,
 } from '../../styling/overlay-motion';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -54,7 +54,7 @@ export interface LightboxGalleryImage {
 }
 
 type Slot<Tag extends keyof React.JSX.IntrinsicElements> = Omit<ComponentPropsWithRef<Tag>, 'children'> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 
 export interface LightboxGallerySlotProps {
@@ -370,9 +370,9 @@ function GalleryImage({
       )}
       {state !== 'error' && (
         <Image
-          {...rest}
+          {...withoutSx(rest)}
           ref={mergedRef}
-          css={[imageStyle, loadingStyle, slot?.css]}
+          css={[imageStyle, loadingStyle, slot?.sx]}
           src={image.src}
           srcSet={image.srcSet}
           sizes={image.sizes}
@@ -850,14 +850,14 @@ function Viewer({
   };
   return (
     <ViewerDialog
-      {...viewerSlot}
+      {...withoutSx(viewerSlot)}
       {...native}
       data-ui="lightbox-gallery-viewer"
       aria-modal="true"
       aria-label={viewerSlot['aria-label'] ?? label}
       aria-labelledby={joinIds(viewerSlot['aria-labelledby'], titleId)}
       aria-describedby={joinIds(viewerSlot['aria-describedby'], withDescription && !!hasCaption && captionId)}
-      css={[viewerStyle, viewerSlot.css]}
+      css={[viewerStyle, viewerSlot.sx]}
       onKeyDown={(event) => {
         viewerSlot.onKeyDown?.(event);
         keyDown(event);
@@ -879,7 +879,7 @@ function Viewer({
           onClose={controller.requestClose}
         />
         <Stage
-          {...slotProps?.stage}
+          {...withoutSx(slotProps?.stage)}
           ref={stageMerged}
           role="group"
           aria-label={slotProps?.stage?.['aria-label'] ?? image?.alt ?? labels.unavailable}
@@ -887,7 +887,7 @@ function Viewer({
           data-ui="lightbox-gallery-stage"
           data-zoom={zoom}
           data-reduced-motion={reduced}
-          css={[stageStyle, slotProps?.stage?.css]}
+          css={[stageStyle, slotProps?.stage?.sx]}
           onKeyDown={(event) => {
             slotProps?.stage?.onKeyDown?.(event);
           }}
@@ -953,7 +953,7 @@ function Viewer({
           )}
         </Stage>
         {hasCaption && (
-          <Caption {...slotProps?.caption} id={captionId} tabIndex={slotProps?.caption?.tabIndex ?? 0} css={[captionStyle, slotProps?.caption?.css]}>
+          <Caption {...withoutSx(slotProps?.caption)} id={captionId} tabIndex={slotProps?.caption?.tabIndex ?? 0} css={[captionStyle, slotProps?.caption?.sx]}>
             {image.caption}
           </Caption>
         )}
@@ -1091,9 +1091,9 @@ export function LightboxGallery({
           >
             {images.length ? (
               <Grid
-                {...slotProps?.grid}
+                {...withoutSx(slotProps?.grid)}
                 ref={mergedGrid}
-                css={[gridStyle, slotProps?.grid?.css]}
+                css={[gridStyle, slotProps?.grid?.sx]}
                 style={
                   {
                     ...slotProps?.grid?.style,
@@ -1108,7 +1108,7 @@ export function LightboxGallery({
                   return (
                     <li key={image.id} style={{ gridRowEnd: `span ${span}`, minInlineSize: 0 }}>
                       <Tile
-                        {...slotProps?.tile}
+                        {...withoutSx(slotProps?.tile)}
                         component={slots?.tile}
                         register={(node) => {
                           if (node) tiles.current.set(image.id, node);
@@ -1125,7 +1125,7 @@ export function LightboxGallery({
                           slotProps?.tile?.['aria-label'] ??
                           `${image.title || image.alt}, ${labels.position(format.format(index + 1), format.format(images.length))}, ${labels.open}`
                         }
-                        css={[tileStyle, slotProps?.tile?.css]}
+                        css={[tileStyle, slotProps?.tile?.sx]}
                         style={{
                           ...slotProps?.tile?.style,
                           aspectRatio: `${image.width} / ${image.height}`,

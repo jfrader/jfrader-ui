@@ -27,13 +27,12 @@ export type EmblemPattern = 'none' | 'stripes' | 'hoops' | 'sash';
 
 export interface EmblemPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 /** Props the `render` callback spreads onto the element it returns. */
 export interface EmblemRenderProps extends Omit<HTMLAttributes<HTMLElement>, 'color'> {
   ref: RefCallback<HTMLElement> | null;
-  css: Interpolation<Theme>;
   'data-ui': string;
   'data-shape': EmblemShape;
   'data-pattern': EmblemPattern;
@@ -274,14 +273,14 @@ export function Emblem({
           alt=""
           onError={() => setFailedSrc(src)}
           className={slotProps?.image?.className}
-          css={[imageStyle, slotProps?.image?.css]}
+          css={[imageStyle, slotProps?.image?.sx]}
         />
       ) : (
         <Monogram
           data-ui="emblem-ink"
           aria-hidden="true"
           className={slotProps?.monogram?.className}
-          css={[monogramStyle, inkStyle, slotProps?.monogram?.css]}
+          css={[monogramStyle, inkStyle, slotProps?.monogram?.sx]}
         >
           {monogram}
         </Monogram>
@@ -302,7 +301,6 @@ export function Emblem({
             'data-shape': shape,
             'data-pattern': pattern,
             'aria-label': renderLabel,
-            css: styles,
             children: content,
           })
         }

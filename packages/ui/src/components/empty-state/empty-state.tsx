@@ -17,7 +17,7 @@ export type EmptyStateVariant = 'centered' | 'inline';
 
 export interface EmptyStatePartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface EmptyStateSlotProps {
@@ -211,7 +211,7 @@ export function EmptyState({
               data-ui="empty-state-icon"
               aria-hidden="true"
               className={slotProps?.icon?.className}
-              css={[iconStyle, slotProps?.icon?.css]}
+              css={[iconStyle, slotProps?.icon?.sx]}
             >
               {icon}
             </Icon>
@@ -219,14 +219,14 @@ export function EmptyState({
           <Content
             data-ui="empty-state-content"
             className={slotProps?.content?.className}
-            css={[contentStyle, contentVariantStyles[variant], slotProps?.content?.css]}
+            css={[contentStyle, contentVariantStyles[variant], slotProps?.content?.sx]}
           >
             {hasTitle && (
               <Heading
                 id={titleId}
                 {...(slots?.title ? { headingLevel } : {})}
                 className={slotProps?.title?.className}
-                css={[titleStyle, slotProps?.title?.css]}
+                css={[titleStyle, slotProps?.title?.sx]}
               >
                 {title}
               </Heading>
@@ -235,7 +235,7 @@ export function EmptyState({
               <Description
                 id={descriptionId}
                 className={slotProps?.description?.className}
-                css={[descriptionStyle, slotProps?.description?.css]}
+                css={[descriptionStyle, slotProps?.description?.sx]}
               >
                 {description}
               </Description>
@@ -245,7 +245,7 @@ export function EmptyState({
             <Action
               data-ui="empty-state-action"
               className={slotProps?.action?.className}
-              css={[actionStyle, actionVariantStyles[variant], slotProps?.action?.css]}
+              css={[actionStyle, actionVariantStyles[variant], slotProps?.action?.sx]}
             >
               {action}
             </Action>

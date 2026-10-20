@@ -584,7 +584,7 @@ const ProfilePortrait = styled(PersonAvatar)({
   render: (args) => <PersonAvatar {...args} component={ComponentAdapter} slots={{ root: RootAdapter }}
     className="consumer" data-test="consumer"
     style={{ opacity: 0.5, verticalAlign: 'top' }}
-    slotProps={{ root: { ...args.slotProps?.root, className: 'slot', css: slotCss, style: { opacity: 1 }, 'aria-label': 'Blair',
+    slotProps={{ root: { ...args.slotProps?.root, className: 'slot', sx: slotCss, style: { opacity: 1 }, 'aria-label': 'Blair',
       'data-test': 'slot' } }}
     alt={undefined} sx={{ inlineSize: vars.size.personAvatarLg }} />,
   play: async ({ canvasElement, userEvent, args }) => {

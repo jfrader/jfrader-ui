@@ -18,6 +18,7 @@
     "verify:exports": "node scripts/verify-exports.mjs",
     "verify:slots": "node --test scripts/verify-slot-wiring.test.mjs && node scripts/verify-slot-wiring.mjs",
     "verify:docs": "pnpm --filter @jfrader/storybook verify:docs",
+    "verify:api": "pnpm --filter @jfrader/storybook verify:api",
     "docs:build": "node scripts/build-docs.mjs"
   },
   "pnpm": {

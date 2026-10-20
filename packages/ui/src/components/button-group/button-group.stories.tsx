@@ -242,13 +242,13 @@ export const GeneratedPartProps: StoryObj<Omit<ButtonGroupEasyProps, 'component'
     ],
     slotProps: {
       root: { 'data-testid': 'custom-root', className: 'custom-root-class' },
-      item: { className: 'custom-item-class', css: { fontStyle: 'italic' } },
+      item: { className: 'custom-item-class', sx: { fontStyle: 'italic' } },
       link: { className: 'custom-link-class', sx: { fontStyle: 'italic' } },
     },
   },
   render: (args) => <ButtonGroup {...args} />,
   parameters: { docs: { source: { code: `<ButtonGroup label="Document actions" items={actions}
-  slotProps={{ item: { css: { fontStyle: 'italic' } }, link: { sx: { fontStyle: 'italic' } } }} />` } } },
+  slotProps={{ item: { sx: { fontStyle: 'italic' } }, link: { sx: { fontStyle: 'italic' } } }} />` } } },
   play: async ({ canvas }) => {
     const root = canvas.getByTestId('custom-root');
     await expect(root).toHaveClass('custom-root-class');

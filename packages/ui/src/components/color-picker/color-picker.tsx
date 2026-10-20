@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 import {
@@ -969,7 +970,7 @@ export function ColorPicker({
         {label}
       </FieldLabel>
         <Trigger
-          {...slotProps?.trigger}
+          {...withoutSx(slotProps?.trigger)}
           ref={triggerRefs}
           id={field.id}
           type="button"
@@ -991,7 +992,7 @@ export function ColorPicker({
               .join(' ') || undefined
           }
           aria-invalid={field.ariaInvalid ?? slotProps?.trigger?.['aria-invalid']}
-          css={[inputControlStyle, triggerStyle, triggerStyles[size], slotProps?.trigger?.css]}
+          css={[inputControlStyle, triggerStyle, triggerStyles[size], slotProps?.trigger?.sx]}
           onClick={(event) => {
             slotProps?.trigger?.onClick?.(event);
             if (!event.defaultPrevented && !disabled) requestOpen(true);
@@ -1028,7 +1029,7 @@ export function ColorPicker({
       <Dialog.Content dir={effectiveDirection}>
         <Dialog.Panel>
           <Dialog.Title>{messages.dialog}</Dialog.Title>
-          <Content {...slotProps?.content} css={[panelStyle, slotProps?.content?.css]}>
+          <Content {...withoutSx(slotProps?.content)} css={[panelStyle, slotProps?.content?.sx]}>
             {panel}
           </Content>
         </Dialog.Panel>

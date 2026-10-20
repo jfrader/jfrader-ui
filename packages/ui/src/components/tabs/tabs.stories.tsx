@@ -85,9 +85,9 @@ export const SlotProps: EasyStory = {
     slots: { root: TabsRootAdapter, tab: TabsTabAdapter },
     className: 'consumer-tabs', style: { paddingBlock: vars.space[1] },
     slotProps: {
-      root: { className: 'custom-tabs', 'data-ui': 'tabs-root custom', style: { paddingInline: vars.space[2] }, css: { borderRadius: vars.radius.md } },
+      root: { className: 'custom-tabs', 'data-ui': 'tabs-root custom', style: { paddingInline: vars.space[2] }, sx: { borderRadius: vars.radius.md } },
       list: { className: 'custom-list' },
-      tab: { css: { fontStyle: 'italic' } },
+      tab: { sx: { fontStyle: 'italic' } },
       panel: { className: 'custom-panel' },
     },
   },

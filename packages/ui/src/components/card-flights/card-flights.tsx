@@ -68,7 +68,7 @@ export interface CardFlightsSlots {
 /** Root slot props win conflicts; className and style merge. */
 export interface CardFlightsSlotProps {
   /** Root slot props win conflicts; className and style merge. */
-  root?: ScopeRootProps & { css?: Interpolation<Theme> };
+  root?: ScopeRootProps & { sx?: Interpolation<Theme> };
 }
 
 export interface CardFlightsProviderProps extends ScopeRootProps, SxProps {
@@ -102,7 +102,7 @@ function useFlightReducedMotion() {
 export function CardFlightsProvider({ children, scopeRef: externalScopeRef, component, slots, slotProps, className, style, sx, ...rest }: CardFlightsProviderProps) {
   const internalScopeRef = useRef<HTMLDivElement>(null);
   const scopeRef = externalScopeRef ?? internalScopeRef;
-  const { css: slotCss, className: slotClassName, style: slotStyle, ...slotRest } = slotProps?.root ?? {};
+  const { sx: slotCss, className: slotClassName, style: slotStyle, ...slotRest } = slotProps?.root ?? {};
   const rootProps = { ...rest, children, ...slotRest };
   const rootRef = useMergeRefs([internalScopeRef, rootProps.ref]);
   const Root = slots?.root ?? component ?? 'div';

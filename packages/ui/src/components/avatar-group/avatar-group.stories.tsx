@@ -96,13 +96,13 @@ export const ComposedMembers: Story = {
   render: (args) => <AvatarGroup {...args} max={3} avatarProps={{
     children: '★', className: 'shared-avatar',
     slots: { fallback: SharedFallback },
-    slotProps: { fallback: { className: 'shared-fallback', title: 'Shared artwork', css: { fontWeight: vars.fontWeight.bold } } },
+    slotProps: { fallback: { className: 'shared-fallback', title: 'Shared artwork', sx: { fontWeight: vars.fontWeight.bold } } },
     sx: { outline: `1px solid ${vars.color.border}` },
   }} members={[
     { id: 'ada', name: 'Ada Lovelace', avatarProps: {
       children: <PersonAvatar seed="ada" alt="" size="full" crop="circle" />,
       className: 'member-avatar', slots: { fallback: MemberFallback },
-      slotProps: { fallback: { className: 'member-fallback', title: 'Ada artwork', css: { opacity: 1 } } },
+      slotProps: { fallback: { className: 'member-fallback', title: 'Ada artwork', sx: { opacity: 1 } } },
       sx: { outlineWidth: '2px' },
     } },
     { id: 'grace', name: 'Grace Hopper' },
@@ -998,9 +998,9 @@ export const ConsumerStylePrecedence: Story = {
           className={`consumer-group ${className(consumerGroupStyle)}`}
           sx={sxGroupStyle}
           slotProps={{
-            member: { className: 'slot-member', css: slotMemberStyle },
-            overflow: { className: 'slot-overflow', css: slotOverflowStyle },
-            summary: { className: 'slot-summary', css: slotSummaryStyle },
+            member: { className: 'slot-member', sx: slotMemberStyle },
+            overflow: { className: 'slot-overflow', sx: slotOverflowStyle },
+            summary: { className: 'slot-summary', sx: slotSummaryStyle },
           }}
           avatarProps={{
             className: 'consumer-avatar',

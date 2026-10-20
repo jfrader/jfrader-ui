@@ -181,10 +181,10 @@ import { vars } from '@jfrader/tokens/vars';
   closeLabel="Close"
   slots={{ root: Surface }}
   slotProps={{
-    root: { className: 'custom-dialog-panel', css: { borderRadius: vars.radius.sm } },
-    header: { className: 'custom-dialog-header', css: { fontStyle: 'italic' } },
+    root: { className: 'custom-dialog-panel', sx: { borderRadius: vars.radius.sm } },
+    header: { className: 'custom-dialog-header', sx: { fontStyle: 'italic' } },
     title: { className: 'custom-dialog-title' },
-    close: { css: { marginBlockStart: vars.space[4] } },
+    close: { sx: { marginBlockStart: vars.space[4] } },
   }}
 />` },
   } },
@@ -194,10 +194,10 @@ import { vars } from '@jfrader/tokens/vars';
     slots: { root: Surface },
     component: UnusedDialogRoot,
     slotProps: {
-      root: { className: 'custom-dialog-panel', css: { borderRadius: vars.radius.sm } },
-      header: { className: 'custom-dialog-header', css: { fontStyle: 'italic' } },
+      root: { className: 'custom-dialog-panel', sx: { borderRadius: vars.radius.sm } },
+      header: { className: 'custom-dialog-header', sx: { fontStyle: 'italic' } },
       title: { className: 'custom-dialog-title' },
-      close: { css: { marginBlockStart: vars.space[4] } },
+      close: { sx: { marginBlockStart: vars.space[4] } },
     },
   },
   render: (args) => <Dialog {...args} />,
@@ -682,7 +682,7 @@ export const SizingOverrides: Story = {
   render: (args) => (
     <Dialog {...args}>
       <Dialog.Content sx={{ inlineSize: '280px', minInlineSize: 0 }}>
-        <Dialog.Panel slotProps={{ root: { css: panelSizeOverride } }} sx={{ inlineSize: '260px' }}>
+        <Dialog.Panel slotProps={{ root: { sx: panelSizeOverride } }} sx={{ inlineSize: '260px' }}>
           <Dialog.Title>Saved</Dialog.Title>
           <Dialog.Description>Profile updated.</Dialog.Description>
           <Dialog.Close>Done</Dialog.Close>

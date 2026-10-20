@@ -13,7 +13,7 @@ import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
-import { WithSx, type SlotCss, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Avatar } from '../avatar';
@@ -82,12 +82,12 @@ export interface ShareAccessMessages {
   roleFor: (name: string, role: ShareRole) => string;
   announce: (event: ShareAccessEvent) => string;
 }
-type NativeSlot<E extends 'section' | 'ul' | 'div'> = ComponentPropsWithRef<E> & SlotCss;
-type ActionSlot = Omit<ButtonProps, 'sx'> & SlotCss;
-type RoleSlot = Omit<SelectEasyProps, 'sx' | 'options'> & SlotCss;
+type NativeSlot<E extends 'section' | 'ul' | 'div'> = ComponentPropsWithRef<E> & SxProps;
+type ActionSlot = Omit<ButtonProps, 'sx'> & SxProps;
+type RoleSlot = Omit<SelectEasyProps, 'sx' | 'options'> & SxProps;
 export interface ShareAccessSlotProps {
   root?: NativeSlot<'section'>;
-  inviteField?: Omit<ComboboxInputProps, 'sx'> & SlotCss;
+  inviteField?: Omit<ComboboxInputProps, 'sx'> & SxProps;
   chipList?: NativeSlot<'ul'>;
   memberList?: NativeSlot<'ul'>;
   undoList?: NativeSlot<'ul'>;
@@ -100,9 +100,9 @@ export interface ShareAccessSlotProps {
   dismissUndoButton?: ActionSlot;
   doneButton?: ActionSlot;
   status?: NativeSlot<'div'>;
-  heading?: ComponentPropsWithRef<'h2'> & SlotCss;
+  heading?: ComponentPropsWithRef<'h2'> & SxProps;
   copyButton?: ActionSlot;
-  sheet?: Omit<ShareSheetProps, 'title' | 'link' | 'people' | 'accessOptions' | 'sx'> & SlotCss;
+  sheet?: Omit<ShareSheetProps, 'title' | 'link' | 'people' | 'accessOptions' | 'sx'> & SxProps;
 }
 export interface ShareAccessSlots {
   root?: ComponentType<ComponentPropsWithRef<'section'>>;
@@ -545,7 +545,7 @@ export function ShareAccess({
     <MotionConfig reducedMotion="user">
       <WithSx
         className={[className, slotProps.root?.className].filter(Boolean).join(' ')}
-        styles={[rootStyle, slotProps.root?.css]}
+        styles={[rootStyle, slotProps.root?.sx]}
         sx={sx}
       >
         {(resolved) => (
@@ -564,12 +564,12 @@ export function ShareAccess({
             }
           >
             <Sheet
-              {...slotProps.sheet}
+              {...withoutSx(slotProps.sheet)}
               title={title}
               link={link}
               people={[]}
               presentation="inline"
-              css={[sheetStyle, slotProps.sheet?.css]}
+              css={[sheetStyle, slotProps.sheet?.sx]}
               slots={{
                 ...slotProps.sheet?.slots,
                 title: slots?.heading ?? slotProps.sheet?.slots?.title,
@@ -699,8 +699,8 @@ export function ShareAccess({
                 </Combobox.List>
               </Combobox>
               <ChipList
-                {...slotProps.chipList}
-                css={[rowStyle, listStyle, slotProps.chipList?.css]}
+                {...withoutSx(slotProps.chipList)}
+                css={[rowStyle, listStyle, slotProps.chipList?.sx]}
                 data-ui="share-access-chip-list"
                 aria-label={text.chips}
               >
@@ -763,8 +763,8 @@ export function ShareAccess({
                 </p>
               )}
               <MemberList
-                {...slotProps.memberList}
-                css={[listStyle, slotProps.memberList?.css]}
+                {...withoutSx(slotProps.memberList)}
+                css={[listStyle, slotProps.memberList?.sx]}
                 data-ui="share-access-member-list"
                 aria-label={text.people}
               >
@@ -825,8 +825,8 @@ export function ShareAccess({
                 ))}
               </MemberList>
               <UndoList
-                {...slotProps.undoList}
-                css={[listStyle, slotProps.undoList?.css]}
+                {...withoutSx(slotProps.undoList)}
+                css={[listStyle, slotProps.undoList?.sx]}
                 data-ui="share-access-undo-list"
                 aria-label={text.removed}
               >
@@ -887,9 +887,9 @@ export function ShareAccess({
               </Done>
             )}
             <Status
-              {...slotProps.status}
+              {...withoutSx(slotProps.status)}
               data-ui="share-access-status"
-              css={[visuallyHiddenStyle, slotProps.status?.css]}
+              css={[visuallyHiddenStyle, slotProps.status?.sx]}
               role="status"
               aria-live="polite"
               aria-atomic="true"

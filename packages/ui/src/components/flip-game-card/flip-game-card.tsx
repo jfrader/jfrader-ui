@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 import { useEffect, useState, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
@@ -176,30 +177,30 @@ function FlipCardContent({
         attributes={{ 'data-state': state, 'data-size': size, 'data-reduced-motion': (mounted && reducedMotion) || undefined }}
       >
         <Rotator
-          {...slotProps?.rotator}
+          {...withoutSx(slotProps?.rotator)}
           data-ui={cardPartIdentity('flip-game-card-rotator', slotProps?.rotator?.['data-ui'])}
           data-state={state}
           className={slotProps?.rotator?.className}
-          css={[rotatorStyle, slotProps?.rotator?.css]}
+          css={[rotatorStyle, slotProps?.rotator?.sx]}
         >
           <Front
-            {...slotProps?.front}
+            {...withoutSx(slotProps?.front)}
             data-ui={cardPartIdentity('flip-game-card-front', slotProps?.front?.['data-ui'])}
             inert={flipped}
             aria-hidden={flipped || undefined}
             className={slotProps?.front?.className}
-            css={[faceStyle, slotProps?.front?.css]}
+            css={[faceStyle, slotProps?.front?.sx]}
           >
             {front}
           </Front>
           <Back
-            {...slotProps?.back}
+            {...withoutSx(slotProps?.back)}
             data-ui={cardPartIdentity('flip-game-card-back', slotProps?.back?.['data-ui'])}
             data-reduced-motion={(mounted && reducedMotion) || undefined}
             inert={!flipped}
             aria-hidden={!flipped || undefined}
             className={slotProps?.back?.className}
-            css={[faceStyle, backStyle, slotProps?.back?.css]}
+            css={[faceStyle, backStyle, slotProps?.back?.sx]}
           >
             {back}
           </Back>

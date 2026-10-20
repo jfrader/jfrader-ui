@@ -906,22 +906,22 @@ export const SlotStyling: Story = {
     compact: true,
     sx: { paddingBlock: px(SX_PADDING) },
     slotProps: {
-      root: { css: { paddingInline: px(SLOT_OVERRIDE), paddingBlock: px(SLOT_OVERRIDE) } },
-      list: { css: { paddingBlock: px(SLOT_OVERRIDE) } },
-      item: { css: { paddingBlock: px(SLOT_OVERRIDE) } },
-      head: { css: { borderRadius: px(SLOT_OVERRIDE) } },
-      marker: { css: { borderRadius: px(SLOT_OVERRIDE) } },
-      label: { css: { letterSpacing: px(SLOT_OVERRIDE) } },
-      description: { css: { letterSpacing: px(SLOT_OVERRIDE) } },
-      connector: { css: { blockSize: px(SLOT_OVERRIDE) } },
-      caption: { css: { letterSpacing: px(SLOT_OVERRIDE) } },
+      root: { sx: { paddingInline: px(SLOT_OVERRIDE), paddingBlock: px(SLOT_OVERRIDE) } },
+      list: { sx: { paddingBlock: px(SLOT_OVERRIDE) } },
+      item: { sx: { paddingBlock: px(SLOT_OVERRIDE) } },
+      head: { sx: { borderRadius: px(SLOT_OVERRIDE) } },
+      marker: { sx: { borderRadius: px(SLOT_OVERRIDE) } },
+      label: { sx: { letterSpacing: px(SLOT_OVERRIDE) } },
+      description: { sx: { letterSpacing: px(SLOT_OVERRIDE) } },
+      connector: { sx: { blockSize: px(SLOT_OVERRIDE) } },
+      caption: { sx: { letterSpacing: px(SLOT_OVERRIDE) } },
     },
   },
   render: (args) => <StyledStepper {...args} />,
   play: async ({ canvasElement }) => {
     const root = getRoot(canvasElement);
     const style = (element: HTMLElement) => getComputedStyle(element);
-    // Own styles → slotProps.root css → consumer sx.
+    // Own styles → slotProps.root sx → consumer sx.
     await expectPx(style(root).paddingTop, SX_PADDING);
     await expectPx(style(root).paddingLeft, SLOT_OVERRIDE);
     await expectPx(style(parts(root, 'list')[0]!).paddingTop, SLOT_OVERRIDE);

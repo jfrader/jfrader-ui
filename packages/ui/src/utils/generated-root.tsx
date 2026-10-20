@@ -2,14 +2,12 @@
 
 import type { ComponentPropsWithRef, ComponentType } from 'react';
 import { WithSx, type SxProps } from '../styling/sx';
-import type { Interpolation, Theme } from '../styling/css';
 
 export type GeneratedRootProps = ComponentPropsWithRef<'div'> & SxProps & {
-  css?: Interpolation<Theme>;
   'data-ui'?: string;
   [attribute: `data-${string}`]: string | number | boolean | undefined;
 };
-export type GeneratedRootSlotProps = Omit<GeneratedRootProps, 'children' | 'sx'>;
+export type GeneratedRootSlotProps = Omit<GeneratedRootProps, 'children'>;
 
 export function GeneratedRoot({
   component,
@@ -18,7 +16,6 @@ export function GeneratedRoot({
   children,
   className,
   style,
-  css,
   sx,
   ...props
 }: GeneratedRootProps & {
@@ -26,15 +23,15 @@ export function GeneratedRoot({
   rootSlot?: GeneratedRootSlotProps;
   marker: string;
 }) {
-  if (!component && !rootSlot && !className && !style && !css && !sx && Object.keys(props).length === 0) return children;
+  if (!component && !rootSlot && !className && !style && !sx && Object.keys(props).length === 0) return children;
   const Root = component ?? 'div';
-  const { css: slotCss, className: slotClassName, style: slotStyle, ...slotRest } = rootSlot ?? {};
+  const { sx: slotCss, className: slotClassName, style: slotStyle, ...slotRest } = rootSlot ?? {};
   const merged = { ...props, ...slotRest };
   const dataUi = [...new Set([marker, ...[props['data-ui'], slotRest['data-ui']].flatMap((value) => typeof value === 'string' ? value.split(/\s+/).filter(Boolean) : [])])].join(' ');
   return (
     <WithSx className={slotClassName} styles={slotCss}>
       {(slotClasses) => (
-        <WithSx className={className} styles={css} sx={sx}>
+        <WithSx className={className} sx={sx}>
           {(consumerClasses) => (
             <WithSx styles={[]} className={[slotClasses, consumerClasses].filter(Boolean).join(' ')}>
               {(resolvedClassName) => (

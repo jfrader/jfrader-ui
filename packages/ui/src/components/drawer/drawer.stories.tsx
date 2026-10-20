@@ -126,9 +126,9 @@ Pass triggerLabel, title, content and closeLabel for a standard drawer; descript
 - Give Close visible text or a localized \`aria-label\`.
 
 ### Panel material
-Panel defaults to contrast; appearance="default" inherits the enclosing appearance. component is sugar for slots.root; only root is adopted, and slots.root wins. slotProps.root accepts div props and css, not sx. Declare adapters outside render, render one div, forward every supplied prop/ref, and apply material before className. Changing the adapter type remounts children and resets focus and uncontrolled inputs.
+Panel defaults to contrast; appearance="default" inherits the enclosing appearance. component is sugar for slots.root; only root is adopted, and slots.root wins. slotProps.root accepts div props and sx. Declare adapters outside render, render one div, forward every supplied prop/ref, and apply material before className. Changing the adapter type remounts children and resets focus and uncontrolled inputs.
 
-Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry → slot css/classes → consumer css/classes → sx. Content stays the native dialog shell. Panel's registered div keeps attached-edge corners, size caps and motion; its translate is host-owned. Select composed panels with [data-ui~="drawer-panel"].`,
+Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry → slot sx/classes → consumer classes → consumer sx. Content stays the native dialog shell. Panel's registered div keeps attached-edge corners, size caps and motion; its translate is host-owned. Select composed panels with [data-ui~="drawer-panel"].`,
     },
   },
 } satisfies Meta<typeof Drawer>;

@@ -733,9 +733,9 @@ export function StyledStorageMeter() {
       slots={{ segment: MeterSpan, status: MeterSpan }}
       sx={{ padding: vars.space[4] }}
       slotProps={{
-        root: { css: { padding: vars.space[1] } },
-        track: { css: { blockSize: vars.space[6] } },
-        item: { css: { paddingBlock: vars.space[3] } },
+        root: { sx: { padding: vars.space[1] } },
+        track: { sx: { blockSize: vars.space[6] } },
+        item: { sx: { paddingBlock: vars.space[3] } },
       }}
     />
   );
@@ -744,9 +744,9 @@ export function StyledStorageMeter() {
     slots: { segment: ReplacementMeterSpan, status: ReplacementMeterSpan },
     sx: { padding: vars.space[4] },
     slotProps: {
-      root: { css: { padding: vars.space[1] } },
-      track: { css: { blockSize: vars.space[6] } },
-      item: { css: { paddingBlock: vars.space[3] } },
+      root: { sx: { padding: vars.space[1] } },
+      track: { sx: { blockSize: vars.space[6] } },
+      item: { sx: { paddingBlock: vars.space[3] } },
     },
     ref: fn(),
   },

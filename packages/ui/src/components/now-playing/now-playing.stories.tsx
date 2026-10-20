@@ -805,7 +805,7 @@ export const NativeCustomization: Story = {
     defaultOpen: true,
     ref: fn(),
     sx: { paddingInline: vars.space[8] },
-    slotProps: { seek: { ref: fn() }, title: { css: { fontWeight: vars.fontWeight.semibold } } },
+    slotProps: { seek: { ref: fn() }, title: { sx: { fontWeight: vars.fontWeight.semibold } } },
   },
   play: async ({ canvasElement, args, canvas }) => {
     const waveform = canvasElement.querySelector('[data-slot="now-playing-waveform"]');

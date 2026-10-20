@@ -845,7 +845,7 @@ function ReplacementStatus(props: ComponentPropsWithRef<'div'>) {
 }
 
 export const SlotStyles: Story = {
-  args: { slotProps: { row: { css: slotRow }, value: { css: slotValue } }, sx: override },
+  args: { slotProps: { row: { sx: slotRow }, value: { sx: slotValue } }, sx: override },
   render: (args) => <StyledJsonViewer {...args} slots={{ status: ReplacementStatus }} />,
   play: async ({ canvasElement }) => {
     const status = canvasElement.querySelector('[data-slot="json-viewer-status"]');

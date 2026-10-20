@@ -15,7 +15,7 @@ import {
 import { useMergeRefs, type Placement } from '@floating-ui/react';
 import { MotionConfig, animate, motion, useMotionValue, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, keyframes, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { css, keyframes, type SerializedStyles } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { listboxSurfaceStyle, listboxScrollStyle } from '../../styling/listbox-style';
@@ -73,13 +73,13 @@ export interface ButtonGroupSlotProps {
   /** Container element wrapping the grouped buttons. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children'> &
     SxProps & {
-      css?: Interpolation<Theme>;
+
       [attribute: `data-${string}`]: unknown;
     };
   /** Action button inside the group. Default: `Button`. */
-  item?: Partial<Omit<ButtonGroupItemProps, 'children' | 'label' | 'onClick' | 'disabled'>> & { css?: Interpolation<Theme> };
+  item?: Partial<Omit<ButtonGroupItemProps, 'children' | 'label' | 'onClick' | 'disabled'>>;
   /** Navigation link button inside the group. */
-  link?: Partial<Omit<ButtonGroupLinkProps, 'children' | 'label' | 'href' | 'onClick' | 'disabled'>> & { css?: Interpolation<Theme> };
+  link?: Partial<Omit<ButtonGroupLinkProps, 'children' | 'label' | 'href' | 'onClick' | 'disabled'>>;
 }
 
 export interface ButtonGroupBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'role' | 'children' | 'defaultValue'>, SxProps {
@@ -524,7 +524,6 @@ function ButtonGroupRoot({
   const {
     className: rootSlotClassName,
     style: rootSlotStyle,
-    css: rootSlotCss,
     sx: rootSlotSx,
     ref: rootSlotRef,
     'data-ui': rootSlotDataUi,
@@ -674,7 +673,7 @@ function ButtonGroupRoot({
     >
       <Context.Provider value={context}>
         <MotionConfig reducedMotion="user">
-          <WithSx className={mergedClassName} styles={[rootStyle, presentation === 'floating' && trayStyle, rootSlotCss, rootSlotSx]} sx={sx}>
+          <WithSx className={mergedClassName} styles={[rootStyle, presentation === 'floating' && trayStyle, rootSlotSx]} sx={sx}>
             {(resolvedClassName) => (
               <Root
                 {...rest}
@@ -750,7 +749,6 @@ function ButtonGroupRoot({
                     if (item.href !== undefined) {
                       const {
                         className: linkSlotClassName,
-                        css: linkSlotCss,
                         sx: linkSlotSx,
                         style: linkSlotStyle,
                         ...linkSlotRest
@@ -777,7 +775,7 @@ function ButtonGroupRoot({
                           label={typeof itemLabel === 'string' ? itemLabel : undefined}
                           className={mergedLinkClassName}
                           style={mergedLinkStyle}
-                          css={[linkSlotCss, linkSlotSx]}
+                          css={[linkSlotSx]}
                           sx={itemSxProp}
                         >
                           {itemLabel}
@@ -786,7 +784,6 @@ function ButtonGroupRoot({
                     }
                     const {
                       className: itemSlotClassName,
-                      css: itemSlotCss,
                       sx: itemSlotSx,
                       style: itemSlotStyle,
                       ...itemSlotRest
@@ -811,7 +808,7 @@ function ButtonGroupRoot({
                         label={typeof itemLabel === 'string' ? itemLabel : undefined}
                         className={mergedItemClassName}
                         style={mergedItemStyle}
-                        css={[itemSlotCss, itemSlotSx]}
+                        css={[itemSlotSx]}
                         sx={itemSxProp}
                       >
                         {itemLabel}

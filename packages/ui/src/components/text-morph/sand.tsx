@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -319,9 +320,9 @@ export function Sand({
   const Canvas = slots?.canvas ?? 'canvas';
   return enabled ? (
     <Canvas
-      {...slotProps?.canvas}
+      {...withoutSx(slotProps?.canvas)}
       ref={ref}
-      css={[canvasStyle, slotProps?.canvas?.css]}
+      css={[canvasStyle, slotProps?.canvas?.sx]}
       aria-hidden="true"
       tabIndex={-1}
       data-ui="text-morph-canvas"

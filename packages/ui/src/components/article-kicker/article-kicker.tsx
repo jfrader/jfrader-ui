@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useMemo, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css } from '../../styling/css';
 import type { SxProps } from '../../styling/sx';
 import { articleLabelStyle, articleLinkStyle } from '../../styling/article';
 import { isRenderable } from '../../utils/renderable';
@@ -23,7 +23,7 @@ export interface ArticleKickerSlots {
 }
 export interface ArticleKickerSlotProps {
   root?: PresentationParts<{ root: 'p' }>['root'];
-  item?: Omit<ArticleKickerItemProps, 'children'> & { css?: Interpolation<Theme> };
+  item?: Omit<ArticleKickerItemProps, 'children'>;
 }
 type Content = { items: readonly ArticleKickerEntry[]; children?: never } | { items?: never; children?: ReactNode };
 export type ArticleKickerProps = Omit<ComponentPropsWithRef<'p'>, 'children'> & SxProps & Content & {

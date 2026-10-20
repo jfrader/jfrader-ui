@@ -40,7 +40,7 @@ export interface RadialMenuAction {
   tone?: 'neutral' | 'danger';
   disabled?: boolean;
 }
-type Part<P> = P & { css?: Interpolation<Theme> };
+type Part<P> = P & { sx?: Interpolation<Theme> };
 export interface RadialMenuSlots {
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
   trigger?: ComponentType<MenuTriggerProps>;
@@ -327,10 +327,10 @@ function RadialMenuBody({
       }
     }
   };
-  const { css: triggerCss, ...triggerProps } = slotProps?.trigger ?? {};
-  const { css: contentCss, ...contentProps } = slotProps?.content ?? {};
-  const { css: itemCss, ...itemProps } = slotProps?.item ?? {};
-  const { css: statusCss, ...statusProps } = slotProps?.status ?? {};
+  const { sx: triggerCss, ...triggerProps } = slotProps?.trigger ?? {};
+  const { sx: contentCss, ...contentProps } = slotProps?.content ?? {};
+  const { sx: itemCss, ...itemProps } = slotProps?.item ?? {};
+  const { sx: statusCss, ...statusProps } = slotProps?.status ?? {};
   const Status = slots?.status ?? 'div';
   const cancelGesture = () => {
     clearTimeout(holdTimer.current);

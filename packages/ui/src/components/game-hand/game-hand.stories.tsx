@@ -70,14 +70,14 @@ const cards = [
 - The fan turns 3 cards by −10/0/10° and 2 by −7/7°. Other counts stay straight.
 - Cards overlap by 1.32 spacing steps (10.56px) at \`md\` and \`lg\`. At \`sm\`, cards do not overlap, leaving a 32px strip for pointer selection.
 - Hands have no opening animation, including with reduced motion.
-- Roots accept \`ref\`, \`css\` and \`sx\`. \`slotProps\` styles the fan, card buttons and confirmation.
+- Roots accept \`ref\` and \`sx\`. \`slotProps\` styles the fan, card buttons and confirmation through \`sx\`.
 
 ## Hidden hands
 - \`GameHand.Hidden\` takes \`count\`, never card values. It renders 0–3 backs and needs a \`label\` naming the hand.
 - Omit \`polar\` for a standalone fan.
 - With \`polar\`, the root moves inward from a caller-positioned seat, allowing for a 56px avatar and a 28px name block. Position the seat yourself.
 - \`rules\` and \`scale\` configure radial geometry. \`size\` controls the card width.
-- \`slotProps.card\` styles each hidden-card wrapper. Root styles use \`css\` and \`sx\`.`,
+- \`slotProps.card.sx\` styles each hidden-card wrapper. Root styles use \`sx\`.`,
   } },
 } satisfies Meta<typeof GameHand>;
 export default meta;
@@ -638,12 +638,12 @@ const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.s
 export const HiddenCardSlots: Story = {
   name: 'Hidden card slots',
   render: () => <GameHand.Hidden count={3} label="Opponent hand"
-    slotProps={{ card: { className: 'custom-hidden-card', css: { borderRadius: vars.radius.lg } } }} />,
+    slotProps={{ card: { className: 'custom-hidden-card', sx: { borderRadius: vars.radius.lg } } }} />,
   parameters: { docs: { source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
 import { vars } from '@jfrader/tokens/vars';
 
 <GameHand.Hidden count={3} label="Opponent hand"
-  slotProps={{ card: { className: 'custom-hidden-card', css: { borderRadius: vars.radius.lg } } }} />` } } },
+  slotProps={{ card: { className: 'custom-hidden-card', sx: { borderRadius: vars.radius.lg } } }} />` } } },
   play: async ({ canvasElement }) => {
     const cards = canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-hand-hidden-card"]');
     await expect(cards).toHaveLength(3);

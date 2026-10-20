@@ -18,7 +18,7 @@ import { MotionConfig } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SlotCss, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { createDurationFormatters } from '../../utils/duration-format';
@@ -90,18 +90,18 @@ export interface VoiceRecorderSlots {
 }
 
 export interface VoiceRecorderSlotProps {
-  root?: ComponentPropsWithRef<'section'> & SlotCss;
-  messageList?: ComponentPropsWithRef<'ol'> & SlotCss;
-  composer?: ComponentPropsWithRef<'div'> & SlotCss;
-  waveform?: ComponentPropsWithRef<'div'> & SlotCss;
-  seek?: ComponentPropsWithRef<'input'> & SlotCss;
-  record?: Partial<ButtonProps> & SlotCss;
-  stop?: Partial<ButtonProps> & SlotCss;
-  play?: Partial<ButtonProps> & SlotCss;
-  discard?: Partial<ButtonProps> & SlotCss;
-  send?: Partial<ButtonProps> & SlotCss;
-  status?: ComponentPropsWithRef<'span'> & SlotCss;
-  error?: ComponentPropsWithRef<'p'> & SlotCss;
+  root?: ComponentPropsWithRef<'section'> & SxProps;
+  messageList?: ComponentPropsWithRef<'ol'> & SxProps;
+  composer?: ComponentPropsWithRef<'div'> & SxProps;
+  waveform?: ComponentPropsWithRef<'div'> & SxProps;
+  seek?: ComponentPropsWithRef<'input'> & SxProps;
+  record?: Partial<ButtonProps> & SxProps;
+  stop?: Partial<ButtonProps> & SxProps;
+  play?: Partial<ButtonProps> & SxProps;
+  discard?: Partial<ButtonProps> & SxProps;
+  send?: Partial<ButtonProps> & SxProps;
+  status?: ComponentPropsWithRef<'span'> & SxProps;
+  error?: ComponentPropsWithRef<'p'> & SxProps;
 }
 
 export interface VoiceRecorderProps
@@ -871,7 +871,7 @@ export function VoiceRecorder({
   const mergedSendRef = useMergeRefs([sendButtonRef, slotProps?.send?.ref]);
   const mergedRootRef = useMergeRefs([rootRef, ref, slotProps?.root?.ref]);
   const mergedComposerRef = useMergeRefs([composerRef, slotProps?.composer?.ref]);
-  const { css: rootCss, className: rootClassName, style: rootStyleProp, ...rootProps } = slotProps?.root ?? {};
+  const { sx: rootCss, className: rootClassName, style: rootStyleProp, ...rootProps } = slotProps?.root ?? {};
 
   const describedBy = [
     rest['aria-describedby'],
@@ -904,11 +904,11 @@ export function VoiceRecorder({
           >
             {messages && messages.length > 0 && (
               <MessageList
-                {...slotProps?.messageList}
+                {...withoutSx(slotProps?.messageList)}
                 role="list"
                 aria-label={labels.messages}
                 data-ui="voice-recorder-messages"
-                css={[messageListStyle, slotProps?.messageList?.css]}
+                css={[messageListStyle, slotProps?.messageList?.sx]}
               >
                 {messages.map((msg) => {
                   const isPlayingMsg =
@@ -980,16 +980,16 @@ export function VoiceRecorder({
             )}
 
             <Composer
-              {...slotProps?.composer}
+              {...withoutSx(slotProps?.composer)}
               ref={mergedComposerRef}
               data-ui="voice-recorder-composer"
-              css={[composerStyle, slotProps?.composer?.css]}
+              css={[composerStyle, slotProps?.composer?.sx]}
             >
               {value.state === 'recording' && (
                 <Waveform
-                  {...slotProps?.waveform}
+                  {...withoutSx(slotProps?.waveform)}
                   data-ui="voice-recorder-waveform"
-                  css={[waveformContainerStyle, slotProps?.waveform?.css]}
+                  css={[waveformContainerStyle, slotProps?.waveform?.sx]}
                 >
                   <VoiceOrb
                     state="listening"
@@ -1008,9 +1008,9 @@ export function VoiceRecorder({
 
               {value.state === 'review' && (
                 <Waveform
-                  {...slotProps?.waveform}
+                  {...withoutSx(slotProps?.waveform)}
                   data-ui="voice-recorder-waveform"
-                  css={[waveformContainerStyle, slotProps?.waveform?.css]}
+                  css={[waveformContainerStyle, slotProps?.waveform?.sx]}
                 >
                   <svg
                     viewBox="0 0 320 40"
@@ -1021,7 +1021,7 @@ export function VoiceRecorder({
                     {renderReviewBars(peaks, clampedCurrentTime, safeDuration)}
                   </svg>
                   <Seek
-                    {...slotProps?.seek}
+                    {...withoutSx(slotProps?.seek)}
                     type="range"
                     min={0}
                     max={safeDuration}
@@ -1032,7 +1032,7 @@ export function VoiceRecorder({
                     aria-valuetext={seekValueText}
                     onChange={handleSeekChange}
                     data-ui="voice-recorder-seek"
-                    css={[seekInputStyle, slotProps?.seek?.css]}
+                    css={[seekInputStyle, slotProps?.seek?.sx]}
                   />
                   <span data-ui="voice-recorder-timer" css={timerStyle}>
                     {formatDigital(clampedCurrentTime)} / {formatDigital(safeDuration)}
@@ -1047,8 +1047,8 @@ export function VoiceRecorder({
                     tone="accent"
                     size={size}
                     disabled={disabled}
-                    {...slotProps?.record}
-                    css={[controlStyle, slotProps?.record?.css]}
+                    {...withoutSx(slotProps?.record)}
+                    css={[controlStyle, slotProps?.record?.sx]}
                     ref={mergedRecordRef}
                     onClick={(e) => {
                       slotProps?.record?.onClick?.(e);
@@ -1068,8 +1068,8 @@ export function VoiceRecorder({
                       tone="accent"
                       size={size}
                       disabled={disabled}
-                      {...slotProps?.stop}
-                      css={[controlStyle, slotProps?.stop?.css]}
+                      {...withoutSx(slotProps?.stop)}
+                      css={[controlStyle, slotProps?.stop?.sx]}
                       ref={mergedStopRef}
                       onClick={(e) => {
                         slotProps?.stop?.onClick?.(e);
@@ -1084,8 +1084,8 @@ export function VoiceRecorder({
                       variant="outline"
                       size={size}
                       disabled={disabled}
-                      {...slotProps?.discard}
-                      css={[controlStyle, slotProps?.discard?.css]}
+                      {...withoutSx(slotProps?.discard)}
+                      css={[controlStyle, slotProps?.discard?.sx]}
                       onClick={(e) => {
                         slotProps?.discard?.onClick?.(e);
                         if (!e.defaultPrevented) handleDiscard();
@@ -1103,8 +1103,8 @@ export function VoiceRecorder({
                     <PlayButton
                       variant="outline"
                       size={size}
-                      {...slotProps?.play}
-                      css={[controlStyle, slotProps?.play?.css]}
+                      {...withoutSx(slotProps?.play)}
+                      css={[controlStyle, slotProps?.play?.sx]}
                       disabled={disabled || value.state === 'pending' || slotProps?.play?.disabled}
                       onClick={(e) => {
                         slotProps?.play?.onClick?.(e);
@@ -1119,8 +1119,8 @@ export function VoiceRecorder({
                       variant="outline"
                       size={size}
                       disabled={disabled || value.state === 'pending'}
-                      {...slotProps?.discard}
-                      css={[controlStyle, slotProps?.discard?.css]}
+                      {...withoutSx(slotProps?.discard)}
+                      css={[controlStyle, slotProps?.discard?.sx]}
                       onClick={(e) => {
                         slotProps?.discard?.onClick?.(e);
                         if (!e.defaultPrevented) handleDiscard();
@@ -1134,8 +1134,8 @@ export function VoiceRecorder({
                       variant="solid"
                       tone="accent"
                       size={size}
-                      {...slotProps?.send}
-                      css={[controlStyle, slotProps?.send?.css]}
+                      {...withoutSx(slotProps?.send)}
+                      css={[controlStyle, slotProps?.send?.sx]}
                       disabled={disabled}
                       loading={value.state === 'pending'}
                       aria-busy={value.state === 'pending'}
@@ -1161,8 +1161,8 @@ export function VoiceRecorder({
                           variant="outline"
                           size={size}
                           disabled={disabled}
-                          {...slotProps?.discard}
-                          css={[controlStyle, slotProps?.discard?.css]}
+                          {...withoutSx(slotProps?.discard)}
+                          css={[controlStyle, slotProps?.discard?.sx]}
                           onClick={(e) => {
                             slotProps?.discard?.onClick?.(e);
                             if (!e.defaultPrevented) handleDiscard();
@@ -1177,8 +1177,8 @@ export function VoiceRecorder({
                           tone="accent"
                           size={size}
                           disabled={disabled}
-                          {...slotProps?.send}
-                          css={[controlStyle, slotProps?.send?.css]}
+                          {...withoutSx(slotProps?.send)}
+                          css={[controlStyle, slotProps?.send?.sx]}
                           ref={mergedSendRef}
                           onClick={(e) => {
                             slotProps?.send?.onClick?.(e);
@@ -1196,8 +1196,8 @@ export function VoiceRecorder({
                         tone="accent"
                         size={size}
                         disabled={disabled}
-                        {...slotProps?.record}
-                        css={[controlStyle, slotProps?.record?.css]}
+                        {...withoutSx(slotProps?.record)}
+                        css={[controlStyle, slotProps?.record?.sx]}
                         ref={mergedRecordRef}
                         onClick={(e) => {
                           slotProps?.record?.onClick?.(e);
@@ -1215,23 +1215,23 @@ export function VoiceRecorder({
             </Composer>
 
             <Status
-              {...slotProps?.status}
+              {...withoutSx(slotProps?.status)}
               id={statusId}
               role="status"
               aria-atomic="true"
               data-ui="voice-recorder-status"
-              css={[visuallyHiddenStyle, slotProps?.status?.css]}
+              css={[visuallyHiddenStyle, slotProps?.status?.sx]}
             >
               {statusText}
             </Status>
 
             {hasError && (
               <ErrorPart
-                {...slotProps?.error}
+                {...withoutSx(slotProps?.error)}
                 id={errorId}
                 role="alert"
                 data-ui="voice-recorder-error"
-                css={[errorStyle, slotProps?.error?.css]}
+                css={[errorStyle, slotProps?.error?.sx]}
               >
                 {value.error}
               </ErrorPart>

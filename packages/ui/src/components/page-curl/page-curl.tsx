@@ -18,7 +18,7 @@ import {
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS } from '../../styling/media';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -42,8 +42,8 @@ export interface PageCurlLabels {
     locale?: Intl.LocalesArgument,
   ) => string;
 }
-type PartProps = ComponentPropsWithRef<'div'> & { css?: Interpolation<Theme> };
-type ActionProps = Omit<ButtonProps, 'sx'> & { css?: Interpolation<Theme> };
+type PartProps = ComponentPropsWithRef<'div'> & { sx?: Interpolation<Theme> };
+type ActionProps = Omit<ButtonProps, 'sx'> & { sx?: Interpolation<Theme> };
 export interface PageCurlSlots {
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
   book?: ComponentType<ComponentPropsWithRef<'div'>>;
@@ -281,7 +281,7 @@ export function PageCurl({
     <MotionConfig reducedMotion="user">
       <WithSx
         className={[className, root?.className].filter(Boolean).join(' ')}
-        styles={[rootStyle, root?.css]}
+        styles={[rootStyle, root?.sx]}
         sx={sx}
       >
         {(resolved) => (
@@ -303,9 +303,9 @@ export function PageCurl({
             data-ui="page-curl"
           >
             <Book
-              {...slotProps?.book}
+              {...withoutSx(slotProps?.book)}
               ref={bookRef}
-              css={[bookStyle, slotProps?.book?.css]}
+              css={[bookStyle, slotProps?.book?.sx]}
               role="group"
               tabIndex={0}
               aria-label={label}
@@ -351,9 +351,9 @@ export function PageCurl({
                       : slotProps?.page;
                   return (
                     <Page
-                      {...part}
+                      {...withoutSx(part)}
                       key={page.id}
-                      css={[pageStyle, part?.css]}
+                      css={[pageStyle, part?.sx]}
                       data-ui="page-curl-page"
                       data-page-index={index}
                       data-side={
@@ -368,9 +368,9 @@ export function PageCurl({
                 })}
               {!reduced && (
                 <Fold
-                  {...slotProps?.fold}
+                  {...withoutSx(slotProps?.fold)}
                   ref={foldRef}
-                  css={[foldStyle, slotProps?.fold?.css]}
+                  css={[foldStyle, slotProps?.fold?.sx]}
                   style={{ ...slotProps?.fold?.style, visibility: 'hidden' }}
                   inert
                   aria-hidden="true"
@@ -381,13 +381,13 @@ export function PageCurl({
               )}
             </Book>
             <Controls
-              {...slotProps?.controls}
-              css={[controlsStyle, slotProps?.controls?.css]}
+              {...withoutSx(slotProps?.controls)}
+              css={[controlsStyle, slotProps?.controls?.sx]}
               data-ui="page-curl-controls"
             >
               <Previous
-                {...slotProps?.previousButton}
-                css={slotProps?.previousButton?.css}
+                {...withoutSx(slotProps?.previousButton)}
+                css={slotProps?.previousButton?.sx}
                 type="button"
                 disabled={current === 0 || !pages.length}
                 data-ui="page-curl-previous"
@@ -410,8 +410,8 @@ export function PageCurl({
                 {count}
               </Status>
               <Next
-                {...slotProps?.nextButton}
-                css={[nextStyle, slotProps?.nextButton?.css]}
+                {...withoutSx(slotProps?.nextButton)}
+                css={[nextStyle, slotProps?.nextButton?.sx]}
                 type="button"
                 disabled={current === max || !pages.length}
                 data-ui="page-curl-next"
@@ -502,8 +502,8 @@ export function PageCurl({
             </Controls>
             {isRenderable(hint) && (
               <Hint
-                {...slotProps?.hint}
-                css={[hintStyle, slotProps?.hint?.css]}
+                {...withoutSx(slotProps?.hint)}
+                css={[hintStyle, slotProps?.hint?.sx]}
                 data-ui="page-curl-hint"
               >
                 {hint}

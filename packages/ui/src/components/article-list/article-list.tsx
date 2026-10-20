@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useMemo, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css } from '../../styling/css';
 import type { SxProps } from '../../styling/sx';
 import { ARTICLE_DESKTOP, articleHeadingFont, articleLabelStyle, articleLinkStyle, articleSoftRule, articleTimeStyle } from '../../styling/article';
 import { isRenderable } from '../../utils/renderable';
@@ -34,7 +34,7 @@ export interface ArticleListSlots {
 }
 export interface ArticleListSlotProps {
   root?: PresentationParts<{ root: 'ul' }>['root'];
-  item?: Partial<ArticleListItemProps> & { css?: Interpolation<Theme> };
+  item?: Partial<ArticleListItemProps>;
 }
 export type ArticleListProps = Omit<ComponentPropsWithRef<'ul'>, 'children'> & SxProps & ({ items: readonly ArticleListEntry[]; children?: never } | { items?: never; children?: ReactNode }) & {
   variant?: ArticleListVariant;

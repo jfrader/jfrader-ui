@@ -1680,12 +1680,12 @@ export const SlotStylingAndRefs: Story = {
     ref: rootRef,
     sx: { paddingBlock: '7px' },
     slotProps: {
-      frame: { ref: frameRef, css: { borderRadius: '3px' } },
-      handle: { ref: handleRef, css: { borderRadius: vars.radius.sm } },
-      divider: { css: { inlineSize: '6px' } },
-      beforeLabel: { css: { letterSpacing: '2px' } },
-      afterLabel: { css: { letterSpacing: '3px' } },
-      resetButton: { variant: 'ghost', css: { letterSpacing: '1px' } },
+      frame: { ref: frameRef, sx: { borderRadius: '3px' } },
+      handle: { ref: handleRef, sx: { borderRadius: vars.radius.sm } },
+      divider: { sx: { inlineSize: '6px' } },
+      beforeLabel: { sx: { letterSpacing: '2px' } },
+      afterLabel: { sx: { letterSpacing: '3px' } },
+      resetButton: { variant: 'ghost', sx: { letterSpacing: '1px' } },
     },
   },
   play: async ({ canvas, canvasElement }) => {

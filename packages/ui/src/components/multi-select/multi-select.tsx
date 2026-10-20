@@ -25,7 +25,7 @@ import {
   type Placement,
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
+import { css, keyframes } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
@@ -90,27 +90,27 @@ export interface MultiSelectSlotProps {
   /** Outer container element wrapping the multi-select field. */
   root?: ComponentPropsWithRef<'div'> &
     SxProps & {
-      css?: Interpolation<Theme>;
+
       [attribute: `data-${string}`]: unknown;
     };
   /** Label element associated with the select. Default: `MultiSelect.Label`. */
-  label?: Partial<MultiSelectLabelProps> & { css?: Interpolation<Theme> };
+  label?: Partial<MultiSelectLabelProps>;
   /** Helper text element displayed below or above the trigger. Default: `MultiSelect.Description`. */
-  description?: Partial<MultiSelectDescriptionProps> & { css?: Interpolation<Theme> };
+  description?: Partial<MultiSelectDescriptionProps>;
   /** Validation error message element displayed when invalid. Default: `MultiSelect.Error`. */
-  error?: Partial<MultiSelectErrorProps> & { css?: Interpolation<Theme> };
+  error?: Partial<MultiSelectErrorProps>;
   /** Combobox button trigger that opens the options popup. Default: `MultiSelect.Trigger`. */
-  trigger?: Partial<MultiSelectTriggerProps> & { css?: Interpolation<Theme> };
+  trigger?: Partial<MultiSelectTriggerProps>;
   /** Display area rendering selected value tags or placeholder. Default: `MultiSelect.Value`. */
-  value?: Partial<MultiSelectValueProps> & { css?: Interpolation<Theme> };
+  value?: Partial<MultiSelectValueProps>;
   /** Button that clears all selected values. Default: `MultiSelect.Clear`. */
-  clear?: Partial<MultiSelectClearProps> & { css?: Interpolation<Theme> };
+  clear?: Partial<MultiSelectClearProps>;
   /** Floating popup panel holding the options list. Default: `MultiSelect.Content`. */
-  content?: Partial<MultiSelectContentProps> & { css?: Interpolation<Theme> };
+  content?: Partial<MultiSelectContentProps>;
   /** Selectable option item within the list. Default: `MultiSelect.Item`. */
-  item?: Partial<Omit<MultiSelectItemProps, 'value' | 'id' | 'disabled' | 'textValue'>> & { css?: Interpolation<Theme> };
+  item?: Partial<Omit<MultiSelectItemProps, 'value' | 'id' | 'disabled' | 'textValue'>>;
   /** Message container displayed when no options match. Default: `MultiSelect.Empty`. */
-  empty?: Partial<MultiSelectEmptyProps> & { css?: Interpolation<Theme> };
+  empty?: Partial<MultiSelectEmptyProps>;
 }
 export interface MultiSelectBaseProps {
   value?: readonly string[];
@@ -518,7 +518,6 @@ function MultiSelectOverlay(props: MultiSelectProps) {
     const RootPart = slots?.root ?? component ?? 'div';
     const {
       className: rootClassName,
-      css: rootCss,
       sx: rootSx,
       'data-ui': rootDataUi,
       ...rootRest
@@ -567,7 +566,7 @@ function MultiSelectOverlay(props: MultiSelectProps) {
     renderedContent = (
       <>
         {hasFieldAnatomy ? (
-          <WithSx className={rootClassName} styles={[fieldColumnStyle, rootCss]} sx={rootSx}>
+          <WithSx className={rootClassName} styles={[fieldColumnStyle, rootSx]}>
             {(className) => (
               <RootPart
                 {...rootRest}

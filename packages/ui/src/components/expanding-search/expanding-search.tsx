@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 import {
@@ -16,7 +17,7 @@ import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
-import type { SlotCss, SxProps } from '../../styling/sx';
+import type { SxProps } from '../../styling/sx';
 import { FieldSlot, type FieldSlots, type FieldParts } from '../field/field-slot';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -57,7 +58,7 @@ export type ExpandingSearchSlotProps = FieldParts<ExpandingSearchAnatomy> &
     /** Search field displayed when expanded. Default: `SearchField`. */
     field?: Omit<SearchFieldProps, 'ref' | 'value' | 'defaultValue' | 'onValueChange'>;
     /** Collapsed button that triggers expansion. Default: `Button`. */
-    trigger?: ButtonProps & SlotCss;
+    trigger?: ButtonProps & SxProps;
   };
 
 export type ExpandingSearchInputProps = Omit<
@@ -380,7 +381,7 @@ export function ExpandingSearch({
           styles={triggerWrapStyle}
         >
           <Trigger
-            {...slotProps?.trigger}
+            {...withoutSx(slotProps?.trigger)}
             ref={mergedTriggerRef}
             size={size}
             variant="outline"
@@ -388,7 +389,7 @@ export function ExpandingSearch({
             aria-label={triggerLabel}
             aria-expanded={open}
             aria-controls={regionId}
-            css={[triggerStyle, slotProps?.trigger?.css]}
+            css={[triggerStyle, slotProps?.trigger?.sx]}
             onClick={(event) => {
               slotProps?.trigger?.onClick?.(event);
               if (event.defaultPrevented) return;
@@ -440,12 +441,12 @@ export function ExpandingSearch({
               ...slotProps?.field?.slotProps,
               root: slotProps?.field?.slotProps?.root ?? {
                 className: slotProps?.root?.className,
-                css: slotProps?.root?.css,
+                sx: slotProps?.root?.sx,
               },
               shell: {
                 ...slotProps?.shell,
                 ...slotProps?.field?.slotProps?.shell,
-                css: [fieldShellStyle, slotProps?.shell?.css, slotProps?.field?.slotProps?.shell?.css],
+                sx: [fieldShellStyle, slotProps?.shell?.sx, slotProps?.field?.slotProps?.shell?.sx],
               },
             }}
             onKeyDown={(event) => {

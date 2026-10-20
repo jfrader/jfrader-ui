@@ -207,7 +207,7 @@ export const GeneratedPartCustomization: Story = {
     slotProps: {
       root: { ...args.slotProps?.root, className: 'custom-stack', title: 'Notifications panel', sx: { gap: vars.space[3] } },
       list: { className: 'custom-stack-list' },
-      item: { className: 'custom-stack-card', css: { borderRadius: vars.radius.sm } },
+      item: { className: 'custom-stack-card', sx: { borderRadius: vars.radius.sm } },
     },
   }}><Controls initial={messages.slice(0, 2)} /><Toast.Viewport /><ToastStack /></Toast></Surface>,
   play: async ({ canvasElement, args, userEvent }) => {
@@ -675,7 +675,7 @@ export const StylingAndRef: Story = {
     variant: 'list',
     ref: fn(),
     sx: { paddingInlineStart: vars.space[8] },
-    slotProps: { list: { css: { borderBlockStart: `2px solid ${vars.color.borderControl}` } } },
+    slotProps: { list: { sx: { borderBlockStart: `2px solid ${vars.color.borderControl}` } } },
   },
   render: (args) => <Harness {...args} />,
   play: async ({ canvasElement, args }) => {

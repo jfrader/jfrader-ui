@@ -30,7 +30,7 @@ import {
 import { autoUpdate, flip, offset, shift, useFloating, useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
-import { WithSx, type SlotCss, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import {
   listboxItemStateStyle,
   listboxItemStyle,
@@ -50,7 +50,7 @@ export type ThreadSize = 'sm' | 'md';
 
 export interface ThreadPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 /** Textarea props a consumer may add; the thread owns value, change and mention wiring. */
@@ -102,7 +102,7 @@ export function ThreadTime({ epoch, now, formatters, invalidLabel, id, fullId, u
   const InvalidTime = component ?? 'span';
   if (epoch === null) {
     return (
-      <InvalidTime {...part} id={id} data-ui={ui(owner, 'time')} className={part?.className} css={[timeStyle, part?.css]}>
+      <InvalidTime {...withoutSx(part)} id={id} data-ui={ui(owner, 'time')} className={part?.className} css={[timeStyle, part?.sx]}>
         {invalidLabel}
       </InvalidTime>
     );
@@ -110,12 +110,12 @@ export function ThreadTime({ epoch, now, formatters, invalidLabel, id, fullId, u
   return (
     <>
       <Time
-        {...part}
+        {...withoutSx(part)}
         id={id}
         dateTime={new Date(epoch).toISOString()}
         data-ui={ui(owner, 'time')}
         className={part?.className}
-        css={[timeStyle, part?.css]}
+        css={[timeStyle, part?.sx]}
       >
         {now === null ? formatters.full.format(epoch) : relativeTime(epoch, now, formatters.relative)}
       </Time>
@@ -146,7 +146,7 @@ export interface ThreadMessageViewProps {
   /** Body, editor and footer rows. */
   children: ReactNode;
   avatar?: ReactNode;
-  articleProps?: ComponentPropsWithRef<'article'> & SlotCss & SxProps & {
+  articleProps?: ComponentPropsWithRef<'article'> & SxProps & SxProps & {
     'data-ui'?: string;
     'data-own'?: boolean;
     'data-size'?: ThreadSize;
@@ -220,7 +220,7 @@ export function ThreadMessageView({
   const timeId = partId(baseId, 'time', messageId);
   const fullId = partId(baseId, 'when', messageId);
 
-  const { css: articleSlotCss, ...articleSlotProps } = slots?.article ?? {};
+  const { sx: articleSlotCss, ...articleSlotProps } = slots?.article ?? {};
   const mergedArticle = { ...articleProps, ...articleSlotProps };
   const {
     ref: articleRef,
@@ -254,7 +254,7 @@ export function ThreadMessageView({
         >
           {/* The author's name is the adjacent text; the portrait only decorates it. */}
           {avatar !== null ? (
-            <AvatarColumn {...slots?.avatar} aria-hidden="true" className={slots?.avatar?.className} css={[avatarColumnStyle, slots?.avatar?.css]}>
+            <AvatarColumn {...withoutSx(slots?.avatar)} aria-hidden="true" className={slots?.avatar?.className} css={[avatarColumnStyle, slots?.avatar?.sx]}>
               {avatar !== undefined ? avatar : <Avatar name={author.name} src={author.avatar} size={avatarSizes[size]} />}
             </AvatarColumn>
           ) : null}
@@ -359,7 +359,6 @@ export function ThreadReactions({
     />
   );
 }
-
 
 // ---------------------------------------------------------------------------------------------
 // Composer
@@ -618,13 +617,13 @@ export function ThreadComposer({
 
   return (
     <Root
-      {...part}
+      {...withoutSx(part)}
       ref={containerRefs}
       data-ui={ui(owner, 'composer')}
       data-composer={kind}
       data-avatar={showAvatar}
       className={part?.className}
-      css={[composerStyle, part?.css]}
+      css={[composerStyle, part?.sx]}
     >
       {showAvatar ? (
         <span aria-hidden="true" css={composerAvatarStyle}>

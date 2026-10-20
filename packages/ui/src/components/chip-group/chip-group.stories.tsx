@@ -399,22 +399,23 @@ export const StylingAndRefs: Story = {
     ref: rootRefSpy,
     sx: { paddingBlockStart: vars.space[2] },
     slotProps: {
-      frame: { css: slotFrameStyle },
-      row: { css: slotRowStyle },
+      frame: { sx: slotFrameStyle },
+      row: { sx: [slotRowStyle, (theme) => ({ gap: theme.space[3] })] },
       chip: (option) => ({
         ref: option.value === 'design' ? chipRefSpy : undefined,
-        css: slotChipStyle,
+        sx: slotChipStyle,
       }),
-      label: { css: slotLabelStyle },
-      check: { css: slotCheckStyle },
-      overflow: { css: slotOverflowStyle },
+      label: { sx: slotLabelStyle },
+      check: { sx: slotCheckStyle },
+      overflow: { sx: slotOverflowStyle },
     },
   },
-  render: (args) => <RefFixture {...args} />,
+  render: (args) => <ThemeRoot><RefFixture {...args} /></ThemeRoot>,
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     const root = canvas.getByRole('group');
     const design = canvas.getByRole('button', { name: 'Design' });
+    await expect(canvasElement.querySelector('[sx]')).toBeNull();
     await expect(rootRefSpy).toHaveBeenCalledWith(root);
     await expect(chipRefSpy).toHaveBeenCalledWith(design);
     await expect(getComputedStyle(root).paddingBlockStart).toBe('8px');

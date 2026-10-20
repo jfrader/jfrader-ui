@@ -552,12 +552,12 @@ function FruitField(props: ComponentPropsWithRef<'div'>) {
     { value: 'banana', label: 'Banana', disabled: true },
     { value: 'cherry', label: 'Cherry' },
   ]}
-  slotProps={{ label: { css: { fontStyle: 'italic' } }, item: { className: 'fruit-option' } }}
+  slotProps={{ label: { sx: { fontStyle: 'italic' } }, item: { className: 'fruit-option' } }}
 />` } } },
   args: {
     label: 'Fruit', options: FRUITS, defaultValue: 'apple',
     component: CustomSelectRoot,
-    slotProps: { label: { css: { fontStyle: 'italic' } }, item: { className: 'fruit-option' } },
+    slotProps: { label: { sx: { fontStyle: 'italic' } }, item: { className: 'fruit-option' } },
   },
   render: (args) => <Select {...args} />,
   play: async ({ canvasElement, userEvent }) => {

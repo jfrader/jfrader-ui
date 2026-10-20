@@ -66,9 +66,9 @@ export interface PaymentFlowSlots extends FieldSlots<Anatomy> {
   stepButton?: ComponentType<ButtonProps>;
   replayButton?: ComponentType<ButtonProps>;
 }
-type ButtonSlotProps = Omit<ButtonProps, 'sx'> & { css?: Interpolation<Theme> };
+type ButtonSlotProps = Omit<ButtonProps, 'sx'> & { sx?: Interpolation<Theme> };
 export interface PaymentFlowSlotProps extends FieldParts<Anatomy> {
-  journey?: Partial<Omit<StepperStaticProps, 'sx'>> & { css?: Interpolation<Theme> };
+  journey?: Partial<Omit<StepperStaticProps, 'sx'>> & { sx?: Interpolation<Theme> };
   pauseButton?: ButtonSlotProps;
   stepButton?: ButtonSlotProps;
   replayButton?: ButtonSlotProps;

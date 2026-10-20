@@ -33,7 +33,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { partId } from '../../utils/part-id';
 import { isRenderable } from '../../utils/renderable';
@@ -61,7 +61,7 @@ export interface StepperStep {
 
 export interface StepperPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 export interface StepperSlots {
   /** Container naming the step sequence. */
@@ -497,7 +497,8 @@ export function Stepper(props: StepperProps) {
   const Root = slots?.root ?? (interactive ? 'nav' : 'div');
   const List = slots?.list ?? 'ol';
   const Item = slots?.item ?? 'li';
-  const Head = slots?.head ?? (interactive ? 'button' : 'span');
+  const InteractiveHead = slots?.head ?? 'button';
+  const Head = slots?.head ?? 'span';
   const Marker = slots?.marker ?? 'span';
   const Label = slots?.label ?? 'span';
   const Description = slots?.description ?? 'span';
@@ -577,7 +578,7 @@ export function Stepper(props: StepperProps) {
 
   const {
     className: headClassName,
-    css: headCss,
+    sx: headCss,
     onClick: onHeadClick,
     onKeyDown: onHeadKeyDown,
     onFocus: onHeadFocus,
@@ -587,11 +588,11 @@ export function Stepper(props: StepperProps) {
 
   const list = (
     <List
-      {...slotProps?.list}
+      {...withoutSx(slotProps?.list)}
       role="list"
       data-ui="stepper-list"
       className={slotProps?.list?.className}
-      css={[listStyles[orientation], slotProps?.list?.css]}
+      css={[listStyles[orientation], slotProps?.list?.sx]}
     >
       {steps.map((step, index) => {
         const status = getStatus(step, index, current);
@@ -608,23 +609,23 @@ export function Stepper(props: StepperProps) {
         const headContent = (
           <>
             <Marker
-              {...slotProps?.marker}
+              {...withoutSx(slotProps?.marker)}
               aria-hidden="true"
               data-ui="stepper-marker"
               data-state={status}
               data-numeral={numeral}
               className={slotProps?.marker?.className}
-              css={[markerStyle, slotProps?.marker?.css]}
+              css={[markerStyle, slotProps?.marker?.sx]}
             >
               {hasIcon ? step.icon : glyph}
             </Marker>
             <Label
-              {...slotProps?.label}
+              {...withoutSx(slotProps?.label)}
               aria-hidden={interactive ? undefined : true}
               data-ui="stepper-label"
               data-state={status}
               className={slotProps?.label?.className}
-              css={[labelStyle, slotProps?.label?.css]}
+              css={[labelStyle, slotProps?.label?.sx]}
             >
               {step.label}
             </Label>
@@ -634,7 +635,7 @@ export function Stepper(props: StepperProps) {
 
         return (
           <Item
-            {...slotProps?.item}
+            {...withoutSx(slotProps?.item)}
             key={step.id}
             role="listitem"
             data-ui="stepper-item"
@@ -642,10 +643,10 @@ export function Stepper(props: StepperProps) {
             aria-current={isCurrent ? 'step' : undefined}
             aria-label={name}
             className={slotProps?.item?.className}
-            css={[itemStyles[orientation], slotProps?.item?.css]}
+            css={[itemStyles[orientation], slotProps?.item?.sx]}
           >
             {interactive ? (
-              <Head
+              <InteractiveHead
                 {...headRest}
                 ref={(node) => {
                   if (!node) return;
@@ -679,7 +680,7 @@ export function Stepper(props: StepperProps) {
                 }}
               >
                 {headContent}
-              </Head>
+              </InteractiveHead>
             ) : (
               <Head
                 {...headRest}
@@ -693,24 +694,24 @@ export function Stepper(props: StepperProps) {
             )}
             {showDetail && (
               <Description
-                {...slotProps?.description}
+                {...withoutSx(slotProps?.description)}
                 id={detailId}
                 data-ui="stepper-description"
                 data-state={status}
                 className={slotProps?.description?.className}
-                css={[descriptionStyle, descriptionOrientationStyles[orientation], slotProps?.description?.css]}
+                css={[descriptionStyle, descriptionOrientationStyles[orientation], slotProps?.description?.sx]}
               >
                 {hasError ? step.error : step.description}
               </Description>
             )}
             {index < count - 1 && (
               <Connector
-                {...slotProps?.connector}
+                {...withoutSx(slotProps?.connector)}
                 aria-hidden="true"
                 data-ui="stepper-connector"
                 data-state={index < current ? 'complete' : 'upcoming'}
                 className={slotProps?.connector?.className}
-                css={[connectorStyle, connectorOrientationStyles[orientation], slotProps?.connector?.css]}
+                css={[connectorStyle, connectorOrientationStyles[orientation], slotProps?.connector?.sx]}
               />
             )}
           </Item>
@@ -724,11 +725,11 @@ export function Stepper(props: StepperProps) {
   const caption = allComplete ? (
     isRenderable(completeLabel) && (
       <Caption
-        {...slotProps?.caption}
+        {...withoutSx(slotProps?.caption)}
         data-ui="stepper-caption"
         data-complete=""
         className={slotProps?.caption?.className}
-        css={[captionStyle, slotProps?.caption?.css]}
+        css={[captionStyle, slotProps?.caption?.sx]}
       >
         {completeLabel}
       </Caption>
@@ -736,11 +737,11 @@ export function Stepper(props: StepperProps) {
   ) : (
     currentStep && (
       <Caption
-        {...slotProps?.caption}
+        {...withoutSx(slotProps?.caption)}
         aria-hidden="true"
         data-ui="stepper-caption"
         className={slotProps?.caption?.className}
-        css={[captionStyle, slotProps?.caption?.css]}
+        css={[captionStyle, slotProps?.caption?.sx]}
       >
         <span css={captionTitleStyle}>{currentStep.label}</span>
         {!isRenderable(currentStep.error) && isRenderable(currentStep.description) && currentStep.description}
@@ -774,17 +775,17 @@ export function Stepper(props: StepperProps) {
   return (
     <WithSx
       className={[slotProps?.root?.className, className].filter(Boolean).join(' ') || undefined}
-      styles={[rootStyle, rootSizeStyles[size], slotProps?.root?.css]}
+      styles={[rootStyle, rootSizeStyles[size], slotProps?.root?.sx]}
       sx={sx}
     >
       {(rootClassName) =>
         interactive ? (
           // The mode discriminates the prop union, so an interactive ref targets the <nav>.
-          <Root {...slotProps?.root} css={undefined} {...rootProps} ref={mergedRootRef} className={rootClassName}>
+          <Root {...withoutSx(slotProps?.root)} css={undefined} {...rootProps} ref={mergedRootRef} className={rootClassName}>
             {children}
           </Root>
         ) : (
-          <Root {...slotProps?.root} css={undefined} {...rootProps} ref={mergedRootRef} role="group" className={rootClassName}>
+          <Root {...withoutSx(slotProps?.root)} css={undefined} {...rootProps} ref={mergedRootRef} role="group" className={rootClassName}>
             {children}
           </Root>
         )

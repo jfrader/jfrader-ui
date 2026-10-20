@@ -981,8 +981,8 @@ export const SlotStyles: Story = {
         actionsLabel="Actions for Invoice"
         leading={leading}
         slotProps={{
-          body: { css: { paddingInline: vars.space[4] } },
-          trigger: { css: { minBlockSize: vars.space[12] } },
+          body: { sx: { paddingInline: vars.space[4] } },
+          trigger: { sx: { minBlockSize: vars.space[12] } },
         }}
       >
         Invoice

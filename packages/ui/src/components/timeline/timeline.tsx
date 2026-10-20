@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 // Semantics: a named `region` holding one group per local calendar day, labelled by a real day
@@ -92,7 +93,7 @@ export interface TimelineLabels {
 
 export interface TimelinePartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 export interface TimelineSlots {
   /** Replaces the outer div; forwards its props, ref and className. */
@@ -550,13 +551,13 @@ function TimelineMarker({ event, part, component: Marker = 'span' }: { event: Ti
   // The adjacent actor and title text identify the event; the marker only decorates it.
   return (
     <Marker
-      {...part}
+      {...withoutSx(part)}
       aria-hidden="true"
       data-ui="timeline-marker"
       data-kind={kind}
       data-tone={tone}
       className={part?.className}
-      css={[markerStyle, markerToneStyles[tone], part?.css]}
+      css={[markerStyle, markerToneStyles[tone], part?.sx]}
     >
       {content}
     </Marker>
@@ -784,7 +785,7 @@ export function Timeline({
           className={className}
         >
           <Scroller
-            {...slotProps?.scroller}
+            {...withoutSx(slotProps?.scroller)}
             ref={mergedScrollerRef}
             data-ui="timeline-scroller"
             data-bounded={bounded ? '' : undefined}
@@ -797,7 +798,7 @@ export function Timeline({
               captureAnchor();
             }}
             className={slotProps?.scroller?.className}
-            css={[scrollerStyle, slotProps?.scroller?.css]}
+            css={[scrollerStyle, slotProps?.scroller?.sx]}
           >
             {empty ? (
               <p id={emptyId} data-ui="timeline-empty" css={emptyStyle}>
@@ -809,21 +810,21 @@ export function Timeline({
                 return (
                   // A group, not a named section: one region landmark per day would flood landmark navigation.
                   <Group
-                    {...slotProps?.group}
+                    {...withoutSx(slotProps?.group)}
                     key={group.key}
                     role="group"
                     aria-labelledby={headingId}
                     data-ui="timeline-group"
                     data-day={group.key}
                     className={slotProps?.group?.className}
-                    css={[groupStyle, slotProps?.group?.css]}
+                    css={[groupStyle, slotProps?.group?.sx]}
                   >
                     <Heading
-                      {...slotProps?.heading}
+                      {...withoutSx(slotProps?.heading)}
                       id={headingId}
                       data-ui="timeline-heading"
                       className={slotProps?.heading?.className}
-                      css={[headingStyle, slotProps?.heading?.css]}
+                      css={[headingStyle, slotProps?.heading?.sx]}
                     >
                       {group.epoch === null ? (
                         <span>{dayHeading(group, formatters, labels)}</span>
@@ -833,10 +834,10 @@ export function Timeline({
                       <span css={dayCountStyle}>{labels.dayCount(group.rows.length)}</span>
                     </Heading>
                     <List
-                      {...slotProps?.list}
+                      {...withoutSx(slotProps?.list)}
                       data-ui="timeline-list"
                       className={slotProps?.list?.className}
-                      css={[listStyle, slotProps?.list?.css]}
+                      css={[listStyle, slotProps?.list?.sx]}
                     >
                       {group.rows.map(({ event, epoch, order }) => {
                         const expandable = hasContent(event.detail);
@@ -845,7 +846,7 @@ export function Timeline({
                         const fullDateId = partId(baseId, 'when', event.id);
                         const title = expandable ? (
                           <Trigger
-                            {...slotProps?.trigger}
+                            {...withoutSx(slotProps?.trigger)}
                             type="button"
                             data-ui="timeline-trigger"
                             aria-expanded={expanded}
@@ -856,7 +857,7 @@ export function Timeline({
                               if (!click.defaultPrevented) toggle(event.id);
                             }}
                             className={slotProps?.trigger?.className}
-                            css={[triggerStyle, slotProps?.trigger?.css]}
+                            css={[triggerStyle, slotProps?.trigger?.sx]}
                           >
                             {event.title}
                           </Trigger>
@@ -867,7 +868,7 @@ export function Timeline({
                         );
                         return (
                           <Item
-                            {...slotProps?.item}
+                            {...withoutSx(slotProps?.item)}
                             key={JSON.stringify([event.id, duplicateIds.includes(event.id) ? order : null])}
                             data-ui="timeline-item"
                             data-event-id={event.id}
@@ -875,7 +876,7 @@ export function Timeline({
                             data-state={expandable ? (expanded ? 'open' : 'closed') : undefined}
                             data-new={entering.has(event.id) ? '' : undefined}
                             className={slotProps?.item?.className}
-                            css={[itemStyle, slotProps?.item?.css]}
+                            css={[itemStyle, slotProps?.item?.sx]}
                           >
                             <TimelineMarker event={event} part={slotProps?.marker} component={Marker} />
                             <div css={bodyStyle}>
@@ -896,11 +897,11 @@ export function Timeline({
                               </div>
                               {epoch === null ? null : (
                                 <Time
-                                  {...slotProps?.time}
+                                  {...withoutSx(slotProps?.time)}
                                   dateTime={new Date(epoch).toISOString()}
                                   data-ui="timeline-time"
                                   className={slotProps?.time?.className}
-                                  css={[timeStyle, slotProps?.time?.css]}
+                                  css={[timeStyle, slotProps?.time?.sx]}
                                 >
                                   {validNow === null
                                     ? formatters.clock.format(epoch)
@@ -913,13 +914,13 @@ export function Timeline({
                             </div>
                             {expandable ? (
                               <Detail
-                                {...slotProps?.detail}
+                                {...withoutSx(slotProps?.detail)}
                                 id={detailId}
                                 hidden={!expanded}
                                 data-ui="timeline-detail"
                                 data-state={expanded ? 'open' : 'closed'}
                                 className={slotProps?.detail?.className}
-                                css={[detailStyle, slotProps?.detail?.css]}
+                                css={[detailStyle, slotProps?.detail?.sx]}
                               >
                                 {event.detail}
                               </Detail>
@@ -934,12 +935,12 @@ export function Timeline({
             )}
           </Scroller>
           <Status
-            {...slotProps?.status}
+            {...withoutSx(slotProps?.status)}
             role="status"
             aria-atomic="true"
             data-ui="timeline-status"
             className={slotProps?.status?.className}
-            css={[visuallyHiddenStyle, slotProps?.status?.css]}
+            css={[visuallyHiddenStyle, slotProps?.status?.sx]}
           >
             {announcement.text ? <span key={announcement.key}>{announcement.text}</span> : null}
           </Status>

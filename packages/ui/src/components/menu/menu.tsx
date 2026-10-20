@@ -135,13 +135,13 @@ export interface MenuSlotProps {
   /** Outer wrapper element around the trigger and content. */
   root?: GeneratedRootSlotProps;
   /** Button element that opens the menu. */
-  trigger?: Omit<MenuTriggerProps, 'children'> & { css?: Interpolation<Theme> };
+  trigger?: Omit<MenuTriggerProps, 'children'>;
   /** Popup menu overlay container element holding menu items. */
-  content?: Omit<MenuContentProps, 'children'> & { css?: Interpolation<Theme> };
+  content?: Omit<MenuContentProps, 'children'>;
   /** Action item button element inside the menu. */
-  item?: Omit<MenuItemProps, 'children' | 'onSelect' | 'disabled'> & { css?: Interpolation<Theme> };
+  item?: Omit<MenuItemProps, 'children' | 'onSelect' | 'disabled'>;
   /** Separator element dividing menu items. */
-  separator?: MenuSeparatorProps & { css?: Interpolation<Theme> };
+  separator?: MenuSeparatorProps;
 }
 
 export type MenuProps = MenuCompoundProps | MenuEasyProps;

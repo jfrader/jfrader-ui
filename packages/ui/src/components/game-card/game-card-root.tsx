@@ -8,7 +8,7 @@ export interface GameCardRootProps extends ComponentPropsWithRef<'div'> {
   [attribute: `data-${string}`]: string | number | boolean | undefined;
 }
 
-export type GameCardRootSlotProps = Partial<GameCardRootProps> & { css?: Interpolation<Theme> };
+export type GameCardRootSlotProps = Partial<GameCardRootProps> & { sx?: Interpolation<Theme> };
 
 export interface GameCardRootCustomization {
   /** Replace the root. Exactly sugar for `slots.root`; declare replacements outside render. */
@@ -33,7 +33,7 @@ export function CardRoot({
   sx, className, style, children, ...host
 }: CardRootProps) {
   const Root = slots?.root ?? component ?? 'div';
-  const { css: slotCss, className: slotClassName, style: slotStyle, ...slotRest } = rootSlot ?? {};
+  const { sx: slotCss, className: slotClassName, style: slotStyle, ...slotRest } = rootSlot ?? {};
   const identity = [...new Set([marker, host['data-ui'], slotRest['data-ui']]
     .flatMap((value) => typeof value === 'string' ? value.split(/\s+/).filter(Boolean) : []))].join(' ');
 

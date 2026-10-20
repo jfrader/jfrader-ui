@@ -22,7 +22,7 @@ export type CountdownUnit = 'days' | 'hours' | 'minutes' | 'seconds';
 export type CountdownVariant = 'display' | 'compact';
 export interface CountdownPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 export interface CountdownSlots {
   /** Replaces the header label. */
@@ -293,7 +293,7 @@ function NumericRun({
         numberStyle,
         variant === 'display' ? displayNumberStyle : compactNumberStyle,
         changed && rollingStyle,
-        slot?.css,
+        slot?.sx,
       ]}
     >
       {value}
@@ -422,7 +422,7 @@ export function Countdown({
           data-ui="countdown-icon"
           aria-hidden="true"
           className={slotProps?.icon?.className}
-          css={[iconStyle, slotProps?.icon?.css]}
+          css={[iconStyle, slotProps?.icon?.sx]}
         >
           {completionIcon}
         </Icon>
@@ -468,7 +468,7 @@ export function Countdown({
                 id={labelId}
                 data-ui="countdown-label"
                 className={slotProps?.label?.className}
-                css={[labelStyle, slotProps?.label?.css]}
+                css={[labelStyle, slotProps?.label?.sx]}
               >
                 {label}
               </Label>
@@ -478,7 +478,7 @@ export function Countdown({
                 data-ui="countdown-content"
                 aria-hidden="true"
                 className={slotProps?.content?.className}
-                css={[contentStyle, slotProps?.content?.css]}
+                css={[contentStyle, slotProps?.content?.sx]}
               >
                 {partsFor(seconds, normalizedUnits).map(({ unit, value }) => {
                   const formatter = numberFormatter(locale, {
@@ -494,7 +494,7 @@ export function Countdown({
                       key={`${unit}-${resolved.locale}-${resolved.numberingSystem}`}
                       data-ui="countdown-unit"
                       className={slotProps?.unit?.className}
-                      css={[unitStyle, slotProps?.unit?.css]}
+                      css={[unitStyle, slotProps?.unit?.sx]}
                     >
                       {formatter
                         .formatToParts(value)
@@ -522,7 +522,7 @@ export function Countdown({
                 <Complete
                   data-ui="countdown-complete"
                   className={slotProps?.complete?.className}
-                  css={[completeStyle, slotProps?.complete?.css]}
+                  css={[completeStyle, slotProps?.complete?.sx]}
                 >
                   {completionContent}
                 </Complete>
@@ -540,7 +540,7 @@ export function Countdown({
                 id={descriptionId}
                 data-ui="countdown-description"
                 className={slotProps?.description?.className}
-                css={[visuallyHiddenStyle, slotProps?.description?.css]}
+                css={[visuallyHiddenStyle, slotProps?.description?.sx]}
               >
                 {description}
               </Description>
@@ -553,7 +553,7 @@ export function Countdown({
               aria-atomic="true"
               data-ui="countdown-announcement"
               className={slotProps?.complete?.className}
-              css={announce ? [completeStyle, slotProps?.complete?.css] : visuallyHiddenStyle}
+              css={announce ? [completeStyle, slotProps?.complete?.sx] : visuallyHiddenStyle}
             >
               {announce ? completionContent : null}
             </Complete>

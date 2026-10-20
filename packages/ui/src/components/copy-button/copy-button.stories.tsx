@@ -1038,7 +1038,7 @@ export const SxPrecedence: Story = {
     className: 'consumer-class',
     sx: consumerSx,
     ref: fn(),
-    slotProps: { label: { className: 'slot-label', css: slotLabelCss }, status: { id: 'copy-status' } },
+    slotProps: { label: { className: 'slot-label', sx: slotLabelCss }, status: { id: 'copy-status' } },
   },
   render: (args) => <ClassNames>{({ css: register }) => <CopyButton {...args} className={`${args.className} ${register(consumerCss)}`} />}</ClassNames>,
   play: async ({ args, canvasElement }) => {

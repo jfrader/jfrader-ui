@@ -50,7 +50,7 @@ import {
 import { vars } from '@jfrader/tokens/vars';
 import { animate, MotionConfig } from 'motion/react';
 import { useReducedMotion } from '../../utils/use-reduced-motion';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css } from '../../styling/css';
 import {
   listboxItemStateStyle,
   listboxItemStyle,
@@ -145,25 +145,25 @@ export interface SelectSlotProps {
   /** Container element wrapping the select field. */
   root?: ComponentPropsWithRef<'div'> &
     SxProps & {
-      css?: Interpolation<Theme>;
+
       [attribute: `data-${string}`]: unknown;
     };
   /** Label element associated with the select. Default: `Select.Label`. */
-  label?: Partial<SelectLabelProps> & { css?: Interpolation<Theme> };
+  label?: Partial<SelectLabelProps>;
   /** Helper text element displayed below or above the trigger. Default: `Select.Description`. */
-  description?: Partial<SelectDescriptionProps> & { css?: Interpolation<Theme> };
+  description?: Partial<SelectDescriptionProps>;
   /** Validation error message element displayed when invalid. Default: `Select.Error`. */
-  error?: Partial<SelectErrorProps> & { css?: Interpolation<Theme> };
+  error?: Partial<SelectErrorProps>;
   /** Button trigger that opens the select dropdown. Default: `Select.Trigger`. */
-  trigger?: Partial<SelectTriggerProps> & { css?: Interpolation<Theme> };
+  trigger?: Partial<SelectTriggerProps>;
   /** Text container displaying the selected option label. Default: `Select.Value`. */
-  value?: Partial<SelectValueProps> & { css?: Interpolation<Theme> };
+  value?: Partial<SelectValueProps>;
   /** Floating popup panel holding the options list. Default: `Select.Content`. */
-  content?: Partial<SelectContentProps> & { css?: Interpolation<Theme> };
+  content?: Partial<SelectContentProps>;
   /** Selectable option item within the list. Default: `Select.Item`. */
-  item?: Partial<Omit<SelectItemProps, 'value' | 'id' | 'disabled' | 'textValue'>> & { css?: Interpolation<Theme> };
+  item?: Partial<Omit<SelectItemProps, 'value' | 'id' | 'disabled' | 'textValue'>>;
   /** Message container displayed when no options are available. Default: `Select.Empty`. */
-  empty?: Partial<SelectEmptyProps> & { css?: Interpolation<Theme> };
+  empty?: Partial<SelectEmptyProps>;
 }
 
 export interface SelectBaseProps {
@@ -568,7 +568,6 @@ function SelectOverlay({ nodeId, ...props }: SelectProps & { nodeId: string | un
     const RootPart = slots?.root ?? component ?? 'div';
     const {
       className: rootClassName,
-      css: rootCss,
       sx: rootSx,
       'data-ui': rootDataUi,
       ...rootRest
@@ -605,7 +604,7 @@ function SelectOverlay({ nodeId, ...props }: SelectProps & { nodeId: string | un
     renderedContent = (
       <>
         {hasFieldAnatomy ? (
-          <WithSx className={rootClassName} styles={[fieldColumnStyle, rootCss]} sx={rootSx}>
+          <WithSx className={rootClassName} styles={[fieldColumnStyle, rootSx]}>
             {(className) => (
               <RootPart
                 {...rootRest}

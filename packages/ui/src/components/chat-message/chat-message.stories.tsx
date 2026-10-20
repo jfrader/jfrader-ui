@@ -517,8 +517,8 @@ export const StylingAndZeroContent: Story = {
           className={className({ outlineStyle: 'dotted' })}
           sx={{ outlineStyle: 'dashed' }}
           slotProps={{
-            article: { css: slotArticleStyle, className: 'custom-message', style: { opacity: 1 } },
-            bubble: { css: slotBubbleStyle },
+            article: { sx: slotArticleStyle, className: 'custom-message', style: { opacity: 1 } },
+            bubble: { sx: slotBubbleStyle },
           }}
         />
       )}

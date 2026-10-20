@@ -4,7 +4,7 @@ import { useEffect, useRef, type ComponentPropsWithRef, type ComponentType, type
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Kbd } from '../kbd';
@@ -17,7 +17,7 @@ export interface KeycapSpec {
 
 export interface KeycapKeyboardSlotProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface KeycapKeyboardSlots {
@@ -214,16 +214,16 @@ export function KeycapKeyboard({
       {(rootClass) => (
         <div {...rest} ref={ref} aria-hidden="true" data-ui="keycap-keyboard" data-tone={tone} className={rootClass} style={style}>
           {rows.map((row, rowIndex) => (
-            <Row {...slotProps?.row} key={rowIndex} data-ui="keycap-keyboard-row" className={slotProps?.row?.className}
-              css={[rowStyle, slotProps?.row?.css]} style={{
+            <Row {...withoutSx(slotProps?.row)} key={rowIndex} data-ui="keycap-keyboard-row" className={slotProps?.row?.className}
+              css={[rowStyle, slotProps?.row?.sx]} style={{
                 gridTemplateColumns: row.map((key) => `minmax(0, ${unitsOf(key)}fr)`).join(' '),
                 inlineSize: `calc((100% - ${maxGaps} * ${vars.space[1]}) * ${(rowUnits[rowIndex] ?? 0) / widest} + ${Math.max(0, row.length - 1)} * ${vars.space[1]})`,
               } satisfies CSSProperties}>
               {row.map((key, keyIndex) => (
-                <Key {...slotProps?.key} key={`${key.code}-${keyIndex}`} data-ui="keycap-keyboard-key" data-code={key.code} data-state={active.includes(key.code) ? 'pressed' : 'idle'}
-                  className={slotProps?.key?.className} css={[keyStyle, slotProps?.key?.css]}>
-                  {isRenderable(key.legend) && key.legend !== '' && <Legend {...slotProps?.legend} data-ui="keycap-keyboard-legend" className={slotProps?.legend?.className}
-                    css={[legendStyle, slotProps?.legend?.css]}>{key.legend}</Legend>}
+                <Key {...withoutSx(slotProps?.key)} key={`${key.code}-${keyIndex}`} data-ui="keycap-keyboard-key" data-code={key.code} data-state={active.includes(key.code) ? 'pressed' : 'idle'}
+                  className={slotProps?.key?.className} css={[keyStyle, slotProps?.key?.sx]}>
+                  {isRenderable(key.legend) && key.legend !== '' && <Legend {...withoutSx(slotProps?.legend)} data-ui="keycap-keyboard-legend" className={slotProps?.legend?.className}
+                    css={[legendStyle, slotProps?.legend?.sx]}>{key.legend}</Legend>}
                 </Key>
               ))}
             </Row>

@@ -574,13 +574,13 @@ export const PersistentViewer: Story = {
     );
   },
 };
-export const PersistentFavorite: Story = { 
+export const PersistentFavorite: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
 args: { defaultOpen: true, defaultFavorites: ['p1'] } };
 export const ViewerFilmstripSelection: Story = {
   tags: ['!autodocs'],
-  args: { defaultOpen: true, defaultValue: 'p12', slotProps: { filmstrip: { css: { maxInlineSize: '12rem' } } } },
+  args: { defaultOpen: true, defaultValue: 'p12', slotProps: { filmstrip: { sx: { maxInlineSize: '12rem' } } } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const stage = canvas.getByRole('group', { name: 'Night over the Hills' });
     const strip = canvas.getByRole('group', { name: 'Choose photo' });
@@ -620,7 +620,7 @@ export const PersistentImageZoom: Story = {
     await expect(canvas.getByRole('button', { name: 'Pan left' })).toBeVisible();
   },
 };
-export const PersistentUnavailable: Story = { 
+export const PersistentUnavailable: Story = {
   // Excluded from the docs page: its open overlay (modal/backdrop) covers the documentation.
   tags: ['!autodocs'],
 args: { defaultOpen: true, value: 'missing' } };
@@ -923,8 +923,8 @@ export const SlotStyling: Story = {
   args: {
     slotProps: {
       header: { style: { padding: '12px' } },
-      item: { css: { padding: '8px' } },
-      photo: { css: { borderWidth: '3px' } },
+      item: { sx: { padding: '8px' } },
+      photo: { sx: { borderWidth: '3px' } },
     },
     sx: { padding: '24px' },
   },

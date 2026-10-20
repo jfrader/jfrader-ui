@@ -831,12 +831,12 @@ export const RefAndStyling: Story = {
   args: { ref: fn() },
   render: (args) => (
     <ClassNames>{({ css: register }) => <VoiceOrb {...args} className={register(strayRootStyle)} sx={{ opacity: 0.8 }}>
-      <VoiceOrb.Visual sx={{ opacity: 0.7 }} slotProps={{ canvas: { css: { opacity: 0.5 } } }} />
+      <VoiceOrb.Visual sx={{ opacity: 0.7 }} slotProps={{ canvas: { sx: { opacity: 0.5 } } }} />
       <VoiceOrb.Status sx={{ fontWeight: vars.fontWeight.semibold }} />
       <VoiceOrb.Transcript text="Hello" sx={{ opacity: 0.9 }} />
       <VoiceOrb.Controls
         sx={{ opacity: 0.75, gap: vars.space[6] }}
-        slotProps={{ start: { css: { paddingInline: vars.space[8] } } }}
+        slotProps={{ start: { sx: { paddingInline: vars.space[8] } } }}
       />
     </VoiceOrb>}</ClassNames>
   ),

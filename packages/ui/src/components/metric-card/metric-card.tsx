@@ -195,12 +195,12 @@ export function MetricCard({
           <Surface
             variant={variant}
             className={slotProps?.surface?.className}
-            css={[surfaceStyle, slotProps?.surface?.css]}
+            css={[surfaceStyle, slotProps?.surface?.sx]}
           >
             <Header
               data-ui="metric-card-header"
               className={slotProps?.header?.className}
-              css={[headerStyle, slotProps?.header?.css]}
+              css={[headerStyle, slotProps?.header?.sx]}
             >
               {hasLabel && (
                 <Heading
@@ -208,7 +208,7 @@ export function MetricCard({
                   data-ui="metric-card-label"
                   {...(slots?.label ? { headingLevel } : {})}
                   className={slotProps?.label?.className}
-                  css={[labelStyle, slotProps?.label?.css]}
+                  css={[labelStyle, slotProps?.label?.sx]}
                 >
                   {label}
                 </Heading>
@@ -218,7 +218,7 @@ export function MetricCard({
                   tone={deltaTone}
                   data-direction={direction}
                   className={slotProps?.delta?.className}
-                  css={[deltaStyle, slotProps?.delta?.css]}
+                  css={[deltaStyle, slotProps?.delta?.sx]}
                 >
                   <span aria-hidden="true">
                     {normalizedDelta === 0 ? '↔' : normalizedDelta > 0 ? '↑' : '↓'}
@@ -233,7 +233,7 @@ export function MetricCard({
             <Value
               data-ui="metric-card-value"
               className={slotProps?.value?.className}
-              css={[valueStyle, slotProps?.value?.css]}
+              css={[valueStyle, slotProps?.value?.sx]}
             >
               {formattedValue}
               {hasFiniteValue && unitLabel ? ` ${unitLabel}` : ''}
@@ -243,7 +243,7 @@ export function MetricCard({
                 id={descriptionId}
                 data-ui="metric-card-description"
                 className={slotProps?.description?.className}
-                css={[descriptionStyle, slotProps?.description?.css]}
+                css={[descriptionStyle, slotProps?.description?.sx]}
               >
                 {description}
               </Description>

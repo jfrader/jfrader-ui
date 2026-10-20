@@ -12,7 +12,7 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { moveRovingFocus, type OwnedItemsQuery } from '../../utils/roving-focus';
@@ -56,13 +56,13 @@ export interface GameActionsSlotProps {
   /** Props passed to the root toolbar element. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children'> &
     SxProps & {
-      css?: Interpolation<Theme>;
+
       'data-ui'?: string;
       [attribute: `data-${string}`]: unknown;
     };
   /** Props passed to each action button. */
   action?: Partial<Omit<ButtonProps, 'children'>> & {
-    css?: Interpolation<Theme>;
+
     'data-ui'?: string;
     [attribute: `data-${string}`]: unknown;
   };
@@ -163,7 +163,6 @@ export function GameActions({
   const {
     className: rootSlotClassName,
     style: rootSlotStyle,
-    css: rootSlotCss,
     sx: rootSlotSx,
     ref: rootSlotRef,
     onKeyDown: rootSlotOnKeyDown,
@@ -197,7 +196,6 @@ export function GameActions({
   const {
     className: actionSlotClassName,
     style: actionSlotStyle,
-    css: actionSlotCss,
     sx: actionSlotSx,
     onClick: actionSlotOnClick,
     onFocus: actionSlotOnFocus,
@@ -209,7 +207,7 @@ export function GameActions({
   return (
     <WithSx
       className={mergedClassName}
-      styles={[rootBaseStyle, rootSlotCss, rootSlotSx]}
+      styles={[rootBaseStyle, rootSlotSx]}
       sx={sx}
     >
       {(resolvedClassName) => (
@@ -272,7 +270,6 @@ export function GameActions({
                 aria-describedby={action['aria-describedby']}
                 className={actionSlotClassName}
                 style={actionSlotStyle}
-                css={actionSlotCss}
                 sx={actionSlotSx}
                 onClick={handleActionClick}
                 onFocus={handleActionFocus}

@@ -33,7 +33,7 @@ export interface ReactionGroupViewProps extends Omit<ComponentPropsWithRef<'div'
   onToggle: (emoji: string) => void;
   onSelect?: (emoji: string) => void;
   pickerId: string;
-  partProps?: { className?: string; css?: Interpolation<Theme> };
+  partProps?: { className?: string; sx?: Interpolation<Theme> };
   overlay?: boolean;
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
 }
@@ -111,7 +111,7 @@ export function ReactionGroupView({
   };
 
   return (
-    <WithSx className={[className, partProps?.className].filter(Boolean).join(' ') || undefined} styles={[reactionsStyle, partProps?.css]} sx={sx}>
+    <WithSx className={[className, partProps?.className].filter(Boolean).join(' ') || undefined} styles={[reactionsStyle, partProps?.sx]} sx={sx}>
       {(rootClass) => (
         <Root {...rootProps} data-ui={rootUi} className={rootClass}>
           {counts.map(({ emoji, count, mine = false }) => {

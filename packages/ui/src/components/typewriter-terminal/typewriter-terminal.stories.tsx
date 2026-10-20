@@ -720,11 +720,11 @@ export const SlotStyles: Story = {
     defaultPaused: true,
     caption: 'Caption',
     slotProps: {
-      header: { css: { paddingInline: vars.space[6] } },
-      screen: { css: { fontSize: vars.textSize.md } },
-      controls: { css: { gap: vars.space[4] } },
-      caption: { css: { fontWeight: vars.fontWeight.medium } },
-      status: { css: { fontFamily: vars.font.mono } },
+      header: { sx: { paddingInline: vars.space[6] } },
+      screen: { sx: { fontSize: vars.textSize.md } },
+      controls: { sx: { gap: vars.space[4] } },
+      caption: { sx: { fontWeight: vars.fontWeight.medium } },
+      status: { sx: { fontFamily: vars.font.mono } },
     },
   },
   play: async ({ canvasElement }) => {

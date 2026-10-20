@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 import { useEffect, useRef, type ReactNode } from 'react';
@@ -85,7 +86,7 @@ export function ViewerHeader({
   const Title = component ?? 'h2';
   return (
     <div css={headerStyle}>
-      <Title {...slot} id={titleId} tabIndex={slot?.tabIndex ?? 0} css={[titleStyle, slot?.css]}>
+      <Title {...withoutSx(slot)} id={titleId} tabIndex={slot?.tabIndex ?? 0} css={[titleStyle, slot?.sx]}>
         {title}
       </Title>
       <ChromeAction ref={autofocus} label={labels.close} icon={icons.close} placement="bottom" onClick={onClose} />
@@ -130,10 +131,10 @@ export function ViewerToolbar({
   const Controls = slots?.controls ?? 'div';
   return (
     <div css={toolbarStyle}>
-      <Status {...slotProps?.status} role="status" aria-live="polite" aria-atomic="true" css={[counterStyle, slotProps?.status?.css]}>
+      <Status {...withoutSx(slotProps?.status)} role="status" aria-live="polite" aria-atomic="true" css={[counterStyle, slotProps?.status?.sx]}>
         {position}
       </Status>
-      <Controls {...slotProps?.controls} css={[controlsStyle, slotProps?.controls?.css]}>
+      <Controls {...withoutSx(slotProps?.controls)} css={[controlsStyle, slotProps?.controls?.sx]}>
         <ChromeAction label={labels.previous} icon={icons.previous} disabled={!canPrevious} onClick={onPrevious} />
         <ChromeAction label={labels.next} icon={icons.next} disabled={!canNext} onClick={onNext} />
         <span aria-hidden="true" css={dividerStyle} />
@@ -186,7 +187,7 @@ export function Filmstrip({
     return () => observer.disconnect();
   }, [selected]);
   return (
-    <Thumbnails {...slot} ref={ref} role="group" aria-label={slot?.['aria-label'] ?? labels.thumbnails} css={[filmstripStyle, slot?.css]}>
+    <Thumbnails {...withoutSx(slot)} ref={ref} role="group" aria-label={slot?.['aria-label'] ?? labels.thumbnails} css={[filmstripStyle, slot?.sx]}>
       {images.map((item, index) => (
         <button
           key={item.id}

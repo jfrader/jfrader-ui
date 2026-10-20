@@ -65,7 +65,7 @@ type SlotProps<T> = Partial<
     | 'thumbLabels'
     | 'minStepsBetweenThumbs'
   >
-> & { css?: Interpolation<Theme> };
+> & { sx?: Interpolation<Theme> };
 export interface ControlCenterSlotProps extends FieldParts<NativeAnatomy> {
   tile?: SlotProps<ButtonProps>;
   detailTrigger?: SlotProps<ButtonProps>;

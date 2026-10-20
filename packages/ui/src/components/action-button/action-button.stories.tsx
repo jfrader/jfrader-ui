@@ -224,7 +224,7 @@ export const Customization: Story = {
         slotProps={{
           root: {
             title: 'Root props',
-            css: { borderRadius: vars.radius.full },
+            sx: { borderRadius: vars.radius.full },
           },
           icon: { title: 'Icon props' },
           label: { title: 'Label props' },

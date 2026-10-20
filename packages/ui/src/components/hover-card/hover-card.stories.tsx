@@ -452,11 +452,11 @@ export const Profile: Story = {
         className="probe-profile"
         sx={{ rowGap: '14px' }}
         slotProps={{
-          avatar: { ...slotHooks('avatar'), className: 'probe-avatar', css: { paddingInlineEnd: '3px' } },
-          identity: { ...slotHooks('identity'), className: 'probe-identity', css: { letterSpacing: '1px' } },
-          bio: { ...slotHooks('bio'), className: 'probe-bio', css: { fontStyle: 'italic' } },
-          stats: { ...slotHooks('stats'), className: 'probe-stats', css: { columnGap: '30px' } },
-          meta: { ...slotHooks('meta'), className: 'probe-meta', css: { textDecorationLine: 'underline' } },
+          avatar: { ...slotHooks('avatar'), className: 'probe-avatar', sx: { paddingInlineEnd: '3px' } },
+          identity: { ...slotHooks('identity'), className: 'probe-identity', sx: { letterSpacing: '1px' } },
+          bio: { ...slotHooks('bio'), className: 'probe-bio', sx: { fontStyle: 'italic' } },
+          stats: { ...slotHooks('stats'), className: 'probe-stats', sx: { columnGap: '30px' } },
+          meta: { ...slotHooks('meta'), className: 'probe-meta', sx: { textDecorationLine: 'underline' } },
         }}
       />
       <span id="profile-note">From the review thread</span>

@@ -103,9 +103,9 @@ Do not combine \`pages\` with \`children\`. Use \`slotProps.trigger\`, \`slotPro
 ### Panel material
 Content inherits appearance; appearance="contrast" uses fixed charcoal. Declaration-site theme and tokens cross the internal stage portal, which remains inside the modal layer.
 
-component is sugar for slots.root; only root is adopted, and slots.root wins. slotProps.root accepts div props and css, not sx. Declare adapters outside render, render one div, forward every supplied prop/ref, and apply material before className. Changing the adapter type remounts the panel and resets focus and uncontrolled input state.
+component is sugar for slots.root; only root is adopted, and slots.root wins. slotProps.root accepts div props and sx. Declare adapters outside render, render one div, forward every supplied prop/ref, and apply material before className. Changing the adapter type remounts the panel and resets focus and uncontrolled input state.
 
-Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry/motion → slot css/classes → consumer css/classes → sx. Generated handle/body, IDs, active/parent state, inertness, native dismissal and depth variables stay authoritative. Select composed panels with [data-ui~="dialog-stack"].`,
+Root slot props win ordinary conflicts; className combines and style shallow-merges, slot values last. Styling order is adapter material → host geometry/motion → slot sx/classes → consumer classes → consumer sx. Generated handle/body, IDs, active/parent state, inertness, native dismissal and depth variables stay authoritative. Select composed panels with [data-ui~="dialog-stack"].`,
       source: {
         language: 'tsx',
         code: `const pages = [

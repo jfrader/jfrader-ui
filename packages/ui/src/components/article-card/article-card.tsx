@@ -48,7 +48,7 @@ export type ArticleCardSlots = PresentationSlots<NativeAnatomy> & {
   lede?: ComponentType<ComponentPropsWithRef<'p'>>;
   media?: ComponentType<ComponentPropsWithRef<'figure'>>;
 };
-type PartProps<P> = P & { css?: Interpolation<Theme> };
+type PartProps<P> = P & { sx?: Interpolation<Theme> };
 export type ArticleCardSlotProps = PresentationParts<NativeAnatomy> & {
   headline?: PartProps<ArticleCardHeadlineProps>;
   dek?: PartProps<ArticleCardDekProps>;

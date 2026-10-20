@@ -266,8 +266,7 @@ export const ReplacedParts: StoryObj<EasySingleProps> = {
       root: {
         className: 'slot-root',
         style: { fontStyle: 'italic' },
-        css: { fontWeight: vars.fontWeight.regular },
-        sx: { fontWeight: vars.fontWeight.medium },
+        sx: [{ fontWeight: vars.fontWeight.regular }, { fontWeight: vars.fontWeight.medium }],
         'aria-label': 'Sections',
         'data-ui': 'root-extra accordion',
       },

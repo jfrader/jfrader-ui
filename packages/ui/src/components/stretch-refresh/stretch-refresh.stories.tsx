@@ -934,7 +934,7 @@ export const AriaMerge: Story = {
       feed: {
         'aria-labelledby': 'external-heading missing-heading',
         'aria-describedby': 'external-description missing-description',
-        css: overrideStyle,
+        sx: overrideStyle,
       },
     },
   },

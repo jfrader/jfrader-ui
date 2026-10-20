@@ -21,7 +21,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { choiceInputStyle, choiceRootStateStyle } from '../../styling/choice-control';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 
@@ -63,7 +63,7 @@ export interface RadioCardsSlots {
 export interface RadioCardsSlotProps {
   /** Container element wrapping the radio card group. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
-    css?: Interpolation<Theme>;
+
     [attribute: `data-${string}`]: unknown;
   };
   /** Header label naming the radio card group. Default: `RadioCards.Label`. */
@@ -71,7 +71,7 @@ export interface RadioCardsSlotProps {
   /** Selectable card representing an individual radio option. Default: `RadioCards.Item`. */
   item?: Omit<RadioCardsItemProps, keyof RadioCardsOption>;
   /** Validation error message displayed when invalid. */
-  error?: Omit<ComponentPropsWithRef<'span'>, 'children'> & { css?: Interpolation<Theme> };
+  error?: Omit<ComponentPropsWithRef<'span'>, 'children'> & { sx?: Interpolation<Theme> };
 }
 export interface RadioCardsEasyProps extends Omit<RadioCardsCompoundProps, 'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component'> {
   options: readonly RadioCardsOption[];
@@ -82,7 +82,7 @@ export interface RadioCardsEasyProps extends Omit<RadioCardsCompoundProps, 'chil
   slotProps?: RadioCardsSlotProps;
 }
 export type RadioCardsProps = RadioCardsCompoundProps | RadioCardsEasyProps;
-export type RadioCardsPartProps = ComponentPropsWithRef<'span'> & { css?: Interpolation<Theme> };
+export type RadioCardsPartProps = ComponentPropsWithRef<'span'> & { sx?: Interpolation<Theme> };
 export interface RadioCardsItemSlots {
   /** Container surrounding the option content. */
   control?: ComponentType<RadioCardsPartProps>;
@@ -355,7 +355,7 @@ function SelectionRing({
 
 function RadioCardsRoot({
   rootElement: Root = 'div',
-  rootCss,
+  slotStyles,
   errorElement: Error = 'span',
   errorSlotProps,
   ref,
@@ -381,7 +381,8 @@ function RadioCardsRoot({
   ...rest
 }: RadioCardsCompoundProps & {
   rootElement?: 'div' | RadioCardsSlots['root'];
-  rootCss?: Interpolation<Theme>;
+  slotStyles?: Interpolation<Theme>;
+
   errorElement?: 'span' | RadioCardsSlots['error'];
   errorSlotProps?: RadioCardsSlotProps['error'];
 }) {
@@ -394,7 +395,7 @@ function RadioCardsRoot({
     description: [],
   });
   const hasError = isRenderable(error);
-  const { css: errorCss, ...errorProps } = errorSlotProps ?? {};
+  const { sx: errorCss, ...errorProps } = errorSlotProps ?? {};
   const register = useCallback((kind: Relationship, partId: string) => {
     setRelationships((current) => ({ ...current, [kind]: [...current[kind], partId] }));
     return () =>
@@ -462,7 +463,7 @@ function RadioCardsRoot({
   };
   return (
     <Context.Provider value={context}>
-      <WithSx className={className} styles={[rootStyle, layoutStyles[layout], rootCss]} sx={sx}>
+      <WithSx className={className} styles={[rootStyle, layoutStyles[layout], slotStyles]} sx={sx}>
         {(className) => (
           <Root
             {...rest}
@@ -572,22 +573,22 @@ function RadioCardsItem({
             css={[choiceInputStyle, inputStyle]}
           />
           <Control
-            {...slotProps?.control}
+            {...withoutSx(slotProps?.control)}
             data-ui="radio-cards-control"
-            css={[controlStyle, sizeStyles[context.size], slotProps?.control?.css]}
+            css={[controlStyle, sizeStyles[context.size], slotProps?.control?.sx]}
           >
             <Indicator
-              {...slotProps?.indicator}
+              {...withoutSx(slotProps?.indicator)}
               aria-hidden="true"
               data-ui="radio-cards-indicator"
-              css={[indicatorStyle, slotProps?.indicator?.css]}
+              css={[indicatorStyle, slotProps?.indicator?.sx]}
             />
             {isRenderable(icon) && (
               <Icon
-                {...slotProps?.icon}
+                {...withoutSx(slotProps?.icon)}
                 aria-hidden="true"
                 data-ui="radio-cards-icon"
-                css={[iconStyle, slotProps?.icon?.css]}
+                css={[iconStyle, slotProps?.icon?.sx]}
               >
                 {icon}
               </Icon>
@@ -596,20 +597,20 @@ function RadioCardsItem({
               <span css={contentStyle}>
                 {hasLabel && (
                   <Label
-                    {...slotProps?.label}
+                    {...withoutSx(slotProps?.label)}
                     id={`${id}-label`}
                     data-ui="radio-cards-item-label"
-                    css={[labelStyle, slotProps?.label?.css]}
+                    css={[labelStyle, slotProps?.label?.sx]}
                   >
                     {label}
                   </Label>
                 )}
                 {hasDetail && (
                   <Description
-                    {...slotProps?.description}
+                    {...withoutSx(slotProps?.description)}
                     id={`${id}-description`}
                     data-ui="radio-cards-item-description"
-                    css={[descriptionStyle, slotProps?.description?.css]}
+                    css={[descriptionStyle, slotProps?.description?.sx]}
                   >
                     {detail}
                   </Description>
@@ -617,7 +618,7 @@ function RadioCardsItem({
               </span>
             )}
             {isRenderable(meta) && (
-              <Meta {...slotProps?.meta} data-ui="radio-cards-meta" css={[metaStyle, slotProps?.meta?.css]}>
+              <Meta {...withoutSx(slotProps?.meta)} data-ui="radio-cards-meta" css={[metaStyle, slotProps?.meta?.sx]}>
                 {meta}
               </Meta>
             )}
@@ -669,7 +670,7 @@ RadioCardsDescription.displayName = 'RadioCards.Description';
 function RadioCardsComponent(props: RadioCardsProps) {
   if (props.options === undefined) return <RadioCardsRoot {...props} />;
   const { options, label, component, slots, slotProps, ...rest } = props;
-  const { css: rootCss, className, style, sx, ...rootProps } = slotProps?.root ?? {};
+  const { className, style, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
   const Label = slots?.label ?? RadioCardsLabel;
   const Item = slots?.item ?? RadioCardsItem;
   return (
@@ -677,12 +678,12 @@ function RadioCardsComponent(props: RadioCardsProps) {
       {...rest}
       {...rootProps}
       rootElement={slots?.root ?? component}
-      rootCss={rootCss}
+      slotStyles={slotSx}
       errorElement={slots?.error}
       errorSlotProps={slotProps?.error}
       className={[className, rest.className].filter(Boolean).join(' ') || undefined}
       style={{ ...rest.style, ...style }}
-      sx={[sx, rest.sx]}
+      sx={rest.sx}
     >
       {isRenderable(label) && <Label {...slotProps?.label}>{label}</Label>}
       {options.map((option) => (

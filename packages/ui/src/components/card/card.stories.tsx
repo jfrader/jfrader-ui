@@ -113,8 +113,8 @@ export const EasyMode: StoryObj<(props: CardEasyProps) => ReactNode> = {
 };
 
 export const EasyCustomization: Story = {
-  render: () => <Card title="Project" content={0} footer={0} slotProps={{ title: { css: easyTitleStyle }, content: { className: 'project-body' } }} />,
-  parameters: { docs: { source: { code: '<Card title="Project" content={0} footer={0} slotProps={{ title: { css: css({ fontSize: vars.textSize.lg }) }, content: { className: "project-body" } }} />' } } },
+  render: () => <Card title="Project" content={0} footer={0} slotProps={{ title: { sx: easyTitleStyle }, content: { className: 'project-body' } }} />,
+  parameters: { docs: { source: { code: "<Card title=\"Project\" content={0} footer={0} slotProps={{ title: { sx: css({ fontSize: vars.textSize.lg }) }, content: { className: \"project-body\" } }} />" } } },
   play: async ({ canvasElement }) => {
     const content = canvasElement.querySelector('[data-ui="card-content"]');
     await expect(content).toHaveClass('project-body');
@@ -438,7 +438,7 @@ export const SlotProps: Story = {
   render: (args) => (
     <>
       <PlanCard {...args} />
-      <PlanCard {...args} slots={{ title: SlotCardTitle }} slotProps={{ title: { css: slotTitleStyle, className: 'plan-title' } }} />
+      <PlanCard {...args} slots={{ title: SlotCardTitle }} slotProps={{ title: { sx: slotTitleStyle, className: 'plan-title' } }} />
     </>
   ),
   play: async ({ canvasElement }) => {
@@ -468,8 +468,8 @@ export const ConsumerStylePrecedence: Story = {
   className="consumer-card"
   sx={{ fontStyle: 'normal' }}
   slotProps={{
-    root: { className: 'slot-card', css: css({ fontStyle: 'italic' }) },
-    title: { className: 'slot-title', css: css({ textTransform: 'uppercase' }) },
+    root: { className: 'slot-card', sx: css({ fontStyle: 'italic' }) },
+    title: { className: 'slot-title', sx: css({ textTransform: 'uppercase' }) },
   }}
 >
   <Card.Title className="consumer-title" sx={{ textTransform: 'lowercase' }}>
@@ -487,8 +487,8 @@ export const ConsumerStylePrecedence: Story = {
           className={`consumer-card ${className({ fontStyle: 'oblique', letterSpacing: '0.05em' })}`}
           sx={consumerRootOverrideStyle}
           slotProps={{
-            root: { className: 'slot-card', css: slotRootOverrideStyle },
-            title: { className: 'slot-title', css: slotTitleOverrideStyle },
+            root: { className: 'slot-card', sx: slotRootOverrideStyle },
+            title: { className: 'slot-title', sx: slotTitleOverrideStyle },
           }}
         >
           <Card.Title className="consumer-title" sx={consumerTitleOverrideStyle}>
@@ -703,7 +703,7 @@ function IndependentCardPaper({ className, ...props }: SurfacePartProps) {
 export const RootAdapters: Story = {
   render: (args) => <>{[undefined, Surface, Card, IndependentCardPaper].map((component, index) =>
     <Card {...args} key={index} component={component} data-testid={`card-adapter-${index}`}
-      slotProps={{ title: { css: slotTitleOverrideStyle }, root: { className: 'root-slot' } }}>
+      slotProps={{ title: { sx: slotTitleOverrideStyle }, root: { className: 'root-slot' } }}>
       <Card.Title>Adapter {index}</Card.Title><Card.Content>Panel contents</Card.Content>
     </Card>)}</>,
   play: async ({ canvas }) => {

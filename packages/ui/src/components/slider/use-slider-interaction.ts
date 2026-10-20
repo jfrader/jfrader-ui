@@ -22,7 +22,7 @@ import { useControlledState } from '../../utils/use-controlled-state';
 export type SliderValue = number | readonly [number, number];
 export type SliderMark = number | { value: number; label?: ReactNode };
 export type SliderPart<E extends 'div' | 'span' | 'button'> = ComponentPropsWithRef<E> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 /** Pointer position for one gesture sample, in domain units plus the geometry to convert them. */
 export interface SliderPointerSample {

@@ -7,7 +7,7 @@ import { WithSx, type SxProps } from '../../styling/sx';
 export interface GameTableRootProps extends ComponentPropsWithRef<'div'> {
   [attribute: `data-${string}`]: string | number | boolean | undefined;
 }
-export type GameTableRootSlotProps = Partial<GameTableRootProps> & { css?: Interpolation<Theme> };
+export type GameTableRootSlotProps = Partial<GameTableRootProps> & { sx?: Interpolation<Theme> };
 export interface GameTableSlots {
   root?: ComponentType<GameTableRootProps>;
 }
@@ -29,7 +29,7 @@ export function TableRoot({ marker, structure, attributes, component, slots, slo
   marker: string; structure: Interpolation<Theme>; attributes?: GameTableRootProps;
 }) {
   const Root = slots?.root ?? component ?? 'div';
-  const { css: slotCss, className: slotClassName, style: slotStyle, ...slotRest } = slotProps?.root ?? {};
+  const { sx: slotCss, className: slotClassName, style: slotStyle, ...slotRest } = slotProps?.root ?? {};
   const identity = [...new Set([marker, host['data-ui'], slotRest['data-ui']]
     .flatMap((value) => typeof value === 'string' ? value.split(/\s+/).filter(Boolean) : []))].join(' ');
   return <WithSx styles={[structure, slotCss]} className={slotClassName}>

@@ -23,7 +23,7 @@ export interface PersonAvatarSlots {
 export interface PersonAvatarRootProps extends Omit<ComponentPropsWithRef<'svg'>,
   'children' | 'dangerouslySetInnerHTML' | 'viewBox' | 'preserveAspectRatio' | 'width' | 'height' |
   'role' | 'tabIndex' | 'focusable'> {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
   [attribute: `data-${string}`]: string | number | boolean | undefined;
 }
 
@@ -83,7 +83,7 @@ export function PersonAvatar({
   size = 'md', fullKit = false, crop = 'none', alt,
   component, slots, slotProps, className, style, sx, ...rest
 }: PersonAvatarProps) {
-  const { css: slotCss, className: slotClass, style: slotStyle, ref: slotRef, ...slotRest } = slotProps?.root ?? {};
+  const { sx: slotCss, className: slotClass, style: slotStyle, ref: slotRef, ...slotRest } = slotProps?.root ?? {};
   const merged = { ...rest, ...slotRest };
   const rootRef = useMergeRefs([ref, slotRef]);
   const Root = slots?.root ?? component ?? 'svg';

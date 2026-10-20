@@ -11,7 +11,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
@@ -53,8 +53,8 @@ export interface DockMessages {
   empty: string;
 }
 
-type DivSlot = ComponentPropsWithRef<'div'> & { css?: Interpolation<Theme> };
-type ButtonSlot = Omit<ComponentPropsWithRef<'button'>, 'children'> & { css?: Interpolation<Theme> };
+type DivSlot = ComponentPropsWithRef<'div'> & { sx?: Interpolation<Theme> };
+type ButtonSlot = Omit<ComponentPropsWithRef<'button'>, 'children'> & { sx?: Interpolation<Theme> };
 export interface DockSlotProps {
   /** Container holding the top-level tool buttons. */
   toolbar?: DivSlot;
@@ -67,7 +67,7 @@ export interface DockSlotProps {
   /** Floating label shared by focused and hovered tools. */
   floatingLabel?: DivSlot;
   /** Count badge beside a tool button. */
-  badge?: ComponentPropsWithRef<'span'> & { css?: Interpolation<Theme> };
+  badge?: ComponentPropsWithRef<'span'> & { sx?: Interpolation<Theme> };
   /** Live region announcing accepted reorder operations. */
   status?: DivSlot;
 }
@@ -84,7 +84,7 @@ export interface DockSlots {
   /** Replaces the shared floating label. */
   floatingLabel?: ComponentType<DivSlot>;
   /** Replaces each tool's count badge. */
-  badge?: ComponentType<ComponentPropsWithRef<'span'> & { css?: Interpolation<Theme> }>;
+  badge?: ComponentType<ComponentPropsWithRef<'span'> & { sx?: Interpolation<Theme> }>;
   /** Replaces the reorder announcement live region. */
   status?: ComponentType<DivSlot>;
 }
@@ -282,7 +282,7 @@ function DockControl({
   const scale = useSpring(press, PRESS_SPRING);
   const suppressClick = useRef(false);
   const ref = useMergeRefs([register, slot.ref]);
-  const { css: slotCss, onClick, onKeyDown, onFocus, onBlur, onPointerEnter, onPointerLeave,
+  const { sx: slotCss, onClick, onKeyDown, onFocus, onBlur, onPointerEnter, onPointerLeave,
     onPointerDown, onPointerMove, onPointerUp, onPointerCancel, ...native } = slot;
   const icon = isGroup(item) && isRenderable(item.icon) ? item.icon : tool?.icon;
   return (
@@ -344,7 +344,7 @@ function DockControl({
           {labels === 'always' && <span>{tool?.label ?? item.label}</span>}
         </motion.span>
       </Control>
-      {count !== null && <Badge {...badgeSlot} css={[badgeStyle, badgeSlot?.css]} aria-hidden data-ui="dock-badge">
+      {count !== null && <Badge {...withoutSx(badgeSlot)} css={[badgeStyle, badgeSlot?.sx]} aria-hidden data-ui="dock-badge">
           <AnimatePresence mode="wait" initial={false}>
             <motion.span key={count} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               transition={{ duration: reduced ? 0 : FAST_FADE_SECONDS }}>{count}</motion.span>
@@ -595,7 +595,7 @@ function DockWidget({
           }
         }}
         data-state={shown ? 'open' : 'closed'} data-selected={ordered.some(selected) ? 'true' : 'false'}>
-        <Toolbar {...toolbarSlot} ref={toolbarRef} css={[toolbarStyle, toolbarSlot?.css]} role="toolbar"
+        <Toolbar {...withoutSx(toolbarSlot)} ref={toolbarRef} css={[toolbarStyle, toolbarSlot?.sx]} role="toolbar"
           aria-hidden={undefined}
           aria-label={toolbarSlot?.['aria-label'] ?? native['aria-label'] ?? label}
           aria-labelledby={uniqueIds(native['aria-labelledby'], toolbarSlot?.['aria-labelledby'])}>
@@ -634,7 +634,7 @@ function DockWidget({
           </Menu.Content>
         </Menu>}
         {renderedGroup && <>
-            <Tray {...getFloatingProps(traySlot ?? {})} ref={trayRef} css={[trayStyle, traySlot?.css]}
+            <Tray {...getFloatingProps(withoutSx(traySlot) ?? {})} ref={trayRef} css={[trayStyle, traySlot?.sx]}
               id={trayId} role="group" dir={direction} hidden={!shown} inert={!shown} aria-hidden={shown ? undefined : true}
               aria-label={traySlot?.['aria-label'] ?? messages.trayLabel(renderedGroup.label)}
               aria-labelledby={joinIds(traySlot?.['aria-labelledby'], trigger?.id)}
@@ -660,7 +660,7 @@ function DockWidget({
             </Tray>
         </>}
         {floatingLabel !== null && labels === 'focus' && <OverlayPortal>
-          <FloatingLabel {...labelSlot} ref={labelRef} css={[tooltipContentStyle, labelStyle, labelSlot?.css]}
+          <FloatingLabel {...withoutSx(labelSlot)} ref={labelRef} css={[tooltipContentStyle, labelStyle, labelSlot?.sx]}
             aria-hidden dir={direction} data-ui="dock-floating-label" data-glide={labelReady ? 'true' : 'false'}
             style={{ ...labelSlot?.style, ...labelFloating.floatingStyles,
               visibility: labelFloating.isPositioned ? labelSlot?.style?.visibility : 'hidden' }}
@@ -669,7 +669,7 @@ function DockWidget({
             {floatingLabel}
           </FloatingLabel>
         </OverlayPortal>}
-        <Status {...statusSlot} css={[visuallyHiddenStyle, statusSlot?.css]} role="status" aria-live="polite" aria-atomic="true"
+        <Status {...withoutSx(statusSlot)} css={[visuallyHiddenStyle, statusSlot?.sx]} role="status" aria-live="polite" aria-atomic="true"
           aria-hidden={undefined} data-ui="dock-status">{status}</Status>
       </div>}
     </WithSx>

@@ -810,8 +810,8 @@ export const ConsumerStylePrecedence: Story = {
   className="consumer-empty"
   sx={css({ paddingBlock: vars.space[3] })}
   slotProps={{
-    title: { className: 'slot-title', css: css({ textTransform: 'uppercase' }) },
-    description: { className: 'slot-description', css: css({ fontStyle: 'italic' }) },
+    title: { className: 'slot-title', sx: css({ textTransform: 'uppercase' }) },
+    description: { className: 'slot-description', sx: css({ fontStyle: 'italic' }) },
   }}
 />`,
       },
@@ -826,8 +826,8 @@ export const ConsumerStylePrecedence: Story = {
         className="consumer-empty"
         sx={consumerRootStyle}
         slotProps={{
-          title: { className: 'slot-title', css: slotTitleStyle },
-          description: { className: 'slot-description', css: slotDescriptionStyle },
+          title: { className: 'slot-title', sx: slotTitleStyle },
+          description: { className: 'slot-description', sx: slotDescriptionStyle },
         }}
       />
       <StyledEmptyState {...args} title="Sx styles" sx={sxRootStyle} />

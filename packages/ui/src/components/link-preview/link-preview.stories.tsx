@@ -43,7 +43,7 @@ const meta = {
 - The title is a native link. Tab focuses it and Enter follows its destination. The rest of the card is not a link. There is no composite APG keyboard pattern.
 
 ### Styling
-- The root accepts native div props, \`ref\`, \`className\`, \`css\`, \`sx\` and \`dir\`. Use \`slotProps\` for the title link, image and body.
+- The root accepts native div props, \`ref\`, \`className\`, \`sx\` and \`dir\`. Use \`slotProps\` with \`sx\` for the title link, image and body.
 - Reduced motion stops decorative animation. Set \`motion="none"\` to disable it explicitly.
 - Use LinkUnfurl when you need a message composer with URL detection, preview requests, expansion and removal.`,
     },
@@ -227,7 +227,7 @@ function ReplacementTitle(props: ComponentPropsWithRef<'a'>) {
 // This story tests sx and the documented slot css API.
 export const Customization: Story = {
   render: (args) => <LinkPreview {...args} slots={{ title: ReplacementTitle }} />,
-  args: { ref: fn(), sx: { borderStyle: 'dashed' }, slotProps: { title: { css: { textDecoration: 'underline' }, target: '_blank', rel: 'noreferrer' }, body: { css: { padding: vars.space[4] } }, image: { onLoad: fn() } } },
+  args: { ref: fn(), sx: { borderStyle: 'dashed' }, slotProps: { title: { sx: { textDecoration: 'underline' }, target: '_blank', rel: 'noreferrer' }, body: { sx: { padding: vars.space[4] } }, image: { onLoad: fn() } } },
   play: async ({ canvas, canvasElement, args }) => {
     const root = canvasElement.querySelector('[data-ui="link-preview"]')!;
     await expect(args.ref).toHaveBeenCalledWith(root);

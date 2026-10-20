@@ -13,12 +13,12 @@ import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 
 export type TextRevealVariant = 'standard' | 'soft';
 export type TextRevealPartProps = ComponentPropsWithRef<'span'> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
   'data-ui'?: string;
 };
 export interface TextRevealSlots {
@@ -73,7 +73,7 @@ export function TextReveal({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const {
-    css: rootCss,
+    sx: rootCss,
     className: slotClassName,
     style: slotStyle,
     ref: slotRef,
@@ -147,7 +147,7 @@ export function TextReveal({
                       const wordDelay = `${delay}ms + ${wordIndex} * min(calc(${vars.motion.duration.fast} / 4), calc(${vars.motion.duration.slow} / ${Math.max(count - 1, 1)}))`;
                       return (
                         <Word
-                          {...slotProps?.word}
+                          {...withoutSx(slotProps?.word)}
                           key={segmentIndex}
                           data-ui={[
                             ...new Set([
@@ -155,7 +155,7 @@ export function TextReveal({
                               ...(slotProps?.word?.['data-ui']?.split(/\s+/).filter(Boolean) ?? []),
                             ]),
                           ].join(' ')}
-                          css={[wordStyle, slotProps?.word?.css]}
+                          css={[wordStyle, slotProps?.word?.sx]}
                           style={
                             {
                               ...slotProps?.word?.style,

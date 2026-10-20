@@ -42,7 +42,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { numberFormatter } from '../../utils/intl';
 import { moveRovingFocus, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -67,7 +67,7 @@ export interface CarouselLabels {
   slideCount: (index: number, count: number) => string;
 }
 
-type StyleSlot = { css?: Interpolation<Theme> };
+type StyleSlot = { sx?: Interpolation<Theme> };
 type PartSlot = Omit<ComponentPropsWithRef<'div'>, 'children' | 'role' | 'id' | 'tabIndex' | 'hidden' | 'inert'> &
   StyleSlot;
 type SlideSlot = Omit<PartSlot, 'ref' | 'aria-hidden'>;
@@ -809,8 +809,8 @@ export function Carousel({
             <RotationButton
               size="sm"
               variant="outline"
-              {...rotationSlot}
-              css={[rotationButtonStyle, rotationSlot?.css]}
+              {...withoutSx(rotationSlot)}
+              css={[rotationButtonStyle, rotationSlot?.sx]}
               data-ui="carousel-rotation"
               aria-disabled={disabled || reducedMotion || undefined}
               onPointerDown={chain(rotationSlot?.onPointerDown, () => {
@@ -823,12 +823,12 @@ export function Carousel({
           )}
 
           {count === 0 ? (
-            <Empty {...emptySlot} data-ui="carousel-empty" css={[emptyStyle, emptySlot?.css]}>
+            <Empty {...withoutSx(emptySlot)} data-ui="carousel-empty" css={[emptyStyle, emptySlot?.sx]}>
               {labels.empty}
             </Empty>
           ) : (
             <Viewport
-              {...viewportSlot}
+              {...withoutSx(viewportSlot)}
               ref={viewportRefs}
               role="group"
               aria-label={viewportSlot?.['aria-label'] ?? (viewportSlot?.['aria-labelledby'] ? undefined : labels.slides)}
@@ -836,7 +836,7 @@ export function Carousel({
               data-ui="carousel-viewport"
               data-disabled={disabled || undefined}
               data-dragging={dragging || undefined}
-              css={[viewportStyle, viewportSlot?.css]}
+              css={[viewportStyle, viewportSlot?.sx]}
               onKeyDown={chain(viewportSlot?.onKeyDown, handleViewportKeyDown)}
               onWheel={chain(viewportSlot?.onWheel, resetGesture)}
               onPointerDown={chain(viewportSlot?.onPointerDown, handlePointerDown)}
@@ -847,12 +847,12 @@ export function Carousel({
               onScroll={chain(viewportSlot?.onScroll, supportsScrollEnd ? noop : scrollFallback)}
               onScrollEnd={chain(viewportSlot?.onScrollEnd, settle)}
             >
-              <Track {...trackSlot} ref={trackRef} data-ui="carousel-track" css={[trackStyle, trackSlot?.css]}>
+              <Track {...withoutSx(trackSlot)} ref={trackRef} data-ui="carousel-track" css={[trackStyle, trackSlot?.sx]}>
                 {slides.map((slide, index) => {
                   const isActive = index === active;
                   return (
                     <Slide
-                      {...slideSlot}
+                      {...withoutSx(slideSlot)}
                       key={slideKey(slide, index)}
                       role={tabbed ? 'tabpanel' : undefined}
                       id={panelId(index)}
@@ -861,7 +861,7 @@ export function Carousel({
                       inert={!isActive}
                       data-ui="carousel-slide"
                       data-state={isActive ? 'active' : 'inactive'}
-                      css={[slideStyle, slideSlot?.css]}
+                      css={[slideStyle, slideSlot?.sx]}
                     >
                       {slide}
                     </Slide>
@@ -872,9 +872,9 @@ export function Carousel({
           )}
 
           {tabbed && (
-            <Controls {...controlsSlot} data-ui="carousel-controls" css={[controlsStyle, controlsSlot?.css]}>
+            <Controls {...withoutSx(controlsSlot)} data-ui="carousel-controls" css={[controlsStyle, controlsSlot?.sx]}>
               <TabList
-                {...tabListSlot}
+                {...withoutSx(tabListSlot)}
                 ref={tabListRefs}
                 role="tablist"
                 aria-label={
@@ -882,12 +882,12 @@ export function Carousel({
                 }
                 aria-orientation="horizontal"
                 data-ui="carousel-tablist"
-                css={[tabListStyle, tabListSlot?.css]}
+                css={[tabListStyle, tabListSlot?.sx]}
                 onKeyDown={chain(tabListSlot?.onKeyDown, handleTabListKeyDown)}
               >
                 {slides.map((slide, index) => (
                   <Indicator
-                    {...indicatorSlot}
+                    {...withoutSx(indicatorSlot)}
                     key={slideKey(slide, index)}
                     type="button"
                     role="tab"
@@ -898,7 +898,7 @@ export function Carousel({
                     aria-disabled={disabled || undefined}
                     tabIndex={index === tabStop ? 0 : -1}
                     data-ui="carousel-indicator"
-                    css={[indicatorStyle, indicatorSlot?.css]}
+                    css={[indicatorStyle, indicatorSlot?.sx]}
                     onPointerDown={chain(indicatorSlot?.onPointerDown, () => {
                       focusRequestRef.current = null;
                     })}
@@ -912,8 +912,8 @@ export function Carousel({
               <PreviousButton
                 size="sm"
                 variant="outline"
-                {...previousSlot}
-                css={[stepButtonStyle, previousSlot?.css]}
+                {...withoutSx(previousSlot)}
+                css={[stepButtonStyle, previousSlot?.sx]}
                 data-ui="carousel-previous"
                 aria-label={previousSlot?.['aria-label'] ?? labels.previous}
                 aria-disabled={!navigable || active === 0 || undefined}
@@ -924,8 +924,8 @@ export function Carousel({
               <NextButton
                 size="sm"
                 variant="outline"
-                {...nextSlot}
-                css={[stepButtonStyle, nextSlot?.css]}
+                {...withoutSx(nextSlot)}
+                css={[stepButtonStyle, nextSlot?.sx]}
                 data-ui="carousel-next"
                 aria-label={nextSlot?.['aria-label'] ?? labels.next}
                 aria-disabled={!navigable || active === count - 1 || undefined}
@@ -938,12 +938,12 @@ export function Carousel({
 
           {tabbed && (
             <Status
-              {...statusSlot}
+              {...withoutSx(statusSlot)}
               role="status"
               aria-live={rotating ? 'off' : 'polite'}
               aria-atomic="true"
               data-ui="carousel-status"
-              css={[statusStyle, statusSlot?.css]}
+              css={[statusStyle, statusSlot?.sx]}
             >
               {getSlideLabel(active, count)}
             </Status>

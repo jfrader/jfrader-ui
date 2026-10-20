@@ -47,12 +47,12 @@ const FixtureButton = styled.button({
 });
 // These overrides exercise the documented slot `css` API.
 const overrides = {
-  control: { css: css({ borderRadius: vars.radius.sm }) },
-  indicator: { css: css({ inlineSize: vars.space[6], blockSize: vars.space[6] }) },
-  icon: { css: css({ fontSize: vars.textSize['2xl'] }) },
-  label: { css: css({ fontWeight: vars.fontWeight.semibold }) },
-  description: { css: css({ fontSize: vars.textSize.xs }) },
-  meta: { css: css({ fontWeight: vars.fontWeight.semibold }) },
+  control: { sx: css({ borderRadius: vars.radius.sm }) },
+  indicator: { sx: css({ inlineSize: vars.space[6], blockSize: vars.space[6] }) },
+  icon: { sx: css({ fontSize: vars.textSize['2xl'] }) },
+  label: { sx: css({ fontWeight: vars.fontWeight.semibold }) },
+  description: { sx: css({ fontSize: vars.textSize.xs }) },
+  meta: { sx: css({ fontWeight: vars.fontWeight.semibold }) },
 };
 function DeliveryIcon() {
   return (
@@ -189,7 +189,7 @@ function EasyRoot(props: ComponentPropsWithRef<'div'>) {
 export const EasyCustomization: EasyStory = {
   ...Easy,
   parameters: { docs: { source: { code: `<RadioCards label="Shipping speed" options={shipping} defaultValue="standard"
-  slotProps={{ label: { title: 'Shipping label' }, item: { slotProps: { control: { css: { borderRadius: 0 } } } } }}
+  slotProps={{ label: { title: 'Shipping label' }, item: { slotProps: { control: { sx: { borderRadius: 0 } } } } }}
 />` } } },
   args: {
     ...Easy.args,
@@ -197,7 +197,7 @@ export const EasyCustomization: EasyStory = {
     slotProps: {
       root: { title: 'Shipping choices' },
       label: { title: 'Shipping label' },
-      item: { slotProps: { control: { css: { borderRadius: 0 } } } },
+      item: { slotProps: { control: { sx: { borderRadius: 0 } } } },
     },
   },
   render: (args) => <RadioCards {...args} component={EasyRoot} />,

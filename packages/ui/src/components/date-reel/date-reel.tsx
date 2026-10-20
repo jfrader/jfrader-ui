@@ -26,7 +26,7 @@ import {
 } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS } from '../../styling/media';
 
 /** Widest the reel card grows before it centers in its container. */
@@ -104,7 +104,7 @@ export const DEFAULT_DATE_REEL_LABELS: DateReelLabels = {
 
 type SlotProps<Tag extends keyof HTMLElementTagNameMap> =
   ComponentPropsWithRef<Tag> & {
-    css?: Interpolation<Theme>;
+    sx?: Interpolation<Theme>;
   };
 
 export interface DateReelSlots {
@@ -1351,7 +1351,7 @@ export function DateReel({
     <MotionConfig reducedMotion="user">
       <WithSx
         className={mergedClassName}
-        styles={[rootStyle, slotProps?.root?.css]}
+        styles={[rootStyle, slotProps?.root?.sx]}
         sx={sx}
       >
         {(withSxClass) => (
@@ -1370,30 +1370,30 @@ export function DateReel({
           >
             {hasTitle && (
               <TitleSlot
-                {...slotProps?.title}
+                {...withoutSx(slotProps?.title)}
                 id={titleId}
                 role="heading"
                 aria-level={3}
                 data-ui="date-reel-title"
-                css={[titleStyle, slotProps?.title?.css]}
+                css={[titleStyle, slotProps?.title?.sx]}
               >
                 {title}
               </TitleSlot>
             )}
 
             <SummarySlot
-              {...slotProps?.summary}
+              {...withoutSx(slotProps?.summary)}
               id={summaryId}
               data-ui="date-reel-summary"
-              css={[summaryStyle, slotProps?.summary?.css]}
+              css={[summaryStyle, slotProps?.summary?.sx]}
             >
               {formattedSummary}
             </SummarySlot>
 
             <ReelsSlot
-              {...slotProps?.reels}
+              {...withoutSx(slotProps?.reels)}
               data-ui="date-reel-reels"
-              css={[reelsContainerStyle, slotProps?.reels?.css]}
+              css={[reelsContainerStyle, slotProps?.reels?.sx]}
             >
               {reelParts.map((partType, partIndex) => {
                 const { items, selectedIndex, validMin, validMax } =
@@ -1438,11 +1438,11 @@ export function DateReel({
 
             {presets && presets.length > 0 && (
               <PresetsSlot
-                {...slotProps?.presets}
+                {...withoutSx(slotProps?.presets)}
                 role="group"
                 aria-label={labels.presets}
                 data-ui="date-reel-presets"
-                css={[presetsStyle, slotProps?.presets?.css]}
+                css={[presetsStyle, slotProps?.presets?.sx]}
               >
                 {presets.map((preset) => {
                   const isSelected = safeCurrentValue === preset.value;
@@ -1457,12 +1457,12 @@ export function DateReel({
                   return (
                     <PresetSlot
                       key={preset.id}
-                      {...slotProps?.preset}
+                      {...withoutSx(slotProps?.preset)}
                       type="button"
                       aria-pressed={isSelected}
                       aria-disabled={isPresetDisabled ? 'true' : undefined}
                       data-ui="date-reel-preset"
-                      css={[presetStyle, slotProps?.preset?.css]}
+                      css={[presetStyle, slotProps?.preset?.sx]}
                       onClick={(e) => {
                         slotProps?.preset?.onClick?.(e);
                         if (e.defaultPrevented) return;
@@ -1478,12 +1478,12 @@ export function DateReel({
 
             {onConfirm && (
               <ConfirmSlot
-                {...slotProps?.confirm}
+                {...withoutSx(slotProps?.confirm)}
                 type="button"
                 aria-busy={isPending ? 'true' : undefined}
                 aria-disabled={disabled || isPending ? 'true' : undefined}
                 data-ui="date-reel-confirm"
-                css={[confirmStyle, slotProps?.confirm?.css]}
+                css={[confirmStyle, slotProps?.confirm?.sx]}
                 onClick={(e) => {
                   slotProps?.confirm?.onClick?.(e);
                   if (e.defaultPrevented) return;
@@ -1495,23 +1495,23 @@ export function DateReel({
             )}
 
             <StatusSlot
-              {...slotProps?.status}
+              {...withoutSx(slotProps?.status)}
               role="status"
               aria-live="polite"
               aria-atomic="true"
               data-ui="date-reel-status"
-              css={[statusStyle, slotProps?.status?.css]}
+              css={[statusStyle, slotProps?.status?.sx]}
             >
               {confirmStatus === 'success' ? labels.confirmSuccess : ''}
             </StatusSlot>
 
             {(isInvalidConfig || confirmErrorMessage) && (
               <ErrorSlot
-                {...slotProps?.error}
+                {...withoutSx(slotProps?.error)}
                 id={errorId}
                 role="alert"
                 data-ui="date-reel-error"
-                css={[errorStyle, slotProps?.error?.css]}
+                css={[errorStyle, slotProps?.error?.sx]}
               >
                 {isInvalidConfig
                   ? labels.configError(configCheck.reason ?? '')
@@ -1984,7 +1984,7 @@ function ReelColumn({
 
   return (
     <ReelSlot
-      {...slotPropsReel}
+      {...withoutSx(slotPropsReel)}
       ref={mergedReelRef}
       role="spinbutton"
       tabIndex={0}
@@ -2001,7 +2001,7 @@ function ReelColumn({
       aria-invalid={isInvalidConfig ? 'true' : undefined}
       data-ui="date-reel-reel"
       data-part={partType}
-      css={[reelStyle, slotPropsReel?.css]}
+      css={[reelStyle, slotPropsReel?.sx]}
       onKeyDown={(e) => {
         slotPropsReel?.onKeyDown?.(e);
         if (e.defaultPrevented) return;
@@ -2041,10 +2041,10 @@ function ReelColumn({
       onBlur={slotPropsReel?.onBlur}
     >
       <LensSlot
-        {...slotPropsLens}
+        {...withoutSx(slotPropsLens)}
         aria-hidden="true"
         data-ui="date-reel-lens"
-        css={[lensStyle(tone), slotPropsLens?.css]}
+        css={[lensStyle(tone), slotPropsLens?.sx]}
       />
 
       <div aria-hidden="true" css={rowsWrapperStyle}>

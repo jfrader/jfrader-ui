@@ -368,7 +368,7 @@ export const CancelledReset: Story = {
   },
 };
 export const RefAndStyles: Story = {
-  args: { dir: 'rtl', className: 'consumer-root', slotProps: { root: { css: { paddingInline: vars.space[1] } } }, sx: { paddingInline: vars.space[3] } },
+  args: { dir: 'rtl', className: 'consumer-root', slotProps: { root: { sx: { paddingInline: vars.space[1] } } }, sx: { paddingInline: vars.space[3] } },
   render: (args) => <RefField {...args} />,
   play: async ({ canvas, canvasElement, userEvent }) => {
     const input = canvas.getByRole('searchbox');
@@ -445,7 +445,7 @@ export const SlotCustomization: Story = {
         className: 'slot-root',
         title: 'slot title',
         style: fieldRootStyles.slot,
-        css: { borderRadius: '8px' },
+        sx: { borderRadius: '8px' },
       },
       label: { ref: fn(), title: 'generated part' },
     },
@@ -454,7 +454,7 @@ export const SlotCustomization: Story = {
   parameters: {
     docs: {
       source: {
-        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<SearchField label=\"Name\"\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { css: { borderRadius: '8px' } }, label: { title: 'Name' } }}\n  sx={{ borderRadius: '11px' }}\n/>",
+        code: "function MyRoot(props) { return <div {...props} />; }\nfunction MyLabel(props) { return <label {...props} />; }\n\n<SearchField label=\"Name\"\n  component={MyRoot}\n  slots={{ label: MyLabel }}\n  slotProps={{ root: { sx: { borderRadius: '8px' } }, label: { title: 'Name' } }}\n  sx={{ borderRadius: '11px' }}\n/>",
       },
     },
   },

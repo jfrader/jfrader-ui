@@ -1122,7 +1122,7 @@ export const ZeroCells: Story = {
 const StyledTable = styled(Table)({ borderRadius: vars.radius.sm });
 export const ConsumerStylePrecedence: Story = {
   args: {
-    slotProps: { cell: { css: { paddingInlineStart: vars.space[6] } }, sortButton: { css: { borderRadius: vars.radius.sm } } },
+    slotProps: { cell: { sx: { paddingInlineStart: vars.space[6] } }, sortButton: { sx: { borderRadius: vars.radius.sm } } },
     sx: { borderRadius: vars.radius.lg },
   },
   render: (args) => <StyledTable {...args} />,

@@ -21,7 +21,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import {
   findByValue,
@@ -34,7 +34,7 @@ import { useControlledState } from '../../utils/use-controlled-state';
 export type SegmentedControlSize = 'sm' | 'md' | 'lg';
 export type SegmentedControlVariant = 'solid' | 'soft';
 type SlotProps<Element extends 'div' | 'span'> = ComponentPropsWithRef<Element> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 
 export interface SegmentedControlCompoundProps
@@ -77,7 +77,7 @@ export interface SegmentedControlSlots {
 export interface SegmentedControlSlotProps extends NonNullable<SegmentedControlCompoundProps['slotProps']> {
   /** Outer container wrapping the segmented control. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
-    css?: Interpolation<Theme>;
+
     [attribute: `data-${string}`]: unknown;
   };
   /** Button representing an individual segment option. Default: `SegmentedControl.Item`. */
@@ -223,7 +223,7 @@ function SelectionSurface({
   const mergedRef = useMergeRefs([ref, slotProps?.ref]);
   return (
     <Selection
-      {...slotProps}
+      {...withoutSx(slotProps)}
       {...rest}
       ref={mergedRef}
       aria-hidden="true"
@@ -241,7 +241,7 @@ function SelectionSurface({
         blockSize: 'auto',
         pointerEvents: 'none',
       }}
-      css={[selectionVariants[variant], selectionStyle, slotProps?.css]}
+      css={[selectionVariants[variant], selectionStyle, slotProps?.sx]}
     />
   );
 }
@@ -249,7 +249,7 @@ const MotionSelection = motion.create(SelectionSurface);
 
 function SegmentedControlRoot({
   rootElement: Root = 'div',
-  rootCss,
+  slotStyles,
   ref,
   value: valueProp,
   defaultValue,
@@ -266,7 +266,7 @@ function SegmentedControlRoot({
   children,
   onKeyDown,
   ...rest
-}: SegmentedControlCompoundProps & { rootElement?: 'div' | SegmentedControlSlots['root']; rootCss?: Interpolation<Theme> }) {
+}: SegmentedControlCompoundProps & { rootElement?: 'div' | SegmentedControlSlots['root']; slotStyles?: Interpolation<Theme> }) {
   const Track = slots?.track ?? 'div';
   const [value, requestChange] = useControlledState(valueProp, defaultValue, onValueChange);
   const [focused, setFocused] = useState<string | null>(null);
@@ -399,7 +399,7 @@ function SegmentedControlRoot({
     <Context.Provider value={context}>
       <MotionConfig reducedMotion="user">
         <LayoutGroup id={instanceId}>
-          <WithSx className={className} styles={[rootStyle, rootCss]} sx={sx}>
+          <WithSx className={className} styles={[rootStyle, slotStyles]} sx={sx}>
             {(className) => (
               <Root
                 {...rest}
@@ -412,14 +412,14 @@ function SegmentedControlRoot({
                 className={className}
               >
                 <Track
-                  {...slotProps?.track}
+                  {...withoutSx(slotProps?.track)}
                   ref={mergedTrackRef}
                   aria-hidden={undefined}
                   hidden={false}
                   role={undefined}
                   tabIndex={undefined}
                   data-ui="segmented-control-track"
-                  css={[trackStyle, slotProps?.track?.css]}
+                  css={[trackStyle, slotProps?.track?.sx]}
                 >
                   {children}
                 </Track>
@@ -516,19 +516,19 @@ SegmentedControlItem.displayName = 'SegmentedControl.Item';
 function SegmentedControlComponent(props: SegmentedControlProps) {
   if (props.options === undefined) return <SegmentedControlRoot {...props} />;
   const { options, component, slots, slotProps, ...rest } = props;
-  const { css: rootCss, className, style, sx, ...rootProps } = slotProps?.root ?? {};
+  const { className, style, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
   const Item = slots?.item ?? SegmentedControlItem;
   return (
     <SegmentedControlRoot
       {...rest}
       {...rootProps}
       rootElement={slots?.root ?? component}
-      rootCss={rootCss}
+      slotStyles={slotSx}
       slotProps={slotProps}
       slots={slots}
       className={[className, rest.className].filter(Boolean).join(' ') || undefined}
       style={{ ...rest.style, ...style }}
-      sx={[sx, rest.sx]}
+      sx={rest.sx}
     >
       {options.map(({ label, ...option }) => (
         <Item {...slotProps?.item} {...option} key={option.value}>

@@ -118,13 +118,13 @@ export interface TabsSlots {
 
 export interface TabsSlotProps {
   /** Outer tabs container element wrapping the tab list and panels. */
-  root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & { css?: Interpolation<Theme>; 'data-ui'?: string };
+  root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & { sx?: Interpolation<Theme>; 'data-ui'?: string };
   /** Tab list container element holding tab buttons. */
-  list?: Omit<TabsListProps, 'children' | 'aria-label'> & { css?: Interpolation<Theme> };
+  list?: Omit<TabsListProps, 'children' | 'aria-label'>;
   /** Tab button element selecting a panel. */
-  tab?: Omit<TabsTabProps, 'children' | 'value' | 'disabled'> & { css?: Interpolation<Theme> };
+  tab?: Omit<TabsTabProps, 'children' | 'value' | 'disabled'>;
   /** Tab panel container element displaying the tab content. */
-  panel?: Omit<TabsPanelProps, 'children' | 'value'> & { css?: Interpolation<Theme> };
+  panel?: Omit<TabsPanelProps, 'children' | 'value'>;
 }
 
 export type TabsProps = TabsCompoundProps | TabsEasyProps;
@@ -411,7 +411,7 @@ function TabsRoot({
       labels, compact, setCompact, locale, draggableIndicator, collapseOnScroll, scrollRef,
     ],
   );
-  const { css: rootCss, className: rootClassName, style: rootStyleProp, ref: rootRef, 'data-ui': rootDataUi, ...rootProps } = slotProps?.root ?? {};
+  const { sx: rootCss, className: rootClassName, style: rootStyleProp, ref: rootRef, 'data-ui': rootDataUi, ...rootProps } = slotProps?.root ?? {};
   const rootMarker = [...new Set(['tabs-root', ...(rootDataUi?.split(/\s+/).filter(Boolean) ?? [])])].join(' ');
   const mergedRef = useMergeRefs([ref, rootRef]);
   const RootPart = slots?.root ?? component ?? 'div';

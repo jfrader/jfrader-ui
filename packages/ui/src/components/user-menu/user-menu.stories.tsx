@@ -2548,7 +2548,7 @@ export const SxAndSlots: Story = {
         variant="menu"
         className={`consumer-content ${register(consumerCss)}`}
         sx={consumerSx}
-        slotProps={{ menu: { className: 'consumer-menu', css: slotOverride } }}
+        slotProps={{ menu: { className: 'consumer-menu', sx: slotOverride } }}
       >
         <UserMenu.Identity className={`consumer-identity ${register(consumerCss)}`} sx={consumerSx} />
         <UserMenu.Item className={`consumer-item ${register(consumerCss)}`} sx={consumerSx}>
@@ -2559,7 +2559,7 @@ export const SxAndSlots: Story = {
           className={`consumer-group ${register(consumerCss)}`}
           sx={consumerSx}
           labels={THEME_LABELS}
-          slotProps={{ option: { className: 'consumer-option', css: slotOverride } }}
+          slotProps={{ option: { className: 'consumer-option', sx: slotOverride } }}
         />
         <UserMenu.SignOut
           className={`consumer-sign-out ${register(consumerCss)}`}

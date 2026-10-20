@@ -157,7 +157,7 @@ const meta = {
 - Use \`component\` or \`slots.root\` to replace the root. \`slots.root\` wins when both are supplied.
 - Declare replacements outside render, forward all props and ref to one div, and apply your material before the supplied \`className\`.
 - \`slotProps.root\` overrides root props. ClassName and style merge.
-- Style order is material → slot css → consumer sx.`,
+- Style order is material → slot sx → consumer sx.`,
     },
   },
 } satisfies Meta<typeof GameCard>;
@@ -370,7 +370,7 @@ export const RootCustomization: Story = {
   args: { ref: fn(), component: CardMaterial, slots: { root: CardMaterial }, 'data-ui': 'consumer game-card consumer',
     title: 'Host title', className: 'host-class', style: { marginInlineStart: 1, marginBlockStart: 2 },
     slotProps: { root: { 'data-ui': 'slot consumer', title: 'Slot title', className: 'slot-class',
-      style: { marginInlineStart: 3 }, css: css({ opacity: 0.8 }) } },
+      style: { marginInlineStart: 3 }, sx: css({ opacity: 0.8 }) } },
     sx: { opacity: 0.6 } },
   render: (args) => <ClassNames>{({ css: register }) => <GameCard {...args} className={`${args.className} ${register(strayRootStyle)}`} />}</ClassNames>,
   play: async ({ args, canvas }) => {

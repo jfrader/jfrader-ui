@@ -34,7 +34,7 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css } from '../../styling/css';
 import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
@@ -62,7 +62,6 @@ export type NavigationItemRecord = Readonly<{
   id?: string;
   className?: string;
   style?: CSSProperties;
-  css?: Interpolation<Theme>;
   sx?: SxProps['sx'];
   'aria-current'?: 'page' | 'step' | 'location' | 'date' | 'time' | 'true' | 'false';
   'aria-label'?: string;
@@ -78,7 +77,6 @@ export type NavigationGroupRecord = Readonly<{
   items: readonly NavigationItemRecord[];
   className?: string;
   style?: CSSProperties;
-  css?: Interpolation<Theme>;
   sx?: SxProps['sx'];
 }>;
 
@@ -95,13 +93,13 @@ export interface NavigationSlotProps {
   /** Root landmark `<nav>` container element. */
   root?: Omit<ComponentPropsWithRef<'nav'>, 'children'> &
     SxProps & {
-      css?: Interpolation<Theme>;
+
       [attribute: `data-${string}`]: unknown;
     };
   /** Section container element grouping navigation items. */
-  group?: Partial<Omit<NavigationGroupProps, 'children' | 'label' | 'collapsible' | 'defaultOpen'>> & { css?: Interpolation<Theme> };
+  group?: Partial<Omit<NavigationGroupProps, 'children' | 'label' | 'collapsible' | 'defaultOpen'>>;
   /** Link or item element inside a navigation group. */
-  item?: Partial<Omit<NavigationItemProps, 'children' | 'href' | 'active' | 'disabled' | 'icon'>> & { css?: Interpolation<Theme> };
+  item?: Partial<Omit<NavigationItemProps, 'children' | 'href' | 'active' | 'disabled' | 'icon'>>;
 }
 
 export interface NavigationBaseProps extends Omit<ComponentPropsWithRef<'nav'>, 'children'>, SxProps {
@@ -370,7 +368,6 @@ function NavigationRoot({
   const {
     className: rootSlotClassName,
     style: rootSlotStyle,
-    css: rootSlotCss,
     sx: rootSlotSx,
     ref: rootSlotRef,
     'data-ui': rootSlotDataUi,
@@ -457,7 +454,7 @@ function NavigationRoot({
 
   return (
     <NavigationContext.Provider value={variant}>
-    <WithSx className={mergedClassName} styles={[rootStyle, variant === 'morph' && morphStyle, variant === 'morph' && translucentControlStyle, rootSlotCss, rootSlotSx]} sx={sx}>
+    <WithSx className={mergedClassName} styles={[rootStyle, variant === 'morph' && morphStyle, variant === 'morph' && translucentControlStyle, rootSlotSx]} sx={sx}>
       {(resolvedClassName) => (
         <Root
           {...rest}
@@ -477,7 +474,6 @@ function NavigationRoot({
               const groupKey = group.key ?? (typeof group.label === 'string' ? group.label : groupIndex);
               const {
                 className: groupSlotClassName,
-                css: groupSlotCss,
                 sx: groupSlotSx,
                 style: groupSlotStyle,
                 ...groupSlotRest
@@ -495,7 +491,7 @@ function NavigationRoot({
                   active={group.active ?? group.items.some((item) => item.active ?? (activeHref !== undefined && item.href === activeHref))}
                   className={mergedGroupClassName}
                   style={mergedGroupStyle}
-                  css={[groupSlotCss, groupSlotSx, group.css]}
+                  css={groupSlotSx}
                   sx={group.sx}
                 >
                   {group.items.map((item, itemIndex) => {
@@ -503,7 +499,6 @@ function NavigationRoot({
                     const isActive = item.active ?? (activeHref !== undefined && item.href !== undefined && item.href === activeHref);
                     const {
                       className: itemSlotClassName,
-                      css: itemSlotCss,
                       sx: itemSlotSx,
                       style: itemSlotStyle,
                       ...itemSlotRest
@@ -518,8 +513,8 @@ function NavigationRoot({
                       key: _k,
                       className: itemClassName,
                       style: itemStyleProp,
-                      css: itemCssProp,
-                      sx: itemSxProp,
+                      sx: itemCssProp,
+
                       ...itemRest
                     } = item;
                     const mergedItemClassName = [itemSlotClassName, itemClassName].filter(Boolean).join(' ') || undefined;
@@ -536,8 +531,8 @@ function NavigationRoot({
                         description={description}
                         className={mergedItemClassName}
                         style={mergedItemStyle}
-                        css={[itemSlotCss, itemSlotSx, itemCssProp]}
-                        sx={itemSxProp}
+                        css={itemSlotSx}
+                        sx={itemCssProp}
                       >
                         {itemLabel}
                       </Item>

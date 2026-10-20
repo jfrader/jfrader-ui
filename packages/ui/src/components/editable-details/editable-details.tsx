@@ -23,7 +23,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { disclosureCaret, disclosureCaretInlineSize } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 declare const process: { env: { NODE_ENV?: string } };
@@ -33,7 +33,7 @@ export interface EditableDetailsMessages {
 }
 export interface EditableDetailsPartProps {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 export interface EditableDetailsItemRecord {
@@ -91,7 +91,7 @@ export interface EditableDetailsSlotProps {
   /** Root container element around the sections. */
   root?: ComponentPropsWithRef<'div'> &
     SxProps & {
-      css?: Interpolation<Theme>;
+
       [attribute: `data-${string}`]: unknown;
     };
   /** Collapsible section container. */
@@ -351,7 +351,7 @@ function EditableDetailsRoot(props: EditableDetailsProps) {
   const RootPart = slots?.root ?? component ?? 'div';
   const rootSlot = slotProps?.root;
   const {
-    css: slotCss,
+
     className: slotClassName,
     style: slotStyle,
     ref: slotRef,
@@ -437,7 +437,7 @@ function EditableDetailsRoot(props: EditableDetailsProps) {
 
   return (
     <MessagesContext.Provider value={text}>
-      <WithSx className={mergedClassName} styles={[rootStyle, slotCss, slotSx]} sx={sx}>
+      <WithSx className={mergedClassName} styles={[rootStyle, slotSx]} sx={sx}>
         {(classes) => (
           <RootPart
             {...merged}
@@ -481,16 +481,16 @@ function EditableDetailsSection({
     <WithSx className={className} styles={sectionStyle} sx={sx}>
       {(className) => (
         <section {...rest} ref={ref} className={className} data-ui="editable-details-section" data-state={open ? 'open' : 'closed'} data-depth={depth}>
-          <Heading {...slotProps?.heading} css={[headingStyle, slotProps?.heading?.css]} className={slotProps?.heading?.className}>
+          <Heading {...withoutSx(slotProps?.heading)} css={[headingStyle, slotProps?.heading?.sx]} className={slotProps?.heading?.className}>
             <Trigger
-              {...slotProps?.trigger}
+              {...withoutSx(slotProps?.trigger)}
               ref={mergedTrigger}
               type="button"
               id={`${id}-trigger`}
               aria-expanded={!!open}
               aria-controls={`${id}-panel`}
               onClick={() => requestOpen(!open)}
-              css={[triggerStyle, depth === 0 ? topLevelTriggerStyle : nestedTriggerStyle, slotProps?.trigger?.css]}
+              css={[triggerStyle, depth === 0 ? topLevelTriggerStyle : nestedTriggerStyle, slotProps?.trigger?.sx]}
               className={slotProps?.trigger?.className}
               data-ui="editable-details-section-trigger"
             >
@@ -499,11 +499,11 @@ function EditableDetailsSection({
           </Heading>
           <DisclosureContext.Provider value={scope}>
             <Panel
-              {...slotProps?.panel}
+              {...withoutSx(slotProps?.panel)}
               ref={panel}
               id={`${id}-panel`}
               hidden={!open}
-              css={[panelStyle, slotProps?.panel?.css]}
+              css={[panelStyle, slotProps?.panel?.sx]}
               className={slotProps?.panel?.className}
               data-ui="editable-details-section-panel"
             >
@@ -585,14 +585,14 @@ function EditorSession({ renderEditor, labelId, hostId, part, component, edit, r
   }, [focusIntent, scope.visible]);
   return (
     <Editor
-      {...part}
+      {...withoutSx(part)}
       ref={host}
       id={hostId}
       role="group"
       aria-labelledby={labelId}
       tabIndex={-1}
       className={part?.className}
-      css={[editorStyle, part?.css]}
+      css={[editorStyle, part?.sx]}
       data-ui="editable-details-editor"
     >
       {renderEditor({ initialFocusRef, complete: close, cancel: close, visible: scope.visible })}
@@ -643,10 +643,10 @@ function EditableDetailsItem({
     <WithSx className={className} styles={itemStyle} sx={sx}>
       {(className) => (
         <div {...rest} ref={mergedRef} className={className} data-ui="editable-details-item" data-state={editing ? 'open' : 'closed'}>
-          <Label {...slotProps?.label} id={`${id}-label`} css={[labelStyle, slotProps?.label?.css]} className={slotProps?.label?.className}>
+          <Label {...withoutSx(slotProps?.label)} id={`${id}-label`} css={[labelStyle, slotProps?.label?.sx]} className={slotProps?.label?.className}>
             {label}
           </Label>
-          <Description {...slotProps?.description} css={[descriptionStyle, slotProps?.description?.css]} className={slotProps?.description?.className}>
+          <Description {...withoutSx(slotProps?.description)} css={[descriptionStyle, slotProps?.description?.sx]} className={slotProps?.description?.className}>
             {editing ? (
               <EditorSession
                 renderEditor={renderEditor}
@@ -660,17 +660,17 @@ function EditableDetailsItem({
                 acceptedClose={acceptedClose}
               />
             ) : (
-              <Summary {...slotProps?.summary} css={[summaryStyle, slotProps?.summary?.css]} className={slotProps?.summary?.className}>
+              <Summary {...withoutSx(slotProps?.summary)} css={[summaryStyle, slotProps?.summary?.sx]} className={slotProps?.summary?.className}>
                 <div css={valueStyle}>{children}</div>
                 {renderEditor && (
                   <Edit
-                    {...slotProps?.edit}
+                    {...withoutSx(slotProps?.edit)}
                     ref={edit}
                     type="button"
                     id={`${id}-edit`}
                     aria-labelledby={`${id}-edit ${id}-label`}
                     onClick={() => { memory.intent.current = true; requestOpen(true); }}
-                    css={[editStyle, slotProps?.edit?.css]}
+                    css={[editStyle, slotProps?.edit?.sx]}
                     className={slotProps?.edit?.className}
                     data-ui="editable-details-edit"
                   >

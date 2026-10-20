@@ -1047,10 +1047,10 @@ export const ConsumerStylePrecedence: Story = {
       <StyledActiveFilters
         sx={{ padding: vars.space[3] }}
         slotProps={{
-          list: { css: { gap: vars.space[4] } },
-          chip: { css: { borderRadius: 0 } },
-          label: { css: { fontWeight: vars.fontWeight.semibold } },
-          remove: { css: { minInlineSize: vars.space[10] } },
+          list: { sx: { gap: vars.space[4] } },
+          chip: { sx: { borderRadius: 0 } },
+          label: { sx: { fontWeight: vars.fontWeight.semibold } },
+          remove: { sx: { minInlineSize: vars.space[10] } },
         }}
       />
       <StyledFilterClear sx={{ paddingInline: vars.space[6] }} />

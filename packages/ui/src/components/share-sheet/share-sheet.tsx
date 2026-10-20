@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 import {
@@ -84,7 +85,7 @@ export interface ShareSheetMessages {
   announce: (event: string) => string;
 }
 type Slot<E extends 'button' | 'div' | 'h2' | 'span'> = ComponentPropsWithRef<E> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 export interface ShareSheetSlotProps {
   /** Outer sharing widget element, not the dialog panel. */
@@ -92,7 +93,7 @@ export interface ShareSheetSlotProps {
   /** Button that opens the sharing surface. */
   trigger?: Slot<'button'>;
   /** Native modal shell used for the phone sheet. */
-  dialog?: ComponentPropsWithRef<'dialog'> & { css?: Interpolation<Theme> };
+  dialog?: ComponentPropsWithRef<'dialog'> & { sx?: Interpolation<Theme> };
   /** Inner panel holding the active sharing face. */
   content?: Slot<'div'>;
   /** Heading naming the sharing surface. */
@@ -813,7 +814,7 @@ function ShareSheetLayer({
   const surface = (
     <ShareSheetShell origin={entranceOrigin} inline={inline}>
       <Content
-        {...contentSlot}
+        {...withoutSx(contentSlot)}
         ref={panelMergedRef}
         dir={props.dir ?? direction}
         id={sheet ? undefined : contentId}
@@ -827,7 +828,7 @@ function ShareSheetLayer({
           [slots.content?.['aria-describedby'], error && errorId].filter(Boolean).join(' ') ||
           undefined
         }
-        css={[panelStyle, inline && inlinePanelStyle, slots.content?.css]}
+        css={[panelStyle, inline && inlinePanelStyle, slots.content?.sx]}
         style={contentStyle}
         onKeyDownCapture={(event) => {
           slots.content?.onKeyDownCapture?.(event);
@@ -840,9 +841,9 @@ function ShareSheetLayer({
       >
         {sheet && (
           <Grabber
-            {...slots.grabber}
+            {...withoutSx(slots.grabber)}
             data-ui="share-sheet-grabber"
-            css={[grabberStyle, slots.grabber?.css]}
+            css={[grabberStyle, slots.grabber?.sx]}
             aria-hidden="true"
             onPointerDown={(event) => {
               slots.grabber?.onPointerDown?.(event);
@@ -878,7 +879,7 @@ function ShareSheetLayer({
           />
         )}
         <div css={columnStyle}>
-          <Title {...slots.title} id={titleId} css={[titleStyle, slots.title?.css]}>
+          <Title {...withoutSx(slots.title)} id={titleId} css={[titleStyle, slots.title?.sx]}>
             {text.heading(title)}
           </Title>
           {children}
@@ -909,10 +910,10 @@ function ShareSheetLayer({
               <>
                 <div css={rowStyle}>
                   <CopyButton
-                    {...slots.copyButton}
+                    {...withoutSx(slots.copyButton)}
                     data-share-control="copy"
                     ref={copyMergedRef}
-                    css={[copyStyle, slots.copyButton?.css]}
+                    css={[copyStyle, slots.copyButton?.sx]}
                     disabled={!validAccess || slots.copyButton?.disabled}
                     aria-disabled={copyState === 'pending' || undefined}
                     aria-busy={copyState === 'pending' || undefined}
@@ -951,8 +952,8 @@ function ShareSheetLayer({
                     disabled={!accessOptions.some((option) => !option.disabled)}
                   >
                     <AccessControl
-                      {...slots.accessControl}
-                      css={[accessStyle, slots.accessControl?.css]}
+                      {...withoutSx(slots.accessControl)}
+                      css={[accessStyle, slots.accessControl?.sx]}
                       data-share-control="access"
                       aria-label={slots.accessControl?.['aria-label'] ?? text.sendTo}
                       onKeyDownCapture={(event) => {
@@ -1009,7 +1010,7 @@ function ShareSheetLayer({
                   </p>
                 )}
                 {!inline && channels.length > 0 && (
-                  <ChannelList {...slots.channelList} css={[rowStyle, slots.channelList?.css]}>
+                  <ChannelList {...withoutSx(slots.channelList)} css={[rowStyle, slots.channelList?.sx]}>
                     {channels.map((item) => (
                       <div key={item.id}>
                         <Button
@@ -1046,7 +1047,7 @@ function ShareSheetLayer({
                   </ChannelList>
                 )}
                 {!inline && selectedPeople.length > 0 && (
-                  <SelectedList {...slots.selectedList} css={[rowStyle, slots.selectedList?.css]}>
+                  <SelectedList {...withoutSx(slots.selectedList)} css={[rowStyle, slots.selectedList?.sx]}>
                     {selectedPeople.map((person) => (
                       <Button
                         key={person.id}
@@ -1065,9 +1066,9 @@ function ShareSheetLayer({
                   <section aria-labelledby={`${id}-recent`}>
                     <h3 id={`${id}-recent`}>{text.recentPeople}</h3>
                     <PeopleList
-                      {...slots.peopleList}
+                      {...withoutSx(slots.peopleList)}
                       ref={peopleMergedRef}
-                      css={[peopleStyle, slots.peopleList?.css]}
+                      css={[peopleStyle, slots.peopleList?.sx]}
                     >
                       {people.map((person) => (
                         <Button
@@ -1121,8 +1122,8 @@ function ShareSheetLayer({
             )}
           </motion.div>
           <Status
-            {...slots.status}
-            css={[visuallyHiddenStyle, slots.status?.css]}
+            {...withoutSx(slots.status)}
+            css={[visuallyHiddenStyle, slots.status?.sx]}
             role="status"
             aria-live="polite"
             aria-atomic="true"
@@ -1199,7 +1200,7 @@ function ShareSheetLayer({
             }}
             ref={dialogMergedRef}
             id={sheet ? contentId : undefined}
-            css={[dialogStyle, slots.dialog?.css]}
+            css={[dialogStyle, slots.dialog?.sx]}
             aria-modal="true"
             aria-label={slots.dialog?.['aria-label']}
             aria-labelledby={[slots.dialog?.['aria-labelledby'], titleId]

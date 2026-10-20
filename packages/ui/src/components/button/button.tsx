@@ -15,7 +15,7 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { loadingRing, loadingRingPulse } from '../../styling/loading-ring';
@@ -29,7 +29,6 @@ export type ButtonSize = 'sm' | 'md' | 'lg';
 /** Props a `render` callback spreads onto the element it returns. */
 export interface ButtonRenderProps extends Omit<ButtonHTMLAttributes<HTMLElement>, 'color' | 'disabled'> {
   ref: RefCallback<HTMLElement> | null;
-  css: Interpolation<Theme>;
   'data-ui': string;
 }
 
@@ -244,9 +243,8 @@ export function Button({
 
   if (render) {
     const { disabled: _disabled, ...attributes } = rest;
-    // The rendered element merges `css` before `className`, so `sx` rides in the className.
     return (
-      <WithSx className={className} sx={sx}>
+      <WithSx className={className} styles={[baseStyle, renderedStyle, sizeStyles[size], variantStyles[variant][tone]]} sx={sx}>
         {(className) =>
           render({
             ...attributes,
@@ -257,7 +255,6 @@ export function Button({
             'aria-busy': loading ? true : rest['aria-busy'],
             'aria-disabled': isInactive ? true : ariaDisabled,
             onClick: handleClick,
-            css: [baseStyle, renderedStyle, sizeStyles[size], variantStyles[variant][tone]],
             children: content,
           })
         }

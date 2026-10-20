@@ -1290,20 +1290,20 @@ const ReceiptPicker = styled(FileDropzone)({ padding: theme.space[4] });
 
 <ReceiptPicker label="Add receipts" messages={messages}
   slotProps={{
-    target: { css: { borderRadius: 0 } },
-    label: { css: { fontWeight: 700 } },
-    action: { css: { borderRadius: 0 } },
-    browse: { css: { borderStyle: 'dotted' } },
+    target: { sx: { borderRadius: 0 } },
+    label: { sx: { fontWeight: 700 } },
+    action: { sx: { borderRadius: 0 } },
+    browse: { sx: { borderStyle: 'dotted' } },
   }} />` } } },
   args: {
     ref: fn(),
     inputRef: fn(),
     sx: { padding: vars.space[4] },
     slotProps: {
-      target: { css: { borderRadius: 0 } },
-      label: { css: { fontWeight: 700 } },
-      action: { css: { borderRadius: 0 } },
-      browse: { css: { borderStyle: 'dotted' } },
+      target: { sx: { borderRadius: 0 } },
+      label: { sx: { fontWeight: 700 } },
+      action: { sx: { borderRadius: 0 } },
+      browse: { sx: { borderStyle: 'dotted' } },
     },
   },
   play: async ({ canvasElement, args }) => {
@@ -1609,7 +1609,7 @@ export const SlotCustomization: Story = {
         className: 'slot-root',
         title: 'slot title',
         style: fieldRootStyles.slot,
-        css: { borderRadius: '8px' },
+        sx: { borderRadius: '8px' },
       },
       label: { ref: fn(), title: 'generated part' },
     },
@@ -1630,7 +1630,7 @@ const ReceiptPicker = styled(FileDropzone)({ borderRadius: '9px' });
 
 <ReceiptPicker label="Add receipts" messages={messages} className="consumer-root" title="consumer title"
   component={ReceiptRoot} slots={{ root: ReceiptRoot, label: ReceiptLabel }}
-  slotProps={{ root: { className: 'slot-root', title: 'slot title', css: { borderRadius: '8px' } },
+  slotProps={{ root: { className: 'slot-root', title: 'slot title', sx: { borderRadius: '8px' } },
     label: { title: 'generated part' } }} sx={{ borderRadius: '11px' }} />`,
       },
     },

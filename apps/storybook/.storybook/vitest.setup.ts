@@ -56,6 +56,8 @@ function guardEventWrapperReentrancy() {
 beforeAll(guardEventWrapperReentrancy);
 
 afterEach(() => {
+  const leakedSx = document.querySelector('[sx]');
+  if (leakedSx) throw new Error(`Unconsumed sx attribute on ${leakedSx.outerHTML}`);
   const failures = auditDesign(document);
   if (failures.length) throw new Error(`Design audit:\n${failures.join('\n')}`);
 });

@@ -1,3 +1,4 @@
+import { withoutSx } from '../../styling/sx';
 'use client';
 
 import {
@@ -70,7 +71,7 @@ export interface PhotoGridOption {
 }
 
 type Slot<Tag extends keyof React.JSX.IntrinsicElements> = ComponentPropsWithRef<Tag> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 };
 type ActionSlot = Slot<'button'>;
 
@@ -101,7 +102,7 @@ export interface PhotoGridSlotProps {
   /** Button element toggling the photo favorite state. */
   favorite?: ActionSlot;
   /** Favorite action in the full photo viewer. */
-  viewerFavorite?: Partial<ChromeActionProps> & { css?: Interpolation<Theme> };
+  viewerFavorite?: Partial<ChromeActionProps> & { sx?: Interpolation<Theme> };
   /** Dialog element for the full photo viewer modal. */
   viewer?: Omit<Slot<'dialog'>, 'open'>;
   /** Container element displaying the active photo in the viewer. */
@@ -641,7 +642,7 @@ function PhotoViewer({
   const mergedFilmstripRef = useMergeRefs([filmstripRef, slots?.filmstrip?.ref]);
   const lifecycle = controller;
   const viewerSlot = omitNativeOpen(slots?.viewer ?? {});
-  const { label: favoriteLabel, css: favoriteCss, ...favoriteSlot } = slots?.viewerFavorite ?? {};
+  const { label: favoriteLabel, sx: favoriteCss, ...favoriteSlot } = slots?.viewerFavorite ?? {};
   const native = useNativeDialog(
     { ...lifecycle, open: open && photos.length > 0 },
     {
@@ -788,14 +789,14 @@ function PhotoViewer({
 
   return (
     <Viewer
-      {...viewerSlot}
+      {...withoutSx(viewerSlot)}
       ref={native.ref}
       data-ui="photo-grid-viewer"
       data-state={native['data-state']}
       aria-modal="true"
       aria-labelledby={ids(viewerSlot['aria-labelledby'], `${id}-title`)}
       aria-describedby={ids(viewerSlot['aria-describedby'], hasDetail && `${id}-detail`)}
-      css={[viewerStyle, viewerSlot.css]}
+      css={[viewerStyle, viewerSlot.sx]}
       onCancel={(event) => {
         if (event.target === event.currentTarget) native.onCancel(event);
       }}
@@ -822,13 +823,13 @@ function PhotoViewer({
           />
         </header>
         <Stage
-          {...slots?.stage}
+          {...withoutSx(slots?.stage)}
           ref={mergedStageRef}
           data-ui="photo-grid-stage"
           tabIndex={photo ? 0 : undefined}
           role="group"
           aria-label={slots?.stage?.['aria-label'] ?? photo?.title ?? labels.unavailable}
-          css={[stageStyle, slots?.stage?.css]}
+          css={[stageStyle, slots?.stage?.sx]}
           data-zoom={zoom}
           onPointerDown={(event) => {
             slots?.stage?.onPointerDown?.(event);
@@ -946,7 +947,7 @@ function PhotoViewer({
             <div role="status" aria-live="polite" aria-atomic="true" css={counterStyle}>
               {position}
             </div>
-            <Controls {...slots?.controls} css={[controlsStyle, slots?.controls?.css]}>
+            <Controls {...withoutSx(slots?.controls)} css={[controlsStyle, slots?.controls?.sx]}>
               <ChromeAction
                 label={labels.previous}
                 icon={chromeIcons.previous}
@@ -1006,12 +1007,12 @@ function PhotoViewer({
           </div>
           {photos.length > 1 && (
             <Filmstrip
-              {...slots?.filmstrip}
+              {...withoutSx(slots?.filmstrip)}
               ref={mergedFilmstripRef}
               data-ui="photo-grid-filmstrip"
               role="group"
               aria-label={slots?.filmstrip?.['aria-label'] ?? labels.filmstrip}
-              css={[filmstripStyle, slots?.filmstrip?.css]}
+              css={[filmstripStyle, slots?.filmstrip?.sx]}
             >
               {photos.map((item, itemIndex) => (
                 <button
@@ -1399,15 +1400,15 @@ export function PhotoGrid({
               onKeyDown={onKeyDown}
             >
               <Header
-                {...slotProps?.header}
+                {...withoutSx(slotProps?.header)}
                 role={slotProps?.header?.role ?? 'presentation'}
-                css={[headerStyle, slotProps?.header?.css]}
+                css={[headerStyle, slotProps?.header?.sx]}
               >
                 <div css={headingStyle}>
                   <Title
-                    {...slotProps?.title}
+                    {...withoutSx(slotProps?.title)}
                     id={slotProps?.title?.id ?? `${id}-title`}
-                    css={[titleStyle, slotProps?.title?.css]}
+                    css={[titleStyle, slotProps?.title?.sx]}
                   >
                     {title}
                   </Title>
@@ -1417,10 +1418,10 @@ export function PhotoGrid({
                   </p>
                 </div>
                 {variant === 'grid' && <Density
-                  {...slotProps?.density}
+                  {...withoutSx(slotProps?.density)}
                   role="group"
                   aria-label={slotProps?.density?.['aria-label'] ?? labels.density}
-                  css={[densityStyle, slotProps?.density?.css]}
+                  css={[densityStyle, slotProps?.density?.sx]}
                 >
                   {steps.map((step) => (
                     <ChromeAction
@@ -1474,9 +1475,9 @@ export function PhotoGrid({
               ) : photos.length ? (
                 <motion.div style={{ scale: preview, transformOrigin: previewOrigin }}>
                   <List
-                    {...slotProps?.list}
+                    {...withoutSx(slotProps?.list)}
                     ref={listMergedRef}
-                    css={[listStyle, slotProps?.list?.css]}
+                    css={[listStyle, slotProps?.list?.sx]}
                     data-ui="photo-grid-list"
                     aria-labelledby={ids(
                       slotProps?.list?.['aria-labelledby'],
@@ -1543,10 +1544,10 @@ export function PhotoGrid({
                   >
                     {photos.map((photo, index) => (
                       <Item
-                        {...slotProps?.item}
+                        {...withoutSx(slotProps?.item)}
                         key={photo.id}
                         data-photo-id={photo.id}
-                        css={[cellStyle, slotProps?.item?.css]}
+                        css={[cellStyle, slotProps?.item?.sx]}
                       >
                         <motion.div
                           layout={
@@ -1562,7 +1563,7 @@ export function PhotoGrid({
                         >
                           <PhotoButton
                             component={slots?.photo}
-                            {...slotProps?.photo}
+                            {...withoutSx(slotProps?.photo)}
                             ref={slotProps?.photo?.ref}
                             register={(node) => {
                               if (node) buttons.current.set(photo.id, node);
@@ -1576,7 +1577,7 @@ export function PhotoGrid({
                               slotProps?.photo?.['aria-label'] ??
                               labels.openPhoto(photo.title, photo.alt, favorites.has(photo.id))
                             }
-                            css={[photoStyle, slotProps?.photo?.css]}
+                            css={[photoStyle, slotProps?.photo?.sx]}
                             onFocus={(event) => {
                               slotProps?.photo?.onFocus?.(event);
                               buttons.current.set(photo.id, event.currentTarget);
@@ -1607,7 +1608,7 @@ export function PhotoGrid({
                             </motion.div>
                           </PhotoButton>
                           <Favorite
-                            {...slotProps?.favorite}
+                            {...withoutSx(slotProps?.favorite)}
                             type="button"
                             data-ui="photo-grid-favorite"
                             aria-pressed={favorites.has(photo.id)}
@@ -1615,7 +1616,7 @@ export function PhotoGrid({
                               slotProps?.favorite?.['aria-label'] ??
                               labels.favorite(photo.title, favorites.has(photo.id))
                             }
-                            css={[tileFavoriteStyle, slotProps?.favorite?.css]}
+                            css={[tileFavoriteStyle, slotProps?.favorite?.sx]}
                             onFocus={(event) => {
                               slotProps?.favorite?.onFocus?.(event);
                               focused.current = { id: photo.id, index, kind: 'favorite' };
@@ -1636,11 +1637,11 @@ export function PhotoGrid({
                 <p css={detailStyle}>{labels.empty}</p>
               )}
               <Status
-                {...slotProps?.status}
+                {...withoutSx(slotProps?.status)}
                 role="status"
                 aria-live="polite"
                 aria-atomic="true"
-                css={[statusStyle, slotProps?.status?.css]}
+                css={[statusStyle, slotProps?.status?.sx]}
               >
                 {status}
               </Status>

@@ -533,8 +533,8 @@ export const ConsumerStylePrecedence: Story = {
   args: {
     sx: { padding: '16px' },
     slotProps: {
-      row: { css: css({ minBlockSize: '48px' }) },
-      label: { css: css({ fontWeight: 700 }) },
+      row: { sx: css({ minBlockSize: '48px' }) },
+      label: { sx: css({ fontWeight: 700 }) },
     },
   },
   render: (args) => <ClassNames>{({ css: register }) => <TreeView {...args} className={register(strayRootStyle)} />}</ClassNames>,

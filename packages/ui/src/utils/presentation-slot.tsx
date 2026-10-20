@@ -7,7 +7,7 @@ import type { Interpolation, Theme } from '../styling/css';
 
 type PresentationElement = 'button' | 'article' | 'aside' | 'section' | 'header' | 'footer' | 'blockquote' | 'div' | 'p' | 'span' | 'a' | 'time' | 'figure' | 'figcaption' | 'ul' | 'li' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 export type PresentationProps<E extends PresentationElement> = ComponentPropsWithRef<E> & {
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
   'data-ui'?: string;
   [attribute: `data-${string}`]: unknown;
 };
@@ -23,7 +23,7 @@ export type PresentationHeadingProps = ComponentPropsWithRef<'h2'> & { level?: A
 export type RenderArticleLink = (props: ComponentPropsWithRef<'a'>) => ReactNode;
 
 export function PresentationSlot<E extends PresentationElement>({
-  element, component, marker, slotProps: part, templateProps: template, inheritedSlotProps: inherited, styles, sx, renderLink, css: ownCss, ...own
+  element, component, marker, slotProps: part, templateProps: template, inheritedSlotProps: inherited, styles, sx, renderLink, ...own
 }: PresentationProps<E> & SxProps & {
   element: E;
   marker?: string;
@@ -52,9 +52,9 @@ export function PresentationSlot<E extends PresentationElement>({
   const style = { ...own.style, ...template?.style, ...inherited?.style, ...part?.style };
   const Component = component ?? element;
   return (
-    <WithSx className={className} styles={[styles, template?.css, inherited?.css, part?.css, ownCss]} sx={sx}>
+    <WithSx className={className} styles={[styles, template?.sx, inherited?.sx, part?.sx]} sx={sx}>
       {(className) => {
-        const props = { ...merged, css: undefined, ref, style, className, 'data-ui': dataUi };
+        const props = { ...merged, sx: undefined, css: undefined, ref, style, className, 'data-ui': dataUi };
         if (renderLink) {
           const { css: _css, ...linkProps } = props;
           return renderLink(linkProps as ComponentPropsWithRef<'a'>);

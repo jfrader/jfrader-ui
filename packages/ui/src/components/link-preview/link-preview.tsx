@@ -27,7 +27,7 @@ export interface LinkPreviewData {
 
 interface SlotStyle {
   className?: string;
-  css?: Interpolation<Theme>;
+  sx?: Interpolation<Theme>;
 }
 
 type PartProps<E extends 'div' | 'a' | 'img'> = Omit<
@@ -80,7 +80,7 @@ const NARROW = '@container (max-width: 22.5rem)';
 const PENDING_SWEEP_DURATION = '1.4s';
 
 function splitPart<P extends SlotStyle>(part: P | undefined) {
-  const { className, css: partCss, ...attributes } = part ?? ({} as P);
+  const { className, sx: partCss, ...attributes } = part ?? ({} as P);
   return { className, partCss, attributes };
 }
 

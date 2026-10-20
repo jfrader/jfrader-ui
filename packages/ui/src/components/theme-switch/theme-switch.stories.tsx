@@ -484,8 +484,8 @@ export const SlotStyling: Story = {
   args: {
     sx: { paddingInline: vars.space[4] },
     slotProps: {
-      iconFrame: { css: { inlineSize: vars.space[8] } },
-      lightIcon: { css: { outline: `2px solid ${vars.color.text}` } },
+      iconFrame: { sx: { inlineSize: vars.space[8] } },
+      lightIcon: { sx: { outline: `2px solid ${vars.color.text}` } },
     },
   },
   play: async ({ canvas }) => {

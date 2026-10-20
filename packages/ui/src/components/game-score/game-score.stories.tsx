@@ -39,7 +39,7 @@ Pass rows with stable keys, labels, numeric values and optional stage text. Valu
 The named group contains a native description list. It adds no focus target or keyboard bindings and does not announce updates. Choose a live region in your application when needed. No motion is used.
 
 ### Customization
-Use slotProps for root, label, list, row, name, value and stage. Repeated slots apply to every row. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div. Root slot conflicts win; className and style merge. css and sx apply after slot styles.`,
+Use slotProps for root, label, list, row, name, value and stage; each accepts sx. Repeated slots apply to every row. component is sugar for slots.root; slots.root wins. Replacements forward props and ref to one div. Root slot conflicts win; className and style merge. Consumer sx applies after slot sx.`,
     source: { language: 'tsx', code: source },
   } },
 } satisfies Meta<typeof GameScore>;
@@ -147,9 +147,9 @@ function ContractFixture() {
     className: 'consumer-root', style: { margin: vars.space[1], opacity: 1 },
     'data-ui': 'consumer', 'data-lane': 'consumer',
     'aria-labelledby': externalId, 'aria-describedby': externalId,
-    css: { padding: vars.space[4] }, sx: { padding: vars.space[6] },
+    sx: [{ padding: vars.space[4] }, { padding: vars.space[6] }],
   };
-  const rootSlot = { className: 'slot-root', style: { margin: vars.space[2] }, 'data-lane': 'slot', css: { padding: vars.space[2] } };
+  const rootSlot = { className: 'slot-root', style: { margin: vars.space[2] }, 'data-lane': 'slot', sx: { padding: vars.space[2] } };
   return <ContractScope>
     <span id={externalId}>Match</span>
     <GameScore {...customization} ref={scoreRef} label="Score contract" rows={updated ? [{ key: 'south', label: 0, value: 42 }] : rows} locale="en-US"

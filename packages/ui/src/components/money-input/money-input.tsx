@@ -12,7 +12,7 @@ import {
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
-import { type SxProps } from '../../styling/sx';
+import { withoutSx, type SxProps } from '../../styling/sx';
 import { inputControlStyle } from '../../styling/input-control';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -394,7 +394,7 @@ export function MoneyInput({
       sx={sx}
       style={style}
       title={title}
-      part={{ ...slotProps?.root, css: [rootStyle, slotProps?.root?.css] }}
+      part={{ ...slotProps?.root, sx: [rootStyle, slotProps?.root?.sx] }}
     >
       <FieldLabel
         id={labelId}
@@ -405,10 +405,10 @@ export function MoneyInput({
       >
         {label}
       </FieldLabel>
-      <div {...slotProps?.shell} data-disabled={disabled ? '' : undefined} data-invalid={field.ariaInvalid === true ? '' : undefined} css={[inputControlStyle, shellStyle, sizes[size], slotProps?.shell?.css]}>
+      <div {...withoutSx(slotProps?.shell)} data-disabled={disabled ? '' : undefined} data-invalid={field.ariaInvalid === true ? '' : undefined} css={[inputControlStyle, shellStyle, sizes[size], slotProps?.shell?.sx]}>
         <input
           {...native}
-          {...slotProps?.control}
+          {...withoutSx(slotProps?.control)}
           ref={inputRef}
           id={field.id}
           form={form}
@@ -419,7 +419,7 @@ export function MoneyInput({
           readOnly={readOnly}
           disabled={disabled}
           data-variant={variant}
-          css={[controlStyle, slotProps?.control?.css]}
+          css={[controlStyle, slotProps?.control?.sx]}
           value={draft ?? (current === null ? '' : money.format(current))}
           {...numericAria}
           aria-valuetext={current === null ? messages.empty : money.format(current)}
@@ -511,7 +511,7 @@ export function MoneyInput({
             }
           }}
         />
-        <span {...slotProps?.currency} css={[currencyStyle, slotProps?.currency?.css]}>
+        <span {...withoutSx(slotProps?.currency)} css={[currencyStyle, slotProps?.currency?.sx]}>
           {currencies.length === 1 ? (
             code
           ) : (
@@ -545,21 +545,21 @@ export function MoneyInput({
       </div>
       {quickAdd.length > 0 && (
         <div
-          {...slotProps?.quickAdd}
+          {...withoutSx(slotProps?.quickAdd)}
           role="group"
           aria-label={messages.quickAdd}
-          css={[quickAddStyle, slotProps?.quickAdd?.css]}
+          css={[quickAddStyle, slotProps?.quickAdd?.sx]}
         >
           {quickAdd.map((add, index) => (
             <button
-              {...slotProps?.quickAddButton}
+              {...withoutSx(slotProps?.quickAddButton)}
               key={`${add}-${index}`}
               type="button"
               disabled={disabled}
               aria-disabled={readOnly || (current !== null && current >= max)}
               aria-label={messages.add(money.format(add))}
               aria-controls={field.id}
-              css={[chipStyle, slotProps?.quickAddButton?.css]}
+              css={[chipStyle, slotProps?.quickAddButton?.sx]}
               onClick={() => {
                 if (disabled || readOnly || composing.current) return;
                 if (current !== null && current >= max) setStatus(messages.max(money.format(max)));
@@ -571,7 +571,7 @@ export function MoneyInput({
           ))}
         </div>
       )}
-      <span {...slotProps?.range} id={rangeId} css={[rangeStyle, slotProps?.range?.css]}>
+      <span {...withoutSx(slotProps?.range)} id={rangeId} css={[rangeStyle, slotProps?.range?.sx]}>
         {messages.range(money.format(min), money.format(max))}
       </span>
       <FieldDescription id={field.descriptionId} part={slotProps?.description}>
@@ -581,11 +581,11 @@ export function MoneyInput({
         {fieldError}
       </FieldError>
       <span
-        {...slotProps?.status}
+        {...withoutSx(slotProps?.status)}
         role="status"
         aria-live="polite"
         aria-atomic="true"
-        css={[visuallyHiddenStyle, slotProps?.status?.css]}
+        css={[visuallyHiddenStyle, slotProps?.status?.sx]}
       >
         {status}
       </span>
