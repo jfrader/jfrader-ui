@@ -5,6 +5,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectAligned, expectInside, expectMirroredDirection } from '../../testing/geometry-assertions';
 import { Calendar, type CalendarCompoundProps as CalendarProps, type CalendarEasyProps } from './index';
 
 const LOCALE = 'en-US';
@@ -527,6 +528,44 @@ export const PersianLocaleGregorianDates: Story = {
   },
 };
 
+export const LocalizedGeometry: Story = {
+  args: { locale: 'fa-IR', defaultValue: '2026-09-14', today: '2026-09-14' },
+  render: (args) => (
+    <div style={{ inlineSize: 260, maxInlineSize: '100%' }}>
+      <CalendarExample {...args} sx={{ inlineSize: '100%' }} />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="calendar"]')!;
+    const headers = within(root).getAllByRole('columnheader');
+    await expectInside(root, root.parentElement!);
+    const widths = headers.map((header) => header.getBoundingClientRect().width);
+    await expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
+    for (const button of root.querySelectorAll<HTMLButtonElement>('[data-ui="calendar-day"]')) {
+      const column = (button.closest('td') as HTMLTableCellElement).cellIndex;
+      await expectAligned([headers[column]!, button], 'center-x');
+      await expectInside(button, root);
+      await expect(button.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
+      await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+    await expectMirroredDirection(root, '[data-ui="calendar-day"], [data-ui="calendar-previous"], [data-ui="calendar-next"]');
+  },
+};
+
+export const RightToLeft: Story = {
+  args: { locale: 'ar-SA', defaultValue: '2026-09-14', today: '2026-09-14', dir: 'rtl', onValueChange: fn() },
+  render: (args) => <CalendarExample {...args} />,
+  play: async ({ args, canvasElement, userEvent }) => {
+    const selected = canvasElement.querySelector<HTMLButtonElement>('[data-date="2026-09-14"]')!;
+    selected.focus();
+    await userEvent.keyboard('{ArrowLeft}{Enter}');
+    await expect(canvasElement.querySelector('[data-date="2026-09-15"]')).toHaveFocus();
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('2026-09-15');
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(selected).toHaveFocus();
+  },
+};
+
 export const CivilDateRoundTrip: Story = {
   args: { defaultValue: '2011-12-29', min: '2011-12-29', max: '2011-12-31' },
   render: (args) => (
@@ -735,6 +774,14 @@ export const RangeSelection: Story = {
     await expect(day(canvasElement, 'October 12, 2026')).toHaveAccessibleDescription('Start date');
     await expect(day(canvasElement, 'October 14, 2026')).toHaveAccessibleDescription('End date');
     await expect(day(canvasElement, 'October 11, 2026')).toHaveAttribute('aria-current', 'date');
+    if (canvasElement.ownerDocument.defaultView!.matchMedia('(forced-colors: active)').matches) {
+      const start = getComputedStyle(day(canvasElement, 'October 12, 2026'));
+      const interior = getComputedStyle(day(canvasElement, 'October 13, 2026'));
+      const outside = getComputedStyle(day(canvasElement, 'October 20, 2026'));
+      await expect(interior.backgroundColor).toBe(start.backgroundColor);
+      await expect(interior.backgroundColor).not.toBe(outside.backgroundColor);
+      await expect(interior.color).toBe(start.color);
+    }
 
     // Activation only reports; the selection stays with the parent.
     await userEvent.click(day(canvasElement, 'October 20, 2026'));
