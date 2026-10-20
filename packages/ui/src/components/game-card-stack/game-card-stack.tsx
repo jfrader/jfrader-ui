@@ -16,6 +16,7 @@ import { DEFAULT_PILE_LAYOUT, PLAYED_PILE, getPilePosition, getPileOffset, getSt
 import { getAutoLayout } from './auto-layout';
 import { cardPartIdentity, useCardRegistrationRefs } from '../game-card/card-parts';
 import { CardRoot, type GameCardRootProps, type GameCardRootSlotProps } from '../game-card/game-card-root';
+import type { PlayingCard } from '../card-flights/flight-registry';
 
 export interface GameCardStackSlots {
   root?: ComponentType<GameCardRootProps>;
@@ -55,7 +56,7 @@ interface InspectionProps {
   onValueChange?: (playerKey: string | null) => void;
   /** Jitter and rotation only; GameTable owns placement of composed piles. */
   layout?: Partial<PileLayout>;
-  /** First cards to render, rounded down and clamped to zero; defaults to three. */
+  /** Newest cards to render, rounded down and clamped to zero; defaults to three. */
   maxCards?: number;
   /** Preferred card width; defaults to the inherited width or the medium card token. */
   cardWidth?: string;
@@ -232,8 +233,11 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, 
     returnFocus.current = false;
   }, [inspecting]);
   const config = { ...DEFAULT_PILE_LAYOUT, ...layout };
-  const cards = allCards.slice(0, cardLimit(maxCards));
-  const registrationRef = useCardRegistrationRefs('played', cards.map((card) => card.id));
+  const limit = cardLimit(maxCards);
+  const cards = limit > 0 ? allCards.slice(-limit) : [];
+  const artwork = (card: PlayingCard, face: 'front' | 'back') => <GameCard label={card.label} value={card.value} face={face === 'back' ? 'back' : undefined}
+    backPattern={backPattern} artSet={artSet} cardArtSets={cardArtSets} sx={faceStyle} />;
+  const registrationRef = useCardRegistrationRefs('played', cards, playerKey, artwork);
   const spread = inspecting || revealed;
   const { sx: pileCss, className: pileClassName, style: pileInlineStyle, ...pileProps } = slotProps?.pile ?? {};
   return <MotionConfig reducedMotion="user"><WithSx className={[pileClassName, className].filter(Boolean).join(' ')}
@@ -272,7 +276,7 @@ function GameCardStackPilePart({ ref, playerKey, cards: allCards, label, value, 
                 zIndex: spread ? PLAYED_PILE.zIndex.openCard + index : PLAYED_PILE.zIndex.card + (card.order ?? index),
                 ...slotProps?.card?.style,
               } as CSSProperties}>
-              <GameCard label={card.label} value={card.value} backPattern={backPattern} artSet={artSet} cardArtSets={cardArtSets} sx={faceStyle} />
+               {artwork(card, 'front')}
             </Card>;
           })}
         </div>

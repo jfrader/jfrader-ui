@@ -1,10 +1,8 @@
-import type { GameCardValue } from '../game-card';
+import type { PlayingCard } from '../card-flights/flight-registry';
 
-export interface PlayedCard {
-  /** Unique identity of this play, also used by card-flight destinations. */
-  id: string;
-  label: string;
-  value?: GameCardValue;
+export interface PlayedCard extends PlayingCard {
+  /** Source card identity; defaults to the play's `id`. */
+  cardId?: string;
   /** Closed-pile layer; defaults to the card's position in the pile. */
   order?: number;
 }

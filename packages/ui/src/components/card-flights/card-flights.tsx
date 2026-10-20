@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentPropsWithRef, type ComponentType, type ReactNode, type RefObject } from 'react';
+import { useContext, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentPropsWithRef, type ComponentType, type ReactNode, type RefObject } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { WithSx, type SxProps } from '../../styling/sx';
 import type { Interpolation, Theme } from '../../styling/css';
@@ -9,8 +9,10 @@ import { OverlayPortal } from '../../overlay/overlay-portal';
 import { CardFlight } from './card-flight';
 import { FLIGHT_GEOMETRY, measureCardBox, type CardBox } from './geometry';
 import type { FlightCard } from './use-card-flights';
-import { createFlightRegistry, FlightRegistryContext } from './flight-registry';
+import { assertLegacyFlightEngine, createFlightRegistry, FlightRegistryContext } from './flight-registry';
+import { BusyContext, FlightContext as Context, OriginContext, TreeOwnedContext, useFlightActions } from './flight-context';
 
+/** @deprecated Render CardFlights.Target instead. Removed in the next major release. */
 export type CardFlightSpec = {
   target: string;
   /** Mounted destination. Its visibility is restored on landing, reset or replacement. */
@@ -34,46 +36,32 @@ interface FlightRecord {
   finish: () => void;
 }
 
-interface CardFlightsContextValue {
-  scopeRef: RefObject<HTMLElement | null>;
-  reducedMotion: boolean;
-  resetEpoch: number;
-  landingTargets: ReadonlySet<string>;
-  launch: (specs: readonly CardFlightSpec[]) => void;
-  /** Cancels flights, shows their destinations and forgets captured origins/snapshot baselines. */
-  reset: () => void;
-  synchronize: (key: string | number | undefined) => void;
-  /** Capture before removing a hand card, on click or after a drag. */
-  rememberPlayOrigin: (cardKey: string, elementOrBox: HTMLElement | CardBox) => void;
-  takePlayOrigin: (cardKey: string) => CardBox | undefined;
-}
-
-const Context = createContext<CardFlightsContextValue | null>(null);
-
-/** Launch cards and read destinations still in flight. Must be inside CardFlightsProvider. */
+/** @deprecated Use CardFlights and useCardFlightStatus(). Removed in the next major release. */
 export function useCardFlights() {
-  const context = useContext(Context);
-  if (!context) throw new Error('useCardFlights requires CardFlightsProvider');
-  return context;
+  assertLegacyFlightEngine(useContext(TreeOwnedContext));
+  return useFlightActions();
 }
 
 type ScopeRootProps = ComponentPropsWithRef<'div'> & { [attribute: `data-${string}`]: string | number | boolean | undefined };
 
-/** Replace the root div; declare replacements outside render. */
+/** @deprecated Use DOM-less CardFlights and a native wrapper. Removed in the next major release. */
 export interface CardFlightsSlots {
   /** Replaces the root div. Exactly sugar for `slots.root`. */
   root?: ComponentType<ScopeRootProps>;
 }
 
-/** Root slot props win conflicts; className and style merge. */
+/** @deprecated Use DOM-less CardFlights and a native wrapper. Removed in the next major release. */
 export interface CardFlightsSlotProps {
   /** Root slot props win conflicts; className and style merge. */
   root?: ScopeRootProps & { sx?: Interpolation<Theme> };
 }
 
+/** @deprecated Use CardFlightsProps instead. Removed in the next major release. */
 export interface CardFlightsProviderProps extends ScopeRootProps, SxProps {
   /** Use a consumer-owned scope instead of rendering a root div. Root customization is ignored in this mode. */
   scopeRef?: RefObject<HTMLElement | null>;
+  /** Internal: render children without a scope root for CardFlights. */
+  headless?: boolean;
   /** Replace the root div. Exactly sugar for `slots.root`; declare replacements outside render. */
   component?: ComponentType<ScopeRootProps>;
   /** Every part that takes props is also replaceable; keys match `slotProps`. */
@@ -98,10 +86,11 @@ function useFlightReducedMotion() {
   return useSyncExternalStore(store.subscribe, store.snapshot, () => false);
 }
 
-/** Own card flights for one board. Remount or call reset() when replacing a match. */
-export function CardFlightsProvider({ children, scopeRef: externalScopeRef, component, slots, slotProps, className, style, sx, ...rest }: CardFlightsProviderProps) {
+/** @deprecated Use <CardFlights revision={snapshot}> instead. Removed in the next major release. */
+export function CardFlightsProvider({ children, scopeRef: externalScopeRef, headless = false, component, slots, slotProps, className, style, sx, ...rest }: CardFlightsProviderProps) {
   const internalScopeRef = useRef<HTMLDivElement>(null);
   const scopeRef = externalScopeRef ?? internalScopeRef;
+  const rootless = headless || Boolean(externalScopeRef);
   const { sx: slotCss, className: slotClassName, style: slotStyle, ...slotRest } = slotProps?.root ?? {};
   const rootProps = { ...rest, children, ...slotRest };
   const rootRef = useMergeRefs([internalScopeRef, rootProps.ref]);
@@ -115,6 +104,7 @@ export function CardFlightsProvider({ children, scopeRef: externalScopeRef, comp
   const [flights, setFlights] = useState<FlightRecord[]>([]);
   const [resetEpoch, setResetEpoch] = useState(0);
   const [registry] = useState(createFlightRegistry);
+  registry.treeOwned = useContext(TreeOwnedContext);
 
   const actions = useMemo(() => {
     let snapshot: { key: string | number | undefined } | undefined;
@@ -130,6 +120,7 @@ export function CardFlightsProvider({ children, scopeRef: externalScopeRef, comp
     };
     return {
       clear,
+      prune: () => { records.current.forEach((record) => { if (!record.spec.destination.isConnected) record.finish(); }); },
       reset: () => { clear(); setFlights([]); setResetEpoch((epoch) => epoch + 1); },
       synchronize: (key: string | number | undefined) => {
         if (snapshot && snapshot.key !== key) {
@@ -194,8 +185,8 @@ export function CardFlightsProvider({ children, scopeRef: externalScopeRef, comp
   const value = useMemo(() => ({ scopeRef, reducedMotion, resetEpoch,
     landingTargets: new Set(flights.map((flight) => flight.spec.target)), ...actions,
   }), [scopeRef, reducedMotion, resetEpoch, flights, actions]);
-  return <MotionConfig reducedMotion="user"><Context.Provider value={value}><FlightRegistryContext value={registry}>
-    {externalScopeRef ? children : <WithSx styles={slotCss} className={slotClassName}>
+  return <MotionConfig reducedMotion="user"><Context.Provider value={value}><OriginContext value={actions}><BusyContext value={!reducedMotion && flights.length > 0}><FlightRegistryContext value={registry}>
+    {rootless ? children : <WithSx styles={slotCss} className={slotClassName}>
       {(slotClasses) => <WithSx className={className} sx={sx}>
         {(consumerClasses) => <WithSx styles={[]} className={[slotClasses, consumerClasses].filter(Boolean).join(' ')}>
           {(classes) => <Root {...rootProps} ref={rootRef}
@@ -206,6 +197,6 @@ export function CardFlightsProvider({ children, scopeRef: externalScopeRef, comp
     </WithSx>}
     {flights.length > 0 && <OverlayPortal>{flights.map((flight) =>
       <CardFlight key={flight.id} flightId={flight.id} spec={flight.spec} onStart={flight.start} onFinish={flight.finish} />)}</OverlayPortal>}
-  </FlightRegistryContext></Context.Provider></MotionConfig>;
+  </FlightRegistryContext></BusyContext></OriginContext></Context.Provider></MotionConfig>;
 }
 CardFlightsProvider.displayName = 'CardFlightsProvider';
