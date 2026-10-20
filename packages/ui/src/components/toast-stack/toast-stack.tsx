@@ -116,7 +116,7 @@ const itemStyle = css({
   transitionDuration: vars.motion.duration.base,
   transitionTimingFunction: vars.motion.easeStandard,
   '&[data-stack-visible="false"]': { visibility: 'hidden' },
-  '&[data-stack-collapsed="true"] > [data-ui="toast"]': { overflow: 'hidden' },
+  '&[data-stack-collapsed="true"] > [data-ui~="toast"]': { overflow: 'hidden' },
   [REDUCED_MOTION]: { transitionDuration: '0s' },
 });
 const toggleStyle = css({

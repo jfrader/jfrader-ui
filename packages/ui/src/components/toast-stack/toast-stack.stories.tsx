@@ -1,4 +1,4 @@
-import { Component, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Component, useEffect, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -500,7 +500,12 @@ export const Loading: Story = {
   },
 };
 
+function ComposedNotification({ 'data-ui': dataUi, ...props }: ComponentPropsWithRef<'div'> & { 'data-ui'?: string }) {
+  return <div {...props} data-ui={`custom-notification ${dataUi ?? ''}`} />;
+}
+
 export const CollapsedMixedHeights: Story = {
+  args: { slots: { item: ComposedNotification } },
   render: (args) => <Harness {...args} initial={[
     { title: 'Export ready', description: 'The workspace export includes documents, comments and attachments. '.repeat(8), duration: null },
     { title: 'Message sent', duration: null },
@@ -513,8 +518,9 @@ export const CollapsedMixedHeights: Story = {
     await settled(region);
     await userEvent.unhover(region);
     await settled(region);
-    const cards = region.querySelectorAll<HTMLElement>('[data-ui="toast"]');
+    const cards = region.querySelectorAll<HTMLElement>('[data-ui~="toast"]');
     const toggle = within(region).getByRole('button', { name: 'Expand notifications' });
+    await expect(getComputedStyle(cards[1]!).overflow).toBe('hidden');
     await expect(cards[1]!.getBoundingClientRect().height).toBe(cards[0]!.getBoundingClientRect().height);
     await expect(cards[1]!.getBoundingClientRect().top).toBeGreaterThanOrEqual(toggle.getBoundingClientRect().bottom);
     await expect(cards[1]).toHaveAttribute('inert');
