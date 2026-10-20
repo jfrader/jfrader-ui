@@ -235,10 +235,29 @@ const meta = {
         component:
           'Open account actions, change appearance or presence, and sign out from an avatar button.',
       },
-      usage: `- With \`variant="adaptive"\`, content opens beside Trigger on wider screens. Below \`compactBreakpoint\` (640px by default), it opens as a modal bottom sheet with a Close button and drag handle. Focus stays inside; the page outside is inert.
-- Trigger's \`aria-label\` names the menu. Identity's name names the sheet.
-- Theme and status groups report values through \`onValueChange\`. Connect them to your app's theme and presence services. Map \`available\` to Avatar's \`online\` status on Trigger.
-- Sign out can return a promise. The item stays busy until it settles. Success closes the menu; failure keeps it open and announces \`errorMessage\` as an alert for retry.`,
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'Customization', stories: ['CustomSlots'] },
+        { title: 'Identity', stories: ['ShowName', 'CompactHidesName', 'PhotoFallback'] },
+        { title: 'Preferences and state', stories: ['ThemeGroup', 'ControlledAccept'] },
+        { title: 'Sign out', stories: ['SignOutSuccess', 'SignOutErrorRetry', 'SignOutPendingAcrossReopen'] },
+        { title: 'Sheet', stories: ['Sheet', 'SheetHandle'] },
+        { title: 'Identity only', stories: ['NoCommands'] },
+      ],
+      usage: `### When to use
+Offer account actions, appearance and presence choices, and sign out from an avatar button. Connect preference changes to your application's services; choosing a theme or status does not update them automatically. Shortcut hints do not register keyboard shortcuts.
+
+### Presentation and async actions
+The adaptive presentation opens beside the avatar on wider screens and as a modal bottom sheet below 640px by default. The sheet contains focus, makes the rest of the page inert, and locks page scrolling.
+
+A sign-out promise keeps the action busy until it settles. Success closes the surface that started it; failure keeps that surface open and announces an alert for retry. A pending action cannot be started again, and settling it does not close a newly reopened surface.
+
+### Keyboard and accessibility
+Give the avatar button an accessible name that identifies the account. The sheet is named by the displayed identity.
+
+Enter, Space, or ArrowDown opens the first enabled command; ArrowUp opens the last. Arrows wrap over commands and radio options, Home/End jump, and typeahead resets after 500ms. Disabled commands stay visible but are skipped. Left/Right moves within a choice group without selecting; Enter/Space selects and keeps it open.
+
+Accepted Escape or command selection returns focus to the avatar unless the command already moved focus. Desktop Tab out and outside press close without restoring focus; Shift+Tab from the first command returns to the avatar while leaving the menu open. In the sheet, Tab and Shift+Tab cycle inside; Escape, Close, scrim press, or a downward handle drag requests closure and returns focus after acceptance. With no commands, the menu itself receives focus so Escape still works.`,
     },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive). Every other
@@ -299,7 +318,7 @@ export const Default: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
     const error = spyOn(console, 'error');
     return () => error.mockRestore();
   },
-  name: 'Easy mode',
+  name: 'Account actions',
   args: {
     user: USER,
     variant: 'menu',
@@ -322,9 +341,23 @@ export const Default: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
   },
   parameters: {
     docs: {
+      description: { story: 'Open the account menu for profile actions, appearance, presence, and sign out.' },
       source: {
         language: 'tsx',
-        code: `<UserMenu
+        code: `import { Button, UserMenu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[3] });
+function ProfileIcon() {
+  return <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <circle cx="8" cy="5.5" r="2.5" />
+    <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+  </svg>;
+}
+
+<Row>
+<UserMenu
+  variant="menu"
   user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}
   messages={{
     trigger: 'Account menu, Ada Lovelace',
@@ -334,14 +367,16 @@ export const Default: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
     error: 'Sign out failed. Try again.',
   }}
   items={[
-    { label: 'Profile', onSelect: openProfile },
+    { label: 'Profile', icon: <ProfileIcon />, onSelect: openProfile },
     { label: 'Settings', keys: ['Ctrl', ','], onSelect: openSettings },
     { label: 'Billing', disabled: true },
   ]}
-  theme={{ labels: themeLabels, onValueChange: setTheme }}
-  status={{ labels: statusLabels, onValueChange: setStatus }}
+  theme={{ labels: { group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }, onValueChange: setTheme }}
+  status={{ labels: { group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }, onValueChange: setStatus }}
   onSignOut={signOut}
-/>`,
+/>
+<Button>After</Button>
+</Row>`,
       },
     },
   },
@@ -476,7 +511,50 @@ export const EasyAsyncSignOut: StoryObj<(props: UserMenuEasyProps) => ReactNode>
 
 export const CustomSlots: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
   ...Default,
-  name: 'Easy mode custom slotProps',
+  name: 'Part props',
+  parameters: { docs: {
+    description: { story: 'Apply classes to generated account controls, identity, preferences, and sign out.' },
+    source: { language: 'tsx', code: `import { Button, UserMenu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[3] });
+function ProfileIcon() {
+  return <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <circle cx="8" cy="5.5" r="2.5" />
+    <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+  </svg>;
+}
+
+<Row>
+  <UserMenu
+    variant="menu"
+    user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}
+    messages={{
+      trigger: 'Account menu, Ada Lovelace', close: 'Close account menu',
+      signOut: 'Sign out', pending: 'Signing out', error: 'Sign out failed. Try again.',
+    }}
+    items={[
+      { label: 'Profile', icon: <ProfileIcon />, onSelect: openProfile },
+      { label: 'Settings', keys: ['Ctrl', ','], onSelect: openSettings },
+      { label: 'Billing', disabled: true },
+    ]}
+    theme={{ labels: { group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }, onValueChange: setTheme }}
+    status={{ labels: { group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }, onValueChange: setStatus }}
+    onSignOut={signOut}
+    slotProps={{
+      trigger: { className: 'custom-trigger' },
+      content: { className: 'custom-content' },
+      identity: { className: 'custom-identity' },
+      item: { className: 'custom-item' },
+      separator: { className: 'custom-separator' },
+      themeGroup: { className: 'custom-theme-group' },
+      statusGroup: { className: 'custom-status-group' },
+      signOut: { className: 'custom-sign-out' },
+    }}
+  />
+  <Button>After</Button>
+</Row>` },
+  } },
   args: {
     ...Default.args,
     slotProps: {
@@ -526,20 +604,42 @@ export const CustomSlots: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
 };
 
 export const Compound: Story = {
+  name: 'Compound anatomy',
   parameters: {
     docs: {
+      description: { story: 'Compose identity, commands, theme and status choices, and sign out explicitly.' },
       source: {
-        code: `<UserMenu user={user}>
-  <UserMenu.Trigger aria-label={\`Account menu, \${user.name}\`} />
-  <UserMenu.Content closeLabel="Close account menu">
+        language: 'tsx',
+        code: `import { Button, UserMenu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[3] });
+function ProfileIcon() {
+  return <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <circle cx="8" cy="5.5" r="2.5" />
+    <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+  </svg>;
+}
+
+<Row>
+<UserMenu user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}>
+  <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" />
+  <UserMenu.Content variant="menu" closeLabel="Close account menu">
     <UserMenu.Identity />
-    <UserMenu.Item onSelect={openProfile}>Profile</UserMenu.Item>
-    <UserMenu.ThemeGroup labels={themeLabels} onValueChange={setPreference} />
-    <UserMenu.SignOut onSignOut={signOut} pendingLabel="Signing out" errorMessage="Sign out failed">
+    <UserMenu.Item icon={<ProfileIcon />} onSelect={openProfile}>Profile</UserMenu.Item>
+    <UserMenu.Item keys={['Ctrl', ',']} onSelect={openSettings}>Settings</UserMenu.Item>
+    <UserMenu.Item disabled>Billing</UserMenu.Item>
+    <UserMenu.Separator />
+    <UserMenu.ThemeGroup labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }} onValueChange={setTheme} />
+    <UserMenu.StatusGroup labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }} onValueChange={setStatus} />
+    <UserMenu.Separator />
+    <UserMenu.SignOut onSignOut={signOut} onSignOutError={reportError} pendingLabel="Signing out" errorMessage="Sign out failed. Try again.">
       Sign out
     </UserMenu.SignOut>
   </UserMenu.Content>
-</UserMenu>`,
+</UserMenu>
+<Button>After</Button>
+</Row>`,
       },
     },
   },
@@ -820,8 +920,10 @@ function ProfileIcon() {
 };
 
 export const ShowName: Story = {
+  name: 'Name beside avatar',
   parameters: {
     docs: {
+      description: { story: 'Show Ada Lovelace beside the avatar outside compact viewports.' },
       source: {
         language: 'tsx',
         code: `import { Button, styled, UserMenu } from '@jfrader/ui';
@@ -896,8 +998,10 @@ function ProfileIcon() {
 };
 
 export const CompactHidesName: Story = {
+  name: 'Compact avatar',
   parameters: {
     docs: {
+      description: { story: 'Keep the account name accessible while showing only the avatar in compact mode.' },
       source: {
         language: 'tsx',
         code: `import { Button, styled, UserMenu } from '@jfrader/ui';
@@ -985,6 +1089,47 @@ function PhotoMenu(args: StoryArgs) {
 PhotoMenu.displayName = 'PhotoMenu';
 
 export const PhotoFallback: Story = {
+  name: 'Photo fallback and retry',
+  parameters: { docs: {
+    description: { story: 'A failed photo shows initials; choose New photo to retry with a different image.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, UserMenu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[3] });
+function ProfileIcon() {
+  return <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <circle cx="8" cy="5.5" r="2.5" />
+    <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+  </svg>;
+}
+
+function AccountPhoto() {
+  const [src, setSrc] = useState('data:image/png;base64,broken');
+  return (
+    <Row>
+      <Row>
+        <UserMenu user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro', avatarSrc: src }}>
+          <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" />
+          <UserMenu.Content variant="menu" closeLabel="Close account menu">
+            <UserMenu.Identity />
+            <UserMenu.Item icon={<ProfileIcon />} onSelect={openProfile}>Profile</UserMenu.Item>
+            <UserMenu.Item keys={['Ctrl', ',']} onSelect={openSettings}>Settings</UserMenu.Item>
+            <UserMenu.Item disabled>Billing</UserMenu.Item>
+            <UserMenu.Separator />
+            <UserMenu.ThemeGroup labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }} onValueChange={setTheme} />
+            <UserMenu.StatusGroup labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }} onValueChange={setStatus} />
+            <UserMenu.Separator />
+            <UserMenu.SignOut onSignOut={signOut} onSignOutError={reportError} pendingLabel="Signing out" errorMessage="Sign out failed. Try again.">Sign out</UserMenu.SignOut>
+          </UserMenu.Content>
+        </UserMenu>
+        <Button>After</Button>
+      </Row>
+      <Button onClick={() => setSrc('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E')}>New photo</Button>
+    </Row>
+  );
+}` },
+  } },
   render: (args) => <PhotoMenu {...args} />,
   play: async ({ canvasElement }) => {
     const trigger = getTrigger(canvasElement);
@@ -1107,8 +1252,10 @@ export const AccountCommands: Story = {
 };
 
 export const ThemeGroup: Story = {
+  name: 'Theme choices',
   parameters: {
     docs: {
+      description: { story: 'Move between appearance choices with Left/Right, then select with Enter or Space.' },
       source: {
         language: 'tsx',
         code: `import { Button, styled, UserMenu } from '@jfrader/ui';
@@ -1323,6 +1470,44 @@ export const ControlledAxesReject: Story = {
 };
 
 export const ControlledAccept: Story = {
+  name: 'Controlled opening',
+  parameters: { docs: {
+    description: { story: 'Accept account-menu opening and dismissal in application state.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, UserMenu, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[3] });
+function ProfileIcon() {
+  return <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <circle cx="8" cy="5.5" r="2.5" />
+    <path d="M3 13.5c.8-2.4 2.7-3.5 5-3.5s4.2 1.1 5 3.5" />
+  </svg>;
+}
+
+function AccountActions() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Row>
+      <UserMenu user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }} open={open} onOpenChange={setOpen}>
+        <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" />
+        <UserMenu.Content variant="menu" closeLabel="Close account menu">
+          <UserMenu.Identity />
+          <UserMenu.Item icon={<ProfileIcon />} onSelect={openProfile}>Profile</UserMenu.Item>
+          <UserMenu.Item keys={['Ctrl', ',']} onSelect={openSettings}>Settings</UserMenu.Item>
+          <UserMenu.Item disabled>Billing</UserMenu.Item>
+          <UserMenu.Separator />
+          <UserMenu.ThemeGroup labels={{ group: 'Appearance', light: 'Light', dark: 'Dark', system: 'System' }} onValueChange={setTheme} />
+          <UserMenu.StatusGroup labels={{ group: 'Status', available: 'Available', busy: 'Busy', away: 'Away' }} onValueChange={setStatus} />
+          <UserMenu.Separator />
+          <UserMenu.SignOut onSignOut={signOut} onSignOutError={reportError} pendingLabel="Signing out" errorMessage="Sign out failed. Try again.">Sign out</UserMenu.SignOut>
+        </UserMenu.Content>
+      </UserMenu>
+      <Button>After</Button>
+    </Row>
+  );
+}` },
+  } },
   render: function Render(args) {
     const [open, setOpen] = useState(false);
     return (
@@ -1427,8 +1612,10 @@ function ProfileIcon() {
 };
 
 export const SignOutSuccess: Story = {
+  name: 'Sign out success',
   parameters: {
     docs: {
+      description: { story: 'Choose Sign out and let the action finish to close the account menu.' },
       source: {
         language: 'tsx',
         code: `import { Button, styled, UserMenu } from '@jfrader/ui';
@@ -1521,8 +1708,10 @@ function ProfileIcon() {
 };
 
 export const SignOutErrorRetry: Story = {
+  name: 'Sign out error and retry',
   parameters: {
     docs: {
+      description: { story: 'A failed sign out announces an error and leaves the action available for retry.' },
       source: {
         language: 'tsx',
         code: `import { Button, styled, UserMenu } from '@jfrader/ui';
@@ -1716,8 +1905,10 @@ let attempt = 0;
 };
 
 export const SignOutPendingAcrossReopen: Story = {
+  name: 'Pending sign out across reopen',
   parameters: {
     docs: {
+      description: { story: 'Reopen during sign out: the action stays busy and its completion does not dismiss the new surface.' },
       source: {
         language: 'tsx',
         code: `import { Button, styled, UserMenu } from '@jfrader/ui';
@@ -1875,6 +2066,18 @@ export const SignOutErrorOpen: Story = {
 };
 
 export const NoCommands: Story = {
+  name: 'Identity without commands',
+  parameters: { docs: {
+    description: { story: 'Open an identity-only menu; focus lands on the menu and Escape returns to the avatar.' },
+    source: { language: 'tsx', code: `import { UserMenu } from '@jfrader/ui';
+
+<UserMenu user={{ name: 'Ada Lovelace', email: 'ada@example.com', plan: 'Pro' }}>
+  <UserMenu.Trigger aria-label="Account menu, Ada Lovelace" />
+  <UserMenu.Content variant="menu">
+    <UserMenu.Identity />
+  </UserMenu.Content>
+</UserMenu>` },
+  } },
   render: (args) => (
     <UserMenu user={args.user} onOpenChange={args.onOpenChange}>
       <UserMenu.Trigger aria-label={TRIGGER_LABEL} />
@@ -1941,8 +2144,10 @@ export const OpenSheet: Story = {
 };
 
 export const Sheet: Story = {
+  name: 'Modal sheet',
   parameters: {
     docs: {
+      description: { story: 'Open account actions in a bottom sheet with contained focus and a Close button.' },
       source: {
         language: 'tsx',
         code: `import { Button, styled, UserMenu } from '@jfrader/ui';
@@ -2084,8 +2289,10 @@ export const SheetRejectedClose: Story = {
 };
 
 export const SheetHandle: Story = {
+  name: 'Drag the sheet handle',
   parameters: {
     docs: {
+      description: { story: 'Drag the handle downward and release past 80px to request dismissal, or use Close.' },
       source: {
         language: 'tsx',
         code: `import { Button, styled, UserMenu } from '@jfrader/ui';
