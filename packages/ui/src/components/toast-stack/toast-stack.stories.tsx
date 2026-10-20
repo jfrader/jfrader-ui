@@ -28,25 +28,70 @@ const meta = {
   tags: ['autodocs'],
   parameters: {
     docs: {
-      source: { code: '<Toast viewport="stack" viewportProps={{ maxVisible: 3 }}><PublishButton /></Toast>' },
       description: {
         component:
           'Show toast messages in a stack and dismiss them.',
       },
-      usage: `- Set \`Toast viewport="stack"\` to mount ToastStack automatically; \`viewportProps\` and \`slotProps.viewport\` configure it.
-- Use the renderer\'s \`component\` / \`slots.root\` to replace its div. \`slotProps\` exposes root, list, toggle and item styling. Declare replacement components outside render and forward all props and ref.
-- Without automatic rendering, mount one queue renderer per Toast provider.
-- Toasts land in the corner of the page. Set \`contained\` with a positioned host to keep the stack inside a panel.
-- Keep timed messages available elsewhere after they disappear.
-- Tab visits the toggle and controls from newest to oldest. Escape dismisses the focused toast.
-- Enable Alt+T only when you want that shortcut.
-- Environment stories check structure. Check media preferences and screen readers separately.`,
+      sections: [
+        { title: 'Basic', stories: ['Default'] },
+        { title: 'Queue and stacking', stories: ['List', 'OverflowPromotion'] },
+        { title: 'Placement', stories: ['Positions', 'Contained'] },
+        { title: 'Pause and limits', stories: ['PauseOnHover'] },
+        { title: 'Actions', stories: ['UndoPrevented'] },
+        { title: 'Controlled updates', stories: ['LoadingUpdate'] },
+      ],
+      usage: `### When to use
+Group non-blocking notifications in a compact pile, or use a list when several messages need to remain readable together. Keep timed information available elsewhere.
+
+### Constraints
+Mount one queue renderer per provider. A contained stack needs a positioned host with enough height for the expanded messages. The queue limit removes the oldest message; the visible limit only changes the collapsed pile.
+
+Hovering or focusing the stack pauses dismissal. Messages hidden behind the newest card keep their remaining time until exposed.
+
+### Keyboard and accessibility
+Tab visits the toggle and controls from newest to oldest. Escape dismisses the focused toast, not a notification elsewhere on the page. Enter and Space activate buttons. The optional Alt+T shortcut focuses notifications but does not interrupt editing in a text field.
+
+Only exposed messages announce. Use persistent notifications for actions readers must complete.`,
     },
   },
 } satisfies Meta<typeof ToastStack>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function stackSource(initial: ToastOptions[], props = '', max = 12, blockSize = '20rem') {
+  return `import { useEffect, useRef } from 'react';
+import { Button, Toast, ToastStack, styled, useToast } from '@jfrader/ui';
+
+const Panel = styled.div({ position: 'relative', blockSize: '${blockSize}' });
+
+function Notifications() {
+  const { toast, update, dismiss } = useToast();
+  const ids = useRef<string[]>([]);
+  const initialized = useRef(false);
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+    ids.current = ${JSON.stringify(initial, null, 2)}.map((message) => toast(message));
+  }, [toast]);
+  return <>
+    <Button onClick={() => ids.current.push(toast({ title: 'New notification', duration: null }))}>Notify</Button>
+    <Button onClick={() => {
+      const id = ids.current.at(-1);
+      if (id) update(id, { title: 'Saved successfully', loading: false, duration: null, action: undefined });
+    }}>Complete</Button>
+    <Button onClick={() => {
+      const id = ids.current.at(-1);
+      if (id) dismiss(id);
+    }}>Dismiss newest</Button>
+  </>;
+}
+
+<Toast max={${max}}>
+  <Notifications />
+  <Panel><ToastStack contained ${props}/></Panel>
+</Toast>`;
+}
 
 function Controls({ initial, mode }: { initial: ToastOptions[]; mode?: 'update' | 'evict' }) {
   const api = useToast();
@@ -172,10 +217,15 @@ async function settled(element: HTMLElement) {
 }
 
 export const Default: Story = {
-  render: (args) => <Surface><Toast max={12} viewport="stack" viewportProps={{ contained: true, ...args }}>
+  name: 'Notification stack',
+  parameters: { docs: {
+    description: { story: 'Expand the pile to read earlier messages or add another notification.' },
+    source: { language: 'tsx', code: stackSource(messages.slice(0, 3), '', 12, '30rem') },
+  } },
+  render: (args) => <Surface blockSize="30rem"><Toast max={12} viewport="stack" viewportProps={{ contained: true, ...args }}>
     <Controls initial={messages.slice(0, 3)} />
   </Toast></Surface>,
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, userEvent }) => {
     const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
     await settled(region);
     await expect(region).not.toHaveAttribute('aria-live');
@@ -193,6 +243,11 @@ export const Default: Story = {
     await expect(cards[1]?.querySelector('[role="status"]')).toBeEmptyDOMElement();
     await expect(within(region).getAllByRole('status')).toHaveLength(1);
     await expect(within(region).getByRole('status').querySelector('button')).toBeNull();
+    await userEvent.hover(region);
+    await settled(region);
+    const outside = within(canvasElement).getByRole('button', { name: 'Outside' });
+    const toggle = within(region).getByRole('button', { name: 'Collapse notifications' });
+    await expect(toggle.getBoundingClientRect().top).toBeGreaterThanOrEqual(outside.getBoundingClientRect().bottom);
   },
 };
 
@@ -264,6 +319,11 @@ export const ViewportAnchored: Story = {
   },
 };
 export const List: Story = {
+  name: 'Expanded list',
+  parameters: { docs: {
+    description: { story: 'Keep all queued messages readable in a list instead of a collapsed pile.' },
+    source: { language: 'tsx', code: stackSource(messages.slice(0, 3), 'variant="list" ') },
+  } },
   args: { variant: 'list' },
   render: (args) => <Harness {...args} />,
   play: async ({ canvasElement }) => {
@@ -276,7 +336,7 @@ export const List: Story = {
     ).toBeGreaterThan(6);
   },
 };
-export const PersistentStack: Story = { ...List };
+export const PersistentStack: Story = { ...List, name: 'Persistent stack' };
 export const Empty: Story = { render: (args) => <Harness {...args} initial={[]} /> };
 export const AllTones: Story = {
   args: { variant: 'list' },
@@ -292,6 +352,11 @@ export const AllTones: Story = {
   ),
 };
 export const OverflowPromotion: Story = {
+  name: 'Queue and visible limits',
+  parameters: { docs: {
+    description: { story: 'Keep four messages in the queue while showing two cards in the collapsed pile.' },
+    source: { language: 'tsx', code: stackSource(messages, 'maxVisible={2} ', 4) },
+  } },
   args: { maxVisible: 2 },
   render: (args) => <Harness {...args} initial={messages} max={4} />,
   play: async ({ canvasElement, userEvent }) => {
@@ -373,6 +438,11 @@ export const HoverAndTouchExpansion: Story = {
   },
 };
 export const PauseOnHover: Story = {
+  name: 'Pause timed messages',
+  parameters: { docs: {
+    description: { story: 'Hover or focus the stack to pause its short dismissal countdown.' },
+    source: { language: 'tsx', code: stackSource(messages.slice(0, 2).map((item) => ({ ...item, duration: 600 }))) },
+  } },
   render: (args) => (
     <Harness {...args} initial={messages.slice(0, 2).map((item) => ({ ...item, duration: 600 }))} />
   ),
@@ -392,6 +462,11 @@ export const PauseOnHover: Story = {
   },
 };
 export const LoadingUpdate: Story = {
+  name: 'Complete a loading message',
+  parameters: { docs: {
+    description: { story: 'Select Complete to replace a loading message without adding another card.' },
+    source: { language: 'tsx', code: stackSource([{ title: 'Saving project', loading: true }]) },
+  } },
   render: (args) => <Harness {...args} initial={[{ title: 'Saving project', loading: true }]} />,
   play: async ({ canvasElement, userEvent }) => {
     const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
@@ -407,6 +482,32 @@ export const LoadingUpdate: Story = {
   },
 };
 export const UndoPrevented: Story = {
+  name: 'Keep an action message open',
+  parameters: { docs: {
+    description: { story: 'Activate Undo without dismissing the notification.' },
+    source: { language: 'tsx', code: `import { useEffect, useRef } from 'react';
+import { Toast, ToastStack, styled, useToast } from '@jfrader/ui';
+
+const Panel = styled.div({ position: 'relative', blockSize: '20rem' });
+
+function ArchiveNotice() {
+  const { toast } = useToast();
+  const initialized = useRef(false);
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+    toast({ title: 'Message archived', duration: null,
+      action: { label: 'Undo', onClick: (event) => event.preventDefault() },
+    });
+  }, [toast]);
+  return null;
+}
+
+<Toast max={12}>
+  <ArchiveNotice />
+  <Panel><ToastStack contained variant="list" /></Panel>
+</Toast>` },
+  } },
   args: { variant: 'list' },
   render: (args) => (
     <Harness
@@ -427,7 +528,7 @@ export const UndoPrevented: Story = {
     await sleep(280);
   },
 };
-export const ControlledByImperativeQueue: Story = { ...LoadingUpdate };
+export const ControlledByImperativeQueue: Story = { ...LoadingUpdate, name: 'Controlled by imperative queue' };
 export const UpdateFocusedAction: Story = {
   render: (args) => (
     <Harness {...args} mode="update" initial={[{ title: 'Saving project', loading: true }]} />
@@ -509,11 +610,21 @@ export const QueueEvictionFocus: Story = {
   },
 };
 export const Positions: Story = {
+  name: 'Start-edge placement',
+  parameters: { docs: {
+    description: { story: 'Place the stack at the bottom start edge of its host.' },
+    source: { language: 'tsx', code: stackSource(messages.slice(0, 3), 'position="bottom-start" ') },
+  } },
   args: { position: 'bottom-start' },
   render: (args) => <Harness {...args} />,
 };
 /** The stack fills your own container; give it a positioned host and set `contained`. */
 export const Contained: Story = {
+  name: 'Contain notifications in a panel',
+  parameters: { docs: {
+    description: { story: 'Anchor the stack inside a taller positioned panel instead of the page viewport.' },
+    source: { language: 'tsx', code: stackSource(messages.slice(0, 3), '', 12, '30rem') },
+  } },
   args: { contained: true },
   render: (args) => <Harness {...args} blockSize="30rem" />,
 };
@@ -523,6 +634,7 @@ export const RTL: Story = {
 };
 export const ReducedMotion: Story = {
   ...PersistentStack,
+  name: 'Reduced motion',
   parameters: {
     docs: {
       description: {
@@ -557,6 +669,7 @@ export const ReducedMotion: Story = {
 };
 export const ForcedColors: Story = {
   ...PersistentStack,
+  name: 'Forced colors',
   parameters: {
     docs: {
       description: {
@@ -609,6 +722,7 @@ export const ScrollableQueue: Story = {
 };
 export const LightTheme: Story = {
   ...PersistentStack,
+  name: 'Light theme',
   globals: { theme: 'light' },
   decorators: [withLightTheme],
 };
