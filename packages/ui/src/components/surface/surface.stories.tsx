@@ -57,24 +57,15 @@ const meta = {
   parameters: {
     docs: {
       description: { component: 'Give a panel a background, border, rounded corners, and optional shadow.' },
-      usage: `### Material and spacing
-Surface has no padding or interactive behavior. Add spacing with sx, or use Card for headings, content and actions. Flat is the default; raised and floating change only the shadow. Surface adds no role, keyboard commands, focus movement, transitions, or landmarks.
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Variants'] },
+        { title: 'Appearance', stories: ['Contrast', 'DefaultInsideContrast'] },
+      ],
+      usage: `### When to use
+Give a panel its own background and border without adding layout or interaction. Use Card for a group with headings and actions. Surface supplies no spacing.
 
-### Appearance
-Omitted appearance and default inherit the nearest appearance. Contrast uses fixed dark charcoal on either page theme. Use ThemeRoot to change the named theme; default does not reset a contrast parent. Descendant portals retain the resolved scope and portal container.
-
-### Root replacement
-component is exactly sugar for slots.root. Only root is replaceable. slots.root wins when both are supplied. Declare component types outside render: changing their identity remounts the root, losing focus and uncontrolled form state. Development warnings detect identity changes, not inline functions on their first render.
-
-A replacement must render one div and forward ref, className, style, children, native handlers, data attributes and ARIA. It supplies material instead of the default material. Apply its styles before the supplied className. Do not use an intrinsic string, element, Fragment, portal, display: contents, or imperative ref handle. Runtime diagnostics check the registered div, not complete adapter conformance.
-
-| Slot | Replacement | Props |
-| --- | --- | --- |
-| root | component or slots.root: ComponentType<SurfacePartProps> | slotProps.root: div props and sx |
-
-Extra div props flow into root. slotProps.root wins collisions, including children and event handlers; displaced handlers are not also called. className combines and style shallow-merges, slot values last. Styling order is adapter material → host structure → slot sx/classes → consumer classes → consumer sx. Inline style retains normal CSS precedence.
-
-Composed roots keep both data-ui tokens. Select them with [data-ui~="surface"], not an exact-value selector. Surface uses data-surface-variant and preserves a host's data-variant.`,
+### Accessibility
+A surface adds no landmark, keyboard commands, focus movement, or transitions. Put actions in buttons or links inside it and choose headings that fit the page.`,
     },
   },
 } satisfies Meta<typeof Surface>;
@@ -98,6 +89,13 @@ export type SurfaceTypeRegression = {
 };
 
 export const Default: Story = {
+  name: 'Basic panel',
+  parameters: { docs: {
+    description: { story: 'Start with a flat panel without padding or interactive behavior.' },
+    source: { language: 'tsx', code: `import { Surface } from '@jfrader/ui';
+
+<Surface>Panel contents</Surface>` },
+  } },
   render: (args) => <Surface {...args} />,
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('[data-ui="surface"]')!;
@@ -111,6 +109,19 @@ export const Default: Story = {
 };
 
 export const Variants: Story = {
+  name: 'Panel shadows',
+  parameters: { docs: {
+    description: { story: 'Compare flat, raised, and floating panels with the same spacing.' },
+    source: { language: 'tsx', code: `import { Surface, styled, theme } from '@jfrader/ui';
+
+const PaddedSurface = styled(Surface)({ padding: theme.space[4] });
+
+<>
+  <PaddedSurface variant="flat">flat</PaddedSurface>
+  <PaddedSurface variant="raised">raised</PaddedSurface>
+  <PaddedSurface variant="floating">floating</PaddedSurface>
+</>` },
+  } },
   render: (args) => <>{(['flat', 'raised', 'floating'] as const).map((variant) =>
     <PaddedSurface {...args} key={variant} variant={variant}>{variant}</PaddedSurface>)}</>,
   play: async ({ canvasElement }) => {
@@ -122,9 +133,20 @@ export const Variants: Story = {
   },
 };
 
-export const Light: Story = { ...Variants, decorators: [withLightTheme], globals: { theme: 'light' } };
+export const Light: Story = { ...Variants, name: 'Light', decorators: [withLightTheme], globals: { theme: 'light' } };
 
 export const Contrast: Story = {
+  name: 'Charcoal panel',
+  parameters: { docs: {
+    description: { story: 'Use a charcoal panel on a light page.' },
+    source: { language: 'tsx', code: `import { Surface, ThemeRoot, styled, theme } from '@jfrader/ui';
+
+const PaddedSurface = styled(Surface)({ padding: theme.space[4] });
+
+<ThemeRoot theme="light">
+  <PaddedSurface appearance="contrast" variant="raised">Panel contents</PaddedSurface>
+</ThemeRoot>` },
+  } },
   args: { appearance: 'contrast', variant: 'raised', sx: padding },
   decorators: [withLightTheme], globals: { theme: 'light' },
   render: (args) => <Surface {...args} />,
@@ -137,6 +159,19 @@ export const Contrast: Story = {
 };
 
 export const DefaultInsideContrast: Story = {
+  name: 'Inherited contrast',
+  parameters: { docs: {
+    description: { story: 'A nested default panel keeps its parent’s charcoal appearance rather than resetting to the page theme.' },
+    source: { language: 'tsx', code: `import { Surface, ThemeRoot, styled, theme } from '@jfrader/ui';
+
+const PaddedSurface = styled(Surface)({ padding: theme.space[4] });
+
+<ThemeRoot theme="light">
+  <PaddedSurface appearance="contrast">
+    <Surface appearance="default">Inherited appearance</Surface>
+  </PaddedSurface>
+</ThemeRoot>` },
+  } },
   render: (args) => <ThemeRoot theme="light"><PaddedSurface appearance="contrast">
     <Surface {...args} appearance="default"><ScopeProbe id="inherited" />Inherited appearance</Surface>
   </PaddedSurface></ThemeRoot>,
@@ -502,6 +537,7 @@ export const SsrHydration: Story = {
 /** Enable forced colors in the browser; all variants retain a visible border. */
 export const ForcedColors: Story = {
   ...Variants,
+  name: 'Forced colors',
   play: async ({ canvasElement }) => {
     for (const root of canvasElement.querySelectorAll('[data-ui="surface"]')) {
       await expect(getComputedStyle(root).borderTopStyle).toBe('solid');

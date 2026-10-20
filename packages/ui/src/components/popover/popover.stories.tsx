@@ -45,18 +45,46 @@ const Row = styled.div({
   alignItems: 'center',
 });
 
+const shareActionsSource = `import { useId } from 'react';
+import { Button, Popover, styled, theme } from '@jfrader/ui';
+
+const Heading = styled.h2({ margin: 0, marginBlockEnd: theme.space[3], fontSize: theme.textSize.md, fontWeight: theme.fontWeight.semibold });
+const Actions = styled.div({ display: 'flex', gap: theme.space[2] });
+
+function ShareActions() {
+  const headingId = useId();
+  return (
+    <Popover>
+      <Popover.Trigger>Share</Popover.Trigger>
+      <Popover.Content aria-labelledby={headingId}>
+        <Heading id={headingId}>Share link</Heading>
+        <Actions>
+          <Button size="sm">Copy link</Button>
+          <Button size="sm">Email link</Button>
+        </Actions>
+      </Popover.Content>
+    </Popover>
+  );
+}`;
+
 const meta: Meta<PopoverProps> = {
   title: 'Surfaces/Popover',
   component: Popover,
   parameters: {
     docs: {
       description: { component: 'Open a panel beside a button without blocking the rest of the page.' },
-      usage: `- Pass triggerLabel, label and content for a generated trigger and named panel. Use slots or slotProps to customize those parts.
-- With compound parts, give the panel a name with aria-labelledby (preferred) or aria-label.
-- Enter/Space toggles; Escape and outside press close.
-- Opening does not move focus or trap it. Tab follows page order across the portal and does not close the panel.
-- Escape returns focus to the trigger only after an accepted close. Outside press closes without moving focus.
-- Nested layers handle Escape and outside press before the parent.`,
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'Composition', stories: ['CustomParts', 'Controlled'] },
+        { title: 'Interaction', stories: ['EasyDisabled', 'EscapeReturnFocus', 'KeyboardEntry', 'OutsideClick', 'NestedEscapeFromChild'] },
+      ],
+      usage: `### When to use
+Show related information or actions beside a button while keeping the rest of the page available. Use a modal dialog when the task must block the page.
+
+### Keyboard and accessibility
+Give the panel an accessible name, preferably from a visible heading. Enter or Space toggles it; Escape and outside press request closure. Opening does not move focus. Tab follows page order through the panel and out without closing it or trapping focus.
+
+Escape returns focus to the trigger only after an accepted close. Outside press closes without moving focus to the trigger. Nested layers handle Escape and outside press before their parent.`,
     },
   },
 };
@@ -187,14 +215,21 @@ async function expectClosed(canvasElement: HTMLElement, trigger: HTMLElement) {
 }
 
 export const Default: StoryObj<(props: PopoverEasyProps) => ReactNode> = {
+  name: 'Share a link',
   args: { triggerLabel: TRIGGER, label: HEADING, content: <ShareLink /> },
   render: (args) => <Popover {...args} />,
-  parameters: { docs: { source: { code: `<Popover
+  parameters: { docs: {
+    description: { story: 'Open a named panel with a link and a copy action.' },
+    source: { language: 'tsx', code: `import { Button, Popover, styled, theme } from '@jfrader/ui';
+
+const LinkText = styled.p({ margin: 0, marginBlockEnd: theme.space[3] });
+
+<Popover
   triggerLabel="Share"
   label="Share link"
   content={
     <>
-      <p>ui.jfrader.com/s/q3-roadmap</p>
+      <LinkText>ui.jfrader.com/s/q3-roadmap</LinkText>
       <Button size="sm">Copy link</Button>
     </>
   }
@@ -215,13 +250,11 @@ export const Default: StoryObj<(props: PopoverEasyProps) => ReactNode> = {
 
 /** Assemble a trigger and panel with a visible heading. */
 export const Compound: Story = {
+  name: 'Trigger and panel',
   render: (args) => <PopoverExample {...args} />,
-  parameters: { docs: { source: { code: `<Popover>
-  <Popover.Trigger>Share</Popover.Trigger>
-  <Popover.Content aria-label="Share link">
-    <Button>Copy link</Button>
-  </Popover.Content>
-</Popover>` } } },
+  parameters: { docs: {
+    description: { story: 'Name the panel from its visible heading and group the copy and email actions.' },
+    source: { language: 'tsx', code: shareActionsSource } } },
   play: async ({ canvasElement }) => {
     const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
     await expect(bodyOf(canvasElement).queryByRole('dialog')).toBeNull();
@@ -243,14 +276,35 @@ export const Compound: Story = {
 
 /** Set props on the generated trigger and panel. */
 export const CustomParts: StoryObj<(props: PopoverEasyProps) => ReactNode> = {
+  name: 'Custom trigger and panel',
   args: {
     triggerLabel: TRIGGER, label: HEADING, content: <Button size="sm">Copy link</Button>,
     slots: { trigger: PopoverButtonRoot, content: PopoverPanelRoot },
     slotProps: { trigger: { className: 'share-trigger', ref: fn() }, content: { className: 'share-panel', ref: fn(), sx: { padding: vars.space[6] } } },
   },
   render: (args) => <Popover {...args} />,
-  parameters: { docs: { source: { code: `<Popover triggerLabel="Share" label="Share link" content={<Button>Copy link</Button>}
-  slotProps={{ content: { sx: { padding: theme.space[6] } } }} />` } } },
+  parameters: { docs: {
+    description: { story: 'Replace the generated button and panel while adding classes and panel spacing.' },
+    source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
+import { Button, Popover, theme } from '@jfrader/ui';
+
+function ShareTrigger(props: ComponentPropsWithRef<'button'>) {
+  return <button {...props} data-generated-trigger="" />;
+}
+function SharePanel(props: ComponentPropsWithRef<'div'>) {
+  return <div {...props} data-generated-panel="" />;
+}
+
+<Popover
+  triggerLabel="Share"
+  label="Share link"
+  content={<Button size="sm">Copy link</Button>}
+  slots={{ trigger: ShareTrigger, content: SharePanel }}
+  slotProps={{
+    trigger: { className: 'share-trigger' },
+    content: { className: 'share-panel', sx: { padding: theme.space[6] } },
+  }}
+/>` } } },
   play: async ({ args, canvasElement, userEvent }) => {
     const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
     await expect(trigger).toHaveClass('share-trigger');
@@ -267,6 +321,13 @@ export const CustomParts: StoryObj<(props: PopoverEasyProps) => ReactNode> = {
 };
 
 export const EasyDisabled: StoryObj<(props: PopoverEasyProps) => ReactNode> = {
+  name: 'Disabled trigger',
+  parameters: { docs: {
+    description: { story: 'A disabled Share button cannot open the panel.' },
+    source: { language: 'tsx', code: `import { Popover } from '@jfrader/ui';
+
+<Popover triggerLabel="Share" label="Share link" content="Options" slotProps={{ trigger: { disabled: true } }} />` },
+  } },
   args: { triggerLabel: TRIGGER, label: HEADING, content: 'Options', slotProps: { trigger: { disabled: true } } },
   render: (args) => <Popover {...args} />,
   play: async ({ canvasElement, userEvent }) => {
@@ -328,6 +389,32 @@ export const LongContent: Story = {
 };
 
 export const Controlled: Story = {
+  name: 'Controlled panel',
+  parameters: { docs: {
+    description: { story: 'Keep the panel’s open state in the parent and accept open and close requests.' },
+    source: { language: 'tsx', code: `import { useId, useState } from 'react';
+import { Button, Popover, styled, theme } from '@jfrader/ui';
+
+const Heading = styled.h2({ margin: 0, marginBlockEnd: theme.space[3], fontSize: theme.textSize.md, fontWeight: theme.fontWeight.semibold });
+const Actions = styled.div({ display: 'flex', gap: theme.space[2] });
+
+function ControlledShare() {
+  const [open, setOpen] = useState(false);
+  const headingId = useId();
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <Popover.Trigger>Share</Popover.Trigger>
+      <Popover.Content aria-labelledby={headingId}>
+        <Heading id={headingId}>Share link</Heading>
+        <Actions>
+          <Button size="sm">Copy link</Button>
+          <Button size="sm">Email link</Button>
+        </Actions>
+      </Popover.Content>
+    </Popover>
+  );
+}` },
+  } },
   args: { onOpenChange: fn() },
   render: (args) => <ControlledPopover {...args} />,
   play: async ({ args, canvasElement }) => {
@@ -343,6 +430,11 @@ export const Controlled: Story = {
 };
 
 export const EscapeReturnFocus: Story = {
+  name: 'Escape and focus return',
+  parameters: { docs: {
+    description: { story: 'Open the panel, focus Copy link, then press Escape to return to Share.' },
+    source: { language: 'tsx', code: shareActionsSource },
+  } },
   render: (args) => <PopoverExample {...args} />,
   play: async ({ canvasElement }) => {
     const { trigger, popover } = await openPopover(canvasElement);
@@ -375,6 +467,35 @@ export const RejectedControlled: Story = {
 };
 
 export const KeyboardEntry: Story = {
+  name: 'Tab through the panel',
+  parameters: { docs: {
+    description: { story: 'Open with Enter and Tab through both actions to After popover without closing the panel.' },
+    source: { language: 'tsx', code: `import { useId } from 'react';
+import { Button, Popover, styled, theme } from '@jfrader/ui';
+
+const Row = styled.div({ display: 'flex', gap: theme.space[3], alignItems: 'center' });
+const Heading = styled.h2({ margin: 0, marginBlockEnd: theme.space[3], fontSize: theme.textSize.md, fontWeight: theme.fontWeight.semibold });
+const Actions = styled.div({ display: 'flex', gap: theme.space[2] });
+
+function KeyboardShare() {
+  const headingId = useId();
+  return (
+    <Row>
+      <Popover>
+        <Popover.Trigger>Share</Popover.Trigger>
+        <Popover.Content aria-labelledby={headingId}>
+          <Heading id={headingId}>Share link</Heading>
+          <Actions>
+            <Button size="sm">Copy link</Button>
+            <Button size="sm">Email link</Button>
+          </Actions>
+        </Popover.Content>
+      </Popover>
+      <Button>After popover</Button>
+    </Row>
+  );
+}` },
+  } },
   render: (args) => <PopoverWithAfter {...args} />,
   play: async ({ canvasElement }) => {
     const { ownerDocument } = canvasElement;
@@ -400,6 +521,35 @@ export const KeyboardEntry: Story = {
 };
 
 export const OutsideClick: Story = {
+  name: 'Outside press',
+  parameters: { docs: {
+    description: { story: 'Click Outside target to close the panel while leaving focus on that button.' },
+    source: { language: 'tsx', code: `import { useId } from 'react';
+import { Button, Popover, styled, theme } from '@jfrader/ui';
+
+const Row = styled.div({ display: 'flex', gap: theme.space[3], alignItems: 'center' });
+const Heading = styled.h2({ margin: 0, marginBlockEnd: theme.space[3], fontSize: theme.textSize.md, fontWeight: theme.fontWeight.semibold });
+const Actions = styled.div({ display: 'flex', gap: theme.space[2] });
+
+function OutsideShare() {
+  const headingId = useId();
+  return (
+    <Row>
+      <Popover>
+        <Popover.Trigger>Share</Popover.Trigger>
+        <Popover.Content aria-labelledby={headingId}>
+          <Heading id={headingId}>Share link</Heading>
+          <Actions>
+            <Button size="sm">Copy link</Button>
+            <Button size="sm">Email link</Button>
+          </Actions>
+        </Popover.Content>
+      </Popover>
+      <Button>Outside target</Button>
+    </Row>
+  );
+}` },
+  } },
   render: (args) => <PopoverWithOutside {...args} />,
   play: async ({ canvasElement }) => {
     const { ownerDocument } = canvasElement;
@@ -500,6 +650,28 @@ export const NestedEscapeFromParent: Story = {
 };
 
 export const NestedEscapeFromChild: Story = {
+  name: 'Nested panels',
+  parameters: { docs: {
+    description: { story: 'Open Link settings inside Share; Escape closes the inner panel before the outer one.' },
+    source: { language: 'tsx', code: `import { Button, Popover, styled, theme } from '@jfrader/ui';
+
+const Actions = styled.div({ display: 'flex', gap: theme.space[2] });
+
+<Popover>
+  <Popover.Trigger>Share</Popover.Trigger>
+  <Popover.Content aria-label="Share link">
+    <Actions>
+      <Button size="sm">Copy link</Button>
+      <Popover>
+        <Popover.Trigger>Link settings</Popover.Trigger>
+        <Popover.Content aria-label="Link settings">
+          <Button size="sm">Expire link</Button>
+        </Popover.Content>
+      </Popover>
+    </Actions>
+  </Popover.Content>
+</Popover>` },
+  } },
   render: () => <NestedPopovers />,
   play: async ({ canvasElement }) => {
     const layers = await openNestedPopovers(canvasElement);

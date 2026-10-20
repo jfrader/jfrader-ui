@@ -58,6 +58,17 @@ const ACCESS = [
   { value: 'edit', label: 'Can edit' },
 ];
 const CHANNELS = [{ id: 'team', label: 'Team channel', doneLabel: 'Shared with team' }];
+const shareDataSource = `const people = [
+  { id: 'ada', name: 'Ada Lovelace' },
+  { id: 'grace', name: 'Grace Hopper' },
+  { id: 'linus', name: 'Linus Torvalds' },
+];
+const accessOptions = [
+  { value: 'view', label: 'Can view' },
+  { value: 'blocked', label: 'Owner only', disabled: true },
+  { value: 'edit', label: 'Can edit' },
+];
+const channels = [{ id: 'team', label: 'Team channel', doneLabel: 'Shared with team' }];`;
 const meta = {
   title: 'Surfaces/ShareSheet',
   component: ShareSheet,
@@ -78,13 +89,25 @@ const meta = {
   },
   parameters: {
     docs: {
-      source: {
-        code: '<ShareSheet title="Roadmap" link={url} people={people} accessOptions={access} onSend={sendShare} />',
-      },
       description: {
         component:
-          'A nonmodal desktop dialog and native modal phone sheet. Enter/Space opens on Copy; Escape dismisses the access list before the surface. Access uses virtual focus with all four arrows, Home/End and Enter/Space. People are pressed-state buttons; Send commits a persistent confirmation only after success. Close and Done return focus; an outside desktop press does not. Controlled open, people and access requests remain authoritative until accepted.',
+          'Share a link with people and channels, and choose their access permission.',
       },
+      sections: [
+        { title: 'Inline sharing', stories: ['InlineComposition'] },
+        { title: 'Overlay sharing', stories: ['Default', 'Controlled', 'ControlledRejectsOpen'] },
+        { title: 'Composition and focus', stories: ['MultiInstance', 'OutsideFocus'] },
+      ],
+      usage: `### When to use
+Let people copy a link, choose collaborators, and share access from one place. Sharing can stay in the page, open beside its trigger on desktop, or use a modal sheet on a phone.
+
+### Keyboard and accessibility
+Enter or Space opens the overlay and focuses Copy link. The desktop popover is nonmodal; the phone sheet is modal. The access picker uses virtual focus: use any arrow key, Home or End to navigate and Enter or Space to choose. Escape closes the access list before the sharing surface. People buttons announce their pressed state.
+
+Close and Done return focus to the trigger; an outside desktop press does not. A rejected controlled request leaves the current open state, selection, or access unchanged.
+
+### Sending
+Choose at least one person before sending. Confirmation appears only after a successful send and stays until dismissed. A send that finishes after closing and reopening does not replace the new session. Sharing actions are unavailable without an enabled access option; send and channel actions also require application handlers.`,
     },
   },
   render: (args) => <ShareSheet {...args} />,
@@ -108,8 +131,25 @@ function ReplacementAccess(props: ComponentPropsWithRef<typeof Select.Trigger>) 
 }
 
 export const InlineComposition: Story = {
+  name: 'Inline link and access',
   args: { presentation: 'inline', people: [], channels: [] },
-  parameters: { docs: { source: { code: '<ShareSheet presentation="inline" title="Roadmap" link={url} people={[]} accessOptions={access}><Text>Manage collaborators</Text></ShareSheet>', language: 'tsx' } } },
+  parameters: { docs: {
+    description: { story: 'Keep the sharing heading, link copy action, and access picker in the page without an overlay.' },
+    source: { language: 'tsx', code: `import { ShareSheet } from '@jfrader/ui';
+
+<ShareSheet
+  presentation="inline"
+  title="Roadmap"
+  link="https://example.com/roadmap"
+  people={[]}
+  channels={[]}
+  accessOptions={[
+    { value: 'view', label: 'Can view' },
+    { value: 'blocked', label: 'Owner only', disabled: true },
+    { value: 'edit', label: 'Can edit' },
+  ]}
+/>` },
+  } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole('heading', { name: 'Share Roadmap' })).toBeVisible();
@@ -228,6 +268,28 @@ async function clipboard(
   }
 }
 export const Default: Story = {
+  name: 'Share with collaborators',
+  parameters: { docs: {
+    description: { story: 'Open Share to copy the roadmap link, select people, or share with the team channel.' },
+    source: { language: 'tsx', code: `import { ShareSheet, type ShareSheetProps } from '@jfrader/ui';
+
+${shareDataSource}
+
+function RoadmapSharing({ onSend, onChannel }: Pick<ShareSheetProps, 'onSend' | 'onChannel'>) {
+  return (
+    <ShareSheet
+      title="Roadmap"
+      link="https://example.com/roadmap"
+      presentation="popover"
+      people={people}
+      accessOptions={accessOptions}
+      channels={channels}
+      onSend={onSend}
+      onChannel={onChannel}
+    />
+  );
+}` },
+  } },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: 'Share' });
     await userEvent.tab();
@@ -554,6 +616,29 @@ export const CopyFailure: Story = {
   },
 };
 export const ControlledRejectsOpen: Story = {
+  name: 'Decline an open request',
+  parameters: { docs: {
+    description: { story: 'Click Share while the parent keeps the panel closed; focus stays on the trigger.' },
+    source: { language: 'tsx', code: `import { ShareSheet, type ShareSheetProps } from '@jfrader/ui';
+
+${shareDataSource}
+
+function LockedSharing({ onSend, onChannel }: Pick<ShareSheetProps, 'onSend' | 'onChannel'>) {
+  return (
+    <ShareSheet
+      title="Roadmap"
+      link="https://example.com/roadmap"
+      presentation="popover"
+      people={people}
+      accessOptions={accessOptions}
+      channels={channels}
+      open={false}
+      onSend={onSend}
+      onChannel={onChannel}
+    />
+  );
+}` },
+  } },
   args: { open: false },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: 'Share' });
@@ -655,6 +740,26 @@ export const ReducedMotion: Story = {
   },
 };
 export const MultiInstance: Story = {
+  name: 'Independent sharing panels',
+  parameters: { docs: {
+    description: { story: 'Open Roadmap and Notes from separate Share buttons with independent selection and access.' },
+    source: { language: 'tsx', code: `import { ShareSheet, styled, theme, type ShareSheetProps } from '@jfrader/ui';
+
+${shareDataSource}
+
+const SharingRow = styled.div({ display: 'flex', gap: theme.space[8] });
+
+function DocumentSharing({ onSend, onChannel }: Pick<ShareSheetProps, 'onSend' | 'onChannel'>) {
+  return (
+    <SharingRow>
+      <ShareSheet title="Roadmap" link="https://example.com/roadmap" presentation="popover"
+        people={people} accessOptions={accessOptions} channels={channels} onSend={onSend} onChannel={onChannel} />
+      <ShareSheet title="Notes" link="https://example.com/roadmap" presentation="popover"
+        people={people} accessOptions={accessOptions} channels={channels} onSend={onSend} onChannel={onChannel} />
+    </SharingRow>
+  );
+}` },
+  } },
   render: (args) => (
     <div style={{ display: 'flex', gap: 32 }}>
       <ShareSheet {...args} />
@@ -686,6 +791,23 @@ export const ThemeScopedDialogNestedAccess: Story = {
   },
 };
 export const OutsideFocus: Story = {
+  name: 'Outside press and focus',
+  parameters: { docs: {
+    description: { story: 'Open Share, then click Outside to close the desktop panel and keep focus on Outside.' },
+    source: { language: 'tsx', code: `import { Button, ShareSheet, type ShareSheetProps } from '@jfrader/ui';
+
+${shareDataSource}
+
+function SharingWithOutsideAction({ onSend, onChannel }: Pick<ShareSheetProps, 'onSend' | 'onChannel'>) {
+  return (
+    <>
+      <ShareSheet title="Roadmap" link="https://example.com/roadmap" presentation="popover"
+        people={people} accessOptions={accessOptions} channels={channels} onSend={onSend} onChannel={onChannel} />
+      <Button>Outside</Button>
+    </>
+  );
+}` },
+  } },
   render: (args) => (
     <>
       <ShareSheet {...args} />
@@ -755,6 +877,38 @@ function ControlledExample(args: ShareSheetProps) {
   );
 }
 export const Controlled: Story = {
+  name: 'Controlled sharing',
+  parameters: { docs: {
+    description: { story: 'Keep opening, selected people, and access permission in parent state.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { ShareSheet, type ShareSheetProps } from '@jfrader/ui';
+
+${shareDataSource}
+
+function ControlledSharing({ onSend, onChannel }: Pick<ShareSheetProps, 'onSend' | 'onChannel'>) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState<string[]>([]);
+  const [access, setAccess] = useState('view');
+  return (
+    <ShareSheet
+      title="Roadmap"
+      link="https://example.com/roadmap"
+      presentation="popover"
+      people={people}
+      accessOptions={accessOptions}
+      channels={channels}
+      open={open}
+      onOpenChange={setOpen}
+      value={value}
+      onValueChange={setValue}
+      access={access}
+      onAccessChange={setAccess}
+      onSend={onSend}
+      onChannel={onChannel}
+    />
+  );
+}` },
+  } },
   render: (args) => <ControlledExample {...args} />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Share' }));
