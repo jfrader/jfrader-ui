@@ -53,26 +53,41 @@ export interface RadialMenuSlots {
 }
 export interface RadialMenuProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
+  /** Sets the text on the menu trigger. */
   label: string;
+  /** Supplies actions in arc order; more than six actions use a vertical list. */
   actions: readonly RadialMenuAction[];
+  /** Runs the selected action by id and requests closing on success in the same open cycle. Rejection keeps the menu open. */
   onAction?: (id: string) => void | Promise<void>;
+  /** Controls whether the menu is open; `disabled` forces it closed. */
   open?: boolean;
+  /** Opens the uncontrolled menu initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Called when the menu requests opening or closing. */
   onOpenChange?: (open: boolean) => void;
+  /** Sets the action arc radius in pixels, with a minimum of 40. Defaults to 104 for omitted or non-finite values. */
   radius?: number;
+  /** Sets the arc span in degrees, clamped to 1–360. Defaults to 150 for omitted or non-finite values. */
   spread?: number;
   /** Physical angle in degrees: up -90, right 0, down 90, left 180. */
   direction?: number;
+  /** Prevents opening the menu and running actions. Defaults to `false`. */
   disabled?: boolean;
+  /** Announces action status through a live region. Defaults to `true`; `false` retains visible status. */
   announce?: boolean;
+  /** Shifts the menu within the viewport and uses a list when the arc cannot fit. Defaults to `shift`. */
   collision?: 'shift' | 'none';
+  /** Overrides pending, success and failure text functions, each receiving the action label. */
   messages?: Partial<{
     pending: (label: string) => string;
     done: (label: string) => string;
     failed: (label: string) => string;
   }>;
+  /** Replaces the root container; `slots.root` takes precedence. */
   component?: RadialMenuSlots['root'];
+  /** Replaces the root, trigger, menu content, action items or status. */
   slots?: RadialMenuSlots;
+  /** Passes props to the root, trigger, menu content, action items and status. */
   slotProps?: {
     root?: GeneratedRootSlotProps;
     /** Renders a `button` by default. */

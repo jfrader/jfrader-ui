@@ -31,13 +31,21 @@ import { isRenderable } from '../../utils/renderable';
 
 export interface ExpandableCardBaseProps
   extends Omit<ComponentPropsWithRef<'article'>, 'defaultValue' | 'onChange' | 'children' | 'title' | 'content'>, SxProps {
+  /** Controls whether the details panel is expanded. */
   open?: boolean;
+  /** Expands the uncontrolled card initially. Defaults to `false`. */
   defaultOpen?: boolean;
+  /** Called when the trigger or Escape requests expansion or collapse. */
   onOpenChange?: (open: boolean) => void;
+  /** Caps collapsed width in pixels, limited by available space; omitted, non-positive or non-finite values use available width. */
   collapsedInlineSize?: number;
+  /** Caps expanded width in pixels, limited by available space; omitted, non-positive or non-finite values fall back to `collapsedInlineSize`. */
   expandedInlineSize?: number;
+  /** Sets header and details padding and header height. Defaults to `md`. */
   size?: 'sm' | 'md';
+  /** Disables the expansion trigger without forcing collapse. Defaults to `false`. */
   disabled?: boolean;
+  /** Sets the heading level wrapping the trigger. Defaults to 3. */
   headingLevel?: 2 | 3 | 4;
 }
 export interface ExpandableCardSlots {
@@ -68,6 +76,7 @@ export interface ExpandableCardSlotProps {
   content?: Omit<ExpandableCardContentProps, 'children'>;
 }
 export interface ExpandableCardCompoundProps extends ExpandableCardBaseProps {
+  /** Composes the trigger, title, description and content parts instead of using `content`. */
   children?: ReactNode;
   title?: string;
   description?: never;
@@ -77,12 +86,18 @@ export interface ExpandableCardCompoundProps extends ExpandableCardBaseProps {
   slotProps?: never;
 }
 export interface ExpandableCardEasyProps extends ExpandableCardBaseProps {
+  /** Renders the heading text inside the generated expansion trigger. */
   title: ReactNode;
+  /** Renders secondary text inside the trigger and describes the details region. */
   description?: ReactNode;
+  /** Renders details inside the expandable panel. */
   content: ReactNode;
   children?: never;
+  /** Replaces the root article; takes precedence over `slots.root`. */
   component?: ExpandableCardSlots['root'];
+  /** Replaces the generated root, trigger, title, description or content panel. */
   slots?: ExpandableCardSlots;
+  /** Passes props to the generated root, trigger, title, description and content panel. */
   slotProps?: ExpandableCardSlotProps;
 }
 export type ExpandableCardProps = ExpandableCardCompoundProps | ExpandableCardEasyProps;
