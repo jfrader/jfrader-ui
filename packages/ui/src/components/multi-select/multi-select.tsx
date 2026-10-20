@@ -229,6 +229,7 @@ const chipStyle = css({
   minInlineSize: 0,
   [FORCED_COLORS]: { border: '1px solid CanvasText' },
 });
+const counterStyle = css({ flexShrink: 0 });
 const textStyle = css({
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
@@ -237,7 +238,6 @@ const textStyle = css({
 const errorStyle = css({ color: vars.color.dangerText });
 const fade = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
 const panelStyle = css({
-  minInlineSize: 0,
   maxInlineSize: '100vw',
   borderColor: vars.color.borderControl,
   animation: `${fade} ${vars.motion.duration.base} ${vars.motion.easeStandard}`,
@@ -253,6 +253,7 @@ const optionStyle = css({
   [FORCED_COLORS]: { '&[data-active]': { outlineColor: 'Highlight' } },
 });
 const clearStyle = css({
+  flexShrink: 0,
   minBlockSize: vars.space[6],
   minInlineSize: vars.space[6],
 });
@@ -798,7 +799,7 @@ function MultiSelectValue({
                   {label}
                 </span>
               ))}
-              {remaining > 0 && <span css={chipStyle}>+{m.formatters.number.format(remaining)}</span>}
+              {remaining > 0 && <span css={[chipStyle, counterStyle]}>+{m.formatters.number.format(remaining)}</span>}
             </>
           ) : (
             placeholder
@@ -860,7 +861,7 @@ function MultiSelectContent({
               ...style,
               ...m.floatingStyles,
               inlineSize: m.refs.domReference.current?.getBoundingClientRect().width,
-              maxBlockSize: m.available.height || undefined,
+              maxBlockSize: m.available.height ? `min(280px, ${m.available.height}px)` : undefined,
               maxInlineSize: m.available.width || undefined,
             }}
           >

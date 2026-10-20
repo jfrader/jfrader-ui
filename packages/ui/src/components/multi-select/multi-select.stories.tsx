@@ -652,6 +652,88 @@ export const LongLabels: Story = {
     await expect(triggerOf(canvasElement).getBoundingClientRect().width).toBeLessThanOrEqual(221);
   },
 };
+const LONG_OPTIONS: readonly MultiSelectOption[] = Array.from({ length: 30 }, (_, index) => ({
+  value: `label-${index}`,
+  label: `Label ${index + 1}: Documentation and international accessibility requirements`,
+}));
+
+export const NarrowSelection: EasyStory = {
+  tags: ['!autodocs'],
+  args: {
+    label: 'Project labels',
+    description: 'Choose project labels.',
+    error: 'Review the selected labels.',
+    options: LONG_OPTIONS,
+    defaultValue: LONG_OPTIONS.slice(0, 8).map((option) => option.value),
+    defaultOpen: true,
+    clearable: true,
+  },
+  render: (args) => <NarrowFrame><MultiSelect {...args} /></NarrowFrame>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('combobox');
+    const clear = canvas.getByRole('button', { name: 'Clear selection' });
+    const value = trigger.querySelector('[data-ui="multi-select-value"]')!;
+    const counter = value.lastElementChild!;
+    await expect(counter).toHaveTextContent('+6');
+    await expect(counter.clientWidth).toBeGreaterThanOrEqual(counter.scrollWidth);
+    await expect(clear.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
+    await expect(clear.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    await expect(clear.getBoundingClientRect().right).toBeLessThanOrEqual(
+      canvas.getByText('Project labels').parentElement!.getBoundingClientRect().right + 1,
+    );
+    const panel = body(canvasElement).getByRole('listbox');
+    await waitFor(async () => {
+      const anchor = trigger.getBoundingClientRect();
+      const popup = panel.getBoundingClientRect();
+      const rtl = getComputedStyle(trigger).direction === 'rtl';
+      await expect(Math.abs(rtl ? popup.right - anchor.right : popup.left - anchor.left)).toBeLessThanOrEqual(8);
+      await expect(popup.width).toBeCloseTo(Math.max(180, anchor.width), 0);
+      await expect(popup.height).toBeLessThanOrEqual(280);
+      await expect(popup.top >= anchor.bottom || popup.bottom <= anchor.top).toBe(true);
+      await expect(Math.min(Math.abs(popup.top - anchor.bottom), Math.abs(anchor.top - popup.bottom))).toBeLessThanOrEqual(9);
+    });
+    await expect(panel.scrollHeight).toBeGreaterThan(panel.clientHeight);
+    await expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth);
+    await userEvent.click(trigger);
+    await userEvent.keyboard('{ArrowDown}{End}');
+    await waitFor(async () => {
+      const last = body(canvasElement).getAllByRole('option').at(-1)!;
+      await expect(trigger).toHaveAttribute('aria-activedescendant', last.id);
+      await expect(last.getBoundingClientRect().bottom).toBeLessThanOrEqual(panel.getBoundingClientRect().bottom);
+    });
+  },
+};
+
+export const GroupedOptions: Story = {
+  tags: ['!autodocs'],
+  render: (args) => (
+    <ExampleFrame>
+      <MultiSelect {...args} defaultOpen>
+        <MultiSelect.Label>Project labels</MultiSelect.Label>
+        <MultiSelect.Trigger><MultiSelect.Value placeholder="Choose labels" /></MultiSelect.Trigger>
+        <MultiSelect.Content>
+          <div role="group" aria-label="Issues">
+            <MultiSelect.Item value="bug">Bug</MultiSelect.Item>
+            <MultiSelect.Item value="feature">Feature</MultiSelect.Item>
+          </div>
+          <div role="group" aria-label="Resources">
+            <MultiSelect.Item value="docs">Documentation</MultiSelect.Item>
+            <MultiSelect.Item value="archive" disabled>Archive</MultiSelect.Item>
+          </div>
+        </MultiSelect.Content>
+      </MultiSelect>
+    </ExampleFrame>
+  ),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('combobox');
+    await userEvent.click(trigger);
+    await userEvent.keyboard('{ArrowDown}{End}{Enter}');
+    const option = body(canvasElement).getByRole('option', { name: 'Documentation' });
+    await expect(trigger).toHaveAttribute('aria-activedescendant', option.id);
+    await expect(option).toHaveAttribute('aria-selected', 'true');
+    await expect(body(canvasElement).getByRole('group', { name: 'Resources' })).toContainElement(option);
+  },
+};
 export const Required: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `<form>
   <MultiSelect name="labels" required>
