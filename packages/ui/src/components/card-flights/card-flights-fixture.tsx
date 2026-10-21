@@ -49,7 +49,7 @@ function Match() {
     <Controls><Button disabled={landing.size > 0} onClick={() => {
       setPlays([]); setHandIndex((index) => index + 1);
     }}>Deal hand</Button></Controls>
-    <Board><GameTable players={2} seats={seats}>
+    <Board><GameTable places={2} seats={seats}>
       <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={rivalCards.length} label="Rival hand" /></GameTable.Seat>
       <GameTable.Dock><GameHand cards={ownCards} playLabel="Play selected" onPlayIntent={acceptPlay} disabled={landing.size > 0} /></GameTable.Dock>
       {seats.map((player) => <GameTable.Play key={player.key} slotKey={player.key}>

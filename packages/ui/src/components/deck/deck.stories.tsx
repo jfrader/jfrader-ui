@@ -673,7 +673,7 @@ const deck = defineDeck({ id: 'celestial',
 });
 
 <DeckProvider decks={[deck]} default="celestial" backLabel="Card back">
-  <BoardFrame><GameTable players={2} seats={[]} artSet="rare">
+  <BoardFrame><GameTable places={2} seats={[]} artSet="rare">
     <GameTable.Center><Row>
       <GameCard label="Inherited board art" value={{ suit: 'stars', rank: 'I' }} />
       <GameCard label="Card override" value={{ suit: 'stars', rank: 'I' }} cardArtSets={{ 'stars-I': 'release-2/spooky' }} />
@@ -685,7 +685,7 @@ const deck = defineDeck({ id: 'celestial',
 </DeckProvider>` } } },
   render: () => (
     <DeckProvider decks={[celestialDeck]} default="celestial" backLabel="Card back">
-      <BoardFrame><GameTable players={2} seats={[]} artSet="rare">
+      <BoardFrame><GameTable places={2} seats={[]} artSet="rare">
         <GameTable.Center>
           <Row>
             <GameCard label="Inherited board art" value={{ suit: 'stars', rank: 'I' }} />

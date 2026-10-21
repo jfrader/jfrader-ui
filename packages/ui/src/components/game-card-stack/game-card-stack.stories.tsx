@@ -841,7 +841,7 @@ const spanishPiles: readonly GameCardStackPile[] = [
 /** Two-player truco with Spanish-deck cards and a pile in front of each seat. */
 export const Default: Story = {
   name: 'Piles at table seats',
-  render: () => <GameTable players={2}
+  render: () => <GameTable places={2}
     seats={[{ key: 'Ana', teamIdx: 0, isMe: true }, { key: 'Luis', teamIdx: 1 }]}
   >
     {spanishPiles.map((pile) => <GameTable.Seat key={pile.playerKey} slotKey={pile.playerKey}>
@@ -869,7 +869,7 @@ const spanishPiles: readonly GameCardStackPile[] = [
 export function TrucoTable() {
   return (
     <GameTable
-      players={2}
+      places={2}
       seats={[{ key: 'Ana', teamIdx: 0, isMe: true }, { key: 'Luis', teamIdx: 1 }]}
     >
       {spanishPiles.map((pile) => (

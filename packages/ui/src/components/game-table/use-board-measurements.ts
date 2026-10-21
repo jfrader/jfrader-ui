@@ -8,6 +8,7 @@ const HIDDEN_CARD_SELECTOR = '[data-ui~="game-card"][data-face="back"]';
 const CONTROL_SELECTOR = 'button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
 const MIN_CONTROL_SIDE = 24;
 const MIN_CONTROL_MAIN_AXIS = 32;
+const MAX_OUTBOARD_RESERVE_RATIO = 0.25;
 
 function naturalSize(element: HTMLElement): BoardContentSize {
   const style = element.ownerDocument.defaultView!.getComputedStyle(element);
@@ -22,20 +23,15 @@ function naturalSize(element: HTMLElement): BoardContentSize {
   };
 }
 
-function regionSize(region: HTMLElement): BoardContentSize {
+export function regionSize(region: HTMLElement): BoardContentSize {
   let minimumScale = 0;
-  for (const card of region.querySelectorAll<HTMLElement>('[data-ui~="game-card"]')) {
-    if (card.closest('[data-ui~="game-table-seat-chrome"]')) continue;
-    const { width } = naturalSize(card);
-    if (width > 0) minimumScale = Math.max(minimumScale, GAME_TABLE_LIMITS.minimumCardWidthPx / width);
-  }
   for (const control of region.querySelectorAll<HTMLElement>(CONTROL_SELECTOR)) {
     if (control.closest('[data-ui~="game-table-seat-chrome"]')) continue;
     const { width, height } = naturalSize(control);
     if (width > 0 && height > 0) minimumScale = Math.max(minimumScale, Math.min(1,
       Math.max(MIN_CONTROL_SIDE / Math.min(width, height), MIN_CONTROL_MAIN_AXIS / Math.max(width, height))));
   }
-  return { ...naturalSize(region), minimumScale: minimumScale || 1 };
+  return { ...naturalSize(region), minimumScale };
 }
 
 // Chrome can change sides without feeding its dimensions back into card fitting.
@@ -93,8 +89,8 @@ export function useBoardMeasurements(rootIdentity?: unknown) {
       const seatPlacement = root.dataset.seatPlacement as NonNullable<BoardMeasurements['seatPlacement']>;
       const reserve = { inside: 0, edge: 0.5, outside: 1 }[seatPlacement];
       const seatSizes = seats.map(regionSize);
-      shell.style.setProperty('--game-table-reserve-inline', `${Math.max(0, ...seatSizes.map((seat) => seat.width * (seat.minimumScale ?? 1))) * reserve}px`);
-      shell.style.setProperty('--game-table-reserve-block', `${Math.max(0, ...seatSizes.map((seat) => seat.height * (seat.minimumScale ?? 1))) * reserve}px`);
+      shell.style.setProperty('--game-table-reserve-inline', `${Math.min(shell.clientWidth * MAX_OUTBOARD_RESERVE_RATIO, Math.max(0, ...seatSizes.map((seat) => seat.width)) * reserve)}px`);
+      shell.style.setProperty('--game-table-reserve-block', `${Math.min(shell.clientHeight * MAX_OUTBOARD_RESERVE_RATIO, Math.max(0, ...seatSizes.map((seat) => seat.height)) * reserve)}px`);
       const elements = new Set([root, shell, surface, center, ...seats, ...plays, ...surface.querySelectorAll<HTMLElement>(CHROME_SELECTOR)]);
       for (const element of observed) if (!elements.has(element)) {
         resize.unobserve(element);
