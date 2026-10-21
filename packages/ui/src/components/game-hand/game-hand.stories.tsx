@@ -12,9 +12,15 @@ import { buildOpponentHiddenHandLayout, DEFAULT_HIDDEN_HAND_RULES, getHandFanRot
 import { HIDDEN_PARITY, PLAYER_PARITY, SEAT_PARITY } from './parity-fixtures';
 
 const Controls = styled.div({ display: 'grid', justifyItems: 'start', gap: vars.space[4] });
-const Row = styled.div({ display: 'flex', gap: vars.space[8] });
-const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.space[8] });
-const SpaciousHands = styled(Hands)({ padding: vars.space[12] });
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', maxInlineSize: '100%', overflowX: 'auto', gap: vars.space[8] });
+const Hands = styled.div({ display: 'flex', flexWrap: 'wrap', maxInlineSize: '100%', boxSizing: 'border-box', gap: vars.space[12], padding: vars.space[8] });
+const SpaciousHands = styled(Hands)({ flexWrap: 'nowrap', maxInlineSize: 'none', flexShrink: 0,
+  padding: `calc(4 * ${vars.space[12]})`, gap: `calc(4 * ${vars.space[12]})` });
+const NarrowExample = styled.div({ inlineSize: 280, maxInlineSize: '100%' });
+const ExampleViewport = styled.div({
+  inlineSize: `min(100%, calc(100vw - 2 * ${vars.space[4]}))`, maxInlineSize: '100%',
+  display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', justifyItems: 'safe center', overflowX: 'auto',
+});
 
 function ReplacedHandRoot(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replacement="hand-root" />;
@@ -30,6 +36,7 @@ const CARDS: GameHandCard[] = [
 
 const meta = {
   title: 'Games/GameHand', component: GameHand, tags: ['autodocs'],
+  decorators: [(Story) => <ExampleViewport><Story /></ExampleViewport>],
   args: { cards: CARDS.slice(0, 3), playLabel: 'Play card', onValueChange: fn(), onPlayIntent: fn() },
   parameters: { docs: {
     description: { component: 'Choose a card from your hand and confirm to play it. Show opponents’ hands as card backs with GameHand.Hidden.' },
@@ -87,7 +94,7 @@ export const ReplacedRootKeepsSelection: Story = {
     await expect(root).toHaveClass('custom-hand');
     await expect(root).toHaveAttribute('title', 'Your cards');
     await expect(args.slotProps?.root?.ref).toHaveBeenCalledWith(root);
-    await expect(getComputedStyle(root).display).toBe('inline-flex');
+    await expect(getComputedStyle(root).display).toBe('flex');
     await userEvent.click(canvas.getByRole('button', { name: 'Ace of spades' }));
     await expect(canvas.getByRole('button', { name: 'Ace of spades' })).toHaveAttribute('aria-pressed', 'true');
     await userEvent.click(canvas.getByRole('button', { name: 'Play card' }));
@@ -528,7 +535,7 @@ export const Sizes: Story = {
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
-const Row = styled.div({ display: 'flex', gap: vars.space[8] });
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', maxInlineSize: '100%', overflowX: 'auto', gap: vars.space[8] });
 
 const cards = [
   { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
@@ -553,6 +560,32 @@ const cards = [
   }
 } };
 
+export const NarrowSizes: Story = {
+  tags: ['!autodocs'],
+  render: (args) => <NarrowExample><Row>
+    {(['sm', 'md', 'lg'] as const).map((size) => <GameHand {...args} key={size} size={size} />)}
+  </Row></NarrowExample>,
+  play: async ({ canvasElement, userEvent }) => {
+    const hands = [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-hand"]')];
+    const row = hands[0]!.parentElement!;
+    const bounds = row.getBoundingClientRect();
+    await expect(bounds.width).toBeLessThanOrEqual(280);
+    await expect(hands[0]!.getBoundingClientRect().left).toBeGreaterThanOrEqual(bounds.left);
+    await expect(hands[1]!.getBoundingClientRect().top).toBeGreaterThan(hands[0]!.getBoundingClientRect().top);
+    const buttons = [...row.querySelectorAll<HTMLButtonElement>('button')];
+    for (const button of buttons) {
+      await userEvent.tab();
+      await expect(canvasElement.ownerDocument.activeElement).toBe(button);
+      await expect(getComputedStyle(button).outlineStyle).not.toBe('none');
+      const target = button.getBoundingClientRect();
+      await expect(target.right).toBeGreaterThan(bounds.left);
+      await expect(target.left).toBeLessThan(bounds.right);
+      await expect(target.width).toBeGreaterThanOrEqual(32);
+      await expect(target.height).toBeGreaterThanOrEqual(24);
+    }
+  },
+};
+
 /** Opponent hands showing one, two, and three facedown cards. */
 export const HiddenHands: Story = {
   name: 'Opponent hands',
@@ -563,7 +596,7 @@ export const HiddenHands: Story = {
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
-const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.space[8] });
+const Hands = styled.div({ display: 'flex', flexWrap: 'wrap', maxInlineSize: '100%', boxSizing: 'border-box', gap: vars.space[12], padding: vars.space[8] });
 
 <Hands>
   {[1, 2, 3].map((count) => <GameHand.Hidden key={count} count={count} label="Opponent hand" />)}
@@ -618,7 +651,7 @@ import { ThemeRoot } from '@jfrader/ui/theme-root';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
-const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.space[8] });
+const Hands = styled.div({ display: 'flex', flexWrap: 'wrap', maxInlineSize: '100%', boxSizing: 'border-box', gap: vars.space[12], padding: vars.space[8] });
 
 <ThemeRoot theme="light">
   <Hands>
@@ -656,7 +689,7 @@ export const HiddenHandsRTL: Story = {
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
-const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.space[8] });
+const Hands = styled.div({ display: 'flex', flexWrap: 'wrap', maxInlineSize: '100%', boxSizing: 'border-box', gap: vars.space[12], padding: vars.space[8] });
 
 <div dir="rtl"><Hands>
   {[1, 2, 3].map((count) => <GameHand.Hidden key={count} count={count} label="Opponent hand" />)}
@@ -664,9 +697,16 @@ const Hands = styled.div({ display: 'flex', gap: vars.space[12], padding: vars.s
 };
 export const RadialHiddenHands: Story = {
   tags: ['!autodocs'],
-  render: () => <SpaciousHands>
+  render: () => <Row role="region" aria-label="Radial hands" tabIndex={0}><SpaciousHands>
     {SEAT_PARITY.map((seat, index) => <GameHand.Hidden key={index} count={3} label="Opponent hand" polar={seat.polar} />)}
-  </SpaciousHands>,
+  </SpaciousHands></Row>,
+  play: async ({ canvasElement }) => {
+    const hands = [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-hand-hidden"]')];
+    for (const [index, hand] of hands.entries()) {
+      for (const other of hands.slice(index + 1)) await expectNoOverlap(hand, other);
+      for (const card of hand.querySelectorAll('[data-ui="game-hand-hidden-card"]')) await expectInside(card, hand.parentElement!);
+    }
+  },
 };
 
 /** Pick a card without adding a play action. */

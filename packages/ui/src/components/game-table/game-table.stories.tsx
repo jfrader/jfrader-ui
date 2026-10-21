@@ -31,6 +31,7 @@ type ViewportSize = { width: number; height: number };
 
 const viewportSize = ({ viewport }: { viewport: ViewportSize }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 const ViewportFrame = styled.div(viewportSize);
+const ExampleViewport = styled.div({ inlineSize: '100%', maxInlineSize: '100%', overflowX: 'auto' });
 function ThemeViewport({ viewport, theme, children }: {
   viewport: ViewportSize; theme: 'dark' | 'light'; children: ReactNode;
 }) {
@@ -290,6 +291,7 @@ const meta = {
   title: 'Games/GameTable',
   component: Table<Player>,
   tags: ['autodocs'],
+  decorators: [(Story) => <ExampleViewport data-table-example-viewport="" role="region" aria-label="Table example" tabIndex={0}><Story /></ExampleViewport>],
   args: {
     places: 6, seats: SEATS, viewport: VIEWPORTS.portraitShort,
     renderSeat, center, header: 'Poker · 10 / 20', dock: <Button>Check</Button>,
@@ -523,6 +525,10 @@ export default function Example() {
     const ownBox = required(seats[0]).getBoundingClientRect();
     await expect(ownBox.y + ownBox.height / 2).toBeGreaterThan(surfaceBox.y + surfaceBox.height / 2);
     await expectSeatFraming(table, 6, 'portraitShort', 'scaled');
+    await userEvent.tab();
+    const viewport = canvasElement.querySelector<HTMLElement>('[data-table-example-viewport]')!;
+    await expect(table.ownerDocument.activeElement).toBe(viewport);
+    await expect(getComputedStyle(viewport).outlineStyle).not.toBe('none');
     await userEvent.tab();
     const button = within(table).getByRole('button', { name: 'Check' });
     await expect(table.ownerDocument.activeElement).toBe(button);
