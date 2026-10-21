@@ -1,8 +1,8 @@
 export { Calendar } from './calendar';
 export type {
   CalendarBaseProps,
-  CalendarCompoundProps,
-  CalendarEasyProps,
+  CalendarComposedProps,
+  CalendarShorthandProps,
   CalendarGridProps,
   CalendarHeaderProps,
   CalendarProps,

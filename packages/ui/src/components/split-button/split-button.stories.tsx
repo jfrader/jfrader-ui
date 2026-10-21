@@ -10,8 +10,8 @@ import {
   SplitButton,
   type SplitButtonActionProps,
   type SplitButtonActionRecord,
-  type SplitButtonCompoundProps,
-  type SplitButtonEasyProps,
+  type SplitButtonComposedProps,
+  type SplitButtonShorthandProps,
   type SplitButtonItemRecord,
 } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -28,7 +28,7 @@ const Row = styled.div({
   gap: vars.space[3],
 });`;
 
-const easySource = `${exportSnippetBase}
+const shorthandSource = `${exportSnippetBase}
 
 function ExportActions({ exportPdf, exportCsv, exportJson, deleteExport }: {
   exportPdf: () => void;
@@ -85,7 +85,7 @@ const StackFrame = styled.div({
 const consumerCss = css({ marginInlineStart: vars.space[1], letterSpacing: '0.05em' });
 const consumerSx = css({ marginInlineStart: vars.space[2] });
 
-interface StoryArgs extends SplitButtonCompoundProps {
+interface StoryArgs extends SplitButtonComposedProps {
   onAction?: (event: MouseEvent<HTMLButtonElement>) => void;
   onCsv?: () => void;
   onJson?: () => void;
@@ -192,7 +192,7 @@ const meta = {
       },
       sections: [
         { title: 'Basic', stories: ['Basic'] },
-        { title: 'Menu actions', stories: ['Compound'] },
+        { title: 'Menu actions', stories: ['Composed'] },
         { title: 'Disabled', stories: ['Disabled', 'DisabledParts'] },
         { title: 'Keyboard', stories: ['KeyboardActivation'] },
         { title: 'Placement', stories: ['Placement'] },
@@ -251,13 +251,13 @@ function CustomAction(props: SplitButtonActionProps) {
 
 type Story = StoryObj<Omit<StoryArgs, 'component'>>;
 
-function EasyExample({
+function ShorthandExample({
   onAction: _onAction,
   onCsv: _onCsv,
   onJson: _onJson,
   onDelete: _onDelete,
   ...args
-}: SplitButtonEasyProps & Partial<Pick<StoryArgs, 'onAction' | 'onCsv' | 'onJson' | 'onDelete'>>) {
+}: SplitButtonShorthandProps & Partial<Pick<StoryArgs, 'onAction' | 'onCsv' | 'onJson' | 'onDelete'>>) {
   return (
     <Row>
       <SplitButton {...args} />
@@ -266,8 +266,8 @@ function EasyExample({
   );
 }
 
-export const Default: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
-  name: 'Easy mode',
+export const Default: StoryObj<Omit<SplitButtonShorthandProps, 'component'>> = {
+  name: 'Shorthand mode',
   beforeEach: () => {
     const error = spyOn(console, 'error');
     return () => error.mockRestore();
@@ -291,11 +291,11 @@ export const Default: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
       description: { story: 'Run Export PDF directly, or open the adjacent menu for another format.' },
       source: {
         language: 'tsx',
-        code: easySource,
+        code: shorthandSource,
       },
     },
   },
-  render: (args) => <EasyExample {...args} />,
+  render: (args) => <ShorthandExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const group = within(canvasElement).getByRole('group', { name: GROUP });
     await expect(console.error).not.toHaveBeenCalled();
@@ -343,17 +343,17 @@ export const Default: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
   },
 };
 
-export const Basic: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
+export const Basic: StoryObj<Omit<SplitButtonShorthandProps, 'component'>> = {
   name: 'Export with alternative formats',
   args: Default.args,
   render: Default.render,
   parameters: { docs: {
     description: { story: 'Run Export PDF directly, or open the adjacent menu for another format.' },
-    source: { language: 'tsx', code: easySource },
+    source: { language: 'tsx', code: shorthandSource },
   } },
 };
 
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Compose menu actions',
   parameters: {
     docs: {
@@ -423,7 +423,7 @@ function ExportActions({ exportPdf, exportCsv, exportJson, deleteExport }: {
   },
 };
 
-export const GeneratedPartProps: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
+export const GeneratedPartProps: StoryObj<Omit<SplitButtonShorthandProps, 'component'>> = {
   name: 'Generated part props',
   args: {
     label: ACTION,
@@ -474,7 +474,7 @@ export const GeneratedPartProps: StoryObj<Omit<SplitButtonEasyProps, 'component'
 };
 
 // This story tests the documented css/slot API and native style merging.
-export const ReplacedParts: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
+export const ReplacedParts: StoryObj<Omit<SplitButtonShorthandProps, 'component'>> = {
   name: 'Replaced parts',
   args: {
     label: ACTION,
@@ -519,7 +519,7 @@ export const ReplacedParts: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = 
   },
 };
 
-export const GeneratedItemEvents: StoryObj<Omit<SplitButtonEasyProps, 'component'>> = {
+export const GeneratedItemEvents: StoryObj<Omit<SplitButtonShorthandProps, 'component'>> = {
   args: {
     label: ACTION,
     menuLabel: TRIGGER,
@@ -542,16 +542,16 @@ export const GeneratedItemEvents: StoryObj<Omit<SplitButtonEasyProps, 'component
   },
 };
 
-function easyModeTypeContracts() {
+function shorthandModeTypeContracts() {
   const items: readonly SplitButtonItemRecord[] = [{ label: 'CSV' }];
-  // @ts-expect-error Easy mode rejects compound children.
+  // @ts-expect-error Shorthand mode rejects composed children.
   <SplitButton label="Export" menuLabel="More" items={items}>Child</SplitButton>;
-  // @ts-expect-error Compound mode rejects items.
+  // @ts-expect-error Composed mode rejects items.
   <SplitButton items={items}>Child</SplitButton>;
-  // @ts-expect-error Compound mode rejects slotProps.
+  // @ts-expect-error Composed mode rejects slotProps.
   <SplitButton slotProps={{ root: {} }}>Child</SplitButton>;
 }
-void easyModeTypeContracts;
+void shorthandModeTypeContracts;
 
 // Room beside the Trigger and off the viewport edge, so the end-aligned menu is neither flipped nor shifted.
 const Roomy = styled.div({

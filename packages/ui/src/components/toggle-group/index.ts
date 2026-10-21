@@ -1,7 +1,7 @@
 export { ToggleGroup } from './toggle-group';
 export type {
-  ToggleGroupCompoundProps,
-  ToggleGroupEasyProps,
+  ToggleGroupComposedProps,
+  ToggleGroupShorthandProps,
   ToggleGroupOption,
   ToggleGroupSlots,
   ToggleGroupSlotProps,

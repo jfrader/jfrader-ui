@@ -18,8 +18,8 @@ import { ThemeRoot } from '../theme-root';
 import {
   ContextMenu,
   type ContextMenuAction,
-  type ContextMenuCompoundProps,
-  type ContextMenuEasyProps,
+  type ContextMenuComposedProps,
+  type ContextMenuShorthandProps,
   type ContextMenuProps,
   type ContextMenuTargetProps,
 } from './index';
@@ -40,7 +40,7 @@ const TINY_VIEWPORT = { width: 200, height: 180 };
 const consumerCss = css({ paddingInlineStart: vars.space[1], letterSpacing: '0.05em' });
 const consumerSx = css({ paddingInlineStart: vars.space[2] });
 
-interface StoryArgs extends ContextMenuCompoundProps {
+interface StoryArgs extends ContextMenuComposedProps {
   onCopy: () => void;
   onRename: () => void;
   onDelete: () => void;
@@ -239,7 +239,7 @@ const meta = {
           'Open actions for an item with a context click, Shift+F10, the ContextMenu key, or a menu button.',
       },
       sections: [
-        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'Basic', stories: ['Default', 'Composed'] },
         { title: 'Customization', stories: ['CustomSlots'] },
         { title: 'Choices', stories: ['CheckboxItems'] },
         { title: 'Opening and placement', stories: ['PointerAnchor', 'KeyboardAnchor', 'VisibleTrigger', 'ViewportCorners', 'RTL'] },
@@ -293,9 +293,9 @@ export default meta;
 
 type Story = StoryObj<(props: StoryArgs) => ReactNode>;
 
-function easyModeTypeContracts() {
-  // @ts-expect-error Collection mode rejects compound children.
-  <ContextMenu targetLabel="Actions" items={[]} content="Box">Compound</ContextMenu>;
+function shorthandModeTypeContracts() {
+  // @ts-expect-error Collection mode rejects composed children.
+  <ContextMenu targetLabel="Actions" items={[]} content="Box">Composed</ContextMenu>;
   // @ts-expect-error Collection mode requires targetLabel.
   <ContextMenu items={[]} content="Box" />;
   // @ts-expect-error Collection mode requires items.
@@ -305,9 +305,9 @@ function easyModeTypeContracts() {
   // @ts-expect-error Separators cannot carry selection callbacks.
   <ContextMenu targetLabel="Actions" content="Box" items={[{ type: 'separator', onSelect: fn() }]} />;
 }
-void easyModeTypeContracts;
+void shorthandModeTypeContracts;
 
-export const Default: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
+export const Default: StoryObj<(props: ContextMenuShorthandProps) => ReactNode> = {
   beforeEach: () => {
     const error = spyOn(console, 'error');
     return () => error.mockRestore();
@@ -376,7 +376,7 @@ const items: readonly ContextMenuAction[] = [
       },
     },
   },
-  render: (args) => <EasyExample {...args} />,
+  render: (args) => <ShorthandExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     await expect(console.error).not.toHaveBeenCalled();
     const target = getTarget(canvasElement);
@@ -400,9 +400,9 @@ const items: readonly ContextMenuAction[] = [
   },
 };
 
-export const EasyKeyboard: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
+export const ShorthandKeyboard: StoryObj<(props: ContextMenuShorthandProps) => ReactNode> = {
   ...Default,
-  name: 'Easy mode keyboard',
+  name: 'Shorthand mode keyboard',
   play: async ({ canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
     await userEvent.tab();
@@ -427,9 +427,9 @@ export const EasyKeyboard: StoryObj<(props: ContextMenuEasyProps) => ReactNode> 
   },
 };
 
-export const EasyDismissal: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
+export const ShorthandDismissal: StoryObj<(props: ContextMenuShorthandProps) => ReactNode> = {
   ...Default,
-  name: 'Easy mode dismissal',
+  name: 'Shorthand mode dismissal',
   play: async ({ canvasElement, userEvent }) => {
     const target = getTarget(canvasElement);
     const box = target.getBoundingClientRect();
@@ -443,10 +443,10 @@ export const EasyDismissal: StoryObj<(props: ContextMenuEasyProps) => ReactNode>
   },
 };
 
-export const EasyControlled: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
+export const ShorthandControlled: StoryObj<(props: ContextMenuShorthandProps) => ReactNode> = {
   tags: ['!autodocs'],
   ...Default,
-  name: 'Easy mode controlled',
+  name: 'Shorthand mode controlled',
   args: {
     ...Default.args,
     open: true,
@@ -467,9 +467,9 @@ export const EasyControlled: StoryObj<(props: ContextMenuEasyProps) => ReactNode
   },
 };
 
-export const EasyDisabled: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
+export const ShorthandDisabled: StoryObj<(props: ContextMenuShorthandProps) => ReactNode> = {
   ...Default,
-  name: 'Easy mode disabled',
+  name: 'Shorthand mode disabled',
   args: {
     ...Default.args,
     disabled: true,
@@ -483,7 +483,7 @@ export const EasyDisabled: StoryObj<(props: ContextMenuEasyProps) => ReactNode> 
   },
 };
 
-export const CustomSlots: StoryObj<(props: ContextMenuEasyProps) => ReactNode> = {
+export const CustomSlots: StoryObj<(props: ContextMenuShorthandProps) => ReactNode> = {
   ...Default,
   name: 'Part props',
   parameters: { docs: {
@@ -557,8 +557,8 @@ function LinkIcon() {
   },
 };
 
-export const Compound: Story = {
-  name: 'Compound anatomy',
+export const Composed: Story = {
+  name: 'Composed anatomy',
   parameters: {
     docs: {
       description: { story: 'Compose the file target, actions, disabled item, and separator explicitly.' },
@@ -1374,13 +1374,13 @@ export const Danger: Story = {
   },
 };
 
-function EasyExample({
+function ShorthandExample({
   onRename: _onRename,
   onDelete: _onDelete,
   onOpenChild: _onOpenChild,
   targetProps: _targetProps,
   ...args
-}: Omit<ContextMenuEasyProps, 'onRename' | 'onDelete' | 'onOpenChild' | 'targetProps'> & Partial<Pick<StoryArgs, 'onRename' | 'onDelete' | 'onOpenChild' | 'targetProps'>>) {
+}: Omit<ContextMenuShorthandProps, 'onRename' | 'onDelete' | 'onOpenChild' | 'targetProps'> & Partial<Pick<StoryArgs, 'onRename' | 'onDelete' | 'onOpenChild' | 'targetProps'>>) {
   return (
     <Row>
       <ContextMenu {...args} />

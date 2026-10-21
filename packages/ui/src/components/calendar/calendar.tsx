@@ -141,7 +141,7 @@ export interface CalendarBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'd
   rangeLabels?: CalendarRangeLabels;
 }
 
-export interface CalendarCompoundProps extends CalendarBaseProps {
+export interface CalendarComposedProps extends CalendarBaseProps {
   /** Compose the header and grid directly; omit to render both automatically. */
   children?: ReactNode;
   component?: never;
@@ -149,7 +149,7 @@ export interface CalendarCompoundProps extends CalendarBaseProps {
   slotProps?: never;
 }
 
-export interface CalendarEasyProps extends CalendarBaseProps {
+export interface CalendarShorthandProps extends CalendarBaseProps {
   children?: never;
   /** Replace the root div; equivalent to slots.root. Forward all props and ref. */
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
@@ -173,7 +173,7 @@ export interface CalendarEasyProps extends CalendarBaseProps {
   };
 }
 
-export type CalendarProps = CalendarCompoundProps | CalendarEasyProps;
+export type CalendarProps = CalendarComposedProps | CalendarShorthandProps;
 
 /** The header renders its own month buttons and label. */
 export type CalendarHeaderProps = Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps;
@@ -186,7 +186,7 @@ interface FocusTarget {
 }
 
 interface CalendarContextValue {
-  slots: CalendarEasyProps['slots'];
+  slots: CalendarShorthandProps['slots'];
   value: string | undefined;
   selectionRange: CalendarRange | null | undefined;
   previewRange: CalendarRange | null | undefined;

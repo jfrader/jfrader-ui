@@ -12,6 +12,7 @@
 // IDREF targets. Panels keep their state while hidden.
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useId,
@@ -23,6 +24,7 @@ import {
   type ComponentType,
   type FocusEvent,
   type KeyboardEvent,
+  type ReactElement,
   type MouseEvent,
   type PointerEvent,
   type ReactNode,
@@ -48,13 +50,19 @@ export type TabsVariant = 'line' | 'glass' | 'liquid';
 export type TabsIndicator = 'line' | 'pill' | 'lens';
 export type TabsLabels = 'always' | 'active' | 'none';
 
-interface TabsStateProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue' | 'children'>, SxProps {
+interface TabsValueProps<V extends string = string> {
   /** Control the selected tab and matching panel. */
-  value?: string;
+  value?: NoInfer<V>;
   /** Set the initial uncontrolled selection. Omit to start without a selected panel. */
-  defaultValue?: string;
+  defaultValue?: NoInfer<V>;
   /** Receive the requested selected tab value. */
-  onValueChange?: (value: string) => void;
+  onValueChange?: (value: V) => void;
+}
+
+interface TabsStateProps<V extends string = string>
+  extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue' | 'children'>,
+    SxProps,
+    TabsValueProps<V> {
   /** Set the tab layout and arrow-key axis. Defaults to `horizontal`. */
   orientation?: TabsOrientation;
   /** Select on focus with `auto`, or on click, Enter or Space with `manual`. Defaults to `auto`. */
@@ -81,8 +89,8 @@ interface TabsStateProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' |
   scrollRef?: RefObject<HTMLElement | null>;
 }
 
-export interface TabsSection {
-  value: string;
+export interface TabsSection<V extends string = string> {
+  value: V;
   label: ReactNode;
   panel: ReactNode;
   disabled?: boolean;
@@ -92,7 +100,7 @@ export interface TabsSection {
   badgeLabel?: string;
 }
 
-export interface TabsCompoundProps extends TabsStateProps {
+export interface TabsComposedProps extends TabsStateProps<string> {
   /** Compose `Tabs.List`, `Tabs.Tab` and `Tabs.Panel` parts. */
   children?: ReactNode;
   items?: never;
@@ -102,11 +110,11 @@ export interface TabsCompoundProps extends TabsStateProps {
   component?: never;
 }
 
-export interface TabsEasyProps extends TabsStateProps {
+export interface TabsShorthandProps<V extends string = string> extends TabsStateProps<V> {
   /** Name the tab list. */
   label: string;
   /** Pair each tab with its panel by value. */
-  items: readonly TabsSection[];
+  items: readonly TabsSection<V>[];
   children?: never;
   /** Pass props and styles to the generated root, list, tabs and panels. */
   slotProps?: TabsSlotProps;
@@ -138,7 +146,7 @@ export interface TabsSlotProps {
   panel?: Omit<TabsPanelProps, 'children' | 'value'>;
 }
 
-export type TabsProps = TabsCompoundProps | TabsEasyProps;
+export type TabsProps<V extends string = string> = TabsComposedProps | TabsShorthandProps<V>;
 
 export type TabsListProps = ComponentPropsWithRef<'div'> & SxProps;
 
@@ -395,7 +403,7 @@ function Selection({ indicator }: { indicator: TabsIndicator }) {
   );
 }
 
-function TabsRoot({
+function TabsRoot<V extends string = string>({
   ref,
   value: valueProp,
   defaultValue,
@@ -421,9 +429,13 @@ function TabsRoot({
   component,
   children,
   ...rest
-}: TabsProps) {
+}: TabsProps<V>) {
   const baseId = useId();
-  const [value, setValue] = useControlledState<string>(valueProp, defaultValue, onValueChange);
+  // Tabs values come from items (V) or composed tabs (string). One boundary widens the emit.
+  const notifyValueChange = useCallback((next: string) => {
+    (onValueChange as ((value: string) => void) | undefined)?.(next);
+  }, [onValueChange]);
+  const [value, setValue] = useControlledState<string>(valueProp, defaultValue, notifyValueChange);
   const [focused, setFocused] = useState<string | null>(null);
   const [compact, setCompact] = useControlledState(compactProp, defaultCompact, onCompactChange);
 
@@ -819,4 +831,14 @@ function TabsPanel({
 
 TabsPanel.displayName = 'Tabs.Panel';
 
-export const Tabs = Object.assign(TabsRoot, { List: TabsList, Tab: TabsTab, Panel: TabsPanel });
+export interface TabsComponent {
+  <V extends string = string>(props: TabsShorthandProps<V>): ReactElement;
+  (props: TabsComposedProps): ReactElement;
+  /** Accepts a pre-built shorthand/composed union, e.g. `TabsProps<TabId>` spread into the component. */
+  <V extends string = string>(props: TabsProps<V>): ReactElement;
+  List: typeof TabsList;
+  Tab: typeof TabsTab;
+  Panel: typeof TabsPanel;
+}
+
+export const Tabs = Object.assign(TabsRoot, { List: TabsList, Tab: TabsTab, Panel: TabsPanel }) as TabsComponent;

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState, type MouseEventHandler } from 'react';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { withLightTheme } from '../../testing/story-decorators';
-import { ButtonGroup, type ButtonGroupCompoundProps, type ButtonGroupEasyProps } from './index';
+import { ButtonGroup, type ButtonGroupComposedProps, type ButtonGroupShorthandProps } from './index';
 import { Button } from '../button';
 
 function ActionIcon() {
@@ -39,9 +39,9 @@ const meta = {
       <ButtonGroup.Item id="archive" startIcon={<ActionIcon />}>Archive</ButtonGroup.Item>
     </ButtonGroup>
   ),
-} satisfies Meta<ButtonGroupCompoundProps>;
+} satisfies Meta<ButtonGroupComposedProps>;
 export default meta;
-type Story = StoryObj<Omit<ButtonGroupCompoundProps, 'component' | 'onClick'> & { onClick?: MouseEventHandler<HTMLElement> }>;
+type Story = StoryObj<Omit<ButtonGroupComposedProps, 'component' | 'onClick'> & { onClick?: MouseEventHandler<HTMLElement> }>;
 
 /** Keep board commands in a pill tray. Position the tray in your layout or a Popover. */
 export const Floating: Story = {
@@ -231,7 +231,7 @@ export const ExpandingReducedMotion: Story = {};
 /** Enable reduced motion in your browser; the shared highlight moves immediately. */
 export const FloatingReducedMotion: Story = { ...Floating };
 
-export const ExpandingEasyMode: StoryObj<Omit<ButtonGroupEasyProps, 'component'>> = {
+export const ExpandingShorthandMode: StoryObj<Omit<ButtonGroupShorthandProps, 'component'>> = {
   args: {
     presentation: 'expanding', label: 'Message actions',
     items: [
@@ -270,7 +270,7 @@ export const ExpandingLabelledFallback: Story = {
   },
 };
 
-function AvailabilityExample({ onValueChange }: Pick<ButtonGroupCompoundProps, 'onValueChange'>) {
+function AvailabilityExample({ onValueChange }: Pick<ButtonGroupComposedProps, 'onValueChange'>) {
   const [available, setAvailable] = useState(true);
   const [removed, setRemoved] = useState(false);
   return <>
@@ -331,7 +331,7 @@ export const ExpandingFocusRecovery: Story = {
   },
 };
 
-function ControlledExample({ onValueChange }: Pick<ButtonGroupCompoundProps, 'onValueChange'>) {
+function ControlledExample({ onValueChange }: Pick<ButtonGroupComposedProps, 'onValueChange'>) {
   const [value, setValue] = useState('reply');
   return <ButtonGroup aria-label="Controlled actions" presentation="expanding" value={value} onValueChange={(next) => {
     onValueChange?.(next);

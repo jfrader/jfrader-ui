@@ -61,13 +61,13 @@ export type GravityWellSlotProps = {
   pauseButton?: FieldElementProps<'button'>;
 };
 
-interface GravityWellBaseProps
+interface GravityWellBaseProps<T extends GravityWellItem = GravityWellItem>
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>,
     SxProps {
   /** Items to render inside the well grid. Noninteractive content only. */
-  items: readonly GravityWellItem[];
+  items: readonly T[];
   /** Optional custom renderer for each item. Defaults to `item.content`. */
-  renderItem?: (item: GravityWellItem) => ReactNode;
+  renderItem?: (item: T) => ReactNode;
   /** Accessible group name. Required. */
   label: string;
   /** Current keyboard well location. */
@@ -102,7 +102,7 @@ interface GravityWellBaseProps
   slotProps?: GravityWellSlotProps;
 }
 
-export type GravityWellProps = GravityWellBaseProps & (
+export type GravityWellProps<T extends GravityWellItem = GravityWellItem> = GravityWellBaseProps<T> & (
   | {
       /** Enable pointer and keyboard interaction and pause controls. Defaults to `true`. */
       interactive?: true;
@@ -245,7 +245,7 @@ const buttonStyle = css({
   [REDUCED_MOTION]: { transition: 'none' },
 });
 
-export function GravityWell({
+export function GravityWell<T extends GravityWellItem = GravityWellItem>({
   ref,
   items,
   renderItem,
@@ -270,7 +270,7 @@ export function GravityWell({
   sx,
   className,
   ...rest
-}: GravityWellProps) {
+}: GravityWellProps<T>) {
   const labelId = useId();
   const isReduced = useReducedMotion();
   const prefersReducedMotion = isReduced ?? false;

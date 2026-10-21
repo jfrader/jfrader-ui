@@ -1,7 +1,7 @@
 export { SegmentedControl } from './segmented-control';
 export type {
-  SegmentedControlCompoundProps,
-  SegmentedControlEasyProps,
+  SegmentedControlComposedProps,
+  SegmentedControlShorthandProps,
   SegmentedControlOption,
   SegmentedControlSlots,
   SegmentedControlSlotProps,

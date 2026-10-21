@@ -1,7 +1,7 @@
 export { ButtonGroup } from './button-group';
 export type {
-  ButtonGroupCompoundProps,
-  ButtonGroupEasyProps,
+  ButtonGroupComposedProps,
+  ButtonGroupShorthandProps,
   ButtonGroupItemRecord,
   ButtonGroupProps,
   ButtonGroupSlots,

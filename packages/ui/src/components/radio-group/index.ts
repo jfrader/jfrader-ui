@@ -1,7 +1,7 @@
 export { RadioGroup } from './radio-group';
 export type {
-  RadioGroupCompoundProps,
-  RadioGroupEasyProps,
+  RadioGroupComposedProps,
+  RadioGroupShorthandProps,
   RadioGroupOption,
   RadioGroupSlots,
   RadioGroupSlotProps,

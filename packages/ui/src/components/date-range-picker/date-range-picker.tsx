@@ -199,7 +199,7 @@ export interface DateRangePickerBaseProps {
   children?: ReactNode;
 }
 
-export interface DateRangePickerCompoundProps extends DateRangePickerBaseProps {
+export interface DateRangePickerComposedProps extends DateRangePickerBaseProps {
   label?: never;
   placeholder?: never;
   size?: never;
@@ -208,7 +208,7 @@ export interface DateRangePickerCompoundProps extends DateRangePickerBaseProps {
   slotProps?: never;
 }
 
-export interface DateRangePickerEasyProps extends Omit<DateRangePickerBaseProps, 'children'> {
+export interface DateRangePickerShorthandProps extends Omit<DateRangePickerBaseProps, 'children'> {
   /** Name the generated range trigger and dialog. */
   label: string;
   /** Content shown in the trigger when no valid range is committed. */
@@ -229,7 +229,7 @@ export interface DateRangePickerEasyProps extends Omit<DateRangePickerBaseProps,
   };
 }
 
-export type DateRangePickerProps = DateRangePickerCompoundProps | DateRangePickerEasyProps;
+export type DateRangePickerProps = DateRangePickerComposedProps | DateRangePickerShorthandProps;
 
 export interface DateRangePickerSlots {
   /** Opens the date range dialog. */
@@ -289,7 +289,7 @@ interface TriggerLabelling {
 }
 
 interface DateRangePickerContextValue {
-  slots: DateRangePickerEasyProps['slots'];
+  slots: DateRangePickerShorthandProps['slots'];
   open: boolean;
   disabled: boolean;
   readOnly: boolean;
@@ -574,7 +574,7 @@ function DateRangePickerLayer({
   messages,
   children,
   slots,
-}: DateRangePickerBaseProps & Pick<DateRangePickerEasyProps, 'slots'> & { nodeId: string | undefined }) {
+}: DateRangePickerBaseProps & Pick<DateRangePickerShorthandProps, 'slots'> & { nodeId: string | undefined }) {
   const [committed = null, requestValue, resetToDefault] = useControlledState<DateRangeValue | null>(
     valueProp,
     defaultValue ?? null,

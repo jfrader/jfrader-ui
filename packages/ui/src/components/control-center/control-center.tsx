@@ -17,7 +17,7 @@ import { resolveTimeOptions } from '../../utils/intl';
 import { Button, type ButtonProps } from '../button';
 import { Avatar } from '../avatar';
 import { Dialog, type DialogContentProps } from '../dialog';
-import { RadioGroup, type RadioGroupProps, type RadioGroupEasyProps } from '../radio-group';
+import { RadioGroup, type RadioGroupProps, type RadioGroupShorthandProps } from '../radio-group';
 import { Slider, type SliderProps } from '../slider';
 import { Switch, type SwitchProps } from '../switch';
 import { FieldSlot, type FieldParts, type FieldSlots } from '../field/field-slot';
@@ -71,7 +71,7 @@ export interface ControlCenterSlotProps extends FieldParts<NativeAnatomy> {
   detailTrigger?: SlotProps<ButtonProps>;
   meter?: SlotProps<Extract<SliderProps, { type?: 'single' }>>;
   dial?: SlotProps<Extract<SliderProps, { type?: 'single' }>>;
-  modes?: SlotProps<RadioGroupEasyProps>;
+  modes?: SlotProps<RadioGroupShorthandProps>;
   channel?: SlotProps<SwitchProps>;
   person?: SlotProps<SwitchProps>;
   /** Uses `Dialog.Content` by default. */
@@ -83,7 +83,7 @@ export interface ControlCenterSlots extends FieldSlots<NativeAnatomy> {
   detailTrigger?: ComponentType<ButtonProps>;
   meter?: ComponentType<SliderProps>;
   dial?: ComponentType<SliderProps>;
-  modes?: ComponentType<RadioGroupProps>;
+  modes?: ComponentType<RadioGroupShorthandProps>;
   channel?: ComponentType<SwitchProps>;
   person?: ComponentType<SwitchProps>;
   /** Uses `Dialog.Content` by default. */

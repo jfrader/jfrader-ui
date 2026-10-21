@@ -7,11 +7,11 @@ import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import {
   Navigation,
-  type NavigationCompoundProps,
-  type NavigationEasyProps,
+  type NavigationComposedProps,
+  type NavigationShorthandProps,
   type NavigationGroupProps,
   type NavigationGroupRecord,
-  type NavigationCompoundProps as NavigationProps,
+  type NavigationComposedProps as NavigationProps,
 } from './index';
 
 const WORKSPACE = [
@@ -53,7 +53,7 @@ const meta = {
     docs: {
       description: { component: 'Group links into navigation sections and mark the current page.' },
       sections: [
-        { title: 'Page links', stories: ['Default', 'Compound'] },
+        { title: 'Page links', stories: ['Default', 'Composed'] },
         { title: 'Floating navigation', stories: ['Morph'] },
       ],
       usage: `### Accessibility
@@ -75,7 +75,7 @@ Floating groups wrap at narrow widths. Below 420px, disclosure panels use one co
       </Frame>
     ),
   ],
-} satisfies Meta<NavigationCompoundProps>;
+} satisfies Meta<NavigationComposedProps>;
 
 export default meta;
 
@@ -86,7 +86,7 @@ function CustomGroup(props: NavigationGroupProps) {
   return <Navigation.Group {...props} data-testid="custom-navigation-group" />;
 }
 
-type Story = StoryObj<Omit<NavigationCompoundProps, 'component'>>;
+type Story = StoryObj<Omit<NavigationComposedProps, 'component'>>;
 
 function SidebarExample(props: NavigationProps) {
   return (
@@ -128,7 +128,7 @@ async function expectFocusRing(element: HTMLElement) {
   await expect(getComputedStyle(element).outlineWidth).not.toBe('0px');
 }
 
-export const Default: StoryObj<Omit<NavigationEasyProps, 'component'>> = {
+export const Default: StoryObj<Omit<NavigationShorthandProps, 'component'>> = {
   name: 'Workspace links',
   args: {
     label: 'Main',
@@ -207,7 +207,7 @@ const groups = [
   },
 };
 
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Compose link groups',
   parameters: { docs: {
     description: { story: 'Compose workspace and settings links with a current-page marker.' },
@@ -261,7 +261,7 @@ export const Compound: Story = {
   },
 };
 
-export const GeneratedPartProps: StoryObj<Omit<NavigationEasyProps, 'component'>> = {
+export const GeneratedPartProps: StoryObj<Omit<NavigationShorthandProps, 'component'>> = {
   name: 'Generated part props',
   args: {
     label: 'Main',
@@ -295,7 +295,7 @@ export const GeneratedPartProps: StoryObj<Omit<NavigationEasyProps, 'component'>
   },
 };
 
-export const ReplacedParts: StoryObj<Omit<NavigationEasyProps, 'component'>> = {
+export const ReplacedParts: StoryObj<Omit<NavigationShorthandProps, 'component'>> = {
   name: 'Replaced parts',
   args: {
     groups: [
@@ -336,18 +336,18 @@ export const ReplacedParts: StoryObj<Omit<NavigationEasyProps, 'component'>> = {
   },
 };
 
-function easyModeTypeContracts() {
+function shorthandModeTypeContracts() {
   const groups: readonly NavigationGroupRecord[] = [{ items: [{ label: 'Home', href: '/' }] }];
-  // @ts-expect-error Easy mode rejects compound children.
+  // @ts-expect-error Shorthand mode rejects composed children.
   <Navigation groups={groups}>Child</Navigation>;
-  // @ts-expect-error Compound mode rejects groups.
+  // @ts-expect-error Composed mode rejects groups.
   <Navigation groups={groups}>Child</Navigation>;
-  // @ts-expect-error Compound mode rejects activeHref.
+  // @ts-expect-error Composed mode rejects activeHref.
   <Navigation activeHref="/">Child</Navigation>;
-  // @ts-expect-error Compound mode rejects slotProps.
+  // @ts-expect-error Composed mode rejects slotProps.
   <Navigation slotProps={{ root: {} }}>Child</Navigation>;
 }
-void easyModeTypeContracts;
+void shorthandModeTypeContracts;
 
 
 export const Links: Story = {
@@ -591,7 +591,7 @@ export const NarrowLabels: Story = {
 };
 
 /** Open a grouped set of site links from a floating disclosure bar. */
-export const Morph: StoryObj<Omit<NavigationEasyProps, 'component'>> = {
+export const Morph: StoryObj<Omit<NavigationShorthandProps, 'component'>> = {
   name: 'Floating site links',
   args: {
     variant: 'morph', label: 'Site', activeHref: '#overview',

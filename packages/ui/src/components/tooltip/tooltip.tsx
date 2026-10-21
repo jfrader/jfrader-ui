@@ -54,7 +54,7 @@ export interface TooltipBaseProps {
   children?: ReactNode;
 }
 
-export interface TooltipCompoundProps extends TooltipBaseProps {
+export interface TooltipComposedProps extends TooltipBaseProps {
   triggerLabel?: never;
   content?: never;
   slots?: never;
@@ -63,7 +63,7 @@ export interface TooltipCompoundProps extends TooltipBaseProps {
 
 type TooltipGeneratedPartProps<Props> = Omit<Props, 'children'> & { sx?: Interpolation<Theme> };
 
-export interface TooltipEasyProps extends Omit<TooltipBaseProps, 'children'> {
+export interface TooltipShorthandProps extends Omit<TooltipBaseProps, 'children'> {
   /** Name the generated trigger button. */
   triggerLabel: ReactNode;
   /** Show non-interactive help on hover or focus. */
@@ -85,7 +85,7 @@ export interface TooltipEasyProps extends Omit<TooltipBaseProps, 'children'> {
   };
 }
 
-export type TooltipProps = TooltipCompoundProps | TooltipEasyProps;
+export type TooltipProps = TooltipComposedProps | TooltipShorthandProps;
 
 export interface TooltipTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
 export interface TooltipContentProps extends ComponentPropsWithRef<'div'>, SxProps {}
@@ -93,7 +93,7 @@ export interface TooltipContentProps extends ComponentPropsWithRef<'div'>, SxPro
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
 interface TooltipContextValue {
-  slots: TooltipEasyProps['slots'];
+  slots: TooltipShorthandProps['slots'];
   open: boolean;
   refs: OverlayFloating['refs'];
   floatingStyles: CSSProperties;
@@ -160,7 +160,7 @@ function TooltipOverlay({
   closeDelay = DEFAULT_CLOSE_DELAY_MS,
   children,
   slots,
-}: TooltipBaseProps & Pick<TooltipEasyProps, 'slots'> & { nodeId: string | undefined }) {
+}: TooltipBaseProps & Pick<TooltipShorthandProps, 'slots'> & { nodeId: string | undefined }) {
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const { refs, floatingStyles, context } = useOverlayFloating({ open, placement, nodeId, onOpenChange: requestOpenChange });
   const { getReferenceProps, getFloatingProps } = useTooltipInteractions(context, { openDelay, closeDelay });

@@ -128,7 +128,7 @@ export interface DrawerSlots {
   footer?: ComponentType<DrawerFooterProps>;
 }
 
-export interface DrawerCompoundProps extends DrawerBaseProps {
+export interface DrawerComposedProps extends DrawerBaseProps {
   /** Compose the drawer trigger, content, and panel parts directly. */
   children?: ReactNode;
   triggerLabel?: never;
@@ -142,7 +142,7 @@ export interface DrawerCompoundProps extends DrawerBaseProps {
   footer?: never;
 }
 
-export interface DrawerEasyProps extends DrawerBaseProps, Omit<DrawerPanelProps, 'children' | 'title' | 'content' | 'slots' | 'slotProps' | 'draggable'> {
+export interface DrawerShorthandProps extends DrawerBaseProps, Omit<DrawerPanelProps, 'children' | 'title' | 'content' | 'slots' | 'slotProps' | 'draggable'> {
   /** Name the button that opens the drawer. */
   triggerLabel: ReactNode;
   /** Name the drawer with a visible heading. */
@@ -163,7 +163,7 @@ export interface DrawerEasyProps extends DrawerBaseProps, Omit<DrawerPanelProps,
   footer?: ReactNode;
 }
 
-export type DrawerProps = DrawerCompoundProps | DrawerEasyProps;
+export type DrawerProps = DrawerComposedProps | DrawerShorthandProps;
 
 export interface DrawerTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
 export interface DrawerContentProps extends Omit<ComponentPropsWithRef<'dialog'>, 'open'>, SxProps {

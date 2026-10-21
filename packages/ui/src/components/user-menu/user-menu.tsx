@@ -212,7 +212,7 @@ export interface UserMenuBaseProps {
   compactBreakpoint?: number;
 }
 
-export interface UserMenuCompoundProps extends UserMenuBaseProps {
+export interface UserMenuComposedProps extends UserMenuBaseProps {
   /** Composes the trigger, content and account-menu parts. */
   children?: ReactNode;
   messages?: never;
@@ -228,7 +228,7 @@ export interface UserMenuCompoundProps extends UserMenuBaseProps {
   component?: never;
 }
 
-export interface UserMenuEasyProps extends UserMenuBaseProps, Omit<GeneratedRootProps, 'children'> {
+export interface UserMenuShorthandProps extends UserMenuBaseProps, Omit<GeneratedRootProps, 'children'> {
   /** Localized messages for trigger, close, signOut, pending, and error. */
   messages: UserMenuMessages;
   /** Command actions and separators. */
@@ -254,7 +254,7 @@ export interface UserMenuEasyProps extends UserMenuBaseProps, Omit<GeneratedRoot
   component?: UserMenuSlots['root'];
 }
 
-export type UserMenuProps = UserMenuCompoundProps | UserMenuEasyProps;
+export type UserMenuProps = UserMenuComposedProps | UserMenuShorthandProps;
 
 export interface UserMenuTriggerProps extends Omit<ComponentPropsWithRef<'button'>, 'children'>, SxProps {
   /** Translated name of the button, e.g. "Account menu, Ada Lovelace". */
@@ -884,73 +884,73 @@ function UserMenuRoot(props: UserMenuProps) {
   const breakpoint =
     Number.isFinite(compactBreakpoint) && compactBreakpoint > 0 ? compactBreakpoint : DEFAULT_COMPACT_BREAKPOINT;
 
-  const easyProps = props.messages !== undefined ? props : undefined;
-  const Trigger = easyProps?.slots?.trigger ?? UserMenuTrigger;
-  const Content = easyProps?.slots?.content ?? UserMenuContent;
-  const Identity = easyProps?.slots?.identity ?? UserMenuIdentity;
-  const Item = easyProps?.slots?.item ?? UserMenuItem;
-  const Separator = easyProps?.slots?.separator ?? UserMenuSeparator;
-  const ThemeGroup = easyProps?.slots?.themeGroup ?? UserMenuThemeGroup;
-  const StatusGroup = easyProps?.slots?.statusGroup ?? UserMenuStatusGroup;
-  const SignOut = easyProps?.slots?.signOut ?? UserMenuSignOut;
+  const shorthandProps = props.messages !== undefined ? props : undefined;
+  const Trigger = shorthandProps?.slots?.trigger ?? UserMenuTrigger;
+  const Content = shorthandProps?.slots?.content ?? UserMenuContent;
+  const Identity = shorthandProps?.slots?.identity ?? UserMenuIdentity;
+  const Item = shorthandProps?.slots?.item ?? UserMenuItem;
+  const Separator = shorthandProps?.slots?.separator ?? UserMenuSeparator;
+  const ThemeGroup = shorthandProps?.slots?.themeGroup ?? UserMenuThemeGroup;
+  const StatusGroup = shorthandProps?.slots?.statusGroup ?? UserMenuStatusGroup;
+  const SignOut = shorthandProps?.slots?.signOut ?? UserMenuSignOut;
   const { user: _user, open: _open, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange,
     placement: _placement, compactBreakpoint: _compactBreakpoint, children: _children,
     messages: _messages, items: _items, theme: _theme, status: _status, onSignOut: _onSignOut,
     onSignOutError: _onSignOutError, showName: _showName, variant: _variant,
     slotProps: _slotProps, slots: _slots, component: _component, ...rootProps } = props;
 
-  const hasItems = Boolean(easyProps?.items && easyProps.items.length > 0);
-  const lastItemIsSeparator = easyProps?.items?.at(-1)?.type === 'separator';
-  const hasGroups = Boolean(easyProps?.theme || easyProps?.status);
+  const hasItems = Boolean(shorthandProps?.items && shorthandProps.items.length > 0);
+  const lastItemIsSeparator = shorthandProps?.items?.at(-1)?.type === 'separator';
+  const hasGroups = Boolean(shorthandProps?.theme || shorthandProps?.status);
   const showGroupSeparator = hasItems && !lastItemIsSeparator && hasGroups;
-  const showSignOutSeparator = Boolean(easyProps?.onSignOut && (hasGroups || (hasItems && !lastItemIsSeparator)));
+  const showSignOutSeparator = Boolean(shorthandProps?.onSignOut && (hasGroups || (hasItems && !lastItemIsSeparator)));
 
   return (
     <MenuController open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} placement={placement}>
       <UserMenuScope user={user} compactBreakpoint={breakpoint}>
-        {easyProps ? (
-          <GeneratedRoot {...rootProps} component={easyProps.slots?.root ?? easyProps.component} rootSlot={easyProps.slotProps?.root} marker="user-menu-root">
+        {shorthandProps ? (
+          <GeneratedRoot {...rootProps} component={shorthandProps.slots?.root ?? shorthandProps.component} rootSlot={shorthandProps.slotProps?.root} marker="user-menu-root">
             <Trigger
-              showName={easyProps.showName}
-              {...easyProps.slotProps?.trigger}
-              aria-label={easyProps.messages.trigger}
+              showName={shorthandProps.showName}
+              {...shorthandProps.slotProps?.trigger}
+              aria-label={shorthandProps.messages.trigger}
             />
             <Content
-              variant={easyProps.variant}
-              closeLabel={easyProps.messages.close}
-              {...easyProps.slotProps?.content}
+              variant={shorthandProps.variant}
+              closeLabel={shorthandProps.messages.close}
+              {...shorthandProps.slotProps?.content}
             >
-              <Identity {...easyProps.slotProps?.identity} />
-              {easyProps.items?.map((item, index) =>
+              <Identity {...shorthandProps.slotProps?.identity} />
+              {shorthandProps.items?.map((item, index) =>
                 item.type === 'separator' ? (
-                  <Separator {...easyProps.slotProps?.separator} key={item.key ?? index} />
+                  <Separator {...shorthandProps.slotProps?.separator} key={item.key ?? index} />
                 ) : (
                   <Item
-                    {...easyProps.slotProps?.item}
+                    {...shorthandProps.slotProps?.item}
                     key={item.key ?? index}
                     onSelect={item.onSelect}
                     disabled={item.disabled}
-                    tone={item.tone ?? easyProps.slotProps?.item?.tone}
-                    icon={item.icon !== undefined ? item.icon : easyProps.slotProps?.item?.icon}
-                    keys={item.keys ?? easyProps.slotProps?.item?.keys}
+                    tone={item.tone ?? shorthandProps.slotProps?.item?.tone}
+                    icon={item.icon !== undefined ? item.icon : shorthandProps.slotProps?.item?.icon}
+                    keys={item.keys ?? shorthandProps.slotProps?.item?.keys}
                   >
                     {item.label}
                   </Item>
                 ),
               )}
-              {showGroupSeparator && <Separator {...easyProps.slotProps?.separator} />}
-              {easyProps.theme && <ThemeGroup {...easyProps.theme} {...easyProps.slotProps?.themeGroup} />}
-              {easyProps.status && <StatusGroup {...easyProps.status} {...easyProps.slotProps?.statusGroup} />}
-              {showSignOutSeparator && <Separator {...easyProps.slotProps?.separator} />}
-              {easyProps.onSignOut && (
+              {showGroupSeparator && <Separator {...shorthandProps.slotProps?.separator} />}
+              {shorthandProps.theme && <ThemeGroup {...shorthandProps.theme} {...shorthandProps.slotProps?.themeGroup} />}
+              {shorthandProps.status && <StatusGroup {...shorthandProps.status} {...shorthandProps.slotProps?.statusGroup} />}
+              {showSignOutSeparator && <Separator {...shorthandProps.slotProps?.separator} />}
+              {shorthandProps.onSignOut && (
                 <SignOut
-                  onSignOut={easyProps.onSignOut}
-                  pendingLabel={easyProps.messages.pending}
-                  errorMessage={easyProps.messages.error}
-                  onSignOutError={easyProps.onSignOutError}
-                  {...easyProps.slotProps?.signOut}
+                  onSignOut={shorthandProps.onSignOut}
+                  pendingLabel={shorthandProps.messages.pending}
+                  errorMessage={shorthandProps.messages.error}
+                  onSignOutError={shorthandProps.onSignOutError}
+                  {...shorthandProps.slotProps?.signOut}
                 >
-                  {easyProps.messages.signOut}
+                  {shorthandProps.messages.signOut}
                 </SignOut>
               )}
             </Content>

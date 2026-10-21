@@ -7,12 +7,14 @@
 // Each hidden native input stays operable and draws the focus ring on its visual circle.
 import {
   createContext,
+  useCallback,
   useContext,
   useId,
   useMemo,
   type ChangeEvent,
   type ComponentPropsWithRef,
   type ComponentType,
+  type ReactElement,
   type ReactNode,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
@@ -25,13 +27,19 @@ import { useControlledState } from '../../utils/use-controlled-state';
 
 export type RadioGroupOrientation = 'vertical' | 'horizontal';
 
-export interface RadioGroupCompoundProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
+export interface RadioGroupValueProps<V extends string = string> {
   /** Controls the selected radio value. */
-  value?: string;
+  value?: NoInfer<V>;
   /** Sets the initial uncontrolled selection; omitted values leave all radios unchecked. */
-  defaultValue?: string;
+  defaultValue?: NoInfer<V>;
   /** Reports the requested radio value when an option becomes checked. */
-  onValueChange?: (value: string) => void;
+  onValueChange?: (value: V) => void;
+}
+
+export interface RadioGroupComposedProps
+  extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>,
+    SxProps,
+    RadioGroupValueProps<string> {
   /** Groups native inputs under this form field name; defaults to a generated name. */
   name?: string;
   /** Disables every radio in the group. Defaults to false. */
@@ -45,10 +53,10 @@ export interface RadioGroupCompoundProps extends Omit<ComponentPropsWithRef<'div
   slotProps?: never;
 }
 
-export type RadioGroupOption = Pick<
-  RadioGroupRadioProps,
-  'value' | 'description' | 'disabled' | 'id'
-> & { label: ReactNode };
+export type RadioGroupOption<V extends string = string> = Omit<
+  Pick<RadioGroupRadioProps, 'value' | 'description' | 'disabled' | 'id'>,
+  'value'
+> & { value: V; label: ReactNode };
 export interface RadioGroupSlots {
   /** Container element wrapping the radio group. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
@@ -68,9 +76,14 @@ export interface RadioGroupSlotProps {
   /** Radio button option within the group. Default: `RadioGroup.Radio`. */
   radio?: Omit<RadioGroupRadioProps, 'value' | 'label' | 'description' | 'disabled' | 'id' | 'children'>;
 }
-export interface RadioGroupEasyProps extends Omit<RadioGroupCompoundProps, 'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component'> {
-  /** Renders radio options in array order instead of compound children. */
-  options: readonly RadioGroupOption[];
+export interface RadioGroupShorthandProps<V extends string = string>
+  extends Omit<
+      RadioGroupComposedProps,
+      'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component' | 'value' | 'defaultValue' | 'onValueChange'
+    >,
+    RadioGroupValueProps<V> {
+  /** Renders radio options in array order instead of composed children. */
+  options: readonly RadioGroupOption<V>[];
   /** Displays the group heading and supplies its accessible name. */
   label?: ReactNode;
   /** Not accepted when `options` supplies the radio choices. */
@@ -82,7 +95,7 @@ export interface RadioGroupEasyProps extends Omit<RadioGroupCompoundProps, 'chil
   /** Passes props to the group container, heading and radio options. */
   slotProps?: RadioGroupSlotProps;
 }
-export type RadioGroupProps = RadioGroupCompoundProps | RadioGroupEasyProps;
+export type RadioGroupProps<V extends string = string> = RadioGroupComposedProps | RadioGroupShorthandProps<V>;
 
 export interface RadioGroupRadioPartProps extends ComponentPropsWithRef<'span'> {
   className?: string;
@@ -205,7 +218,13 @@ const descriptionStyle = css({
   color: vars.color.textMuted,
 });
 
-function RadioGroupRoot({
+type RadioGroupRootProps<V extends string = string> = Omit<
+  RadioGroupComposedProps,
+  'value' | 'defaultValue' | 'onValueChange'
+> &
+  RadioGroupValueProps<V>;
+
+function RadioGroupRoot<V extends string = string>({
   rootElement: Root = 'div',
   slotStyles,
   ref,
@@ -218,10 +237,14 @@ function RadioGroupRoot({
   className,
   sx,
   ...rest
-}: RadioGroupCompoundProps & { rootElement?: 'div' | RadioGroupSlots['root']; slotStyles?: Interpolation<Theme> }) {
+}: RadioGroupRootProps<V> & { rootElement?: 'div' | RadioGroupSlots['root']; slotStyles?: Interpolation<Theme> }) {
   const generatedName = useId();
   const name = nameProp ?? generatedName;
-  const [value, setValue] = useControlledState<string>(valueProp, defaultValue, onValueChange);
+  // Options only carry `V`; composed radios carry strings. One boundary widens the emit.
+  const notifyValueChange = useCallback((next: string) => {
+    (onValueChange as ((value: string) => void) | undefined)?.(next);
+  }, [onValueChange]);
+  const [value, setValue] = useControlledState<string>(valueProp, defaultValue, notifyValueChange);
 
   const context = useMemo(() => ({ value, setValue, name, disabled }), [value, setValue, name, disabled]);
 
@@ -339,7 +362,7 @@ function RadioGroupRadio({
 
 RadioGroupRadio.displayName = 'RadioGroup.Radio';
 
-function RadioGroupComponent(props: RadioGroupProps) {
+function RadioGroupComponent<V extends string = string>(props: RadioGroupProps<V>) {
   const labelId = useId();
   if (props.options === undefined) return <RadioGroupRoot {...props} />;
   const { options, label, component, slots, slotProps, ...rest } = props;
@@ -371,4 +394,12 @@ function RadioGroupComponent(props: RadioGroupProps) {
   );
 }
 RadioGroupComponent.displayName = 'RadioGroup';
-export const RadioGroup = Object.assign(RadioGroupComponent, { Radio: RadioGroupRadio });
+export interface RadioGroupComponentContract {
+  <V extends string = string>(props: RadioGroupShorthandProps<V>): ReactElement;
+  (props: RadioGroupComposedProps): ReactElement;
+  /** Accepts a pre-built shorthand/composed union, e.g. `RadioGroupProps<Role>` spread into the component. */
+  <V extends string = string>(props: RadioGroupProps<V>): ReactElement;
+  Radio: typeof RadioGroupRadio;
+}
+
+export const RadioGroup = Object.assign(RadioGroupComponent, { Radio: RadioGroupRadio }) as RadioGroupComponentContract;

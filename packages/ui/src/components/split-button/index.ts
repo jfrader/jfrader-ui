@@ -2,9 +2,9 @@ export { SplitButton } from './split-button';
 export type {
   SplitButtonActionProps,
   SplitButtonActionRecord,
-  SplitButtonCompoundProps,
+  SplitButtonComposedProps,
   SplitButtonContentProps,
-  SplitButtonEasyProps,
+  SplitButtonShorthandProps,
   SplitButtonItemProps,
   SplitButtonItemRecord,
   SplitButtonItemTone,

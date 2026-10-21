@@ -21,6 +21,9 @@ export default {
     from: '@jfrader/ui',
     pattern: 'src/components/*/*.stories.tsx',
   },
+  api: {
+    module: './src/api-table.tsx',
+  },
   groups: {
     rename: { Data: 'Data display', 'Data Display': 'Data display' },
     order: [

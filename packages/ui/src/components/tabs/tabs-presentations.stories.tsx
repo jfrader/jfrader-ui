@@ -4,13 +4,13 @@ import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { expectTranslucentContrast } from '../../testing/contrast-assertions';
-import { Tabs, type TabsEasyProps } from './tabs';
+import { Tabs, type TabsShorthandProps } from './tabs';
 
 const Frame = styled.div({ boxSizing: 'border-box', inlineSize: `min(24rem, calc(100vw - ${vars.space[8]}))`, padding: vars.space[4] });
 const NarrowFrame = styled.div({ maxInlineSize: '100%', inlineSize: '16rem' });
 const ScrollArea = styled.div({ overflowY: 'auto', blockSize: '8rem', marginBlockStart: vars.space[4] });
 const ScrollContent = styled.div({ blockSize: '40rem', backgroundColor: vars.color.surfaceRaised });
-function ScrollExample(props: TabsEasyProps) {
+function ScrollExample(props: TabsShorthandProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   return <><Tabs {...props} collapseOnScroll scrollRef={scrollRef} /><ScrollArea ref={scrollRef} data-testid="scroll-host"><ScrollContent /></ScrollArea></>;
 }
@@ -35,7 +35,7 @@ const meta = {
   parameters: { docs: { description: { component: 'Switch between panels by choosing a tab.' }, source: { language: 'tsx', code: source } } },
   decorators: [(Story) => <Frame><Story /></Frame>],
   render: (args) => <Tabs {...args} />,
-} satisfies Meta<TabsEasyProps>;
+} satisfies Meta<TabsShorthandProps>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 

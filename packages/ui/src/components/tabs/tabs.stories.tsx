@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
-import { Tabs, type TabsCompoundProps, type TabsEasyProps } from './index';
+import { Tabs, type TabsComposedProps, type TabsShorthandProps, type TabsSection } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { Card } from '../card';
@@ -16,6 +16,25 @@ const sections = [
   { value: 'two', label: 'Security', panel: 'Password and two-factor sign-in.' },
   { value: 'three', label: 'Billing', panel: 'Plan, invoices and payment method.' },
 ];`;
+
+type TabId = 'account' | 'billing';
+const TYPED_ITEMS = [
+  { value: 'account', label: 'Account', panel: 'Name and email.' },
+  { value: 'billing', label: 'Billing', panel: 'Plan and invoices.' },
+] as const satisfies readonly TabsSection<TabId>[];
+
+/** Compile-time consumer checks; never rendered. */
+function TabsGenericChecks() {
+  const saveTab = (id: TabId) => id;
+  return (
+    <>
+      <Tabs<TabId> label="Settings" items={TYPED_ITEMS} value="account" onValueChange={saveTab} />
+      <Tabs label="Settings" items={TYPED_ITEMS} onValueChange={(next) => saveTab(next)} />
+      {/* @ts-expect-error value must be one of the tab ids */}
+      <Tabs<TabId> label="Settings" items={TYPED_ITEMS} value="profile" />
+    </>
+  );
+}
 
 const ITEMS = [
   { value: 'one', label: 'Account', panel: 'Name, email and avatar.' },
@@ -37,7 +56,7 @@ const meta = {
     docs: {
       description: { component: 'Switch between panels by choosing a tab.' },
       sections: [
-        { title: 'Basic', stories: ['Compound'] },
+        { title: 'Basic', stories: ['Composed'] },
         { title: 'Variants', stories: ['Glass', 'Liquid', 'Vertical'] },
         { title: 'Icons and labels', stories: ['IconLabels', 'LineIcons'] },
         { title: 'Controlled selection', stories: ['Controlled'] },
@@ -81,12 +100,12 @@ Use line tabs for vertical layouts. Horizontal overflow preserves target sizes. 
 
 export default meta;
 
-type Story = StoryObj<(props: TabsCompoundProps) => ReactNode>;
-type EasyStory = StoryObj<(props: TabsEasyProps) => ReactNode>;
+type Story = StoryObj<(props: TabsComposedProps) => ReactNode>;
+type ShorthandStory = StoryObj<(props: TabsShorthandProps) => ReactNode>;
 // @ts-expect-error Generated-part slot keys are closed.
-type UnknownSlot = NonNullable<TabsEasyProps['slotProps']>['unknown'];
+type UnknownSlot = NonNullable<TabsShorthandProps['slotProps']>['unknown'];
 // @ts-expect-error Replacement slot keys are closed.
-type UnknownReplacement = NonNullable<TabsEasyProps['slots']>['unknown'];
+type UnknownReplacement = NonNullable<TabsShorthandProps['slots']>['unknown'];
 
 function TabsRootAdapter(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-testid="custom-tabs-root" />;
@@ -98,7 +117,7 @@ function UnusedTabsRoot() { return null; }
 
 /** Restyle every generated tab and pass props to the root and panels. */
 // This story tests the documented css/slot API and native style merging.
-export const SlotProps: EasyStory = {
+export const SlotProps: ShorthandStory = {
   args: {
     label: 'Settings', items: ITEMS, defaultValue: 'one',
     component: UnusedTabsRoot,
@@ -128,14 +147,14 @@ export const SlotProps: EasyStory = {
   },
 };
 
-export const Default: EasyStory = {
-  name: 'Easy mode',
+export const Default: ShorthandStory = {
+  name: 'Shorthand mode',
   args: {
     label: 'Settings',
     items: ITEMS.map((item) => ({ ...item, disabled: item.value === 'two' })),
     defaultValue: 'one',
     onValueChange: fn(),
-    slotProps: { list: { className: 'easy-tabs-list' } },
+    slotProps: { list: { className: 'shorthand-tabs-list' } },
   },
   parameters: { docs: { source: { language: 'tsx', code: `const sections = [
   { value: 'one', label: 'Account', panel: 'Name, email and avatar.' },
@@ -146,7 +165,7 @@ export const Default: EasyStory = {
 <Tabs label="Settings" items={sections} defaultValue="one" />` } } },
   render: (args) => <Tabs {...args} />,
   play: async ({ canvasElement, canvas, args, userEvent }) => {
-    await expect(canvas.getByRole('tablist', { name: 'Settings' })).toHaveClass('easy-tabs-list');
+    await expect(canvas.getByRole('tablist', { name: 'Settings' })).toHaveClass('shorthand-tabs-list');
     await expectSelected(canvasElement, 0);
     await expect(canvas.getByRole('tab', { name: 'Security' })).toBeDisabled();
     await userEvent.tab();
@@ -163,9 +182,9 @@ export const Default: EasyStory = {
   },
 };
 
-export const EasyModeManual: EasyStory = {
+export const ShorthandModeManual: ShorthandStory = {
   ...Default,
-  name: 'Easy mode manual',
+  name: 'Shorthand mode manual',
   args: { ...Default.args, activation: 'manual' },
   play: async ({ canvasElement, canvas, args, userEvent }) => {
     await userEvent.tab();
@@ -178,11 +197,11 @@ export const EasyModeManual: EasyStory = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
-export const EasyModeLight: EasyStory = { ...Default, name: 'Easy mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
+export const ShorthandModeLight: ShorthandStory = { ...Default, name: 'Shorthand mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
 
-export const EasyModeRejectedSelection: EasyStory = {
+export const ShorthandModeRejectedSelection: ShorthandStory = {
   ...Default,
-  name: 'Easy mode rejected selection',
+  name: 'Shorthand mode rejected selection',
   args: { ...Default.args, value: 'one' },
   play: async ({ canvasElement, canvas, args, userEvent }) => {
     await userEvent.click(canvas.getByRole('tab', { name: 'Billing' }));
@@ -192,15 +211,15 @@ export const EasyModeRejectedSelection: EasyStory = {
   },
 };
 
-function easyModeTypeContracts() {
-  // @ts-expect-error Collection mode rejects compound children.
-  <Tabs label="Settings" items={ITEMS}>Compound</Tabs>;
+function shorthandModeTypeContracts() {
+  // @ts-expect-error Collection mode rejects composed children.
+  <Tabs label="Settings" items={ITEMS}>Composed</Tabs>;
   // @ts-expect-error Collection mode requires a tablist label.
   <Tabs items={ITEMS} />;
   // @ts-expect-error Every section pairs a tab with its panel.
   <Tabs label="Settings" items={[{ value: 'one', label: 'Account' }]} />;
 }
-void easyModeTypeContracts;
+void shorthandModeTypeContracts;
 
 const suspendedTabRender = fn();
 const pendingTab = new Promise<never>(() => {});
@@ -213,7 +232,7 @@ function PendingTab({ value }: { value: string }) {
   return null;
 }
 
-function SuspendedControlledTabs(props: TabsCompoundProps) {
+function SuspendedControlledTabs(props: TabsComposedProps) {
   const [value, setValue] = useState('one');
   return <>
     <button onClick={() => startTransition(() => setValue('two'))}>Load security</button>
@@ -248,7 +267,7 @@ export const SuspendedControlledRequest: Story = {
   },
 };
 
-function TabsExample({ disabledValue, ...props }: TabsCompoundProps & { disabledValue?: string }) {
+function TabsExample({ disabledValue, ...props }: TabsComposedProps & { disabledValue?: string }) {
   return (
     <Tabs {...props}>
       <Tabs.List aria-label="Settings">
@@ -268,7 +287,7 @@ function TabsExample({ disabledValue, ...props }: TabsCompoundProps & { disabled
 }
 TabsExample.displayName = 'TabsExample';
 
-function ControlledTabs(props: TabsCompoundProps) {
+function ControlledTabs(props: TabsComposedProps) {
   const [value, setValue] = useState('one');
   return (
     <TabsExample
@@ -322,7 +341,7 @@ async function expectSelected(canvasElement: HTMLElement, selectedIndex: number)
   await expect(panel).toHaveTextContent(ITEMS[selectedIndex]!.panel);
 }
 
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Settings panels',
   parameters: { docs: { description: { story: 'Switch between Account, Security and Billing without leaving the page.' }, source: { language: 'tsx', code: `import { Tabs } from '@jfrader/ui';
 
@@ -600,7 +619,7 @@ export const RTL: Story = {
 };
 
 /** Use a rounded glass bar for short, in-page section labels. */
-export const IconLabels: EasyStory = {
+export const IconLabels: ShorthandStory = {
   name: 'Icons with active labels',
   args: {
     label: 'Library', variant: 'glass', labels: 'active', defaultValue: 'home',
@@ -621,7 +640,7 @@ export const IconLabels: EasyStory = {
   } },
 };
 
-export const Overflow: EasyStory = {
+export const Overflow: ShorthandStory = {
   name: 'Scrollable tab labels',
   args: {
     label: 'Project settings', defaultValue: 'general', variant: 'glass', sx: { inlineSize: '16rem', maxInlineSize: '100%' },
@@ -675,7 +694,7 @@ export const PanelComposition: Story = {
   } },
 };
 
-export const Glass: EasyStory = {
+export const Glass: ShorthandStory = {
   name: 'Glass tab bar',
   args: { label: 'Settings', items: ITEMS, defaultValue: 'one', variant: 'glass' },
   render: (args) => <Tabs {...args} />,
@@ -685,7 +704,7 @@ export const Glass: EasyStory = {
 };
 
 /** Move a shared lens between tabs while keeping panels mounted. */
-export const Liquid: EasyStory = {
+export const Liquid: ShorthandStory = {
   ...Glass,
   name: 'Liquid tab bar',
   args: { ...Glass.args, variant: 'liquid' },
@@ -694,7 +713,7 @@ export const Liquid: EasyStory = {
 <Tabs variant="liquid" label="Settings" defaultValue="one" items={sections} />` } } },
 };
 
-export const LineOverflow: EasyStory = {
+export const LineOverflow: ShorthandStory = {
   ...Overflow,
   name: 'Scrollable line tabs',
   parameters: { docs: {
@@ -721,7 +740,7 @@ export const LineOverflow: EasyStory = {
   },
 };
 
-export const LineIcons: EasyStory = {
+export const LineIcons: ShorthandStory = {
   ...IconLabels,
   name: 'Line tabs with icons',
   args: { ...IconLabels.args, variant: 'line', labels: 'always' },
@@ -735,7 +754,7 @@ export const LineIcons: EasyStory = {
   },
 };
 
-export const LongPanel: EasyStory = {
+export const LongPanel: ShorthandStory = {
   args: {
     label: 'References', defaultValue: 'reference', orientation: 'vertical',
     items: [

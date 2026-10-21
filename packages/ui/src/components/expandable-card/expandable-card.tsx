@@ -75,7 +75,7 @@ export interface ExpandableCardSlotProps {
   /** Expandable body panel containing card details. */
   content?: Omit<ExpandableCardContentProps, 'children'>;
 }
-export interface ExpandableCardCompoundProps extends ExpandableCardBaseProps {
+export interface ExpandableCardComposedProps extends ExpandableCardBaseProps {
   /** Composes the trigger, title, description and content parts instead of using `content`. */
   children?: ReactNode;
   title?: string;
@@ -85,7 +85,7 @@ export interface ExpandableCardCompoundProps extends ExpandableCardBaseProps {
   slots?: never;
   slotProps?: never;
 }
-export interface ExpandableCardEasyProps extends ExpandableCardBaseProps {
+export interface ExpandableCardShorthandProps extends ExpandableCardBaseProps {
   /** Renders the heading text inside the generated expansion trigger. */
   title: ReactNode;
   /** Renders secondary text inside the trigger and describes the details region. */
@@ -100,7 +100,7 @@ export interface ExpandableCardEasyProps extends ExpandableCardBaseProps {
   /** Passes props to the generated root, trigger, title, description and content panel. */
   slotProps?: ExpandableCardSlotProps;
 }
-export type ExpandableCardProps = ExpandableCardCompoundProps | ExpandableCardEasyProps;
+export type ExpandableCardProps = ExpandableCardComposedProps | ExpandableCardShorthandProps;
 export type ExpandableCardTriggerProps = ComponentPropsWithRef<'button'> & SxProps;
 export type ExpandableCardTitleProps = ComponentPropsWithRef<'span'> & SxProps;
 export type ExpandableCardDescriptionProps = ComponentPropsWithRef<'span'> & SxProps;
@@ -248,7 +248,7 @@ function ExpandableCardRoot(props: ExpandableCardProps) {
     slotProps,
     ...rest
   } = props;
-  const easy = 'content' in props;
+  const shorthand = 'content' in props;
   const Root = component ?? slots?.root ?? 'article';
   const { className: slotClassName, style: slotStyle, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
   const marker = typeof rootProps['data-ui'] === 'string' ? rootProps['data-ui'] : '';
@@ -339,7 +339,7 @@ function ExpandableCardRoot(props: ExpandableCardProps) {
                 {...rest}
                 {...rootProps}
                 ref={mergedRef}
-                title={rootProps.title ?? (!easy && typeof title === 'string' ? title : undefined)}
+                title={rootProps.title ?? (!shorthand && typeof title === 'string' ? title : undefined)}
                 style={{ ...rest.style, ...slotStyle }}
                 data-ui={rootDataUi}
                 data-size={size}
@@ -359,7 +359,7 @@ function ExpandableCardRoot(props: ExpandableCardProps) {
                   request(false);
                 }}
               >
-                {easy ? (
+                {shorthand ? (
                   <>
                     <ExpandableCardTrigger {...slotProps?.trigger}>
                       <ExpandableCardTitle {...slotProps?.title}>{title}</ExpandableCardTitle>

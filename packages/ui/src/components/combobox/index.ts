@@ -2,8 +2,8 @@ export { Combobox } from './combobox';
 export type {
   ComboboxProps,
   ComboboxBaseProps,
-  ComboboxCompoundProps,
-  ComboboxEasyProps,
+  ComboboxComposedProps,
+  ComboboxShorthandProps,
   ComboboxOption,
   ComboboxEmptyProps,
   ComboboxInputProps,

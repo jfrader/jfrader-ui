@@ -106,7 +106,7 @@ export interface DatePickerBaseProps {
   children?: ReactNode;
 }
 
-export interface DatePickerCompoundProps extends DatePickerBaseProps {
+export interface DatePickerComposedProps extends DatePickerBaseProps {
   label?: never;
   description?: never;
   error?: never;
@@ -117,7 +117,7 @@ export interface DatePickerCompoundProps extends DatePickerBaseProps {
 
 type DatePickerGeneratedPartProps<Props> = Omit<Props, 'children'> & { sx?: Interpolation<Theme> };
 
-export interface DatePickerEasyProps extends Omit<DatePickerBaseProps, 'children'> {
+export interface DatePickerShorthandProps extends Omit<DatePickerBaseProps, 'children'> {
   /** Label the generated date field and its popup. */
   label: string;
   /** Show supporting content below the generated date field. */
@@ -138,7 +138,7 @@ export interface DatePickerEasyProps extends Omit<DatePickerBaseProps, 'children
   };
 }
 
-export type DatePickerProps = DatePickerCompoundProps | DatePickerEasyProps;
+export type DatePickerProps = DatePickerComposedProps | DatePickerShorthandProps;
 
 export interface DatePickerSlots {
   /** Displays the selected date in the field. */
@@ -165,7 +165,7 @@ interface InputLabelling {
 }
 
 interface DatePickerContextValue {
-  slots: DatePickerEasyProps['slots'];
+  slots: DatePickerShorthandProps['slots'];
   open: boolean;
   disabled: boolean;
   value: string | undefined;
@@ -277,7 +277,7 @@ function DatePickerOverlay({
   placeholder: placeholderProp,
   children,
   slots,
-}: DatePickerBaseProps & Pick<DatePickerEasyProps, 'slots'> & { nodeId: string | undefined }) {
+}: DatePickerBaseProps & Pick<DatePickerShorthandProps, 'slots'> & { nodeId: string | undefined }) {
   const [value, requestValueChange] = useControlledState<string>(valueProp, defaultValue, onValueChange);
   const [requestedOpen = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const [inputDisabled, setInputDisabled] = useState(false);

@@ -3,7 +3,7 @@ import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
-import { ToggleGroup, type ToggleGroupCompoundProps as ToggleGroupProps, type ToggleGroupProps as PublicToggleGroupProps, type ToggleGroupSingleProps } from './index';
+import { ToggleGroup, type ToggleGroupComposedProps as ToggleGroupProps, type ToggleGroupProps as PublicToggleGroupProps, type ToggleGroupSingleProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
@@ -101,12 +101,12 @@ const meta = {
   parameters: {
     docs: {
       sections: [
-        { title: 'Basic', stories: ['Easy'] },
+        { title: 'Basic', stories: ['Shorthand'] },
         { title: 'Single and multiple selection', stories: ['SingleAllowEmpty', 'Multiple'] },
         { title: 'Orientation', stories: ['Vertical'] },
         { title: 'States', stories: ['DisabledGroup'] },
         { title: 'Composition', stories: ['Single'] },
-        { title: 'Keyboard', stories: ['EasyKeyboard'] },
+        { title: 'Keyboard', stories: ['ShorthandKeyboard'] },
       ],
       description: { component: 'Choose one or more options from a group of toggle buttons.' },
       usage: `### When to use
@@ -114,7 +114,7 @@ Use toggle buttons for related view or formatting choices. Use SegmentedControl 
 
 ### Values and constraints
 
-Give every item a nonempty value. Single selection keeps the pressed item selected unless clearing is allowed. Multiple selection toggles choices independently and reports them in activation order. Supply either options or compound children, not both.
+Give every item a nonempty value. Single selection keeps the pressed item selected unless clearing is allowed. Multiple selection toggles choices independently and reports them in activation order. Supply either options or composed children, not both.
 
 ### Keyboard and accessibility
 
@@ -149,15 +149,15 @@ type Story = Omit<StoryObj<ToggleGroupProps>, 'render' | 'play'> & {
 
 type CheckedToggleGroupArgs<Args extends NonNullable<Story['args']>> = Args;
 
-type EasyProps = Extract<PublicToggleGroupProps, { options: readonly unknown[] }>;
-type EasyStory = Omit<StoryObj<ToggleGroupProps>, 'args' | 'render' | 'play'> & {
-  args?: Partial<EasyProps>;
-  render?: (args: EasyProps) => ReactNode;
-  play?: (context: StoryContext<EasyProps>) => Promise<void>;
+type ShorthandProps = Extract<PublicToggleGroupProps, { options: readonly unknown[] }>;
+type ShorthandStory = Omit<StoryObj<ToggleGroupProps>, 'args' | 'render' | 'play'> & {
+  args?: Partial<ShorthandProps>;
+  render?: (args: ShorthandProps) => ReactNode;
+  play?: (context: StoryContext<ShorthandProps>) => Promise<void>;
 };
 const views = VIEWS.map((option) => ({ ...option, disabled: option.value === 'board' }));
-const easyArgs = { label: 'View', options: views, defaultValue: 'list', onValueChange: fn() };
-export const Easy: EasyStory = {
+const shorthandArgs = { label: 'View', options: views, defaultValue: 'list', onValueChange: fn() };
+export const Shorthand: ShorthandStory = {
   name: 'Choose a view',
   parameters: { docs: { description: { story: 'Choose one view while keeping the unavailable Board option visible.' }, source: { language: 'tsx', code: `import { ToggleGroup } from '@jfrader/ui';
 
@@ -169,7 +169,7 @@ const views = [
 ];
 
 <ToggleGroup label="View" options={views} defaultValue="list" />` } } },
-  args: easyArgs,
+  args: shorthandArgs,
   render: (args) => <ToggleGroup {...args} />,
   play: async ({ canvas, userEvent, args }) => {
     await expect(canvas.getByRole('group', { name: 'View' })).toBeInTheDocument();
@@ -182,7 +182,7 @@ const views = [
     await expect(args.onValueChange).toHaveBeenLastCalledWith('grid');
   },
 };
-function EasyControlledExample(args: EasyProps) {
+function ShorthandControlledExample(args: ShorthandProps) {
   const [value, setValue] = useState('list');
   if (args.type === 'multiple') return <ToggleGroup {...args} />;
   return (
@@ -192,9 +192,9 @@ function EasyControlledExample(args: EasyProps) {
     }} />
   );
 }
-export const EasyControlled: EasyStory = { ...Easy, name: 'Controlled options', render: (args) => <EasyControlledExample {...args} /> };
-export const EasyRejected: EasyStory = {
-  ...Easy, args: { ...easyArgs, value: 'list' },
+export const ShorthandControlled: ShorthandStory = { ...Shorthand, name: 'Controlled options', render: (args) => <ShorthandControlledExample {...args} /> };
+export const ShorthandRejected: ShorthandStory = {
+  ...Shorthand, args: { ...shorthandArgs, value: 'list' },
   name: 'Rejected option change',
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Grid' }));
@@ -204,8 +204,8 @@ export const EasyRejected: EasyStory = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('grid');
   },
 };
-export const EasyMultiple: EasyStory = {
-  ...Easy, args: { type: 'multiple', label: 'View', options: views, defaultValue: ['list'], onValueChange: fn() },
+export const ShorthandMultiple: ShorthandStory = {
+  ...Shorthand, args: { type: 'multiple', label: 'View', options: views, defaultValue: ['list'], onValueChange: fn() },
   name: 'Multiple options',
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Grid' }));
@@ -215,8 +215,8 @@ export const EasyMultiple: EasyStory = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith(['list', 'grid']);
   },
 };
-export const EasyAllowEmpty: EasyStory = {
-  ...Easy, args: { ...easyArgs, allowEmpty: true },
+export const ShorthandAllowEmpty: ShorthandStory = {
+  ...Shorthand, args: { ...shorthandArgs, allowEmpty: true },
   name: 'Options allow empty',
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'List' }));
@@ -225,8 +225,8 @@ export const EasyAllowEmpty: EasyStory = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('');
   },
 };
-export const EasyKeyboard: EasyStory = {
-  ...Easy,
+export const ShorthandKeyboard: ShorthandStory = {
+  ...Shorthand,
   name: 'Keyboard navigation',
   parameters: { docs: { description: { story: 'Use arrows to move past Board, then Space or Enter to select a view.' }, source: { language: 'tsx', code: `import { ToggleGroup } from '@jfrader/ui';
 
@@ -252,8 +252,8 @@ export const EasyKeyboard: EasyStory = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('table');
   },
 };
-export const EasyRTL: EasyStory = {
-  ...Easy, args: { ...easyArgs, dir: 'rtl' },
+export const ShorthandRTL: ShorthandStory = {
+  ...Shorthand, args: { ...shorthandArgs, dir: 'rtl' },
   name: 'Options in RTL',
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
@@ -267,33 +267,33 @@ export const EasyRTL: EasyStory = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('grid');
   },
 };
-function EasyRoot(props: ComponentPropsWithRef<'div'>) {
+function ShorthandRoot(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replacement="toggle-group" />;
 }
-export const EasyCustomization: EasyStory = {
-  ...Easy,
+export const ShorthandCustomization: ShorthandStory = {
+  ...Shorthand,
   name: 'Options customization',
   parameters: { docs: { source: { code: `<ToggleGroup label="View" options={views} defaultValue="list"
   slotProps={{ root: { title: 'View selector' }, item: { sx: { borderRadius: 0 } } }}
 />` } } },
   args: {
-    ...easyArgs,
+    ...shorthandArgs,
     ref: fn(),
     slotProps: {
       root: { title: 'View selector' },
       item: { sx: { borderRadius: 0 } },
     },
   },
-  render: (args) => <ToggleGroup {...args} component={EasyRoot} />,
+  render: (args) => <ToggleGroup {...args} component={ShorthandRoot} />,
   play: async (context) => {
-    await Easy.play?.(context);
+    await Shorthand.play?.(context);
     await expect(context.canvas.getByRole('group', { name: 'View' })).toHaveAttribute('data-replacement', 'toggle-group');
     await expect(context.args.ref).toHaveBeenCalledWith(context.canvas.getByRole('group', { name: 'View' }));
     await expect(context.canvas.getByRole('button', { name: 'Grid' })).toHaveStyle({ borderRadius: '0px' });
   },
 };
 type AssertToggleGroupProps<T extends PublicToggleGroupProps> = T;
-export type ToggleGroupEasyTypeRegression = {
+export type ToggleGroupShorthandTypeRegression = {
   // @ts-expect-error Options and children are mutually exclusive.
   mixed: AssertToggleGroupProps<{ options: typeof views; children: string }>;
   // @ts-expect-error Multiple mode requires an array value.
@@ -362,7 +362,7 @@ function expectPressed(canvasElement: HTMLElement, pressed: readonly boolean[]) 
 }
 
 export const Single: Story = {
-  name: 'Compound toggle buttons',
+  name: 'Composed toggle buttons',
   parameters: { docs: { description: { story: 'Compose a single-selection view picker from individual buttons.' }, source: { language: 'tsx', code: `import { ToggleGroup } from '@jfrader/ui';
 
 <ToggleGroup label="View" defaultValue="list">

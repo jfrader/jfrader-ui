@@ -6,7 +6,7 @@ import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { ClassNames } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
-import { Accordion, type AccordionCompoundProps as AccordionProps, type AccordionEasyProps } from './index';
+import { Accordion, type AccordionComposedProps as AccordionProps, type AccordionShorthandProps } from './index';
 
 const ITEMS = [
   { value: 'one', label: 'Account', panel: 'Name, email and avatar.' },
@@ -40,8 +40,8 @@ const meta = {
     sections: [
       { title: 'Basic', stories: ['Default'] },
       { title: 'Single and multiple panels', stories: ['Multiple', 'NotCollapsible'] },
-      { title: 'Default open', stories: ['Compound'] },
-      { title: 'Disabled sections', stories: ['EasyMultiple'] },
+      { title: 'Default open', stories: ['Composed'] },
+      { title: 'Disabled sections', stories: ['ShorthandMultiple'] },
       { title: 'Long content', stories: ['LongContent', 'LongUnbrokenContent'] },
       { title: 'Composition', stories: ['GeneratedPartProps', 'Controlled'] },
       { title: 'Keyboard', stories: ['Keyboard'] },
@@ -80,13 +80,13 @@ type Story = Omit<StoryObj<Omit<AccordionProps, 'component'>>, 'render' | 'play'
 };
 
 type CheckedAccordionArgs<Args extends Partial<AccordionProps>> = Args;
-type EasySingleProps = Omit<Extract<AccordionEasyProps, { type?: 'single' }>, 'component'>;
-type CheckedEasyArgs<Args extends AccordionEasyProps> = Args;
-export type EasyModeTypeRegression = {
-  // @ts-expect-error Easy items cannot be combined with compound children.
-  mixed: CheckedEasyArgs<{ items: typeof ITEMS; children: string }>;
+type ShorthandSingleProps = Omit<Extract<AccordionShorthandProps, { type?: 'single' }>, 'component'>;
+type CheckedShorthandArgs<Args extends AccordionShorthandProps> = Args;
+export type ShorthandModeTypeRegression = {
+  // @ts-expect-error Shorthand items cannot be combined with composed children.
+  mixed: CheckedShorthandArgs<{ items: typeof ITEMS; children: string }>;
   // @ts-expect-error Multiple selection still requires array values.
-  multiple: CheckedEasyArgs<{ items: typeof ITEMS; type: 'multiple'; value: string }>;
+  multiple: CheckedShorthandArgs<{ items: typeof ITEMS; type: 'multiple'; value: string }>;
 };
 
 function AccordionHost(props: ComponentPropsWithRef<'div'> & { 'data-ui'?: string }) {
@@ -186,7 +186,7 @@ async function expectExpanded(canvasElement: HTMLElement, openLabels: readonly I
   await expect(canvas.queryAllByRole('region')).toHaveLength(openLabels.length);
 }
 
-export const Default: StoryObj<EasySingleProps> = {
+export const Default: StoryObj<ShorthandSingleProps> = {
   name: 'Account sections',
   args: { items: ITEMS, defaultValue: 'one', onValueChange: fn() },
   render: (args) => <Accordion {...args} />,
@@ -206,7 +206,7 @@ export const Default: StoryObj<EasySingleProps> = {
   },
 };
 
-export const GeneratedPartProps: StoryObj<EasySingleProps> = {
+export const GeneratedPartProps: StoryObj<ShorthandSingleProps> = {
   name: 'Style section headers',
   args: { items: ITEMS, defaultValue: 'one', slotProps: { trigger: { sx: { fontWeight: vars.fontWeight.semibold } } } },
   render: (args) => <Accordion {...args} />,
@@ -219,7 +219,7 @@ ${accordionSource}
   },
 };
 
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Initially open panel',
   args: { defaultValue: 'one' },
   parameters: { docs: { description: { story: 'Start with Account expanded using explicit section anatomy.' }, source: { language: 'tsx', code: `import { Accordion } from '@jfrader/ui';
@@ -248,7 +248,7 @@ export const Compound: Story = {
   },
 };
 
-export const EasyMultiple: StoryObj<Omit<Extract<AccordionEasyProps, { type: 'multiple' }>, 'component'>> = {
+export const ShorthandMultiple: StoryObj<Omit<Extract<AccordionShorthandProps, { type: 'multiple' }>, 'component'>> = {
   name: 'Unavailable section',
   parameters: { docs: { description: { story: 'Keep Account and Billing available while Security is disabled.' }, source: { language: 'tsx', code: `${accordionSource}
 
@@ -268,7 +268,7 @@ export const EasyMultiple: StoryObj<Omit<Extract<AccordionEasyProps, { type: 'mu
   },
 };
 
-export const EasyControlled: StoryObj<EasySingleProps> = {
+export const ShorthandControlled: StoryObj<ShorthandSingleProps> = {
   args: { items: ITEMS, value: 'one', onValueChange: fn() },
   render: (args) => <Accordion {...args} />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
@@ -278,7 +278,7 @@ export const EasyControlled: StoryObj<EasySingleProps> = {
   },
 };
 
-export const ReplacedParts: StoryObj<EasySingleProps> = {
+export const ReplacedParts: StoryObj<ShorthandSingleProps> = {
   args: {
     items: ITEMS,
     ref: fn(),
@@ -589,7 +589,7 @@ export const ForcedColors: Story = {
   },
 };
 
-export const LongUnbrokenContent: StoryObj<EasySingleProps> = {
+export const LongUnbrokenContent: StoryObj<ShorthandSingleProps> = {
   args: {
     defaultValue: 'reference',
     items: [{

@@ -40,7 +40,7 @@ import { TextField, type TextFieldProps } from '../text-field';
 import { Textarea } from '../textarea';
 import { Spinner } from '../spinner';
 import { RadioGroup } from '../radio-group';
-import type { RadioGroupCompoundProps } from '../radio-group/radio-group';
+import type { RadioGroupComposedProps } from '../radio-group/radio-group';
 import { consumerHandlersFirst, restoreTriggerFocus } from '../menu/menu';
 
 export interface ActionMorphComposer {
@@ -105,7 +105,7 @@ export interface ActionMorphSlotProps {
   item?: NativePart<'button'>;
   form?: NativePart<'form'>;
   field?: ActionMorphFieldProps;
-  choices?: Omit<RadioGroupCompoundProps, 'sx'> & {
+  choices?: Omit<RadioGroupComposedProps, 'sx'> & {
     sx?: Interpolation<Theme>;
   };
   backButton?: ButtonProps;

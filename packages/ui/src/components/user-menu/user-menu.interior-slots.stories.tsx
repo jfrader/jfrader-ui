@@ -3,13 +3,13 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
 import { Button } from '../button';
 import { ClassNames, css } from '../../styling/css';
-import { UserMenu, type UserMenuEasyProps } from './user-menu';
+import { UserMenu, type UserMenuShorthandProps } from './user-menu';
 import { createRefCleanupTracker, expectMergedClasses, expectRootPrecedence, expectSameDomIdentity } from '../../testing/interior-slot-assertions';
 
 // @ts-expect-error Replacement keys are closed.
-type UnknownUserMenuSlot = NonNullable<UserMenuEasyProps['slots']>['unknown'];
+type UnknownUserMenuSlot = NonNullable<UserMenuShorthandProps['slots']>['unknown'];
 // @ts-expect-error Native interior keys are closed.
-type UnknownUserMenuContentSlot = NonNullable<NonNullable<NonNullable<UserMenuEasyProps['slotProps']>['content']>['slots']>['unknown'];
+type UnknownUserMenuContentSlot = NonNullable<NonNullable<NonNullable<UserMenuShorthandProps['slotProps']>['content']>['slots']>['unknown'];
 
 function AccountRoot(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-slot="account-root" />;
@@ -59,7 +59,7 @@ export default {
 } satisfies Meta<typeof UserMenu>;
 
 /** Replace the account list while keeping its keyboard navigation. */
-export const InteriorSlots: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
+export const InteriorSlots: StoryObj<(props: UserMenuShorthandProps) => ReactNode> = {
   tags: ['!autodocs'],
   render: () => <AccountFixture />,
   parameters: { docs: {

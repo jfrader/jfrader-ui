@@ -17,8 +17,8 @@ import {
   DateRangePicker,
   type DateRangePickerContentProps,
   type DateRangePickerMessages,
-  type DateRangePickerCompoundProps as DateRangePickerProps,
-  type DateRangePickerEasyProps,
+  type DateRangePickerComposedProps as DateRangePickerProps,
+  type DateRangePickerShorthandProps,
   type DateRangePickerTriggerProps,
   type DateRangePreset,
   type DateRangeValue,
@@ -161,7 +161,7 @@ const meta: Meta<DateRangePickerProps> = {
           'Choose a date range or a preset, then apply it.',
       },
       sections: [
-        { title: 'Basic', stories: ['Default', 'Compound', 'EasyControlled'] },
+        { title: 'Basic', stories: ['Default', 'Composed', 'ShorthandControlled'] },
         { title: 'Range constraints', stories: ['Bounds'] },
         { title: 'Presets', stories: ['CustomPresets'] },
         { title: 'States', stories: ['Invalid', 'Disabled'] },
@@ -192,27 +192,27 @@ type Story = StoryObj<typeof meta>;
 type CheckedDateRangePicker<Props extends import('./index').DateRangePickerProps> = Props;
 export type DateRangePickerTypeRegression = {
   // @ts-expect-error The non-DOM provider root has no component sugar.
-  providerComponent: DateRangePickerEasyProps['component'];
+  providerComponent: DateRangePickerShorthandProps['component'];
   // @ts-expect-error The semantic button and portaled panel have separate replacement seams.
-  providerRootSlot: NonNullable<DateRangePickerEasyProps['slots']>['root'];
+  providerRootSlot: NonNullable<DateRangePickerShorthandProps['slots']>['root'];
   // @ts-expect-error The provider has no root element to receive native props.
-  providerRootProps: NonNullable<DateRangePickerEasyProps['slotProps']>['root'];
-  // @ts-expect-error Easy label and compound children are mutually exclusive.
+  providerRootProps: NonNullable<DateRangePickerShorthandProps['slotProps']>['root'];
+  // @ts-expect-error Shorthand label and composed children are mutually exclusive.
   mixed: CheckedDateRangePicker<{ label: string; messages: DateRangePickerMessages; children: string }>;
-  // @ts-expect-error Easy placeholder requires a label.
+  // @ts-expect-error Shorthand placeholder requires a label.
   incomplete: CheckedDateRangePicker<{ placeholder: string; messages: DateRangePickerMessages }>;
-  // @ts-expect-error Compound mode rejects generated-part props.
+  // @ts-expect-error Composed mode rejects generated-part props.
   compoundSlots: CheckedDateRangePicker<{ children: string; messages: DateRangePickerMessages; slotProps: { trigger: { className: string } } }>;
 };
 
-function EasyControlledRange(props: DateRangePickerEasyProps) {
+function ShorthandControlledRange(props: DateRangePickerShorthandProps) {
   const [value, setValue] = useState<DateRangeValue | null>(WEEK);
   const [open, setOpen] = useState(false);
   return <DateRangePicker {...props} value={value} open={open}
     onValueChange={(next) => { setValue(next); props.onValueChange?.(next); }}
     onOpenChange={(next) => { setOpen(next); props.onOpenChange?.(next); }} />;
 }
-EasyControlledRange.displayName = 'EasyControlledRange';
+ShorthandControlledRange.displayName = 'ShorthandControlledRange';
 
 function RangeButtonRoot(props: ComponentPropsWithRef<'button'>) {
   return <button {...props} data-generated-trigger="" />;
@@ -323,7 +323,7 @@ const summaryText = ({ start, end }: DateRangeValue, days: number) =>
 
 // ---- Stories.
 
-export const Default: StoryObj<DateRangePickerEasyProps> = {
+export const Default: StoryObj<DateRangePickerShorthandProps> = {
   name: 'Choose and apply a range',
   args: { label: LABEL, placeholder: PLACEHOLDER, locale: LOCALE, today: TODAY, messages: rangeMessages, defaultValue: WEEK, months: 1, onValueChange: fn() },
   render: (args) => <DateRangePicker {...args} />,
@@ -363,7 +363,7 @@ ${RANGE_MESSAGES_SOURCE}
 };
 
 /** Assemble the range trigger and dialog for a custom layout. */
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Compose the trigger and calendar',
   args: { defaultValue: WEEK, onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <RangeExample {...args} />,
@@ -449,7 +449,7 @@ ${RANGE_MESSAGES_SOURCE}
 };
 
 /** Set props on the generated trigger and dialog, including its interior slots. */
-export const CustomParts: StoryObj<DateRangePickerEasyProps> = {
+export const CustomParts: StoryObj<DateRangePickerShorthandProps> = {
   args: {
     label: LABEL, placeholder: PLACEHOLDER, locale: LOCALE, today: TODAY, messages: rangeMessages, defaultValue: WEEK, months: 1,
     slots: { trigger: RangeButtonRoot, content: RangePanelRoot },
@@ -474,7 +474,7 @@ export const CustomParts: StoryObj<DateRangePickerEasyProps> = {
   },
 };
 
-export const EasyDisabled: StoryObj<DateRangePickerEasyProps> = {
+export const ShorthandDisabled: StoryObj<DateRangePickerShorthandProps> = {
   tags: ['!autodocs'],
   args: { label: LABEL, placeholder: PLACEHOLDER, messages: rangeMessages, disabled: true, open: true },
   render: (args) => <DateRangePicker {...args} />,
@@ -485,7 +485,7 @@ export const EasyDisabled: StoryObj<DateRangePickerEasyProps> = {
   },
 };
 
-export const EasyControlled: StoryObj<DateRangePickerEasyProps> = {
+export const ShorthandControlled: StoryObj<DateRangePickerShorthandProps> = {
   name: 'Control the applied range',
   parameters: { docs: {
     description: { story: 'Keep the applied range and dialog visibility in React state.' },
@@ -502,7 +502,7 @@ export function ReportPeriod() {
 }` },
   } },
   args: { label: LABEL, placeholder: PLACEHOLDER, locale: LOCALE, today: TODAY, messages: rangeMessages, months: 1, onValueChange: fn(), onOpenChange: fn() },
-  render: (args) => <EasyControlledRange {...args} />,
+  render: (args) => <ShorthandControlledRange {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     await userEvent.click(getTrigger(canvasElement));
     await findDialog(canvasElement);
@@ -519,7 +519,7 @@ export function ReportPeriod() {
 };
 
 /** Date text follows the selected locale; action copy comes from messages. */
-export const EasyLocale: StoryObj<DateRangePickerEasyProps> = {
+export const ShorthandLocale: StoryObj<DateRangePickerShorthandProps> = {
   args: {
     label: LABEL, locale: 'es-ES', today: TODAY, defaultValue: WEEK, months: 1,
     messages: { ...rangeMessages, apply: 'Aplicar', cancel: 'Cancelar', empty: 'Sin fechas', start: 'Fecha inicial', end: 'Fecha final', summary: ({ range }) => range },

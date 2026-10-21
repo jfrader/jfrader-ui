@@ -117,7 +117,7 @@ export interface ResizablePanelsBaseProps
   getValueText?: (share: number, panelValue: string, collapsed: boolean) => string;
 }
 
-export interface ResizablePanelsCompoundProps extends ResizablePanelsBaseProps {
+export interface ResizablePanelsComposedProps extends ResizablePanelsBaseProps {
   /** Supplies `ResizablePanels.Panel` elements in layout order. */
   children?: ReactNode;
   panels?: never;
@@ -128,7 +128,7 @@ export interface ResizablePanelsCompoundProps extends ResizablePanelsBaseProps {
   component?: never;
 }
 
-export interface ResizablePanelsEasyProps extends ResizablePanelsBaseProps {
+export interface ResizablePanelsShorthandProps extends ResizablePanelsBaseProps {
   /** Name the resizable panels group. */
   label?: string;
   /** Ordered panel specifications. */
@@ -142,7 +142,7 @@ export interface ResizablePanelsEasyProps extends ResizablePanelsBaseProps {
   slotProps?: ResizablePanelsSlotProps;
 }
 
-export type ResizablePanelsProps = ResizablePanelsCompoundProps | ResizablePanelsEasyProps;
+export type ResizablePanelsProps = ResizablePanelsComposedProps | ResizablePanelsShorthandProps;
 
 export interface ResizablePanelsPanelProps extends ComponentPropsWithRef<'div'>, SxProps {
   /** Stable identifier, unique within the group. */

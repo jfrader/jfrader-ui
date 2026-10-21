@@ -94,7 +94,7 @@ export interface ToggleGroupSlotProps {
 type ToggleGroupComposition =
   | {
       options?: never;
-      /** Supplies compound `ToggleGroup.Item` elements instead of `options`. */
+      /** Supplies composed `ToggleGroup.Item` elements instead of `options`. */
       children?: ReactNode;
       component?: never;
       slots?: never;
@@ -111,9 +111,9 @@ type ToggleGroupComposition =
       /** Supplies attributes and `sx` to the generated root and items. */
       slotProps?: ToggleGroupSlotProps;
     };
-export type ToggleGroupCompoundProps = ToggleGroupSingleProps | ToggleGroupMultipleProps;
+export type ToggleGroupComposedProps = ToggleGroupSingleProps | ToggleGroupMultipleProps;
 export type ToggleGroupProps = (Omit<ToggleGroupSingleProps, 'children'> | Omit<ToggleGroupMultipleProps, 'children'>) & ToggleGroupComposition;
-export type ToggleGroupEasyProps = Extract<ToggleGroupProps, { options: readonly ToggleGroupOption[] }>;
+export type ToggleGroupShorthandProps = Extract<ToggleGroupProps, { options: readonly ToggleGroupOption[] }>;
 
 export interface ToggleGroupItemProps extends Omit<ComponentPropsWithRef<'button'>, 'value'>, SxProps {
   /** Identifies this item in the group's selection; must be nonempty. */
@@ -245,7 +245,7 @@ function ToggleGroupRoot({
   className,
   sx,
   ...rest
-}: ToggleGroupCompoundProps & { rootElement?: 'div' | ToggleGroupSlots['root']; slotStyles?: Interpolation<Theme> }) {
+}: ToggleGroupComposedProps & { rootElement?: 'div' | ToggleGroupSlots['root']; slotStyles?: Interpolation<Theme> }) {
   // `toggle` only emits the shape that matches `type`, so either callback accepts it.
   const [value, setValue] = useControlledState<ToggleGroupValue>(
     valueProp,

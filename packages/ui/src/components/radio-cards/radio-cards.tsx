@@ -14,6 +14,7 @@ import {
   type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
+  type ReactElement,
   type ReactNode,
 } from 'react';
 import { animate, MotionConfig, motion, useMotionValue, useReducedMotion } from 'motion/react';
@@ -27,14 +28,19 @@ import { useControlledState } from '../../utils/use-controlled-state';
 
 export type RadioCardsLayout = 'grid' | 'list';
 export type RadioCardsSize = 'sm' | 'md';
-export interface RadioCardsCompoundProps
-  extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
+export interface RadioCardsValueProps<V extends string = string> {
   /** Controls the selected card's value. */
-  value?: string;
+  value?: NoInfer<V>;
   /** Sets the initially selected card. Defaults to no selection. */
-  defaultValue?: string;
+  defaultValue?: NoInfer<V>;
   /** Receives the newly selected card's value. */
-  onValueChange?: (value: string) => void;
+  onValueChange?: (value: V) => void;
+}
+
+export interface RadioCardsComposedProps
+  extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>,
+    SxProps,
+    RadioCardsValueProps<string> {
   /** Names the group's native radio inputs for form submission. Defaults to a generated name. */
   name?: string;
   /** Requires a selection for native form validation. Defaults to `false`. */
@@ -57,10 +63,10 @@ export interface RadioCardsCompoundProps
   component?: never;
   slotProps?: never;
 }
-export type RadioCardsOption = Pick<
-  RadioCardsItemProps,
-  'value' | 'label' | 'description' | 'meta' | 'icon' | 'disabled' | 'disabledReason' | 'id'
->;
+export type RadioCardsOption<V extends string = string> = Omit<
+  Pick<RadioCardsItemProps, 'value' | 'label' | 'description' | 'meta' | 'icon' | 'disabled' | 'disabledReason' | 'id'>,
+  'value'
+> & { value: V };
 export interface RadioCardsSlots {
   /** Container element wrapping the radio card group. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
@@ -84,9 +90,14 @@ export interface RadioCardsSlotProps {
   /** Validation error message displayed when invalid. */
   error?: Omit<ComponentPropsWithRef<'span'>, 'children'> & { sx?: Interpolation<Theme> };
 }
-export interface RadioCardsEasyProps extends Omit<RadioCardsCompoundProps, 'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component'> {
+export interface RadioCardsShorthandProps<V extends string = string>
+  extends Omit<
+      RadioCardsComposedProps,
+      'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component' | 'value' | 'defaultValue' | 'onValueChange'
+    >,
+    RadioCardsValueProps<V> {
   /** Supplies the cards to render in the generated group. */
-  options: readonly RadioCardsOption[];
+  options: readonly RadioCardsOption<V>[];
   /** Names the generated radio group. */
   label?: ReactNode;
   /** Not accepted when `options` supplies the cards. */
@@ -98,7 +109,7 @@ export interface RadioCardsEasyProps extends Omit<RadioCardsCompoundProps, 'chil
   /** Passes props and style overrides to generated group parts. */
   slotProps?: RadioCardsSlotProps;
 }
-export type RadioCardsProps = RadioCardsCompoundProps | RadioCardsEasyProps;
+export type RadioCardsProps<V extends string = string> = RadioCardsComposedProps | RadioCardsShorthandProps<V>;
 export type RadioCardsPartProps = ComponentPropsWithRef<'span'> & { sx?: Interpolation<Theme> };
 export interface RadioCardsItemSlots {
   /** Container surrounding the option content. */
@@ -378,7 +389,13 @@ function SelectionRing({
   );
 }
 
-function RadioCardsRoot({
+type RadioCardsRootProps<V extends string = string> = Omit<
+  RadioCardsComposedProps,
+  'value' | 'defaultValue' | 'onValueChange'
+> &
+  RadioCardsValueProps<V>;
+
+function RadioCardsRoot<V extends string = string>({
   rootElement: Root = 'div',
   slotStyles,
   errorElement: Error = 'span',
@@ -404,7 +421,7 @@ function RadioCardsRoot({
   'aria-describedby': describedBy,
   'aria-invalid': ariaInvalid,
   ...rest
-}: RadioCardsCompoundProps & {
+}: RadioCardsRootProps<V> & {
   rootElement?: 'div' | RadioCardsSlots['root'];
   slotStyles?: Interpolation<Theme>;
 
@@ -414,7 +431,11 @@ function RadioCardsRoot({
   const id = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   useImperativeHandle(ref, () => rootRef.current as HTMLDivElement, []);
-  const [value, requestChange, resetToDefault] = useControlledState(valueProp, defaultValue, onValueChange);
+  // Options only carry `V`; composed items carry strings. One boundary widens the emit.
+  const notifyChange = useCallback((next: string) => {
+    (onValueChange as ((value: string) => void) | undefined)?.(next);
+  }, [onValueChange]);
+  const [value, requestChange, resetToDefault] = useControlledState<string>(valueProp, defaultValue, notifyChange);
   const [relationships, setRelationships] = useState<Record<Relationship, string[]>>({
     label: [],
     description: [],
@@ -692,7 +713,7 @@ function RadioCardsDescription(props: RadioCardsDescriptionProps) {
 }
 RadioCardsLabel.displayName = 'RadioCards.Label';
 RadioCardsDescription.displayName = 'RadioCards.Description';
-function RadioCardsComponent(props: RadioCardsProps) {
+function RadioCardsComponent<V extends string = string>(props: RadioCardsProps<V>) {
   if (props.options === undefined) return <RadioCardsRoot {...props} />;
   const { options, label, component, slots, slotProps, ...rest } = props;
   const { className, style, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
@@ -718,8 +739,18 @@ function RadioCardsComponent(props: RadioCardsProps) {
   );
 }
 RadioCardsComponent.displayName = 'RadioCards';
+export interface RadioCardsComponentContract {
+  <V extends string = string>(props: RadioCardsShorthandProps<V>): ReactElement;
+  (props: RadioCardsComposedProps): ReactElement;
+  /** Accepts a pre-built shorthand/composed union, e.g. `RadioCardsProps<Plan>` spread into the component. */
+  <V extends string = string>(props: RadioCardsProps<V>): ReactElement;
+  Item: typeof RadioCardsItem;
+  Label: typeof RadioCardsLabel;
+  Description: typeof RadioCardsDescription;
+}
+
 export const RadioCards = Object.assign(RadioCardsComponent, {
   Item: RadioCardsItem,
   Label: RadioCardsLabel,
   Description: RadioCardsDescription,
-});
+}) as RadioCardsComponentContract;

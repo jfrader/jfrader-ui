@@ -15,9 +15,9 @@ import { ThemeRoot } from '../theme-root';
 import { Popover } from '../popover';
 import {
   BottomSheet,
-  type BottomSheetCompoundProps,
+  type BottomSheetComposedProps,
   type BottomSheetContentProps,
-  type BottomSheetEasyProps,
+  type BottomSheetShorthandProps,
   type BottomSheetPanelProps,
   type BottomSheetProps,
   type BottomSheetSlotProps,
@@ -62,9 +62,9 @@ const meta = {
           'Open content from the bottom of the screen. Drag the handle or use the keyboard to change its height.',
       },
       sections: [
-        { title: 'Easy and compound', stories: ['Default', 'Compound'] },
+        { title: 'Shorthand and composed', stories: ['Default', 'Composed'] },
         { title: 'Keyboard', stories: ['KeyboardNavigation'] },
-        { title: 'Controlled and disabled', stories: ['Controlled', 'EasyModeDisabled'] },
+        { title: 'Controlled and disabled', stories: ['Controlled', 'ShorthandModeDisabled'] },
         { title: 'Native form', stories: ['NativeFormClose'] },
         { title: 'Nested', stories: ['NestedOverlay'] },
         { title: 'Drag', stories: ['DragToResize'] },
@@ -85,7 +85,7 @@ Provide an accessible name for the sheet heading, resize handle, and close butto
   },
 } satisfies Meta<typeof BottomSheet>;
 export default meta;
-type Story = StoryObj<(props: BottomSheetCompoundProps) => ReactNode>;
+type Story = StoryObj<(props: BottomSheetComposedProps) => ReactNode>;
 
 const AdapterMaterial = styled.div({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, borderRadius: vars.radius.full, boxShadow: 'none' });
 function SheetPaper({ className, ...props }: SurfacePartProps) {
@@ -135,7 +135,7 @@ export const IndependentMaterialAdapter = rootAdapterStory(SheetPaper);
 export const SurfaceAdapterLight: Story = {
   tags: ['!autodocs'], ...SurfaceAdapter, decorators: [withLightTheme], globals: { theme: 'light' } };
 
-function ContrastPortalFixture({ theme = 'light', ...props }: BottomSheetCompoundProps & { theme?: 'dark' | 'light' }) {
+function ContrastPortalFixture({ theme = 'light', ...props }: BottomSheetComposedProps & { theme?: 'dark' | 'light' }) {
   const [panel, setPanel] = useState<HTMLDivElement | null>(null);
   return <ThemeRoot theme={theme} portalContainer={panel}>
     <BottomSheet {...props} defaultOpen>
@@ -289,7 +289,7 @@ function touch(
   return event;
 }
 
-export const Default: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
+export const Default: StoryObj<(props: BottomSheetShorthandProps) => ReactNode> = {
   name: 'Trip itinerary',
   args: {
     triggerLabel: TRIGGER,
@@ -357,13 +357,13 @@ export const Default: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
   },
 };
 
-export const Compound: Story = {
-  name: 'Compound anatomy',
+export const Composed: Story = {
+  name: 'Composed anatomy',
   parameters: {
     docs: {
       description: {
         story:
-          'Arrange the trigger, dialog shell, animated panel, header, handle, body, and footer with compound parts.',
+          'Arrange the trigger, dialog shell, animated panel, header, handle, body, and footer with composed parts.',
       },
       source: {
         language: 'tsx',
@@ -411,8 +411,8 @@ export const Compound: Story = {
   },
 };
 
-export const EasyModeKeyboard: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
-  name: 'Easy mode keyboard',
+export const ShorthandModeKeyboard: StoryObj<(props: BottomSheetShorthandProps) => ReactNode> = {
+  name: 'Shorthand mode keyboard',
   args: {
     triggerLabel: TRIGGER,
     title: TITLE,
@@ -464,7 +464,7 @@ export const EasyModeKeyboard: StoryObj<(props: BottomSheetEasyProps) => ReactNo
   },
 };
 
-function ControlledEasyBottomSheet(props: BottomSheetEasyProps) {
+function ControlledShorthandBottomSheet(props: BottomSheetShorthandProps) {
   const [open, setOpen] = useState(false);
   return (
     <BottomSheet
@@ -477,10 +477,10 @@ function ControlledEasyBottomSheet(props: BottomSheetEasyProps) {
     />
   );
 }
-ControlledEasyBottomSheet.displayName = 'ControlledEasyBottomSheet';
+ControlledShorthandBottomSheet.displayName = 'ControlledShorthandBottomSheet';
 
-export const EasyModeControlled: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
-  name: 'Easy mode controlled',
+export const ShorthandModeControlled: StoryObj<(props: BottomSheetShorthandProps) => ReactNode> = {
+  name: 'Shorthand mode controlled',
   args: {
     triggerLabel: TRIGGER,
     title: TITLE,
@@ -494,7 +494,7 @@ export const EasyModeControlled: StoryObj<(props: BottomSheetEasyProps) => React
     closeLabel: 'Close',
     onOpenChange: fn(),
   },
-  render: (args) => <ControlledEasyBottomSheet {...args} />,
+  render: (args) => <ControlledShorthandBottomSheet {...args} />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const trigger = canvas.getByRole('button', { name: TRIGGER });
     await userEvent.click(trigger);
@@ -513,7 +513,7 @@ export const EasyModeControlled: StoryObj<(props: BottomSheetEasyProps) => React
   },
 };
 
-export const EasyModeDisabled: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
+export const ShorthandModeDisabled: StoryObj<(props: BottomSheetShorthandProps) => ReactNode> = {
   name: 'Disabled trigger',
   args: {
     triggerLabel: TRIGGER,
@@ -572,8 +572,8 @@ export const EasyModeDisabled: StoryObj<(props: BottomSheetEasyProps) => ReactNo
   },
 };
 
-export const EasyModeCustomizationSlotProps: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
-  name: 'Easy mode customization slotProps',
+export const ShorthandModeCustomizationSlotProps: StoryObj<(props: BottomSheetShorthandProps) => ReactNode> = {
+  name: 'Shorthand mode customization slotProps',
   args: {
     triggerLabel: TRIGGER,
     title: TITLE,
@@ -646,9 +646,9 @@ export const EasyModeCustomizationSlotProps: StoryObj<(props: BottomSheetEasyPro
   },
 };
 
-export const EasyModeWithoutDescription: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
+export const ShorthandModeWithoutDescription: StoryObj<(props: BottomSheetShorthandProps) => ReactNode> = {
   tags: ['!autodocs'],
-  name: 'Easy mode without description',
+  name: 'Shorthand mode without description',
   args: {
     triggerLabel: TRIGGER,
     title: TITLE,
@@ -670,15 +670,15 @@ export const EasyModeWithoutDescription: StoryObj<(props: BottomSheetEasyProps) 
   },
 };
 
-function easyModeTypeContracts() {
-  // @ts-expect-error Presentation mode rejects compound children.
-  <BottomSheet triggerLabel="Open" title="Trip" content="Trip" closeLabel="Close">Compound</BottomSheet>;
+function shorthandModeTypeContracts() {
+  // @ts-expect-error Presentation mode rejects composed children.
+  <BottomSheet triggerLabel="Open" title="Trip" content="Trip" closeLabel="Close">Composed</BottomSheet>;
   // @ts-expect-error Presentation mode requires title and closeLabel.
   <BottomSheet triggerLabel="Open" content="Trip" />;
-  // @ts-expect-error Named presentation props cannot leak into compound mode.
+  // @ts-expect-error Named presentation props cannot leak into composed mode.
   <BottomSheet title="Trip"><BottomSheet.Content /></BottomSheet>;
 }
-void easyModeTypeContracts;
+void shorthandModeTypeContracts;
 interface SheetFrame {
   open: boolean;
   top: number;
@@ -831,7 +831,7 @@ export const LongContent: Story = {
 };
 
 /** Long names wrap beside the close button on narrow sheets. */
-export const LongHeader: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = {
+export const LongHeader: StoryObj<(props: BottomSheetShorthandProps) => ReactNode> = {
   tags: ['!autodocs'],
   args: {
     defaultOpen: true,
@@ -899,7 +899,7 @@ export const NoDescription: Story = {
   },
 };
 
-function ControlledExample(args: BottomSheetCompoundProps) {
+function ControlledExample(args: BottomSheetComposedProps) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(0);
   return (
@@ -1296,7 +1296,7 @@ export const DynamicViewport: Story = {
   },
 };
 
-function NativeCloseExample({ mode, ...args }: BottomSheetCompoundProps & { mode: 'form' | 'ref' }) {
+function NativeCloseExample({ mode, ...args }: BottomSheetComposedProps & { mode: 'form' | 'ref' }) {
   const ref = useRef<HTMLDialogElement>(null);
   return (
     <BottomSheet {...args}>
@@ -1318,7 +1318,7 @@ function NativeCloseExample({ mode, ...args }: BottomSheetCompoundProps & { mode
 // `close` event, so wait for the notification itself, then assert its exact count.
 async function nativeClosed(
   canvasElement: HTMLElement,
-  onOpenChange: BottomSheetCompoundProps['onOpenChange'],
+  onOpenChange: BottomSheetComposedProps['onOpenChange'],
   calls: number,
 ) {
   await waitFor(async () => {
@@ -1396,7 +1396,7 @@ export const CancelVeto: Story = {
     await expect(args.onOpenChange).not.toHaveBeenCalled();
   },
 };
-function UnmountExample(args: BottomSheetCompoundProps) {
+function UnmountExample(args: BottomSheetComposedProps) {
   const [mounted, setMounted] = useState(true);
   return (
     <BottomSheet {...args}>
@@ -1467,7 +1467,7 @@ export const ExternalARIA: Story = {
     );
   },
 };
-function FalsyExample(args: BottomSheetCompoundProps) {
+function FalsyExample(args: BottomSheetComposedProps) {
   const [content, setContent] = useState<ReactNode>(false);
   return (
     <BottomSheet {...args}>
@@ -1519,7 +1519,7 @@ export const FalsyContent: Story = {
   },
 };
 
-function NestedExample(args: BottomSheetCompoundProps) {
+function NestedExample(args: BottomSheetComposedProps) {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   return (
     <BottomSheet {...args}>
@@ -1692,7 +1692,7 @@ export const StylingAndRefs: Story = {
 };
 const contentRefSpy = fn();
 
-function ExternalValueExample(args: BottomSheetCompoundProps) {
+function ExternalValueExample(args: BottomSheetComposedProps) {
   const [value, setValue] = useState(0);
   return (
     <BottomSheet {...args} value={value} detents={[0.45, 0.92]}>

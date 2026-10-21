@@ -128,7 +128,7 @@ computed styles from the themed element.
 
 ## Style a part
 
-Compound components expose the parts you render yourself. Apply `sx` to the part:
+Composed components expose the parts you render yourself. Apply `sx` to the part:
 
 ```tsx
 import { Card, theme } from '@jfrader/ui';

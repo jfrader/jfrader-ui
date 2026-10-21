@@ -43,6 +43,7 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   type MutableRefObject,
+  type ReactElement,
   type ReactNode,
   type SetStateAction,
 } from 'react';
@@ -94,8 +95,8 @@ const tokens = (...values: Array<unknown>): string | undefined => {
   return list.join(' ') || undefined;
 };
 
-export interface ComboboxOption {
-  value: string;
+export interface ComboboxOption<V extends string = string> {
+  value: V;
   label: ReactNode;
   disabled?: boolean;
   textValue?: string;
@@ -144,13 +145,16 @@ export interface ComboboxSlotProps {
   empty?: Partial<ComboboxEmptyProps>;
 }
 
-export interface ComboboxBaseProps {
+export interface ComboboxStateProps<V extends string = string> {
   /** `null` is the controlled "nothing selected" state. */
-  value?: string | null;
+  value?: NoInfer<V> | null;
   /** Sets the initially selected option. Defaults to no selection. */
-  defaultValue?: string;
+  defaultValue?: NoInfer<V>;
   /** Fires once per accepted selection with the option's `value`, or `null` when the text is cleared. */
-  onValueChange?: (value: string | null) => void;
+  onValueChange?: (value: V | null) => void;
+}
+
+export interface ComboboxBaseProps<V extends string = string> extends ComboboxStateProps<V> {
   /** Controls popup visibility; disabled and read-only inputs keep it closed. */
   open?: boolean;
   /** Sets initial popup visibility. Defaults to `false`. */
@@ -165,7 +169,7 @@ export interface ComboboxBaseProps {
   onInputChange?: (query: string) => void;
 }
 
-export interface ComboboxCompoundProps extends ComboboxBaseProps {
+export interface ComboboxComposedProps extends ComboboxBaseProps<string> {
   options?: never;
   /** Composes the input, list, items and empty state instead of using `options`. */
   children?: ReactNode;
@@ -185,9 +189,9 @@ export interface ComboboxCompoundProps extends ComboboxBaseProps {
   slotProps?: never;
 }
 
-export interface ComboboxEasyProps extends ComboboxBaseProps {
+export interface ComboboxShorthandProps<V extends string = string> extends ComboboxBaseProps<V> {
   /** Supplies the suggestions rendered in the popup. */
-  options: readonly ComboboxOption[];
+  options: readonly ComboboxOption<V>[];
   children?: never;
   /** Labels the text input. */
   label?: ReactNode;
@@ -219,7 +223,7 @@ export interface ComboboxEasyProps extends ComboboxBaseProps {
   slotProps?: ComboboxSlotProps;
 }
 
-export type ComboboxProps = ComboboxCompoundProps | ComboboxEasyProps;
+export type ComboboxProps<V extends string = string> = ComboboxComposedProps | ComboboxShorthandProps<V>;
 
 export interface ComboboxInputProps extends Omit<TextFieldProps, 'value' | 'defaultValue' | 'onValueChange'> {
   /** Root `name` submits the selected value. Input `name` submits an extra text entry. */
@@ -332,7 +336,7 @@ const emptyStyle = css({
   color: vars.color.textMuted,
 });
 
-function ComboboxOverlay({ nodeId, ...props }: ComboboxProps & { nodeId: string | undefined }) {
+function ComboboxOverlay<V extends string = string>({ nodeId, ...props }: ComboboxProps<V> & { nodeId: string | undefined }) {
   const {
     value: valueProp,
     defaultValue,
@@ -350,10 +354,14 @@ function ComboboxOverlay({ nodeId, ...props }: ComboboxProps & { nodeId: string 
   const [inputReadOnly, setInputReadOnly] = useState(false);
   const inactive = inputDisabled || inputReadOnly;
   const [inputForm, setInputForm] = useState<string>();
+  // Options only carry `V`; composed children carry strings. One boundary widens the emit.
+  const notifyValueChange = useCallback((next: string | null) => {
+    (onValueChange as ((value: string | null) => void) | undefined)?.(next);
+  }, [onValueChange]);
   const [selectedValue = null, requestValueChange, resetValue] = useControlledState<string | null>(
     valueProp,
     defaultValue ?? null,
-    onValueChange,
+    notifyValueChange,
   );
   const [openState = false, requestOpen] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const open = openState && !inactive;
@@ -601,7 +609,7 @@ function ComboboxOverlay({ nodeId, ...props }: ComboboxProps & { nodeId: string 
   );
 }
 
-function ComboboxRoot(props: ComboboxProps) {
+function ComboboxRoot<V extends string = string>(props: ComboboxProps<V>) {
   return (
     <OverlayLayer>
       {(nodeId) => <ComboboxOverlay {...props} nodeId={nodeId} />}
@@ -957,9 +965,20 @@ function ComboboxEmpty({ ref, children, className, sx, ...rest }: ComboboxEmptyP
 
 ComboboxEmpty.displayName = 'Combobox.Empty';
 
+export interface ComboboxComponent {
+  <V extends string = string>(props: ComboboxShorthandProps<V>): ReactElement;
+  (props: ComboboxComposedProps): ReactElement;
+  /** Accepts a pre-built shorthand/composed union, e.g. `ComboboxProps<Status>` spread into the component. */
+  <V extends string = string>(props: ComboboxProps<V>): ReactElement;
+  Input: typeof ComboboxInput;
+  List: typeof ComboboxList;
+  Item: typeof ComboboxItem;
+  Empty: typeof ComboboxEmpty;
+}
+
 export const Combobox = Object.assign(ComboboxRoot, {
   Input: ComboboxInput,
   List: ComboboxList,
   Item: ComboboxItem,
   Empty: ComboboxEmpty,
-});
+}) as ComboboxComponent;

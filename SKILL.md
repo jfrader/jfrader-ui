@@ -186,18 +186,51 @@ These are the rules that repeatedly caught real defects in this repo's review cy
   optimize measured boundaries, not guessed ones.
 - `will-change` only for a demonstrated rendering problem, removed afterwards.
 
-### Easy mode
+### Shorthand mode
 
-- Dual-mode components (MultiSelect, Select, Combobox) support both compound anatomy and a single-element easy mode via a mutually exclusive `options` XOR `children` type union.
+- Dual-mode components (MultiSelect, Select, Combobox) support both composed anatomy and a single-element shorthand mode via a mutually exclusive `options` XOR `children` type union.
 - `options` is a readonly array of `{ value, label, disabled?, textValue?, id? }`.
 - Presentation props (`label`, `description`, `error`, `placeholder`, `size`, plus `clearable` on MultiSelect only) configure the generated field anatomy.
-- Easy mode composes the existing compound parts internally (no parallel implementations) and preserves existing state, controlled/uncontrolled axes, and native form reset semantics.
+- Shorthand mode reuses the existing parts internally (no parallel implementations) and preserves existing state, controlled/uncontrolled axes, and native form reset semantics.
 - Generated parts expose typed `slotProps` with singular, lower-camel-case anatomy keys: `root`, `label`, `description`, `error`, `trigger`, `value`, `content`, `item`, `empty`, and family parts such as `clear`, `input`, `list`, `tab`, `panel`, `separator`, `header`, `title`, `close`. Expose only parts the family generates; provider-only roots need no DOM slot. Repeated parts share one props object; record values, ids, and disabled state remain authoritative. Part props accept `className` and `sx` plus the existing part API; unknown keys are rejected.
-- `slots` replaces generated compound parts with adapters that forward props/ref to the original part; `component` is sugar for `slots.root`, and `slots.root` wins. Preserve existing leaf `render` APIs. Dialog adopts only its Panel div for `slots.root` / `slotProps.root`; `slotProps.content` targets the native shell. Combobox's direct field `label` / `description` / `error` props win over the same nested `slotProps.input.slotProps` keys. Provider families may add an optional easy-mode wrapper only when a root override is supplied.
-- Overlay generated-part adapters forward props/ref to the original compound part to retain focus, scrolling, gestures, and ARIA registration. Dialog, Drawer, and BottomSheet keep the native Content shell; their easy `root` slot targets Panel. DialogStack's easy `root` targets each Content. Native `header`/`body` wrappers (Dialog header, DialogStack header/body) forward to one div. Menu, ContextMenu, Popover, and UserMenu add a wrapper only when root customization is supplied; native root props merge into `slotProps.root`. UserMenu.Content's `menu`, `handle`, and `close` slots replace native elements and forward all supplied props/ref. Declare replacement types outside render. A part that takes props is also replaceable: every `slotProps` key has the same key in `slots`, and one key is one element, so a part that renders twice gets two keys. See [the generated API inventory](docs/customization-inventory.md) for supported keys.
+- `slots` replaces generated composed parts with adapters that forward props/ref to the original part; `component` is sugar for `slots.root`, and `slots.root` wins. Preserve existing leaf `render` APIs. Dialog adopts only its Panel div for `slots.root` / `slotProps.root`; `slotProps.content` targets the native shell. Combobox's direct field `label` / `description` / `error` props win over the same nested `slotProps.input.slotProps` keys. Provider families may add an optional shorthand-mode wrapper only when a root override is supplied.
+- Overlay generated-part adapters forward props/ref to the original compound part to retain focus, scrolling, gestures, and ARIA registration. Dialog, Drawer, and BottomSheet keep the native Content shell; their shorthand `root` slot targets Panel. DialogStack's shorthand `root` targets each Content. Native `header`/`body` wrappers (Dialog header, DialogStack header/body) forward to one div. Menu, ContextMenu, Popover, and UserMenu add a wrapper only when root customization is supplied; native root props merge into `slotProps.root`. UserMenu.Content's `menu`, `handle`, and `close` slots replace native elements and forward all supplied props/ref. Declare replacement types outside render. A part that takes props is also replaceable: every `slotProps` key has the same key in `slots`, and one key is one element, so a part that renders twice gets two keys. See [the generated API inventory](docs/customization-inventory.md) for supported keys.
 - Form-field native attributes and top-level refs keep their existing control targets; wrapper refs use `slotProps.root.ref`. Native generated-part replacements forward props/ref to the same element kind. InlineEdit's `control` adapter handles both input and textarea props. FileDropzone's `action` and `progress` adapters forward to Button and Progress. ExpandingSearch uses `container` for its animated shell, `field` for SearchField, and `fieldRoot` for that field's wrapper; its existing SearchField keys remain available. Legacy `slotProps.root` className/sx still style the inner field as well as the outer wrapper; use `slotProps.field.slotProps.root` to target only the inner field.
-- Component documentation and the primary story snippet show the easy path first as the default usage, followed by compound examples for custom anatomy.
+- Component documentation and the primary story snippet show the shorthand path first as the default usage, followed by composed examples for custom anatomy.
 - Incompatible modes (passing both `options` and `children`) are rejected at compile time with TypeScript type errors.
+
+### Type contracts and generics
+
+- Public props are the contract: every exported component has a named `...Props` type, exported from
+  its barrel and composed from `ComponentPropsWithRef<'el'>` when it wraps a native element.
+- Carry the consumer's domain through the type. A prop that selects, renders or returns an item is
+  generic in that item, not `string`, `unknown` or a private record.
+  - **Selection:** `options` infers the value union (`Select<Status>`); state, defaults and callbacks
+    use the same `V`. Accept `NoInfer<V>` on `value`/`defaultValue` so inference comes from `options`,
+    never from a typo.
+  - **Collections:** `T` flows from `items`/`rows` into `renderItem`, `cell`, `compare`, `getRowId` and
+    change callbacks. A recursive structure propagates `T` through children and lazy results, not only
+    through the root array.
+  - **Defaults:** keep `V = string` / `T = BaseItem` so existing broad callers compile. Do not infer a
+    generic from callbacks when the data prop is present.
+- Do not invent a generic where the component generates values. NumberField steps numbers, DatePicker
+  builds ISO strings, PhoneInput accepts incomplete candidates; a literal generic would promise
+  something the component can create.
+- Type the compound boundary, not the children. A root cannot constrain independent JSX children
+  through React context; keep composed parts string-based unless a typed factory is designed.
+- Slots receive the element they replace: map each key to `ComponentPropsWithRef<'button'>` or the
+  adopted part's props. A styling-only `PartProps` record loses `onChange`, `ref` and attributes; use
+  the anatomy map (`FieldSlots`, `FieldParts`) and export a named `...SlotProps`.
+- `unknown` is for untrusted input (HTML `data-*` payloads, caught errors, heterogeneous table cells)
+  and is narrowed before use. Never `any`; never a double cast to bridge an overlay seam.
+- Defaults live in one place. When the applying part owns the initializer (`size = 'md'` in
+  Select.Trigger), state the default in TSDoc and make the docs extractor report it. An API table that
+  prints `—` for a real default is a documentation defect.
+- Every API-visible prop has TSDoc that starts with what it changes. Controlled/default semantics,
+  units, callback timing and clearing behaviour belong to the contract.
+- Verify with the package typecheck and a consumer fixture: literal-union inference, a wrong literal
+  rejected, a narrow callback accepted, custom item metadata visible in a renderer, and slot props
+  completing native attributes.
 
 ### Families and composition
 
@@ -205,7 +238,7 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - Compose different responsibilities. Avatar owns a person's accessible identity and presence; PersonAvatar owns deterministic person artwork; Scene owns procedural scene artwork. Avatar content may be PersonAvatar; neither renderer reimplements presence or initials.
 - Ordinary children are content. `slots` replaces structure and `slotProps` forwards its props. A replacement preserves its host element/ref contract; an SVG is not an img replacement. Generated semantics and lifecycle stay owned by the host.
 - Keep serializable data and deterministic resolvers below UI shells. Kit vocabulary/resolution lives in person-avatar/kit; geometry imports it, never the shell. Existing public imports survive internal moves.
-- Easy mode calls the same parts as compound mode. A sibling may share a material/collection/field seam without sharing a semantic role or state machine.
+- Shorthand mode calls the same parts as composed mode. A sibling may share a material/collection/field seam without sharing a semantic role or state machine.
 - The family catalog is: Avatar/artwork; Surface/panels/disclosures; native modal shells; selection collections; Tabs/value choices; field anatomy; viewer chrome. Record adoption gaps explicitly, not as claims that the entire family is already generalized.
 - Examples use the library's own artwork, layout, fields, buttons, and surfaces. Use Scene/sceneSource for generated imagery and PersonAvatar for generated people. Raw fixtures are reserved for the specific native/error behavior under test, not copied application UI.
 
@@ -226,8 +259,10 @@ Fill this in the spec/PR before coding (it prevents 80% of review findings):
    `slotProps` for part props. Root extra props merge as `slotProps.root`: slot conflicts win,
    except combined className and shallow-merged style. Existing leaf-control `render` APIs stay;
    no new panel render APIs, `asChild`, or element-valued replacements.
-7. **Environments**: RTL, reduced motion, forced colors, SSR/hydration notes.
-8. **Lifecycle status**: new / stable / deprecated (with replacement).
+7. **Types**: value/item generic and its inference source, default type parameters, slot element
+   maps, and where each default is initialized.
+8. **Environments**: RTL, reduced motion, forced colors, SSR/hydration notes.
+9. **Lifecycle status**: new / stable / deprecated (with replacement).
 
 ## 4. Files, naming, and shared modules
 
@@ -352,7 +387,7 @@ Shared assertions in `src/testing/`, reused before writing a local copy:
 - React 19 ref-as-prop: components are plain functions reading `ref` from props typed with
   `ComponentPropsWithRef<'el'>`; never `forwardRef`. Every public component and compound part sets a
   dotted `displayName` (`Dialog.Trigger`) so DevTools and Storybook code panels show the public name.
-- `data-ui="<name>"` on every component root (and `data-ui="<name>-<part>"` on compound parts).
+- `data-ui="<name>"` on every component root (and `data-ui="<name>-<part>"` on composed parts).
   Composed roots retain deduplicated identity tokens; use `[data-ui~="<name>"]` selectors.
   Surface uses `data-surface-variant`, leaving host `data-variant` untouched.
 - One folder per component; `field/` and `thread/` hold shared internal anatomy rather than public components. A shared hook only when a second consumer exists. `field/field-anatomy.tsx` (`FieldRoot`) owns the labeled-field anatomy, the optional `dir` route to the visual root and `minInlineSize: 0`; TextField, Textarea, SearchField, TagInput, MentionInput, PasswordField, NumberField, MoneyInput, PhoneInput, and ColorPicker compose it instead of forking a visual root.
@@ -610,6 +645,10 @@ One house style covers every Markdown file in the repo: `README.md`, `docs/`, `S
   canvas, read like a consumer wrote it, and include the import.
 - Props, parts, and slot descriptions are written once as TSDoc on the source contract; the
   generated API renders them with Slots and Also uses. Do not describe them a second time in prose.
+- The API section renders through `ApiTable`: literal unions as chips, `members`/`signatures`
+  expanded from the source types, real defaults, and a Slots panel built from `slots`/`slotProps`.
+  Prop rows are generated, never hand-written in prose, and a type the table cannot resolve is a
+  gap in the source contract or the extractor.
 - `packages/ui/src/components/dialog/dialog.stories.tsx` is the reference page.
 
 **Component introduction**
@@ -716,7 +755,7 @@ disclosure with the keyboard, and check the first example and prop table still a
 - **Generated docs**: `docs/customization-inventory.md` is produced by
   `scripts/customization-inventory.mjs` (`pnpm verify:docs` checks it); regenerate it after an API or
   slot change, never hand-edit it.
-- **Compound part naming stays consistent** across components: callable roots (`Tabs`, `Dialog`) with
+- **Composed part naming stays consistent** across components: callable roots (`Tabs`, `Dialog`) with
   the same part names: `Trigger`, `Content`, `Title`, `Description`, `Close`, `List`, `Tab`, `Panel`.
 - Keep `SKILL.md`, `AGENTS.md`, `PLAN.md`, `README.md`, `llms.txt`, and `docs/` in sync in the same
   change that invalidates them.

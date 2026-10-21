@@ -17,11 +17,11 @@ import { Popover } from '../popover';
 import { TextField } from '../text-field';
 import { ThemeRoot } from '../theme-root';
 import { Surface, type SurfacePartProps } from '../surface';
-import { Card, type CardCompoundProps, type CardEasyProps, type CardTitleProps, type CardVariant } from './index';
+import { Card, type CardComposedProps, type CardShorthandProps, type CardTitleProps, type CardVariant } from './index';
 
 const VARIANTS = ['flat', 'raised'] as const satisfies readonly CardVariant[];
 // The slot API takes `css` values, so this story keeps the documented spelling.
-const easyTitleStyle = css({ fontSize: vars.textSize.lg });
+const shorthandTitleStyle = css({ fontSize: vars.textSize.lg });
 
 const Frame = styled.div({
   display: 'grid',
@@ -53,7 +53,7 @@ const meta = {
   parameters: { docs: {
     description: { component: 'Group content with a heading, description, and actions.' },
     sections: [
-      { title: 'Basic', stories: ['EasyMode', 'Variants', 'Glass', 'Holo'] },
+      { title: 'Basic', stories: ['ShorthandMode', 'Variants', 'Glass', 'Holo'] },
       { title: 'Composition', stories: ['Basic', 'SingleAction'] },
       { title: 'Content', stories: ['WithForm'] },
       { title: 'Behaviour', stories: ['HoloTilt'] },
@@ -81,13 +81,13 @@ Choose a heading level that fits the surrounding page. Cards add no landmark by 
       </Frame>
     ),
   ],
-} satisfies Meta<CardCompoundProps>;
+} satisfies Meta<CardComposedProps>;
 
 export default meta;
 
-type Story = StoryObj<(props: CardCompoundProps) => ReactNode>;
+type Story = StoryObj<(props: CardComposedProps) => ReactNode>;
 
-export const EasyMode: StoryObj<(props: CardEasyProps) => ReactNode> = {
+export const ShorthandMode: StoryObj<(props: CardShorthandProps) => ReactNode> = {
   name: 'Project summary',
   parameters: { docs: {
     description: { story: 'Group a project summary with an action to open it.' },
@@ -114,8 +114,8 @@ export const EasyMode: StoryObj<(props: CardEasyProps) => ReactNode> = {
   },
 };
 
-export const EasyCustomization: Story = {
-  render: () => <Card title="Project" content={0} footer={0} slotProps={{ title: { sx: easyTitleStyle }, content: { className: 'project-body' } }} />,
+export const ShorthandCustomization: Story = {
+  render: () => <Card title="Project" content={0} footer={0} slotProps={{ title: { sx: shorthandTitleStyle }, content: { className: 'project-body' } }} />,
   parameters: { docs: { source: { code: "<Card title=\"Project\" content={0} footer={0} slotProps={{ title: { sx: css({ fontSize: vars.textSize.lg }) }, content: { className: \"project-body\" } }} />" } } },
   play: async ({ canvasElement }) => {
     const content = canvasElement.querySelector('[data-ui="card-content"]');
@@ -145,7 +145,7 @@ export const CardDefaultUnderContrast: Story = {
   },
 };
 
-function PlanCard(props: CardCompoundProps) {
+function PlanCard(props: CardComposedProps) {
   return (
     <Card {...props}>
       <Card.Header>
@@ -177,7 +177,7 @@ function getCards(canvasElement: HTMLElement) {
 }
 
 export const Basic: Story = {
-  name: 'Compound anatomy',
+  name: 'Composed anatomy',
   parameters: { docs: {
     description: { story: 'Compose a plan with its benefits and separate cancel and upgrade actions.' },
     source: { language: 'tsx', code: `import { Button, Card, styled } from '@jfrader/ui';
@@ -347,7 +347,7 @@ const PlanList = styled.ul({ margin: 0, paddingInlineStart: vars.space[5] });
   },
 };
 
-function InviteCard(props: CardCompoundProps) {
+function InviteCard(props: CardComposedProps) {
   const titleId = useId();
   const formId = useId();
   return (

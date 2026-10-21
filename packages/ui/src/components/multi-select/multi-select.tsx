@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useId,
   useLayoutEffect,
@@ -13,6 +14,7 @@ import {
   type HTMLProps,
   type KeyboardEvent,
   type KeyboardEventHandler,
+  type ReactElement,
   type ReactNode,
 } from 'react';
 import {
@@ -57,8 +59,8 @@ export interface MultiSelectMessages {
   toggled: (label: string, selected: boolean) => string;
   required: string;
 }
-export interface MultiSelectOption {
-  value: string;
+export interface MultiSelectOption<V extends string = string> {
+  value: V;
   label: ReactNode;
   disabled?: boolean;
   textValue?: string;
@@ -112,13 +114,16 @@ export interface MultiSelectSlotProps {
   /** Message container displayed when no options match. Default: `MultiSelect.Empty`. */
   empty?: Partial<MultiSelectEmptyProps>;
 }
-export interface MultiSelectBaseProps {
+export interface MultiSelectStateProps<V extends string = string> {
   /** Controls the selected option values. */
-  value?: readonly string[];
+  value?: readonly NoInfer<V>[];
   /** Seeds uncontrolled selection. Defaults to no selected options. */
-  defaultValue?: readonly string[];
+  defaultValue?: readonly NoInfer<V>[];
   /** Receives the selected values after a toggle or clear request. */
-  onValueChange?: (value: string[]) => void;
+  onValueChange?: (value: V[]) => void;
+}
+
+export interface MultiSelectBaseProps<V extends string = string> extends MultiSelectStateProps<V> {
   /** Controls whether the options popup is open. */
   open?: boolean;
   /** Initially opens the uncontrolled popup. Defaults to `false`. */
@@ -138,7 +143,7 @@ export interface MultiSelectBaseProps {
   /** Positions the popup relative to the trigger. Defaults to `bottom-start`. */
   placement?: Placement;
 }
-export interface MultiSelectCompoundProps extends MultiSelectBaseProps {
+export interface MultiSelectComposedProps extends MultiSelectBaseProps<string> {
   options?: never;
   /** Composes the field from `MultiSelect` parts instead of `options`. */
   children?: ReactNode;
@@ -155,9 +160,9 @@ export interface MultiSelectCompoundProps extends MultiSelectBaseProps {
   component?: never;
   slotProps?: never;
 }
-export interface MultiSelectEasyProps extends MultiSelectBaseProps {
+export interface MultiSelectShorthandProps<V extends string = string> extends MultiSelectBaseProps<V> {
   /** Supplies the options rendered in the popup. */
-  options: readonly MultiSelectOption[];
+  options: readonly MultiSelectOption<V>[];
   children?: never;
   /** Names the field with a linked label. */
   label?: ReactNode;
@@ -184,7 +189,7 @@ export interface MultiSelectEasyProps extends MultiSelectBaseProps {
   /** Passes props to field parts. */
   slotProps?: MultiSelectSlotProps;
 }
-export type MultiSelectProps = MultiSelectCompoundProps | MultiSelectEasyProps;
+export type MultiSelectProps<V extends string = string> = MultiSelectComposedProps | MultiSelectShorthandProps<V>;
 export interface MultiSelectTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
   /** Sets trigger height. Defaults to `md`. */
   size?: 'sm' | 'md' | 'lg';
@@ -289,7 +294,7 @@ const clearStyle = css({
   minInlineSize: vars.space[6],
 });
 
-function useMultiSelectModel({
+function useMultiSelectModel<V extends string = string>({
   value: valueProp,
   defaultValue = EMPTY_VALUES,
   onValueChange,
@@ -301,14 +306,18 @@ function useMultiSelectModel({
   locale,
   messages: messagesProp,
   placement = 'bottom-start',
-}: MultiSelectProps) {
+}: MultiSelectProps<V>) {
   const baseId = useId();
   const [listId, setListId] = useState(`${baseId}-listbox`);
   const [direction, setDirection] = useState('ltr');
+  // Options only carry `V`; composed items carry strings. One boundary widens the emit.
+  const notifyValueChange = useCallback((next: readonly string[]) => {
+    (onValueChange as ((value: string[]) => void) | undefined)?.([...next]);
+  }, [onValueChange]);
   const [current = EMPTY_VALUES, requestValue] = useControlledState<readonly string[]>(
     valueProp,
     defaultValue,
-    (next) => onValueChange?.([...next]),
+    notifyValueChange,
   );
   const selected = useMemo(() => [...new Set(current)], [current]);
   const [open = false, requestOpen] = useControlledState(openProp, defaultOpen, onOpenChange);
@@ -493,7 +502,7 @@ const tokens = (...values: Array<unknown>): string | undefined => {
   return list.join(' ') || undefined;
 };
 
-function MultiSelectOverlay(props: MultiSelectProps) {
+function MultiSelectOverlay<V extends string = string>(props: MultiSelectProps<V>) {
   const model = useMultiSelectModel(props);
   const labels = model.selected.map((value) => model.options.get(value)?.label ?? value);
   const previousSelection = useRef(model.selected);
@@ -675,7 +684,7 @@ function MultiSelectOverlay(props: MultiSelectProps) {
     </Context.Provider>
   );
 }
-function MultiSelectRoot(props: MultiSelectProps) {
+function MultiSelectRoot<V extends string = string>(props: MultiSelectProps<V>) {
   return (
     <IsolatedOverlay>
       <MultiSelectOverlay {...props} />
@@ -1122,6 +1131,22 @@ function MultiSelectEmpty({ ref, children, className, sx, ...rest }: MultiSelect
   );
 }
 MultiSelectEmpty.displayName = 'MultiSelect.Empty';
+export interface MultiSelectComponent {
+  <V extends string = string>(props: MultiSelectShorthandProps<V>): ReactElement;
+  (props: MultiSelectComposedProps): ReactElement;
+  /** Accepts a pre-built shorthand/composed union, e.g. `MultiSelectProps<Role>` spread into the component. */
+  <V extends string = string>(props: MultiSelectProps<V>): ReactElement;
+  Trigger: typeof MultiSelectTrigger;
+  Value: typeof MultiSelectValue;
+  Content: typeof MultiSelectContent;
+  Item: typeof MultiSelectItem;
+  Clear: typeof MultiSelectClear;
+  Label: typeof MultiSelectLabel;
+  Description: typeof MultiSelectDescription;
+  Error: typeof MultiSelectError;
+  Empty: typeof MultiSelectEmpty;
+}
+
 export const MultiSelect = Object.assign(MultiSelectRoot, {
   Trigger: MultiSelectTrigger,
   Value: MultiSelectValue,
@@ -1132,4 +1157,4 @@ export const MultiSelect = Object.assign(MultiSelectRoot, {
   Description: MultiSelectDescription,
   Error: MultiSelectError,
   Empty: MultiSelectEmpty,
-});
+}) as MultiSelectComponent;

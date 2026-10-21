@@ -14,12 +14,12 @@ import {
 } from '../../testing/interior-slot-assertions';
 import {
   Drawer,
-  type DrawerEasyProps,
+  type DrawerShorthandProps,
   type DrawerHeaderProps,
 } from './drawer';
 
-// @ts-expect-error Unknown slot key is rejected on DrawerEasyProps['slots']
-type UnknownDrawerSlot = NonNullable<DrawerEasyProps['slots']>['unknownKey'];
+// @ts-expect-error Unknown slot key is rejected on DrawerShorthandProps['slots']
+type UnknownDrawerSlot = NonNullable<DrawerShorthandProps['slots']>['unknownKey'];
 
 const CustomDrawerMaterial = styled.div({
   backgroundColor: vars.color.surfaceRaised,
@@ -94,7 +94,7 @@ const meta = {
 
 export default meta;
 
-type Story = StoryObj<(props: DrawerEasyProps) => ReactNode>;
+type Story = StoryObj<(props: DrawerShorthandProps) => ReactNode>;
 
 /** Customize the drawer panel surface and header using slots. */
 export const Customization: Story = {

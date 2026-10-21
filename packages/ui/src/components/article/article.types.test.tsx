@@ -3,11 +3,11 @@ import { Article } from './index';
 import { ArticleList } from '../article-list';
 
 export function articleTypeContracts() {
-  // @ts-expect-error Easy and compound content are mutually exclusive.
+  // @ts-expect-error Shorthand and composed content are mutually exclusive.
   <Article headline="Headline"><Article.Dek>Summary</Article.Dek></Article>;
-  // @ts-expect-error Easy and compound lists are mutually exclusive.
+  // @ts-expect-error Shorthand and composed lists are mutually exclusive.
   <ArticleList items={[]}><ArticleList.Item headline="Headline" /></ArticleList>;
-  // @ts-expect-error Easy and compound kickers are mutually exclusive.
+  // @ts-expect-error Shorthand and composed kickers are mutually exclusive.
   <Article.Kicker items={[]}>Topic</Article.Kicker>;
   // @ts-expect-error A leaf adapter and structural link replacement are mutually exclusive.
   <Article.Headline renderLink={(props) => <a {...props} />} slots={{ link: (props) => <a {...props} /> }}>Headline</Article.Headline>;

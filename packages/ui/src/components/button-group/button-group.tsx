@@ -117,7 +117,7 @@ export interface ButtonGroupBaseProps extends Omit<ComponentPropsWithRef<'div'>,
   placement?: Placement;
 }
 
-export interface ButtonGroupCompoundProps extends ButtonGroupBaseProps {
+export interface ButtonGroupComposedProps extends ButtonGroupBaseProps {
   /** Compose the group's action, label, trigger, and menu parts. */
   children?: ReactNode;
   label?: never;
@@ -127,7 +127,7 @@ export interface ButtonGroupCompoundProps extends ButtonGroupBaseProps {
   slotProps?: never;
 }
 
-export interface ButtonGroupEasyProps extends ButtonGroupBaseProps {
+export interface ButtonGroupShorthandProps extends ButtonGroupBaseProps {
   /** Accessible name for the group landmark/widget. */
   label?: string;
   /** Action items or links rendered in order. */
@@ -141,7 +141,7 @@ export interface ButtonGroupEasyProps extends ButtonGroupBaseProps {
   slotProps?: ButtonGroupSlotProps;
 }
 
-export type ButtonGroupProps = ButtonGroupCompoundProps | ButtonGroupEasyProps;
+export type ButtonGroupProps = ButtonGroupComposedProps | ButtonGroupShorthandProps;
 export interface ButtonGroupItemProps extends Omit<ButtonProps, 'render'> {
   /** Hide the visible label and show it in a tooltip. Defaults to `false`. */
   iconOnly?: boolean;

@@ -110,7 +110,7 @@ export interface EditableDetailsBaseProps extends Omit<ComponentPropsWithRef<'di
   [attribute: `data-${string}`]: unknown;
 }
 
-export interface EditableDetailsCompoundProps extends EditableDetailsBaseProps {
+export interface EditableDetailsComposedProps extends EditableDetailsBaseProps {
   /** Composes sections and detail lists instead of supplying `sections`. */
   children?: ReactNode;
   sections?: never;
@@ -120,7 +120,7 @@ export interface EditableDetailsCompoundProps extends EditableDetailsBaseProps {
   slotProps?: EditableDetailsSlotProps;
 }
 
-export interface EditableDetailsEasyProps extends EditableDetailsBaseProps {
+export interface EditableDetailsShorthandProps extends EditableDetailsBaseProps {
   /** Structured section records to render. */
   sections: readonly EditableDetailsSectionRecord[];
   children?: never;
@@ -130,7 +130,7 @@ export interface EditableDetailsEasyProps extends EditableDetailsBaseProps {
   slotProps?: EditableDetailsSlotProps;
 }
 
-export type EditableDetailsProps = EditableDetailsCompoundProps | EditableDetailsEasyProps;
+export type EditableDetailsProps = EditableDetailsComposedProps | EditableDetailsShorthandProps;
 export interface EditableDetailsSectionSlots {
   /** Groups the section disclosure trigger. Renders an `h3` by default, or the heading set by `headingLevel`. */
   heading?: ComponentType<EditableDetailsPartProps>;

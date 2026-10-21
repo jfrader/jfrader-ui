@@ -111,7 +111,7 @@ export interface NavigationBaseProps extends Omit<ComponentPropsWithRef<'nav'>, 
   compact?: boolean;
 }
 
-export interface NavigationCompoundProps extends NavigationBaseProps {
+export interface NavigationComposedProps extends NavigationBaseProps {
   /** Compose groups and items directly instead of supplying `groups`. */
   children?: ReactNode;
   groups?: never;
@@ -121,7 +121,7 @@ export interface NavigationCompoundProps extends NavigationBaseProps {
   slotProps?: never;
 }
 
-export interface NavigationEasyProps extends NavigationBaseProps {
+export interface NavigationShorthandProps extends NavigationBaseProps {
   /** Accessible name of the navigation landmark. Defaults to 'Main'. */
   label?: string;
   /** Navigation groups rendered in order. */
@@ -137,7 +137,7 @@ export interface NavigationEasyProps extends NavigationBaseProps {
   slotProps?: NavigationSlotProps;
 }
 
-export type NavigationProps = NavigationCompoundProps | NavigationEasyProps;
+export type NavigationProps = NavigationComposedProps | NavigationShorthandProps;
 
 export interface NavigationGroupProps extends ComponentPropsWithRef<'section'>, SxProps {
   /** Name the group heading or disclosure trigger; required when `collapsible` is true. */
@@ -367,7 +367,7 @@ function NavigationRoot({
   compact = false,
   ...rest
 }: NavigationProps) {
-  const isEasyMode = groups !== undefined;
+  const isShorthandMode = groups !== undefined;
   const Root = slots?.root ?? component ?? 'nav';
   const Group = slots?.group ?? NavigationGroup;
   const Item = slots?.item ?? NavigationItem;
@@ -476,7 +476,7 @@ function NavigationRoot({
           onKeyDown={keyboard}
           onClick={click}
         >
-          {isEasyMode ? (
+          {isShorthandMode ? (
             groups.map((group, groupIndex) => {
               const groupKey = group.key ?? (typeof group.label === 'string' ? group.label : groupIndex);
               const {

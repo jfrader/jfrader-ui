@@ -4,6 +4,34 @@ import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { GravityWell, type GravityWellItem } from './index';
 
+type PricedTile = GravityWellItem & { price: number };
+const PRICED_TILES: readonly PricedTile[] = [{ id: 'starter', content: 'Starter', price: 12 }];
+
+/** Compile-time consumer check; never rendered. */
+function GravityWellGenericChecks() {
+  return (
+    <GravityWell
+      interactive={false}
+      label="Plans"
+      items={PRICED_TILES}
+      renderItem={(item) => <span>{item.price}</span>}
+    />
+  );
+}
+
+/** Compile-time consumer check; never rendered. */
+function GravityWellGenericRejection() {
+  return (
+    <GravityWell
+      interactive={false}
+      label="Plans"
+      items={PRICED_TILES}
+      // @ts-expect-error item carries the caller's fields, not arbitrary ones
+      renderItem={(item) => <span>{item.missing}</span>}
+    />
+  );
+}
+
 const Frame = styled.div({
   display: 'grid',
   gap: vars.space[4],

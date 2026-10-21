@@ -20,7 +20,7 @@ import { css } from '../../styling/css';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useNativeDialog, useNativeDialogRoot } from '../../overlay/use-native-dialog';
-import { Dialog, type DialogPanelProps, type DialogCompoundProps, type DialogEasyProps, type DialogScroll } from './index';
+import { Dialog, type DialogPanelProps, type DialogComposedProps, type DialogShorthandProps, type DialogScroll } from './index';
 
 const TITLE = 'Edit profile';
 const LONG_REFERENCE = 'CustomerAccountExportConfirmationReference'.repeat(3);
@@ -82,7 +82,7 @@ const meta = {
   parameters: { docs: {
     description: { component: 'Open a dialog to show content or ask for a decision.' },
     sections: [
-      { title: 'Basic', stories: ['Default', 'Compound'] },
+      { title: 'Basic', stories: ['Default', 'Composed'] },
       { title: 'Composition', stories: ['SlotProps', 'CustomRoot', 'TriggerAsButton'] },
       { title: 'Behavior', stories: ['Controlled', 'CancelVeto', 'BackdropClick', 'NestedDialog', 'NativeClose'] },
       { title: 'Content', stories: ['ScrollModes', 'LongContent', 'NarrowLayout'] },
@@ -98,7 +98,7 @@ Tab and Shift+Tab stay inside the open dialog; the rest of the page is inert. Es
 Give every dialog an accessible name. For structured or long content, set withDescription={false} so assistive technology can read the content in order rather than as one description.
 
 ### Scrolling
-The default scroll="paper" keeps Dialog.Body scrollable while sibling headings and Dialog.Footer stay in place. Easy mode generates these regions. With scroll="body", the whole panel scrolls inside the overlay viewport, not the document body; the page behind remains locked. Use an autoFocus heading with tabIndex={-1} to start long structured content at its beginning.
+The default scroll="paper" keeps Dialog.Body scrollable while sibling headings and Dialog.Footer stay in place. Shorthand mode generates these regions. With scroll="body", the whole panel scrolls inside the overlay viewport, not the document body; the page behind remains locked. Use an autoFocus heading with tabIndex={-1} to start long structured content at its beginning.
 
 Accepted closure restores focus after exit motion. Reduced motion makes entry and exit instant.`,
   } },
@@ -106,10 +106,10 @@ Accepted closure restores focus after exit motion. Reduced motion makes entry an
 
 export default meta;
 
-type Story = StoryObj<(props: DialogCompoundProps) => ReactNode>;
-type EasyStory = StoryObj<(props: DialogEasyProps) => ReactNode>;
+type Story = StoryObj<(props: DialogComposedProps) => ReactNode>;
+type ShorthandStory = StoryObj<(props: DialogShorthandProps) => ReactNode>;
 
-export const UnbrokenContent: EasyStory = {
+export const UnbrokenContent: ShorthandStory = {
   tags: ['!autodocs'],
   args: {
     defaultOpen: true,
@@ -132,9 +132,9 @@ export const UnbrokenContent: EasyStory = {
   },
 };
 // @ts-expect-error Generated-part slot keys are closed.
-type UnknownSlot = NonNullable<DialogEasyProps['slotProps']>['unknown'];
+type UnknownSlot = NonNullable<DialogShorthandProps['slotProps']>['unknown'];
 // @ts-expect-error Replacement keys are closed.
-type UnknownReplacement = NonNullable<DialogEasyProps['slots']>['unknown'];
+type UnknownReplacement = NonNullable<DialogShorthandProps['slots']>['unknown'];
 
 function UnusedDialogRoot() { return null; }
 
@@ -148,7 +148,7 @@ function ReplacementPanel(props: SurfacePartProps) {
   return <div {...props} data-testid="replacement-panel" />;
 }
 
-export const ShellAndPanelSlots: EasyStory = {
+export const ShellAndPanelSlots: ShorthandStory = {
   tags: ['!autodocs'],
   args: {
     triggerLabel: 'Open profile', title: TITLE, description: DESCRIPTION,
@@ -202,10 +202,10 @@ export const ShellAndPanelSlots: EasyStory = {
 };
 
 /** Restyle the generated header and replace the panel's material root. */
-export const SlotProps: EasyStory = {
+export const SlotProps: ShorthandStory = {
   name: 'Part props',
   parameters: { docs: {
-    description: { story: 'Set header, title, close button, and panel props in easy mode.' },
+    description: { story: 'Set header, title, close button, and panel props in shorthand mode.' },
     source: { language: 'tsx', code: `import { Dialog, Surface, TextField } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
@@ -251,7 +251,7 @@ import { vars } from '@jfrader/tokens/vars';
   },
 };
 
-export const Default: EasyStory = {
+export const Default: ShorthandStory = {
   name: 'Profile editor',
   args: {
     triggerLabel: 'Open profile',
@@ -266,8 +266,8 @@ export const Default: EasyStory = {
     closeLabel: 'Close',
     onOpenChange: fn(),
     slotProps: {
-      content: { className: 'easy-dialog-shell' },
-      title: { className: 'easy-dialog-title' },
+      content: { className: 'shorthand-dialog-shell' },
+      title: { className: 'shorthand-dialog-title' },
       close: { style: { marginBlockStart: vars.space[4] } },
     },
   },
@@ -292,8 +292,8 @@ function setNativeAutoFocus(input: HTMLInputElement | null) {
   }
   closeLabel="Close"
   slotProps={{
-    content: { className: 'easy-dialog-shell' },
-    title: { className: 'easy-dialog-title' },
+    content: { className: 'shorthand-dialog-shell' },
+    title: { className: 'shorthand-dialog-title' },
     close: { style: { marginBlockStart: vars.space[4] } },
   }}
 />` } } },
@@ -304,10 +304,10 @@ function setNativeAutoFocus(input: HTMLInputElement | null) {
     await expect(trigger).toHaveFocus();
     await userEvent.keyboard('{Enter}');
     const dialog = await canvas.findByRole('dialog', { name: TITLE });
-    await expect(dialog).toHaveClass('easy-dialog-shell');
+    await expect(dialog).toHaveClass('shorthand-dialog-shell');
     await expect(dialog.querySelectorAll('[data-ui~="dialog-panel"]')).toHaveLength(1);
     const title = canvas.getByRole('heading', { name: TITLE });
-    await expect(title).toHaveClass('easy-dialog-title');
+    await expect(title).toHaveClass('shorthand-dialog-title');
     await expect(dialog).toHaveAttribute('aria-labelledby', title.id);
     await expect(dialog).toHaveAccessibleDescription(DESCRIPTION);
     await expect(dialog).toHaveAttribute('aria-describedby', dialog.querySelector('[data-ui="dialog-description"]')!.id);
@@ -336,9 +336,9 @@ function setNativeAutoFocus(input: HTMLInputElement | null) {
   },
 };
 
-export const EasyModeNativeForm: EasyStory = {
+export const ShorthandModeNativeForm: ShorthandStory = {
   ...Default,
-  name: 'Easy mode native form',
+  name: 'Shorthand mode native form',
   args: { ...Default.args, content: <form method="dialog"><Button type="submit">Save profile</Button></form> },
   play: async ({ canvasElement, canvas, args, userEvent }) => {
     const { trigger } = await openDialog(canvasElement);
@@ -348,18 +348,18 @@ export const EasyModeNativeForm: EasyStory = {
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
   },
 };
-export const EasyModeOpen: EasyStory = {
+export const ShorthandModeOpen: ShorthandStory = {
   ...Default,
-  name: 'Easy mode open',
+  name: 'Shorthand mode open',
   tags: ['!autodocs'],
   args: { ...Default.args, defaultOpen: true },
   play: async ({ canvas }) => { await settleMotion(canvas.getByRole('dialog')); },
 };
-export const EasyModeLight: EasyStory = { ...Default, name: 'Easy mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
+export const ShorthandModeLight: ShorthandStory = { ...Default, name: 'Shorthand mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
 
-export const EasyModeVetoedClose: EasyStory = {
+export const ShorthandModeVetoedClose: ShorthandStory = {
   ...Default,
-  name: 'Easy mode vetoed close',
+  name: 'Shorthand mode vetoed close',
   args: { ...Default.args, slotProps: { content: { onCancel: (event) => event.preventDefault() } } },
   play: async ({ canvasElement, canvas, args, userEvent }) => {
     const { trigger, dialog } = await openDialog(canvasElement);
@@ -373,10 +373,10 @@ export const EasyModeVetoedClose: EasyStory = {
     await expectClosed(canvasElement, trigger);
   },
 };
-export const EasyModeWithoutDescription: EasyStory = {
-  ...EasyModeOpen,
-  name: 'Easy mode without description',
-  args: { ...EasyModeOpen.args, description: undefined, content: 0 },
+export const ShorthandModeWithoutDescription: ShorthandStory = {
+  ...ShorthandModeOpen,
+  name: 'Shorthand mode without description',
+  args: { ...ShorthandModeOpen.args, description: undefined, content: 0 },
   play: async ({ canvas }) => {
     const dialog = canvas.getByRole('dialog', { name: TITLE });
     await expect(dialog).not.toHaveAttribute('aria-describedby');
@@ -384,15 +384,15 @@ export const EasyModeWithoutDescription: EasyStory = {
   },
 };
 
-function easyModeTypeContracts() {
-  // @ts-expect-error Presentation mode rejects compound children.
-  <Dialog triggerLabel="Open" title="Profile" content="Profile" closeLabel="Close">Compound</Dialog>;
+function shorthandModeTypeContracts() {
+  // @ts-expect-error Presentation mode rejects composed children.
+  <Dialog triggerLabel="Open" title="Profile" content="Profile" closeLabel="Close">Composed</Dialog>;
   // @ts-expect-error Presentation mode requires a title and close label.
   <Dialog triggerLabel="Open" content="Profile" />;
-  // @ts-expect-error Named presentation props cannot leak into compound mode.
+  // @ts-expect-error Named presentation props cannot leak into composed mode.
   <Dialog description="Profile"><Dialog.Content /></Dialog>;
 }
-void easyModeTypeContracts;
+void shorthandModeTypeContracts;
 
 const AdapterMaterial = styled.div({ boxSizing: 'border-box', backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, boxShadow: 'none' });
 // Shell and panel override stories exercise the documented slot css and sx APIs.
@@ -476,7 +476,7 @@ export const PanelComposition: Story = {
   },
 };
 
-function ContrastPanelFixture({ theme = 'light', ...props }: DialogCompoundProps & { theme?: 'dark' | 'light' }) {
+function ContrastPanelFixture({ theme = 'light', ...props }: DialogComposedProps & { theme?: 'dark' | 'light' }) {
   const [panel, setPanel] = useState<HTMLDivElement | null>(null);
   return <ThemeRoot theme={theme} portalContainer={panel}>
     <Dialog {...props} defaultOpen>
@@ -511,7 +511,7 @@ export const DialogContrastPanelDark: Story = {
   render: (args) => <ContrastPanelFixture {...args} theme="dark" />,
 };
 
-function DialogExample(props: DialogCompoundProps) {
+function DialogExample(props: DialogComposedProps) {
   return (
     <Dialog {...props}>
       <Dialog.Trigger>Open profile</Dialog.Trigger>
@@ -528,7 +528,7 @@ function DialogExample(props: DialogCompoundProps) {
 }
 DialogExample.displayName = 'DialogExample';
 
-function FormDialog(props: DialogCompoundProps) {
+function FormDialog(props: DialogComposedProps) {
   return (
     <Dialog {...props}>
       <Dialog.Trigger>Open form</Dialog.Trigger>
@@ -543,7 +543,7 @@ function FormDialog(props: DialogCompoundProps) {
 }
 FormDialog.displayName = 'FormDialog';
 
-function ComposedDialog(props: DialogCompoundProps) {
+function ComposedDialog(props: DialogComposedProps) {
   return (
     <Dialog {...props}>
       <Dialog.Trigger
@@ -573,7 +573,7 @@ function ComposedDialog(props: DialogCompoundProps) {
 }
 ComposedDialog.displayName = 'ComposedDialog';
 
-function ControlledDialog(props: DialogCompoundProps) {
+function ControlledDialog(props: DialogComposedProps) {
   const [open, setOpen] = useState(false);
   return (
     <DialogExample
@@ -610,10 +610,10 @@ async function expectClosed(canvasElement: HTMLElement, trigger: HTMLElement) {
   });
 }
 
-export const Compound: Story = {
-  name: 'Compound anatomy',
+export const Composed: Story = {
+  name: 'Composed anatomy',
   parameters: { docs: {
-    description: { story: 'Arrange the trigger, title, description, body, and close button with compound parts.' },
+    description: { story: 'Arrange the trigger, title, description, body, and close button with composed parts.' },
     source: { language: 'tsx', code: `import { Dialog, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
@@ -740,7 +740,7 @@ export const SizingOverrides: Story = {
   },
 };
 
-async function playMotion(canvasElement: HTMLElement, onOpenChange: DialogCompoundProps['onOpenChange']) {
+async function playMotion(canvasElement: HTMLElement, onOpenChange: DialogComposedProps['onOpenChange']) {
   const { canvas, trigger, dialog } = await openDialog(canvasElement);
   const animated = dialog.dataset.scroll === 'body' ? dialog.querySelector<HTMLElement>('[data-ui~="dialog-panel"]')! : dialog;
   await expectEntranceMotion(animated);
@@ -780,7 +780,7 @@ export const BodyMotion: Story = {
   args: { scroll: 'body', onOpenChange: fn() },
 };
 
-export const BodyProfileEditor: EasyStory = {
+export const BodyProfileEditor: ShorthandStory = {
   ...Default,
   tags: ['!autodocs'],
   args: { ...Default.args, scroll: 'body' },
@@ -830,7 +830,7 @@ export const BodyProfileEditor: EasyStory = {
   },
 };
 
-export const BodyProfileEditorShortViewport: EasyStory = {
+export const BodyProfileEditorShortViewport: ShorthandStory = {
   ...BodyProfileEditor,
   parameters: {
     viewport: { options: { shortPhone: { name: 'Short phone', styles: { width: '390px', height: '320px' } } } },
@@ -1265,10 +1265,10 @@ export const BodyNestedDialog: Story = {
   args: { scroll: 'body', onOpenChange: fn() },
 };
 
-export const BodyVetoedClose: EasyStory = {
-  ...EasyModeVetoedClose,
+export const BodyVetoedClose: ShorthandStory = {
+  ...ShorthandModeVetoedClose,
   tags: ['!autodocs'],
-  args: { ...EasyModeVetoedClose.args, scroll: 'body' },
+  args: { ...ShorthandModeVetoedClose.args, scroll: 'body' },
 };
 
 
@@ -1428,7 +1428,7 @@ async function expectBodyInsets(body: HTMLElement, inset: number) {
   body.scrollTop = originalScrollTop;
 }
 
-export const PaperScrolling: EasyStory = {
+export const PaperScrolling: ShorthandStory = {
   name: 'Scroll inside the panel',
   tags: ['!autodocs'],
   args: {
@@ -1475,13 +1475,13 @@ export const PaperScrolling: EasyStory = {
   },
 };
 
-export const PaperScrollingRTL: EasyStory = {
+export const PaperScrollingRTL: ShorthandStory = {
   ...PaperScrolling,
   name: 'Scroll inside the panel (RTL)',
   decorators: [(Story) => <div dir="rtl"><Story /></div>],
 };
 
-export const BodyScrolling: EasyStory = {
+export const BodyScrolling: ShorthandStory = {
   ...PaperScrolling,
   name: 'Scroll the whole panel',
   args: { ...PaperScrolling.args, scroll: 'body', slotProps: { content: { withDescription: false } } },
@@ -1542,18 +1542,18 @@ export const BodyScrolling: EasyStory = {
   },
 };
 
-export const BodyScrollingRTL: EasyStory = {
+export const BodyScrollingRTL: ShorthandStory = {
   ...BodyScrolling,
   decorators: [(Story) => <div dir="rtl"><Story /></div>],
 };
 
-export const BodyScrollingLight: EasyStory = {
+export const BodyScrollingLight: ShorthandStory = {
   ...BodyScrolling,
   decorators: [withLightTheme],
   globals: { theme: 'light' },
 };
 
-export const BodyScrollingMobile: EasyStory = {
+export const BodyScrollingMobile: ShorthandStory = {
   ...BodyScrolling,
   parameters: {
     viewport: { options: { phone: { name: 'Phone', styles: { width: '390px', height: '844px' } } } },
@@ -1566,12 +1566,12 @@ export const BodyScrollingMobile: EasyStory = {
   },
 };
 
-export const BodyScrollingMobileRTL: EasyStory = {
+export const BodyScrollingMobileRTL: ShorthandStory = {
   ...BodyScrollingMobile,
   decorators: [(Story) => <div dir="rtl"><Story /></div>],
 };
 
-export const BodyExitResumePreservesScroll: EasyStory = {
+export const BodyExitResumePreservesScroll: ShorthandStory = {
   ...BodyScrollingMobile,
   args: { ...BodyScrolling.args, defaultOpen: true },
   play: async ({ canvas, canvasElement }) => {
@@ -1604,7 +1604,7 @@ export const BodyExitResumePreservesScroll: EasyStory = {
   },
 };
 
-export const BodyMobileExplicitFieldFocus: EasyStory = {
+export const BodyMobileExplicitFieldFocus: ShorthandStory = {
   ...BodyScrollingMobile,
   args: {
     ...BodyScrolling.args,
@@ -1637,7 +1637,7 @@ export const BodyMobileExplicitFieldFocus: EasyStory = {
   },
 };
 
-export const BodyMobileExplicitHeadingFocus: EasyStory = {
+export const BodyMobileExplicitHeadingFocus: ShorthandStory = {
   ...BodyScrollingMobile,
   args: {
     ...BodyScrolling.args,
@@ -1653,13 +1653,13 @@ export const BodyMobileExplicitHeadingFocus: EasyStory = {
   },
 };
 
-export const BodyProfileEditorMobile: EasyStory = {
+export const BodyProfileEditorMobile: ShorthandStory = {
   ...BodyProfileEditor,
   parameters: BodyScrollingMobile.parameters,
   globals: BodyScrollingMobile.globals,
 };
 
-export const CrampedPaper: EasyStory = {
+export const CrampedPaper: ShorthandStory = {
   ...PaperScrolling,
   args: { ...PaperScrolling.args, slotProps: { content: { withDescription: false, sx: { maxBlockSize: '96px' } } } },
   play: async ({ canvas, canvasElement, userEvent }) => {

@@ -27,11 +27,11 @@ const meta = {
       { title: 'Headlines and summaries', stories: ['Standard', 'Lead', 'Secondary', 'Brief'] },
       { title: 'Editorial layouts', stories: ['Wide', 'TimeColumn', 'RuleTop', 'RuleBottom', 'Centered'] },
       { title: 'Media', stories: ['Media', 'ImageMedia', 'PictureMedia'] },
-      { title: 'Composition', stories: ['FullArticle', 'Compound', 'ArticleHeader'] },
+      { title: 'Composition', stories: ['FullArticle', 'Composed', 'ArticleHeader'] },
       { title: 'Links', stories: ['RouterLink'] },
     ],
     usage: `### Content and hierarchy
-Choose heading levels to fit the surrounding page. Supply either generated content or compound children, not both. Generated brief and summary-free treatments omit the summary; the bottom-rule treatment also omits the kicker. Compound content stays caller-controlled.
+Choose heading levels to fit the surrounding page. Supply either generated content or composed children, not both. Generated brief and summary-free treatments omit the summary; the bottom-rule treatment also omits the kicker. Composed content stays caller-controlled.
 
 Choose excerpts that add information rather than repeat the summary. Excerpts can be hidden on smaller screens, so keep essential information in the headline, summary or body. Supply accessible media content; no figure or placeholder appears without media.
 
@@ -658,7 +658,7 @@ function Div(props: ComponentPropsWithRef<'div'>) {
     },
   },
 };
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Composed article',
   render: () => <Article size="brief"><Article.Headline href="#river">{headline}</Article.Headline><Article.Dek>{dek}</Article.Dek><Article.Lede visibility="always">{lede}</Article.Lede><Article.Media caption="The river path" credit="City archive"><p>The river path</p></Article.Media></Article>,
   parameters: { docs: { description: { story: 'Compose the headline, summary, excerpt and media explicitly.' }, source: { language: 'tsx', code: `import { Article } from '@jfrader/ui';

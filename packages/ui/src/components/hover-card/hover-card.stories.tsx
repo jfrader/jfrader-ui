@@ -10,10 +10,10 @@ import { Popover } from '../popover';
 import { ThemeRoot, type ThemeRootProps } from '../theme-root';
 import {
   HoverCard,
-  type HoverCardEasyProps,
+  type HoverCardShorthandProps,
   type HoverCardGroupProps,
   type HoverCardProfileProps,
-  type HoverCardCompoundProps,
+  type HoverCardComposedProps,
   type HoverCardStat,
 } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -92,7 +92,7 @@ const meta = {
           'Preview a person or reference by hovering over or focusing its trigger.',
       },
       sections: [
-        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'Basic', stories: ['Default', 'Composed'] },
         { title: 'Navigation', stories: ['LinkTrigger'] },
         { title: 'Related previews', stories: ['GroupWarmTraversal'] },
       ],
@@ -112,15 +112,15 @@ A touch tap toggles a button trigger. A link still navigates on click, Enter or 
 Give the enclosing ThemeRoot a portal container inside the dialog.`,
     },
   },
-} satisfies Meta<HoverCardCompoundProps>;
+} satisfies Meta<HoverCardComposedProps>;
 
 export default meta;
 
-type Story = StoryObj<HoverCardCompoundProps>;
+type Story = StoryObj<HoverCardComposedProps>;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function ProfileExample({ before = true, ...props }: HoverCardCompoundProps & { before?: boolean }) {
+function ProfileExample({ before = true, ...props }: HoverCardComposedProps & { before?: boolean }) {
   return (
     <Row>
       {before && <Button>Before</Button>}
@@ -197,17 +197,17 @@ function recordClicks(document: Document) {
   return { seen, stop: () => document.removeEventListener('click', listener) };
 }
 
-function easyModeTypeContracts() {
-  // @ts-expect-error Easy mode rejects compound children.
+function shorthandModeTypeContracts() {
+  // @ts-expect-error Shorthand mode rejects composed children.
   <HoverCard triggerLabel="@ada" profile={{ name: 'Ada' }}>Children</HoverCard>;
-  // @ts-expect-error Easy mode requires triggerLabel.
+  // @ts-expect-error Shorthand mode requires triggerLabel.
   <HoverCard profile={{ name: 'Ada' }} />;
-  // @ts-expect-error Easy mode requires profile.
+  // @ts-expect-error Shorthand mode requires profile.
   <HoverCard triggerLabel="@ada" />;
 }
-void easyModeTypeContracts;
+void shorthandModeTypeContracts;
 
-export const Default: StoryObj<HoverCardEasyProps> = {
+export const Default: StoryObj<HoverCardShorthandProps> = {
   name: 'Profile preview',
   args: {
     triggerLabel: TRIGGER,
@@ -264,9 +264,9 @@ const Actions = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'cen
   },
 };
 
-export const EasyKeyboard: StoryObj<HoverCardEasyProps> = {
+export const ShorthandKeyboard: StoryObj<HoverCardShorthandProps> = {
   ...Default,
-  name: 'Easy mode keyboard',
+  name: 'Shorthand mode keyboard',
   play: async ({ canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await userEvent.tab();
@@ -285,9 +285,9 @@ export const EasyKeyboard: StoryObj<HoverCardEasyProps> = {
   },
 };
 
-export const EasyDismissal: StoryObj<HoverCardEasyProps> = {
+export const ShorthandDismissal: StoryObj<HoverCardShorthandProps> = {
   ...Default,
-  name: 'Easy mode dismissal',
+  name: 'Shorthand mode dismissal',
   play: async ({ canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await userEvent.hover(trigger);
@@ -300,10 +300,10 @@ export const EasyDismissal: StoryObj<HoverCardEasyProps> = {
   },
 };
 
-export const EasyControlled: StoryObj<HoverCardEasyProps> = {
+export const ShorthandControlled: StoryObj<HoverCardShorthandProps> = {
   ...Default,
   tags: ['!autodocs'],
-  name: 'Easy mode controlled',
+  name: 'Shorthand mode controlled',
   args: {
     ...Default.args,
     open: true,
@@ -326,9 +326,9 @@ function ProfileAvatar(props: ComponentPropsWithRef<'span'>) {
 function ProfileIdentity(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-slot="profile-identity" />;
 }
-export const CustomSlots: StoryObj<HoverCardEasyProps> = {
+export const CustomSlots: StoryObj<HoverCardShorthandProps> = {
   ...Default,
-  name: 'Easy mode custom slotProps',
+  name: 'Shorthand mode custom slotProps',
   args: {
     ...Default.args,
     slots: { content: SlotContent },
@@ -363,7 +363,7 @@ export const CustomSlots: StoryObj<HoverCardEasyProps> = {
   },
 };
 
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Composed profile',
   parameters: { docs: { description: { story: 'Assemble a profile inside a preview with its own trigger and content.' }, source: { language: 'tsx', code: `import { Button, HoverCard, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -777,7 +777,7 @@ export const GroupMemberUnmount: GroupStory = {
   },
 };
 
-function UnmountExample(props: HoverCardCompoundProps) {
+function UnmountExample(props: HoverCardComposedProps) {
   const [mounted, setMounted] = useState(true);
   return (
     <Row>
@@ -1016,7 +1016,7 @@ export const OutsidePress: Story = {
 
 const popoverOpenChange = fn<(open: boolean) => void>();
 
-function PopoverHost(props: HoverCardCompoundProps) {
+function PopoverHost(props: HoverCardComposedProps) {
   return (
     <Row>
       <Popover defaultOpen onOpenChange={popoverOpenChange}>
@@ -1104,7 +1104,7 @@ export const InsidePopoverOutsidePress: Story = {
   },
 };
 
-function ControlledRejectExample(props: HoverCardCompoundProps) {
+function ControlledRejectExample(props: HoverCardComposedProps) {
   const [open, setOpen] = useState(true);
   return (
     <Row>
@@ -1391,7 +1391,7 @@ export const ScopedThemePortal: Story = {
   },
 };
 
-function DialogHost(props: HoverCardCompoundProps) {
+function DialogHost(props: HoverCardComposedProps) {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   return (
     <Dialog defaultOpen>

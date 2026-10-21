@@ -1,7 +1,7 @@
 export {
   RadioCards,
-  type RadioCardsCompoundProps,
-  type RadioCardsEasyProps,
+  type RadioCardsComposedProps,
+  type RadioCardsShorthandProps,
   type RadioCardsOption,
   type RadioCardsSlots,
   type RadioCardsSlotProps,

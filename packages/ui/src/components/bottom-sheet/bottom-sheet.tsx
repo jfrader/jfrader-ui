@@ -146,7 +146,7 @@ export interface BottomSheetSlots {
   footer?: ComponentType<BottomSheetFooterProps>;
 }
 
-export interface BottomSheetCompoundProps extends BottomSheetBaseProps {
+export interface BottomSheetComposedProps extends BottomSheetBaseProps {
   /** Compose the sheet from `BottomSheet` parts. */
   children?: ReactNode;
   triggerLabel?: never;
@@ -160,7 +160,7 @@ export interface BottomSheetCompoundProps extends BottomSheetBaseProps {
   footer?: never;
 }
 
-export interface BottomSheetEasyProps extends BottomSheetBaseProps, Omit<BottomSheetPanelProps, 'children' | 'title' | 'content' | 'defaultValue' | 'slots' | 'slotProps'> {
+export interface BottomSheetShorthandProps extends BottomSheetBaseProps, Omit<BottomSheetPanelProps, 'children' | 'title' | 'content' | 'defaultValue' | 'slots' | 'slotProps'> {
   /** Name the button that opens the bottom sheet. */
   triggerLabel: ReactNode;
   /** Name the bottom sheet with a visible heading. */
@@ -181,7 +181,7 @@ export interface BottomSheetEasyProps extends BottomSheetBaseProps, Omit<BottomS
   footer?: ReactNode;
 }
 
-export type BottomSheetProps = BottomSheetCompoundProps | BottomSheetEasyProps;
+export type BottomSheetProps = BottomSheetComposedProps | BottomSheetShorthandProps;
 
 const DEFAULT_DETENTS = [0.45, 0.92] as const;
 const INLINE_CAP = '36rem';

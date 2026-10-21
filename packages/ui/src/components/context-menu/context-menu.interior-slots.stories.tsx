@@ -14,12 +14,12 @@ import {
 } from '../../testing/interior-slot-assertions';
 import {
   ContextMenu,
-  type ContextMenuEasyProps,
+  type ContextMenuShorthandProps,
   type ContextMenuItemProps,
 } from './context-menu';
 
-// @ts-expect-error Unknown slot key is rejected on ContextMenuEasyProps['slots']
-type UnknownContextMenuSlot = NonNullable<ContextMenuEasyProps['slots']>['unknownKey'];
+// @ts-expect-error Unknown slot key is rejected on ContextMenuShorthandProps['slots']
+type UnknownContextMenuSlot = NonNullable<ContextMenuShorthandProps['slots']>['unknownKey'];
 
 function CustomContextMenuRoot({ className, ref, ...props }: ComponentPropsWithRef<'div'>) {
   return <div ref={ref} {...props} className={className} data-slot="context-menu-root-winner" />;
@@ -98,7 +98,7 @@ const meta = {
 
 export default meta;
 
-type Story = StoryObj<(props: ContextMenuEasyProps) => ReactNode>;
+type Story = StoryObj<(props: ContextMenuShorthandProps) => ReactNode>;
 
 /** Customize the context menu root wrapper and action items using slots. */
 export const Customization: Story = {

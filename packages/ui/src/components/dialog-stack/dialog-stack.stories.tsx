@@ -19,9 +19,9 @@ import { Card } from '../card';
 import {
   DialogStack,
   useDialogStack,
-  type DialogStackCompoundProps,
+  type DialogStackComposedProps,
   type DialogStackContentProps,
-  type DialogStackEasyProps,
+  type DialogStackShorthandProps,
   type DialogStackPageRecord,
 } from './index';
 
@@ -72,7 +72,7 @@ const meta = {
           'Open settings or pickers in stacked panels, then go back one panel at a time.',
       },
       sections: [
-        { title: 'Easy and compound', stories: ['Default', 'Compound'] },
+        { title: 'Shorthand and composed', stories: ['Default', 'Composed'] },
         { title: 'Two and three levels', stories: ['TwoLevels', 'ThreeLevels'] },
         { title: 'Resize', stories: ['AutoResize'] },
         { title: 'Contained', stories: ['Contained'] },
@@ -124,12 +124,12 @@ Give every panel and navigation button an accessible name. Inactive parent panel
 
 export default meta;
 
-type Story = Omit<StoryObj<DialogStackCompoundProps>, 'render' | 'play'> & {
-  render?: (args: DialogStackCompoundProps) => ReactNode;
-  play?: (context: StoryContext<DialogStackCompoundProps>) => Promise<void>;
+type Story = Omit<StoryObj<DialogStackComposedProps>, 'render' | 'play'> & {
+  render?: (args: DialogStackComposedProps) => ReactNode;
+  play?: (context: StoryContext<DialogStackComposedProps>) => Promise<void>;
 };
 
-function DeclarationScopeFixture({ contained = false, ...props }: DialogStackCompoundProps) {
+function DeclarationScopeFixture({ contained = false, ...props }: DialogStackComposedProps) {
   return <Container>
     <DialogStack {...props} contained={contained} defaultValue={['scope']} variant="dialog">
       <ThemeRoot theme="light" tokens={{ radius: { lg: '3rem' } }}>
@@ -207,7 +207,7 @@ export const CardAdapter = rootAdapterStory(Card);
 export const IndependentMaterialAdapter = rootAdapterStory(StackPaper);
 export const SurfaceAdapterLight: Story = { ...SurfaceAdapter, decorators: [withLightTheme], globals: { theme: 'light' } };
 
-interface LevelsProps extends Omit<DialogStackCompoundProps, 'children'> {
+interface LevelsProps extends Omit<DialogStackComposedProps, 'children'> {
   contentProps?: Partial<Record<string, Partial<DialogStackContentProps>>>;
   body?: ReactNode;
   footer?: boolean;
@@ -324,7 +324,7 @@ async function expectStackClosed(canvasElement: HTMLElement, trigger: HTMLElemen
   await expect(canvasElement.ownerDocument.documentElement.style.overflow).toBe('');
 }
 
-const EASY_PAGES: readonly DialogStackPageRecord[] = [
+const SHORTHAND_PAGES: readonly DialogStackPageRecord[] = [
   {
     value: 'settings',
     title: 'Settings',
@@ -350,7 +350,7 @@ const EASY_PAGES: readonly DialogStackPageRecord[] = [
 
 const LONG_REFERENCE = 'CustomerAccountExportConfirmationReference'.repeat(3);
 
-export const UnbrokenContent: StoryObj<(props: DialogStackEasyProps) => ReactNode> = {
+export const UnbrokenContent: StoryObj<(props: DialogStackShorthandProps) => ReactNode> = {
   tags: ['!autodocs'],
   args: {
     defaultValue: ['export'],
@@ -377,8 +377,8 @@ export const UnbrokenContent: StoryObj<(props: DialogStackEasyProps) => ReactNod
   },
 };
 
-export const Default: StoryObj<(props: DialogStackEasyProps) => ReactNode> = {
-  name: 'Easy mode',
+export const Default: StoryObj<(props: DialogStackShorthandProps) => ReactNode> = {
+  name: 'Shorthand mode',
   parameters: {
     docs: {
       description: {
@@ -424,7 +424,7 @@ const pages = [
   },
   args: {
     triggerLabel: 'Open settings',
-    pages: EASY_PAGES,
+    pages: SHORTHAND_PAGES,
     onValueChange: fn(),
   },
   render: (args) => <DialogStack {...args} />,
@@ -486,7 +486,7 @@ const pages = [
   },
 };
 
-function ControlledEasyStackFixture() {
+function ControlledShorthandStackFixture() {
   const [value, setValue] = useState<string[]>([]);
   return (
     <div>
@@ -494,15 +494,15 @@ function ControlledEasyStackFixture() {
         triggerLabel="Open controlled"
         value={value}
         onValueChange={setValue}
-        pages={EASY_PAGES}
+        pages={SHORTHAND_PAGES}
       />
     </div>
   );
 }
 
-export const EasyModeControlled: StoryObj = {
-  name: 'Easy mode controlled',
-  render: () => <ControlledEasyStackFixture />,
+export const ShorthandModeControlled: StoryObj = {
+  name: 'Shorthand mode controlled',
+  render: () => <ControlledShorthandStackFixture />,
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     const trigger = canvas.getByRole('button', { name: 'Open controlled' });
@@ -524,37 +524,37 @@ export const EasyModeControlled: StoryObj = {
   },
 };
 
-export const EasyModeSlotPropsOverrides: StoryObj<(props: DialogStackEasyProps) => ReactNode> = {
-  name: 'Easy mode slotProps overrides',
+export const ShorthandModeSlotPropsOverrides: StoryObj<(props: DialogStackShorthandProps) => ReactNode> = {
+  name: 'Shorthand mode slotProps overrides',
   args: {
     triggerLabel: 'Open settings',
-    pages: EASY_PAGES,
+    pages: SHORTHAND_PAGES,
     slotProps: {
-      trigger: { className: 'easy-trigger-class' },
-      content: { className: 'easy-content-class' },
-      title: { className: 'easy-title-class' },
-      back: { className: 'easy-back-class' },
-      close: { className: 'easy-close-class' },
-      footer: { className: 'easy-footer-class' },
+      trigger: { className: 'shorthand-trigger-class' },
+      content: { className: 'shorthand-content-class' },
+      title: { className: 'shorthand-title-class' },
+      back: { className: 'shorthand-back-class' },
+      close: { className: 'shorthand-close-class' },
+      footer: { className: 'shorthand-footer-class' },
     },
   },
   render: (args) => <DialogStack {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     const trigger = canvas.getByRole('button', { name: 'Open settings' });
-    await expect(trigger).toHaveClass('easy-trigger-class');
+    await expect(trigger).toHaveClass('shorthand-trigger-class');
     await userEvent.click(trigger);
     const shell = await canvas.findByRole('dialog');
     const panel = activePanel(canvasElement);
-    await expect(panel).toHaveClass('easy-content-class');
-    await expect(within(shell).getByRole('heading', { name: 'Settings' })).toHaveClass('easy-title-class');
-    await expect(within(shell).getByRole('button', { name: 'Close settings' })).toHaveClass('easy-close-class');
+    await expect(panel).toHaveClass('shorthand-content-class');
+    await expect(within(shell).getByRole('heading', { name: 'Settings' })).toHaveClass('shorthand-title-class');
+    await expect(within(shell).getByRole('button', { name: 'Close settings' })).toHaveClass('shorthand-close-class');
 
     // Go to account page to verify back and footer
     await userEvent.click(within(shell).getByRole('button', { name: 'Account settings' }));
-    await waitFor(() => expect(within(shell).getByRole('button', { name: 'Back to Settings' })).toHaveClass('easy-back-class'));
+    await waitFor(() => expect(within(shell).getByRole('button', { name: 'Back to Settings' })).toHaveClass('shorthand-back-class'));
     const footer = canvasElement.ownerDocument.querySelector('[data-ui="dialog-stack-footer"]');
-    await expect(footer).toHaveClass('easy-footer-class');
+    await expect(footer).toHaveClass('shorthand-footer-class');
 
     // Clean up modal by closing
     requestEscape(shell);
@@ -565,20 +565,20 @@ export const EasyModeSlotPropsOverrides: StoryObj<(props: DialogStackEasyProps) 
   },
 };
 
-function easyModeTypeContracts() {
-  // @ts-expect-error Presentation mode rejects compound children.
-  <DialogStack triggerLabel="Open" pages={EASY_PAGES}>Compound</DialogStack>;
+function shorthandModeTypeContracts() {
+  // @ts-expect-error Presentation mode rejects composed children.
+  <DialogStack triggerLabel="Open" pages={SHORTHAND_PAGES}>Composed</DialogStack>;
   // @ts-expect-error Presentation mode requires pages.
   <DialogStack triggerLabel="Open" />;
   // @ts-expect-error Page record requires value, title, and content.
   <DialogStack triggerLabel="Open" pages={[{ value: 'settings' }]} />;
-  // @ts-expect-error Named presentation props cannot leak into compound mode.
-  <DialogStack pages={EASY_PAGES}><DialogStack.Content value="s" /></DialogStack>;
+  // @ts-expect-error Named presentation props cannot leak into composed mode.
+  <DialogStack pages={SHORTHAND_PAGES}><DialogStack.Content value="s" /></DialogStack>;
 }
-void easyModeTypeContracts;
+void shorthandModeTypeContracts;
 
-export const Compound: Story = {
-  name: 'Compound anatomy',
+export const Composed: Story = {
+  name: 'Composed anatomy',
   parameters: {
     docs: {
       description: {
@@ -1586,7 +1586,7 @@ function HookControls() {
 }
 HookControls.displayName = 'HookControls';
 
-function HookFixture(props: Omit<DialogStackCompoundProps, 'children'>) {
+function HookFixture(props: Omit<DialogStackComposedProps, 'children'>) {
   return (
     <DialogStack {...props}>
       {['settings', 'account', 'password'].map((key) => (
@@ -1761,7 +1761,7 @@ export const NormalizedDefault: Story = {
   },
 };
 
-function RemovableFixture(props: Omit<DialogStackCompoundProps, 'children'>) {
+function RemovableFixture(props: Omit<DialogStackComposedProps, 'children'>) {
   const [mounted, setMounted] = useState(true);
   return (
     <DialogStack {...props}>
@@ -2338,7 +2338,7 @@ export const ForcedColors: Story = {
   },
 };
 
-function UnmountFixture(props: Omit<DialogStackCompoundProps, 'children'>) {
+function UnmountFixture(props: Omit<DialogStackComposedProps, 'children'>) {
   const [mounted, setMounted] = useState(true);
   return (
     <>
@@ -2474,7 +2474,7 @@ export const PartStyling: Story = {
   },
 };
 
-function DisconnectedInvokerFixture(props: Omit<DialogStackCompoundProps, 'children'>) {
+function DisconnectedInvokerFixture(props: Omit<DialogStackComposedProps, 'children'>) {
   const [linked, setLinked] = useState(true);
   return (
     <DialogStack {...props}>

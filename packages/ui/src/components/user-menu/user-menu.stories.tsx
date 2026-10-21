@@ -10,7 +10,7 @@ import { Button } from '../button';
 import { ThemeRoot } from '../theme-root';
 import {
   UserMenu,
-  type UserMenuEasyProps,
+  type UserMenuShorthandProps,
   type UserMenuBaseProps,
   type UserMenuStatus,
   type UserMenuTheme,
@@ -74,14 +74,14 @@ interface StoryArgs extends UserMenuBaseProps {
   onSignOutError: (error: unknown) => void;
 }
 
-function EasyExample({
+function ShorthandExample({
   onProfile: _onProfile,
   onSettings: _onSettings,
   onThemeChange: _onThemeChange,
   onStatusChange: _onStatusChange,
   showName: _showName,
   ...args
-}: UserMenuEasyProps & Partial<Pick<StoryArgs, 'onProfile' | 'onSettings' | 'onThemeChange' | 'onStatusChange' | 'showName'>>) {
+}: UserMenuShorthandProps & Partial<Pick<StoryArgs, 'onProfile' | 'onSettings' | 'onThemeChange' | 'onStatusChange' | 'showName'>>) {
   return (
     <Row>
       <UserMenu {...args} />
@@ -236,7 +236,7 @@ const meta = {
           'Open account actions, change appearance or presence, and sign out from an avatar button.',
       },
       sections: [
-        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'Basic', stories: ['Default', 'Composed'] },
         { title: 'Customization', stories: ['CustomSlots'] },
         { title: 'Identity', stories: ['ShowName', 'CompactHidesName', 'PhotoFallback'] },
         { title: 'Preferences and state', stories: ['ThemeGroup', 'ControlledAccept'] },
@@ -304,18 +304,18 @@ export default meta;
 
 type Story = StoryObj<Omit<typeof meta, 'component'>>;
 
-function easyModeTypeContracts() {
+function shorthandModeTypeContracts() {
   const messages = { trigger: 'Account', close: 'Close', signOut: 'Sign out', pending: 'Signing out', error: 'Try again' };
-  // @ts-expect-error Easy mode rejects compound children.
+  // @ts-expect-error Shorthand mode rejects composed children.
   <UserMenu user={USER} messages={messages}>Children</UserMenu>;
-  // @ts-expect-error Easy mode requires messages.
+  // @ts-expect-error Shorthand mode requires messages.
   <UserMenu user={USER} items={[]} />;
-  // @ts-expect-error Easy mode requires user.
+  // @ts-expect-error Shorthand mode requires user.
   <UserMenu messages={messages} />;
 }
-void easyModeTypeContracts;
+void shorthandModeTypeContracts;
 
-export const Default: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
+export const Default: StoryObj<(props: UserMenuShorthandProps) => ReactNode> = {
   beforeEach: () => {
     const error = spyOn(console, 'error');
     return () => error.mockRestore();
@@ -382,7 +382,7 @@ function ProfileIcon() {
       },
     },
   },
-  render: (args) => <EasyExample {...args} />,
+  render: (args) => <ShorthandExample {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     await expect(console.error).not.toHaveBeenCalled();
     const trigger = getTrigger(canvasElement);
@@ -411,9 +411,9 @@ function ProfileIcon() {
   },
 };
 
-export const EasyKeyboard: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
+export const ShorthandKeyboard: StoryObj<(props: UserMenuShorthandProps) => ReactNode> = {
   ...Default,
-  name: 'Easy mode keyboard',
+  name: 'Shorthand mode keyboard',
   play: async ({ canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await userEvent.tab();
@@ -438,9 +438,9 @@ export const EasyKeyboard: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
   },
 };
 
-export const EasyDismissal: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
+export const ShorthandDismissal: StoryObj<(props: UserMenuShorthandProps) => ReactNode> = {
   ...Default,
-  name: 'Easy mode dismissal',
+  name: 'Shorthand mode dismissal',
   play: async ({ canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await userEvent.click(trigger);
@@ -451,10 +451,10 @@ export const EasyDismissal: StoryObj<(props: UserMenuEasyProps) => ReactNode> = 
   },
 };
 
-export const EasyControlled: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
+export const ShorthandControlled: StoryObj<(props: UserMenuShorthandProps) => ReactNode> = {
   ...Default,
   tags: ['!autodocs'],
-  name: 'Easy mode controlled',
+  name: 'Shorthand mode controlled',
   args: {
     ...Default.args,
     open: true,
@@ -470,9 +470,9 @@ export const EasyControlled: StoryObj<(props: UserMenuEasyProps) => ReactNode> =
   },
 };
 
-export const EasyDisabled: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
+export const ShorthandDisabled: StoryObj<(props: UserMenuShorthandProps) => ReactNode> = {
   ...Default,
-  name: 'Easy mode disabled',
+  name: 'Shorthand mode disabled',
   play: async ({ canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await userEvent.click(trigger);
@@ -488,9 +488,9 @@ export const EasyDisabled: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
   },
 };
 
-export const EasyAsyncSignOut: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
+export const ShorthandAsyncSignOut: StoryObj<(props: UserMenuShorthandProps) => ReactNode> = {
   ...Default,
-  name: 'Easy mode async sign out',
+  name: 'Shorthand mode async sign out',
   play: async ({ args, canvasElement, userEvent }) => {
     const pending = deferred();
     (args.onSignOut as Mock).mockImplementation(() => pending.promise);
@@ -511,7 +511,7 @@ export const EasyAsyncSignOut: StoryObj<(props: UserMenuEasyProps) => ReactNode>
   },
 };
 
-export const CustomSlots: StoryObj<(props: UserMenuEasyProps) => ReactNode> = {
+export const CustomSlots: StoryObj<(props: UserMenuShorthandProps) => ReactNode> = {
   ...Default,
   name: 'Part props',
   parameters: { docs: {
@@ -605,8 +605,8 @@ function ProfileIcon() {
   },
 };
 
-export const Compound: Story = {
-  name: 'Compound anatomy',
+export const Composed: Story = {
+  name: 'Composed anatomy',
   parameters: {
     docs: {
       description: { story: 'Compose identity, commands, theme and status choices, and sign out explicitly.' },

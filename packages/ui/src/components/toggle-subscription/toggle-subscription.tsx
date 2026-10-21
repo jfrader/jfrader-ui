@@ -32,7 +32,7 @@ type SlotProps<Element extends 'span' | 'del'> = ComponentPropsWithRef<Element> 
   sx?: Interpolation<Theme>;
 };
 
-export interface ToggleSubscriptionCompoundProps
+export interface ToggleSubscriptionComposedProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {
   /** Controls the selected billing period. */
   value?: string;
@@ -94,7 +94,7 @@ export interface ToggleSubscriptionSlotProps {
   /** Price text displayed inside an item. */
   price?: Omit<ToggleSubscriptionPriceProps, keyof ToggleSubscriptionPriceDefinition>;
 }
-export interface ToggleSubscriptionEasyProps extends Omit<ToggleSubscriptionCompoundProps, 'children' | 'options' | 'prices' | 'label' | 'slots' | 'slotProps' | 'component'> {
+export interface ToggleSubscriptionShorthandProps extends Omit<ToggleSubscriptionComposedProps, 'children' | 'options' | 'prices' | 'label' | 'slots' | 'slotProps' | 'component'> {
   /** Defines the billing periods rendered as selectable items. */
   options: readonly ToggleSubscriptionOption[];
   /** Maps billing-period values to prices. Throws when the selected period has no price. */
@@ -110,7 +110,7 @@ export interface ToggleSubscriptionEasyProps extends Omit<ToggleSubscriptionComp
   /** Passes props and `sx` to individual switch and price parts. */
   slotProps?: ToggleSubscriptionSlotProps;
 }
-export type ToggleSubscriptionProps = ToggleSubscriptionCompoundProps | ToggleSubscriptionEasyProps;
+export type ToggleSubscriptionProps = ToggleSubscriptionComposedProps | ToggleSubscriptionShorthandProps;
 export interface ToggleSubscriptionListProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {}
 export interface ToggleSubscriptionLabelProps extends ComponentPropsWithRef<'span'>, SxProps {}
@@ -297,7 +297,7 @@ function ToggleSubscriptionRoot({
   sx,
   children,
   ...rest
-}: ToggleSubscriptionCompoundProps & { rootElement?: 'div' | ToggleSubscriptionSlots['root']; slotStyles?: Interpolation<Theme> }) {
+}: ToggleSubscriptionComposedProps & { rootElement?: 'div' | ToggleSubscriptionSlots['root']; slotStyles?: Interpolation<Theme> }) {
   const [value, requestChange] = useControlledState(valueProp, defaultValue, onValueChange);
   const [labels, setLabels] = useState<string[]>([]);
   const [selections, setSelections] = useState<ReadonlyMap<string, SelectionPart>>(new Map());
@@ -575,11 +575,11 @@ function ToggleSubscriptionPrice({
 }
 ToggleSubscriptionPrice.displayName = 'ToggleSubscription.Price';
 
-function ToggleSubscriptionEasyPrice({
+function ToggleSubscriptionShorthandPrice({
   prices,
   slots,
   slotProps,
-}: Pick<ToggleSubscriptionEasyProps, 'prices' | 'slots' | 'slotProps'>) {
+}: Pick<ToggleSubscriptionShorthandProps, 'prices' | 'slots' | 'slotProps'>) {
   const { value } = useToggleSubscription();
   if (value === undefined) return null;
   const price = Object.hasOwn(prices, value) ? prices[value] : undefined;
@@ -614,7 +614,7 @@ function ToggleSubscriptionComponent(props: ToggleSubscriptionProps) {
           </Item>
         ))}
       </List>
-      <ToggleSubscriptionEasyPrice prices={prices} slots={slots} slotProps={slotProps} />
+      <ToggleSubscriptionShorthandPrice prices={prices} slots={slots} slotProps={slotProps} />
     </ToggleSubscriptionRoot>
   );
 }

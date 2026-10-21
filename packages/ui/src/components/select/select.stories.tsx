@@ -9,8 +9,8 @@ import { Button } from '../button';
 import { Popover } from '../popover';
 import {
   Select,
-  type SelectCompoundProps,
-  type SelectEasyProps,
+  type SelectComposedProps,
+  type SelectShorthandProps,
   type SelectItemProps,
   type SelectOption,
   type SelectProps,
@@ -92,7 +92,7 @@ const morphSnippet = `import { Select } from '@jfrader/ui';
   ]} />`;
 
 /** Open the pill to choose a fruit. */
-export const Morph: EasyStory = {
+export const Morph: ShorthandStory = {
   args: { variant: 'morph', label: LABEL, options: FRUITS, defaultValue: 'apple', onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <Select {...args} />,
   parameters: { docs: { description: { story: 'Choose a fruit from a pill trigger with an animated popup.' }, source: { language: 'tsx', code: morphSnippet } } },
@@ -117,7 +117,7 @@ export const Morph: EasyStory = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
-export const MorphLight: EasyStory = {
+export const MorphLight: ShorthandStory = {
   ...Morph,
   parameters: { docs: { source: { language: 'tsx', code: `<ThemeRoot theme="light">
   <Select variant="morph" label="Fruit" defaultValue="apple" options={[
@@ -130,7 +130,7 @@ export const MorphLight: EasyStory = {
   globals: { theme: 'light' },
 };
 /** Enable reduced motion to open and close without geometric animation. */
-export const MorphReducedMotion: EasyStory = {
+export const MorphReducedMotion: ShorthandStory = {
   ...Morph,
   play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(window.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true);
@@ -144,7 +144,7 @@ export const MorphReducedMotion: EasyStory = {
     await expect(trigger.ownerDocument.activeElement).toBe(trigger);
   },
 };
-export const MorphRTL: EasyStory = {
+export const MorphRTL: ShorthandStory = {
   ...Morph,
   parameters: { docs: { source: { language: 'tsx', code: `<div dir="rtl">
   <Select variant="morph" label="Fruit" defaultValue="apple" options={[
@@ -155,18 +155,18 @@ export const MorphRTL: EasyStory = {
 </div>` } } },
   render: (args) => <div dir="rtl"><Select {...args} /></div>,
 };
-export const MorphOpen: EasyStory = {
+export const MorphOpen: ShorthandStory = {
   args: { variant: 'morph', label: LABEL, options: FRUITS, defaultValue: 'apple', open: true },
   render: (args) => <Select {...args} />,
   tags: ['!autodocs'],
   parameters: { docs: { source: { code: morphSnippet } } },
 };
-export const MorphOpenLight: EasyStory = {
+export const MorphOpenLight: ShorthandStory = {
   ...MorphOpen,
   decorators: [withLightTheme],
   globals: { theme: 'light' },
 };
-export const MorphControlledRejects: EasyStory = {
+export const MorphControlledRejects: ShorthandStory = {
   args: { variant: 'morph', label: LABEL, options: FRUITS, value: 'apple', open: true,
     name: 'fruit', onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <form><Select {...args} /></form>,
@@ -230,7 +230,7 @@ const FieldRow = styled.div({
   gap: vars.space[3],
 });
 
-const meta: Meta<SelectCompoundProps> = {
+const meta: Meta<SelectComposedProps> = {
   title: 'Inputs/Select',
   component: Select,
   parameters: {
@@ -241,9 +241,9 @@ const meta: Meta<SelectCompoundProps> = {
       },
       sections: [
         { title: 'Choose an option', stories: ['Default', 'Placeholder', 'Morph'] },
-        { title: 'Compose the field', stories: ['Compound'] },
+        { title: 'Compose the field', stories: ['Composed'] },
         { title: 'Unavailable choices', stories: ['DisabledSelect'] },
-        { title: 'Forms', stories: ['EasyFormReset'] },
+        { title: 'Forms', stories: ['ShorthandFormReset'] },
         { title: 'Keyboard and dismissal', stories: ['Keyboard', 'TypeaheadAcrossOpening', 'OutsidePress', 'InitialActive'] },
       ],
       usage: `### When to use
@@ -273,11 +273,11 @@ const meta: Meta<SelectCompoundProps> = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
-type EasyStory = StoryObj<(props: SelectEasyProps) => ReactNode>;
+type ShorthandStory = StoryObj<(props: SelectShorthandProps) => ReactNode>;
 
 const LONG_LABEL = 'InternationalEnterpriseWorkspaceWithoutWordSeparators';
 
-export const FieldStates: EasyStory = {
+export const FieldStates: ShorthandStory = {
   tags: ['!autodocs'],
   render: () => (
     <VisualGrid>
@@ -328,7 +328,7 @@ export const Grouped: Story = {
   },
 };
 
-export const ViewportEdge: EasyStory = {
+export const ViewportEdge: ShorthandStory = {
   tags: ['!autodocs'],
   args: { label: 'Workspace', options: Array.from({ length: 30 }, (_, i) => ({ value: String(i), label: `${LONG_LABEL} ${i}` })), defaultValue: '0' },
   render: (args) => <EdgeFrame><Select {...args} /></EdgeFrame>,
@@ -353,7 +353,7 @@ export const ViewportEdge: EasyStory = {
   },
 };
 
-export const MorphViewportEdge: EasyStory = {
+export const MorphViewportEdge: ShorthandStory = {
   ...ViewportEdge,
   args: { ...ViewportEdge.args, variant: 'morph' },
   play: async ({ canvas, canvasElement, userEvent }) => {
@@ -375,7 +375,7 @@ const ScrollHost = styled.div({ blockSize: 240, overflow: 'auto' });
 const ScrollSpace = styled.div({ blockSize: 600 });
 
 /** Open a long list inside a scrolling region. */
-export const LongList: EasyStory = {
+export const LongList: ShorthandStory = {
   args: { label: 'Option', options: LONG_OPTIONS, initialActiveValue: '720', onValueChange: fn() },
   tags: ['!autodocs'],
   render: (args) => (
@@ -435,7 +435,7 @@ export const LongList: EasyStory = {
 };
 
 /** Seed a highlight without selecting an option. */
-export const InitialActive: EasyStory = {
+export const InitialActive: ShorthandStory = {
   parameters: { docs: {
     description: { story: 'Open with Cherry highlighted without selecting it, or type a prefix to highlight another option.' },
     source: { language: 'tsx', code: `import { Select } from '@jfrader/ui';
@@ -462,7 +462,7 @@ export const InitialActive: EasyStory = {
   },
 };
 
-export const InitialActiveDisabled: EasyStory = {
+export const InitialActiveDisabled: ShorthandStory = {
   ...InitialActive,
   args: { label: LABEL, options: FRUITS, initialActiveValue: 'banana' },
   play: async ({ canvas, canvasElement, userEvent }) => {
@@ -473,12 +473,12 @@ export const InitialActiveDisabled: EasyStory = {
   },
 };
 
-export const InitialActiveSelected: EasyStory = {
+export const InitialActiveSelected: ShorthandStory = {
   ...InitialActiveDisabled,
   args: { label: LABEL, options: FRUITS, initialActiveValue: 'cherry', defaultValue: 'apple' },
 };
 
-export const InitialActiveOpen: EasyStory = {
+export const InitialActiveOpen: ShorthandStory = {
   ...InitialActive,
   args: { label: LABEL, options: FRUITS, initialActiveValue: 'cherry', defaultOpen: true },
   tags: ['!autodocs'],
@@ -489,7 +489,7 @@ export const InitialActiveOpen: EasyStory = {
   },
 };
 
-export const UnselectedOpen: EasyStory = {
+export const UnselectedOpen: ShorthandStory = {
   ...InitialActiveOpen,
   args: { label: LABEL, options: FRUITS, defaultOpen: true },
   play: async ({ canvas, canvasElement }) => {
@@ -536,12 +536,12 @@ export const StickyList: Story = {
   },
 };
 // @ts-expect-error Generated-part slot keys are closed.
-type UnknownSlot = NonNullable<SelectEasyProps['slotProps']>['unknown'];
+type UnknownSlot = NonNullable<SelectShorthandProps['slotProps']>['unknown'];
 // @ts-expect-error Replacement slot keys are closed.
-type UnknownReplacement = NonNullable<SelectEasyProps['slots']>['unknown'];
+type UnknownReplacement = NonNullable<SelectShorthandProps['slots']>['unknown'];
 
 /** Restyle the generated label and every option with slotProps. */
-export const SlotProps: EasyStory = {
+export const SlotProps: ShorthandStory = {
   parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { Select } from '@jfrader/ui';
 
@@ -579,15 +579,40 @@ type CheckedSelect<Props extends SelectProps> = Props;
 export type SelectTypeRegression = {
   // @ts-expect-error Options and children are mutually exclusive.
   optionsWithChildren: CheckedSelect<{ options: readonly SelectOption[]; children: ReactNode }>;
-  // @ts-expect-error Presentation props are rejected in compound mode without options.
+  // @ts-expect-error Presentation props are rejected in composed mode without options.
   childrenWithLabel: CheckedSelect<{ label: string; children: ReactNode }>;
-  // @ts-expect-error Presentation props are rejected in compound mode without options.
+  // @ts-expect-error Presentation props are rejected in composed mode without options.
   childrenWithPlaceholder: CheckedSelect<{ placeholder: string; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects slots and slotProps.
+  // @ts-expect-error Composed mode rejects slots and slotProps.
   childrenWithSlots: CheckedSelect<{ slots: { root?: () => null }; children: ReactNode }>;
 };
 
-function SelectExample(props: SelectCompoundProps) {
+type Status = 'draft' | 'live';
+const STATUS_OPTIONS = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'live', label: 'Live' },
+] as const satisfies readonly SelectOption<Status>[];
+
+/** Compile-time consumer checks; never rendered. */
+function SelectFromProps(props: SelectProps<Status>) {
+  return <Select {...props} />;
+}
+
+function SelectGenericChecks() {
+  const saveStatus = (status: Status) => status;
+  return (
+    <>
+      <Select<Status> options={STATUS_OPTIONS} value="draft" onValueChange={saveStatus} />
+      <Select options={STATUS_OPTIONS as readonly SelectOption<Status>[]} onValueChange={(next) => saveStatus(next)} />
+      {/* @ts-expect-error value must be one of the options */}
+      <Select<Status> options={STATUS_OPTIONS} value="paused" />
+      {/* @ts-expect-error the callback must accept every option value */}
+      <Select<Status> options={STATUS_OPTIONS} onValueChange={(next: 'paused') => next} />
+    </>
+  );
+}
+
+function SelectExample(props: SelectComposedProps) {
   const labelId = useId();
   return (
     <Row>
@@ -646,7 +671,7 @@ async function focusTrigger(canvasElement: HTMLElement) {
   return trigger;
 }
 
-export const Default: EasyStory = {
+export const Default: ShorthandStory = {
   name: 'Choose a billing plan',
   args: {
     label: PLAN_LABEL,
@@ -698,7 +723,7 @@ export const Default: EasyStory = {
   },
 };
 
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Compose a fruit picker',
   args: { defaultValue: 'apple', onValueChange: fn() },
   render: (args) => <SelectExample {...args} />,
@@ -744,7 +769,7 @@ function CustomSelectTrigger(props: SelectTriggerProps) {
   return <Select.Trigger {...props} data-testid="custom-trigger" />;
 }
 
-export const CustomSlots: EasyStory = {
+export const CustomSlots: ShorthandStory = {
   parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { Select, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -789,7 +814,7 @@ function FruitField(props: ComponentPropsWithRef<'div'>) {
   },
 };
 
-function EasyControlledSelect(props: SelectEasyProps) {
+function ShorthandControlledSelect(props: SelectShorthandProps) {
   const [value, setValue] = useState('apple');
   const [open, setOpen] = useState(false);
   return (
@@ -809,10 +834,10 @@ function EasyControlledSelect(props: SelectEasyProps) {
   );
 }
 
-export const EasyControlled: EasyStory = {
+export const ShorthandControlled: ShorthandStory = {
   tags: ['!autodocs'],
   args: { label: LABEL, options: FRUITS, onValueChange: fn(), onOpenChange: fn() },
-  render: (args) => <EasyControlledSelect {...args} />,
+  render: (args) => <ShorthandControlledSelect {...args} />,
   play: async ({ args, canvasElement }) => {
     const trigger = getTrigger(canvasElement);
     await waitFor(() => expect(trigger).toHaveTextContent('Apple'));
@@ -824,7 +849,7 @@ export const EasyControlled: EasyStory = {
   },
 };
 
-export const EasyRejectedControlled: EasyStory = {
+export const ShorthandRejectedControlled: ShorthandStory = {
   tags: ['!autodocs'],
   args: { label: LABEL, options: FRUITS, value: 'apple', onValueChange: fn() },
   render: (args) => <Select {...args} />,
@@ -838,7 +863,7 @@ export const EasyRejectedControlled: EasyStory = {
   },
 };
 
-export const EasyDisabledOption: EasyStory = {
+export const ShorthandDisabledOption: ShorthandStory = {
   tags: ['!autodocs'],
   args: { label: LABEL, options: FRUITS, defaultValue: 'apple', onValueChange: fn() },
   render: (args) => <Select {...args} />,
@@ -854,7 +879,7 @@ export const EasyDisabledOption: EasyStory = {
   },
 };
 
-export const EasyKeyboard: EasyStory = {
+export const ShorthandKeyboard: ShorthandStory = {
   tags: ['!autodocs'],
   args: { label: LABEL, options: FRUITS, defaultValue: 'apple', onValueChange: fn() },
   render: (args) => <Select {...args} />,
@@ -877,7 +902,7 @@ const CUSTOM_SELECT_OPTIONS: readonly SelectOption[] = [
   { value: 'cherry', label: 'Cherry', id: 'custom-cherry-opt', textValue: 'Zucchini' },
 ];
 
-export const EasyOptionIdsAndTextValue: EasyStory = {
+export const ShorthandOptionIdsAndTextValue: ShorthandStory = {
   tags: ['!autodocs'],
   args: { label: LABEL, options: CUSTOM_SELECT_OPTIONS, defaultValue: 'apple' },
   render: (args) => <Select {...args} />,
@@ -893,7 +918,7 @@ export const EasyOptionIdsAndTextValue: EasyStory = {
   },
 };
 
-function DisabledWhileOpenSelect(props: SelectCompoundProps) {
+function DisabledWhileOpenSelect(props: SelectComposedProps) {
   const [disabled, setDisabled] = useState(false);
   return (
     <>
@@ -950,7 +975,7 @@ export const NativeFormReset: Story = {
   },
 };
 
-function AssociatedFormResetSelect(props: SelectCompoundProps) {
+function AssociatedFormResetSelect(props: SelectComposedProps) {
   const formId = useId();
   const [cancelReset, setCancelReset] = useState(true);
   return (
@@ -993,7 +1018,7 @@ export const AssociatedFormReset: Story = {
   },
 };
 
-function ControlledSelect(props: SelectCompoundProps) {
+function ControlledSelect(props: SelectComposedProps) {
   const [value, setValue] = useState('apple');
   const [open, setOpen] = useState(false);
   const [callbackOrder, setCallbackOrder] = useState<string[]>([]);
@@ -1020,7 +1045,7 @@ function ControlledSelect(props: SelectCompoundProps) {
 }
 ControlledSelect.displayName = 'ControlledSelect';
 
-export const EasyFormReset: EasyStory = {
+export const ShorthandFormReset: ShorthandStory = {
   name: 'Reset a form',
   parameters: { docs: { description: { story: 'Choose another fruit, then reset the form to restore Apple.' }, source: { language: 'tsx', code: `import { Button, Select } from '@jfrader/ui';
 

@@ -13,13 +13,13 @@ import { Button } from '../button';
 import { TextField } from '../text-field';
 import {
   EditableDetails,
-  type EditableDetailsCompoundProps,
-  type EditableDetailsEasyProps,
+  type EditableDetailsComposedProps,
+  type EditableDetailsShorthandProps,
   type EditableDetailsEditorProps,
   type EditableDetailsSectionRecord,
 } from './index';
 
-type StoryArgs = EditableDetailsCompoundProps & {
+type StoryArgs = EditableDetailsComposedProps & {
   onItemOpenChange: (open: boolean) => void;
   onSectionOpenChange: (open: boolean) => void;
   onRefCleanup: (part: string) => void;
@@ -43,7 +43,7 @@ const meta = {
     docs: {
       description: { component: 'Show grouped details and edit selected values in place with your own forms.' },
       sections: [
-        { title: 'Editing details', stories: ['Default', 'Compound'] },
+        { title: 'Editing details', stories: ['Default', 'Composed'] },
         { title: 'Hierarchy', stories: ['NestedDepth'] },
       ],
       usage: `### Editing
@@ -63,15 +63,15 @@ const meta = {
 } satisfies Meta<StoryArgs>;
 export default meta;
 type Story = StoryObj<Meta<StoryArgs>>;
-type EasyStory = StoryObj<Meta<EditableDetailsEasyProps>>;
+type ShorthandStory = StoryObj<Meta<EditableDetailsShorthandProps>>;
 
-function EasyExample({
+function ShorthandExample({
   onItemOpenChange: _onItemOpenChange,
   onSectionOpenChange: _onSectionOpenChange,
   onRefCleanup: _onRefCleanup,
   onHydrationError: _onHydrationError,
   ...args
-}: EditableDetailsEasyProps & Partial<Pick<StoryArgs, 'onItemOpenChange' | 'onSectionOpenChange' | 'onRefCleanup' | 'onHydrationError'>>) {
+}: EditableDetailsShorthandProps & Partial<Pick<StoryArgs, 'onItemOpenChange' | 'onSectionOpenChange' | 'onRefCleanup' | 'onHydrationError'>>) {
   return <EditableDetails {...args} />;
 }
 
@@ -85,7 +85,7 @@ function DraftEditor({ initialFocusRef, cancel, complete, visible, onCapture }: 
   </Editor>;
 }
 
-const EASY_SECTIONS: readonly EditableDetailsSectionRecord[] = [
+const SHORTHAND_SECTIONS: readonly EditableDetailsSectionRecord[] = [
   {
     value: 'settings',
     title: 'Settings',
@@ -117,7 +117,7 @@ const EASY_SECTIONS: readonly EditableDetailsSectionRecord[] = [
   },
 ];
 
-export const Default: EasyStory = {
+export const Default: ShorthandStory = {
   name: 'Edit grouped details',
   parameters: { docs: {
     description: { story: 'Open the name editor, edit a draft and complete or cancel it.' },
@@ -148,9 +148,9 @@ function NameEditor({ initialFocusRef, complete, cancel, visible }: EditableDeta
 }]} />` },
   } },
   args: {
-    sections: EASY_SECTIONS,
+    sections: SHORTHAND_SECTIONS,
   },
-  render: (args) => <EasyExample {...args} />,
+  render: (args) => <ShorthandExample {...args} />,
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     const section = canvas.getByRole('button', { name: 'Settings' });
@@ -193,7 +193,7 @@ function NameEditor({ initialFocusRef, complete, cancel, visible }: EditableDeta
   },
 };
 
-export const EasyFalsyContent: EasyStory = {
+export const ShorthandFalsyContent: ShorthandStory = {
   tags: ['!autodocs'],
   beforeEach: () => {
     const error = spyOn(console, 'error');
@@ -204,7 +204,7 @@ export const EasyFalsyContent: EasyStory = {
     { value: 'false', label: 'False', content: false },
     { value: 'empty', label: 'Empty', content: '' },
   ] }] },
-  render: (args) => <EasyExample {...args} />,
+  render: (args) => <ShorthandExample {...args} />,
   play: async ({ canvas }) => {
     await expect(console.error).not.toHaveBeenCalled();
     const values = canvas.getAllByRole('definition');
@@ -213,7 +213,7 @@ export const EasyFalsyContent: EasyStory = {
   },
 };
 
-function ControlledEasyFixture() {
+function ControlledShorthandFixture() {
   const [sectionOpen, setSectionOpen] = useState(true);
   const [itemOpen, setItemOpen] = useState(false);
   const controlledSections: readonly EditableDetailsSectionRecord[] = [
@@ -237,9 +237,9 @@ function ControlledEasyFixture() {
   return <EditableDetails sections={controlledSections} />;
 }
 
-export const EasyModeControlled: StoryObj = {
-  name: 'Easy mode controlled',
-  render: () => <ControlledEasyFixture />,
+export const ShorthandModeControlled: StoryObj = {
+  name: 'Shorthand mode controlled',
+  render: () => <ControlledShorthandFixture />,
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
     const section = canvas.getByRole('button', { name: 'Profile' });
@@ -251,10 +251,10 @@ export const EasyModeControlled: StoryObj = {
   },
 };
 
-export const EasyModeSlotPropsOverrides: EasyStory = {
-  name: 'Easy mode slotProps overrides',
+export const ShorthandModeSlotPropsOverrides: ShorthandStory = {
+  name: 'Shorthand mode slotProps overrides',
   args: {
-    sections: EASY_SECTIONS,
+    sections: SHORTHAND_SECTIONS,
     slotProps: {
       root: { className: 'custom-root-slot', 'data-testid': 'custom-root' },
       section: { className: 'custom-section-slot' },
@@ -262,7 +262,7 @@ export const EasyModeSlotPropsOverrides: EasyStory = {
       item: { className: 'custom-item-slot' },
     },
   },
-  render: (args) => <EasyExample {...args} />,
+  render: (args) => <ShorthandExample {...args} />,
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('[data-ui~="editable-details"]');
     await expect(root).toHaveClass('custom-root-slot');
@@ -275,10 +275,10 @@ export const EasyModeSlotPropsOverrides: EasyStory = {
   },
 };
 
-export const RootPropMerge: EasyStory = {
+export const RootPropMerge: ShorthandStory = {
   name: 'Root prop merge',
   args: {
-    sections: EASY_SECTIONS,
+    sections: SHORTHAND_SECTIONS,
     id: 'host-id',
     'data-origin': 'host',
     className: 'host-class',
@@ -297,7 +297,7 @@ export const RootPropMerge: EasyStory = {
       },
     },
   },
-  render: (args) => <EasyExample {...args} />,
+  render: (args) => <ShorthandExample {...args} />,
   play: async ({ canvasElement, args, userEvent }) => {
     const root = canvasElement.querySelector<HTMLElement>('[data-ui~="editable-details"]');
     if (!root) throw new Error('Missing EditableDetails root.');
@@ -315,16 +315,16 @@ export const RootPropMerge: EasyStory = {
   },
 };
 
-function easyModeTypeContracts() {
-  // @ts-expect-error Presentation mode rejects compound children.
-  <EditableDetails sections={EASY_SECTIONS}>Compound</EditableDetails>;
+function shorthandModeTypeContracts() {
+  // @ts-expect-error Presentation mode rejects composed children.
+  <EditableDetails sections={SHORTHAND_SECTIONS}>Composed</EditableDetails>;
   <EditableDetails />;
   // @ts-expect-error Section record requires value, title, and items.
   <EditableDetails sections={[{ title: 'Settings' }]} />;
   // @ts-expect-error Item record requires value, label, and content.
   <EditableDetails sections={[{ value: 's', title: 'Settings', items: [{ label: 'L' }] }]} />;
 }
-void easyModeTypeContracts;
+void shorthandModeTypeContracts;
 
 function DetailsFixture() {
   return <EditableDetails>
@@ -341,7 +341,7 @@ function DetailsFixture() {
   </EditableDetails>;
 }
 
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Compose nested details',
   parameters: { docs: {
     description: { story: 'Nest an editable project list inside a settings section.' },

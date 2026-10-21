@@ -7,8 +7,8 @@ import { withLightTheme } from '../../testing/story-decorators';
 import {
   SwipeActions,
   type SwipeAction,
-  type SwipeActionsCompoundProps,
-  type SwipeActionsEasyProps,
+  type SwipeActionsComposedProps,
+  type SwipeActionsShorthandProps,
   type SwipeActionsRecord,
   type SwipeActionsValue,
 } from './index';
@@ -27,7 +27,7 @@ const CompactList = styled(SwipeActions)({ maxWidth: 320 });
 
 const select = fn();
 // These values exercise the documented css/sx and slot styling APIs.
-const easyRowStyle = css({ paddingBlock: vars.space[2] });
+const shorthandRowStyle = css({ paddingBlock: vars.space[2] });
 const change = fn();
 const leading: readonly SwipeAction[] = [
   {
@@ -70,7 +70,7 @@ const meta = {
   parameters: {
     docs: {
       sections: [
-        { title: 'Row actions', stories: ['EasyMode', 'Default'] },
+        { title: 'Row actions', stories: ['ShorthandMode', 'Default'] },
         { title: 'Interaction', stories: ['KeepRow', 'ControlledRail'] },
       ],
       source: { code: snippet },
@@ -114,10 +114,10 @@ const meta = {
       </SwipeActions.Row>
     </ListFrame>
   ),
-} satisfies Meta<SwipeActionsCompoundProps>;
+} satisfies Meta<SwipeActionsComposedProps>;
 export default meta;
-type Story = StoryObj<SwipeActionsCompoundProps>;
-export const EasyMode: StoryObj<SwipeActionsEasyProps> = {
+type Story = StoryObj<SwipeActionsComposedProps>;
+export const ShorthandMode: StoryObj<SwipeActionsShorthandProps> = {
   name: 'Inbox actions',
   args: { 'aria-label': 'Inbox', rows: [invoiceRow] },
   render: (args) => <SwipeActions {...args} />,
@@ -147,7 +147,7 @@ export function Inbox({ onAction }: { onAction: (action: 'archive' | 'delete') =
   },
 };
 
-export const EasyCustomization: Story = {
+export const ShorthandCustomization: Story = {
   render: () => (
     <SwipeActions
       aria-label="Inbox"
@@ -155,7 +155,7 @@ export const EasyCustomization: Story = {
       rows={[{ ...invoiceRow, disabled: true }]}
       slotProps={{
         root: { className: 'inbox-list' },
-        row: { sx: easyRowStyle, slotProps: { body: { className: 'invoice-body' } } },
+        row: { sx: shorthandRowStyle, slotProps: { body: { className: 'invoice-body' } } },
       }}
     />
   ),
@@ -167,7 +167,7 @@ export const EasyCustomization: Story = {
   },
 };
 
-export const EasyControlled: Story = {
+export const ShorthandControlled: Story = {
   args: { onValueChange: fn() },
   render: (args) => (
     <SwipeActions
@@ -269,7 +269,7 @@ async function reveal(row: HTMLElement, dx: number) {
 }
 
 export const Default: Story = {
-  name: 'Compound rows',
+  name: 'Composed rows',
   parameters: { docs: {
     description: { story: 'Compose a row with read actions on one side and archive or delete on the other.' },
     source: { language: 'tsx', code: `import { SwipeActions, styled } from '@jfrader/ui';
@@ -613,7 +613,7 @@ export const DisabledRow: Story = {
     </SwipeActions>
   ),
 };
-function Controlled(props: SwipeActionsCompoundProps) {
+function Controlled(props: SwipeActionsComposedProps) {
   const [value, setValue] = useState<SwipeActionsValue>(null);
   return (
     <SwipeActions
@@ -947,7 +947,7 @@ export const FalsyAndAria: Story = {
     ).toHaveLength(1);
   },
 };
-function RemovalExample(props: SwipeActionsCompoundProps) {
+function RemovalExample(props: SwipeActionsComposedProps) {
   const [ids, setIds] = useState(['first', 'second', 'third']);
   return (
     <>
@@ -1105,7 +1105,7 @@ export const FlickAndClickSuppression: Story = {
     }
   },
 };
-function ExternalStateExample(props: SwipeActionsCompoundProps) {
+function ExternalStateExample(props: SwipeActionsComposedProps) {
   const [value, setValue] = useState<SwipeActionsValue>({ id: 'invoice', side: 'leading' });
   return (
     <>

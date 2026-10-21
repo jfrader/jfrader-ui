@@ -12,7 +12,7 @@ import {
 } from '../../testing/interior-slot-assertions';
 import {
   Menu,
-  type MenuEasyProps,
+  type MenuShorthandProps,
   type MenuItemProps,
 } from './menu';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -20,8 +20,8 @@ import { styled } from '../../index';
 
 const Frame = styled.div({ padding: vars.space[4] });
 
-// @ts-expect-error Unknown slot key is rejected on MenuEasyProps['slots']
-type UnknownMenuSlot = NonNullable<MenuEasyProps['slots']>['unknownKey'];
+// @ts-expect-error Unknown slot key is rejected on MenuShorthandProps['slots']
+type UnknownMenuSlot = NonNullable<MenuShorthandProps['slots']>['unknownKey'];
 
 function CustomMenuRoot({ className, ref, ...props }: ComponentPropsWithRef<'div'>) {
   return <div ref={ref} {...props} className={className} data-slot="menu-root-winner" />;
@@ -94,7 +94,7 @@ const meta = {
 
 export default meta;
 
-type Story = StoryObj<(props: MenuEasyProps) => ReactNode>;
+type Story = StoryObj<(props: MenuShorthandProps) => ReactNode>;
 
 /** Customize the menu root wrapper and action items using slots. */
 export const Customization: Story = {
