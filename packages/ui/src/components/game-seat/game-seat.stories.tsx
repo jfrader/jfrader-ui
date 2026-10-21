@@ -60,8 +60,27 @@ import { GameSeat } from '@jfrader/ui/game-seat';
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-async function expectAvatarOrbit(seat: HTMLElement) {
+async function expectSeatContainment(seat: HTMLElement) {
   const bounds = seat.getBoundingClientRect();
+  for (const part of seat.querySelectorAll('[data-ui="game-seat-name"], [data-ui="game-seat-badges"], [data-ui="game-seat-points"]')) {
+    const content = part.getBoundingClientRect();
+    await expect(getComputedStyle(part).overflow).toBe('hidden');
+    await expect(content.left).toBeGreaterThanOrEqual(bounds.left);
+    await expect(content.top).toBeGreaterThanOrEqual(bounds.top);
+    await expect(content.right).toBeLessThanOrEqual(bounds.right);
+    await expect(content.bottom).toBeLessThanOrEqual(bounds.bottom);
+  }
+  for (const back of seat.querySelectorAll('[data-ui="game-hand-hidden-card"]')) {
+    const card = back.getBoundingClientRect();
+    await expect(card.left).toBeGreaterThanOrEqual(bounds.left + 1);
+    await expect(card.top).toBeGreaterThanOrEqual(bounds.top + 1);
+    await expect(card.right).toBeLessThanOrEqual(bounds.right - 1);
+    await expect(card.bottom).toBeLessThanOrEqual(bounds.bottom - 1);
+  }
+}
+
+async function expectAvatarOrbit(seat: HTMLElement) {
+  await expectSeatContainment(seat);
   const avatar = seat.querySelector('[data-ui="game-seat-avatar-content"]')!;
   const avatarBounds = avatar.getBoundingClientRect();
   const centerX = avatarBounds.x + avatarBounds.width / 2;
@@ -74,10 +93,6 @@ async function expectAvatarOrbit(seat: HTMLElement) {
   await expect(getComputedStyle(avatar).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
   for (const back of backs) {
     const card = back.getBoundingClientRect();
-    await expect(card.left).toBeGreaterThanOrEqual(bounds.left + 1);
-    await expect(card.top).toBeGreaterThanOrEqual(bounds.top + 1);
-    await expect(card.right).toBeLessThanOrEqual(bounds.right - 1);
-    await expect(card.bottom).toBeLessThanOrEqual(bounds.bottom - 1);
     await expect(card.top).toBeLessThan(centerY);
     await expect(card.bottom).toBeGreaterThan(avatarBounds.top);
     for (const part of seat.querySelectorAll('[data-ui="game-seat-name"], [data-ui="game-seat-badges"], [data-ui="game-seat-points"]')) {
@@ -131,8 +146,7 @@ const TableEdgeRow = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.s
     for (const seat of seats) {
       await expect(seat.getBoundingClientRect().width).toBe(first!.width);
       await expect(seat.getBoundingClientRect().height).toBe(first!.height);
-      const badges = seat.querySelector('[data-ui="game-seat-badges"]')!;
-      await expect(badges.scrollWidth).toBeLessThanOrEqual(badges.clientWidth);
+      await expectSeatContainment(seat);
     }
     await expect(canvas.getByRole('group', { name: 'Sam' })).toHaveAttribute('data-state', 'winner');
   },
@@ -213,8 +227,6 @@ export const WinnerWithTimer: Story = {
     await expect(getComputedStyle(medallion).boxShadow).toContain(getComputedStyle(timer).stroke);
     await expect(getComputedStyle(medallion).outlineStyle).toBe('none');
     await expect(timer.querySelector('circle')).toHaveAttribute('stroke-dashoffset', '25');
-    const badges = seat.querySelector('[data-ui="game-seat-badges"]')!;
-    await expect(badges.scrollWidth).toBeLessThanOrEqual(badges.clientWidth);
     await expectAvatarOrbit(seat);
   },
 };
@@ -259,8 +271,8 @@ export const StableFootprint: Story = {
     try {
       for (const count of [0, 1, 3, 50, 0]) {
         flushSync(() => root.render(<GameSeat ref={ref} name="Alex" avatar={<PersonAvatar seed="Alex" size="full" />}
-          handCount={count} points={count} badges={count > 3 ? <Badge>Won the trick</Badge> : undefined} />));
-        const seat = host.querySelector('[data-ui~="game-seat"]')!;
+          handCount={count} points={count} badges={count > 3 ? <Badge>Won the trick with the highest score</Badge> : undefined} />));
+        const seat = host.querySelector<HTMLElement>('[data-ui~="game-seat"]')!;
         const current = seat.getBoundingClientRect();
         if (bounds) {
           await expect(current.width).toBe(bounds.width);
@@ -272,6 +284,11 @@ export const StableFootprint: Story = {
         await expect(host.querySelectorAll('[data-ui="game-hand-hidden-card"]')).toHaveLength(Math.min(count, 3));
         await expect(host.querySelector('[data-ui="game-seat-chat"]')).toBeNull();
         await expect(ref).toHaveBeenCalledWith(seat);
+        await expectSeatContainment(seat);
+        if (count > 3) {
+          const badges = seat.querySelector('[data-ui="game-seat-badges"]')!;
+          await expect(badges.scrollWidth).toBeGreaterThan(badges.clientWidth);
+        }
       }
     } finally { flushSync(() => root.unmount()); host.remove(); }
   },
