@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, type CSSProperties } from 'react';
 import { animate } from 'motion/mini';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
@@ -17,7 +17,7 @@ const shadowStyle = css({ position: 'absolute', inset: 0, boxShadow: vars.shadow
 const rotatorStyle = css({ position: 'relative', inlineSize: '100%', blockSize: '100%', transformStyle: 'preserve-3d' });
 const faceStyle = css({
   position: 'absolute', inset: 0, backfaceVisibility: 'hidden',
-  '& > [data-ui~="game-card"]': { inlineSize: '100%', blockSize: '100%' },
+  '& > [data-ui~="game-card"]': { '--game-card-width': 'inherit', inlineSize: '100%', blockSize: '100%' },
 });
 const backStyle = css({ transform: 'rotateY(180deg)' });
 const pose = (x: number, y: number, rotate: number, scale: number) =>
@@ -79,8 +79,11 @@ export function CardFlight({ flightId, spec, onStart, onFinish }: {
     }).catch(() => { if (active) { cancel(); onFinish(); } });
     return cancel;
   }, [flightId]);
+  const style: CSSProperties & { '--game-card-width': string } = {
+    '--game-card-width': `${to.width}px`, width: to.width, height: to.height, transform: start, visibility: 'hidden',
+  };
   return <div ref={bodyRef} css={bodyStyle} aria-hidden="true" data-ui="card-flight"
-    data-flight-target={spec.target} style={{ width: to.width, height: to.height, transform: start, visibility: 'hidden' }}>
+    data-flight-target={spec.target} style={style}>
     <div ref={shadowRef} css={shadowStyle} data-ui="card-flight-shadow" style={{ borderRadius: to.width / CARD_FRAME.cornerDivisor }} />
     <div ref={turnRef} css={rotatorStyle} data-ui="card-flight-turn" style={{ transform: face === 'up' ? 'none' : 'rotateY(180deg)' }}>
       <div css={faceStyle}>{face !== 'down' && front}</div>

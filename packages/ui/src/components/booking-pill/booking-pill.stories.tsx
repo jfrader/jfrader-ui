@@ -20,7 +20,8 @@ const ReservationPanel = styled(Surface)({
   boxSizing: 'border-box',
   inlineSize: `calc(${vars.space[8]} * 18)`,
   maxInlineSize: '100%',
-  padding: vars.space[6],
+  padding: `clamp(${vars.space[2]}, 3%, ${vars.space[6]})`,
+  marginInline: 'auto',
   display: 'grid',
   gap: vars.space[5],
 });
@@ -53,13 +54,14 @@ const meta = {
     onStepChange: fn(),
   },
   parameters: {
+    layout: 'padded',
     docs: {
       source: {
         language: 'tsx',
         code: `import { BookingPill, Surface, styled, type BookingPillProps } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
-const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: vars.space[6], display: 'grid', gap: vars.space[5] });
+const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: \`clamp(\${vars.space[2]}, 3%, \${vars.space[6]})\`, display: 'grid', gap: vars.space[5] });
 const VenueLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
 
 export function Reservation({ onConfirm }: Pick<BookingPillProps, 'onConfirm'>) {
@@ -123,7 +125,7 @@ export const Date: Story = {
     source: { language: 'tsx', code: `import { BookingPill, Surface, styled, type BookingPillProps } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
-const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: vars.space[6], display: 'grid', gap: vars.space[5] });
+const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: \`clamp(\${vars.space[2]}, 3%, \${vars.space[6]})\`, display: 'grid', gap: vars.space[5] });
 const VenueLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
 
 export function Reservation({ onConfirm }: Pick<BookingPillProps, 'onConfirm'>) {
@@ -144,7 +146,7 @@ export const Time: Story = {
     source: { language: 'tsx', code: `import { BookingPill, Surface, styled, type BookingPillProps } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
-const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: vars.space[6], display: 'grid', gap: vars.space[5] });
+const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: \`clamp(\${vars.space[2]}, 3%, \${vars.space[6]})\`, display: 'grid', gap: vars.space[5] });
 const VenueLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
 
 export function Reservation({ onConfirm }: Pick<BookingPillProps, 'onConfirm'>) {
@@ -180,7 +182,7 @@ export const Review: Story = {
     source: { language: 'tsx', code: `import { BookingPill, Surface, styled, type BookingPillProps } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
-const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: vars.space[6], display: 'grid', gap: vars.space[5] });
+const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: \`clamp(\${vars.space[2]}, 3%, \${vars.space[6]})\`, display: 'grid', gap: vars.space[5] });
 const VenueLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
 
 export function Reservation({ onConfirm }: Pick<BookingPillProps, 'onConfirm'>) {
@@ -262,7 +264,7 @@ export const AllUnavailable: Story = {
   parameters: { docs: { description: { story: 'Show an empty time step when no reservation times are available.' }, source: { language: 'tsx', code: `import { BookingPill, Surface, styled, type BookingPillProps } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
-const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: vars.space[6], display: 'grid', gap: vars.space[5] });
+const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: \`clamp(\${vars.space[2]}, 3%, \${vars.space[6]})\`, display: 'grid', gap: vars.space[5] });
 const VenueLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
 
 export function Reservation({ onConfirm }: Pick<BookingPillProps, 'onConfirm'>) {
@@ -334,7 +336,7 @@ export const AtomicInvalidation: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import { BookingPill, Surface, styled, type BookingPillProps } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
-const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: vars.space[6], display: 'grid', gap: vars.space[5] });
+const ReservationPanel = styled(Surface)({ boxSizing: 'border-box', inlineSize: '36rem', maxInlineSize: '100%', padding: \`clamp(\${vars.space[2]}, 3%, \${vars.space[6]})\`, display: 'grid', gap: vars.space[5] });
 const VenueLabel = styled.p({ margin: 0, fontFamily: vars.font.sans, fontSize: vars.textSize.sm, color: vars.color.textMuted });
 
 export function Reservation({ onConfirm }: Pick<BookingPillProps, 'onConfirm'>) {
@@ -453,6 +455,14 @@ export const InvalidReview: Story = {
   },
 };
 export const Disabled: Story = { args: { disabled: true, defaultOpen: true } };
+export const LongContent: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    venue: 'The Glasshouse private dining room and rooftop garden',
+    venueDetail: 'Reservation'.repeat(18),
+  },
+};
 export const Narrow: Story = {
   args: Review.args,
   decorators: [

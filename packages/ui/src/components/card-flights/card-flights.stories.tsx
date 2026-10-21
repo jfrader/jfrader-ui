@@ -98,7 +98,7 @@ function CustomMatch() {
 const meta = {
   title: 'Games/CardFlights', component: CardFlights, tags: ['autodocs'], args: { children: null },
   render: () => <Match />,
-  parameters: { a11y: { test: 'error' }, docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+  parameters: { layout: 'padded', a11y: { test: 'error' }, docs: { source: { language: 'tsx', code: `import { useState } from 'react';
 import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { Button } from '@jfrader/ui/button';
