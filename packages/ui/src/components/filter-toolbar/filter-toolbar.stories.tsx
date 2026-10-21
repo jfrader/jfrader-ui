@@ -22,7 +22,9 @@ import {
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
-const NarrowFrame = styled.div({ inlineSize: 280, maxInlineSize: '100%' });
+// The docs page renders each story in a lane narrower than a phone, so the frame takes the
+// available width and caps at 280px instead of assuming 280px of room.
+const NarrowFrame = styled.div({ inlineSize: '100%', maxInlineSize: 280, minInlineSize: 0 });
 
 const OPEN: FilterValue = { id: 'status', label: 'Status', value: 'open', valueLabel: 'Open' };
 const CLOSED: FilterValue = { ...OPEN, value: 'closed', valueLabel: 'Closed' };
@@ -1197,7 +1199,7 @@ export const LongChips: Story = {
     description: { story: 'Truncate long chip text while preserving its full accessible remove label.' },
     source: { language: 'tsx', code: `import { FilterToolbar, styled } from '@jfrader/ui';
 
-const Frame = styled.div({ inlineSize: 280, maxInlineSize: '100%' });
+const Frame = styled.div({ inlineSize: '100%', maxInlineSize: 280 });
 
 <Frame>
   <FilterToolbar defaultValue={[
