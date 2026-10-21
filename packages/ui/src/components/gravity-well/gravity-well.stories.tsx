@@ -36,8 +36,9 @@ function GravityWellGenericRejection() {
 const Frame = styled.div({
   display: 'grid',
   gap: vars.space[4],
-  inlineSize: `min(640px, calc(100vw - ${vars.space[4]} * 2))`,
-  maxInlineSize: '100%',
+  inlineSize: '100%',
+  maxInlineSize: '640px',
+  marginInline: 'auto',
   boxSizing: 'border-box',
   padding: vars.space[5],
   borderRadius: vars.radius.xl,
@@ -125,8 +126,8 @@ import { GravityWell } from '@jfrader/ui/gravity-well';
 
 const Frame = styled.div({
   display: 'grid', gap: vars.space[4],
-  inlineSize: \`min(640px, calc(100vw - \${vars.space[4]} * 2))\`,
-  maxInlineSize: '100%', boxSizing: 'border-box', padding: vars.space[5],
+  inlineSize: '100%', maxInlineSize: '640px', marginInline: 'auto',
+  boxSizing: 'border-box', padding: vars.space[5],
   borderRadius: vars.radius.xl, background: vars.color.surfaceInset,
   border: \`1px solid \${vars.color.border}\`,
 });
@@ -164,6 +165,7 @@ const meta = {
     onPausedChange: fn(),
   },
   parameters: {
+    layout: 'padded',
     docs: {
       description: {
         component:

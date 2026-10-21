@@ -5,6 +5,15 @@ import { chromium } from 'playwright';
 import { preview } from 'vite';
 
 const cases = [
+  ...[
+    { id: 'showcase-gravitywell--docs', primary: '[data-ui="gravity-well"]' },
+    { id: 'games-deck--docs', primary: '[data-ui="game-card"], [data-ui="game-table"]' },
+  ].map(testCase => ({
+    ...testCase,
+    containPreview: 'all',
+    verifyPreviewOverflow: true,
+    viewports: [{ width: 390, height: 844 }, { width: 768, height: 900 }, { width: 1440, height: 900 }],
+  })),
   {
     id: 'data-filtertoolbar--docs', primary: '[data-ui~="filter-toolbar"]', containPreview: 'all',
     verifyPreviewOverflow: true,

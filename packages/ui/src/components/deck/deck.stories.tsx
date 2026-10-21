@@ -68,6 +68,7 @@ const meta = {
   tags: ['autodocs'],
   args: { children: null },
   parameters: {
+    layout: 'padded',
     docs: {
       description: { component: 'Declare card decks with suits, ranks, card art sets and backs.' },
       sections: [
