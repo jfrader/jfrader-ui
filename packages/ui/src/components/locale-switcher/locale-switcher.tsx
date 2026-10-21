@@ -126,6 +126,7 @@ const rootStyle = css({
   fontFamily: vars.font.sans,
   lineHeight: vars.lineHeight.tight,
   color: vars.color.text,
+  overflowWrap: 'anywhere',
 });
 
 const rootSizeStyles: Record<LocaleSwitcherSize, SerializedStyles> = {
@@ -136,9 +137,11 @@ const rootSizeStyles: Record<LocaleSwitcherSize, SerializedStyles> = {
 
 const triggerLayoutStyle = css({
   gap: vars.space[2],
+  minInlineSize: 0,
   maxInlineSize: '100%',
   fontSize: 'inherit',
-  whiteSpace: 'nowrap',
+  whiteSpace: 'normal',
+  '& > span[lang]': { minInlineSize: 0 },
 });
 
 const triggerSizeStyles: Record<LocaleSwitcherSize, SerializedStyles> = {
@@ -149,6 +152,7 @@ const triggerSizeStyles: Record<LocaleSwitcherSize, SerializedStyles> = {
 
 const chevronStyle = css({
   display: 'inline-flex',
+  flexShrink: 0,
   transitionProperty: 'transform',
   transitionDuration: vars.motion.duration.fast,
   transitionTimingFunction: vars.motion.easeStandard,
@@ -181,12 +185,16 @@ const listStyle = css({
   margin: 0,
   padding: 0,
   listStyle: 'none',
+  minInlineSize: 0,
+  maxInlineSize: '100%',
+  '& > li': { minInlineSize: 0, maxInlineSize: '100%' },
 });
 
 const optionStyle = css({
   display: 'inline-flex',
   alignItems: 'center',
   minBlockSize: vars.space[8],
+  maxInlineSize: '100%',
   borderRadius: vars.radius.sm,
 });
 
@@ -215,15 +223,19 @@ const currentStyle = css({
 
 const pillsListStyle = css({
   display: 'inline-flex',
+  flexWrap: 'wrap',
+  boxSizing: 'border-box',
+  minInlineSize: 0,
+  maxInlineSize: '100%',
   alignItems: 'center',
   gap: `calc(${vars.space[1]} / 2)`,
   margin: 0,
   padding: `calc(${vars.space[1]} * 0.75)`,
   listStyle: 'none',
   border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.full,
+  borderRadius: vars.radius.lg,
   backgroundColor: vars.color.surfaceRaised,
-  '& > li': { display: 'flex' },
+  '& > li': { display: 'flex', minInlineSize: 0, maxInlineSize: '100%' },
   [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
 
@@ -231,7 +243,8 @@ const pillStyle = css({
   justifyContent: 'center',
   boxSizing: 'border-box',
   borderRadius: vars.radius.full,
-  whiteSpace: 'nowrap',
+  paddingBlock: `calc(${vars.space[1]} / 2)`,
+  whiteSpace: 'normal',
 });
 
 // Outer pill heights match the menu trigger: pill + padding + border = 32 / 40 / 48px.
