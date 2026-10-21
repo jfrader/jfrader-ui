@@ -43,6 +43,13 @@ function TreeViewGenericChecks() {
           const path: string = node.path;
           return path ? [] : [];
         }}
+      />
+      <TreeView
+        nodes={fileNodes}
+        loadChildren={async (node) => {
+          const path: string = node.path;
+          return path ? [] : [];
+        }}
         onLoadError={(error, node) => {
           const path: string = node.path;
           void error;
