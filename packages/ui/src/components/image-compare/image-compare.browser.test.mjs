@@ -45,6 +45,24 @@ async function value(slider) {
   return Number(await slider.getAttribute('aria-valuenow'));
 }
 
+test('docs comparisons stay inside their preview lanes at phone width', async () => {
+  const context = await workbench.browser.newContext({ viewport, reducedMotion: 'reduce' });
+  try {
+    const page = await context.newPage();
+    await page.goto(`${workbench.baseURL}/iframe.html?id=media-imagecompare--docs&viewMode=docs`);
+    await page.getByRole('slider').first().waitFor();
+    const frames = await page.locator('.docs-story').evaluateAll((elements) => elements.map((element) => ({
+      id: element.closest('[id]')?.id,
+      width: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    })));
+    assert.ok(frames.length > 0);
+    for (const frame of frames) assert.ok(frame.scrollWidth <= frame.width + 1, `${frame.id}: comparison overflows its preview`);
+  } finally {
+    await context.close();
+  }
+});
+
 test('native touch transfers implicit handle capture and keeps dragging outside the handle', async () => {
   await fixture(async ({ page, slider, frame, touch }) => {
     await page.evaluate((selector) => {

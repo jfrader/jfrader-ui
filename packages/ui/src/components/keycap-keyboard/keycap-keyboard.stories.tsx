@@ -30,12 +30,14 @@ export function TypingKeyboard() {
 }`;
 
 const NarrowStack = styled(Stack)({ maxInlineSize: '320px' });
+const CompactStack = styled(Stack)({ maxInlineSize: '14rem' });
 const meta = {
   title: 'Data display/KeycapKeyboard',
   component: KeycapKeyboard,
   tags: ['autodocs'],
   args: { onValueChange: fn() },
   parameters: {
+    layout: 'padded',
     docs: { sections: [
       { title: 'Typing feedback', stories: ['Default', 'Letters'] },
       { title: 'Shortcut illustrations', stories: ['CustomMacro', 'MacShortcut'] },
@@ -99,6 +101,15 @@ export const Default: Story = {
     await expect(board(canvasElement).querySelectorAll('button,input,[tabindex]')).toHaveLength(0);
     await expect(canvas.getAllByRole('textbox')).toHaveLength(1);
     await expect(board(canvasElement).querySelectorAll('[data-ui="keycap-keyboard-row"]')).toHaveLength(5);
+    const rows = board(canvasElement).querySelectorAll('[data-ui="keycap-keyboard-row"]');
+    const firstRow = rows[0]!.getBoundingClientRect();
+    for (const row of rows) {
+      await expect(Math.abs(row.getBoundingClientRect().width - firstRow.width)).toBeLessThan(1);
+    }
+    const unit = cap(canvasElement, 'Digit1').getBoundingClientRect().width;
+    for (const code of ['KeyQ', 'KeyA', 'KeyZ']) {
+      await expect(Math.abs(cap(canvasElement, code).getBoundingClientRect().width - unit)).toBeLessThan(1);
+    }
   },
 };
 
@@ -370,6 +381,17 @@ export const NarrowContainer: Story = {
     const root = board(canvasElement);
     await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
     await expect(root.getBoundingClientRect().width).toBeLessThanOrEqual(321);
+  },
+};
+export const CompactPreview: Story = {
+  name: 'Compact preview',
+  render: (args) => <CompactStack><KeycapKeyboard {...args} /></CompactStack>,
+  play: async ({ canvasElement }) => {
+    const root = board(canvasElement);
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+    for (const legend of root.querySelectorAll('[data-ui="keycap-keyboard-legend"]')) {
+      await expect(legend.scrollWidth).toBeLessThanOrEqual(legend.clientWidth + 1);
+    }
   },
 };
 export const LightTheme: Story = { decorators: [withLightTheme], globals: { theme: 'light' }, args: { value: ['KeyK'] } };
