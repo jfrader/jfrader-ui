@@ -837,7 +837,7 @@ export const LongHeader: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = 
     triggerLabel: TRIGGER,
     title: 'InternationalIntercontinentalConnectionConfirmation',
     description: 'Departure and arrival information. Check the platform before boarding.',
-    content: <p>Train 42 · Platform 3</p>,
+    content: <p>{'InternationalIntercontinentalConnectionConfirmation'.repeat(3)}</p>,
     closeLabel: 'Close',
     sx: { maxInlineSize: '24rem' },
   },
@@ -849,6 +849,8 @@ export const LongHeader: StoryObj<(props: BottomSheetEasyProps) => ReactNode> = 
     const close = canvas.getByRole('button', { name: 'Close' });
     for (const direction of ['ltr', 'rtl']) {
       panel.dir = direction;
+      const body = canvasElement.querySelector<HTMLElement>('[data-ui="bottom-sheet-body"]')!;
+      await expect(body.scrollWidth).toBeLessThanOrEqual(body.clientWidth + 1);
       await expect(title.scrollWidth).toBeLessThanOrEqual(title.clientWidth + 1);
       await expectInside(title, panel);
       await expectInside(close, panel);

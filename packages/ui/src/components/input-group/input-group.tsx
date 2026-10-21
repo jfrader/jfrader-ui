@@ -37,6 +37,7 @@ export interface InputGroupAddonProps extends ComponentPropsWithRef<'div'>, SxPr
 const Context = createContext({ disabled: false, invalid: false });
 const frameStyle = css({
   display: 'flex',
+  minInlineSize: 0,
   alignItems: 'center',
   gap: vars.space[2],
   '&:has([data-ui~="input-group-textarea"])': { alignItems: 'flex-end' },
@@ -48,7 +49,7 @@ const sizes = {
 };
 const controlStyle = css({
   flex: 1,
-  minInlineSize: 0,
+  minInlineSize: vars.space[8],
   inlineSize: '100%',
   boxSizing: 'border-box',
   border: 0,
@@ -68,7 +69,8 @@ const textareaStyle = css({ resize: 'vertical' });
 const addonStyle = css({
   display: 'flex',
   alignItems: 'center',
-  flexShrink: 0,
+  minInlineSize: 'min-content',
+  overflowWrap: 'anywhere',
   paddingBlock: vars.space[1],
   '&[data-placement="start"]': { order: 0 },
   '&[data-placement="end"]': { order: 2 },

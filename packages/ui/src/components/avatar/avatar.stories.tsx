@@ -524,6 +524,12 @@ import { sceneSource } from '@jfrader/ui/scene';
       await expect(badge.getBoundingClientRect().height).toBe(avatar.getBoundingClientRect().height / 4);
       await expect(Number.parseFloat(ring.width)).toBe(badge.getBoundingClientRect().width);
       await expect(Number.parseFloat(ring.height)).toBe(badge.getBoundingClientRect().height);
+      const borderBoxWidth = Number.parseFloat(ring.width) + (ring.boxSizing === 'border-box' ? 0 :
+        Number.parseFloat(ring.borderLeftWidth) + Number.parseFloat(ring.borderRightWidth));
+      const borderBoxHeight = Number.parseFloat(ring.height) + (ring.boxSizing === 'border-box' ? 0 :
+        Number.parseFloat(ring.borderTopWidth) + Number.parseFloat(ring.borderBottomWidth));
+      await expect(borderBoxWidth).toBe(badge.getBoundingClientRect().width);
+      await expect(borderBoxHeight).toBe(badge.getBoundingClientRect().height);
       if (index % 2 === 0) {
         const photo = avatar.querySelector('img')!;
         await waitFor(() => expect(photo.naturalWidth).toBeGreaterThan(0));

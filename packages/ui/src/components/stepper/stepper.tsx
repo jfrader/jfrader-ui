@@ -190,12 +190,12 @@ const MARKER_SIZE = '--stepper-marker-size';
 const MARKER_FONT = '--stepper-marker-font';
 const DETAIL_FONT = '--stepper-detail-font';
 const marker = `var(${MARKER_SIZE})`;
-const AUTO_COMPACT_QUERY = '@container stepper (max-width: 30rem)';
+const NARROW_LAYOUT_QUERY = '@container stepper (max-width: 30rem)';
 
 /** Styles for a part while the stepper is compact, manually or by the responsive container query. */
 const whenCompact = <Styles extends object>(styles: Styles) => ({
   '[data-compact] &': styles,
-  [AUTO_COMPACT_QUERY]: { '[data-auto-compact] &': styles },
+  [NARROW_LAYOUT_QUERY]: { '[data-auto-compact] &': styles },
 });
 
 function normalizeIndex(value: number | undefined, count: number) {
@@ -271,6 +271,10 @@ const itemStyles: Record<StepperOrientation, SerializedStyles> = {
     flex: '1 1 0',
     minInlineSize: 0,
     '&:last-of-type': { gridTemplateColumns: 'minmax(0, max-content)', flex: '0 1 auto' },
+    [NARROW_LAYOUT_QUERY]: {
+      gridTemplateColumns: `calc(${marker} + 2 * ${vars.space[1]}) minmax(0, 1fr)`,
+      '&:last-of-type': { gridTemplateColumns: 'minmax(0, 1fr)', flex: '1 1 0' },
+    },
   }),
   vertical: css({
     display: 'grid',
@@ -304,7 +308,10 @@ const headStyle = css({
 });
 
 const headOrientationStyles: Record<StepperOrientation, SerializedStyles> = {
-  horizontal: css({ gridColumn: 1 }),
+  horizontal: css({
+    gridColumn: 1,
+    [NARROW_LAYOUT_QUERY]: { gridColumn: '1 / -1', flexDirection: 'column', gap: vars.space[1] },
+  }),
   vertical: css({ gridColumn: '1 / -1' }),
 };
 
@@ -405,6 +412,7 @@ const descriptionOrientationStyles: Record<StepperOrientation, SerializedStyles>
   horizontal: css({
     gridColumn: '1 / -1',
     paddingInlineStart: `calc(${vars.space[1]} + ${marker} + ${vars.space[3]})`,
+    [NARROW_LAYOUT_QUERY]: { paddingInlineStart: vars.space[1] },
   }),
   vertical: css({ gridColumn: 2, paddingInlineStart: vars.space[2], paddingBlockEnd: vars.space[2] }),
 };

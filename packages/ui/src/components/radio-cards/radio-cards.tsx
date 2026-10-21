@@ -290,7 +290,7 @@ const iconStyle = css({
   '& > svg': { inlineSize: '1em', blockSize: '1em' },
 });
 const groupPartStyle = css({ gridColumn: '1 / -1', minInlineSize: 0, overflowWrap: 'anywhere' });
-const errorStyle = css({ gridColumn: '1 / -1', color: vars.color.dangerText, fontSize: vars.textSize.sm });
+const errorStyle = css({ color: vars.color.dangerText, fontSize: vars.textSize.sm });
 const ringStyle = css({
   position: 'absolute',
   // Motion x/y use physical DOMRect deltas from the group's top-left, including in RTL.
@@ -518,7 +518,7 @@ function RadioCardsRoot({
                 id={`${id}-error`}
                 role="alert"
                 data-ui="radio-cards-error"
-                css={[errorStyle, errorCss]}
+                css={[groupPartStyle, errorStyle, errorCss]}
               >
                 {error}
               </Error>

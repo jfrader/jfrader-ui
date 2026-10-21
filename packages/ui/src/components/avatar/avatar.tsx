@@ -174,6 +174,7 @@ const statusPulseStyle = css({
   '&[data-status="online"][data-pulse]::after': {
     content: '""',
     position: 'absolute',
+    boxSizing: 'border-box',
     insetBlockStart: 0,
     insetInlineStart: 0,
     inlineSize: '100%',
