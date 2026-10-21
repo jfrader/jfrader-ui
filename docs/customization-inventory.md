@@ -8,9 +8,9 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **163**; public callable parts: **187**.
-- Families exposing `slots.root`: **113**; remaining without a family-level root slot: **50** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **125**; remaining without family-level interior slots: **38** (includes components without generated anatomy).
+- Public callable families: **164**; public callable parts: **188**.
+- Families exposing `slots.root`: **114**; remaining without a family-level root slot: **50** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **126**; remaining without family-level interior slots: **38** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -210,7 +210,9 @@ panel material. The section has no background, border or radius to migrate.
 | [GameMarks](../packages/ui/src/components/game-marks/game-marks.tsx) | yes | `count`, `label`, `mark`, `marks`, `root` | `count`, `label`, `mark`, `marks`, `root` | — | — | — |
 | [GameResult](../packages/ui/src/components/game-result/game-result.tsx) | yes | `actions`, `celebration`, `eyebrow`, `reward`, `root`, `summary`, `title` | `actions`, `celebration`, `eyebrow`, `reward`, `root`, `summary`, `title` | — | — | — |
 | [GameRounds](../packages/ui/src/components/game-rounds/game-rounds.tsx) | yes | `label`, `list`, `outcome`, `root`, `round` | `label`, `list`, `outcome`, `root`, `round` | — | — | — |
-| [GameScore](../packages/ui/src/components/game-score/game-score.tsx) | yes | `label`, `list`, `name`, `root`, `row`, `stage`, `value` | `label`, `list`, `name`, `root`, `row`, `stage`, `value` | — | — | — |
+| [GameScore](../packages/ui/src/components/game-score/game-score.tsx) | yes | `label`, `list`, `name`, `root`, `row`, `stage`, `value` | `label`, `list`, `name`, `root`, `row`, `stage`, `value` | — | — | `Table` |
+| [GameScore.Table](../packages/ui/src/components/game-score/game-score.tsx) | yes | `cell`, `leader`, `root`, `round`, `table`, `total` | `cell`, `leader`, `root`, `round`, `table`, `total` | — | — | — |
+| [GameScoreTable](../packages/ui/src/components/game-score/game-score-table.tsx) | yes | `cell`, `leader`, `root`, `round`, `table`, `total` | `cell`, `leader`, `root`, `round`, `table`, `total` | — | — | — |
 | [GameSeat](../packages/ui/src/components/game-seat/game-seat.tsx) | yes | `avatar`, `badges`, `chat`, `hand`, `name`, `points`, `root`, `timer` | `avatar`, `badges`, `chat`, `hand`, `name`, `points`, `root`, `timer` | — | — | — |
 | [GameTable](../packages/ui/src/components/game-table/game-table.tsx) | yes | `root` | `root` | — | — | `Center`, `Dock`, `Floating`, `Footer`, `Header`, `Play`, `Seat`, `SeatChrome` |
 | [GameTable.Center](../packages/ui/src/components/game-table/game-table.tsx) | yes | `root` | `root` | — | — | — |
