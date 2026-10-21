@@ -15,13 +15,15 @@ import { CardFlightsProvider, measureCardBox, useCardFlights } from '../card-fli
 import { motionDurationMs } from '../../styling/motion-timings';
 import { ThemeRoot } from '../theme-root';
 import {
-  GameTable as Table, useGameTableSeat, buildAlternatingSlots, buildBoardLayoutModel, buildTableOrderSlots,
+  GameTable as Table, useGameTableSeat, buildAlternatingSlots, buildTableOrderSlots,
   getTablePointSeatIndexes, resolveTableTurnDirection,
   type GameTableProps as TableProps, type BoardSeatGeometry, type SeatLike,
   type GameTableSlot, type GameTableRootProps,
 } from './index';
 import { REFERENCE_SLOT_KEYS } from './reference-fixtures';
+import { buildBoardLayoutModel } from './layout-model';
 import { fitBoardContent, GAME_TABLE_LIMITS, type BoardMeasurements } from './fit-layout';
+import { regionSize } from './use-board-measurements';
 import { validateSlots } from './table-slots';
 import { expectInside, expectNoOverlap, expectMirroredDirection } from '../../testing/geometry-assertions';
 
@@ -39,6 +41,10 @@ const FlightsViewport = styled(({ viewport: _viewport, ...props }: { viewport: V
 const ReplacementFrame = styled.div({ inlineSize: 1000, blockSize: 800 });
 const SeatCards = styled.div({ position: 'relative', display: 'flex', gap: vars.space[1] });
 const CardsRow = styled.div({ display: 'flex', gap: vars.space[1] });
+const DecorativeFan = styled.div({ position: 'absolute', inset: 0, pointerEvents: 'none' });
+const MeasuredCardControl = styled.button({ display: 'block', inlineSize: 'max-content', blockSize: 'max-content', padding: 0, border: 0, background: 'none' });
+const ResponsiveFrame = styled.div({ inlineSize: '100%', blockSize: 720 });
+const CompactFrame = styled.div({ inlineSize: '100%', blockSize: 320 });
 const SpacedCards = styled.div({ display: 'flex', gap: vars.space[2] });
 const BoardCenter = styled.div({ display: 'grid', justifyItems: 'center', gap: vars.space[2] });
 const PotRow = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[2] });
@@ -71,7 +77,7 @@ function FixtureContent<T extends SeatLike>({ content }: { content?: RegionFixtu
   return content?.(slot, index, geometry);
 }
 function tableRootProps<T extends SeatLike>({ seats, slots, viewport: _viewport, renderSeat: _seat, renderPlay: _play, header: _header, center: _center, dock: _dock, footer: _footer, floating: _floating, ...props }: Omit<GameTableProps<T>, 'renderSeat'> & { renderSeat?: RegionFixture<T> }) {
-  return { ...props, ...(slots ? { seatSlots: slots } : { seats: seats ?? [] }) };
+  return { ...props, places: props.places ?? props.players ?? NaN, ...(slots ? { seatSlots: slots } : { seats: seats ?? [] }) };
 }
 
 function ReplacementRoot(props: GameTableRootProps) {
@@ -96,7 +102,7 @@ function CompoundPartsFixture() {
     <Button onClick={() => setMounted(false)}>Unmount table</Button>
     <Button onClick={() => setAlternative(true)}>Replace root</Button>
     {mounted && <StrictMode><ReplacementFrame>
-      <Table players={2} seats={SEATS.slice(0, 2)}
+      <Table places={2} seats={SEATS.slice(0, 2)}
         component={UnusedReplacementRoot} slots={{ root: alternative ? AlternativeReplacementRoot : ReplacementRoot }} data-ui="consumer game-table"
         title="host" slotProps={{ root: { title: 'slot', 'data-ui': 'consumer slot' } }}>
         <Table.Dock data-region="dock"><Button>Check</Button></Table.Dock>
@@ -139,12 +145,33 @@ function required<T>(value: T | undefined): T {
   return value;
 }
 
-async function expectSeatFraming(table: HTMLElement, players: number, caseName: string, expectedFit = 'fitted', checkInsufficientGeometry = false) {
+async function expectPlayInsideEllipse(play: Element, surface: Element) {
+  const box = play.getBoundingClientRect();
+  const felt = surface.getBoundingClientRect();
+  for (const x of [box.left, box.right]) for (const y of [box.top, box.bottom]) {
+    await expect(Math.hypot((x - felt.left - felt.width / 2) / (felt.width / 2),
+      (y - felt.top - felt.height / 2) / (felt.height / 2)), 'play corner inside felt ellipse').toBeLessThanOrEqual(1);
+  }
+}
+
+async function expectSeatFraming(table: HTMLElement, players: number, caseName: string, expectedFit: 'fitted' | 'scaled' | 'insufficient-space' = 'fitted', checkInsufficientGeometry = false) {
   await table.ownerDocument.fonts.ready;
   await waitFor(() => expect(table).toHaveAttribute('data-layout-fit', expectedFit));
+  const preferredScale = Number.parseFloat(getComputedStyle(table).getPropertyValue('--game-table-content-scale'));
+  if (expectedFit === 'fitted') await expect(preferredScale).toBe(1);
+  if (expectedFit === 'scaled') {
+    await expect(preferredScale).toBeGreaterThan(0);
+    await expect(preferredScale).toBeLessThan(1);
+  }
   for (const card of table.querySelectorAll<HTMLElement>('[data-ui~="game-card"]')) {
     const box = card.getBoundingClientRect();
-    await expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(GAME_TABLE_LIMITS.minimumCardWidthPx - 0.01);
+    await expect(Math.min(box.width, box.height)).toBeGreaterThan(0);
+  }
+  for (const control of table.querySelectorAll<HTMLElement>('button, input, select, textarea, a[href], [tabindex]:not([tabindex="-1"])')) {
+    if (control.closest('[data-ui="game-table-seat-chrome"]')) continue;
+    const box = control.getBoundingClientRect();
+    await expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(24 - GEOMETRY_TOLERANCE_PX);
+    await expect(Math.max(box.width, box.height)).toBeGreaterThanOrEqual(32 - GEOMETRY_TOLERANCE_PX);
   }
   if (table.dataset.layoutFit === 'insufficient-space') {
     await expect(table).toHaveAttribute('data-clearance-start', String(GAME_TABLE_LIMITS.minimumClearancePx));
@@ -216,6 +243,7 @@ async function expectSeatFraming(table: HTMLElement, players: number, caseName: 
     await expect(Math.abs(Math.cos(angle) - px / Math.hypot(px, py))).toBeLessThan(0.01);
     await expect(Math.abs(Math.sin(angle) - py / Math.hypot(px, py))).toBeLessThan(0.01);
     await expectInside(play, surface, { tolerancePx: GEOMETRY_TOLERANCE_PX });
+    await expectPlayInsideEllipse(play, surface);
     for (const other of [...plays.slice(index + 1), ...seats, ...obstacles]) {
       const otherBox = other.getBoundingClientRect();
       if (otherBox.width && otherBox.height) await expectNoOverlap(play, other, { tolerancePx: GEOMETRY_TOLERANCE_PX });
@@ -264,7 +292,7 @@ const meta = {
   component: Table<Player>,
   tags: ['autodocs'],
   args: {
-    players: 6, seats: SEATS, viewport: VIEWPORTS.portraitShort,
+    places: 6, seats: SEATS, viewport: VIEWPORTS.portraitShort,
     renderSeat, center, header: 'Poker · 10 / 20', dock: <Button>Check</Button>,
   },
   parameters: {
@@ -284,11 +312,13 @@ Use GameTable to arrange players, played cards, community cards, and game action
 
 ### Values and constraints
 
-Give the parent container explicit inline and block sizes. GameTable measures its container using container queries and ResizeObserver rather than the browser viewport.
+Give the parent container explicit inline and block sizes. GameTable measures its container using container queries and ResizeObserver rather than the browser viewport. The parent is the only size cap; the felt, dock, and footer have no private maximum dimensions.
 
 Keep seat and region content in normal document flow so ResizeObserver can measure footprints accurately; absolute elements must reserve their footprint in a parent wrapper. Interactive controls preserve a minimum footprint of 24px on both axes (32px on the primary axis).
 
-Use at least two places with unique player and slot keys. Team assignments must fit the available places. Keep player chrome concise: it does not reserve layout space. If card and control minimum sizes cannot fit, overflow or collisions may remain; give the parent more space or reduce the composition. Do not scale measured child sizes a second time.
+Use at least two places with unique player and slot keys. Team assignments must fit the available places. Keep player chrome concise: it does not reserve layout space. If control minimum sizes cannot fit, overflow or collisions may remain; give the parent more space or reduce the composition. Do not scale measured child sizes a second time.
+
+\`places\` counts occupied and empty places. The deprecated \`players\` alias remains for one release; \`places\` wins when both are passed. Card sizes are preferences and may scale below \`sm\`; only interactive controls impose size floors. \`data-layout-fit\` is \`measuring\` before measurement, \`fitted\` at preferred sizes, \`scaled\` when content shrinks, or \`insufficient-space\` when floors cannot fit. Play rectangles stay inside the felt ellipse, including with outside seats.
 
 ### Keyboard and accessibility
 
@@ -340,7 +370,7 @@ import { GameTable } from '@jfrader/ui/game-table';
 const Frame = styled.div({ inlineSize: '100%', blockSize: 'calc(' + vars.space[4] + ' * 51)' });
 
 export default function Example() {
-  return <Frame><GameTable players={6} seats={[]}>
+  return <Frame><GameTable places={6} seats={[]}>
     <GameTable.Header>Poker</GameTable.Header>
     <GameTable.Seat />
     <GameTable.Center>Pot: 240</GameTable.Center>
@@ -350,7 +380,7 @@ export default function Example() {
     {ASPECT_CASES.map(({ viewport: size, players }) => ASPECT_MODES.map(({ surface, dir }) => (
       <ViewportFrame key={`${size.width}-${players}-${surface}-${dir}`} viewport={size}
         data-aspect-width={size.width} data-aspect-height={size.height} data-aspect-players={players}>
-        <Table players={players} seats={seatsFor(players)} surface={surface} dir={dir}>
+        <Table places={players} seats={seatsFor(players)} surface={surface} dir={dir}>
           <Table.Header>Poker · 10 / 20</Table.Header>
           <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
           <Table.Center>{center}</Table.Center>
@@ -368,7 +398,7 @@ export default function Example() {
       const height = Number(frame.dataset.aspectHeight);
       const players = Number(frame.dataset.aspectPlayers);
       const short = height === 360;
-      const expectedFit = width === 260 || (short && table.dataset.surface === 'lobby' && players === 6) ? 'insufficient-space' : 'fitted';
+      const expectedFit = width === 260 ? 'scaled' : 'fitted';
       await expectSeatFraming(table, players, `${width}/${height}`, expectedFit);
       const container = required(table.querySelector<HTMLElement>('[data-ui="game-table-frame-container"]') ?? undefined);
       await expect(getComputedStyle(container).containerType).toBe('size');
@@ -376,7 +406,8 @@ export default function Example() {
       await expect(getComputedStyle(surface).borderRadius).toBe('50%');
       if (table.dataset.surface === 'lobby' && width / height >= 1.3) {
         const box = surface.getBoundingClientRect();
-        await expect(box.width).toBeCloseTo(box.height, 1);
+        await expect(box.width).toBeGreaterThan(box.height);
+        await expect(getComputedStyle(surface).maxInlineSize).toBe('none');
       }
       if (!short && expectedFit === 'fitted' && table.dataset.surface === 'match') await expectMirroredDirection(table, '[data-ui="game-table-seat"]');
     }
@@ -445,7 +476,7 @@ function SeatContent() {
 export default function Example() {
   return (
     <Frame>
-      <GameTable players={6} seats={players}>
+      <GameTable places={6} seats={players}>
         <GameTable.Header>Poker · 10 / 20</GameTable.Header>
         <GameTable.Seat>
           <SeatContent />
@@ -496,6 +527,248 @@ export default function Example() {
   },
 };
 
+function FourPlaceTable() {
+  return <Table places={4} seats={seatsFor(4)}>
+    <Table.Header>Truco</Table.Header>
+    <Table.Seat><GameCard size="sm" label="Hidden card" /></Table.Seat>
+    <Table.Play><GameCard size="lg" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} /></Table.Play>
+    <Table.Center>Round 1</Table.Center>
+    <Table.Footer>Team 1 · 12 — Team 2 · 8</Table.Footer>
+    <Table.Dock><Button>Check</Button></Table.Dock>
+  </Table>;
+}
+
+async function expectFourPlays(table: HTMLElement, expectedFit: 'fitted' | 'scaled') {
+  await waitFor(() => expect(table).toHaveAttribute('data-layout-fit', expectedFit));
+  const plays = [...table.querySelectorAll<HTMLElement>('[data-ui="game-table-play"]')];
+  await expect(plays).toHaveLength(4);
+  const felt = required(table.querySelector('[data-game-surface]') ?? undefined);
+  for (const play of plays) await expectPlayInsideEllipse(play, felt);
+  const regions = [...table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"], [data-ui="game-table-play"], [data-ui="game-table-center"]')];
+  for (const [index, region] of regions.entries()) {
+    await expectInside(region, table);
+    for (const other of regions.slice(index + 1)) await expectNoOverlap(region, other, { tolerancePx: 0.1 });
+  }
+  const root = table.getBoundingClientRect();
+  const frameStyle = getComputedStyle(required(table.querySelector<HTMLElement>('[data-ui="game-table-frame"]') ?? undefined));
+  const frameWidth = root.width - Number.parseFloat(frameStyle.paddingInlineStart) - Number.parseFloat(frameStyle.paddingInlineEnd);
+  for (const marker of ['dock', 'footer']) {
+    const strip = required(table.querySelector<HTMLElement>(`[data-ui="game-table-${marker}"]`) ?? undefined);
+    await expect(strip.getBoundingClientRect().width).toBeCloseTo(frameWidth, 1);
+  }
+  for (const control of table.querySelectorAll('button')) {
+    const box = control.getBoundingClientRect();
+    await expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(24);
+    await expect(Math.max(box.width, box.height)).toBeGreaterThanOrEqual(32);
+  }
+}
+
+/** Four places use preferred sizes at 768px and 1440px; cards scale down on a 390px phone. */
+export const ResponsiveFourPlaces: Story = {
+  tags: ['!autodocs'],
+  name: 'Responsive four places',
+  args: { places: 4, seats: seatsFor(4) },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, styled } from '@jfrader/ui';
+import { GameCard } from '@jfrader/ui/game-card';
+import { GameTable } from '@jfrader/ui/game-table';
+
+const Frame = styled.div({ inlineSize: '100%', blockSize: 720 });
+const seats = [{ key: 'you', isMe: true }, { key: 'alex' }, { key: 'blair' }, { key: 'drew' }];
+
+export default function Example() {
+  return <Frame><GameTable places={4} seats={seats}>
+    <GameTable.Header>Truco</GameTable.Header>
+    <GameTable.Seat><GameCard size="sm" label="Hidden card" /></GameTable.Seat>
+    <GameTable.Play><GameCard size="lg" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} /></GameTable.Play>
+    <GameTable.Center>Round 1</GameTable.Center>
+    <GameTable.Footer>Team 1 · 12 — Team 2 · 8</GameTable.Footer>
+    <GameTable.Dock><Button>Check</Button></GameTable.Dock>
+  </GameTable></Frame>;
+}` } } },
+  render: () => <ResponsiveFrame><FourPlaceTable /></ResponsiveFrame>,
+  play: async ({ canvasElement }) => {
+    const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
+    await expectFourPlays(table, table.ownerDocument.defaultView!.innerWidth <= 390 ? 'scaled' : 'fitted');
+    await expectMirroredDirection(table, '[data-ui="game-table-play"]');
+    await expect(table.ownerDocument.documentElement.scrollWidth).toBeLessThanOrEqual(table.ownerDocument.documentElement.clientWidth);
+  },
+};
+
+/** The same four plays in a short container; preferred cards shrink below sm. */
+export const CompactFourPlays: Story = {
+  tags: ['!autodocs'],
+  args: { places: 4, seats: seatsFor(4) },
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, styled } from '@jfrader/ui';
+import { GameCard } from '@jfrader/ui/game-card';
+import { GameTable } from '@jfrader/ui/game-table';
+
+const Frame = styled.div({ inlineSize: '100%', blockSize: 320 });
+const seats = [{ key: 'you', isMe: true }, { key: 'alex' }, { key: 'blair' }, { key: 'drew' }];
+
+export default function Example() {
+  return <Frame><GameTable places={4} seats={seats}>
+    <GameTable.Header>Truco</GameTable.Header>
+    <GameTable.Seat><GameCard size="sm" label="Hidden card" /></GameTable.Seat>
+    <GameTable.Play><GameCard size="lg" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} /></GameTable.Play>
+    <GameTable.Center>Round 1</GameTable.Center>
+    <GameTable.Footer>Team 1 · 12 — Team 2 · 8</GameTable.Footer>
+    <GameTable.Dock><Button>Check</Button></GameTable.Dock>
+  </GameTable></Frame>;
+}` } } },
+  render: () => <CompactFrame><FourPlaceTable /></CompactFrame>,
+  play: async ({ canvasElement }) => {
+    const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
+    await expectFourPlays(table, 'scaled');
+    await expect(table).toHaveAttribute('data-layout-fit', 'scaled');
+    await expect(table.querySelector('[data-game-surface]')).toHaveAttribute('data-layout-fit', 'scaled');
+    const card = required(table.querySelector<HTMLElement>('[data-ui="game-table-play"] [data-ui="game-card"]') ?? undefined);
+    await expect(card.getBoundingClientRect().width).toBeLessThan(32);
+  },
+};
+
+export const FourPlayContainerMatrix: Story = {
+  tags: ['!autodocs'],
+  render: () => <MatrixGrid>{[390, 768, 1440].map((width) => <ViewportFrame key={width} viewport={{ width, height: 900 }}><FourPlaceTable /></ViewportFrame>)}</MatrixGrid>,
+  play: async ({ canvasElement }) => {
+    const tables = [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]')];
+    await expect(tables).toHaveLength(3);
+    for (const table of tables) {
+      await expectFourPlays(table, table.getBoundingClientRect().width === 390 ? 'scaled' : 'fitted');
+      await expectMirroredDirection(table, '[data-ui="game-table-play"]');
+    }
+    const surfaces = tables.map((table) => required(table.querySelector('[data-game-surface]') ?? undefined).getBoundingClientRect());
+    await expect(required(surfaces[2]).width).toBeGreaterThan(1000);
+    await expect(required(surfaces[2]).width).toBeGreaterThan(required(surfaces[1]).width);
+    await expect(required(surfaces[2]).height).toBeGreaterThan(608);
+  },
+};
+
+export const PlayEllipseContainment: Story = {
+  tags: ['!autodocs'],
+  render: () => <MatrixGrid>{([{ places: 6, placement: 'outside' }, { places: 4, placement: 'edge' }] as const).map(({ places, placement }) =>
+    <ViewportFrame key={placement} viewport={{ width: 768, height: 600 }}>
+      <Table places={places} seatPlacement={placement} seats={seatsFor(places)}>
+        <Table.Seat><GameCard size="sm" label="Hidden card" /></Table.Seat>
+        <Table.Play><GameCard size="md" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} /></Table.Play>
+        <Table.Center>Round 1</Table.Center>
+      </Table>
+    </ViewportFrame>)}</MatrixGrid>,
+  play: async ({ canvasElement }) => {
+    for (const [places, placement] of [[6, 'outside'], [4, 'edge']] as const) {
+      const measurement: BoardMeasurements = {
+        width: 600, height: 400, centerX: 300, centerY: 200, seatPlacement: placement,
+        available: { left: 420, right: 420, top: 320, bottom: 320 },
+        seats: Array.from({ length: places }, () => ({ width: 80, height: 70 })),
+        plays: Array.from({ length: places }, () => ({ width: 80, height: 100 })),
+        center: { width: 60, height: 30 }, gap: 8, minimumScale: 0,
+      };
+      const fitted = fitBoardContent(measurement);
+      await expect(fitted.fits).toBe(true);
+      await expect(fitted.scale).toBe(1);
+      for (const play of fitted.positions) for (const dx of [-40, 40]) for (const dy of [-50, 50]) {
+        await expect(Math.hypot((play.playX + dx) / 300, (play.playY + dy) / 200)).toBeLessThanOrEqual(1);
+      }
+      const table = required(canvasElement.querySelector<HTMLElement>(`[data-ui="game-table"][data-seat-placement="${placement}"]`) ?? undefined);
+      await expectSeatFraming(table, places, 'ellipse containment', 'fitted');
+      await expectMirroredDirection(table, '[data-ui="game-table-play"]');
+    }
+  },
+};
+
+export const PlaceCountCompatibility: Story = {
+  tags: ['!autodocs'],
+  render: () => <>
+    <ViewportFrame viewport={{ width: 390, height: 300 }}><Table players={2} seats={[]} /></ViewportFrame>
+    <ViewportFrame viewport={{ width: 390, height: 300 }}><Table places={4} players={2} seats={[]} /></ViewportFrame>
+  </>,
+  play: async ({ canvasElement }) => {
+    const tables = [...canvasElement.querySelectorAll('[data-ui="game-table"]')];
+    await expect(required(tables[0]).querySelectorAll('[data-ui="game-table-seat"]')).toHaveLength(2);
+    await expect(required(tables[1]).querySelectorAll('[data-ui="game-table-seat"]')).toHaveLength(4);
+    for (const table of tables) {
+      await expect(table).not.toHaveAttribute('players');
+      await expect(table).not.toHaveAttribute('places');
+    }
+  },
+};
+
+function DecorativeFanFixture() {
+  const [decorated, setDecorated] = useState(false);
+  return <>
+    <Button onClick={() => setDecorated((value) => !value)}>Toggle decorative fan</Button>
+    <MatrixGrid>{[260, 390].map((width) => <ViewportFrame key={width} viewport={{ width, height: 480 }}>
+      <Table places={2} seats={seatsFor(2)}>
+        <Table.Seat>
+          <MeasuredCardControl type="button" aria-label="Inspect hand card"><GameCard size="md" label="Hand card" /></MeasuredCardControl>
+          {decorated && <DecorativeFan aria-hidden="true" data-decorative-fan="true">
+            <CardsRow>{[0, 1, 2].map((index) => <GameCard key={index} size="sm" label="Decorative card" />)}</CardsRow>
+          </DecorativeFan>}
+        </Table.Seat>
+        <Table.Play><GameCard size="md" label="Played card" value={{ deck: 'french', suit: 'spades', rank: 'A' }} /></Table.Play>
+        <Table.Center>Round 1</Table.Center>
+      </Table>
+    </ViewportFrame>)}</MatrixGrid>
+  </>;
+}
+
+export const DecorativeFanMeasurement: Story = {
+  tags: ['!autodocs'],
+  render: () => <DecorativeFanFixture />,
+  play: async ({ canvasElement, userEvent }) => {
+    const tables = [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-table"]')];
+    await expect(tables).toHaveLength(2);
+    const snapshot = (table: HTMLElement) => {
+      const root = table.getBoundingClientRect();
+      const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
+      const shell = required(table.querySelector<HTMLElement>('[data-ui="game-table-shell"]') ?? undefined);
+      return {
+        fit: table.dataset.layoutFit, scale: table.style.getPropertyValue('--game-table-content-scale'),
+        reserveInline: shell.style.getPropertyValue('--game-table-reserve-inline'),
+        reserveBlock: shell.style.getPropertyValue('--game-table-reserve-block'),
+        surface: { x: surface.x - root.x, y: surface.y - root.y, width: surface.width, height: surface.height },
+        regions: [...table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"], [data-ui="game-table-play"]')].map((region) => ({
+          size: regionSize(region), style: region.getAttribute('style'),
+        })),
+      };
+    };
+    for (const table of tables) {
+      await expectSeatFraming(table, 2, 'decorative fan baseline', 'scaled');
+      for (const seat of table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]')) {
+        await expect(regionSize(seat).minimumScale).toBe(24 / 72);
+      }
+      for (const play of table.querySelectorAll<HTMLElement>('[data-ui="game-table-play"]')) {
+        await expect(regionSize(play).minimumScale).toBe(0);
+      }
+    }
+    const baseline = tables.map(snapshot);
+    const toggle = within(canvasElement).getByRole('button', { name: 'Toggle decorative fan' });
+    for (const expectedCards of [12, 0]) {
+      await userEvent.click(toggle);
+      await expect(canvasElement.querySelectorAll('[data-decorative-fan] [data-ui~="game-card"]')).toHaveLength(expectedCards);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      for (const [index, table] of tables.entries()) {
+        await expectSeatFraming(table, 2, 'decorative fan unchanged', 'scaled');
+        await expect(snapshot(table)).toEqual(required(baseline[index]));
+      }
+    }
+  },
+};
+
+export const ControlFloorFailure: Story = {
+  tags: ['!autodocs'],
+  render: () => <ViewportFrame viewport={{ width: 80, height: 100 }}>
+    <Table places={2} seats={[]} clearance={80}>
+      <Table.Center><Button>Start round</Button></Table.Center>
+    </Table>
+  </ViewportFrame>,
+  play: async ({ canvasElement }) => {
+    const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
+    await expectSeatFraming(table, 2, 'control floor', 'insufficient-space');
+    await expect(table).toHaveAttribute('data-clearance', 'reduced');
+    await expect(getComputedStyle(table).overflowX).toBe('visible');
+  },
+};
+
 export const ReplacedRootKeepsFrame: Story = {
   tags: ['!autodocs'],
   render: (args) => <ViewportFrame viewport={args.viewport}>
@@ -515,7 +788,7 @@ export const ReplacedRootKeepsFrame: Story = {
     await expect(getComputedStyle(container).containerType).toBe('size');
     await expect(frame).toHaveAttribute('data-surface', 'match');
     const frameStyle = getComputedStyle(frame);
-    await expect(frameStyle.getPropertyValue('--game-table-max-width')).toContain('100cqi');
+    await expect(getComputedStyle(required(table.querySelector('[data-game-surface]') ?? undefined)).maxInlineSize).toBe('none');
     await expect(Number.parseFloat(frameStyle.paddingBlockStart)).toBeCloseTo(args.viewport.height * 0.01, 1);
     await expect(frame.getBoundingClientRect().width).toBe(args.viewport.width);
     await expect(frame.getBoundingClientRect().height).toBe(args.viewport.height);
@@ -575,7 +848,7 @@ const matrixStory = (caseName: CaseName, theme: 'dark' | 'light'): Story => ({
     <MatrixGrid>
       {COUNTS.map((players) => (
         <ThemeViewport key={players} theme={theme} viewport={args.viewport}>
-          <Table {...tableRootProps({ ...args, clearance: 32, slots: undefined, players, seats: seatsFor(players) })}>
+          <Table {...tableRootProps({ ...args, clearance: 32, slots: undefined, places: players, seats: seatsFor(players) })}>
             <Table.Seat><FixtureContent<Player> content={args.renderSeat} /></Table.Seat>
             <Table.Play><FixtureContent<Player> content={args.renderPlay} /></Table.Play>
             <Table.Center>{args.center}</Table.Center>
@@ -687,7 +960,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.portraitShort}>
-    <Table players={players} seats={seatsFor(players)} clearance={32}>
+    <Table places={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -778,7 +1051,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.portraitShort}>
-    <Table players={players} seats={seatsFor(players)} clearance={32}>
+    <Table places={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -869,7 +1142,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.portrait}>
-    <Table players={players} seats={seatsFor(players)} clearance={32}>
+    <Table places={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -960,7 +1233,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.portrait}>
-    <Table players={players} seats={seatsFor(players)} clearance={32}>
+    <Table places={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1051,7 +1324,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.wide}>
-    <Table players={players} seats={seatsFor(players)} clearance={32}>
+    <Table places={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1142,7 +1415,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.wide}>
-    <Table players={players} seats={seatsFor(players)} clearance={32}>
+    <Table places={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1233,7 +1506,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.square}>
-    <Table players={players} seats={seatsFor(players)} clearance={32}>
+    <Table places={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1324,7 +1597,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.square}>
-    <Table players={players} seats={seatsFor(players)} clearance={32}>
+    <Table places={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1415,7 +1688,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.squareWide}>
-    <Table players={players} seats={seatsFor(players)} clearance={32}>
+    <Table places={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1506,7 +1779,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.squareWide}>
-    <Table players={players} seats={seatsFor(players)} clearance={32}>
+    <Table places={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1597,7 +1870,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="dark" viewport={VIEWPORTS.wideLarge}>
-    <Table players={players} seats={seatsFor(players)} clearance={32}>
+    <Table places={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1688,7 +1961,7 @@ const center = (
 export default function Example() {
   return (<MatrixGrid>{COUNTS.map((players) => (
   <ThemeViewport key={players} theme="light" viewport={VIEWPORTS.wideLarge}>
-    <Table players={players} seats={seatsFor(players)} clearance={32}>
+    <Table places={players} seats={seatsFor(players)} clearance={32}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1785,7 +2058,7 @@ function SeatContent() {
 export default function Example() {
   return (
     <Frame>
-      <GameTable players={6} seatSlots={prebuiltSlots}>
+      <GameTable places={6} seatSlots={prebuiltSlots}>
         <GameTable.Header>Poker · 10 / 20</GameTable.Header>
         <GameTable.Seat>
           <SeatContent />
@@ -1819,7 +2092,7 @@ export default function Example() {
 
 export const Lobby: Story = {
   name: 'Lobby surface',
-  args: { surface: 'lobby', players: 4, seats: seatsFor(4) },
+  args: { surface: 'lobby', places: 4, seats: seatsFor(4) },
   parameters: { docs: {
     description: { story: 'Arrange four players around a lobby surface.' },
     source: { language: 'tsx', code: `import { Button, styled } from '@jfrader/ui';
@@ -1878,7 +2151,7 @@ function SeatContent() {
 export default function Example() {
   return (
     <Frame>
-      <GameTable players={4} seats={players} surface="lobby">
+      <GameTable places={4} seats={players} surface="lobby">
         <GameTable.Header>Poker · 10 / 20</GameTable.Header>
         <GameTable.Seat>
           <SeatContent />
@@ -1972,7 +2245,7 @@ const center = (
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.wide}>
-<Table players={6} seats={SEATS} surface="lobby">
+<Table places={6} seats={SEATS} surface="lobby">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -1987,7 +2260,7 @@ export default function Example() {
     const surface = required(canvasElement.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
     await expect(surface.width).toBeGreaterThan(100);
     await expect(surface.height).toBeGreaterThan(100);
-    await expect(surface.width).toBeCloseTo(surface.height, 1);
+    await expect(surface.width).toBeGreaterThan(surface.height);
   },
 };
 
@@ -2059,7 +2332,7 @@ const center = (
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.portraitShort}>
-<Table players={6} seats={SEATS} dir="rtl">
+<Table places={6} seats={SEATS} dir="rtl">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -2163,7 +2436,7 @@ const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
 export default function Example() {
   return (<MatrixRow>{(['ltr', 'rtl'] as const).map((dir) => (
   <ViewportFrame key={dir} viewport={VIEWPORTS.portraitShort}>
-    <Table players={6} seats={SEATS} dir={dir}>
+    <Table places={6} seats={SEATS} dir={dir}>
     <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
     <Table.Center><span>Truco</span></Table.Center>
@@ -2266,6 +2539,29 @@ export const MeasuredModel: Story = {
     await expect(blocked.fits).toBe(false);
     await expect(blocked.positions.every((seat) => seat.scale === 1)).toBe(true);
     await expect(blocked.centerScale).toBe(1);
+    const fourPlayParentWidth = 390;
+    const fourPlayMeasurement: BoardMeasurements = {
+      width: 300, height: 300, centerX: 150, centerY: 150,
+      seatPlacement: 'edge', surfaceBorderBox: { width: 300, height: 300 },
+      available: { left: fourPlayParentWidth / 2, right: fourPlayParentWidth / 2, top: 195, bottom: 195 },
+      seats: Array.from({ length: 4 }, () => ({ width: 32, height: 47 })),
+      plays: Array.from({ length: 4 }, () => ({ width: 106.7, height: 135 })),
+      center: { width: 50, height: 20 }, gap: 8, minimumScale: 0,
+    };
+    const fourPlay = buildBoardLayoutModel({ surface: 'match', totalSeats: 4, measurement: fourPlayMeasurement });
+    await expect(fourPlay.fit).toBe('scaled');
+    const fittedFourPlay = fitBoardContent(fourPlayMeasurement);
+    await expect(fittedFourPlay.fits).toBe(true);
+    const boxes = fittedFourPlay.positions.map((point) => ({
+      x: point.playX, y: point.playY, width: 106.7 * point.playScale, height: 135 * point.playScale,
+    }));
+    for (const [index, box] of boxes.entries()) for (const other of boxes.slice(index + 1)) {
+      await expect(Math.abs(box.x - other.x) >= (box.width + other.width) / 2 + 8 - 0.01 ||
+        Math.abs(box.y - other.y) >= (box.height + other.height) / 2 + 8 - 0.01).toBe(true);
+    }
+    await expect(fitBoardContent({ ...fourPlayMeasurement,
+      plays: fourPlayMeasurement.plays!.map((play) => ({ ...play, minimumScale: 1 })),
+    }).fits).toBe(false);
     const grownContent = fitBoardContent({ ...measured, seats: measured.seats.map((seat) => ({ width: seat.width * 5, height: seat.height * 5 })) });
     await expect(grownContent.scale).toBeLessThan(circle.scale);
     const wide = fitBoardContent({ ...measured, width: 2000, centerX: 1000 });
@@ -2281,7 +2577,7 @@ export const MeasuredModel: Story = {
     await expect(mixed.fits).toBe(true);
     await expect(mixed.centerScale).toBe(1);
     await expect(required(mixed.positions[0]).scale).toBeLessThan(1);
-    await expect(required(mixed.positions[0]).scale * 112).toBeGreaterThanOrEqual(GAME_TABLE_LIMITS.minimumCardWidthPx);
+    await expect(required(mixed.positions[0]).scale * 112).toBeGreaterThanOrEqual(32);
     const emptyPlays = fitBoardContent({ ...measured, plays: measured.seats.map(() => ({ width: 0, height: 0, minimumScale: 1 })) });
     await expect(emptyPlays.radiusX).toBe(circle.radiusX);
     await expect(emptyPlays.scale).toBe(circle.scale);
@@ -2302,7 +2598,7 @@ function ChangingPlays() {
   return <>
     <Button onClick={() => setEmpty(true)}>Retirar jugadas</Button>
     <ViewportFrame viewport={VIEWPORTS.portraitShort}>
-      <Table players={6} seats={SEATS}>
+      <Table places={6} seats={SEATS}>
         <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
         <Table.Play>{!empty && <GameCard size="lg" value={{ deck: 'spanish', suit: 'bastos', rank: 12 }} label="rey de bastos" />}</Table.Play>
         <Table.Center><span>Truco</span></Table.Center>
@@ -2313,7 +2609,7 @@ function ChangingPlays() {
   </>;
 }
 
-/** Large played cards scale to their own floor; empty regions release their footprint. */
+/** Large played cards scale from their preferred size; empty regions release their footprint. */
 export const PlayRegionResizeAndFloors: Story = {
   name: 'Play region resize and floors',
   parameters: { docs: { source: { language: "tsx", code: `import { useState, type ReactNode } from 'react';
@@ -2367,7 +2663,7 @@ function ChangingPlays() {
   return <>
     <Button onClick={() => setEmpty(true)}>Retirar jugadas</Button>
     <ViewportFrame viewport={VIEWPORTS.portraitShort}>
-      <Table players={6} seats={SEATS}>
+      <Table places={6} seats={SEATS}>
         <Table.Seat><FixtureContent<Player> content={spanishSeat} /></Table.Seat>
         <Table.Play>{!empty && <GameCard size="lg" value={{ deck: 'spanish', suit: 'bastos', rank: 12 }} label="rey de bastos" />}</Table.Play>
         <Table.Center><span>Truco</span></Table.Center>
@@ -2384,11 +2680,11 @@ export default function Example() {
   render: () => <ChangingPlays />,
   play: async ({ canvasElement, userEvent }) => {
     const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
-    await expectSeatFraming(table, 6, 'portraitShort');
+    await expectSeatFraming(table, 6, 'portraitShort', 'scaled');
     const play = required(table.querySelector<HTMLElement>('[data-ui="game-table-play"]') ?? undefined);
     const scale = Number.parseFloat(play.style.getPropertyValue('--game-table-play-scale'));
     await expect(scale).toBeLessThan(1);
-    await expect(scale * 112).toBeGreaterThanOrEqual(GAME_TABLE_LIMITS.minimumCardWidthPx - 0.01);
+    await expect(scale * 112).toBeGreaterThan(0);
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Retirar jugadas' }));
     await waitFor(() => expect(table.querySelectorAll('[data-ui="game-table-play"] [data-ui~="game-card"]')).toHaveLength(0));
     await expectSeatFraming(table, 6, 'portraitShort');
@@ -2558,7 +2854,7 @@ const center = (
 export default function Example() {
   return (<Matrix>{Object.entries(VIEWPORTS).map(([caseName, viewport]) => COUNTS.map((players) => (
   <ViewportFrame key={\`\${caseName}-\${players}\`} viewport={viewport}>
-    <Table players={players} seats={seatsFor(players)} surface="lobby">
+    <Table places={players} seats={seatsFor(players)} surface="lobby">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -2573,7 +2869,7 @@ export default function Example() {
     <Matrix>
       {Object.entries(VIEWPORTS).map(([caseName, viewport]) => COUNTS.map((players) => (
         <ViewportFrame key={`${caseName}-${players}`} viewport={viewport}>
-          <Table {...tableRootProps({ ...args, viewport, players, slots: undefined, seats: seatsFor(players), surface: 'lobby' })}>
+          <Table {...tableRootProps({ ...args, viewport, places: players, slots: undefined, seats: seatsFor(players), surface: 'lobby' })}>
             <Table.Seat><FixtureContent<Player> content={args.renderSeat} /></Table.Seat>
             <Table.Play><FixtureContent<Player> content={args.renderPlay} /></Table.Play>
             <Table.Center>{args.center}</Table.Center>
@@ -2589,7 +2885,7 @@ export default function Example() {
     await expect(tables).toHaveLength(18);
     let index = 0;
     for (const [caseName] of Object.entries(VIEWPORTS) as [CaseName, ViewportSize][]) for (const players of COUNTS) {
-      const expectedFit = caseName === 'wide' && players === 6 ? 'insufficient-space' : 'fitted';
+      const expectedFit = 'fitted';
       await expectSeatFraming(required(tables[index++]), players, caseName, expectedFit);
     }
   },
@@ -2670,7 +2966,7 @@ const center = (
 export default function Example() {
   return (<Matrix>{Object.entries(VIEWPORTS).map(([caseName, viewport]) => COUNTS.map((players) => (
   <ViewportFrame key={\`\${caseName}-\${players}\`} viewport={viewport}>
-    <Table players={players} seats={seatsFor(players)} dir="rtl">
+    <Table places={players} seats={seatsFor(players)} dir="rtl">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -2685,7 +2981,7 @@ export default function Example() {
     <Matrix>
       {Object.entries(VIEWPORTS).map(([caseName, viewport]) => COUNTS.map((players) => (
           <ViewportFrame key={`${caseName}-${players}`} viewport={viewport}>
-            <Table {...tableRootProps({ ...args, viewport, players, slots: undefined, seats: seatsFor(players), dir: 'rtl' })}>
+            <Table {...tableRootProps({ ...args, viewport, places: players, slots: undefined, seats: seatsFor(players), dir: 'rtl' })}>
               <Table.Seat><FixtureContent<Player> content={args.renderSeat} /></Table.Seat>
               <Table.Play><FixtureContent<Player> content={args.renderPlay} /></Table.Play>
               <Table.Center>{args.center}</Table.Center>
@@ -2729,16 +3025,16 @@ const cardComposition = (clearance: boolean): Story => ({
   play: async ({ canvasElement }) => {
     for (const wrapper of canvasElement.querySelectorAll('[data-card-composition]')) {
       const table = required(wrapper.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
-      await expectSeatFraming(table, 6, 'wide');
-      await expect(table).toHaveAttribute('data-layout-fit', 'fitted');
+      const size = wrapper.getAttribute('data-card-composition');
+      if (size !== 'sm' && size !== 'md' && size !== 'lg') throw new Error('Unknown card size');
+      const expectedFit = size === 'lg' || (clearance && size === 'md') ? 'scaled' : 'fitted';
+      await expectSeatFraming(table, 6, 'wide', expectedFit);
       if (clearance && wrapper.getAttribute('data-card-composition') === 'lg') {
         await expect(table).toHaveAttribute('data-clearance', 'reduced');
         await expect(table).toHaveAttribute('data-clearance-start', '0');
       }
       const ownCard = required(table.querySelector<HTMLElement>('[data-ui="game-table-seat"] [data-ui="game-card"]') ?? undefined);
       const intrinsicWidths = { sm: 32, md: 72, lg: 112 };
-      const size = wrapper.getAttribute('data-card-composition');
-      if (size !== 'sm' && size !== 'md' && size !== 'lg') throw new Error('Unknown card size');
       await expect(Number.parseFloat(getComputedStyle(ownCard).width)).toBe(intrinsicWidths[size]);
       const communityCards = table.querySelectorAll<HTMLElement>('[data-ui="game-table-center"] [data-ui="game-card"]');
       await expect(communityCards).toHaveLength(3);
@@ -2810,7 +3106,7 @@ const center = (
 export default function Example() {
   return (<Matrix>{(['sm', 'md', 'lg'] as const).map((size, index) => (
       <ViewportFrame key={size} data-card-composition={size} viewport={{ ...VIEWPORTS.wide, height: 480 }}>
-        <Table players={6} seats={SEATS} clearance={0}>
+        <Table places={6} seats={SEATS} clearance={0}>
     <Table.Seat><FixtureContent<Player> content={(slot) => <GameCard size={size} label={\`\${slot.player?.name}: hidden card\`} />} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -2878,7 +3174,7 @@ const center = (
 export default function Example() {
   return (<Matrix>{(['sm', 'md', 'lg'] as const).map((size, index) => (
       <ViewportFrame key={size} data-card-composition={size} viewport={{ ...VIEWPORTS.wide, height: 480 }}>
-        <Table players={6} seats={SEATS} clearance={[32, 64, 96][index]}>
+        <Table places={6} seats={SEATS} clearance={[32, 64, 96][index]}>
     <Table.Seat><FixtureContent<Player> content={(slot) => <GameCard size={size} label={\`\${slot.player?.name}: hidden card\`} />} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -2908,7 +3204,7 @@ function ChangingContent() {
       <Button onClick={() => setClearance(96)}>Request clearance</Button>
       <Button onClick={() => setRoomy(true)}>Restore room</Button>
       <ResizableFrame narrow={narrow} roomy={roomy}>
-        <Table players={2} clearance={clearance} seats={empty ? [SEATS[2]] : seatsFor(2)}>
+        <Table places={2} clearance={clearance} seats={empty ? [SEATS[2]] : seatsFor(2)}>
           <Table.Seat><FixtureContent<Player> content={(slot) => slot.player ? (
             <SpacedCards>
               {['first', 'second', 'third'].filter((key) => !removed || key !== 'second').map((key) => (
@@ -3004,7 +3300,7 @@ function ChangingContent() {
       <Button onClick={() => setClearance(96)}>Request clearance</Button>
       <Button onClick={() => setRoomy(true)}>Restore room</Button>
       <ResizableFrame narrow={narrow} roomy={roomy}>
-        <Table players={2} clearance={clearance} seats={empty ? [SEATS[2]] : seatsFor(2)}>
+        <Table places={2} clearance={clearance} seats={empty ? [SEATS[2]] : seatsFor(2)}>
           <Table.Seat><FixtureContent<Player> content={(slot) => slot.player ? (
             <SpacedCards>
               {['first', 'second', 'third'].filter((key) => !removed || key !== 'second').map((key) => (
@@ -3040,13 +3336,13 @@ export default function Example() {
     const initialScale = scale();
     await userEvent.click(canvas.getByRole('button', { name: 'Grow content' }));
     await waitFor(() => expect(scale()).toBeLessThan(initialScale));
-    await expectSeatFraming(table, 2, 'wideLarge');
+    await expectSeatFraming(table, 2, 'grown content', 'scaled');
     const grownScale = scale();
     await userEvent.click(canvas.getByRole('button', { name: 'Shrink container' }));
     await waitFor(() => expect(scale()).toBeLessThan(grownScale));
     await expect(table.parentElement?.getBoundingClientRect().width).toBe(380);
     await expect(table.parentElement?.getBoundingClientRect().height).toBe(360);
-    await expectSeatFraming(table, 2, 'wideLarge');
+    await expectSeatFraming(table, 2, 'shrunk container', 'scaled');
     await userEvent.click(canvas.getByRole('button', { name: 'Reveal first' }));
     await waitFor(() => expect(rival()).toHaveLength(2));
     await expect(rival().map((card) => card.dataset.seatHiddenCardIndex)).toEqual(['0', '1']);
@@ -3060,7 +3356,7 @@ export default function Example() {
     await expect(third).not.toHaveAttribute('data-seat-hidden-card');
     await userEvent.click(canvas.getByRole('button', { name: 'Request clearance' }));
     await waitFor(() => expect(table).toHaveAttribute('data-clearance', 'reduced'));
-    await expectSeatFraming(table, 2, 'wideLarge');
+    await expectSeatFraming(table, 2, 'clearance request', 'scaled');
     await userEvent.click(canvas.getByRole('button', { name: 'Restore room' }));
     await waitFor(() => expect(table).toHaveAttribute('data-clearance', 'requested'));
     await expect(Number(table.dataset.clearanceStart)).toBeCloseTo(96, 2);
@@ -3085,7 +3381,7 @@ function ResizingTables() {
       {[first, second].map((ref, index) => (
         <TransformedFrame key={index} viewport={viewport} scaled={Boolean(index)}>
           <FullHeight>
-            <Table ref={ref} dir={index ? 'rtl' : 'ltr'} players={2} seatSlots={buildTableOrderSlots([SEATS[0],SEATS[2]], 'clockwise')}>
+            <Table ref={ref} dir={index ? 'rtl' : 'ltr'} places={2} seatSlots={buildTableOrderSlots([SEATS[0],SEATS[2]], 'clockwise')}>
               <Table.Seat><FixtureContent<Player> content={(slot) => <span>{slot.player?.name}</span>} /></Table.Seat>
               <Table.Play />
               <Table.Center />
@@ -3157,7 +3453,7 @@ function ResizingTables() {
       {[first, second].map((ref, index) => (
         <TransformedFrame key={index} viewport={viewport} scaled={Boolean(index)}>
           <FullHeight>
-            <Table ref={ref} dir={index ? 'rtl' : 'ltr'} players={2} seatSlots={buildTableOrderSlots([SEATS[0],SEATS[2]], 'clockwise')}>
+            <Table ref={ref} dir={index ? 'rtl' : 'ltr'} places={2} seatSlots={buildTableOrderSlots([SEATS[0],SEATS[2]], 'clockwise')}>
               <Table.Seat><FixtureContent<Player> content={(slot) => <span>{slot.player?.name}</span>} /></Table.Seat>
               <Table.Play />
               <Table.Center />
@@ -3279,7 +3575,7 @@ function SeatContent() {
 export default function Example() {
   return (
     <Frame>
-      <GameTable players={6} seats={players}>
+      <GameTable places={6} seats={players}>
         <GameTable.Header>Poker · Avatars</GameTable.Header>
         <GameTable.Seat>
           <SeatContent />
@@ -3304,7 +3600,7 @@ export default function Example() {
 }` },
   } },
   args: {
-    players: 6, seats: SEATS, viewport: VIEWPORTS.wideLarge,
+    places: 6, seats: SEATS, viewport: VIEWPORTS.wideLarge,
     renderSeat: fn((slot, _index, _geometry) => seatWithAvatar(slot, 'sm')),
     center, header: 'Poker · Avatars', dock: <Button>Check</Button>,
   },
@@ -3393,7 +3689,7 @@ const seatWithAvatar = (slot: GameTableSlot<Player>, size: AvatarSize = 'sm') =>
 export default function Example() {
   return (<CaseColumn>{Object.entries(VIEWPORTS).map(([caseName, viewport]) => (
   <ViewportFrame key={caseName} data-container-case={caseName} viewport={viewport}>
-    <Table players={6} seats={SEATS} >
+    <Table places={6} seats={SEATS} >
     <Table.Seat><FixtureContent<Player> content={(slot) => seatWithAvatar(slot, 'sm')} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -3408,7 +3704,7 @@ export default function Example() {
     <CaseColumn>
       {(['portraitShort', 'portrait', 'wide', 'square', 'squareWide', 'wideLarge'] as const).map((caseName) => (
         <ViewportFrame key={caseName} data-container-case={caseName} viewport={VIEWPORTS[caseName]}>
-          <Table players={6} seats={SEATS}>
+          <Table places={6} seats={SEATS}>
             <Table.Seat><FixtureContent<Player> content={(slot) => seatWithAvatar(slot, 'sm')} /></Table.Seat>
             <Table.Play />
             <Table.Center>{center}</Table.Center>
@@ -3519,7 +3815,7 @@ const seatWithAvatar = (slot: GameTableSlot<Player>, size: AvatarSize = 'sm') =>
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.wideLarge}>
-<Table players={4} seats={seatsFor(4)} >
+<Table places={4} seats={seatsFor(4)} >
     <Table.Seat><FixtureContent<Player> content={(slot, index) => {
       if (index === 0) return seatChrome(slot);
       if (index === 1) return <SeatCards><GameCard size="sm" label="First hidden card" /><GameCard size="sm" label="Second hidden card" /></SeatCards>;
@@ -3534,7 +3830,7 @@ export default function Example() {
 </ViewportFrame>);
 }` } } },
   args: {
-    players: 4, seats: seatsFor(4), viewport: VIEWPORTS.wideLarge,
+    places: 4, seats: seatsFor(4), viewport: VIEWPORTS.wideLarge,
     renderSeat: fn((slot, index, _geometry) => {
       if (index === 0) return seatChrome(slot);
       if (index === 1) return (
@@ -3627,7 +3923,7 @@ const center = (
 
 export default function Example() {
   return (<ParityGrid>
-  <div data-parity-group="with-chrome"><Table players={6} seats={SEATS} >
+  <div data-parity-group="with-chrome"><Table places={6} seats={SEATS} >
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -3635,7 +3931,7 @@ export default function Example() {
     <Table.Dock><Button>Check</Button></Table.Dock>
 
   </Table></div>
-  <div data-parity-group="without-chrome"><Table players={6} seats={SEATS} >
+  <div data-parity-group="without-chrome"><Table places={6} seats={SEATS} >
     <Table.Seat><FixtureContent<Player> content={seatCardsOnly} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -3646,7 +3942,7 @@ export default function Example() {
 </ParityGrid>);
 }` } } },
   args: {
-    players: 6, seats: SEATS, viewport: VIEWPORTS.wideLarge,
+    places: 6, seats: SEATS, viewport: VIEWPORTS.wideLarge,
     center, header: 'Poker · Chrome Removal Parity', dock: <Button>Check</Button>,
   },
   render: (args) => (
@@ -3770,7 +4066,7 @@ const center = (
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.portraitShort}>
-<Table players={6} seats={SEATS} >
+<Table places={6} seats={SEATS} >
     <Table.Seat><FixtureContent<Player> content={(slot) => <SpacedCards>
       {[1, 2, 3, 4, 5, 6].map((index) => <GameCard key={index} size="lg" label={\`\${slot.player?.name}: card \${index}\`} />)}
     </SpacedCards>} /></Table.Seat>
@@ -3783,7 +4079,7 @@ export default function Example() {
 </ViewportFrame>);
 }` } } },
   args: {
-    players: 6, seats: SEATS, viewport: VIEWPORTS.portraitShort,
+    places: 6, seats: SEATS, viewport: VIEWPORTS.portraitShort,
     center, header: 'Poker · Insufficient Space', dock: <Button>Check</Button>,
     renderSeat: fn((slot, _index, _geometry) => (
       <SpacedCards>
@@ -3793,15 +4089,17 @@ export default function Example() {
         <GameCard size="lg" label={`${slot.player?.name}: card 4`} />
         <GameCard size="lg" label={`${slot.player?.name}: card 5`} />
         <GameCard size="lg" label={`${slot.player?.name}: card 6`} />
+        <Button>Inspect cards</Button>
       </SpacedCards>
     )),
   },
   play: async ({ canvasElement }) => {
     const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
     await expect(table).toHaveAttribute('data-layout-fit', 'insufficient-space');
-    for (const card of table.querySelectorAll<HTMLElement>('[data-ui~="game-card"]')) {
-      const box = card.getBoundingClientRect();
-      await expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(GAME_TABLE_LIMITS.minimumCardWidthPx - 0.01);
+    for (const control of table.querySelectorAll('button')) {
+      const box = control.getBoundingClientRect();
+      await expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(24 - 0.01);
+      await expect(Math.max(box.width, box.height)).toBeGreaterThanOrEqual(32 - 0.01);
     }
   },
 };
@@ -3875,7 +4173,7 @@ const seatWithAvatar = (slot: GameTableSlot<Player>, size: AvatarSize = 'sm') =>
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.wide}>
-<Table players={6} seats={SEATS} >
+<Table places={6} seats={SEATS} >
     <Table.Seat><FixtureContent<Player> content={(slot) => seatWithAvatar(slot, 'sm')} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -3886,7 +4184,7 @@ export default function Example() {
 </ViewportFrame>);
 }` } } },
   args: {
-    players: 6, seats: SEATS, viewport: VIEWPORTS.wide,
+    places: 6, seats: SEATS, viewport: VIEWPORTS.wide,
     renderSeat: fn((slot, _index, _geometry) => seatWithAvatar(slot, 'sm')), center, header: 'Poker · State Stability', dock: <Button>Check</Button>,
   },
   play: async ({ canvasElement }) => {
@@ -3927,10 +4225,10 @@ function TrucoPlayerSeat() {
 /** Each seat shows the player, badges, hidden hand and turn. */
 export const TrucoPlayerChrome: Story = {
   name: 'Truco player chrome',
-  args: { viewport: VIEWPORTS.wideLarge, players: 4, seats: seatsFor(4) },
+  args: { viewport: VIEWPORTS.wideLarge, places: 4, seats: seatsFor(4) },
   render: (args) => <DeckProvider default="spanish">
     <ViewportFrame viewport={args.viewport}>
-      <Table players={args.players} seats={args.seats ?? []}>
+      <Table places={args.places ?? args.players!} seats={args.seats ?? []}>
         <Table.Seat><TrucoPlayerSeat /></Table.Seat>
         <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
         <Table.Center>Truco</Table.Center>
@@ -4023,7 +4321,7 @@ function TrucoPlayerSeat() {
 export default function Example() {
   return (<DeckProvider default="spanish">
   <ViewportFrame viewport={VIEWPORTS.wideLarge}>
-<Table players={4} seats={seatsFor(4)} >
+<Table places={4} seats={seatsFor(4)} >
     <Table.Seat><TrucoPlayerSeat /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
     <Table.Center>Truco</Table.Center>
@@ -4099,7 +4397,7 @@ function PlayCard() {
 export default function Example() {
   return (
     <Frame>
-      <GameTable players={4} seats={players} seatPlacement="edge">
+      <GameTable places={4} seats={players} seatPlacement="edge">
         <GameTable.Header>Truco</GameTable.Header>
         <GameTable.Seat>
           <SeatCards />
@@ -4125,7 +4423,7 @@ export default function Example() {
       return (
       <Row key={`${caseName}-${players}`}>
         <ViewportFrame data-measurement="before" viewport={size}>
-          <Table {...tableRootProps({ ...args, seatPlacement: 'inside', viewport: size, players, slots: undefined, seats: seatsFor(players) })}>
+          <Table {...tableRootProps({ ...args, seatPlacement: 'inside', viewport: size, places: players, slots: undefined, seats: seatsFor(players) })}>
             <Table.Seat><FixtureContent<Player> content={args.renderSeat} /></Table.Seat>
             <Table.Play />
             <Table.Center>{args.center}</Table.Center>
@@ -4134,7 +4432,7 @@ export default function Example() {
           </Table>
         </ViewportFrame>
         <ViewportFrame data-measurement="after" viewport={size}>
-          <Table {...tableRootProps({ ...args, viewport: size, players, slots: undefined, seats: seatsFor(players) })}>
+          <Table {...tableRootProps({ ...args, viewport: size, places: players, slots: undefined, seats: seatsFor(players) })}>
             <Table.Seat><FixtureContent<Player> content={args.renderSeat} /></Table.Seat>
             <Table.Play><FixtureContent<Player> content={args.renderPlay} /></Table.Play>
             <Table.Center>{args.center}</Table.Center>
@@ -4282,7 +4580,7 @@ export default function Example() {
       {counts.map((playerCount) =>
         modes.map((mode) => (
           <Frame key={\`\${playerCount}-\${mode}\`}>
-            <GameTable players={playerCount} seats={seatsFor(playerCount)} seatPlacement={mode}>
+            <GameTable places={playerCount} seats={seatsFor(playerCount)} seatPlacement={mode}>
               <GameTable.Header>Truco</GameTable.Header>
               <GameTable.Seat>
                 <SeatCards />
@@ -4304,11 +4602,11 @@ export default function Example() {
   );
 }` },
   } },
-  args: { players: 2, seats: seatsFor(2), renderSeat: spanishSeat, renderPlay: spanishPlay, center: <span>Truco</span>, header: 'Truco', dock: <Button>Quiero</Button> },
+  args: { places: 2, seats: seatsFor(2), renderSeat: spanishSeat, renderPlay: spanishPlay, center: <span>Truco</span>, header: 'Truco', dock: <Button>Quiero</Button> },
   render: (args) => <MatrixRow>
     {COUNTS.map((players) => (['inside', 'edge', 'outside'] as const).map((seatPlacement) => (
       <ViewportFrame key={`${players}-${seatPlacement}`} data-placement-count={players} viewport={args.viewport}>
-        <Table {...tableRootProps({ ...args, players, slots: undefined, seats: seatsFor(players), seatPlacement })}>
+        <Table {...tableRootProps({ ...args, places: players, slots: undefined, seats: seatsFor(players), seatPlacement })}>
           <Table.Seat><FixtureContent<Player> content={args.renderSeat} /></Table.Seat>
           <Table.Play><FixtureContent<Player> content={args.renderPlay} /></Table.Play>
           <Table.Center>{args.center}</Table.Center>
@@ -4416,7 +4714,7 @@ const generalSeats = (count: number, teamCount: number): Player[] => Array.from(
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.wideLarge}>
-<Table players={9} seats={generalSeats(9, 3)} teamCount={3}>
+<Table places={9} seats={generalSeats(9, 3)} teamCount={3}>
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play></Table.Play>
     <Table.Center>{center}</Table.Center>
@@ -4426,7 +4724,7 @@ export default function Example() {
   </Table>
 </ViewportFrame>);
 }` } } },
-  args: { players: 9, teamCount: 3, seats: generalSeats(9, 3), viewport: VIEWPORTS.wideLarge },
+  args: { places: 9, teamCount: 3, seats: generalSeats(9, 3), viewport: VIEWPORTS.wideLarge },
   play: async ({ canvasElement }) => {
     const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
     await expectSeatFraming(table, 9, 'wideLarge');
@@ -4528,7 +4826,7 @@ const center = (
 
 export default function Example() {
   return (<ViewportFrame viewport={VIEWPORTS.portraitShort}>
-<Table players={3} seatSlots={[
+<Table places={3} seatSlots={[
     { key: 'third', teamIdx: 42, player: { key: 'c', name: 'Casey', teamIdx: 42 } },
     { key: 'first', teamIdx: 7, player: { key: 'a', name: 'Alex', teamIdx: 7 } },
     { key: 'empty', teamIdx: 99, player: null },
@@ -4542,7 +4840,7 @@ export default function Example() {
   </Table>
 </ViewportFrame>);
 }` } } },
-  args: { players: 3, seats: undefined, slots: [
+  args: { places: 3, seats: undefined, slots: [
     { key: 'third', teamIdx: 42, player: { key: 'c', name: 'Casey', teamIdx: 42 } },
     { key: 'first', teamIdx: 7, player: { key: 'a', name: 'Alex', teamIdx: 7 } },
     { key: 'empty', teamIdx: 99, player: null },
@@ -4561,7 +4859,7 @@ const generalCountMatrix = (seatPlacement: NonNullable<GameTableProps['seatPlace
   render: (args) => <Matrix>
     {GENERAL_CASES.map((caseName) => GENERAL_COUNTS.map((players) => (
       <ViewportFrame key={`${caseName}-${players}`} data-general-count={players} viewport={VIEWPORTS[caseName]}>
-        <Table {...tableRootProps({ ...args, viewport: VIEWPORTS[caseName], players, teamCount: 3, slots: undefined, seats: generalSeats(players, 3) })}>
+        <Table {...tableRootProps({ ...args, viewport: VIEWPORTS[caseName], places: players, teamCount: 3, slots: undefined, seats: generalSeats(players, 3) })}>
           <Table.Seat><FixtureContent<Player> content={args.renderSeat} /></Table.Seat>
           <Table.Play><FixtureContent<Player> content={args.renderPlay} /></Table.Play>
           <Table.Center>{args.center}</Table.Center>
@@ -4578,7 +4876,7 @@ const generalCountMatrix = (seatPlacement: NonNullable<GameTableProps['seatPlace
     let index = 0;
     for (const caseName of GENERAL_CASES) for (const players of GENERAL_COUNTS) {
       const table = required(tables[index++]);
-      const expectedFit = seatPlacement === 'inside' && caseName === 'portraitShort' && players === 9 ? 'insufficient-space' : 'fitted';
+      const expectedFit = 'fitted';
       await expectSeatFraming(table, players, caseName, expectedFit, true);
       const surface = required(table.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
       const plays = Array.from(table.querySelectorAll<HTMLElement>('[data-ui="game-table-play"]'));
@@ -4692,7 +4990,7 @@ const generalSeats = (count: number, teamCount: number): Player[] => Array.from(
 export default function Example() {
   return (<Matrix>{GENERAL_CASES.map((caseName) => GENERAL_COUNTS.map((players) => (
   <ViewportFrame key={\`\${caseName}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[caseName]}>
-    <Table players={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="edge" dir="ltr">
+    <Table places={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="edge" dir="ltr">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
     <Table.Center><span>Pot: 240</span></Table.Center>
@@ -4784,7 +5082,7 @@ const generalSeats = (count: number, teamCount: number): Player[] => Array.from(
 export default function Example() {
   return (<Matrix>{GENERAL_CASES.map((caseName) => GENERAL_COUNTS.map((players) => (
   <ViewportFrame key={\`\${caseName}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[caseName]}>
-    <Table players={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="inside" dir="ltr">
+    <Table places={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="inside" dir="ltr">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
     <Table.Center><span>Pot: 240</span></Table.Center>
@@ -4876,7 +5174,7 @@ const generalSeats = (count: number, teamCount: number): Player[] => Array.from(
 export default function Example() {
   return (<Matrix>{GENERAL_CASES.map((caseName) => GENERAL_COUNTS.map((players) => (
   <ViewportFrame key={\`\${caseName}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[caseName]}>
-    <Table players={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="outside" dir="ltr">
+    <Table places={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="outside" dir="ltr">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
     <Table.Center><span>Pot: 240</span></Table.Center>
@@ -4968,7 +5266,7 @@ const generalSeats = (count: number, teamCount: number): Player[] => Array.from(
 export default function Example() {
   return (<Matrix>{GENERAL_CASES.map((caseName) => GENERAL_COUNTS.map((players) => (
   <ViewportFrame key={\`\${caseName}-\${players}\`} data-general-count={players} viewport={VIEWPORTS[caseName]}>
-    <Table players={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="edge" dir="rtl">
+    <Table places={players} seats={generalSeats(players, 3)} teamCount={3} seatPlacement="edge" dir="rtl">
     <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
     <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
     <Table.Center><span>Pot: 240</span></Table.Center>
@@ -4994,7 +5292,7 @@ function PokerTable() {
   const deckRef = useRef<HTMLDivElement>(null);
   const boardRefs = useRef(new Map<string, HTMLDivElement>());
   const { launch, landingTargets } = useCardFlights();
-  return <Table players={6} teamCount={1} seats={generalSeats(6, 1)}>
+  return <Table places={6} teamCount={1} seats={generalSeats(6, 1)}>
     <Table.Header>Texas Hold'em · 10 / 20</Table.Header>
     <Table.Seat><PokerSeat /></Table.Seat>
     <Table.Center><BoardCenter>
@@ -5143,7 +5441,7 @@ function TexasHoldemTable() {
   };
 
   return (
-    <GameTable players={6} teamCount={1} seats={players}>
+    <GameTable places={6} teamCount={1} seats={players}>
       <GameTable.Header>Texas Hold'em · 10 / 20</GameTable.Header>
       <GameTable.Seat>
         <PokerSeat />

@@ -43,7 +43,7 @@ function MatchTree({ plays, onPlay, onBurst, onDeal, onResync, onClear }: {
   return <>
     <Controls><Button onClick={onDeal}>Deal hand</Button><Button onClick={onResync}>Resync board</Button>
       <Button onClick={onClear}>Clear plays</Button><Button onClick={onBurst}>Play all</Button><Status /></Controls>
-    <Board><GameTable players={2} seats={seats}>
+    <Board><GameTable places={2} seats={seats}>
       <GameTable.Seat slotKey="rival"><GameHand.Hidden count={cards.length - rival.length} label="Rival hand" /></GameTable.Seat>
       <GameTable.Dock><ResponsiveHand cards={cards.filter((card) => !own.some((play) => play.cardId === card.id))}
         ><GameHand.Confirm onPlay={onPlay}>Play selected</GameHand.Confirm></ResponsiveHand></GameTable.Dock>
@@ -160,7 +160,7 @@ export function Match() {
         })))}>Play all</Button>
         <FlightStatus />
       </Controls>
-      <Board><GameTable players={2} seats={seats}>
+      <Board><GameTable places={2} seats={seats}>
         <GameTable.Seat slotKey="rival">
           <GameHand.Hidden count={cards.length - rival.length} label="Rival hand" />
         </GameTable.Seat>
@@ -452,7 +452,7 @@ export const MissingHiddenKey: Story = {
 };
 
 export const TwoTables: Story = {
-  tags: ['!autodocs'], render: () => <CardFlights><Board><GameTable players={2} seats={seats} /><GameTable players={2} seats={seats} /></Board></CardFlights>,
+  tags: ['!autodocs'], render: () => <CardFlights><Board><GameTable places={2} seats={seats} /><GameTable places={2} seats={seats} /></Board></CardFlights>,
   beforeEach: () => { spyOn(console, 'warn').mockImplementation(() => {}); },
   play: async () => { await expect(console.warn).toHaveBeenCalledWith('CardFlights supports one GameTable per board.'); },
 };

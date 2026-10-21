@@ -102,7 +102,7 @@ function GamesTable() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-  return <TableContainer><GameTable players={4} seats={TABLE_SEATS}>
+  return <TableContainer><GameTable places={4} seats={TABLE_SEATS}>
     <GameTable.Header><Pill tone="neutral">Casual Table</Pill></GameTable.Header>
     <GameTable.Center><CommunityCards>
       <GameCard size="sm" value={{ suit: 'spades', rank: 'A' }} label="Ace of spades" />

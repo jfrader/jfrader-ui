@@ -64,7 +64,7 @@ function Match() {
   };
   return <>
     <Button disabled={landing.size > 0} onClick={() => { setPlays([]); setHandKey((key) => key + 1); }}>Deal hand</Button>
-    <Board><GameTable players={2} seats={seats}>
+    <Board><GameTable places={2} seats={seats}>
       <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={rival.length} label="Rival hand" /></GameTable.Seat>
       <GameTable.Dock>
         <GameHand cards={hand} playLabel="Play selected" disabled={landing.size > 0} onPlayIntent={play} />
@@ -195,7 +195,7 @@ function Match() {
   };
   return <>
     <Button disabled={landing.size > 0} onClick={() => { setPlays([]); setHandKey((key) => key + 1); }}>Deal hand</Button>
-    <Board><GameTable players={2} seats={seats}>
+    <Board><GameTable places={2} seats={seats}>
       <GameTable.Seat slotKey="rival"><GameHand.Hidden playerKey="rival" count={rival.length} label="Rival hand" /></GameTable.Seat>
       <GameTable.Dock>
         <GameHand cards={hand} playLabel="Play selected" disabled={landing.size > 0} onPlayIntent={play} />
@@ -391,7 +391,7 @@ function FlightBoard({ initialDealt, initialPlayed, seatShorthand, largeHand }: 
       <output aria-label="Flights in air" data-reset-epoch={resetEpoch}>{landingTargets.size}</output>
     </Controls>
     <Board>
-      <GameTable players={2}
+      <GameTable places={2}
         seats={[{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }]}
       >
         <GameTable.Seat slotKey="rival">{seatShorthand ? <GameSeat name="Rival" handCount={rival.length} /> : <GameHand.Hidden playerKey="rival" count={rival.length} label="Rival hand" />}</GameTable.Seat>

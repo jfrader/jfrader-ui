@@ -63,6 +63,14 @@ let browser;
 try {
   const baseURL = process.env.STORYBOOK_URL ?? server.resolvedUrls.local[0];
   const index = await (await fetch(new URL('index.json', baseURL))).json();
+  for (const story of ['default', 'prebuilt-slots-and-empty-places', 'seat-placement-modes', 'poker-community-board', 'lobby', 'with-avatars']) {
+    assert.ok(index.entries[`games-gametable--${story}`]?.tags.includes('autodocs'),
+      `GameTable preserves its curated ${story} example`);
+  }
+  for (const story of ['responsive-four-places', 'compact-four-plays', 'four-play-container-matrix', 'play-ellipse-containment']) {
+    const entry = index.entries[`games-gametable--${story}`];
+    assert.ok(entry && !entry.tags.includes('autodocs'), `GameTable keeps ${story} in hidden QA`);
+  }
   const detailsEntries = Object.values(index.entries).filter(({ title }) => title === editableDetails.title);
   assert.ok(detailsEntries.filter(({ type }) => type === 'story').length > 0,
     'EditableDetails examples are indexed under one navigation entry');
@@ -169,6 +177,46 @@ try {
       await summary.press('Space');
       assert.equal(await usage.evaluate((element) => element.open), false, `${id}: Space closes usage notes`);
       console.log(`verify-docs-layout: ${id} at ${viewport.width}px (${fontFamily ?? 'theme font'}) OK`);
+    }
+  }
+
+  for (const story of ['responsive-four-places', 'compact-four-plays']) {
+    for (const viewport of [...viewports, { width: 768, height: 900 }]) {
+      await page.setViewportSize(viewport);
+      await page.goto(new URL(`iframe.html?id=games-gametable--${story}&viewMode=story`, baseURL).href);
+      const tables = page.locator('[data-ui="game-table"]');
+      await tables.first().waitFor();
+      await page.evaluate(() => document.fonts.ready);
+      const expectedFit = story === 'compact-four-plays' || viewport.width === 390 ? 'scaled' : 'fitted';
+      await page.waitForFunction((fit) => document.querySelector('[data-ui="game-table"]')?.dataset.layoutFit === fit, expectedFit);
+      assert.equal(await tables.count(), 1, `${story}: one composition is rendered`);
+      const geometry = await tables.first().evaluate((table) => {
+        const felt = table.querySelector('[data-game-surface]').getBoundingClientRect();
+        const plays = [...table.querySelectorAll('[data-ui="game-table-play"]')];
+        const corners = plays.flatMap((play) => {
+          const box = play.getBoundingClientRect();
+          return [box.left, box.right].flatMap((x) => [box.top, box.bottom].map((y) =>
+            Math.hypot((x - felt.left - felt.width / 2) / (felt.width / 2), (y - felt.top - felt.height / 2) / (felt.height / 2))));
+        });
+        const regions = [...table.querySelectorAll('[data-ui="game-table-seat"], [data-ui="game-table-play"], [data-ui="game-table-center"]')];
+        const collisions = regions.flatMap((region, index) => regions.slice(index + 1).filter((other) => {
+          const a = region.getBoundingClientRect();
+          const b = other.getBoundingClientRect();
+          return Math.min(Math.min(a.right, b.right) - Math.max(a.left, b.left),
+            Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)) > 0.1;
+        })).length;
+        return { plays: plays.length, corners, collisions, fit: table.dataset.layoutFit,
+          scale: Number(getComputedStyle(table).getPropertyValue('--game-table-content-scale')),
+          width: document.documentElement.clientWidth, scrollWidth: document.documentElement.scrollWidth };
+      });
+      assert.equal(geometry.fit, expectedFit);
+      if (expectedFit === 'fitted') assert.equal(geometry.scale, 1);
+      else assert.ok(geometry.scale > 0 && geometry.scale < 1);
+      assert.equal(geometry.plays, 4);
+      assert.equal(geometry.collisions, 0);
+      assert.ok(geometry.corners.every((corner) => corner <= 1), `${story}: every play corner stays inside the ellipse`);
+      assert.ok(geometry.scrollWidth <= geometry.width, `${story} at ${viewport.width}px: no horizontal overflow`);
+      console.log(`verify-docs-layout: ${story} at ${viewport.width}px ${expectedFit} OK`);
     }
   }
 
