@@ -8,6 +8,7 @@ const cases = [
   {
     id: 'data-filtertoolbar--docs', primary: '[data-ui~="filter-toolbar"]', containPreview: 'all',
     verifyPreviewOverflow: true,
+    fontFamily: 'monospace',
     viewports: [{ width: 390, height: 844 }, { width: 768, height: 900 }, { width: 1440, height: 900 }],
   },
   { id: 'media-lightboxgallery--docs', primary: '[data-ui="lightbox-gallery"]', containPreview: true },
@@ -24,6 +25,9 @@ const cases = [
   { id: 'inputs-linkunfurl--docs', primary: '[data-ui="link-unfurl"]' },
   { id: 'inputs-mentioninput--docs', primary: '[data-ui="mention-input"]' },
 ];
+const layoutCases = cases.flatMap((testCase) => testCase.fontFamily
+  ? [{ ...testCase, fontFamily: undefined }, testCase]
+  : [testCase]);
 const editableDetails = {
   title: 'Data display/EditableDetails',
   id: 'data-display-editabledetails',
@@ -68,11 +72,14 @@ try {
   const page = await browser.newPage();
   page.setDefaultTimeout(30_000);
 
-  for (const { id, primary, containPreview, verifyPreviewOverflow, viewports: caseViewports = viewports } of cases) {
+  for (const { id, primary, containPreview, verifyPreviewOverflow, fontFamily, viewports: caseViewports = viewports } of layoutCases) {
     for (const viewport of caseViewports) {
       await page.setViewportSize(viewport);
       await page.goto(new URL(`iframe.html?id=${id}&viewMode=docs`, baseURL).href);
       await page.locator(primary).first().waitFor();
+      if (fontFamily) {
+        await page.addStyleTag({ content: `:root,[data-theme]{--ui-font-sans:${fontFamily} !important;}` });
+      }
       const usage = page.locator('.component-usage');
       const summary = usage.locator('summary');
       await summary.focus();
@@ -85,11 +92,15 @@ try {
           await page.waitForTimeout(200);
         }
         const previews = await page.locator('.docs-story').evaluateAll((elements) =>
-          elements.map((element) => ({ width: element.clientWidth, scrollWidth: element.scrollWidth })),
+          elements.map((element) => ({
+            id: element.querySelector('[id^="story--"]')?.id,
+            width: element.clientWidth,
+            scrollWidth: element.scrollWidth,
+          })),
         );
         for (const preview of previews) {
           assert.ok(preview.scrollWidth <= preview.width + 1,
-            `${id} at ${viewport.width}px: story preview overflows (${preview.scrollWidth}px)`);
+            `${id} at ${viewport.width}px (${fontFamily ?? 'theme font'}): ${preview.id ?? 'story preview'} overflows (${preview.scrollWidth}px > ${preview.width}px)`);
         }
       }
       const dimensions = await page.evaluate(() => ({
@@ -122,7 +133,7 @@ try {
         `${id}: focus stays on the summary`);
       await summary.press('Space');
       assert.equal(await usage.evaluate((element) => element.open), false, `${id}: Space closes usage notes`);
-      console.log(`verify-docs-layout: ${id} at ${viewport.width}px OK`);
+      console.log(`verify-docs-layout: ${id} at ${viewport.width}px (${fontFamily ?? 'theme font'}) OK`);
     }
   }
 
