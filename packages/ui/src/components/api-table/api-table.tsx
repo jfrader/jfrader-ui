@@ -144,6 +144,17 @@ export interface ApiTableProps
 
 const rootStyle = css({
   minInlineSize: 0,
+  // The docs chrome styles every <code> as a chip; type and prop names are already code, so a
+  // nested chip adds noise. Keep the code background only for literal-value spans.
+  '& code[class]': {
+    backgroundColor: 'transparent',
+    paddingInline: 0,
+    paddingBlock: 0,
+    borderRadius: 0,
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    lineHeight: 'inherit',
+  },
   border: `1px solid ${vars.color.borderSubtle}`,
   borderRadius: vars.radius.lg,
   backgroundColor: vars.color.surface,
@@ -415,11 +426,12 @@ const slotTypeSummaryStyle = css({ color: vars.color.textMuted, fontSize: vars.t
 
 type TypeTokenKind = 'literal' | 'keyword' | 'type' | 'punctuation' | 'operator';
 
-const NATIVE_INHERITED = /(?:HTMLAttributes|DOMAttributes|AriaAttributes|ClassAttributes|RefAttributes|CSSProperties|DetailedHTMLProps|SVGAttributes|HTMLProps|ComponentProps|EventHandler|EventTarget|ElementType)/;
+const NATIVE_INHERITED = /(?:HTMLAttributes|DOMAttributes|AriaAttributes|ClassAttributes|RefAttributes|CSSProperties|DetailedHTMLProps|SVGAttributes|HTMLProps|ComponentProps|EventHandler|EventTarget|ElementType|LonghandProperties|ShorthandProperties|ObsoleteProperties|SvgProperties)/;
 
 /** Native DOM/React contracts are covered by the "Also accepts native <el>" note, not by rows. */
 function isNativeInherited(prop: ApiPropDoc): boolean {
   if (prop.name === 'className' || prop.name === 'sx') return false;
+  if (prop.name === 'style') return true;
   return Boolean(prop.inheritedFrom) && !prop.inheritedComponent && NATIVE_INHERITED.test(prop.inheritedFrom ?? '');
 }
 
