@@ -7,6 +7,8 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { TextShimmer } from './index';
 
+const NarrowLabel = styled.div({ inlineSize: 240, maxInlineSize: '100%' });
+
 const meta = {
   title: 'Feedback/TextShimmer',
   component: TextShimmer,
@@ -165,6 +167,25 @@ export const RTL: Story = {
 };
 export const Empty: Story = { args: { children: '' } };
 export const ZeroString: Story = { args: { children: '0' } };
+export const LongLabel: Story = {
+  args: { children: 'Synchronizing internationalization_configuration.json' },
+  render: (args) => (
+    <NarrowLabel>
+      <TextShimmer {...args} />
+    </NarrowLabel>
+  ),
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="text-shimmer"]')!;
+    const container = root.parentElement!;
+    await expect(container.scrollWidth).toBeLessThanOrEqual(container.clientWidth + 1);
+    const text = root.querySelector('[data-ui="text-shimmer-text"]')!;
+    const range = root.ownerDocument.createRange();
+    range.selectNodeContents(text);
+    await expect(range.getBoundingClientRect().right).toBeLessThanOrEqual(
+      container.getBoundingClientRect().right + 1,
+    );
+  },
+};
 export const ExternalAria: Story = {
   args: { active: false, 'aria-busy': true, 'aria-label': 'Summary ready' },
   play: async ({ canvasElement }) => {

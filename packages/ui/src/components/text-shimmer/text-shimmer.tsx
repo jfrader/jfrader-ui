@@ -65,6 +65,7 @@ const staticText = {
 const rootStyle = css({
   color: vars.color.text,
   maxInlineSize: '100%',
+  overflowWrap: 'anywhere',
   '&[data-tone="accent"]': { color: vars.color.accentText },
 });
 const textStyle = css({

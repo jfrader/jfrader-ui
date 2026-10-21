@@ -55,6 +55,8 @@ const rootStyle = css({ color: vars.color.text, maxInlineSize: '100%', whiteSpac
 const hiddenStyle = css([visuallyHiddenStyle, { userSelect: 'none' }]);
 const wordStyle = css({
   display: 'inline-block',
+  maxInlineSize: '100%',
+  overflowWrap: 'anywhere',
   animation: `${rise} ${vars.motion.duration.slow} ${vars.motion.easeStandard} backwards, ${fade} ${vars.motion.duration.fast} ${vars.motion.easeStandard} backwards, ${focus} ${vars.motion.duration.base} ${vars.motion.easeStandard} backwards`,
   animationDelay: 'var(--text-reveal-delay)',
   [REDUCED_MOTION]: { animation: 'none', opacity: 1, transform: 'none', filter: 'none' },
@@ -132,7 +134,8 @@ export function TextReveal({
         >
           <span css={hiddenStyle}>{text.replaceAll('\n', ' ')}</span>
           <Visual
-            {...slotProps?.visual}
+            {...withoutSx(slotProps?.visual)}
+            css={slotProps?.visual?.sx}
             key={text}
             data-ui={[
               ...new Set([
