@@ -11,6 +11,7 @@ const data = demo as unknown as readonly ApiComponentDoc[];
 const selectFamily = data.filter((component) => component.name.startsWith('Select.') || component.name === 'Select');
 const selectCore = selectFamily.filter((component) => ['Select', 'Select.Trigger', 'Select.Item'].includes(component.name));
 const moneyInput = data.filter((component) => component.name === 'MoneyInput');
+const gravityWell = data.filter((component) => component.name === 'GravityWell');
 
 const frameStyle = {
   display: 'grid',
@@ -81,6 +82,10 @@ export const Compact: Story = {
 
 export const MoneyInputSignature: Story = {
   args: { components: moneyInput },
+};
+
+export const GravityWellItemType: Story = {
+  args: { components: gravityWell },
 };
 
 export const Light: Story = {

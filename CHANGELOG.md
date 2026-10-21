@@ -30,9 +30,11 @@
 - `PhoneInput` collects international telephone numbers with a searchable country picker, national formatting, incomplete storage candidates, metadata validation and independent controlled number, country and picker state.
 - `ColorPicker` edits HEX, RGB, HSL and OKLCH colors, saves swatches and reports text contrast against an opaque background.
 - `labelPlacement="hidden"` keeps a field's label as the control's accessible name without taking layout space. Available on TextField, Textarea, PasswordField, SearchField, TagInput, MentionInput, TimePicker, Combobox, Select and MultiSelect.
+- `ApiTable` documents props and types from the docs build's `ComponentPropsDoc`: literal unions as chips, expanded members and signatures, real defaults, array item fields, mode badges, and a Slots panel.
 
 ### Changed
 
+- `Select` easy mode infers its option value union (`<Select<Status> options={...} />`) for `value`, `defaultValue` and `onValueChange`; compound mode stays string-based. `GravityWell` keeps custom item fields through `renderItem` (`GravityWell<T>`).
 - Breaking pre-1.0 article API cleanup: use `Article` with `Article.Body`, `Article.Kicker`, `Article.Meta` and `Article.Sources` instead of the separate article components. `ArticleList` stays standalone. `ArticleSection` composes ordered articles into mixed editorial layouts, and `SectionHeading` moves to `ArticleSection.Heading`.
 - `CardFlights` now animates the rendered board tree, with `Deck`, custom `Target` destinations, `deal`/`revision`, automatic hand locking and `onBusyChange`. The provider, explicit deal/play hooks, measurement helpers and flight-spec exports are deprecated until the next major release; replace them with `CardFlights` and `useCardFlightStatus`. Piles now retain the newest `maxCards` cards.
 - Breaking pre-1.0 API cleanup: every `slotProps` part accepts `sx` instead of `css`, preserving own styles → slot `sx` → consumer `sx` precedence. Emotion's `css` remains internal.

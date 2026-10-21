@@ -58,6 +58,8 @@ export interface ApiPropDoc {
   defaultElement?: string;
   /** `data-ui` token of the part this prop configures. */
   part?: string;
+  /** Easy/compound mode this prop belongs to when the other mode excludes it. */
+  mode?: 'easy' | 'compound';
   tags?: readonly ApiTagDoc[];
   /** Expanded object type: members of `slots`, `slotProps`, `messages` and friends. */
   members?: readonly ApiPropDoc[];
@@ -72,10 +74,19 @@ export interface ApiElementDoc {
   members: readonly ApiPropDoc[];
 }
 
+export interface ApiTypeParameterDoc {
+  name: string;
+  constraint?: string;
+  default?: string;
+  description?: string;
+}
+
 export interface ApiComponentDoc {
   name: string;
   description?: string;
   props: readonly ApiPropDoc[];
+  /** Generic parameters declared by the component, e.g. `V extends string = string`. */
+  typeParameters?: readonly ApiTypeParameterDoc[];
   /** Native element whose props also apply, e.g. `button`. */
   native?: string;
 }
@@ -191,6 +202,7 @@ const descriptionStyle = css({
   lineHeight: vars.lineHeight.relaxed,
 });
 const nativeStyle = css({ marginBlock: `${vars.space[2]} 0`, marginInline: 0, color: vars.color.textMuted, fontSize: vars.textSize.sm });
+const signatureLineStyle = css({ marginBlock: `${vars.space[1]} 0 0`, marginInline: 0, fontFamily: vars.font.mono, fontSize: vars.textSize.sm, lineHeight: vars.lineHeight.base, overflowWrap: 'anywhere' });
 
 const rowsStyle = css({ margin: 0, marginBlockStart: vars.space[2], borderBlockStart: `1px solid ${vars.color.borderSubtle}` });
 
@@ -228,6 +240,7 @@ const badgeStyle = css({
 const requiredStyle = css({ color: vars.color.textMuted, border: `1px solid ${vars.color.borderSubtle}` });
 const deprecatedStyle = css({ color: vars.color.dangerText, backgroundColor: vars.color.dangerSoft });
 const partBadgeStyle = css({ color: vars.color.accentText, backgroundColor: vars.color.accentSoft });
+const modeBadgeStyle = css({ color: vars.color.textMuted, backgroundColor: vars.color.surfaceHover, border: `1px solid ${vars.color.borderSubtle}` });
 const unavailableStyle = css({ color: vars.color.warning, backgroundColor: vars.color.warningSoft });
 
 const typeCellStyle = css({ minInlineSize: 0 });
@@ -639,6 +652,7 @@ function PropRow({ prop, density }: { prop: ApiPropDoc; density: ApiTableDensity
         <code css={nameStyle}>{prop.name}</code>
         {prop.required ? <span css={[badgeStyle, requiredStyle]}>required</span> : null}
         {prop.part ? <span css={[badgeStyle, partBadgeStyle]}>{prop.part}</span> : null}
+        {prop.mode ? <span css={[badgeStyle, modeBadgeStyle]}>{prop.mode} only</span> : null}
         {deprecated ? <span css={[badgeStyle, deprecatedStyle]}>deprecated</span> : null}
       </dt>
 
@@ -745,6 +759,15 @@ function ApiPart({
         <Heading css={partNameStyle}>{component.name}</Heading>
         <span css={partCountStyle}>{countLabel(own.length)}</span>
       </div>
+      {component.typeParameters?.length ? (
+        <p css={signatureLineStyle}>
+          <TypeText
+            type={`${component.name}<${component.typeParameters
+              .map((parameter) => `${parameter.name}${parameter.constraint ? ` extends ${parameter.constraint}` : ''}${parameter.default ? ` = ${parameter.default}` : ''}`)
+              .join(', ')}>`}
+          />
+        </p>
+      ) : null}
       {component.description ? <p css={descriptionStyle}>{component.description}</p> : null}
       {component.native ? (
         <p css={nativeStyle}>

@@ -11,5 +11,6 @@ export {
   type ApiTableProps,
   type ApiTableSlotProps,
   type ApiTableSlots,
+  type ApiTypeParameterDoc,
   type ApiTypeRef,
 } from './api-table';

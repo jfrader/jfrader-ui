@@ -2,148 +2,26 @@
   {
     "name": "Select",
     "description": "",
+    "typeParameters": [
+      {
+        "name": "V",
+        "constraint": "string",
+        "default": "string"
+      }
+    ],
     "props": [
       {
-        "name": "children",
-        "type": "ReactNode",
-        "required": false,
-        "defaultValue": null,
-        "description": ""
-      },
-      {
-        "name": "component",
-        "type": "ComponentType<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>>",
-        "required": false,
-        "defaultValue": null,
-        "description": ""
-      },
-      {
-        "name": "defaultOpen",
-        "type": "boolean",
-        "required": false,
-        "defaultValue": "false",
-        "description": ""
-      },
-      {
-        "name": "defaultValue",
-        "type": "string",
-        "required": false,
-        "defaultValue": null,
-        "description": ""
-      },
-      {
-        "name": "description",
-        "type": "ReactNode",
-        "required": false,
-        "defaultValue": null,
-        "description": ""
-      },
-      {
-        "name": "disabled",
-        "type": "boolean",
-        "required": false,
-        "defaultValue": "false",
-        "description": ""
-      },
-      {
-        "name": "empty",
-        "type": "ReactNode",
-        "required": false,
-        "defaultValue": null,
-        "description": ""
-      },
-      {
-        "name": "error",
-        "type": "ReactNode",
-        "required": false,
-        "defaultValue": null,
-        "description": ""
-      },
-      {
-        "name": "initialActiveValue",
-        "type": "string",
-        "required": false,
-        "defaultValue": null,
-        "description": "Highlight this enabled option on opening when no selected option exists. Typeahead takes precedence."
-      },
-      {
-        "name": "label",
-        "type": "ReactNode",
-        "required": false,
-        "defaultValue": null,
-        "description": ""
-      },
-      {
-        "name": "labelPlacement",
-        "type": "\"above\" | \"hidden\"",
-        "required": false,
-        "defaultValue": "'above'",
-        "description": "Label placement. `hidden` keeps the accessible name without taking layout space."
-      },
-      {
-        "name": "name",
-        "type": "string",
-        "required": false,
-        "defaultValue": null,
-        "description": "Adds a hidden input to submit the value with a native form."
-      },
-      {
-        "name": "onOpenChange",
-        "type": "(open: boolean) => void",
-        "required": false,
-        "defaultValue": null,
-        "description": "",
-        "signatures": [
-          {
-            "type": "(open: boolean) => void",
-            "parameters": [
-              {
-                "name": "open",
-                "type": "boolean",
-                "description": ""
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "onValueChange",
-        "type": "(value: string) => void",
-        "required": false,
-        "defaultValue": null,
-        "description": "Fires once per accepted selection with the option's `value`.",
-        "signatures": [
-          {
-            "type": "(value: string) => void",
-            "parameters": [
-              {
-                "name": "value",
-                "type": "string",
-                "description": ""
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "name": "open",
-        "type": "boolean",
-        "required": false,
-        "defaultValue": null,
-        "description": ""
-      },
-      {
         "name": "options",
-        "type": "readonly SelectOption[]",
-        "required": false,
+        "type": "readonly SelectOption<V>[]",
+        "required": true,
         "defaultValue": null,
-        "description": "",
+        "description": "Supplies the options rendered by the shorthand select.",
         "element": {
-          "type": "SelectOption",
+          "type": "SelectOption<V>",
           "members": [
             {
               "name": "value",
-              "type": "string",
+              "type": "V",
               "required": true,
               "defaultValue": null,
               "description": ""
@@ -177,35 +55,174 @@
               "description": ""
             }
           ]
-        }
+        },
+        "mode": "easy"
+      },
+      {
+        "name": "children",
+        "type": "ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": "Composes the trigger, value, content and option parts instead of supplying `options`.",
+        "mode": "compound"
+      },
+      {
+        "name": "component",
+        "type": "ComponentType<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>>",
+        "required": false,
+        "defaultValue": null,
+        "description": "Replaces the root element. Shorthand for `slots.root`.",
+        "mode": "easy"
+      },
+      {
+        "name": "defaultOpen",
+        "type": "boolean",
+        "required": false,
+        "defaultValue": "false",
+        "description": "Opens the uncontrolled popup initially. Defaults to `false`."
+      },
+      {
+        "name": "defaultValue",
+        "type": "V",
+        "required": false,
+        "defaultValue": null,
+        "description": "Sets the initial uncontrolled selection. Omit to start without a selection."
+      },
+      {
+        "name": "description",
+        "type": "ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": "Shows helper text associated with the trigger.",
+        "mode": "easy"
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "required": false,
+        "defaultValue": "false",
+        "description": "Prevents opening the popup and selecting options. Defaults to `false`."
+      },
+      {
+        "name": "empty",
+        "type": "ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": "Shows content in the popup when the options list is empty.",
+        "mode": "easy"
+      },
+      {
+        "name": "error",
+        "type": "ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": "Marks the trigger invalid and shows an associated error message.",
+        "mode": "easy"
+      },
+      {
+        "name": "initialActiveValue",
+        "type": "V",
+        "required": false,
+        "defaultValue": null,
+        "description": "Highlight this enabled option on opening when no selected option exists. Typeahead takes precedence."
+      },
+      {
+        "name": "label",
+        "type": "ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": "Shows a label associated with the trigger.",
+        "mode": "easy"
+      },
+      {
+        "name": "labelPlacement",
+        "type": "\"above\" | \"hidden\"",
+        "required": false,
+        "defaultValue": "'above'",
+        "description": "Label placement. `hidden` keeps the accessible name without taking layout space.",
+        "mode": "easy"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "required": false,
+        "defaultValue": null,
+        "description": "Adds a hidden input to submit the value with a native form."
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(open: boolean) => void",
+        "required": false,
+        "defaultValue": null,
+        "description": "Receives requests to open or close the option popup.",
+        "signatures": [
+          {
+            "type": "(open: boolean) => void",
+            "parameters": [
+              {
+                "name": "open",
+                "type": "boolean",
+                "description": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "onValueChange",
+        "type": "(value: V) => void",
+        "required": false,
+        "defaultValue": null,
+        "description": "Fires once per accepted selection with the option's `value`.",
+        "signatures": [
+          {
+            "type": "(value: V) => void",
+            "parameters": [
+              {
+                "name": "value",
+                "type": "V",
+                "description": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "required": false,
+        "defaultValue": null,
+        "description": "Controls whether the option popup is open. A disabled select stays closed."
       },
       {
         "name": "placeholder",
         "type": "ReactNode",
         "required": false,
         "defaultValue": null,
-        "description": ""
+        "description": "Shows content in the trigger when no option matches the selected value.",
+        "mode": "easy"
       },
       {
         "name": "placement",
         "type": "\"top\" | \"right\" | \"bottom\" | \"left\" | \"top-start\" | \"top-end\" | \"right-start\" | \"right-end\" | \"bottom-start\" | \"bottom-end\" | \"left-start\" | \"left-end\"",
         "required": false,
         "defaultValue": "'bottom-start'",
-        "description": ""
+        "description": "Positions the popup relative to the trigger. Defaults to `bottom-start`."
       },
       {
         "name": "size",
         "type": "\"sm\" | \"md\" | \"lg\"",
         "required": false,
         "defaultValue": "'md'",
-        "description": ""
+        "description": "Sets the trigger height and text size. Defaults to `md`.",
+        "mode": "easy"
       },
       {
         "name": "slotProps",
         "type": "SelectSlotProps",
         "required": false,
         "defaultValue": null,
-        "description": "",
+        "description": "Passes props to the select elements.",
         "members": [
           {
             "name": "root",
@@ -301,14 +318,15 @@
               "name": "Select.Empty"
             }
           }
-        ]
+        ],
+        "mode": "easy"
       },
       {
         "name": "slots",
         "type": "SelectSlots",
         "required": false,
         "defaultValue": null,
-        "description": "",
+        "description": "Replaces select elements with custom components.",
         "members": [
           {
             "name": "root",
@@ -404,14 +422,15 @@
               "name": "Select.Empty"
             }
           }
-        ]
+        ],
+        "mode": "easy"
       },
       {
         "name": "value",
-        "type": "string",
+        "type": "V",
         "required": false,
         "defaultValue": null,
-        "description": ""
+        "description": "Controls the selected option value."
       },
       {
         "name": "variant",
@@ -425,20 +444,21 @@
   {
     "name": "Select.Trigger",
     "description": "",
+    "typeParameters": [],
     "props": [
       {
         "name": "id",
         "type": "string",
         "required": false,
         "defaultValue": null,
-        "description": ""
+        "description": "Native id of the trigger."
       },
       {
         "name": "size",
         "type": "\"sm\" | \"md\" | \"lg\"",
         "required": false,
         "defaultValue": "'md'",
-        "description": ""
+        "description": "Sets the trigger height and text size. Defaults to `md`."
       },
       {
         "name": "sx",
@@ -453,6 +473,7 @@
   {
     "name": "Select.Value",
     "description": "",
+    "typeParameters": [],
     "props": [
       {
         "name": "placeholder",
@@ -474,6 +495,7 @@
   {
     "name": "Select.Content",
     "description": "",
+    "typeParameters": [],
     "props": [
       {
         "name": "sx",
@@ -488,6 +510,7 @@
   {
     "name": "Select.Item",
     "description": "",
+    "typeParameters": [],
     "props": [
       {
         "name": "value",
@@ -501,7 +524,7 @@
         "type": "boolean",
         "required": false,
         "defaultValue": "false",
-        "description": ""
+        "description": "Keeps the option visible but prevents selection and keyboard activation. Defaults to `false`."
       },
       {
         "name": "sx",
@@ -516,13 +539,14 @@
         "type": "string",
         "required": false,
         "defaultValue": null,
-        "description": ""
+        "description": "Supplies plain text for typeahead matching when the option content is not plain text."
       }
     ]
   },
   {
     "name": "Select.Label",
     "description": "",
+    "typeParameters": [],
     "props": [
       {
         "name": "sx",
@@ -537,6 +561,7 @@
   {
     "name": "Select.Description",
     "description": "",
+    "typeParameters": [],
     "props": [
       {
         "name": "sx",
@@ -551,6 +576,7 @@
   {
     "name": "Select.Error",
     "description": "",
+    "typeParameters": [],
     "props": [
       {
         "name": "sx",
@@ -565,6 +591,7 @@
   {
     "name": "Select.Empty",
     "description": "",
+    "typeParameters": [],
     "props": [
       {
         "name": "sx",
@@ -577,8 +604,332 @@
     ]
   },
   {
+    "name": "GravityWell",
+    "description": "",
+    "typeParameters": [
+      {
+        "name": "T",
+        "constraint": "GravityWellItem",
+        "default": "GravityWellItem"
+      }
+    ],
+    "props": [
+      {
+        "name": "items",
+        "type": "readonly T[]",
+        "required": true,
+        "defaultValue": null,
+        "description": "Items to render inside the well grid. Noninteractive content only."
+      },
+      {
+        "name": "label",
+        "type": "string",
+        "required": true,
+        "defaultValue": null,
+        "description": "Accessible group name. Required."
+      },
+      {
+        "name": "columns",
+        "type": "number",
+        "required": false,
+        "defaultValue": null,
+        "description": "Positive integer fixed columns. Auto-fits when omitted."
+      },
+      {
+        "name": "component",
+        "type": "ComponentType<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>>",
+        "required": false,
+        "defaultValue": null,
+        "description": "Replacement component for the root element. Sugar for `slots.root`."
+      },
+      {
+        "name": "controlLabels",
+        "type": "GravityWellControlLabels",
+        "required": false,
+        "defaultValue": null,
+        "description": "Label the pause and resume buttons. Required when `interactive` is `true` or omitted.\nLabel the pause and resume buttons. Unused when `interactive` is `false`.",
+        "members": [
+          {
+            "name": "pause",
+            "type": "string",
+            "required": true,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "resume",
+            "type": "string",
+            "required": true,
+            "defaultValue": null,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "name": "defaultPaused",
+        "type": "boolean",
+        "required": false,
+        "defaultValue": "false",
+        "description": "Initial motion pause state when uncontrolled. Defaults to false."
+      },
+      {
+        "name": "defaultValue",
+        "type": "string",
+        "required": false,
+        "defaultValue": null,
+        "description": "Initial keyboard well location when uncontrolled. Defaults to first item id."
+      },
+      {
+        "name": "gap",
+        "type": "number",
+        "required": false,
+        "defaultValue": null,
+        "description": "Gap between tiles in CSS pixels. Defaults to resolved vars.space[2] (8px)."
+      },
+      {
+        "name": "interactive",
+        "type": "boolean",
+        "required": false,
+        "defaultValue": "true",
+        "description": "Enable pointer and keyboard interaction and pause controls. Defaults to `true`.\nDisable interaction, motion and pause controls."
+      },
+      {
+        "name": "minTileSize",
+        "type": "number",
+        "required": false,
+        "defaultValue": "56",
+        "description": "Minimum tile size in CSS pixels when auto-fitting columns. Defaults to 56."
+      },
+      {
+        "name": "onPausedChange",
+        "type": "(paused: boolean) => void",
+        "required": false,
+        "defaultValue": null,
+        "description": "Callback fired when pause/resume control is toggled.",
+        "signatures": [
+          {
+            "type": "(paused: boolean) => void",
+            "parameters": [
+              {
+                "name": "paused",
+                "type": "boolean",
+                "description": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "onPulse",
+        "type": "(origin: GravityWellPulseOrigin) => void",
+        "required": false,
+        "defaultValue": null,
+        "description": "Callback fired on click or keyboard activation. Local CSS pixel origin.",
+        "signatures": [
+          {
+            "type": "(origin: GravityWellPulseOrigin) => void",
+            "parameters": [
+              {
+                "name": "origin",
+                "type": "GravityWellPulseOrigin",
+                "description": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "onValueChange",
+        "type": "(id: string) => void",
+        "required": false,
+        "defaultValue": null,
+        "description": "Callback fired when keyboard navigates to a new item.",
+        "signatures": [
+          {
+            "type": "(id: string) => void",
+            "parameters": [
+              {
+                "name": "id",
+                "type": "string",
+                "description": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "paused",
+        "type": "boolean",
+        "required": false,
+        "defaultValue": null,
+        "description": "Controlled motion pause state."
+      },
+      {
+        "name": "radius",
+        "type": "number",
+        "required": false,
+        "defaultValue": "150",
+        "description": "Gravitational pull reach radius in CSS pixels. Defaults to 150."
+      },
+      {
+        "name": "renderItem",
+        "type": "(item: T) => ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": "Optional custom renderer for each item. Defaults to `item.content`.",
+        "signatures": [
+          {
+            "type": "(item: T) => ReactNode",
+            "parameters": [
+              {
+                "name": "item",
+                "type": "T",
+                "description": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "slotProps",
+        "type": "GravityWellSlotProps",
+        "required": false,
+        "defaultValue": null,
+        "description": "Props forwarded to anatomy parts.",
+        "members": [
+          {
+            "name": "root",
+            "type": "FieldElementProps<\"div\">",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "field",
+            "type": "FieldElementProps<\"div\">",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "part": "gravity-well-field"
+          },
+          {
+            "name": "scene",
+            "type": "FieldElementProps<\"ul\">",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "part": "gravity-well-scene"
+          },
+          {
+            "name": "tile",
+            "type": "FieldElementProps<\"div\">",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "part": "gravity-well-tile"
+          },
+          {
+            "name": "controls",
+            "type": "FieldElementProps<\"div\">",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "part": "gravity-well-controls"
+          },
+          {
+            "name": "pauseButton",
+            "type": "FieldElementProps<\"button\">",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "part": "gravity-well-pause-button"
+          }
+        ]
+      },
+      {
+        "name": "slots",
+        "type": "GravityWellSlots",
+        "required": false,
+        "defaultValue": null,
+        "description": "Replacement components for anatomy parts.",
+        "members": [
+          {
+            "name": "root",
+            "type": "ComponentType<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>>",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "field",
+            "type": "ComponentType<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>>",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "part": "gravity-well-field"
+          },
+          {
+            "name": "scene",
+            "type": "ComponentType<DetailedHTMLProps<HTMLAttributes<HTMLUListElement>, HTMLUListElement>>",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "part": "gravity-well-scene"
+          },
+          {
+            "name": "tile",
+            "type": "ComponentType<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>>",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "part": "gravity-well-tile"
+          },
+          {
+            "name": "controls",
+            "type": "ComponentType<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>>",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "part": "gravity-well-controls"
+          },
+          {
+            "name": "pauseButton",
+            "type": "ComponentType<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>>",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "part": "gravity-well-pause-button"
+          }
+        ]
+      },
+      {
+        "name": "strength",
+        "type": "number",
+        "required": false,
+        "defaultValue": "1",
+        "description": "Gravitational pull strength (0 to 1.5). Defaults to 1."
+      },
+      {
+        "name": "sx",
+        "type": "Interpolation<Theme>",
+        "required": false,
+        "defaultValue": null,
+        "description": "The public style-override prop. Accepts theme-aware style values and applies last.",
+        "inheritedFrom": "SxProps"
+      },
+      {
+        "name": "value",
+        "type": "string",
+        "required": false,
+        "defaultValue": null,
+        "description": "Current keyboard well location."
+      }
+    ]
+  },
+  {
     "name": "MoneyInput",
     "description": "",
+    "typeParameters": [],
     "props": [
       {
         "name": "currencies",
@@ -912,7 +1263,7 @@
       },
       {
         "name": "slotProps",
-        "type": "Partial<Record<\"root\" | \"label\" | \"range\" | \"quickAdd\" | \"shell\" | \"control\" | \"currency\" | \"quickAddButton\" | \"description\" | \"error\" | \"status\", FieldPartProps>>",
+        "type": "Partial<Record<\"root\" | \"label\" | \"status\" | \"shell\" | \"control\" | \"currency\" | \"quickAdd\" | \"quickAddButton\" | \"range\" | \"description\" | \"error\", FieldPartProps>>",
         "required": false,
         "defaultValue": null,
         "description": "Passes props and style overrides to named field parts.",
@@ -932,14 +1283,7 @@
             "description": ""
           },
           {
-            "name": "range",
-            "type": "FieldPartProps",
-            "required": false,
-            "defaultValue": null,
-            "description": ""
-          },
-          {
-            "name": "quickAdd",
+            "name": "status",
             "type": "FieldPartProps",
             "required": false,
             "defaultValue": null,
@@ -967,7 +1311,21 @@
             "description": ""
           },
           {
+            "name": "quickAdd",
+            "type": "FieldPartProps",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
             "name": "quickAddButton",
+            "type": "FieldPartProps",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "range",
             "type": "FieldPartProps",
             "required": false,
             "defaultValue": null,
@@ -982,13 +1340,6 @@
           },
           {
             "name": "error",
-            "type": "FieldPartProps",
-            "required": false,
-            "defaultValue": null,
-            "description": ""
-          },
-          {
-            "name": "status",
             "type": "FieldPartProps",
             "required": false,
             "defaultValue": null,
