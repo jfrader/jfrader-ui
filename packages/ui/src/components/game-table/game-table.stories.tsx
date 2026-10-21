@@ -32,8 +32,12 @@ type ViewportSize = { width: number; height: number };
 const viewportSize = ({ viewport }: { viewport: ViewportSize }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
 const ViewportFrame = styled.div(viewportSize);
 const ExampleViewport = styled.div({ inlineSize: '100%', maxInlineSize: '100%', overflowX: 'auto' });
-const DOCS_STAGE_BLOCK_SIZE = 600;
-const docsStage = { inlineSize: '100%', blockSize: DOCS_STAGE_BLOCK_SIZE };
+const DOCS_STAGE_BLOCK_SIZE = 640;
+const DOCS_STAGE_MAX_INLINE_SIZE = 640;
+const docsStage = {
+  inlineSize: '100%', maxInlineSize: DOCS_STAGE_MAX_INLINE_SIZE,
+  blockSize: DOCS_STAGE_BLOCK_SIZE, marginInline: 'auto',
+};
 const DocsStage = styled.div(docsStage);
 const DocsFlightsStage = styled(CardFlightsProvider)(docsStage);
 /** `fill` sizes the table by its container; `viewport` pins it to `args.viewport`. */
@@ -455,7 +459,9 @@ import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-tab
 
 const Frame = styled.div({
   inlineSize: '100%',
-  blockSize: 600,
+  maxInlineSize: 640,
+  blockSize: 640,
+  marginInline: 'auto',
 });
 
 const CenterContent = styled.div({
@@ -2033,7 +2039,9 @@ import { GameTable, buildAlternatingSlots, useGameTableSeat, type SeatLike } fro
 
 const Frame = styled.div({
   inlineSize: '100%',
-  blockSize: 600,
+  maxInlineSize: 640,
+  blockSize: 640,
+  marginInline: 'auto',
 });
 
 const SeatCards = styled.div({
@@ -2128,7 +2136,9 @@ import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-tab
 
 const Frame = styled.div({
   inlineSize: '100%',
-  blockSize: 600,
+  maxInlineSize: 640,
+  blockSize: 640,
+  marginInline: 'auto',
 });
 
 const SeatCards = styled.div({
@@ -3549,7 +3559,9 @@ import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-tab
 
 const Frame = styled.div({
   inlineSize: '100%',
-  blockSize: 600,
+  maxInlineSize: 640,
+  blockSize: 640,
+  marginInline: 'auto',
 });
 
 const SeatCards = styled.div({
@@ -4517,7 +4529,9 @@ import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-tab
 
 const Frame = styled.div({
   inlineSize: '100%',
-  blockSize: 600,
+  maxInlineSize: 640,
+  blockSize: 640,
+  marginInline: 'auto',
 });
 
 const CardsRow = styled.div({
@@ -5317,7 +5331,9 @@ import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-tab
 
 const Frame = styled.div({
   inlineSize: '100%',
-  blockSize: 600,
+  maxInlineSize: 640,
+  blockSize: 640,
+  marginInline: 'auto',
 });
 
 const BoardCenter = styled.div({
