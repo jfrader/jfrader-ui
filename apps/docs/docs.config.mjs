@@ -1,6 +1,6 @@
 /**
- * jfrader/ui's documentation front: a configuration for @jfrader/storybook-docs.
- * The tool lives in its own repository (jfrader/storybook-docs) and knows nothing about
+ * jfrader/ui's documentation front: a configuration for @jfrader/react-storydocs.
+ * The tool lives in its own repository (jfrader/react-storydocs) and knows nothing about
  * this component library; everything it needs to know is the file below.
  */
 export default {
