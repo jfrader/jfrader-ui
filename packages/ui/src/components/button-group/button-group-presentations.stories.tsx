@@ -365,3 +365,43 @@ export const ExpandingControlled: Story = {
     await expect(forward).toHaveAttribute('data-expanded', 'true');
   },
 };
+
+export const ExpandingNarrowFocus: Story = {
+  parameters: { layout: 'padded' },
+  render: (args) => (
+    <ButtonGroup {...args} sx={{ inlineSize: '20rem' }}>
+      <ButtonGroup.Item id="reply" startIcon={<ActionIcon />}>Reply</ButtonGroup.Item>
+      <ButtonGroup.Item id="forward" startIcon={<ActionIcon />}>Forward</ButtonGroup.Item>
+      <ButtonGroup.Item id="archive" startIcon={<ActionIcon />}>Archive all selected conversations</ButtonGroup.Item>
+    </ButtonGroup>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    const group = canvas.getByRole('group');
+    const reply = canvas.getByRole('button', { name: 'Reply' });
+    const archive = canvas.getByRole('button', { name: 'Archive all selected conversations' });
+    reply.focus();
+    await userEvent.keyboard('{End}');
+    await expect(archive).toHaveFocus();
+    await waitFor(async () => {
+      const label = archive.querySelector<HTMLElement>('[aria-hidden="true"]:has([data-button-group-labels])')!;
+      await expect(label.getBoundingClientRect().width).toBeGreaterThanOrEqual(label.firstElementChild!.getBoundingClientRect().width - 1);
+      const bounds = group.getBoundingClientRect();
+      const action = archive.getBoundingClientRect();
+      await expect(action.right).toBeLessThanOrEqual(bounds.right + 1);
+      await expect(action.left).toBeGreaterThanOrEqual(bounds.left - 1);
+    });
+    await userEvent.keyboard('{Home}');
+    await expect(reply).toHaveFocus();
+    await waitFor(async () => {
+      const bounds = group.getBoundingClientRect();
+      const action = reply.getBoundingClientRect();
+      await expect(action.right).toBeLessThanOrEqual(bounds.right + 1);
+      await expect(action.left).toBeGreaterThanOrEqual(bounds.left - 1);
+    });
+  },
+};
+
+export const ExpandingNarrowFocusRTL: Story = {
+  ...ExpandingNarrowFocus,
+  args: { dir: 'rtl' },
+};

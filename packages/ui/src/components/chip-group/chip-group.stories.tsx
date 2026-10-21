@@ -254,10 +254,53 @@ export const WrappedLongLabels: Story = {
     const group = within(canvasElement).getByRole('group');
     for (const button of within(group).getAllByRole('button')) {
       await expect(button.getBoundingClientRect().width).toBeLessThanOrEqual(group.getBoundingClientRect().width + 1);
+      const label = button.lastElementChild!;
+      const bounds = label.getBoundingClientRect();
+      const range = button.ownerDocument.createRange();
+      range.selectNodeContents(label);
+      for (const rect of range.getClientRects()) {
+        await expect(rect.left).toBeGreaterThanOrEqual(bounds.left - 1);
+        await expect(rect.right).toBeLessThanOrEqual(bounds.right + 1);
+        await expect(rect.top).toBeGreaterThanOrEqual(bounds.top - 1);
+        await expect(rect.bottom).toBeLessThanOrEqual(bounds.bottom + 1);
+      }
     }
     await expect(
       within(canvasElement).getByRole('button', { name: 'Internationalization and accessibility engineering' }),
     ).toBeInTheDocument();
+  },
+};
+
+export const LongOverflowLabels: Story = {
+  tags: ['!autodocs'],
+  args: {
+    ...OVERFLOW,
+    moreLabel: () => 'ZusammenarbeitseinstellungenundBenachrichtigungsoptionenanzeigen',
+    lessLabel: 'ZusammenarbeitseinstellungenundBenachrichtigungsoptionenausblenden',
+    onExpandedChange: fn(),
+  },
+  render: (args) => (
+    <ConstrainedFrame>
+      <ChipGroup {...args} />
+    </ConstrainedFrame>
+  ),
+  play: async ({ canvas, args, userEvent }) => {
+    const group = canvas.getByRole('group');
+    const toggle = group.querySelector<HTMLButtonElement>('[data-ui="chip-group-overflow"]')!;
+    const expectContained = async () => {
+      await expect(toggle.scrollWidth).toBeLessThanOrEqual(toggle.clientWidth + 1);
+      await expect(toggle.getBoundingClientRect().width).toBeLessThanOrEqual(group.getBoundingClientRect().width + 1);
+      await expect(toggle.getBoundingClientRect().height).toBeGreaterThanOrEqual(SIZE_PX.md);
+    };
+    await expectContained();
+    toggle.focus();
+    await userEvent.keyboard('{Enter}');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expectContained();
+    await userEvent.keyboard(' ');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expectContained();
+    await expect(args.onExpandedChange).toHaveBeenCalledTimes(2);
   },
 };
 export const DisabledGroup: Story = {
