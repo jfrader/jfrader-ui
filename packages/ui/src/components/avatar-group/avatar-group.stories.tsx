@@ -446,6 +446,16 @@ export const GroupGeometry: Story = {
         await expect(overlap).toBe(4);
       }
       await expectInside(overflow, group);
+      const count = overflowCount(overflow);
+      const text = count.firstChild!;
+      const range = canvasElement.ownerDocument.createRange();
+      range.setStart(text, 0);
+      range.setEnd(text, 1);
+      const prefix = range.getBoundingClientRect();
+      range.setStart(text, 1);
+      range.setEnd(text, text.textContent!.length);
+      const digits = range.getBoundingClientRect();
+      await expect(prefix.right).toBeLessThanOrEqual(digits.left + CSS_PIXEL);
     }
   },
 };
