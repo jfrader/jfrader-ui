@@ -28,12 +28,12 @@ import { Button } from '../button';
 import { Checkbox } from '../checkbox';
 
 export type SortDirection = 'asc' | 'desc';
-export interface SortState {
-  columnId: string;
+export interface SortState<Id extends string = string> {
+  columnId: Id;
   direction: SortDirection;
 }
-export interface DataColumn<T> {
-  id: string;
+export interface DataColumn<T, Id extends string = string> {
+  id: Id;
   header: ReactNode;
   accessor?: (row: T) => string | number | Date | null | undefined;
   cell?: (row: T) => ReactNode;
@@ -86,28 +86,28 @@ export interface SortableDataTableSlots {
 export type DataTableSlotProps = {
   [Part in keyof SortableDataTableSlots]?: ComponentProps<NonNullable<SortableDataTableSlots[Part]>>;
 };
-export type SortableDataTableProps<T> = Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> &
+export type SortableDataTableProps<T, Id extends string = string, Key extends string = string> = Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> &
   SxProps & {
     /** Supplies the records displayed and, in client mode, sorted by the table. */
     rows: readonly T[];
     /** Defines column headings, cell content and sorting behavior. */
-    columns: readonly DataColumn<T>[];
+    columns: readonly DataColumn<T, Id>[];
     /** Returns a stable, unique key for each row and its selection state. */
-    getRowId: (row: T) => string;
+    getRowId: (row: T) => Key;
     /** Names the table through its caption. */
     caption: ReactNode;
     /** Visually hides the caption while preserving its accessible name. Defaults to `false`. */
     captionHidden?: boolean;
     /** Sets the initial uncontrolled sort. Defaults to `null` for input order. */
-    defaultValue?: SortState | null;
+    defaultValue?: SortState<NoInfer<Id>> | null;
     /** Receives the requested sort when a column's sort button is activated. */
-    onValueChange?: (sort: SortState | null) => void;
+    onValueChange?: (sort: SortState<NoInfer<Id>> | null) => void;
     /** Controls selected row keys, including keys outside the displayed rows. */
-    selectedKeys?: readonly string[];
+    selectedKeys?: readonly NoInfer<Key>[];
     /** Sets initially selected keys when uncontrolled. Defaults to an empty list. */
-    defaultSelectedKeys?: readonly string[];
+    defaultSelectedKeys?: readonly NoInfer<Key>[];
     /** Receives selected keys after row, select-all or clear actions. */
-    onSelectionChange?: (keys: readonly string[]) => void;
+    onSelectionChange?: (keys: readonly NoInfer<Key>[]) => void;
     /** Sets string sorting and number and date formatting locales. */
     locale?: Intl.LocalesArgument;
     /** Configures formatting for date values without a custom cell renderer. */
@@ -132,12 +132,12 @@ export type SortableDataTableProps<T> = Omit<ComponentPropsWithRef<'div'>, 'chil
     /** Leaves row ordering to you and requires a controlled `value`. */
     sortMode: 'manual';
     /** Controls the active sort. Use `null` for no active sort. */
-    value: SortState | null;
+    value: SortState<NoInfer<Id>> | null;
   } | {
     /** Sorts supplied rows locally. Defaults to `client`. */
     sortMode?: 'client';
     /** Controls the active sort. Use `null` for input order. */
-    value?: SortState | null;
+    value?: SortState<NoInfer<Id>> | null;
   }) &
   ({
     /** Shows row checkboxes and selection controls. */
@@ -253,7 +253,7 @@ const footerStyle = css({
   padding: vars.space[3],
 });
 const checkboxStyle = css({ minBlockSize: vars.space[8], minInlineSize: vars.space[8], justifyContent: 'center' });
-const emptyKeys: readonly string[] = [];
+const emptyKeys: readonly never[] = [];
 const sortable = <T,>(column: DataColumn<T>) => column.sortable !== false && Boolean(column.accessor || column.compare);
 const columnLabel = <T,>(column: DataColumn<T>) =>
   column.sortLabel ?? (typeof column.header === 'string' ? column.header : '');
@@ -262,8 +262,8 @@ const missing = (value: unknown) =>
   value === '' ||
   (typeof value === 'number' && !Number.isFinite(value)) ||
   (value instanceof Date && !Number.isFinite(value.getTime()));
-const normalizeKeys = (keys: readonly string[]) => [...new Set(keys)];
-const sameKeys = (a: readonly string[], b: readonly string[]) => {
+const normalizeKeys = <Key extends string,>(keys: readonly Key[]) => [...new Set(keys)];
+const sameKeys = <Key extends string,>(a: readonly Key[], b: readonly Key[]) => {
   const other = new Set(b);
   return a.length === other.size && a.every((key) => other.has(key));
 };
@@ -276,7 +276,7 @@ function compareValues(a: unknown, b: unknown, collator: Intl.Collator) {
 
 // Native table: Tab/Shift+Tab visit controls; Enter/Space sort through native buttons.
 // Bounded collections only; compose Pagination externally, without grid navigation or virtualization.
-export function SortableDataTable<T>({
+export function SortableDataTable<T, const Id extends string = string, Key extends string = string>({
   ref,
   rows,
   columns,
@@ -305,7 +305,7 @@ export function SortableDataTable<T>({
   className,
   sx,
   ...rest
-}: SortableDataTableProps<T>) {
+}: SortableDataTableProps<T, Id, Key>) {
   const Scroller = slots?.scroller ?? 'div';
   const Table = slots?.table ?? 'table';
   const Caption = slots?.caption ?? 'caption';
@@ -352,11 +352,11 @@ export function SortableDataTable<T>({
     totalSelected: numberFormat.format(keys.length),
     visibleRows: numberFormat.format(visibleKeys.length),
   });
-  const anchor = useRef<string | null>(null);
+  const anchor = useRef<Key | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
   const clearRef = useRef<HTMLButtonElement>(null);
   const clearing = useRef(false);
-  const focusedRow = useRef<{ key: string; index: number; control: number } | null>(null);
+  const focusedRow = useRef<{ key: Key; index: number; control: number } | null>(null);
   const bodyRef = useRef<HTMLTableSectionElement>(null);
   const headerRef = useRef<HTMLTableSectionElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -412,11 +412,11 @@ export function SortableDataTable<T>({
     }
     focusedRow.current = null;
   });
-  const updateSelection = (next: readonly string[]) => {
+  const updateSelection = (next: readonly Key[]) => {
     const normalized = normalizeKeys(next);
     if (!sameKeys(keys, normalized)) requestKeys(normalized);
   };
-  const toggleRows = (targets: readonly string[], checked: boolean) =>
+  const toggleRows = (targets: readonly Key[], checked: boolean) =>
     updateSelection(checked ? [...keys, ...targets] : keys.filter((key) => !targets.includes(key)));
   const formatCell = (column: DataColumn<T>, row: T) => {
     if (column.cell) return column.cell(row);
@@ -426,7 +426,7 @@ export function SortableDataTable<T>({
     if (cell instanceof Date) return dateFormat.format(cell);
     return cell;
   };
-  const selectionCheckbox = (row: T, key: string) => (
+  const selectionCheckbox = (row: T, key: Key) => (
     <Checkbox
       aria-label={messages.selectRow(getRowLabel!(row))}
       checked={keySet.has(key)}
