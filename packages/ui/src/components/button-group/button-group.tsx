@@ -667,6 +667,18 @@ function ButtonGroupRoot({
     )
       setTarget(null);
   }, [disabled, children, items, target]);
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root || !target) return;
+    const revealFocus = () => {
+      if (target.ownerDocument.activeElement === target)
+        target.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    };
+    const observer = new ResizeObserver(revealFocus);
+    observer.observe(root);
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [target]);
   const context = useMemo(
     () => ({
       presentation,

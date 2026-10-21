@@ -149,6 +149,7 @@ const chipStyle = css({
   fontFamily: vars.font.sans,
   fontWeight: vars.fontWeight.medium,
   lineHeight: vars.lineHeight.base,
+  overflowWrap: 'anywhere',
   cursor: 'pointer',
   transitionProperty: 'background-color, border-color, color',
   transitionDuration: vars.motion.duration.fast,
@@ -172,7 +173,7 @@ const sizeStyles = {
   sm: css({ minBlockSize: vars.space[8], fontSize: vars.textSize.sm }),
   md: css({ minBlockSize: vars.space[10], fontSize: vars.textSize.md }),
 };
-const labelStyle = css({ minInlineSize: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' });
+const labelStyle = css({ minInlineSize: 0, whiteSpace: 'normal' });
 const checkStyle = css({ display: 'inline-flex', flexShrink: 0, overflow: 'hidden', alignItems: 'center' });
 const itemFrameStyle = css({ display: 'inline-flex', minInlineSize: 0, maxInlineSize: '100%' });
 const reveal = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
