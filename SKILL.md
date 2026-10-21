@@ -199,6 +199,39 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - Component documentation and the primary story snippet show the easy path first as the default usage, followed by compound examples for custom anatomy.
 - Incompatible modes (passing both `options` and `children`) are rejected at compile time with TypeScript type errors.
 
+### Type contracts and generics
+
+- Public props are the contract: every exported component has a named `...Props` type, exported from
+  its barrel and composed from `ComponentPropsWithRef<'el'>` when it wraps a native element.
+- Carry the consumer's domain through the type. A prop that selects, renders or returns an item is
+  generic in that item, not `string`, `unknown` or a private record.
+  - **Selection:** `options` infers the value union (`Select<Status>`); state, defaults and callbacks
+    use the same `V`. Accept `NoInfer<V>` on `value`/`defaultValue` so inference comes from `options`,
+    never from a typo.
+  - **Collections:** `T` flows from `items`/`rows` into `renderItem`, `cell`, `compare`, `getRowId` and
+    change callbacks. A recursive structure propagates `T` through children and lazy results, not only
+    through the root array.
+  - **Defaults:** keep `V = string` / `T = BaseItem` so existing broad callers compile. Do not infer a
+    generic from callbacks when the data prop is present.
+- Do not invent a generic where the component generates values. NumberField steps numbers, DatePicker
+  builds ISO strings, PhoneInput accepts incomplete candidates; a literal generic would promise
+  something the component can create.
+- Type the compound boundary, not the children. A root cannot constrain independent JSX children
+  through React context; keep compound parts string-based unless a typed factory is designed.
+- Slots receive the element they replace: map each key to `ComponentPropsWithRef<'button'>` or the
+  adopted part's props. A styling-only `PartProps` record loses `onChange`, `ref` and attributes; use
+  the anatomy map (`FieldSlots`, `FieldParts`) and export a named `...SlotProps`.
+- `unknown` is for untrusted input (HTML `data-*` payloads, caught errors, heterogeneous table cells)
+  and is narrowed before use. Never `any`; never a double cast to bridge an overlay seam.
+- Defaults live in one place. When the applying part owns the initializer (`size = 'md'` in
+  Select.Trigger), state the default in TSDoc and make the docs extractor report it. An API table that
+  prints `—` for a real default is a documentation defect.
+- Every API-visible prop has TSDoc that starts with what it changes. Controlled/default semantics,
+  units, callback timing and clearing behaviour belong to the contract.
+- Verify with the package typecheck and a consumer fixture: literal-union inference, a wrong literal
+  rejected, a narrow callback accepted, custom item metadata visible in a renderer, and slot props
+  completing native attributes.
+
 ### Families and composition
 
 - Before adding a variant or sibling, name its family and the module that already owns its material, content generation, anatomy, state, and accessibility. Reuse those modules; do not copy their JSX or event logic.
@@ -226,8 +259,10 @@ Fill this in the spec/PR before coding (it prevents 80% of review findings):
    `slotProps` for part props. Root extra props merge as `slotProps.root`: slot conflicts win,
    except combined className and shallow-merged style. Existing leaf-control `render` APIs stay;
    no new panel render APIs, `asChild`, or element-valued replacements.
-7. **Environments**: RTL, reduced motion, forced colors, SSR/hydration notes.
-8. **Lifecycle status**: new / stable / deprecated (with replacement).
+7. **Types**: value/item generic and its inference source, default type parameters, slot element
+   maps, and where each default is initialized.
+8. **Environments**: RTL, reduced motion, forced colors, SSR/hydration notes.
+9. **Lifecycle status**: new / stable / deprecated (with replacement).
 
 ## 4. Files, naming, and shared modules
 
@@ -610,6 +645,10 @@ One house style covers every Markdown file in the repo: `README.md`, `docs/`, `S
   canvas, read like a consumer wrote it, and include the import.
 - Props, parts, and slot descriptions are written once as TSDoc on the source contract; the
   generated API renders them with Slots and Also uses. Do not describe them a second time in prose.
+- The API section renders through `ApiTable`: literal unions as chips, `members`/`signatures`
+  expanded from the source types, real defaults, and a Slots panel built from `slots`/`slotProps`.
+  Prop rows are generated, never hand-written in prose, and a type the table cannot resolve is a
+  gap in the source contract or the extractor.
 - `packages/ui/src/components/dialog/dialog.stories.tsx` is the reference page.
 
 **Component introduction**
