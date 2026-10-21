@@ -226,6 +226,7 @@ const rootStyle = css({
   color: vars.color.text,
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
+  overflowWrap: 'anywhere',
   '&[data-state="closed"]': { borderRadius: vars.radius.full },
   [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });

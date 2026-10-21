@@ -10,6 +10,7 @@ const SettingsPanel = styled(Surface)({
   inlineSize: `calc(${vars.space[8]} * 18)`,
   maxInlineSize: '100%',
   padding: vars.space[6],
+  marginInline: 'auto',
   display: 'grid',
   gap: vars.space[5],
 });
@@ -85,6 +86,7 @@ const meta = {
     onOpenChange: fn(),
   },
   parameters: {
+    layout: 'padded',
     docs: {
       description: {
         component:

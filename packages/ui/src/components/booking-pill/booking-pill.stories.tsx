@@ -21,6 +21,7 @@ const ReservationPanel = styled(Surface)({
   inlineSize: `calc(${vars.space[8]} * 18)`,
   maxInlineSize: '100%',
   padding: vars.space[6],
+  marginInline: 'auto',
   display: 'grid',
   gap: vars.space[5],
 });
@@ -53,6 +54,7 @@ const meta = {
     onStepChange: fn(),
   },
   parameters: {
+    layout: 'padded',
     docs: {
       source: {
         language: 'tsx',
@@ -453,6 +455,14 @@ export const InvalidReview: Story = {
   },
 };
 export const Disabled: Story = { args: { disabled: true, defaultOpen: true } };
+export const LongContent: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    venue: 'The Glasshouse private dining room and rooftop garden',
+    venueDetail: 'Reservation'.repeat(18),
+  },
+};
 export const Narrow: Story = {
   args: Review.args,
   decorators: [

@@ -6,6 +6,7 @@
 
 - `GameActions` wraps long action labels, `GameResult` contains long result text and actions, and overlapping `GameMarks` stay within their track. Played-pile examples fit narrow screens and use the shared player seats.
 - `ThemeSwitch` gives its clickable appearance icon a 32px target. `ToggleSubscription` wraps long billing labels and badges within each option. `TypewriterTerminal` reveals its transcript when a link receives keyboard focus and wraps long transcript text within the terminal.
+- `BookingPill` wraps long venue details within its panel. `BookingPill` and `ControlCenter` previews fit phone screens, and `CardFlights` previews keep their tables from collapsing to the controls' width.
 - `SwipeActions` keeps revealed actions aligned when writing direction changes, and its examples fit narrow screens. `TextReveal` wraps long words within narrow headings and applies visual-slot styles. `TextShimmer` wraps unbroken activity labels within their container.
 - `RadialMenu` contains long fallback lists in a scrollable menu and wraps long action labels. `SignaturePad` focuses the canvas after drawing so keyboard shortcuts work immediately. `StreamingCaret` stays visible in forced colors.
 - `LocaleSwitcher` wraps long language labels within narrow layouts. `PageCurl` contains long navigation labels, status text, and hints, keeps its turning flap behind navigation controls, and renders documentation page content without a circular-data error. `Pill` grows with enlarged text. `Prose` keeps images, video, and SVG artwork within its reading column.

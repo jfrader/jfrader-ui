@@ -24,7 +24,7 @@ const meta = {
   title: 'Games/CardFlights', component: CardFlightsProvider, tags: ['!autodocs'],
   args: { children: null },
   render: () => <CardFlightsFixture />,
-  parameters: { a11y: { test: 'error' }, docs: {
+  parameters: { layout: 'padded', a11y: { test: 'error' }, docs: {
     description: { component: 'Deal cards to a hand and move played cards to their table piles.' },
     source: { language: 'tsx', code: `import { useState } from 'react';
 import { CardFlightsProvider, useBoardFlights, type PlayedFlightCard } from '@jfrader/ui/card-flights';
