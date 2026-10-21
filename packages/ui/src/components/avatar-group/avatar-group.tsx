@@ -287,7 +287,7 @@ export function AvatarGroup({
               className={slotProps?.overflow?.className}
               css={[overflowBaseStyle, overflowSizeStyles[size], slotProps?.overflow?.sx]}
             >
-              <span aria-hidden="true">+{formattedHidden}</span>
+              <span aria-hidden="true" dir="ltr">+{formattedHidden}</span>
             </Overflow>
           )}
           <Summary
