@@ -488,6 +488,21 @@ const tokenStyles: Record<TypeTokenKind, ReturnType<typeof css>> = {
 };
 
 /** Print a TypeScript type as tokenized code, so unions and generics stay scannable. */
+function InlineText({ text }: { text: string }) {
+  const parts = text.split(/(`[^`]+`)/g);
+  return (
+    <>
+      {parts.map((part, index) =>
+        part.length > 1 && part.startsWith('`') && part.endsWith('`') ? (
+          <code key={index} css={inlineCodeStyle}>{part.slice(1, -1)}</code>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
+
 function TypeText({ type }: { type: string }) {
   const tokens = useMemo(() => [...type.matchAll(TYPE_TOKEN)].map((match) => match[0]), [type]);
   return (
