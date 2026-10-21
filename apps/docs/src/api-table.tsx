@@ -1,4 +1,4 @@
-import { ApiTable, type ApiPropDoc } from '@jfrader/ui';
+import { ApiTable, type ApiPropDoc, type ApiTypeRef } from '@jfrader/ui';
 import type { ApiRendererProps } from '@jfrader/react-storydocs';
 
 /**
@@ -6,30 +6,28 @@ import type { ApiRendererProps } from '@jfrader/react-storydocs';
  * `signature` tells a prop which overload it belongs to, which this side names as a mode.
  */
 
-/** The slot descriptions already state the rendered default; lift it into structured metadata. */
-function defaultFromDescription(description?: string): Pick<ApiPropDoc, 'component' | 'defaultElement'> {
-  const text = description ?? '';
-  const component = text.match(/Uses? `([A-Z][\w.]*)` by default/i);
-  if (component) return { component: { name: component[1] } };
-  const element = text.match(/Renders? (?:an? )?`([a-z][\w-]*)`/i);
-  if (element) return { defaultElement: element[1] };
-  const explicit = text.match(/Defaults to (?:an? )?`([a-z][\w-]*)`/i);
-  if (explicit) return { defaultElement: explicit[1] };
-  return {};
+type EngineRef = { name: string; slug?: string; href?: string };
+
+function withHref(ref: EngineRef | undefined): ApiTypeRef | undefined {
+  if (!ref) return undefined;
+  return { name: ref.name, href: ref.href ?? (ref.slug ? `#/components/${ref.slug}` : undefined) };
 }
 
-function withMemberDefaults(prop: ApiPropDoc): ApiPropDoc {
-  if (!prop.members?.length) return prop;
+/** Resolve the engine's catalog slugs to docs links at the adapter boundary. */
+function withLinks(prop: ApiPropDoc): ApiPropDoc {
   return {
     ...prop,
-    members: prop.members.map((member) => {
-      const inferred = defaultFromDescription(member.description);
-      return {
-        ...member,
-        component: member.component ?? inferred.component,
-        defaultElement: member.defaultElement ?? inferred.defaultElement,
-      };
-    }),
+    component: withHref(prop.component as EngineRef | undefined),
+    inheritedComponent: withHref(prop.inheritedComponent as EngineRef | undefined),
+    members: prop.members?.map(withLinks),
+    element: prop.element ? { ...prop.element, members: prop.element.members.map(withLinks) } : undefined,
+    signatures: prop.signatures?.map((signature) => ({
+      ...signature,
+      parameters: signature.parameters.map((parameter) => ({
+        ...parameter,
+        members: parameter.members?.map(withLinks),
+      })),
+    })),
   };
 }
 
@@ -41,7 +39,7 @@ export default function Api({ components }: ApiRendererProps) {
         ...component,
         // The page lede already introduces the root; only parts need a second description.
         description: index === 0 ? undefined : component.description,
-        props: props.map(({ signature, ...prop }) => ({
+        props: props.map(({ signature, ...prop }) => withLinks({
           ...prop,
           mode: signature === 0 ? 'shorthand' : signature === 1 ? 'composed' : undefined,
         })),
