@@ -1,13 +1,13 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import { storybookDocs } from '@jfrader/storybook-docs/vite';
+import { reactStorydocs } from '@jfrader/react-storydocs/vite';
 import config from './docs.config.mjs';
 
 export default defineConfig({
   // The docs share a service with the Storybook workbench, which serves them under /docs/. Local
   // development stays at the root.
   base: process.env.DOCS_BASE ?? '/',
-  plugins: [storybookDocs({ config }), react({ jsxImportSource: '@emotion/react' })],
+  plugins: [reactStorydocs({ config }), react({ jsxImportSource: '@emotion/react' })],
   resolve: {
     // Stories are rendered from the linked design system's own files, so anything it imports
     // resolves to its copy rather than this app's: two instances of the styling runtime means a
