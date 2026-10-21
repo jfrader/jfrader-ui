@@ -144,6 +144,17 @@ export interface ApiTableProps
 
 const rootStyle = css({
   minInlineSize: 0,
+  // The docs chrome styles every <code> as a chip; type and prop names are already code, so a
+  // nested chip adds noise. Keep the code background only for literal-value spans.
+  '& code[class]': {
+    backgroundColor: 'transparent',
+    paddingInline: 0,
+    paddingBlock: 0,
+    borderRadius: 0,
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    lineHeight: 'inherit',
+  },
   border: `1px solid ${vars.color.borderSubtle}`,
   borderRadius: vars.radius.lg,
   backgroundColor: vars.color.surface,
