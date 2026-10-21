@@ -257,6 +257,7 @@ const SAFE_AREA = {
 
 const dialogStyle = css({
   ...modalShellReset,
+  boxSizing: 'border-box',
   position: 'fixed',
   inset: 0,
   margin: 0,

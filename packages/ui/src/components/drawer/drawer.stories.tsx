@@ -2785,6 +2785,8 @@ export const PartStyling: Story = {
     await expect(getComputedStyle(body).paddingTop).toBe(base.space[2]);
     await expect(getComputedStyle(footer).justifyContent).toBe('flex-start');
     await expect(getComputedStyle(dialog).paddingLeft).toBe(base.space[2]);
+    await expect(rect(dialog).left).toBeGreaterThanOrEqual(0);
+    await expect(rect(dialog).right).toBeLessThanOrEqual(dialog.ownerDocument.documentElement.clientWidth);
     const remPx = Number.parseFloat(getComputedStyle(canvasElement.ownerDocument.documentElement).fontSize);
     await expect(Number.parseFloat(getComputedStyle(within(dialog).getByRole('heading')).fontSize)).toBeCloseTo(
       Number.parseFloat(base.textSize.xl) * remPx,

@@ -13,6 +13,8 @@ import {
   expectSameDomIdentity,
 } from '../../testing/interior-slot-assertions';
 import { Dialog, type DialogEasyProps } from './dialog';
+import { expectInside } from '../../testing/geometry-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
 
 // @ts-expect-error Unknown slot key is rejected on DialogEasyProps['slots']
 type UnknownDialogSlot = NonNullable<DialogEasyProps['slots']>['unknownKey'];
@@ -129,6 +131,8 @@ export const Customization: Story = {
       '[data-slot="dialog-panel-winner"]',
       '[data-slot="dialog-panel-loser"]',
     );
+    await settleMotion(dialogElement!);
+    await expectInside(panel, dialogElement!);
 
     // 2. Class and style merge: top extra props merge with slotProps.root, slot conflicts win
     await expectMergedClasses(panel, 'top-dialog-class', 'slot-dialog-class');
