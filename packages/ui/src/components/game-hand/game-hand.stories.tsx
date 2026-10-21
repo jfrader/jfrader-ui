@@ -12,7 +12,8 @@ import { buildOpponentHiddenHandLayout, DEFAULT_HIDDEN_HAND_RULES, getHandFanRot
 import { HIDDEN_PARITY, PLAYER_PARITY, SEAT_PARITY } from './parity-fixtures';
 
 const Controls = styled.div({ display: 'grid', justifyItems: 'start', gap: vars.space[4] });
-const Row = styled.div({ display: 'flex', flexWrap: 'wrap', maxInlineSize: '100%', overflowX: 'auto', gap: vars.space[8] });
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', maxInlineSize: '100%', overflowX: 'auto',
+  padding: vars.space[1], boxSizing: 'border-box', gap: vars.space[8] });
 const Hands = styled.div({ display: 'flex', flexWrap: 'wrap', maxInlineSize: '100%', boxSizing: 'border-box', gap: vars.space[12], padding: vars.space[8] });
 const SpaciousHands = styled(Hands)({ flexWrap: 'nowrap', maxInlineSize: 'none', flexShrink: 0,
   padding: `calc(4 * ${vars.space[12]})`, gap: `calc(4 * ${vars.space[12]})` });
@@ -20,6 +21,7 @@ const NarrowExample = styled.div({ inlineSize: 280, maxInlineSize: '100%' });
 const ExampleViewport = styled.div({
   inlineSize: `min(100%, calc(100vw - 2 * ${vars.space[4]}))`, maxInlineSize: '100%',
   display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', justifyItems: 'safe center', overflowX: 'auto',
+  padding: vars.space[1], boxSizing: 'border-box',
 });
 
 function ReplacedHandRoot(props: ComponentPropsWithRef<'div'>) {
@@ -36,7 +38,7 @@ const CARDS: GameHandCard[] = [
 
 const meta = {
   title: 'Games/GameHand', component: GameHand, tags: ['autodocs'],
-  decorators: [(Story) => <ExampleViewport><Story /></ExampleViewport>],
+  decorators: [(Story) => <ExampleViewport data-hand-example-viewport=""><Story /></ExampleViewport>],
   args: { cards: CARDS.slice(0, 3), playLabel: 'Play card', onValueChange: fn(), onPlayIntent: fn() },
   parameters: { docs: {
     description: { component: 'Choose a card from your hand and confirm to play it. Show opponents’ hands as card backs with GameHand.Hidden.' },
@@ -162,7 +164,19 @@ const cards = [
       },
     },
   },
-  play: async ({ canvasElement }) => checkFan(canvasElement, 3),
+  play: async ({ canvasElement, canvas, userEvent }) => {
+    await checkFan(canvasElement, 3);
+    for (const button of canvas.getAllByRole('button')) {
+      await userEvent.tab();
+      await expect(canvasElement.ownerDocument.activeElement).toBe(button);
+    }
+    const confirm = canvas.getByRole('button', { name: 'Play card' });
+    await expect(canvasElement.ownerDocument.activeElement).toBe(confirm);
+    const style = getComputedStyle(confirm);
+    const ring = Number.parseFloat(style.outlineWidth) + Number.parseFloat(style.outlineOffset);
+    const viewport = confirm.closest('[data-hand-example-viewport]')!;
+    await expect(confirm.getBoundingClientRect().bottom + ring).toBeLessThanOrEqual(viewport.getBoundingClientRect().bottom + 0.5);
+  },
 };
 export const OneCard: Story = { tags: ['!autodocs'], args: { cards: CARDS.slice(0, 1) }, play: async ({ canvasElement }) => checkFan(canvasElement, 1) };
 export const TwoCards: Story = { tags: ['!autodocs'], args: { cards: CARDS.slice(0, 2) }, play: async ({ canvasElement }) => checkFan(canvasElement, 2) };
@@ -535,7 +549,8 @@ export const Sizes: Story = {
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
-const Row = styled.div({ display: 'flex', flexWrap: 'wrap', maxInlineSize: '100%', overflowX: 'auto', gap: vars.space[8] });
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', maxInlineSize: '100%', overflowX: 'auto',
+  padding: vars.space[1], boxSizing: 'border-box', gap: vars.space[8] });
 
 const cards = [
   { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
@@ -582,6 +597,9 @@ export const NarrowSizes: Story = {
       await expect(target.left).toBeLessThan(bounds.right);
       await expect(target.width).toBeGreaterThanOrEqual(32);
       await expect(target.height).toBeGreaterThanOrEqual(24);
+      const style = getComputedStyle(button);
+      const ring = Number.parseFloat(style.outlineWidth) + Number.parseFloat(style.outlineOffset);
+      await expect(target.bottom + ring).toBeLessThanOrEqual(row.getBoundingClientRect().bottom + 0.5);
     }
   },
 };
