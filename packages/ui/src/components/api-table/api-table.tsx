@@ -808,7 +808,7 @@ function ApiPart({
   term: string;
 }) {
   const [showInherited, setShowInherited] = useState(false);
-  const own = component.props.filter((prop) => !prop.inheritedFrom);
+  const own = component.props.filter((prop) => !prop.inheritedFrom && !isNativeInherited(prop));
   const inherited = component.props.filter((prop) => prop.inheritedFrom && !isNativeInherited(prop));
   const ownMatches = own.filter((prop) => matchesTerm(prop, term));
   const inheritedMatches = inherited.filter((prop) => matchesTerm(prop, term));
@@ -894,7 +894,7 @@ export function ApiTable({
       components
         .map((entry) => ({
           entry,
-          own: entry.props.filter((prop) => !prop.inheritedFrom && matchesTerm(prop, term)),
+          own: entry.props.filter((prop) => !prop.inheritedFrom && !isNativeInherited(prop) && matchesTerm(prop, term)),
           inherited: entry.props.filter((prop) => Boolean(prop.inheritedFrom) && !isNativeInherited(prop) && matchesTerm(prop, term)),
         }))
         .filter(({ own, inherited }) => !term || own.length > 0 || inherited.length > 0),
@@ -933,7 +933,7 @@ export function ApiTable({
           </div>
         ) : null}
         <span css={summaryStyle} aria-hidden="true">
-          {term ? `${total} of ${components.reduce((sum, entry) => sum + entry.props.filter((prop) => !prop.inheritedFrom).length, 0)} props` : countLabel(total)}
+          {term ? `${total} of ${components.reduce((sum, entry) => sum + entry.props.filter((prop) => !prop.inheritedFrom && !isNativeInherited(prop)).length, 0)} props` : countLabel(total)}
         </span>
       </div>
 
