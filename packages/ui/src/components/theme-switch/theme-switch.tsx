@@ -69,8 +69,8 @@ const switchRootStyle = css({ minBlockSize: vars.space[8], justifyContent: 'cent
 const frameStyle = css({
   display: 'inline-grid',
   flexShrink: 0,
-  inlineSize: vars.space[5],
-  blockSize: vars.space[5],
+  inlineSize: vars.space[8],
+  blockSize: vars.space[8],
   alignItems: 'center',
   justifyItems: 'center',
   cursor: 'pointer',
@@ -85,8 +85,8 @@ const frameStyle = css({
 const iconStyle = css({
   gridArea: '1 / 1',
   display: 'inline-flex',
-  inlineSize: '100%',
-  blockSize: '100%',
+  inlineSize: vars.space[5],
+  blockSize: vars.space[5],
   opacity: 0,
   transform: 'rotate(-30deg) scale(.8)',
   '&[data-active="true"]': { opacity: 1, transform: 'none' },

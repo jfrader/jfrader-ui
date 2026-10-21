@@ -238,6 +238,8 @@ export const IconClick: Story = {
   play: async ({ canvas, args, userEvent }) => {
     const input = canvas.getByRole('switch');
     const frame = iconFrameOf(input);
+    await expect(frame.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
+    await expect(frame.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
     await expect(frame.tagName).toBe('LABEL');
     await expect(frame).toHaveAttribute('aria-hidden', 'true');
     await expect(frame).toHaveAttribute('for', input.id);
@@ -295,6 +297,9 @@ export const AllSizes: Story = {
     for (const input of canvas.getAllByRole('switch')) {
       const root = input.closest('[data-ui="switch"]')!;
       await expect(root.getBoundingClientRect().height).toBeGreaterThanOrEqual(31);
+      const frame = iconFrameOf(input);
+      await expect(frame.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
+      await expect(frame.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
     }
   },
 };
