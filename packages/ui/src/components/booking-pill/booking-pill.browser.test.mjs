@@ -15,11 +15,12 @@ test('booking and game previews keep their controls inside narrow viewports', as
         ['showcase-bookingpill--date', 'booking-pill'],
         ['showcase-bookingpill--long-content', 'booking-pill'],
         ['showcase-controlcenter--default', 'control-center'],
+        ['showcase-controlcenter--docs', 'control-center'],
         ['games-cardflights--deal-and-play', 'game-table'],
         ['games-cardflights--composed-board', 'game-table'],
         ['games-flipgamecard--sizes', 'flip-game-card'],
       ]) {
-        await page.goto(`${workbench.baseURL}/iframe.html?id=${story}&viewMode=story`);
+        await page.goto(`${workbench.baseURL}/iframe.html?id=${story}&viewMode=${story.endsWith('--docs') ? 'docs' : 'story'}`);
         const root = page.locator(`[data-ui="${marker}"]`).first();
         await root.waitFor();
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${story}: preview overflows at ${viewport.width}px`);
@@ -30,6 +31,9 @@ test('booking and game previews keep their controls inside narrow viewports', as
           if (!box) continue;
           assert.ok(box.x >= bounds.x - 1 && box.x + box.width <= bounds.x + bounds.width + 1, `${story}: control escapes the panel`);
           assert.ok(box.width >= 24 && box.height >= 24, `${story}: target is smaller than 24px`);
+          if (await control.evaluate((element) => element.tagName === 'BUTTON')) {
+            assert.ok(await control.evaluate((element) => element.scrollWidth <= element.clientWidth), `${story}: button text overflows its target`);
+          }
         }
       }
     } finally {

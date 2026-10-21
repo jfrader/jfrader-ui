@@ -24,7 +24,7 @@ const PanelLabel = styled.p({
 const SettingsRows = styled.div({
   '&&': {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
     gap: vars.space[3],
   },
   '& > :last-child': { gridColumn: '1 / -1' },
@@ -134,7 +134,7 @@ const PanelLabel = styled.p({
 const SettingsRows = styled.div({
   '&&': {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
     gap: vars.space[3],
   },
   '& > :last-child': { gridColumn: '1 / -1' },
@@ -227,7 +227,7 @@ const PanelLabel = styled.p({
 const SettingsRows = styled.div({
   '&&': {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
     gap: vars.space[3],
   },
   '& > :last-child': { gridColumn: '1 / -1' },
@@ -320,7 +320,7 @@ const PanelLabel = styled.p({
 const SettingsRows = styled.div({
   '&&': {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
     gap: vars.space[3],
   },
   '& > :last-child': { gridColumn: '1 / -1' },
@@ -459,7 +459,7 @@ const PanelLabel = styled.p({
 const SettingsRows = styled.div({
   '&&': {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
     gap: vars.space[3],
   },
   '& > :last-child': { gridColumn: '1 / -1' },
@@ -544,7 +544,7 @@ const PanelLabel = styled.p({
 const SettingsRows = styled.div({
   '&&': {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
     gap: vars.space[3],
   },
   '& > :last-child': { gridColumn: '1 / -1' },
@@ -658,7 +658,7 @@ const PanelLabel = styled.p({
 const SettingsRows = styled.div({
   '&&': {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
     gap: vars.space[3],
   },
   '& > :last-child': { gridColumn: '1 / -1' },
