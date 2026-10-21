@@ -37,6 +37,8 @@
 
 - The docs site runs on `@jfrader/react-storydocs` 0.16 and renders every API section with the library's own `ApiTable`; the old `@jfrader/storybook-docs` dependency is gone.
 - Dual-mode prop types rename `*EasyProps` to `*ShorthandProps` and `*CompoundProps` to `*ComposedProps`; docs and stories say "shorthand" and "composed". The component APIs are unchanged.
+- `TreeView<T>` keeps the caller's node fields through `children`, `loadChildren` and `onLoadError`.
+- `MoneyInput` and `PhoneInput` `slotProps` accept native element props, refs and events per part (`input`, `button`, `div`, `span`).
 - `Combobox`, `MultiSelect`, `Tabs`, `RadioGroup`, `SegmentedControl` and `RadioCards` infer their option or item value union in shorthand mode; composed mode stays string-based.
 - `Select` shorthand mode infers its option value union (`<Select<Status> options={...} />`) for `value`, `defaultValue` and `onValueChange`; composed mode stays string-based. `GravityWell` keeps custom item fields through `renderItem` (`GravityWell<T>`).
 - Breaking pre-1.0 article API cleanup: use `Article` with `Article.Body`, `Article.Kicker`, `Article.Meta` and `Article.Sources` instead of the separate article components. `ArticleList` stays standalone. `ArticleSection` composes ordered articles into mixed editorial layouts, and `SectionHeading` moves to `ArticleSection.Heading`.

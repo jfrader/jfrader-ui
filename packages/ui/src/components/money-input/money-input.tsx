@@ -26,8 +26,8 @@ import {
   FieldDescription,
   FieldError,
   useFieldAnatomy,
-  type FieldPartProps,
 } from '../field/field-anatomy';
+import type { FieldParts } from '../field/field-slot';
 import { Select } from '../select';
 import { addMinor, assertDecimals, assertMinor, currencyChoices, moneyFormat, MONEY_LIMIT } from './money-math';
 
@@ -62,33 +62,12 @@ const defaultMessages: MoneyInputMessages = {
   changed: (amount) => `Amount: ${amount}`,
 };
 
-export type MoneyInputSlotProps = Partial<
-  Record<
-    | /** Renders a `div` by default. */
-      'root'
-    | /** Renders a `label` by default. */
-      'label'
-    | /** Renders a `div` by default. */
-      'shell'
-    | /** Renders an `input` by default. */
-      'control'
-    | /** Renders a `span` by default. */
-      'currency'
-    | /** Renders a `div` by default. */
-      'quickAdd'
-    | /** Renders a `button` by default. */
-      'quickAddButton'
-    | /** Renders a `span` by default. */
-      'range'
-    | /** Renders a `span` by default. */
-      'description'
-    | /** Renders a `span` by default. */
-      'error'
-    | /** Renders a `span` by default. */
-      'status',
-    FieldPartProps
-  >
->;
+type MoneyInputAnatomy = {
+  root: 'div'; label: 'label'; shell: 'div'; control: 'input'; currency: 'span';
+  quickAdd: 'div'; quickAddButton: 'button'; range: 'span'; description: 'span'; error: 'span'; status: 'span';
+};
+
+export type MoneyInputSlotProps = FieldParts<MoneyInputAnatomy>;
 
 export interface MoneyInputProps
   extends
