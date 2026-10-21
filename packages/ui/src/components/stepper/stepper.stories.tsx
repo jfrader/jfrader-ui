@@ -483,6 +483,11 @@ export const ErrorCurrent: Story = {
 };
 
 export const ErrorCompleted: Story = {
+  render: (args) => <NarrowFrame><Stepper {...args} /></NarrowFrame>,
+  parameters: { docs: { source: { code: `${stepperSource}
+
+<Stepper steps={steps.map((step) => step.id === 'profile' ? { ...step, error: 'Handle is already taken' } : step)}
+  compact interactive value={2} />` } } },
   args: {
     interactive: true,
     compact: true,
@@ -624,6 +629,13 @@ export const LongLabels: Story = {
     </CompactFrame>
   ),
   play: async ({ canvasElement }) => {
+    const horizontal = getRoot(canvasElement);
+    await expect(parts(horizontal, 'label')[0]!.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+      parts(horizontal, 'marker')[0]!.getBoundingClientRect().bottom,
+    );
+    const items = parts(horizontal, 'item');
+    await expect(items[0]!.getBoundingClientRect().width).toBeCloseTo(items.at(-1)!.getBoundingClientRect().width, 0);
+    for (const connector of parts(horizontal, 'connector')) await expect(connector.getBoundingClientRect().width).toBeGreaterThan(0);
     for (const root of getRoots(canvasElement)) {
       await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
       const bounds = root.getBoundingClientRect();
