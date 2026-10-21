@@ -494,6 +494,21 @@ function MemberRows({ members, depth = 0 }: { members: readonly ApiPropDoc[]; de
                 {member.defaultValue}
               </span>
             ) : null}
+            {member.component ? (
+              <span css={defaultStyle}>
+                Default:{' '}
+                {member.component.href ? (
+                  <a css={metaLinkStyle} href={member.component.href}>{member.component.name}</a>
+                ) : (
+                  member.component.name
+                )}
+              </span>
+            ) : null}
+            {member.defaultElement ? (
+              <span css={defaultStyle}>
+                Renders <code>{`<${member.defaultElement}>`}</code>
+              </span>
+            ) : null}
             {member.description ? <span css={memberNoteStyle}>{member.description}</span> : null}
             {member.members?.length ? <MemberRows members={member.members} depth={depth + 1} /> : null}
           </dd>
