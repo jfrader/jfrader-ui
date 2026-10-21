@@ -6,6 +6,7 @@ import { expect, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside } from '../../testing/geometry-assertions';
 import { Button } from '../button';
 import { TextReveal } from './index';
 
@@ -15,6 +16,7 @@ const Heading = styled.h2({
   fontWeight: vars.fontWeight.semibold,
   lineHeight: vars.lineHeight.tight,
 });
+const NarrowHeading = styled(Heading)({ inlineSize: 240, maxInlineSize: '100%' });
 function Root(props: ComponentPropsWithRef<'span'>) {
   return <span {...props} data-replacement="root" />;
 }
@@ -170,6 +172,24 @@ export const EmptyText: Story = {
   },
 };
 export const ZeroString: Story = { args: { text: '0' } };
+export const LongWord: Story = {
+  args: { text: 'Internationalization' },
+  render: (args) => (
+    <NarrowHeading>
+      <TextReveal {...args} />
+    </NarrowHeading>
+  ),
+  play: async ({ canvasElement }) => {
+    const heading = canvasElement.querySelector('h2')!;
+    const word = canvasElement.querySelector<HTMLElement>('[data-ui="text-reveal-word"]')!;
+    await Promise.all(word.getAnimations().map((animation) => animation.finished));
+    await expectInside(word, heading);
+    await expect(word.scrollWidth).toBeLessThanOrEqual(word.clientWidth + 1);
+    await expect(word.getBoundingClientRect().height).toBeGreaterThan(
+      Number.parseFloat(getComputedStyle(word).lineHeight),
+    );
+  },
+};
 export const CustomSlots: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { TextReveal, styled } from '@jfrader/ui';
@@ -191,7 +211,7 @@ function RevealWord(props: ComponentPropsWithRef<'span'>) {
     slots={{ word: RevealWord }}
     slotProps={{
       root: { title: 'Hero' },
-      visual: { 'data-ui': 'hero-visual text-reveal-visual hero-visual' },
+      visual: { 'data-ui': 'hero-visual text-reveal-visual hero-visual', sx: { letterSpacing: '1px' } },
       word: { className: 'hero-word', 'data-ui': 'hero-word text-reveal-word hero-word' },
     }}
     sx={{ color: vars.color.accentText }}
@@ -202,7 +222,7 @@ function RevealWord(props: ComponentPropsWithRef<'span'>) {
     slots: { word: Word },
     slotProps: {
       root: { title: 'Hero' },
-      visual: { 'data-ui': 'hero-visual text-reveal-visual hero-visual' },
+      visual: { 'data-ui': 'hero-visual text-reveal-visual hero-visual', sx: { letterSpacing: '1px' } },
       word: {
         className: 'hero-word',
         'data-ui': 'hero-word text-reveal-word hero-word',
@@ -224,6 +244,9 @@ function RevealWord(props: ComponentPropsWithRef<'span'>) {
       'data-ui',
       'text-reveal-visual hero-visual',
     );
+    await expect(
+      getComputedStyle(canvasElement.querySelector('[data-ui~="text-reveal-visual"]')!).letterSpacing,
+    ).toBe('1px');
   },
 };
 function ReplayDemo() {

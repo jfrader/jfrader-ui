@@ -4,6 +4,7 @@ import { expect, fn, fireEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside } from '../../testing/geometry-assertions';
 import {
   SwipeActions,
   type SwipeAction,
@@ -17,9 +18,12 @@ import { styled } from '../../index';
 
 const ListFrame = styled(SwipeActions)({ maxWidth: 480 });
 
-const ResponsiveList = styled(SwipeActions)({ width: 480, maxWidth: '100%' });
+const ResponsiveList = styled(SwipeActions)({
+  inlineSize: `min(480px, calc(100vw - 2 * ${vars.space[4]}))`,
+  maxInlineSize: '100%',
+});
 
-const FixedList = styled(SwipeActions)({ width: 480 });
+const NarrowFrame = styled.div({ inlineSize: 240, maxInlineSize: '100%' });
 
 const FixtureButton = styled.button({ minHeight: vars.space[8] });
 
@@ -392,7 +396,7 @@ export const SnapAndSingleOpen: Story = {
 };
 export const FullSwipeOff: Story = {
   render: (args) => (
-    <FixedList {...args}>
+    <ResponsiveList {...args}>
       <SwipeActions.Row
         id="invoice"
         label="Invoice"
@@ -403,13 +407,28 @@ export const FullSwipeOff: Story = {
       >
         Invoice
       </SwipeActions.Row>
-    </FixedList>
+    </ResponsiveList>
   ),
   play: async ({ canvasElement }) => {
     const row = rowOf(canvasElement);
     await reveal(row, 400);
     await near(row, 80);
     await expect(select).toHaveBeenCalledTimes(0);
+  },
+};
+export const NarrowRail: Story = {
+  ...FullSwipeOff,
+  decorators: [(Story) => <NarrowFrame><Story /></NarrowFrame>],
+  play: async ({ canvasElement }) => {
+    const row = rowOf(canvasElement);
+    await reveal(row, 400);
+    await near(row, 80);
+    const list = row.parentElement!;
+    await expectInside(row, list.parentElement!);
+    const action = row.querySelector<HTMLElement>('[data-ui="swipe-actions-action"]')!;
+    await expectInside(action, row);
+    await expect(action.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
+    await expect(action.getBoundingClientRect().height).toBeGreaterThanOrEqual(24);
   },
 };
 export const UncapturedReleaseOutside: Story = {
@@ -862,6 +881,36 @@ export const LongLabels: Story = {
       row.getBoundingClientRect().bottom + 1.5,
     );
     await expect(label.getBoundingClientRect().width).toBeLessThanOrEqual(80);
+  },
+};
+export const DirectionChange: Story = {
+  ...LongLabels,
+  play: async ({ canvasElement }) => {
+    const row = rowOf(canvasElement);
+    const list = row.parentElement!;
+    await near(row, 80);
+    const original = list.getAttribute('dir');
+    const originalDirection = list.style.direction;
+    try {
+      list.dir = 'rtl';
+      await near(row, -80);
+      const action = row.querySelector<HTMLElement>('[data-ui="swipe-actions-action"]')!;
+      await expectInside(action, row);
+      await expect(action.getBoundingClientRect().right).toBeCloseTo(
+        row.getBoundingClientRect().right - 1,
+        0,
+      );
+      list.dir = 'ltr';
+      await near(row, 80);
+      await expectInside(action, row);
+      list.style.direction = 'rtl';
+      await near(row, -80);
+      await expectInside(action, row);
+    } finally {
+      list.style.direction = originalDirection;
+      if (original === null) list.removeAttribute('dir');
+      else list.setAttribute('dir', original);
+    }
   },
 };
 export const InteractiveRow: Story = {

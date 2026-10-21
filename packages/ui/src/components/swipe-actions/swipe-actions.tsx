@@ -469,7 +469,10 @@ function SwipeActionsRow({
       element.current?.getBoundingClientRect().width ?? 0,
       (side === 'leading' ? leadingRail : trailingRail).current?.getBoundingClientRect().width ?? 0,
     );
-  const direction = () => (element.current?.matches(':dir(rtl)') ? -1 : 1);
+  const direction = () => {
+    const node = element.current;
+    return node?.ownerDocument.defaultView?.getComputedStyle(node).direction === 'rtl' ? -1 : 1;
+  };
   const accepted = () =>
     value?.id === id && enabled(value.side)
       ? railWidth(value.side) * (value.side === 'leading' ? 1 : -1) * direction()
@@ -498,14 +501,28 @@ function SwipeActionsRow({
   useEffect(() => {
     const node = element.current;
     const Observer = node?.ownerDocument.defaultView?.ResizeObserver;
-    if (!node || !Observer) return;
-    const observer = new Observer(() => {
+    if (!node) return;
+    const resettle = () => {
       if (!drag.current?.locked) latestSettle.current();
+    };
+    const observer = Observer ? new Observer(resettle) : undefined;
+    observer?.observe(node);
+    if (leadingRail.current) observer?.observe(leadingRail.current);
+    if (trailingRail.current) observer?.observe(trailingRail.current);
+    let previousDirection = direction();
+    const directionObserver = new MutationObserver(() => {
+      const nextDirection = direction();
+      if (nextDirection === previousDirection) return;
+      previousDirection = nextDirection;
+      resettle();
     });
-    observer.observe(node);
-    if (leadingRail.current) observer.observe(leadingRail.current);
-    if (trailingRail.current) observer.observe(trailingRail.current);
-    return () => observer.disconnect();
+    for (let parent: HTMLElement | null = node; parent; parent = parent.parentElement) {
+      directionObserver.observe(parent, { attributes: true, attributeFilter: ['dir', 'class', 'style'] });
+    }
+    return () => {
+      observer?.disconnect();
+      directionObserver.disconnect();
+    };
   }, []);
   // Last order that still contained this row, so an exiting row knows its neighbors.
   useLayoutEffect(() => {
