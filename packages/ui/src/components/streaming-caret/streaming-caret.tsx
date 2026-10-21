@@ -4,7 +4,7 @@ import type { ComponentPropsWithRef } from 'react';
 import { MotionConfig, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes } from '../../styling/css';
-import { REDUCED_MOTION } from '../../styling/media';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 
 /** Size options for the caret. */
@@ -24,6 +24,7 @@ const style = css({
   animation: `${blink} calc(${vars.motion.duration.slow} + ${vars.motion.duration.slow} + ${vars.motion.duration.slow}) step-end infinite`,
   '&[data-reduced-motion]': { animation: 'none' },
   [REDUCED_MOTION]: { animation: 'none' },
+  [FORCED_COLORS]: { backgroundColor: 'CanvasText' },
 });
 const sizes = {
   sm: css({ fontSize: vars.textSize.sm }),
