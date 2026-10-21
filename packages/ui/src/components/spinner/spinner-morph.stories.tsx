@@ -25,12 +25,15 @@ const meta = {
 Set \`value\` to loading, success or error; omitted \`value\` uses the static \`defaultValue\` seed. The indicator never completes work or resets itself. \`variant\` selects dots, bars, ring or square; result drawings use the same footprint. The existing Spinner ring remains the default when no state or new variant is supplied. MorphLoader is a Spinner presentation, not another export.
 
 ### Accessibility and keyboard
+
 The indicator has no tab stop or keyboard behavior. A persistent polite, atomic status announces text changes; mounting it alone does not guarantee an announcement. Keep status outside the region marked \`aria-busy\`. Inside a named button use \`decorative\` to suppress duplicate status semantics and text. Set \`aria-busy\` on the actual control or region yourself.
 
 ### Appearance
+
 The default tone inherits currentColor. \`tone="status"\` adds success/error colors; glyphs and labels still identify results. Existing sizes stay 16/20/24px; xl adds 48px. A finite positive \`dimension\` overrides the preset. \`strokeWidth\` uses the 24-unit drawing grid and defaults to 2; invalid values fall back. Reduced motion renders morph presentations as static shapes and swaps results immediately. Offscreen or hidden-page morph loops pause. The legacy stateless ring retains its reduced-motion pulse.
 
 ### Customization
+
 \`component\` is sugar for \`slots.root\`. Root, indicator and status replacements forward span props, ref and className. Each has matching \`slotProps\`; root native conflicts use slot values and root \`sx\` applies last.`,
       source: {
         code: `<Spinner value={state} variant="ring" label="Saving" successLabel="Saved" errorLabel="Save failed" />`,

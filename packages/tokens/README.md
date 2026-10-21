@@ -1,6 +1,8 @@
 # @jfrader/tokens
 
-Shared design values for `@jfrader/ui`, such as colors, spacing and fonts. The package provides CSS custom properties and typed `var()` references. You can also use them in app CSS without the component library.
+Shared design values for `@jfrader/ui`: colors, spacing, fonts, and the rest. The package ships CSS
+custom properties and typed `var()` references, and works in any app that wants the values without the
+components.
 
 ## Usage
 
@@ -11,7 +13,9 @@ import '@jfrader/tokens/tokens.css';
 import '@jfrader/tokens/base.css';
 ```
 
-`tokens.css` defines the dark theme on `:root` and `[data-theme='dark']`, and the light theme on `[data-theme='light']`.
+`tokens.css` defines the dark theme on `:root` and `[data-theme='dark']`, and the light theme on
+`[data-theme='light']`. `base.css` adds box sizing and the body's margin, background, text color, and
+font.
 
 Typed references for TypeScript:
 
@@ -21,58 +25,24 @@ import { vars } from '@jfrader/tokens/vars';
 const gap = vars.space[4]; // 'var(--ui-space-4)'
 ```
 
-These are references, not resolved values: changing `data-theme` changes what the browser reads. The raw token values are exported as `base` (dark) and `light` from `@jfrader/tokens`.
+These are references, not resolved values: changing `data-theme` changes what the browser reads. The
+raw token values are exported as `base` (dark) and `light` from `@jfrader/tokens`.
 
-For app-wide or scoped overrides, see [Theming](https://github.com/jfrader/jfrader-ui/blob/master/docs/theming.md). For using tokens with `sx`, `styled` or CSS, see [Styling](https://github.com/jfrader/jfrader-ui/blob/master/docs/styling.md).
+For app-wide or scoped overrides, see
+[Theming](https://github.com/jfrader/jfrader-ui/blob/master/docs/theming.md). For tokens with `sx`,
+`styled`, or plain CSS, see
+[Styling](https://github.com/jfrader/jfrader-ui/blob/master/docs/styling.md).
 
-## Build
-
-```sh
-pnpm --filter @jfrader/tokens build
-```
-
-The build generates `dist/tokens.css` and `src/generated/vars.ts` from `src/tokens.ts`. It bundles the runtime entries as `dist/index.js` and `dist/generated/vars.js`, then writes declarations to `dist/types/`. Vite keeps the generated CSS in `dist/`.
-
-## Publishing
-
-`@jfrader/tokens` and `@jfrader/ui` publish together from `.github/workflows/publish.yml` to npmjs and GitHub Packages.
-
-1. Set the same `version` in `packages/tokens/package.json` and `packages/ui/package.json` and merge to `master`.
-2. Push an annotated tag on that commit: `git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z`.
-3. CI checks the tag against both manifests, runs typecheck, tests and `verify:exports`, builds both packages, switches `exports` to `dist/` and packs each package once with `pnpm pack`.
-4. CI verifies or publishes the same tarballs to npmjs, then to GitHub Packages, tokens before UI. A matching artifact already at that version is accepted; a different one fails the release.
-
-To re-run a release without re-tagging:
-
-```sh
-gh workflow run publish.yml --repo jfrader/jfrader-ui --ref v0.1.1
-```
-
-npmjs authenticates through the package's trusted publisher for `jfrader/jfrader-ui` → `.github/workflows/publish.yml`, configured on npmjs after the first version is published by hand. GitHub Packages uses the workflow's `GITHUB_TOKEN`. See the [root README](https://github.com/jfrader/jfrader-ui#publishing) for the full release setup.
-
-In the repo, `exports` point at `src/` so workspace apps use the source. `node scripts/flip-exports.mjs dist` validates and switches both packages to the publish layout. `node scripts/flip-exports.mjs src` switches both back. The tokens `prepack` builds tokens and switches only its manifest with `--package tokens`; `postpack` restores only tokens. Each switch validates only the selected package's export targets.
-
-Tokens can be packed alone without UI's `dist/`. The hook builds every target required by tokens' exports. Run from the repo root:
+## Build and release
 
 ```sh
 pnpm --filter @jfrader/tokens build
-pnpm --filter @jfrader/tokens exec npm pack --dry-run --json
-pnpm --filter @jfrader/tokens pack --pack-destination /tmp/opencode
 ```
 
-For both published packages, build with `pnpm --filter @jfrader/tokens build && pnpm --filter @jfrader/ui build`. Root `pnpm build` builds Storybook, not the published packages. If packing fails after `prepack`, run `node scripts/flip-exports.mjs src` from the repo root to restore workspace exports.
+The build generates `dist/tokens.css` and `src/generated/vars.ts` from `src/tokens.ts`. It bundles the
+runtime entries as `dist/index.js` and `dist/generated/vars.js`, then writes declarations to
+`dist/types/`. Vite keeps the generated CSS in `dist/`.
 
-The tarball must contain only `dist/**`, `base.css`, `package.json`, `README.md` and `LICENSE`.
-
-<a id="registry-choice--installing"></a>
-
-### Registry choice
-
-npmjs needs no authentication; GitHub Packages requires authentication even for public packages. To install from GitHub Packages, add this to `.npmrc`:
-
-```ini
-@jfrader:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-```
-
-See the [root README's registry section](https://github.com/jfrader/jfrader-ui#registry-choice) for details.
+`@jfrader/tokens` and `@jfrader/ui` release together. See
+[Releasing](https://github.com/jfrader/jfrader-ui/blob/master/docs/releasing.md) for the version
+policy, packing, the publish workflow, and registry authentication.

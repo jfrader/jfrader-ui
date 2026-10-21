@@ -45,14 +45,16 @@ const meta = {
       usage: `### When to use
 Collect free-form tags or recipients. TagInput has no suggestion list; use Combobox when readers must choose from suggested or fixed options.
 
-### Constraints
+### Values and constraints
+
 - Supply unique, nonempty, normalized entries. Whitespace is trimmed by default; duplicate comparison ignores case but distinguishes accents under the chosen locale.
 - Rejected additions keep the draft and announce the reason. Existing entries are not removed when a limit changes.
 - Adding a tag requests the new list before clearing the draft; a controlled application must accept both changes to clear it.
 - Forms submit committed tags in list order, not the draft. A required field needs at least one committed tag.
 - Blur commits, when enabled, happen only when focus leaves the whole field, not when it moves to a remove button.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Enter or comma adds the draft. With an empty draft, Enter submits the form and comma types.
 - Backspace at caret 0 picks the last token. Backspace or Delete again removes it.
 - ArrowLeft at caret 0 or with a token picked moves to the previous token, stopping at the first.
@@ -61,7 +63,6 @@ Collect free-form tags or recipients. TagInput has no suggestion list; use Combo
 - Tab and Shift+Tab follow DOM order: remove buttons, input, then page.
 - IME composition bypasses shortcuts and blur commits. Held keys do not remove tokens.
 
-### Accessibility
 - Give the field a visible label and instructions for any nondefault separator. Additions, removals and rejected drafts are announced.`,
     },
   },

@@ -99,7 +99,8 @@ const meta = {
       usage: `### Content
 Repeat information available elsewhere. The preview describes its trigger and has no tab stops. Use Popover for links, buttons or fields inside the popup.
 
-### Pointer and keyboard
+### Keyboard and accessibility
+
 Hover opens after a delay. Focus opens immediately; Enter or Space activates a button trigger and opens the card once. You can move the pointer onto the card to keep reading.
 
 Press Escape to close without moving focus; reopening waits until the pointer leaves or focus moves. Tab and Shift+Tab away close the card. Arrows, Home and End pass through.
@@ -107,6 +108,7 @@ Press Escape to close without moving focus; reopening waits until the pointer le
 A touch tap toggles a button trigger. A link still navigates on click, Enter or tap. Grouped previews switch faster after the first card opens.
 
 ### Inside a modal
+
 Give the enclosing ThemeRoot a portal container inside the dialog.`,
     },
   },

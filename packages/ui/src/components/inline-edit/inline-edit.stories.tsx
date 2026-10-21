@@ -110,13 +110,15 @@ const meta = {
       usage: `- The value is a button; editing replaces it with an input or, with \`multiline\`, a textarea. Use TextField or Textarea for multi-field forms or fields that should stay editable.
 
 ### Saving
+
 - A changed draft calls \`onSave(next)\`. After it resolves, the widget requests \`onValueChange(next)\`, then \`onOpenChange(false)\`. An unchanged draft closes without calling \`onSave\`.
 - The trigger shows the persisted value. Controlled values keep their old text until the parent updates them. Implement optimistic updates outside the widget.
 - A thrown or rejected save keeps the draft open with a status message. Enter or Save retries. If the parent closed the editor during the save, Retry resaves the failed draft.
 - During a save, the editor is read-only and Save/Cancel are inert. An external \`value\` update or unmount discards the pending save; its result requests nothing.
 - \`normalize\` converts the draft; nothing is trimmed by default. A message from \`validate\`, or an \`error\` prop, blocks saving.
 
-### Keyboard and focus
+### Keyboard and accessibility
+
 - Enter or Space opens with the text selected. A pointer click places the caret at the end.
 - Enter saves without submitting a surrounding form. Shift+Enter inserts a newline with \`multiline\`. Escape cancels. Tab/Shift+Tab follow the editor, Save, Cancel and page order.
 - \`saveOnBlur\` defaults to saving when focus leaves the widget. Moving between its controls or switching windows does not save. IME composition bypasses Enter, Escape and leave-to-save.

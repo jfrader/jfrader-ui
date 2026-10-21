@@ -84,15 +84,16 @@ const meta = {
       usage: `### When to use
 Use a dialog stack for settings or nested pickers where users return to a parent view without losing its form state.
 
-### Constraints
+### Values and constraints
+
 A dialog stack is document-modal: the surrounding page is inert. Viewport overlays lock page scroll; contained overlays do not. Parents stay mounted and retain form state while child panels are open. Returning to an already-open panel removes the panels above it. Popped panels unmount.
 
 In bottom sheet layout, dragging the handle downward requests dismissal. A non-dismissible panel still needs an explicit way back or out. Reduced motion disables dragging and entry/depth animation; closure is immediate. Floating overlays must mount in a portal container inside the active panel.
 
-### Keyboard
+### Keyboard and accessibility
+
 Tab and Shift+Tab circulate focus within the topmost panel. Enter or Space on a trigger opens or pushes its panel. Escape or backdrop clicks request closing the topmost panel; when child overlays (such as menus or popovers) are open inside, Escape closes them first. New panels move focus to an autoFocus element, then the heading, Back button, or panel container. Popping restores focus to the control that opened the child; closing the entire stack returns focus to the outer trigger.
 
-### Accessibility
 Give every panel and navigation button an accessible name. Inactive parent panels are inert and hidden from assistive technology. If the control that opened a child has been removed, returning focuses the parent's heading, Back button, or panel instead.`,
 
       source: {

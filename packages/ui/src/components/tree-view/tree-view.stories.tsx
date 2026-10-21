@@ -60,9 +60,11 @@ const meta = {
 Use a tree for a hierarchy whose branches readers need to explore and whose items can be selected. Use a flat list when nesting adds no useful context.
 
 ### Loading constraints
+
 Loading starts after expansion is accepted. Collapse or unmount aborts the request. Successful results are cached per instance; remount the tree to discard the cache. An empty response turns a branch into a leaf. Enter or Space retries a failed load while selecting the item.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Up and Down move focus and stop at the ends. Home and End jump to the first and last item.
 - Right expands or enters a branch. Left collapses or moves to its parent. These keys stay the same in RTL.
 - Enter or Space selects without expanding. Typing searches using the locale, with a 500ms buffer. Disabled items are skipped.

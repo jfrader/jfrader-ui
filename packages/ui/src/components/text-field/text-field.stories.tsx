@@ -46,7 +46,8 @@ const meta = {
       usage: `### When to use
 Use a text field for a single line of text. Use Textarea for a message, SearchField for a query, or PasswordField for a secret. For prefixes, suffixes or icons inside the frame, use InputGroup instead.
 
-### Forms and accessibility
+### Forms
+
 Give each input an accessible name, even when its label is hidden. Keep a visible label unless the surrounding context makes the purpose clear. Placeholders are not labels.
 
 Validate in your form and provide a specific error message. Disabled fields are skipped by keyboard navigation and omitted from form data; read-only fields remain focusable and are submitted.

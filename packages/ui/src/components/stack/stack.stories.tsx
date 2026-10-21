@@ -57,9 +57,11 @@ const meta = {
 Space content vertically without adding margins to individual children. Use Flex for horizontal or inline groups.
 
 ### Layout
+
 Spacing applies between children, not outside the group. Insert separators as children when content needs a visible boundary.
 
-### Accessibility
+### Keyboard and accessibility
+
 Stack adds no landmark or heading semantics. Keep content in reading order and choose semantic elements for each section.`,
     },
   },

@@ -78,12 +78,14 @@ const meta = {
       usage: `### When to use
 Show remaining time toward a specific date or deadline. For an editable or interactive input, use a time picker or duration field instead.
 
-### Behaviour and constraints
+### Values and constraints
+
 Use an unambiguous target instant. Provide the same initial time and locale on the server and client to keep the first render consistent.
 
 In background tabs, completion runs when the browser can next execute a callback, which may be after the target instant.
 
 ### Keyboard and accessibility
+
 Updates are not announced; completion announcements are opt-in. Tab and other keys pass through because the timer has no controls or editable state.`,
     },
   },

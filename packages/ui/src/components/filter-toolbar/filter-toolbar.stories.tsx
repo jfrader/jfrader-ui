@@ -22,7 +22,9 @@ import {
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
-const NarrowFrame = styled.div({ inlineSize: 280, maxInlineSize: '100%' });
+// The docs page renders each story in a lane narrower than a phone, so the frame takes the
+// available width and caps at 280px instead of assuming 280px of room.
+const NarrowFrame = styled.div({ inlineSize: '100%', maxInlineSize: 280, minInlineSize: 0 });
 
 const OPEN: FilterValue = { id: 'status', label: 'Status', value: 'open', valueLabel: 'Open' };
 const CLOSED: FilterValue = { ...OPEN, value: 'closed', valueLabel: 'Closed' };
@@ -209,12 +211,14 @@ const meta = {
       usage: `### When to use
 Use a filter toolbar above a collection to edit criteria, review active filters and clear them. Keep the collection and its filtering logic in your application.
 
-### Constraints
+### Values and constraints
+
 Result counts describe the results your application has committed; changing filters does not calculate a count. Keep the previous count while loading and announce the replacement when the request finishes. Translate the count and control labels for your audience.
 
 Keep multiselect chip IDs stable and unique across the toolbar. Do not switch between controlled and uncontrolled values. Use custom controls for free-text, date or range criteria.
 
 ### Keyboard and accessibility
+
 Tab and Shift+Tab follow control order. Enter and Space activate remove and clear buttons. Each control keeps its own editing and selection keys. Removing a chip moves focus to a neighboring chip, then an available control, or the toolbar when none remain.`,
     },
   },
@@ -1197,7 +1201,7 @@ export const LongChips: Story = {
     description: { story: 'Truncate long chip text while preserving its full accessible remove label.' },
     source: { language: 'tsx', code: `import { FilterToolbar, styled } from '@jfrader/ui';
 
-const Frame = styled.div({ inlineSize: 280, maxInlineSize: '100%' });
+const Frame = styled.div({ inlineSize: '100%', maxInlineSize: 280 });
 
 <Frame>
   <FilterToolbar defaultValue={[

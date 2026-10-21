@@ -62,6 +62,7 @@ const meta = {
 Use a button for an action and a link for navigation. Give each action a concise label. Buttons do not submit forms unless you explicitly make them submit buttons.
 
 ### Keyboard and accessibility
+
 Tab focuses an enabled button; Enter and Space activate it. Disabled native buttons leave the tab order. Loading buttons stay focusable, announce that they are busy and unavailable, and block activation. Icons are decorative; keep a text label or provide an accessible name for an icon-only action.`,
   } },
   tags: ['autodocs'],

@@ -40,12 +40,14 @@ const meta = {
       usage: `### When to use
 Show a non-blocking result after an action. Keep essential information available in the page after a timed notification disappears.
 
-### Constraints
+### Values and constraints
+
 Mount one queue renderer per provider. Adding beyond the queue limit removes the oldest notification immediately. Updates to unknown or closing notifications have no effect.
 
 Timers pause while a toast is hovered, focused or the document is hidden. A text-only update keeps the remaining time; changing the duration restarts it. Keep messages that require action open until dismissal.
 
-### Accessibility
+### Keyboard and accessibility
+
 New notifications do not move focus. Tab reaches actions and dismiss buttons; Enter or Space activates them. Removing a focused notification moves focus to a surviving notification's dismiss button when available.
 
 Danger messages announce assertively; other tones announce politely. Keep interactive controls outside the announcement text and translate dismiss names for your audience.`,

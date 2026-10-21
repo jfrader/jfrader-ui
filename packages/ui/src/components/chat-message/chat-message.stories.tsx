@@ -193,10 +193,12 @@ const meta = {
       usage: `### When to use
 Use a message on its own in a feed or activity view. Use ChatThread when you need a transcript and composer together.
 
-### Constraints
+### Values and constraints
+
 Your application owns delivery, retry transport and the clock used for relative timestamps; the message starts no timer. Without a supplied clock, timestamps show the full localized date and time. Controlled reaction requests remain unchanged until the application accepts them.
 
 ### Keyboard and accessibility
+
 Messages are articles named by author and timestamp. Tab moves through attachments, reactions and retry actions. In the reaction picker, Left/Right wrap and reverse in RTL, Home/End jump to the bounds, and Enter/Space select. Escape closes the picker and returns focus to its trigger.`,
     },
   },

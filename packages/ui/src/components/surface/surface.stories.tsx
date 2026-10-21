@@ -64,7 +64,8 @@ const meta = {
       usage: `### When to use
 Give a panel its own background and border without adding layout or interaction. Use Card for a group with headings and actions. Surface supplies no spacing.
 
-### Accessibility
+### Keyboard and accessibility
+
 A surface adds no landmark, keyboard commands, focus movement, or transitions. Put actions in buttons or links inside it and choose headings that fit the page.`,
     },
   },

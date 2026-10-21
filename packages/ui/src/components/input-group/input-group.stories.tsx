@@ -37,9 +37,11 @@ const meta = {
 Use an input group when units, prefixes, suffixes or actions need to share a frame with a native control. Use TextField or Textarea when you need a ready-made label, description and error message.
 
 ### Labels and errors
+
 Give the control an accessible name and connect any help or error text to it. The frame creates no labels, IDs or validation messages. Validate and submit text in your application. Disable addon actions explicitly when the group is disabled.
 
-### Keyboard
+### Keyboard and accessibility
+
 Tab and Shift+Tab follow DOM order. Addon placement changes visual order only; put start actions before the control and end actions after it. Focus on the control or an addon action outlines the frame. Text editing and form submission follow native browser behavior.`,
   } },
   args: { size: 'md' }, render: (args) => <Example {...args} />,

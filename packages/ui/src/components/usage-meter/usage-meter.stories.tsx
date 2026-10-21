@@ -63,12 +63,14 @@ const meta = {
       usage: `### When to use
 Show consumption of an allowance, not progress through a task. Supply quota data from your app and reserve meaningful colors for categories that need them.
 
-### Constraints
+### Values and constraints
+
 Use a finite positive limit. Provide a locale during server rendering so numbers match on hydration, and translate comparison and status text for your audience.
 
 Hover a category to preview it; click or tap to pin it. Selection does not change the reported usage.
 
 ### Keyboard and accessibility
+
 The legend has one Tab stop. Arrows follow text direction; Home and End move to the first and last item. Enter or Space toggles a pin; Escape clears it.
 
 Numeric ARIA values stop at the limit; value text still reports overage. Status changes and growing overage are announced, with rapid updates coalesced. Avoid duplicate live announcements elsewhere in the page.`,

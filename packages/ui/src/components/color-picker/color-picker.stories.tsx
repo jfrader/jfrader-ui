@@ -109,12 +109,14 @@ const meta = {
       usage: `### When to use
 Let people choose a custom color, adjust channels or reuse saved colors. Use a fixed set of choices instead when arbitrary colors are not allowed.
 
-### Constraints
+### Values and constraints
+
 Color text must use HEX, RGB, HSL or OKLCH syntax with ASCII decimal points, not named colors or CSS variables. Out-of-gamut colors are mapped to sRGB; the original OKLCH color is not preserved. Required marks the field but does not enforce color validation.
 
 Contrast feedback needs an opaque background and includes foreground transparency. It evaluates this color pair for text, not the accessibility of a whole interface. Missing, invalid or translucent backgrounds hide the result. Saved colors evict the oldest entry at capacity. Screen color picking depends on browser support.
 
 ### Keyboard and accessibility
+
 Opening moves focus into a modal dialog. Tab and Shift+Tab stay inside; closing restores trigger focus. Enter or blur commits valid text; invalid text stays visible. Escape discards a dirty draft first, then closes. Done and format changes validate before proceeding.
 
 Saturation and Value are separate sliders. Arrows step by one; Shift+arrows and PageUp/PageDown by ten; Home/End reach bounds. Inline arrows follow RTL while the visual pad remains left-to-right.

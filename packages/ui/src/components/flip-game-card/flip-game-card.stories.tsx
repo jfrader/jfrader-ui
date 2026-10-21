@@ -80,10 +80,12 @@ const meta = {
       usage: `### Faces
 Clicking the card does not turn it over; accept the change in your application. Both faces stay mounted, so do not pass secret card values. Give each face an accessible name. A missing back name throws even when the card starts face up. Custom artwork must fit the card frame.
 
-### Keyboard and focus
+### Keyboard and accessibility
+
 Keep the flip control outside the faces so it retains focus. The inactive face becomes inert and hidden from assistive technology immediately, including during a flip. The wrapper adds no keyboard commands.
 
 ### Motion
+
 Only the inner card rotates; the outer frame stays still. Reduced motion switches faces immediately.`,
     },
   },

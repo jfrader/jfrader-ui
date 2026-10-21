@@ -53,10 +53,12 @@ const meta = {
       usage: `### When to use
 Show attachments on a message or record, with image previews or file download links. Your app owns fetching files and reporting upload failures.
 
-### Constraints
+### Values and constraints
+
 Sizes are bytes, displayed in decimal kB and MB. Give images meaningful alternative text. Missing or unsafe URLs render as text; relative URLs and http, https and blob schemes are allowed, but data and javascript schemes are not. Expansion stays open for the lifetime of the list. An empty list adds no empty-state message.
 
 ### Keyboard and accessibility
+
 Tab and Shift+Tab move through links and the expand button. Enter follows a link; Enter or Space expands the list. Expansion does not move focus. Translate the list name and expansion action for your audience.`,
     },
   },

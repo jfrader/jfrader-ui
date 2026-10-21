@@ -192,12 +192,14 @@ const meta = {
       usage: `### When to use
 Use a photo grid for a collection of square thumbnails with favorites and a full-screen viewer. Choose a masonry gallery when preserving thumbnail proportions matters.
 
-### Limits
+### Values and constraints
+
 Paginate large collections; thumbnails are not virtualized. Give each photo a stable unique ID and finite positive intrinsic dimensions. Keep favorites from other pages when saving a paginated collection. Provide translated action labels and a locale for counts.
 
 Density is fixed by the chosen column count rather than the container width; allow enough room for the controls. The caller handles storage and pagination.
 
-### Keyboard and gestures
+### Keyboard and accessibility
+
 Tab reaches photo and favorite buttons. Arrows move by cell or row, Home/End reach the ends, and PageUp/PageDown move three rows. Left/Right follow RTL. Plus/minus resize thumbnails; Ctrl+scroll and pinch offer pointer alternatives.
 
 In the modal viewer, unzoomed arrows and Home/End select photos without wrapping. Zoomed arrows pan, and plus/minus zoom. Buttons provide alternatives to gestures. Escape or Close returns focus to the launch tile or nearest remaining tile. On narrow screens, use the thumbnail strip or swipe to navigate.`,

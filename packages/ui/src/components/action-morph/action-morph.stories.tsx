@@ -111,10 +111,12 @@ const meta = {
       usage: `### Drafts and submission
 Use this for short drafts, Menu for immediate commands, and Dialog for longer forms. Drafts and choices stay in memory while mounted, including after Back or a failed request. Return the real promise from \`onSubmit\`; omitting it disables submission. Empty trimmed text is rejected, but the original text is submitted. Closing or going Back invalidates UI updates, not the app's request; cancellation belongs to the consumer. Give actions unique ids and shortcuts.
 
-### Keyboard
+### Keyboard and accessibility
+
 Enter, Space or ArrowDown opens on the first enabled action; ArrowUp opens on the last. Up/Down wraps and Home/End jumps. Menu-local shortcuts take precedence over typeahead. Enter/Space chooses an action. Enter submits a single-line draft; Control/Meta+Enter submits multiline text. Escape returns from composer to menu, then closes the menu. Tab follows the nonmodal page order; leaving closes without moving focus back. Accepted Escape and success close return focus to the trigger.
 
 ### State and motion
+
 Rejected close requests retain an accessible success face with a Close button. Only the active face is interactive. Motion changes layout without delaying submission or focus; reduced motion swaps faces immediately. Reserve space around the trigger for the menu and composer to grow.`,
     },
   },

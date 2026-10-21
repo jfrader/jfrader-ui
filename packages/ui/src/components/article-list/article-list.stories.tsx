@@ -24,7 +24,8 @@ const meta = {
     usage: `### Rows and headings
 Input order is preserved; sort and paginate in your app. Empty collections render nothing. Add heading semantics only when the headlines belong in the page outline. Prepare locale-aware time labels before rendering.
 
-### Keyboard
+### Keyboard and accessibility
+
 Tab and Shift+Tab follow native link order; Enter follows links. Keep linked headlines free of nested links. A wire label is part of its headline link, while a topic label in a headline row is not.`,
   } },
 } satisfies Meta<typeof ArticleList>;

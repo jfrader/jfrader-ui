@@ -15,6 +15,7 @@ const meta = {
 The caret is decorative. It is \`aria-hidden\` by default. Provide status text or a live region separately. It has no APG pattern and never moves focus.
 
 ### Motion
+
 The caret blinks normally and stays visible with reduced motion. Color inherits from the surrounding text. Handle transport, text buffering and timers in your app.`,
   } },
   render: (args) => <p>Writing<StreamingCaret {...args} /></p>,

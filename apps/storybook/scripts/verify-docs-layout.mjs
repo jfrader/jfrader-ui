@@ -43,7 +43,7 @@ const editableDetails = {
 // docs page piles into one corner. Stacks with toasts must stay inside their own block.
 const containmentCases = ['feedback-toaststack--docs'];
 const guides = [
-  { id: 'foundations-getting-started--docs', title: 'Getting started', source: 'consuming-jfrader-ui.md' },
+  { id: 'foundations-getting-started--docs', title: 'Getting started', source: 'getting-started.md' },
   { id: 'foundations-theming--docs', title: 'Theming', source: 'theming.md' },
   { id: 'foundations-styling--docs', title: 'Styling', source: 'styling.md' },
 ];

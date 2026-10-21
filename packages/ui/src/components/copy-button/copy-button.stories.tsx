@@ -187,11 +187,13 @@ const meta = {
     usage: `### Clipboard writes
 An empty string is a valid clipboard payload. A write requests pending, then copied or error. Result callbacks run after the result request and receive the text captured at activation or the failure. Controlling the displayed state does not prevent a clipboard write; accept requested state changes to show progress and results.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Press Enter or Space to copy. While a write is in flight, further activations do nothing and focus stays on the button.
 - The accessible name stays at \`label\` while a polite status region announces the changing face. Keep \`label\` about the action, not its result.
 
-### Limits
+### Values and constraints
+
 - If the Clipboard API is unavailable or the browser rejects the write, the button requests \`error\` and calls \`onCopyError\`. Provide an error label and a way for the reader to copy the text themselves.
 
 Provide labels for the action, pending, success and failure states. Keep error copy actionable.`,
@@ -276,8 +278,8 @@ export const Sizes: Story = {
   ),
   play: async ({ canvasElement }) => {
     for (const size of SIZES) {
-      const labelled = getButton(canvasElement, `Copy ${size}`).getBoundingClientRect();
-      await expect(labelled.height).toBe(SIZE_PX[size]);
+      const labeled = getButton(canvasElement, `Copy ${size}`).getBoundingClientRect();
+      await expect(labeled.height).toBe(SIZE_PX[size]);
       const square = getButton(canvasElement, `Copy ${size} icon`).getBoundingClientRect();
       await expect(square.height).toBe(SIZE_PX[size]);
       await expect(square.width).toBe(SIZE_PX[size]);

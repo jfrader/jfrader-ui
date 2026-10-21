@@ -77,7 +77,8 @@ const meta = {
 - Use finite amounts and ISO currencies. Give a previous price an accessible label and set an explicit locale for server rendering.
 - Keep badges free of interactive controls.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Arrow keys select and wrap, skipping disabled periods. Horizontal arrows reverse in RTL.
 - Home/End select the first/last enabled period. Enter/Space activate once.
 - Tab enters the focused enabled item, then leaves the group.`,

@@ -177,7 +177,8 @@ const meta = {
       usage: `### When to use
 Use a thread for a conversation with a transcript and message composer. Your application handles transport, uploads, authentication, pagination and delivery status.
 
-### Constraints
+### Values and constraints
+
 Set a height limit. History is not virtualized and keeps the order you supply. Scrolling stays pinned within 48px of the bottom or after a send or jump; incoming updates never move focus.
 
 A controlled send proposes a message before transport starts. Keep its proposed id until acknowledgement. The draft clears only after transport resolves and the application accepts that id. Rejected requests keep the draft; edit it to retry. Transport failures keep text and files.
@@ -185,6 +186,7 @@ A controlled send proposes a message before transport starts. Keep its proposed 
 The thread releases object URLs it creates on removal, failure and unmount, never URLs supplied by your application. Preview images and accepted local messages retain separate leases. Update the relative-time clock in your application.
 
 ### Keyboard and accessibility
+
 The named log contains an ordered list of articles named by author and time. Typing indicators and submission errors stay outside the log. Enter sends once, Shift+Enter adds a newline, and IME composition does not send. Tab and Shift+Tab follow native order. In the reaction picker, Left/Right wrap and reverse in RTL; Home/End jump to the ends. Escape returns focus to the trigger; outside dismissal does not.`,
     },
   },

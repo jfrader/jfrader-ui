@@ -34,6 +34,7 @@ const meta = {
 Enter or Space opens and focuses the searchbox. Escape collapses without clearing the query; accepted closure returns focus to the button. Tab and Shift+Tab move through the field and clear action. Leaving closes without returning focus. Controlled open requests take effect only when accepted.
 
 ### Layout and results
+
 Reserve space for expansion in the toolbar. Supply filtering and results in your application. Query entry, clearing, validation and form reset follow SearchField behaviour.`,
   } },
 } satisfies Meta<typeof ExpandingSearch>;

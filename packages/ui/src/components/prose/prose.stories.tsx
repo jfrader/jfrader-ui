@@ -14,10 +14,12 @@ const meta = {
     usage: `### Content
 Use semantic HTML and choose heading levels that fit the page outline. Allow space for the first and last child's outer margins in the surrounding layout.
 
-### Keyboard
+### Keyboard and accessibility
+
 Links keep native keyboard activation and visible keyboard focus. No other focus stops are added.
 
 ### Security
+
 Prose styles its children only. Choose a parser, sanitize untrusted HTML and set link and image policies in your application. Prose does not parse Markdown, fetch resources or change link attributes.`,
   } },
   args: { children: <>

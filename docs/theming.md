@@ -1,31 +1,35 @@
 # Theming
 
-Choose a light or dark palette, then change the colors, spacing or typography your app needs. Start with the stylesheet setup in [Getting started](./consuming-jfrader-ui.md).
+Choose a light or dark palette, then change the colors, spacing, and typography your app needs. Start
+with the stylesheet setup in [Getting started](./getting-started.md).
 
 - [Set the document palette](#set-the-document-palette) and remember a user's choice.
 - [Theme part of a page](#theme-part-of-a-page).
-- [Add your brand colors and tokens](#custom-palettes).
+- [Add brand colors and token overrides](#custom-palettes).
 - [Keep themes inside overlays](#overlays-and-portal-containers).
 
 ## What each API changes
 
-A **token** is a named design value, such as a text color or a spacing step. Components read CSS custom properties such as `var(--ui-color-accent)` instead of fixed values.
+A **token** is a named design value, such as a text color or a spacing step. Components read CSS
+custom properties such as `var(--ui-color-accent)` instead of fixed values.
 
 | API | Use it for |
 | --- | --- |
-| `data-theme` on `<html>` | The whole document's light or dark palette. |
+| `data-theme` on `<html>` | The document's light or dark palette. |
 | `ThemeRoot` | A palette for a React subtree and the overlays opened inside it. |
-| `createTheme` | Deriving accent colors and collecting your token overrides. |
+| `createTheme` | Deriving accent colors and collecting token overrides. |
 | `ThemeProvider` | Giving Emotion callbacks access to token references. It does not select a palette. |
 | `theme` / `vars` | Typed `var(--ui-*)` references for your styles. They are the same object. |
 
-Changing `data-theme` changes the CSS values. The `theme` object keeps the same references in both modes; it is not a light/dark state store. Keep the selected mode in your app's state if you need it in JavaScript.
+Changing `data-theme` changes the CSS values. The `theme` object holds the same references in both
+modes; it is not a light/dark store. Keep the selected mode in your app's state if JavaScript needs it.
 
 ## Set the document palette
 
-Put `data-theme="light"` or `data-theme="dark"` on `<html>` in the initial HTML. The token stylesheet uses dark on `:root` when no theme is specified.
+Put `data-theme="light"` or `data-theme="dark"` on `<html>` in the initial HTML. Without a theme, the
+token stylesheet applies dark on `:root`.
 
-In app CSS, match native form controls and scrollbars to that palette:
+Match native form controls and scrollbars to the palette in app CSS:
 
 ```css
 html {
@@ -39,7 +43,8 @@ html[data-theme='light'] {
 
 ### Remember a user's choice
 
-For a client-rendered app, put this script in `index.html` before your app starts. It accepts only the two supported values and falls back to the system preference if storage is unavailable:
+In a client-rendered app, put this script in `index.html` before your app starts. It accepts only the
+two supported values, and falls back to the system preference when storage is unavailable:
 
 ```html
 <script>
@@ -52,7 +57,8 @@ For a client-rendered app, put this script in `index.html` before your app start
 </script>
 ```
 
-Use the same storage key when the user switches modes. This component is for a **client-rendered app**; the pre-paint script above must run first:
+Use the same storage key in the switch. This component is for a **client-rendered app**, and the
+pre-paint script must run first:
 
 ```tsx
 import { useState } from 'react';
@@ -77,13 +83,21 @@ export function AppThemeSwitch() {
 }
 ```
 
-`ThemeSwitch` requests a value change. Your handler applies it; the control does not update `<html>`, save preferences or animate the page itself. This recipe reads the system preference at startup; it does not subscribe to later system changes.
+`ThemeSwitch` only requests the change. Your handler applies it; the control does not update `<html>`,
+save preferences, or animate the page. This recipe reads the system preference at startup and does not
+subscribe to later changes.
 
-For SSR, render the initial `data-theme` on `<html>` and keep the server and first client render consistent. Do not read `document` during server rendering, including in a Client Component's render. If a pre-paint script changes the server's attribute, add `suppressHydrationWarning` to `<html>` and synchronize any mode-dependent controls after hydration. If your Content Security Policy blocks inline scripts, supply your app's nonce or use an allowed external pre-paint script.
+For SSR, render the initial `data-theme` on `<html>` and keep the server and first client render
+consistent. Do not read `document` during server rendering, including in a Client Component's render.
+If a pre-paint script changes the server's attribute, add `suppressHydrationWarning` to `<html>` and
+synchronize mode-dependent controls after hydration. If your Content Security Policy blocks inline
+scripts, supply your app's nonce or an allowed external pre-paint script.
 
 ## Theme part of a page
 
-`ThemeRoot` renders a `div` and applies a palette to its descendants. It also includes `ThemeProvider` and carries its theme through the library's portals. Use it for a widget or a section that differs from the page:
+`ThemeRoot` renders a `div` and applies a palette to its descendants. It includes `ThemeProvider` and
+carries its theme through the library's portals. Use it for a widget or a section that differs from the
+page:
 
 ```tsx
 import { Button, Card, ThemeRoot } from '@jfrader/ui';
@@ -100,11 +114,14 @@ export function LightWidget() {
 }
 ```
 
-The Card paints its own surface. `ThemeRoot` sets text color and native `color-scheme`, but does not paint a background or add padding. Omitting its `theme` selects **dark**, even on a light page. Pass the mode explicitly when nesting roots.
+The Card paints its own surface. `ThemeRoot` sets text color and native `color-scheme`, but paints no
+background and adds no padding. Omitting its `theme` selects **dark**, even on a light page, so pass
+the mode explicitly when nesting roots.
 
 ## Custom palettes
 
-Call `createTheme` outside render, then pass its result to `ThemeRoot tokens`. Define a palette for each mode you offer:
+Call `createTheme` outside render and pass the result to `ThemeRoot tokens`. Define one palette per
+mode you offer:
 
 ```tsx
 import { useState } from 'react';
@@ -131,15 +148,29 @@ export function BrandedWidget() {
 }
 ```
 
-Match `createTheme`'s `base` to the root's `theme`. Changing the root's mode does not recalculate the overrides. `createTheme` returns only the derived values and your overrides; the stylesheet supplies the rest of the named palette.
+Match `createTheme`'s `base` to the root's `theme`. Changing the root's mode does not recalculate the
+overrides. `createTheme` returns the derived values and your overrides; the stylesheet supplies the
+rest of the palette.
 
-`accent` accepts `#rgb` or `#rrggbb`; other formats throw. It derives `accentHover`, `accentText`, `accentSoft`, `accentSoftHover`, `accentBorder`, `accentContrast` and `focusRing`. Raw brand values belong in your theme configuration; use token references in component styles.
+`accent` accepts `#rgb` or `#rrggbb`. Other formats throw. It derives `accentHover`, `accentText`,
+`accentSoft`, `accentSoftHover`, `accentBorder`, `accentContrast`, and `focusRing`. Keep raw brand
+values in your theme configuration and token references in component styles.
 
-**Check your color combinations.** On light, the derived `accentText` limits lightness for contrast on white. On dark, it uses your accent unchanged, so a dark accent can be unreadable. `accentContrast` chooses near-black or white for text on the accent fill; accents with relative luminance around 0.17–0.22 can fall below 4.5:1 against both. Choose a darker or lighter accent, or override the text color. The focus ring also uses your accent and needs contrast against its surroundings. Derivation does not verify every custom combination.
+Check the combinations you derive:
+
+- On light, the derived `accentText` caps lightness for contrast on white.
+- On dark, `accentText` uses your accent unchanged, so a dark accent can be unreadable.
+- `accentContrast` picks near-black or white for text on the accent fill. Accents with relative
+  luminance around 0.17 to 0.22 can fall below 4.5:1 against both.
+- The focus ring uses your accent too, and needs contrast against its surroundings.
+
+Choose a lighter or darker accent, or override the affected token. Derivation does not verify every
+combination for you.
 
 ### Override other tokens
 
-The `tokens` option accepts any token path, including spacing, radii and fonts. Explicit values win over the derived accent family:
+The `tokens` option takes any token path, including spacing, radii, and fonts. Explicit values win over
+the derived accent family:
 
 ```tsx
 import { Card, createTheme, ThemeRoot } from '@jfrader/ui';
@@ -162,13 +193,18 @@ export function CompactWidget() {
 }
 ```
 
-You can also pass a sparse object directly to `ThemeRoot tokens`, without `createTheme`, when no accent derivation is needed. A nested root with the same theme and no `tokens` inherits the enclosing overrides. A different theme drops them. A nested root with its own `tokens` uses that map instead of merging the enclosing map; include every override it needs.
+Pass a sparse object to `ThemeRoot tokens` directly when you need no accent derivation. A nested root
+with the same theme and no `tokens` inherits the enclosing overrides; a different theme drops them. A
+nested root with its own `tokens` uses that map instead of merging, so include every override it needs.
 
 ### App-wide tokens
 
-Wrap your whole React app in a branded `ThemeRoot` to give its components and portals the same overrides. The wrapper does not theme the `body` outside it; set the document palette separately if the page background needs it.
+Wrap the app in a branded `ThemeRoot` to give its components and portals the same overrides. The
+wrapper does not theme the `body` outside it, so set the document palette separately when the page
+background needs it.
 
-For apps that keep all token values in CSS, put overrides after `tokens.css` in `src/app.css`. Target both the document and same-mode scopes:
+Apps that keep all token values in CSS put the overrides after `tokens.css` and target both the
+document and same-mode scopes:
 
 ```css
 :root,
@@ -179,11 +215,14 @@ For apps that keep all token values in CSS, put overrides after `tokens.css` in 
 }
 ```
 
-Setting a variable only on `html` or a wrapper does not override a nested `[data-theme]` element that declares that variable itself. A raw wrapper override also does not follow a portal to `body`. Prefer `ThemeRoot tokens` for scoped customization; it carries the map through portals.
+A variable set only on `html` or a wrapper does not override a nested `[data-theme]` element that
+declares it, and a raw wrapper override does not follow a portal to `body`. Prefer `ThemeRoot tokens`
+for scoped customization: it carries the map through portals.
 
-`themeTokenStyle(overrides)` converts a token map into custom-property declarations. If you generate app-wide CSS, use it once per base and write those declarations under the matching `:root` / `[data-theme='dark']` and `[data-theme='light']` selectors. It returns a style object, not a CSS stylesheet, and does not set a mode or install styles.
-
-For example, use this wrapper around your app instead of a branded `ThemeRoot`. Keep the document mode switch from above; the selectors pick its palette:
+`themeTokenStyle(overrides)` turns a token map into custom-property declarations, for apps that
+generate that CSS. It returns a style object, not a stylesheet, and sets no mode or styles. Write the
+declarations per base under matching `:root` / `[data-theme='dark']` and `[data-theme='light']`
+selectors:
 
 ```tsx
 import type { ReactNode } from 'react';
@@ -193,11 +232,15 @@ const palettes = [
   { selector: ":root, [data-theme='dark']", tokens: createTheme({ base: 'dark', accent: '#c4b5fd' }) },
   { selector: "[data-theme='light']", tokens: createTheme({ base: 'light', accent: '#6d28d9' }) },
 ];
-const brandCss = palettes.map(({ selector, tokens }) => {
-  const declarations = Object.entries(themeTokenStyle(tokens))
-    .map(([name, value]) => `${name}: ${value};`).join('\n');
-  return `${selector} {\n${declarations}\n}`;
-}).join('\n');
+
+const brandCss = palettes
+  .map(({ selector, tokens }) => {
+    const declarations = Object.entries(themeTokenStyle(tokens))
+      .map(([name, value]) => `${name}: ${value};`)
+      .join('\n');
+    return `${selector} {\n${declarations}\n}`;
+  })
+  .join('\n');
 
 export function BrandedApp({ children }: { children: ReactNode }) {
   return (
@@ -209,19 +252,30 @@ export function BrandedApp({ children }: { children: ReactNode }) {
 }
 ```
 
-Place these rules after `tokens.css`. Inline `ThemeRoot tokens` still win over them. Generate CSS only from trusted app configuration, and use your app's stylesheet or nonce if its Content Security Policy blocks inline styles.
+Place these rules after `tokens.css`. Inline `ThemeRoot tokens` still win over them. Generate CSS only
+from trusted app configuration, and use your app's stylesheet or nonce when a Content Security Policy
+blocks inline styles.
 
 ## Contrast surfaces
 
-`<Card appearance="contrast">` uses the dark palette with charcoal surface overrides, on either page theme. `Drawer.Panel` uses this appearance by default. Descendant text, borders, control boundaries and wells follow it, as do Select, Menu and Popover overlays opened inside it.
+`<Card appearance="contrast">` uses the dark palette with charcoal surface overrides, on either page
+theme. `Drawer.Panel` uses this appearance by default. Descendant text, borders, control boundaries,
+and wells follow it, as do the Select, Menu, and Popover overlays opened inside it.
 
-Omit `appearance` on a nested Card to inherit. `appearance="default"` keeps the enclosing theme; it does not restore the outer page's theme. To put a light section inside a contrast surface, wrap it in `ThemeRoot theme="light"`.
+Omit `appearance` on a nested Card to inherit. `appearance="default"` keeps the enclosing theme; it
+does not restore the page's theme. To place a light section inside a contrast surface, wrap it in
+`ThemeRoot theme="light"`.
 
 ## Overlays and portal containers
 
-A portal renders an overlay elsewhere in the DOM, usually under `body`, so it can escape a parent's clipping. Library overlays such as Select, Combobox, Menu, Popover, Tooltip, DatePicker and Toast carry their nearest theme, appearance and `ThemeRoot tokens` with them, including updates while open. Other ancestor CSS does not cross that boundary. Native Dialog renders in place and inherits directly.
+A portal renders an overlay elsewhere in the DOM, usually under `body`, so it can escape a parent's
+clipping. Overlays built on `OverlayPortal`, including Select, Combobox, Menu, Popover, Tooltip,
+DatePicker, and Toast, carry their nearest theme, appearance, and `ThemeRoot tokens` with them,
+including updates while open. Other ancestor CSS does not cross that boundary. Native Dialog renders
+in place and inherits directly.
 
-Use `portalContainer` when an overlay must stay inside an embedded widget or a modal's top-layer subtree. Here is a complete widget-owned host:
+Use `portalContainer` when an overlay must stay inside an embedded widget or a modal's top-layer
+subtree:
 
 ```tsx
 import { useState } from 'react';
@@ -245,8 +299,10 @@ export function ShareWidget() {
 
 - Omitted: inherit the enclosing root's host, or use `body`.
 - `null`: wait for the host before rendering overlays.
-- An element: render there. Set it once; switching to another element later is unsupported.
+- An element: render there. Set it once; switching hosts later is unsupported.
 
-Inside a native modal, place the host **inside the open dialog's DOM**. A portal under `body` is outside its top layer and can be inert or hidden. For a host inside a contrast panel, give its `ThemeRoot` the panel's enclosing theme so the appearance carries through.
+Inside a native modal, place the host **inside the open dialog's DOM**. A portal under `body` sits
+outside its top layer and can be inert or hidden. For a host inside a contrast panel, give its
+`ThemeRoot` the panel's enclosing theme so the appearance carries through.
 
-Next: [Styling](./styling.md) for individual components, parts and reusable styles.
+Next: [Styling](./styling.md) for individual components, parts, and reusable styles.

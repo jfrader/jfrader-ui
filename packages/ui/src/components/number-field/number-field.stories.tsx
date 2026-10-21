@@ -31,16 +31,19 @@ const meta = {
 - Stepping from empty starts at zero clamped to the range, then moves one step. Externally supplied out-of-range amounts are shown invalid without changing them.
 - Bounds and values must be finite, within Number.MAX_SAFE_INTEGER, and use at most 12 fraction digits. Steps must be positive. Invalid configuration throws \`NumberFieldConfigError\`.
 
-### Keyboard
+### Keyboard and accessibility
+
 - ArrowUp/ArrowDown step once. Shift+Arrow or PageUp/PageDown uses \`largeStep\` (ten steps by default).
 - Home/End jumps to the bounds outside draft editing; during editing it retains native caret movement. Enter commits a draft without submitting; otherwise it selects the text. Escape restores the latest committed value.
 - Tab and Shift+Tab move normally. Enter and Space activate a focused stepper once. Holding a pointer repeats after 400ms, accelerating from 150ms to a 40ms floor. Set \`repeat={false}\` to disable holding.
 
 ### Forms
+
 - Forms submit one canonical number (\`1.5\`, not locale-formatted text). Empty submits an empty string; disabled fields are omitted. The visible input owns required/custom validation.
 - Reset restores the initial uncontrolled value without callbacks. Controlled values remain parent-owned.
 
 ### Locale and units
+
 - Set \`locale\` identically on the server and client. Grouping, digits, separators and units use Intl; parsing accepts locale digits without removing arbitrary characters.
 - Use localized units for measurements. Decorative affixes are not announced; provide custom spoken unit wording when needed.
 - This field is for quantities, not money, phone numbers, postal codes or numeric identifiers. Currency, percent, compact and significant-digit formatting are not supported.

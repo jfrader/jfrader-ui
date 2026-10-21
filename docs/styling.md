@@ -1,25 +1,32 @@
 # Styling
 
-Use a component's props for built-in variants. Use tokens for changes shared across your app, and `sx` or `styled` for a particular component. Complete the stylesheet setup in [Getting started](./consuming-jfrader-ui.md) first.
+Use a component's props for built-in variants. Use tokens for changes shared across your app, and
+`sx` or `styled` for one component. Complete the stylesheet setup in
+[Getting started](./getting-started.md) first.
 
 ## Choose where to make the change
 
-| You want to… | Use |
+| You want to change… | Use |
 | --- | --- |
-| Change a Button's supported size, tone or variant | Its `size`, `tone` or `variant` prop. |
-| Change colors, spacing or fonts across a section or app | [Theme tokens](./theming.md). |
-| Change one component instance or public part | [`sx`](#change-one-instance-with-sx). No special JSX setup. |
-| Reuse a styled component throughout your app | [`styled`](#reuse-styles-with-styled). No special JSX setup. |
-| Compose Emotion styles for `styled` | The [`css()`](#compose-styles-with-css) function. |
-| Use an existing stylesheet | `className`, with normal CSS cascade rules. |
+| A Button's supported size, tone, or variant | Its `size`, `tone`, or `variant` prop. |
+| Colors, spacing, or fonts across a section or app | [Theme tokens](./theming.md). |
+| One component instance or public part | [`sx`](#change-one-instance-with-sx). No JSX configuration. |
+| A styled component reused across the app | [`styled`](#reuse-styles-with-styled). No JSX configuration. |
+| Several Emotion styles composed for `styled` | The [`css()`](#compose-styles-with-css) function. |
+| An existing stylesheet | `className`, with normal CSS cascade rules. |
 
 ## Token references
 
-`theme` from `@jfrader/ui` and `vars` from `@jfrader/tokens/vars` are the same object. Its values are references, such as `theme.space[4]` → `var(--ui-space-4)`. They resolve to the active CSS palette wherever the element renders.
+`theme` from `@jfrader/ui` and `vars` from `@jfrader/tokens/vars` are the same object. Its values are
+references, such as `theme.space[4]` → `var(--ui-space-4)`, and they resolve to the active palette
+wherever the element renders.
 
-Use semantic color roles: `text` for body text, `textMuted` for secondary text, `accentText` for accent-colored text, `accent` for accent fills, and `accentContrast` for text on those fills. A fill color is not necessarily readable as text. Put raw brand colors in your [theme configuration](./theming.md).
+Use semantic color roles: `text` for body text, `textMuted` for secondary text, `accentText` for
+accent-colored text, `accent` for accent fills, and `accentContrast` for text on those fills. A fill
+color is not necessarily readable as text. Put raw brand colors in your
+[theme configuration](./theming.md).
 
-In regular CSS, use the same properties directly:
+The same properties work in plain CSS:
 
 ```css
 .project-list {
@@ -29,11 +36,13 @@ In regular CSS, use the same properties directly:
 }
 ```
 
-Use logical properties such as `paddingInline` and `marginBlockEnd` so layouts also work right-to-left.
+Use logical properties such as `paddingInline` and `marginBlockEnd` so layouts also work
+right-to-left.
 
-## Change one instance with sx
+## Change one instance with `sx`
 
-Every public visual component part accepts `sx`. It supports Emotion style objects, arrays, serialized styles and theme callbacks. A provider or context-only root that renders no element has nothing to style.
+Every public visual part accepts `sx`. It takes Emotion style objects, arrays, serialized styles, and
+theme callbacks. A provider or context-only root renders no element, so it has nothing to style.
 
 ```tsx
 import { Button, theme } from '@jfrader/ui';
@@ -46,7 +55,9 @@ export function CreateProjectButton() {
 }
 ```
 
-`sx` works with ordinary React JSX. You can use token references imported from `theme` without a provider. For callbacks that receive `theme`, mount `ThemeProvider` above them. `ThemeRoot` and the Next.js `EmotionRegistry` already include one:
+`sx` works with ordinary React JSX. Token references imported from `theme` need no provider. Theme
+callbacks do: mount `ThemeProvider` above them. `ThemeRoot` and the Next.js `EmotionRegistry` already
+include one.
 
 ```tsx
 import { Card, ThemeProvider } from '@jfrader/ui';
@@ -66,11 +77,12 @@ export function Plan() {
 }
 ```
 
-`sx` callbacks receive the theme directly: `(theme) => styles`. A `styled` callback receives props: `({ theme }) => styles`.
+An `sx` callback receives the theme directly: `(theme) => styles`. A `styled` callback receives props:
+`({ theme }) => styles`.
 
-## Reuse styles with styled
+## Reuse styles with `styled`
 
-Create reusable styled components at module scope. Wrap a library component or a native element:
+Create reusable styled components at module scope, wrapping a library component or a native element:
 
 ```tsx
 import { Button, Card, styled, ThemeProvider } from '@jfrader/ui';
@@ -103,15 +115,20 @@ export function Plan() {
 }
 ```
 
-`styled(Card)` styles the Card root. Style `Card.Title` separately if you want to change the title. Keep using `Card.Header`, `Card.Content` and the other original parts inside your wrapper.
+`styled(Card)` styles the Card root. To change the title, style `Card.Title` separately, and keep
+using `Card.Header`, `Card.Content`, and the other original parts inside your wrapper.
 
-`ThemeProvider` renders no DOM. Its optional `theme` prop replaces the callback values; it does not override the library's CSS variables. Use `ThemeRoot tokens` to customize those. If you need a custom Emotion provider alongside `ThemeRoot`, place it **inside** the root, since the root mounts the default provider.
+`ThemeProvider` renders no DOM. Its optional `theme` prop replaces the callback values; it does not
+override the library's CSS variables. Use `ThemeRoot tokens` for those. A custom Emotion provider
+belongs **inside** `ThemeRoot`, which mounts the default one.
 
-`useTheme()` reads the same callback object. It needs a provider and returns CSS references, not resolved hex values or the active mode. For canvas drawing or another API that needs resolved colors, read computed styles from the themed element.
+`useTheme()` reads the same callback object. It needs a provider and returns CSS references, not
+resolved colors or the active mode. For canvas drawing or another API that needs resolved colors, read
+computed styles from the themed element.
 
 ## Style a part
 
-Compound components expose parts you render yourself. Apply `sx` to that part:
+Compound components expose the parts you render yourself. Apply `sx` to the part:
 
 ```tsx
 import { Card, theme } from '@jfrader/ui';
@@ -130,7 +147,8 @@ export function ProjectCard() {
 }
 ```
 
-Single widgets often render their label, input or icons internally. Use their documented `slotProps` to reach those elements, rather than selectors that depend on internal markup:
+Single widgets render their label, control, and icons internally. Reach those elements through the
+documented `slotProps` instead of selectors that depend on internal markup:
 
 ```tsx
 import { TextField, theme } from '@jfrader/ui';
@@ -149,11 +167,12 @@ export function ProjectName() {
 }
 ```
 
-Slot names vary by component. Every slot takes `sx`, with the same values as the public component root. Styles apply in order: own styles, slot `sx`, then consumer `sx`. For TextField, the top-level `sx` styles the input wrapper, not the label or input itself.
+Slot names vary by component, and every slot takes `sx` with the same values as the component root.
+On TextField, the top-level `sx` styles the field wrapper, not the label or the input.
 
 ## Compose styles with `css()`
 
-`css()` builds serialized Emotion styles — the same values `sx` accepts — for reuse with `styled`:
+`css()` builds serialized Emotion styles, the same values `sx` accepts, for reuse with `styled`:
 
 ```tsx
 import { css } from '@emotion/react';
@@ -165,43 +184,42 @@ const roomy = css({ paddingBlock: theme.space[6] });
 const RoomierCard = styled(Card)([highlighted, roomy]);
 ```
 
-`css()` returns serialized styles, not a class-name string. The Emotion `css` prop is internal to the library: style component instances with `sx` instead, which needs no JSX configuration in your app.
+`css()` returns serialized styles, not a class-name string. Inside the library the `css` prop is
+internal: style component instances with `sx`, which needs no JSX configuration in your app.
 
-## Which style wins?
+## Style precedence
 
-For the same part, the library composes styles in this order:
+For one part, styles apply in this order:
 
 1. Component defaults and visual props.
-2. That part's `slotProps` styles, when available.
+2. That part's `slotProps` styles.
 3. Consumer `sx`.
 
-Later values win when CSS specificity and importance are equal. A rule on the root does not override a different property on a child. Normal CSS rules still apply to external stylesheets, `!important`, inline `style` and more-specific selectors.
-
-For example, with the JSX configuration above:
+Later values win when specificity and importance are equal. A rule on the root does not override a
+different property on a child. External stylesheets, `!important`, inline `style`, and more specific
+selectors keep their normal CSS behavior.
 
 ```tsx
 import { Button, theme } from '@jfrader/ui';
 
 export function RoundedButton() {
-  return (
-    <Button sx={{ borderRadius: theme.radius.full }}>
-      Invite
-    </Button>
-  );
+  return <Button sx={{ borderRadius: theme.radius.full }}>Invite</Button>;
 }
 ```
 
-The button uses the full radius from `sx`.
+The button takes the full radius from `sx`.
 
 ## Next.js boundaries
 
-Use `styled`, `useTheme`, `css()` and theme callbacks in Client Components under `EmotionRegistry`. A Server Component can pass a serializable plain-object `sx`. See the complete layout in [Getting started](./consuming-jfrader-ui.md).
+Use `styled`, `useTheme`, `css()`, and theme callbacks in Client Components under `EmotionRegistry`. A
+Server Component can pass a serializable plain-object `sx`. See the complete layout in
+[Getting started](./getting-started.md).
 
 ## Troubleshooting
 
 | Symptom | Check |
 | --- | --- |
-| A style changes the wrapper but not its input | Use the documented control slot (`slotProps.control` on TextField), or its public input part. |
-| A style loses to another override | Check which element owns the property, then composition order and CSS specificity. |
-| `styled` has undefined theme values | Mount `ThemeProvider`, `ThemeRoot` or `EmotionRegistry` above it. |
-| A CSS variable resolves differently in a popup | Check the nearest `ThemeRoot` and its `tokens`; ancestor-only CSS does not cross portals. See [Theming](./theming.md). |
+| A style changes the wrapper but not its input | Use the documented control slot (`slotProps.control` on TextField), or the public input part. |
+| A style loses to another override | Check which element owns the property, then precedence and CSS specificity. |
+| `styled` reads undefined theme values | Mount `ThemeProvider`, `ThemeRoot`, or `EmotionRegistry` above it. |
+| A CSS variable resolves differently in a popup | Check the nearest `ThemeRoot` and its `tokens`; ancestor CSS does not cross portals. See [Theming](./theming.md). |

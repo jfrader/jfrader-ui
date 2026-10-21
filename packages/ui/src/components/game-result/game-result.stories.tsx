@@ -22,6 +22,7 @@ const USAGE_NOTES = `### Match end
 Use your game's language for result text and give players a next action. Your application decides the match result and handles navigation.
 
 ### Accessibility and motion
+
 The result is an atomic status announcement. Keep the title consistent with the page's heading hierarchy. Any celebration effect belongs to your application: keep positions stable between renders and skip travel when reduced motion is requested.`;
 
 const meta = {

@@ -53,6 +53,7 @@ const meta = {
 - Use InlineEdit when you only need to edit and save one string.
 
 ### Keyboard and forms
+
 - Press Enter or Space to toggle a section. Tab and Shift+Tab follow the document order. Pickers and editors keep their own keyboard behavior.
 - Attach \`initialFocusRef\` to the field that should receive focus after Edit. The labelled editor group is the fallback.
 - Do not nest a native form editor inside another form. Use form-associated controls or a non-form editor there.

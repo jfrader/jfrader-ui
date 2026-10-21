@@ -63,7 +63,8 @@ const meta = {
 - Color requests precede photo reset and unavailable-size clearing. Controlled axes only change when the caller accepts them. Keep controlled photo IDs valid for the accepted color. Unknown controlled IDs show unavailable content.
 - Translate labels, including color/size group names and unavailable text. locale formats counts through Intl.
 
-### Keyboard and gestures
+### Keyboard and accessibility
+
 - Product stage and thumbnail tabs use Left/Right (RTL-aware) and Home/End to select; Enter/Space on the main image opens the native modal. Native radio arrows skip disabled choices; unavailable options remain visible.
 - Cover rail arrows, Home/End, previous/next and position buttons select without wrapping. Caption actions keep native keyboard behavior. Escape does not reset a cover.
 - Swipe horizontally at least 40px to select one photo. The cover rail also accepts horizontal wheel movement; vertical page scroll and Ctrl+wheel are unchanged. Selection is discrete; there is no inertial throw.

@@ -171,12 +171,14 @@ const meta: Meta<DateRangePickerProps> = {
       usage: `### When to use
 Choose an inclusive period for a report, booking, or filter. Use DatePicker when you only need one date.
 
-### Selection and limits
+### Values and constraints
+
 Dates are date-only Gregorian YYYY-MM-DD strings, without a time zone. The first day starts a draft; hovering or focusing another day previews it; the second day finishes it. Apply requests the value change before closure. Cancel, Escape, outside presses, and Tab-out discard the draft.
 Out-of-bounds presets remain visible but unavailable. Automatic month layout needs at least 712px within the boundary to show two months.
 Supply the same current date and locale on the server and client, and translate the messages, including the plural-aware summary.
 
 ### Keyboard and accessibility
+
 Enter, Space, or Down opens the calendar. Arrows move by day or week; Home/End move within a week; Page Up/Down change month and Shift+Page Up/Down change year. Enter or Space selects each endpoint; activate Apply to commit. Escape discards and returns focus to the trigger.
 Presets use a single Tab stop: arrows move between them and Home/End jump to the ends. Give the trigger an accessible name. Required state is announced in its name, but hidden form fields do not enforce native validation.`,
     },

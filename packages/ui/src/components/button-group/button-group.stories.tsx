@@ -77,13 +77,16 @@ const meta = {
 Group related commands, not persistent choices. Use ToggleGroup for selection. Give the group an accessible name and name every icon-only action.
 
 ### Expanding actions
+
 Each expanding action needs a unique identifier, an icon and a text label. Expansion reveals a label, not a selection: pointer movement or focus reveals it, and leaving returns to the focused or resting action. Touch activates on the first tap. Invalid identifiers fall back to the resting or first enabled action without a callback; when all actions are disabled, all labels stay visible.
 
 ### Actions and menus
+
 Application code owns async completion and errors. Reserve room for changing result labels to avoid moving nearby actions. Give at most one action solid accent emphasis.
 Accepted Escape or menu selection returns focus to the trigger; outside press and Tab-out do not.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Tab/Shift+Tab visit every enabled action.
 - Arrows matching the orientation wrap. Home/End move to the ends; horizontal arrows reverse in RTL.
 - Enter/Space activate buttons. Links keep their native Enter/Space behavior.`,

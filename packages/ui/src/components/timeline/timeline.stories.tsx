@@ -288,13 +288,15 @@ const meta = {
 - All events render; there is no virtualization or pagination.
 
 ### Dates and updates
+
 - Pass \`now\` in epoch milliseconds and update it about once a minute. Timeline runs no timer.
 - Use the same \`now\`, \`locale\` and \`timeZone\` on server and client so hydration text matches.
 - Rows show signed relative times and include the full date as hidden text. Events with unreadable dates stay in a trailing group.
 - New rows do not take focus. With \`maxHeight\`, the row being read keeps its position as newer events arrive. Use \`scrollToNew\` to scroll to them instead.
 - A status region announces new ids.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Tab and Shift+Tab follow DOM order through disclosures and open details. Enter or Space toggles a disclosure.
 - Up and Down move between disclosures across days and stop at the ends. Home and End jump to the first and last.
 - Keys inside detail content keep their behavior.`,

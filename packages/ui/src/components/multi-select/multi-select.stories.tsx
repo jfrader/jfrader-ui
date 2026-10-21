@@ -138,12 +138,14 @@ const meta: Meta<MultiSelectCompoundProps> = {
       usage: `### When to use
 - Use MultiSelect for several choices from a fixed list. Use Select for one choice or Combobox for typed search.
 
-### Keyboard and focus
+### Keyboard and accessibility
+
 - DOM focus stays on the trigger while an option is highlighted. Toggling an option leaves the list open.
 - Arrows wrap and skip disabled options; Home/End reach the ends. Prefix typeahead keeps a 500ms buffer and highlights matches without filtering the list.
 - Enter and Space toggle the highlighted option. Escape and Tab close without changing selection; Tab moves focus to the next control.
 
-### Selection and forms
+### Forms
+
 - Clearing the selection keeps disabled selections.
 - The spoken selection summary includes options hidden by the visible count limit.
 - Named fields submit repeated form entries. Required fields need at least one selection before submission.`,

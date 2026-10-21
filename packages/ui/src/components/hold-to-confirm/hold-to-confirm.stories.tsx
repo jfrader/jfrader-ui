@@ -80,15 +80,18 @@ const meta = {
       usage: `### When to use
 Use a hold-to-confirm button for high-consequence or destructive actions where an accidental click would cause disruption. Provide a dialog-based confirmation as an untimed alternative for users who cannot sustain continuous holds.
 
-### Behaviour and constraints
+### Values and constraints
+
 Hold Space, Enter, or the primary pointer continuously until the timer completes. Releasing early, pressing Escape or Tab, losing focus, or pointer cancellation cancels the attempt.
 
 After confirmation, the button remains focusable with \`aria-disabled="true"\`. The \`onConfirm\` callback fires when the hold completes; if a subsequent asynchronous network request fails, set controlled \`value\` back to \`false\`.
 
 ### Keyboard and accessibility
+
 Focus the button with Tab and begin holding with Space or Enter. A description states the hold duration; a polite status announces accepted completion. A controlled parent must accept confirmation on the first render after completion for that announcement to run.
 
 ### Motion
+
 The morph presentation resizes the pill after completion without changing the hold interaction or native button. Reduced motion skips the size animation.`,
       source: {
         language: 'tsx',

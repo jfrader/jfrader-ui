@@ -72,16 +72,19 @@ const meta = {
       usage: `### When to use
 Choose a time of day for an appointment or schedule. Pair with DatePicker when you also need a date; resolve timestamps, time zones, and daylight-saving changes in your app.
 
-### Limits
+### Values and constraints
+
 Values are civil HH:mm strings. Values between steps display without rounding. A one-minute step mounts all 1,440 options; measure performance before using it across many fields. Supply the same locale on the server and client.
 Required state is announced to assistive technology, but the hidden field does not enforce browser constraint validation; validate in your form.
 
 ### Dial presentation
+
 - Drag the 24-hour face and release to select the nearest available time and close; cancelling a gesture leaves the value unchanged.
 - The dial is a pointer-only enhancement, hidden from assistive technology with \`aria-hidden\`. The parallel listbox and its options stay visible and exposed to screen readers; focus remains on the combobox trigger through \`aria-activedescendant\`.
 - Use the same keyboard keys with either presentation, including in RTL; the clock runs clockwise.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Focus stays on the Select trigger. Arrows wrap, Home and End jump, and typing searches.
 - Enter or Space selects. Escape or Tab closes.`,
     },

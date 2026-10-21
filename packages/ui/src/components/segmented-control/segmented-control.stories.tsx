@@ -109,11 +109,13 @@ const meta = {
 Choose one view or display mode from a short row of options. Use Tabs for associated panels, RadioGroup for submitted form values, and ToggleGroup for toolbar actions or multiple selection.
 
 ### Content
+
 - Values must be unique. Accessories must not be interactive.
 - Give the group an accessible name and provide a name for icon-only choices.
 - A selection cannot be cleared by activating it again. Long rows scroll to keep the focused choice visible.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Tab enters the last focused enabled option, then exits.
 - Arrows select and wrap, skipping disabled options. Horizontal arrows reverse in RTL. Home/End select the first/last enabled option.
 - Space and Enter select the focused option.`,

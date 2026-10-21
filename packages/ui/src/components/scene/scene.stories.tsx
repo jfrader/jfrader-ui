@@ -122,9 +122,11 @@ const meta = {
       },
       usage: `
 ### Seeds
+
 The same seed produces identical artwork across reloads and platforms. A raw and a warm scene from one seed line up as a before/after pair; only colours change.
 
-### Accessibility
+### Keyboard and accessibility
+
 Provide \`alt\` or \`aria-label\` to describe the scene. Pass \`aria-hidden\` or an empty \`alt\` string when the scene is decorative.
 `,
     },

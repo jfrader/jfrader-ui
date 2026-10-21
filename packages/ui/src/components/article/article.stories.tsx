@@ -36,6 +36,7 @@ Choose heading levels to fit the surrounding page. Supply either generated conte
 Choose excerpts that add information rather than repeat the summary. Excerpts can be hidden on smaller screens, so keep essential information in the headline, summary or body. Supply accessible media content; no figure or placeholder appears without media.
 
 ### Links and keyboard
+
 Only the headline becomes a link, not the whole article. Keep linked headline children free of nested links. Tab and Shift+Tab follow native link order; Enter follows links.`,
   } },
 } satisfies Meta<typeof Article>;

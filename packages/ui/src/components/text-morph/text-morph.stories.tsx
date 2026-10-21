@@ -55,11 +55,13 @@ const meta = {
 Use short, single-line text and keep the button, heading or status in surrounding markup. Update text in your app; this is not an editable field. Empty strings and zero are valid. Numeric formatting uses Intl.NumberFormat; use the same locale on the server and during hydration.
 
 ### Motion and limits
+
 Automatic matching preserves whole-label shaping when either label uses a joining script or RTL. More than 80 graphemes uses whole-label decoration. Numeric wheels retarget from their current position. Rolling transitions run for at most 2000ms, with at most 400ms of total stagger and three spins.
 
 Sand is for decorative headings, not paragraphs. Its text remains visible and selectable beneath the grains. Pointer effects do not handle touch gestures. Sand settles within a 900ms budget; oversized text, canvas failure, reduced motion, forced colors and pausing leave static text.
 
 ### Keyboard and announcements
+
 Text has no keyboard commands or focus target; use a button for activation. Assistive technology receives the complete current label immediately, without the decoration. Announce only unsolicited updates. An explicit live-region policy suppresses the inner announcement. Give empty buttons another accessible name.`,
       source: { code: "<TextMorph>{saved ? 'Saved' : 'Save'}</TextMorph>", language: 'tsx' },
     },

@@ -65,7 +65,8 @@ const meta = {
       usage: `### When to use
 Show measured completion for work with a known total. Use an indeterminate bar while the total is unknown; do not invent a percentage.
 
-### Accessibility
+### Keyboard and accessibility
+
 Name the task, and describe values in meaningful units when a percentage is insufficient. A progress bar is not focusable and has no keyboard interaction. Announce important completion or error messages separately; changes to the bar alone are not a live announcement. Reduced motion keeps indeterminate feedback still.`,
     },
   },

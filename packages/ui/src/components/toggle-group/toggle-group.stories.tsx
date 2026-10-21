@@ -112,15 +112,18 @@ const meta = {
       usage: `### When to use
 Use toggle buttons for related view or formatting choices. Use SegmentedControl to pick one visual state on a track, or radios for a mutually exclusive form field.
 
-### Selection constraints
+### Values and constraints
+
 Give every item a nonempty value. Single selection keeps the pressed item selected unless clearing is allowed. Multiple selection toggles choices independently and reports them in activation order. Supply either options or compound children, not both.
 
 ### Keyboard and accessibility
+
 Name the group and every button. Tab enters the group's single tab stop. Horizontal arrows move focus and reverse in RTL; vertical groups use Up and Down instead. Navigation wraps and skips disabled items.
 
 Home and End focus the edge items. Focus does not select; press Space or Enter to toggle the focused item.
 
 ### Forms
+
 The items are buttons, not form inputs. Serialize the selection yourself when submitting a form.`,
     },
   },

@@ -125,7 +125,8 @@ const meta = {
 - Large arrays and objects paginate in chunks rather than virtualizing the DOM. Avoid multi-megabyte input.
 - Searching expands matching branches and loads result pages; clearing or canceling search restores base expansion and pagination state.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Focus lands on the tree widget. Up and Down navigate visible rows and stop at the ends.
 - Right arrow expands a closed node or moves to its first child. Left arrow collapses an open node or moves to its parent. Arrow semantics remain identical in RTL.
 - Home and End jump to the first and last rendered rows; alphanumeric keys trigger 500ms typeahead across sibling keys. Enter or Space activates the focused row.

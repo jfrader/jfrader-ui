@@ -41,9 +41,11 @@ const meta = {
 Show a player's identity and turn status on its own or inside a GameTable seat region. GameSeat does not position players around the board or enforce turn rules.
 
 ### Clock constraints
+
 Synchronize the initial clock for server rendering. The ring runs without React ticks; reduced motion keeps its sampled geometry still. Milestone notifications can arrive late in background tabs, so use authoritative game state to enforce a deadline.
 
 ### Keyboard and accessibility
+
 The seat is a named group, not an interactive widget, and adds no focus target or keyboard bindings. The timer ring and shorthand hand are decorative. Supply localized time text, visible offline status and a labeled hidden hand when its count needs announcing. Announce turn changes or milestones, not ticks. Mark decorative avatars aria-hidden to avoid repeating the player's name.`,
     source: { language: 'tsx', code: `import { Avatar, Badge } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
