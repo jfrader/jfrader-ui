@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- `RadialMenu` contains long fallback lists in a scrollable menu and wraps long action labels. `SignaturePad` focuses the canvas after drawing so keyboard shortcuts work immediately. `StreamingCaret` stays visible in forced colors.
+
 ## 0.10.0 — 2026-10-21
 
 ### Added

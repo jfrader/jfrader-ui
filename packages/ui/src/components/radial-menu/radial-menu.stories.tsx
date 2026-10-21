@@ -4,6 +4,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { withLightTheme } from '../../testing/story-decorators';
 import { settleMotion } from '../../testing/motion-assertions';
+import { expectInside } from '../../testing/geometry-assertions';
 import { RadialMenu } from './index';
 import { Surface } from '../surface';
 
@@ -42,6 +43,7 @@ const meta = {
     </Frame>
   ),
   parameters: {
+    layout: 'padded',
     a11y: {
       config: {
         rules: [
@@ -147,6 +149,31 @@ export const LinearFallback: Story = {
       'menu',
     );
     await settleMotion(menu);
+  },
+};
+export const LongActionList: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    actions: Array.from({ length: 16 }, (_, index) => ({
+      id: `archive-${index}`,
+      label: `Archive revision ${index + 1}: ProductLaunchChecklistForTheUpcomingRelease`,
+    })),
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const doc = canvasElement.ownerDocument;
+    const menu = await within(doc.body).findByRole('menu');
+    await settleMotion(menu);
+    await expectInside(menu, doc.documentElement);
+    await expect(menu.scrollHeight).toBeGreaterThan(menu.clientHeight);
+    await expect(menu.scrollWidth).toBeLessThanOrEqual(menu.clientWidth);
+    const items = within(menu).getAllByRole('menuitem');
+    for (const item of items) {
+      await expect(item.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+    await userEvent.keyboard('{End}');
+    await expect(doc.activeElement).toBe(items.at(-1));
+    await expectInside(items.at(-1)!, menu);
   },
 };
 export const Keyboard: Story = {

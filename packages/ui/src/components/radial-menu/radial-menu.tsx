@@ -15,6 +15,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { focusRingOutset } from '../../styling/focus-ring';
+import { listboxScrollStyle } from '../../styling/listbox-style';
 import {
   GeneratedRoot,
   type GeneratedRootSlotProps,
@@ -150,8 +151,15 @@ const contentStyle = css({
     border: `1px solid ${vars.color.borderControl}`,
   },
 });
+const linearContentStyle = css(listboxScrollStyle, {
+  boxSizing: 'border-box',
+  maxInlineSize: `calc(100vw - ${vars.space[8]})`,
+  pointerEvents: 'auto',
+});
 const itemStyle = css({
   pointerEvents: 'auto',
+  maxInlineSize: '100%',
+  overflowWrap: 'anywhere',
   '&[data-radial="true"]': {
     position: 'absolute',
     inlineSize: vars.space[10],
@@ -481,7 +489,7 @@ function RadialMenuBody({
         dir={rtl ? 'rtl' : 'ltr'}
         family="RadialMenu"
         marker="radial-menu-content"
-        styles={[contentStyle, contentCss]}
+        styles={[contentStyle, linear && linearContentStyle, contentCss]}
         slots={{ content: slots?.content }}
         data-linear={linear}
         aria-busy={pending || undefined}

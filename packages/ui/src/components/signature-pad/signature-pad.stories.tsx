@@ -517,6 +517,17 @@ export const TapDot: Story = {
     await expect(signatureToSvg(value)).toContain('<circle');
   },
 };
+export const PointerFocus: Story = {
+  tags: ['!autodocs'],
+  play: async ({ canvasElement, userEvent, args }) => {
+    const canvas = pad(canvasElement);
+    await gesture(canvas, strokeEvents);
+    await expect(canvas.ownerDocument.activeElement).toBe(canvas);
+    await userEvent.keyboard('{Delete}');
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(2, []);
+    await expect(within(canvasElement).getByRole('button', { name: 'Clear' })).toBeDisabled();
+  },
+};
 export const PenPressure: Story = {
   play: async ({ canvasElement, args }) => {
     await gesture(

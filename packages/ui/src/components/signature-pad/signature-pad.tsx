@@ -1041,6 +1041,7 @@ export function SignaturePad({
                   active.current = null;
                   return;
                 }
+                event.currentTarget.focus({ preventScroll: true });
                 sample(event.nativeEvent, gesture);
                 draw([...h.present, gesture.stroke]);
                 event.preventDefault();

@@ -46,6 +46,7 @@ const meta = {
   tags: ['autodocs'],
   render: (args) => <SharePanel><ShareAccess {...args} /></SharePanel>,
   parameters: {
+    layout: 'padded',
     docs: {
       sections: [
         { title: 'People and permissions', stories: ['Default', 'PendingInvite', 'EmptyMembers'] },
