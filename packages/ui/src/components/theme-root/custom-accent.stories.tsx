@@ -194,7 +194,7 @@ export function CustomAccent() {
     <ThemeRoot {...args} theme={theme} tokens={HEADER_THEMES[theme]} data-testid="scope" style={scopeStyle}>
       <Pill tone="accent">Beta</Pill>
       <TextField label="Search" placeholder="Projects, people…" />
-      <Tooltip defaultOpen placement="bottom">
+      <Tooltip placement="bottom">
         <Tooltip.Trigger>Shortcuts</Tooltip.Trigger>
         <Tooltip.Content>Press ? to list them</Tooltip.Content>
       </Tooltip>
@@ -211,6 +211,8 @@ export const Dark: Story = {
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     const scope = canvas.getByTestId('scope');
+    await expect(within(canvasElement.ownerDocument.body).queryByRole('tooltip')).toBeNull();
+    await userEvent.hover(canvas.getByRole('button', { name: 'Shortcuts' }));
     const derived = HEADER_THEMES[args.theme ?? 'dark'].color!;
     for (const role of ACCENT_ROLES) {
       const value = getComputedStyle(scope).getPropertyValue(propertyName(vars.color[role])).trim();

@@ -298,7 +298,22 @@ export const MonthlyYearly: Story = {
   },
 };
 export const ThreePeriods: Story = {
+  parameters: { layout: 'padded' },
   render: (args) => <Example {...args} third />,
+  play: async ({ canvas, userEvent }) => {
+    const group = canvas.getByRole('radiogroup');
+    const frame = group.closest('[data-ui="toggle-subscription"]')!;
+    await expect(group.getBoundingClientRect().right).toBeLessThanOrEqual(frame.getBoundingClientRect().right + 1);
+    await expect(frame.ownerDocument.documentElement.scrollWidth).toBeLessThanOrEqual(frame.ownerDocument.documentElement.clientWidth + 1);
+    await userEvent.tab();
+    await userEvent.keyboard('{End}');
+    const lifetime = canvas.getByRole('radio', { name: 'Lifetime' });
+    await assertFocus(lifetime);
+    await expect(lifetime).toHaveAttribute('aria-checked', 'true');
+    await waitFor(async () => {
+      await expect(lifetime.getBoundingClientRect().right).toBeLessThanOrEqual(group.getBoundingClientRect().right + 1);
+    });
+  },
 };
 export const Dark: Story = {};
 export const LightTheme: Story = { decorators: [withLightTheme] };
@@ -765,7 +780,13 @@ export const LongTranslatedLabels: Story = {
       name: 'Facturación anual anticipada',
     });
     await assertFocus(annual);
-    await expect(annual.getBoundingClientRect().width).toBeGreaterThan(280);
+    const group = canvas.getByRole('radiogroup');
+    await expect(annual.getBoundingClientRect().width).toBeLessThanOrEqual(group.clientWidth);
+    await expect(annual.scrollWidth).toBeLessThanOrEqual(annual.clientWidth + 1);
+    await waitFor(async () => {
+      await expect(annual.getBoundingClientRect().left).toBeGreaterThanOrEqual(group.getBoundingClientRect().left);
+      await expect(annual.getBoundingClientRect().right).toBeLessThanOrEqual(group.getBoundingClientRect().right);
+    });
   },
 };
 function AriaExample(args: ToggleSubscriptionProps) {

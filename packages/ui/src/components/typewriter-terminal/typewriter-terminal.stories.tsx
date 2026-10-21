@@ -20,6 +20,7 @@ const AppearanceStack = styled.div({ display: 'grid', gap: vars.space[4] });
 
 /** Inherited light material and fixed charcoal with paused playback. */
 export const PanelAppearance: StoryObj<typeof TypewriterTerminal> = {
+  parameters: { layout: 'padded' },
   tags: ['!autodocs'],
   decorators: [withLightTheme],
   render: (args) => <AppearanceStack><TypewriterTerminal {...args} paused /><TypewriterTerminal {...args} paused appearance="contrast" /></AppearanceStack>,
@@ -340,6 +341,7 @@ export const CaptionZero: Story = {
   },
 };
 export const AbsentCaptions: Story = {
+  parameters: { layout: 'padded' },
   render: (args) => (
     <div>
       {[false, null].map((caption, index) => (
@@ -706,6 +708,7 @@ export const ExternalRelationships: Story = {
   },
 };
 export const MultipleInstances: Story = {
+  parameters: { layout: 'padded' },
   args: { defaultPaused: true, caption: 'Session' },
   render: (args) => (
     <div>
@@ -797,6 +800,33 @@ export const NarrowContainer: Story = {
       await expect(button.getBoundingClientRect().right).toBeLessThanOrEqual(
         root.getBoundingClientRect().right + 1.1,
       );
+  },
+};
+export const LongTranscript: Story = {
+  parameters: { layout: 'padded' },
+  args: {
+    defaultValue: FINISHED,
+    defaultPaused: true,
+    steps: [{
+      command: 'example inspect',
+      output: [
+        'unbroken'.repeat(30),
+        { text: `https://example.com/${'documentation'.repeat(20)}`, href: 'https://example.com' },
+      ],
+    }],
+  },
+  render: (args) => <NarrowFrame><TypewriterTerminal {...args} /></NarrowFrame>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    for (let index = 0; index < 5; index++) await userEvent.tab();
+    const link = canvas.getByRole('link');
+    await focused(link);
+    const root = canvas.getByRole('figure');
+    await expectInside(link, root);
+    const content = transcript(canvasElement);
+    await expect(getComputedStyle(content).position).toBe('static');
+    await expect(getComputedStyle(content).clipPath).toBe('none');
+    await expect(content.scrollWidth).toBeLessThanOrEqual(content.clientWidth + 1);
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
   },
 };
 // This story tests the documented css/slot API and native style merging.

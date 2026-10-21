@@ -304,8 +304,7 @@ const statusStyle = css({
   minBlockSize: `calc(1em * ${vars.lineHeight.base})`,
   overflowWrap: 'anywhere',
 });
-const transcriptStyle = css({
-  ...visuallyHiddenStyle,
+const transcriptStyle = css(visuallyHiddenStyle, {
   '&:focus-within': {
     position: 'static',
     inlineSize: 'auto',
@@ -314,6 +313,7 @@ const transcriptStyle = css({
     clipPath: 'none',
     overflow: 'visible',
     whiteSpace: 'normal',
+    overflowWrap: 'anywhere',
     margin: vars.space[3],
     paddingInlineStart: vars.space[6],
   },
@@ -321,6 +321,7 @@ const transcriptStyle = css({
 const linkStyle = css({
   display: 'inline-flex',
   alignItems: 'center',
+  maxInlineSize: '100%',
   minBlockSize: vars.space[12],
   color: vars.color.accentText,
   overflowWrap: 'anywhere',

@@ -210,12 +210,22 @@ const rootStyle = css({
 });
 const listStyle = css({ minInlineSize: 0, maxInlineSize: '100%' });
 const itemStyle = css({ display: 'contents' });
+const controlItemStyle = css({
+  maxInlineSize: '100%',
+  flexWrap: 'wrap',
+  whiteSpace: 'normal',
+  overflowWrap: 'anywhere',
+});
+const itemLabelStyle = css({ minInlineSize: 0, maxInlineSize: '100%' });
 const labelStyle = css({
   fontSize: vars.textSize.sm,
   fontWeight: vars.fontWeight.medium,
 });
 const badgeStyle = css({
   display: 'inline-grid',
+  gridTemplateColumns: 'minmax(0, 1fr)',
+  maxInlineSize: '100%',
+  boxSizing: 'border-box',
   border: `1px solid ${vars.color.borderControl}`,
   borderRadius: vars.radius.full,
   paddingInline: vars.space[2],
@@ -228,7 +238,7 @@ const badgeStyle = css({
     color: 'CanvasText',
   },
 });
-const badgeCellStyle = css({ gridArea: '1 / 1', whiteSpace: 'nowrap' });
+const badgeCellStyle = css({ gridArea: '1 / 1', minInlineSize: 0, overflowWrap: 'anywhere' });
 const sizerStyle = css({ visibility: 'hidden', pointerEvents: 'none' });
 const toneStyles: Record<ToggleSubscriptionTone, SerializedStyles> = {
   neutral: css({ color: vars.color.textMuted }),
@@ -433,7 +443,7 @@ function ToggleSubscriptionItem({
   const hasBadge = isRenderable(currentBadge) && currentBadge !== '';
   return (
     <span data-ui="toggle-subscription-item" css={itemStyle}>
-      <WithSx className={className} sx={sx}>
+      <WithSx className={className} styles={controlItemStyle} sx={sx}>
         {(className) => (
           <SegmentedControl.Item
             {...rest}
@@ -464,7 +474,7 @@ function ToggleSubscriptionItem({
               <Label
                 {...withoutSx(slotProps?.label)}
                 data-ui="toggle-subscription-item-label"
-                css={slotProps?.label?.sx}
+                css={[itemLabelStyle, slotProps?.label?.sx]}
               >
                 {children}
               </Label>
