@@ -21,6 +21,8 @@ export interface ApiParameterDoc {
   name: string;
   type: string;
   description?: string;
+  /** Fields of an object parameter type, e.g. `details: MoneyInputDetails`. */
+  members?: readonly ApiPropDoc[];
 }
 
 /** A callable type shown under its prop (event handlers, render props). */
@@ -103,6 +105,8 @@ export interface ApiSlotDoc {
   defaultElement?: string;
   /** Props the replacement element accepts. */
   type?: string;
+  /** Fields of the accepted props type, when the docs engine can expand it. */
+  members?: readonly ApiPropDoc[];
 }
 
 export type ApiTableDensity = 'comfortable' | 'compact';
@@ -515,6 +519,12 @@ function Signatures({ signatures, propType }: { signatures: readonly ApiSignatur
                   <dd style={{ margin: 0, minInlineSize: 0 }}>
                     <TypeText type={parameter.type} />
                     {parameter.description ? <span css={memberNoteStyle}>{parameter.description}</span> : null}
+                    {parameter.members?.length ? (
+                      <details css={slotTypeDetailsStyle}>
+                        <summary css={slotTypeSummaryStyle}>{parameter.members.length} fields</summary>
+                        <MemberRows members={parameter.members} />
+                      </details>
+                    ) : null}
                   </dd>
                 </div>
               ))}
@@ -546,7 +556,7 @@ function collectSlots(components: readonly ApiComponentDoc[]): ApiSlotDoc[] {
   // Only keys in `slots` are replaceable; `slotProps` alone is styling-only.
   for (const component of components) {
     for (const member of component.props.find((prop) => prop.name === 'slots')?.members ?? []) {
-      slots.set(member.name, { name: member.name, description: member.description, part: member.part, component: member.component, defaultElement: member.defaultElement, type: member.type });
+      slots.set(member.name, { name: member.name, description: member.description, part: member.part, component: member.component, defaultElement: member.defaultElement, type: member.type, members: member.members });
     }
   }
   for (const component of components) {
@@ -558,6 +568,7 @@ function collectSlots(components: readonly ApiComponentDoc[]): ApiSlotDoc[] {
       slot.component ??= member.component;
       slot.defaultElement ??= member.defaultElement;
       slot.type = member.type;
+      slot.members = member.members ?? slot.members;
     }
   }
   return [...slots.values()].sort((a, b) => Number(b.name === 'root') - Number(a.name === 'root') || a.name.localeCompare(b.name));
@@ -615,6 +626,7 @@ function ApiSlots({
                   <div css={slotTypeStyle}>
                     <TypeText type={slot.type} />
                   </div>
+                  {slot.members?.length ? <MemberRows members={slot.members} /> : null}
                 </details>
               ) : null}
             </dd>
