@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
+import { FORCED_COLORS } from '../../styling/media';
 import { GravityWell, type GravityWellItem } from './index';
 
 type PricedTile = GravityWellItem & { price: number };
@@ -42,6 +43,7 @@ const Frame = styled.div({
   borderRadius: vars.radius.xl,
   background: vars.color.surfaceInset,
   border: `1px solid ${vars.color.border}`,
+  [FORCED_COLORS]: { color: 'CanvasText', backgroundColor: 'Canvas' },
 });
 
 const WallTitle = styled.h2({
@@ -49,6 +51,7 @@ const WallTitle = styled.h2({
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.lg,
   color: vars.color.text,
+  [FORCED_COLORS]: { color: 'CanvasText' },
 });
 
 const WallCaption = styled.p({
@@ -56,6 +59,7 @@ const WallCaption = styled.p({
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
+  [FORCED_COLORS]: { color: 'CanvasText' },
 });
 
 const AvatarBadge = styled.span({
@@ -229,22 +233,44 @@ export const FixedColumns: Story = {
 };
 
 export const NarrowContainer: Story = {
-  parameters: { docs: { description: { story: 'Fixed columns keep their minimum tile size in a narrow container instead of collapsing.' } } },
+  parameters: { docs: { description: { story: 'Scroll fixed columns in a narrow container. Arrow keys keep the current tile in view.' } } },
   render: (args) => (
     <div style={{ inlineSize: 200 }}>
       <GravityWell {...args} />
     </div>
   ),
-  args: { columns: 3, items: defaultItems.slice(0, 9) },
-  play: async ({ canvasElement }) => {
+  args: { columns: 3, items: defaultItems.slice(0, 9), defaultPaused: true },
+  play: async ({ canvasElement, userEvent, args }) => {
     const field = canvasElement.querySelector<HTMLElement>('[data-ui="gravity-well-field"]');
     if (!field) throw new Error('Missing gravity-well field');
     for (const tile of Array.from(field.querySelectorAll<HTMLElement>('[data-ui="gravity-well-tile"]'))) {
       await expect(tile.getBoundingClientRect().width).toBeGreaterThanOrEqual(56 - 0.5);
     }
-    // Borders round the client area down by up to a pixel per side; the tiles must not clip.
-    await expect(field.scrollWidth).toBeLessThanOrEqual(field.clientWidth + 2);
+    await expect(field.getBoundingClientRect().width).toBeLessThanOrEqual(200);
+    await expect(getComputedStyle(field).overflowX).toBe('auto');
+    await expect(field.scrollWidth).toBeGreaterThan(field.clientWidth);
+    await userEvent.tab();
+    await expect(field.ownerDocument.activeElement).toBe(field);
+    await expect(getComputedStyle(field).outlineStyle).not.toBe('none');
+    for (const key of ['{End}', '{Home}']) {
+      await userEvent.keyboard(key);
+      const active = field.querySelector('[aria-current="true"]')!.getBoundingClientRect();
+      const bounds = field.getBoundingClientRect();
+      await expect(active.left).toBeGreaterThanOrEqual(bounds.left + 4);
+      await expect(active.right).toBeLessThanOrEqual(bounds.right - 4);
+      await userEvent.keyboard('{Enter}');
+      await expect(args.onPulse).toHaveBeenLastCalledWith(expect.objectContaining({
+        x: active.left - bounds.left + active.width / 2,
+        y: active.top - bounds.top + active.height / 2,
+      }));
+    }
+    await expect(args.onPulse).toHaveBeenCalledTimes(2);
   },
+};
+
+export const NarrowContainerRtl: Story = {
+  ...NarrowContainer,
+  args: { ...NarrowContainer.args, dir: 'rtl' },
 };
 
 export const AutoColumns: Story = {
@@ -382,6 +408,7 @@ export const RTL: Story = {
 };
 
 export const ReducedMotion: Story = {
+  name: 'Gravity Well Reduced Motion',
   parameters: {
     docs: {
       description: {
@@ -390,9 +417,23 @@ export const ReducedMotion: Story = {
       },
     },
   },
+  play: async ({ canvasElement, userEvent, args }) => {
+    await expect(window.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true);
+    const field = canvasElement.querySelector<HTMLElement>('[data-ui="gravity-well-field"]')!;
+    await userEvent.tab();
+    await expect(field).toBe(field.ownerDocument.activeElement);
+    await userEvent.keyboard('{ArrowRight}{Enter}');
+    await expect(args.onPulse).toHaveBeenCalledTimes(1);
+    await expect(field.querySelector('[aria-current="true"]')).toHaveTextContent('Beta');
+    for (const tile of field.querySelectorAll('[data-ui="gravity-well-tile"]')) {
+      await expect(getComputedStyle(tile).transform).toBe('none');
+      await expect(getComputedStyle(tile).transitionDuration).toBe('0s');
+    }
+  },
 };
 
 export const ForcedColors: Story = {
+  name: 'Gravity Well Forced Colors',
   parameters: {
     docs: {
       description: {
@@ -400,5 +441,13 @@ export const ForcedColors: Story = {
           'Under forced colors, high-contrast system outlines mark active cells without color dimming.',
       },
     },
+  },
+  play: async ({ canvasElement }) => {
+    const field = canvasElement.querySelector('[data-ui="gravity-well-field"]')!;
+    const tile = canvasElement.querySelector('[data-ui="gravity-well-tile"]')!;
+    await expect(window.matchMedia('(forced-colors: active)').matches).toBe(true);
+    await expect(getComputedStyle(tile).backgroundColor).toBe(getComputedStyle(field).backgroundColor);
+    await expect(getComputedStyle(tile).borderTopColor).toBe(getComputedStyle(field).borderTopColor);
+    await expect(getComputedStyle(tile).forcedColorAdjust).toBe('auto');
   },
 };

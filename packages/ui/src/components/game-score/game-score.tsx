@@ -76,12 +76,12 @@ const labelStyle = css({ fontSize: vars.textSize.xs, fontWeight: vars.fontWeight
   [FORCED_COLORS]: { color: 'CanvasText' },
 });
 const listStyle = css({ display: 'grid', margin: 0 });
-const rowStyle = css({ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: vars.space[6], paddingBlock: vars.space[2],
+const rowStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', columnGap: vars.space[6], rowGap: vars.space[2], minInlineSize: 0, overflowWrap: 'anywhere', paddingBlock: vars.space[2],
   '& + &': { borderBlockStart: `1px solid ${vars.color.borderSubtle}` },
   [FORCED_COLORS]: { '& + &': { borderColor: 'CanvasText' } },
 });
-const nameStyle = css({ fontSize: vars.textSize.md, fontWeight: vars.fontWeight.semibold });
-const valueStyle = css({ margin: 0, fontVariantNumeric: 'tabular-nums', fontSize: vars.textSize.xl, fontWeight: vars.fontWeight.bold, letterSpacing: vars.editorial.tracking.secondary });
+const nameStyle = css({ minInlineSize: 0, maxInlineSize: '100%', fontSize: vars.textSize.md, fontWeight: vars.fontWeight.semibold });
+const valueStyle = css({ minInlineSize: 0, maxInlineSize: '100%', margin: 0, fontVariantNumeric: 'tabular-nums', fontSize: vars.textSize.xl, fontWeight: vars.fontWeight.bold, letterSpacing: vars.editorial.tracking.secondary });
 const stageStyle = css({ marginInlineStart: vars.space[2], fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold, letterSpacing: 'normal', color: vars.color.textMuted, verticalAlign: 'middle',
   [FORCED_COLORS]: { color: 'CanvasText' },
 });

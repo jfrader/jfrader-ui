@@ -11,6 +11,7 @@ import type { GameCardRootProps } from '../game-card/game-card-root';
 import { FORCED_COLORS } from '../../styling/media';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
+import { expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 
 const forcedColorStyle = { [FORCED_COLORS]: { color: 'CanvasText', backgroundColor: 'Canvas' } };
 const Summary = styled.div({ display: 'grid', gap: vars.space[4] });
@@ -256,6 +257,26 @@ export const Empty: Story = {
     const group = within(canvasElement).getByRole('group', { name: 'Score' });
     await expect(within(group).queryAllByRole('term')).toHaveLength(0);
     await expect(within(group).queryAllByRole('definition')).toHaveLength(0);
+  },
+};
+
+export const LongContent: Story = {
+  tags: ['!autodocs'],
+  args: { rows: [{ key: 'finalists', label: 'InternationalChampionshipFinalists', value: -1234567890.75, stage: 'AwaitingChampionshipResult' }] },
+  render: (args) => <div style={{ inlineSize: 280, maxInlineSize: '100%' }}><GameScore {...args} /></div>,
+  play: async ({ canvas }) => {
+    const panel = canvas.getByRole('group', { name: 'Score' });
+    await expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth);
+    const name = canvas.getByRole('term');
+    const value = canvas.getByRole('definition');
+    await expect(name).toHaveTextContent('InternationalChampionshipFinalists');
+    await expect(value).toHaveTextContent(new Intl.NumberFormat('de-DE').format(-1234567890.75));
+    await expect(name.getBoundingClientRect().bottom).toBeLessThanOrEqual(value.getBoundingClientRect().top);
+    await expectNoOverlap(name, value);
+    for (const node of [name, value]) {
+      await expectInside(node, panel);
+      await expect(node.scrollWidth).toBeLessThanOrEqual(node.clientWidth + 1);
+    }
   },
 };
 
