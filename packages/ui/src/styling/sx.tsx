@@ -6,6 +6,7 @@
 // the single class it hands to the part's element.
 import type { ReactNode } from 'react';
 import { ClassNames, type ClassNamesContent, type Interpolation, type Theme } from './css';
+import { nativeScrollbarStyle } from './native-scrollbar';
 
 export interface SxProps {
   /** The public style-override prop. Accepts theme-aware style values and applies last. */
@@ -56,7 +57,7 @@ export function WithSx({ className, styles, sx, children }: WithSxProps) {
       {(sxClassName) => (
         <ResolvedClassName
           className={sx === undefined ? className : [className, sxClassName].filter(Boolean).join(' ')}
-          styles={styles}
+          styles={[nativeScrollbarStyle, styles]}
         >
           {children}
         </ResolvedClassName>

@@ -58,8 +58,8 @@ export interface NativeDialogHandlers {
 
 /** Surface motion around the native lifecycle. */
 export interface NativeDialogTransition {
-  /** Runs after showModal() succeeds, and when a reopen interrupts a running exit. */
-  enter: (dialog: HTMLDialogElement) => void;
+  /** `open` follows a successful showModal(); `resume` reverses a retained exit without native reopening. */
+  enter: (dialog: HTMLDialogElement, reason: 'open' | 'resume') => void;
   /** Runs on a logical close; the native close waits for the promise. Return nothing to close at once. */
   exit: (dialog: HTMLDialogElement) => Promise<unknown> | undefined;
 }
@@ -186,9 +186,9 @@ export function useNativeDialog(
           setOpenFailed(true);
         }
         setIsNativeOpen(dialog.open);
-        if (dialog.open) transitionRef.current?.enter(dialog);
+        if (dialog.open) transitionRef.current?.enter(dialog, 'open');
       } else if (interrupted) {
-        transitionRef.current?.enter(dialog);
+        transitionRef.current?.enter(dialog, 'resume');
       }
     } else if (dialog.open && exitRef.current === null) {
       const exit = transitionRef.current?.exit(dialog);

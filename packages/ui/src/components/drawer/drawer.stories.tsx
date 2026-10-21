@@ -6,6 +6,7 @@ import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { findConditionalStyle } from '../../testing/conditional-style';
 import { expectContrastSurface, expectThemedSurface } from '../../testing/theme-assertions';
 import { Button as FixtureButton } from '../button';
 import { Checkbox } from '../checkbox';
@@ -290,23 +291,6 @@ async function expectFocusRing(element: HTMLElement) {
 
 function rect(element: Element) {
   return element.getBoundingClientRect();
-}
-
-/** The authored rule inside `condition` that targets one of `element`'s classes. */
-function findConditionalRule(element: HTMLElement, condition: string, suffix = '') {
-  for (const sheet of Array.from(element.ownerDocument.styleSheets)) {
-    for (const rule of Array.from(sheet.cssRules)) {
-      if (!(rule instanceof CSSMediaRule) || !rule.conditionText.includes(condition)) continue;
-      for (const inner of Array.from(rule.cssRules)) {
-        if (!(inner instanceof CSSStyleRule)) continue;
-        const matches = Array.from(element.classList).some((name) =>
-          inner.selectorText.split(',').some((selector) => selector.trim() === `.${name}${suffix}`),
-        );
-        if (matches) return inner;
-      }
-    }
-  }
-  return undefined;
 }
 
 function findRule(element: HTMLElement, suffix: string) {
@@ -2684,7 +2668,7 @@ export const ReducedMotion: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, panel, header } = parts(canvasElement);
     await settle(dialog);
-    await expect(findConditionalRule(header, 'prefers-reduced-motion: reduce')?.style.cursor).toBe('auto');
+    await expect(findConditionalStyle(header, 'prefers-reduced-motion: reduce', 'cursor')).toBe('auto');
     // The marker follows the prop alone, so server and client markup match.
     await expect(header).toHaveAttribute('data-draggable');
 
@@ -2752,9 +2736,8 @@ export const ForcedColors: Story = {
   play: async ({ canvasElement }) => {
     const { dialog, panel } = parts(canvasElement);
     await settle(dialog);
-    const rule = findConditionalRule(panel, 'forced-colors: active');
-    await expect(rule?.style.boxShadow).toBe('none');
-    await expect(rule?.style.borderColor.toLowerCase()).toBe('canvastext');
+    await expect(findConditionalStyle(panel, 'forced-colors: active', 'box-shadow')).toBe('none');
+    await expect(findConditionalStyle(panel, 'forced-colors: active', 'border-color')?.toLowerCase()).toBe('canvastext');
   },
 };
 

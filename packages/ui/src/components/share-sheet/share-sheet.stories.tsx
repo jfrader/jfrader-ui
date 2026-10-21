@@ -2,6 +2,7 @@ import { useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectNativeScrollbar } from '../../testing/theme-assertions';
 import { ThemeRoot } from '../theme-root';
 import { Button } from '../button';
 import { Select } from '../select';
@@ -408,6 +409,7 @@ export const LongMemberList: Story = {
     )!;
     await expect(panel.scrollHeight).toBeGreaterThan(panel.clientHeight);
     await expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth + 1);
+    await expectNativeScrollbar(panel);
     const last = body(canvasElement).getByRole('button', { name: 'Team member 40' });
     await userEvent.click(last);
     await expect(last).toHaveAttribute('aria-pressed', 'true');
@@ -677,6 +679,10 @@ export const AccessKeyboard: Story = {
   args: { defaultOpen: true },
   play: async ({ canvasElement, userEvent, args }) => {
     const access = await body(canvasElement).findByRole('combobox', { name: 'Access' });
+    const copy = body(canvasElement).getByRole('button', { name: 'Copy link' });
+    await waitFor(async () => {
+      await expect(copy.ownerDocument.activeElement).toBe(copy);
+    });
     await userEvent.tab();
     await waitFor(async () => {
       await expect(access.ownerDocument.activeElement).toBe(access);

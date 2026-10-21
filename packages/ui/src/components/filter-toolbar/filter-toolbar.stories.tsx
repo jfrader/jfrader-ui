@@ -193,6 +193,7 @@ const meta = {
   args: { defaultValue: FILTERS },
   render: (args) => <Example {...args} />,
   parameters: {
+    layout: 'padded',
     docs: {
       description: {
         component: 'Choose filters for a collection, remove them one at a time, or clear them all.',
@@ -612,6 +613,7 @@ export const FacetSelect: Story = {
 };
 
 export const PersistentSelect: Story = {
+  parameters: { docs: { story: { inline: false, height: '320px' } } },
   render: (args) => (
     <ThemeRoot theme="light">
       <FacetExample {...args} persistent />
@@ -704,7 +706,7 @@ export const EmptyFilterOptions: Story = {
       />
     </NarrowFrame>
   ),
-  parameters: { layout: 'padded', docs: {
+  parameters: { docs: {
     description: { story: 'Show each filter’s empty message when no options are available.' },
     source: { language: 'tsx', code: `import { FilterToolbar } from '@jfrader/ui';
 
@@ -1191,7 +1193,7 @@ function CollectionFilters() {
 
 export const LongChips: Story = {
   name: 'Long filters in a narrow layout',
-  parameters: { layout: 'padded', docs: {
+  parameters: { docs: {
     description: { story: 'Truncate long chip text while preserving its full accessible remove label.' },
     source: { language: 'tsx', code: `import { FilterToolbar, styled } from '@jfrader/ui';
 

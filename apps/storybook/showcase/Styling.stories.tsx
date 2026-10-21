@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { css } from '@emotion/react';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, fn, userEvent, within } from 'storybook/test';
 import { Button, Card, Dialog, ThemeProvider, styled, theme } from '@jfrader/ui';
 import { WithSx } from '../../../packages/ui/src/styling/sx';
 
@@ -161,6 +161,8 @@ export const SxOverCss: Story = {
   },
 };
 
+const preservedInputRef = fn<(element: HTMLInputElement | null) => void>();
+
 function SxToggleProbe() {
   const [styled, setStyled] = useState(false);
   return (
@@ -169,7 +171,7 @@ function SxToggleProbe() {
         Toggle sx
       </button>
       <WithSx sx={styled ? highlightStyle : undefined}>
-        {(className) => <input aria-label="Preserved input" className={className} defaultValue="Preserved" />}
+        {(className) => <input ref={preservedInputRef} aria-label="Preserved input" className={className} defaultValue="Preserved" />}
       </WithSx>
     </div>
   );
@@ -188,25 +190,48 @@ export const UndefinedSxParity: Story = {
   },
   render: () => (
     <div>
-      <WithSx className={undefined} sx={undefined}>
-        {(className) => <span data-testid="undefined-class" data-class-is-undefined={className === undefined} />}
+      <WithSx styles={highlightStyle}>
+        {(className) => <span data-testid="omitted-sx" className={className} />}
+      </WithSx>
+      <WithSx className={undefined} styles={highlightStyle} sx={undefined}>
+        {(className) => <span data-testid="undefined-sx" className={className} />}
       </WithSx>
       <WithSx className="consumer">
-        {(className) => <span data-testid="consumer-class" data-received-class={className} />}
+        {(className) => <span data-testid="consumer-class" className={className} />}
       </WithSx>
       <SxToggleProbe />
     </div>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByTestId('undefined-class')).toHaveAttribute('data-class-is-undefined', 'true');
-    await expect(canvas.getByTestId('consumer-class')).toHaveAttribute('data-received-class', 'consumer');
+    const omitted = canvas.getByTestId('omitted-sx');
+    const explicitUndefined = canvas.getByTestId('undefined-sx');
+    await expect(explicitUndefined.tagName).toBe(omitted.tagName);
+    await expect(explicitUndefined.className).toBe(omitted.className);
+    await expect(getComputedStyle(explicitUndefined).borderTopColor).toBe(getComputedStyle(omitted).borderTopColor);
+    await expect(getComputedStyle(explicitUndefined).borderTopColor).toBe(
+      resolveToken(canvasElement, 'border-top-color', theme.color.accentBorder),
+    );
+    await expect(explicitUndefined).not.toHaveAttribute('sx');
+    await expect(canvas.getByTestId('consumer-class')).toHaveClass('consumer');
     const input = canvas.getByRole('textbox', { name: 'Preserved input' });
     const toggle = canvas.getByRole('button', { name: 'Toggle sx' });
+    await expect(preservedInputRef).toHaveBeenLastCalledWith(input);
+    const refCalls = preservedInputRef.mock.calls.length;
+    const initialBorderColor = getComputedStyle(input).borderTopColor;
+    await userEvent.clear(input);
+    await userEvent.type(input, 'Edited value');
     await userEvent.click(toggle);
     await expect(canvas.getByRole('textbox', { name: 'Preserved input' })).toBe(input);
+    await expect(input).toHaveValue('Edited value');
+    await expect(getComputedStyle(input).borderTopColor).toBe(
+      resolveToken(canvasElement, 'border-top-color', theme.color.accentBorder),
+    );
     await userEvent.click(toggle);
     await expect(canvas.getByRole('textbox', { name: 'Preserved input' })).toBe(input);
+    await expect(input).toHaveValue('Edited value');
+    await expect(getComputedStyle(input).borderTopColor).toBe(initialBorderColor);
+    await expect(preservedInputRef).toHaveBeenCalledTimes(refCalls);
   },
 };
 

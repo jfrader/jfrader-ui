@@ -18,15 +18,15 @@ export const enterTransition = {
 } as const;
 export const exitTransition = { transitionDuration: vars.motion.duration.fast } as const;
 
-/** Panel inside a native <dialog> rendered with `styledDialogTransition`. */
-export function modalPanelMotion(scale: number) {
+/** Modal surface rendered with `styledDialogTransition`. */
+export function modalSurfaceMotion(scale: number, closingSelector = '[data-state="closing"] > &') {
   const hidden = { opacity: 0, scale: String(scale), translate: `0 ${vars.space[2]}` };
   return {
     transitionProperty: 'opacity, scale, translate',
     ...enterTransition,
     '@starting-style': hidden,
-    '[data-state="closing"] > &': { ...hidden, ...exitTransition },
-    [REDUCED_MOTION]: { '&, [data-state="closing"] > &': { transitionDuration: '0s' } },
+    [closingSelector]: { ...hidden, ...exitTransition },
+    [REDUCED_MOTION]: { [`&, ${closingSelector}`]: { transitionDuration: '0s' } },
   } as const;
 }
 

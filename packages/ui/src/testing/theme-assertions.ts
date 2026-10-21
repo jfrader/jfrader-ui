@@ -4,6 +4,22 @@ import type { ThemeName } from '../styling/theme-scope';
 
 const OTHER_THEME: Record<ThemeName, ThemeName> = { dark: 'light', light: 'dark' };
 
+export async function expectNativeScrollbar(element: HTMLElement) {
+  const probe = element.ownerDocument.createElement('div');
+  probe.style.scrollbarColor = `${vars.color.borderControl} transparent`;
+  element.append(probe);
+  try {
+    const expected = getComputedStyle(probe).scrollbarColor;
+    if (!element.ownerDocument.defaultView?.matchMedia('(forced-colors: active)').matches) {
+      await expect(expected).not.toBe('auto');
+    }
+    await expect(getComputedStyle(element).scrollbarColor).toBe(expected);
+    await expect(getComputedStyle(element).scrollbarWidth).toBe('auto');
+  } finally {
+    probe.remove();
+  }
+}
+
 /** Story-only: the computed background `color` resolves to under `theme`, measured on a throwaway probe. */
 function probeBackground(document: Document, theme: ThemeName, color: string): string {
   const probe = document.createElement('div');
