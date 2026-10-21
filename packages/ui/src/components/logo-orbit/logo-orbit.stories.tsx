@@ -3,6 +3,7 @@ import { expect, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectAligned, expectInside } from '../../testing/geometry-assertions';
 import { LogoOrbit } from './index';
 import { Surface } from '../surface';
 import { Button } from '../button';
@@ -14,13 +15,12 @@ const Frame = styled(Surface)({
   padding: vars.space[6],
 });
 const Orbit = styled(LogoOrbit)({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) auto',
+  alignItems: 'start',
   gap: vars.space[4],
-  '& > [data-ui="logo-orbit-filters"]': { flex: '1 1 auto' },
-  '& > [data-ui="logo-orbit-stage"]': { flexBasis: '100%', marginInline: 'auto' },
-  '& > [data-ui="logo-orbit-detail"]': { flexBasis: '100%' },
+  '& > [data-ui="logo-orbit-filters"]': { minInlineSize: 0 },
+  '& > [data-ui="logo-orbit-stage"], & > [data-ui="logo-orbit-detail"], & > [data-ui="logo-orbit-status"]': { gridColumn: '1 / -1' },
 });
 const PauseControl = styled(Button)({ '&&': { borderRadius: vars.radius.md } });
 const items = [
@@ -71,6 +71,7 @@ const meta = {
     </Frame>
   ),
   parameters: {
+    layout: 'padded',
     docs: {
       sections: [
         { title: 'Explore integrations', stories: ['Default', 'Detail'] },
@@ -107,10 +108,9 @@ const Frame = styled(Surface)({
   boxSizing: 'border-box', inlineSize: '48rem', maxInlineSize: '100%', padding: vars.space[6],
 });
 const Orbit = styled(LogoOrbit)({
-  display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4],
-  '& > [data-ui="logo-orbit-filters"]': { flex: '1 1 auto' },
-  '& > [data-ui="logo-orbit-stage"]': { flexBasis: '100%', marginInline: 'auto' },
-  '& > [data-ui="logo-orbit-detail"]': { flexBasis: '100%' },
+  display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', alignItems: 'start', gap: vars.space[4],
+  '& > [data-ui="logo-orbit-filters"]': { minInlineSize: 0 },
+  '& > [data-ui="logo-orbit-stage"], & > [data-ui="logo-orbit-detail"], & > [data-ui="logo-orbit-status"]': { gridColumn: '1 / -1' },
 });
 const integrations = [
   { id: 'mail', name: 'Mail', logo: '◇', category: 'Messages', description: 'Send updates.' },
@@ -128,7 +128,54 @@ export const Light: Story = {
   globals: { theme: 'light' },
   decorators: [withLightTheme],
 };
-export const RTL: Story = { args: { dir: 'rtl' } };
+export const RTL: Story = {
+  args: { dir: 'rtl', defaultPaused: true },
+  play: async ({ canvasElement }) => {
+    const stage = canvasElement.querySelector<HTMLElement>('[data-ui="logo-orbit-stage"]')!;
+    const center = canvasElement.querySelector<HTMLElement>('[data-ui="logo-orbit-center"]')!;
+    await expectAligned([stage, center], 'center-x');
+    await expectAligned([stage, center], 'center-y');
+    for (const pseudo of ['::before', '::after']) {
+      const style = getComputedStyle(stage, pseudo);
+      const translation = new DOMMatrixReadOnly(style.transform).m41;
+      await expect(Math.abs(parseFloat(style.left) + translation + parseFloat(style.width) / 2 - stage.clientWidth / 2)).toBeLessThan(1);
+    }
+  },
+};
+
+export const LongContent: Story = {
+  args: {
+    variant: 'list',
+    defaultValue: 'long',
+    items: [{
+      id: 'long',
+      name: 'InternationalIntegrationWithoutWordSeparators',
+      logo: '◇',
+      category: 'InternationalMessagingAndCollaboration',
+      description: 'HardwareKeySynchronizationAndMutualVerification'.repeat(3),
+    }],
+    labels: {
+      previous: 'PreviousIntegrationWithoutWordSeparators',
+      next: 'NextIntegrationWithoutWordSeparators',
+    },
+    sx: { inlineSize: '16rem', maxInlineSize: '100%' },
+  },
+  play: async ({ canvasElement, canvas, userEvent }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="logo-orbit"]')!;
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
+    for (const button of root.querySelectorAll('button')) {
+      await expectInside(button, root);
+      await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+    const logo = canvas.getByRole('button', { name: 'InternationalIntegrationWithoutWordSeparators' });
+    logo.focus();
+    await userEvent.keyboard('{Escape}');
+    await expect(canvas.queryByRole('region')).toBeNull();
+    await expect(logo).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    await expect(canvas.getByRole('region')).toBeVisible();
+  },
+};
 export const ListAlternative: Story = {
   name: 'Static list',
   args: { variant: 'list' },
@@ -174,6 +221,14 @@ export const ReducedMotion: Story = {
     },
   },
 };
+export const ForcedColors: Story = {
+  args: { defaultValue: 'mail', defaultPaused: true },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(canvas.getByRole('button', { name: 'Mail' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(canvas.getByRole('region', { name: 'Mail' })).toBeVisible();
+  },
+};
 export const Detail: Story = {
   name: 'Selected integration',
   args: { defaultValue: 'mail' },
@@ -189,7 +244,15 @@ export const Detail: Story = {
 ]} />` },
   } },
 };
-export const Empty: Story = { args: { items: [] } };
+export const Empty: Story = {
+  args: { items: [] },
+  play: async ({ canvasElement, canvas }) => {
+    const stage = canvasElement.querySelector<HTMLElement>('[data-ui="logo-orbit-stage"]')!;
+    const pause = canvas.getByRole('button', { name: 'Pause' });
+    await expect(stage.getBoundingClientRect().top).toBeGreaterThanOrEqual(pause.getBoundingClientRect().bottom);
+    await expect(stage).toHaveTextContent('No integrations');
+  },
+};
 export const NoMatches: Story = { args: { defaultFilter: 'Unknown' } };
 export const Keyboard: Story = {
   tags: ['!autodocs'],

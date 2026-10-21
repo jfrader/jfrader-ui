@@ -491,6 +491,28 @@ export const ConsumerInvalid: Story = {
     await expect(canvas.getByRole('radiogroup')).toHaveAttribute('aria-invalid', 'grammar');
   },
 };
+export const LongError: Story = {
+  args: { error: 'DeliveryDestinationRequiresAdditionalVerificationBeforeDispatch' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { RadioCards, styled } from '@jfrader/ui';
+
+const NarrowFrame = styled.div({ inlineSize: 'min(100%, 18rem)' });
+
+<NarrowFrame>
+  <RadioCards error="DeliveryDestinationRequiresAdditionalVerificationBeforeDispatch">
+    <RadioCards.Label>Shipping speed</RadioCards.Label>
+    <RadioCards.Item value="standard" label="Standard" />
+    <RadioCards.Item value="express" label="Express" />
+  </RadioCards>
+</NarrowFrame>` } } },
+  render: (args) => <NarrowFixture><Example {...args} /></NarrowFixture>,
+  play: async ({ canvas }) => {
+    const root = canvas.getByRole('radiogroup');
+    const error = canvas.getByRole('alert');
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+    await expect(error.scrollWidth).toBeLessThanOrEqual(error.clientWidth + 1);
+    await expect(root).toHaveAccessibleDescription('Choose a delivery option. DeliveryDestinationRequiresAdditionalVerificationBeforeDispatch');
+  },
+};
 export const Empty: Story = { render: (args) => <RadioCards {...args} aria-label="Shipping speed" /> };
 export const AllDisabled: Story = {
   render: (args) => (

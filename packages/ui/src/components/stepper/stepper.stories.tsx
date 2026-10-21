@@ -4,6 +4,7 @@ import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside } from '../../testing/geometry-assertions';
 import { Stepper, type StepperProps, type StepperStep } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
@@ -19,9 +20,9 @@ const steps = [
   { id: 'review', label: 'Review', description: 'Confirm and submit' },
 ];`;
 
-const NarrowFrame = styled.div({ inlineSize: '20rem' });
+const NarrowFrame = styled.div({ inlineSize: '20rem', maxInlineSize: '100%' });
 
-const CompactFrame = styled.div({ inlineSize: '320px' });
+const CompactFrame = styled.div({ inlineSize: '320px', maxInlineSize: '100%' });
 
 // Raw fixture buttons must pass the global target-size (WCAG 2.5.8) axe gate in every environment.
 const FixtureButton = styled.button({ minHeight: vars.space[6], minWidth: vars.space[6], padding: `${vars.space[1]} calc(${vars.space[2]} + ${vars.space[1]} / 2)`, boxSizing: 'border-box' });
@@ -49,6 +50,7 @@ const meta = {
   title: 'Navigation/Stepper',
   component: Stepper,
   parameters: {
+    layout: 'padded',
     docs: {
       description: { component: 'Show progress through steps or return to a completed step.' },
       sections: [
@@ -212,8 +214,6 @@ export const Default: Story = {
       'upcoming',
     ]);
     await expect(canvas.queryAllByRole('button')).toHaveLength(0);
-    // The current-step caption only shows when compact.
-    await expect(getComputedStyle(parts(root, 'caption')[0]!).display).toBe('none');
   },
 };
 
@@ -453,6 +453,7 @@ export const ResponsiveNarrow: Story = {
       await expect(getComputedStyle(parts(root, 'caption')[0]!).display).toBe('none');
     }
     for (const root of [auto!, fixed!, vertical!]) await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
+    for (const root of [auto!, fixed!, vertical!]) await expectInside(root, canvasElement);
   },
 };
 
@@ -481,6 +482,11 @@ export const ErrorCurrent: Story = {
 };
 
 export const ErrorCompleted: Story = {
+  render: (args) => <NarrowFrame><Stepper {...args} /></NarrowFrame>,
+  parameters: { docs: { source: { code: `${stepperSource}
+
+<Stepper steps={steps.map((step) => step.id === 'profile' ? { ...step, error: 'Handle is already taken' } : step)}
+  compact interactive value={2} />` } } },
   args: {
     interactive: true,
     compact: true,
@@ -494,6 +500,9 @@ export const ErrorCompleted: Story = {
     await expect(item).toHaveAttribute('data-state', 'error');
     // Compact never hides a non-current error or its step label.
     await expect(getComputedStyle(parts(item, 'label')[0]!).display).not.toBe('none');
+    const label = parts(item, 'label')[0]!.getBoundingClientRect();
+    const marker = parts(item, 'marker')[0]!.getBoundingClientRect();
+    await expect(label.top).toBeGreaterThanOrEqual(marker.bottom);
     const detail = parts(item, 'description')[0]!;
     await expect(getComputedStyle(detail).display).not.toBe('none');
     await expect(detail).toHaveTextContent('Handle is already taken');
@@ -619,6 +628,13 @@ export const LongLabels: Story = {
     </CompactFrame>
   ),
   play: async ({ canvasElement }) => {
+    const horizontal = getRoot(canvasElement);
+    await expect(parts(horizontal, 'label')[0]!.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+      parts(horizontal, 'marker')[0]!.getBoundingClientRect().bottom,
+    );
+    const items = parts(horizontal, 'item');
+    await expect(items[0]!.getBoundingClientRect().width).toBeCloseTo(items.at(-1)!.getBoundingClientRect().width, 0);
+    for (const connector of parts(horizontal, 'connector')) await expect(connector.getBoundingClientRect().width).toBeGreaterThan(0);
     for (const root of getRoots(canvasElement)) {
       await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
       const bounds = root.getBoundingClientRect();

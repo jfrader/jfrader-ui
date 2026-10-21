@@ -1,9 +1,14 @@
 import { useId, useRef, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
+import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { Button } from '../button';
 import { InputGroup } from './index';
+import { styled } from '../../index';
+
+const NarrowFrame = styled.div({ display: 'grid', gap: vars.space[3], inlineSize: 'min(100%, 12rem)' });
 
 function Example(args: ComponentPropsWithRef<typeof InputGroup>) {
   const id = useId();
@@ -305,4 +310,52 @@ export function AmountField() {
   );
 }` } } },
   decorators: [withLightTheme],
+};
+
+export const LongAddons: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { InputGroup, styled } from '@jfrader/ui';
+
+const NarrowFrame = styled.div({ inlineSize: 'min(100%, 12rem)' });
+
+<NarrowFrame>
+  <InputGroup>
+    <InputGroup.Addon placement="start">$</InputGroup.Addon>
+    <InputGroup.Input aria-label="Settlement amount" defaultValue="25" />
+    <InputGroup.Addon placement="end">InternationalSettlementCurrency</InputGroup.Addon>
+  </InputGroup>
+</NarrowFrame>` } } },
+  render: () => <NarrowFrame>
+    <InputGroup>
+      <InputGroup.Addon placement="start">$</InputGroup.Addon>
+      <InputGroup.Input aria-label="Settlement amount" defaultValue="25" />
+      <InputGroup.Addon placement="end">InternationalSettlementCurrency</InputGroup.Addon>
+    </InputGroup>
+    <InputGroup>
+      <InputGroup.Addon placement="start">InternationalSettlementReference</InputGroup.Addon>
+      <InputGroup.Textarea aria-label="Settlement notes" defaultValue="Notes" rows={2} />
+    </InputGroup>
+  </NarrowFrame>,
+  play: async ({ canvasElement, userEvent }) => {
+    for (const control of within(canvasElement).getAllByRole('textbox')) {
+      const frame = control.closest<HTMLElement>('[data-ui="input-group"]')!;
+      await expect(frame.scrollWidth).toBeLessThanOrEqual(frame.clientWidth + 1);
+      await expect(control.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
+      await expect(control.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+      await expectInside(control, frame);
+      for (const addon of frame.querySelectorAll<HTMLElement>('[data-ui="input-group-addon"]')) {
+        await expectInside(addon, frame);
+        await expectNoOverlap(addon, control);
+        await expect(addon.scrollWidth).toBeLessThanOrEqual(addon.clientWidth + 1);
+      }
+    }
+    const input = within(canvasElement).getByRole('textbox', { name: 'Settlement amount' });
+    await userEvent.click(input);
+    await userEvent.keyboard('{End}0');
+    await expect(input).toHaveValue('250');
+  },
+};
+
+export const LongAddonsRTL: Story = {
+  ...LongAddons,
+  decorators: [(Story) => <div dir="rtl"><Story /></div>],
 };
