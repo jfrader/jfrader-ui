@@ -17,6 +17,7 @@ import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { moveRovingFocus, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { Button, type ButtonProps, type ButtonSize, type ButtonTone, type ButtonVariant } from '../button';
+import { buttonBlockSizes } from '../button/button';
 
 export interface GameActionItem {
   /** Unique key for the action. */
@@ -130,6 +131,20 @@ const rootBaseStyle = css({
     opacity: 0.7,
   },
 });
+
+const actionStyle = css({
+  minInlineSize: 0,
+  maxInlineSize: '100%',
+  blockSize: 'auto',
+  whiteSpace: 'normal',
+  overflowWrap: 'anywhere',
+});
+
+const actionSizeStyles = {
+  sm: css({ minBlockSize: buttonBlockSizes.sm }),
+  md: css({ minBlockSize: buttonBlockSizes.md }),
+  lg: css({ minBlockSize: buttonBlockSizes.lg }),
+} satisfies Record<ButtonSize, ReturnType<typeof css>>;
 
 function DefaultAction(props: ButtonProps) {
   return <Button {...props} render={(buttonProps) => <button {...buttonProps} />} />;
@@ -271,7 +286,7 @@ export function GameActions({
                 aria-describedby={action['aria-describedby']}
                 className={actionSlotClassName}
                 style={actionSlotStyle}
-                sx={actionSlotSx}
+                sx={[actionStyle, actionSizeStyles[size], actionSlotSx]}
                 onClick={handleActionClick}
                 onFocus={handleActionFocus}
               >

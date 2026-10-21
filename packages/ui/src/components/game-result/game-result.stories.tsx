@@ -6,6 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
+import { GameActions } from '../game-actions';
 import { GameResult, type GameResultOutcome, type GameResultPartProps } from './index';
 
 
@@ -112,6 +113,40 @@ import { GameResult } from '@jfrader/ui/game-result';
     await expect(accent).toBeTruthy();
   },
 };
+
+/** Result text stays within a narrow panel. */
+export const LongContent: Story = {
+  tags: ['!autodocs'],
+  args: {
+    outcome: 'won',
+    title: 'ChampionshipFinalTieBreakerRematchInvitation',
+    eyebrow: 'ChampionshipFinalTieBreakerRematchInvitation',
+    summary: 'ChampionshipFinalTieBreakerRematchInvitation',
+    reward: 'ChampionshipFinalTieBreakerRematchInvitation',
+    actions: <GameActions label="Next match" size="sm" actions={[{ key: 'continue', label: 'Continue to the championship' }]} />,
+    sx: { inlineSize: 240 },
+  },
+  play: async ({ canvas, userEvent }) => {
+    const root = canvas.getByRole('status');
+    const bounds = root.getBoundingClientRect();
+    for (const part of root.querySelectorAll<HTMLElement>('[data-ui^="game-result-"]')) {
+      const box = part.getBoundingClientRect();
+      await expect(box.left).toBeGreaterThanOrEqual(bounds.left);
+      await expect(box.right).toBeLessThanOrEqual(bounds.right);
+      await expect(part.scrollWidth).toBeLessThanOrEqual(part.clientWidth);
+    }
+    await userEvent.tab();
+    const button = canvas.getByRole('button');
+    await expect(getComputedStyle(button).whiteSpace).toBe('normal');
+    await expect(button.scrollWidth).toBeLessThanOrEqual(button.clientWidth);
+    await expect(button.scrollHeight).toBeLessThanOrEqual(button.clientHeight);
+    await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    await expect(button).toHaveFocus();
+    await expect(getComputedStyle(button).outlineStyle).not.toBe('none');
+  },
+};
+
+export const Empty: Story = { tags: ['!autodocs'], args: { outcome: 'draw' } };
 
 /** Match-end loss panel with single return action. */
 export const Loss: Story = {

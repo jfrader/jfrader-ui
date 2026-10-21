@@ -4,7 +4,9 @@ import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside } from '../../testing/geometry-assertions';
 import { Dialog } from '../dialog';
+import { Button } from '../button';
 import { GameTable } from '../game-table';
 import { Surface } from '../surface';
 import { GameActions, type GameActionItem, type GameActionsProps } from './index';
@@ -148,10 +150,63 @@ const actions = [
   },
 };
 
+/** Long action labels wrap inside a narrow turn panel. */
+export const LongLabels: Story = {
+  tags: ['!autodocs'],
+  args: {
+    actions: [{ key: 'rematch', label: 'ChampionshipFinalTieBreakerRematchInvitation'.repeat(2), onSelect: fn() }],
+    sx: { inlineSize: 240 },
+  },
+  play: async ({ canvas, userEvent, args }) => {
+    const toolbar = canvas.getByRole('toolbar');
+    const button = canvas.getByRole('button');
+    const bounds = toolbar.getBoundingClientRect();
+    const target = button.getBoundingClientRect();
+    await expect(target.left).toBeGreaterThanOrEqual(bounds.left);
+    await expect(target.right).toBeLessThanOrEqual(bounds.right);
+    await expect(button.scrollWidth).toBeLessThanOrEqual(button.clientWidth);
+    await expect(button.scrollHeight).toBeLessThanOrEqual(button.clientHeight);
+    await expect(target.height).toBeGreaterThan(40);
+    await userEvent.tab();
+    await expect(button).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    await expect(args.actions[0]!.onSelect).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const RTL: Story = {
+  tags: ['!autodocs'],
+  args: {
+    dir: 'rtl',
+    actions: [
+      { key: 'fold', label: 'Fold', onSelect: fn() },
+      { key: 'check', label: 'Check', disabled: true, onSelect: fn() },
+      { key: 'raise', label: 'Raise', onSelect: fn() },
+    ],
+  },
+  play: async ({ canvas, userEvent, args }) => {
+    const fold = canvas.getByRole('button', { name: 'Fold' });
+    await userEvent.tab();
+    await expect(fold).toHaveFocus();
+    await userEvent.keyboard('{ArrowLeft}');
+    await expect(canvas.getByRole('button', { name: 'Check' })).toHaveFocus();
+    await userEvent.keyboard('{Enter} ');
+    await expect(args.actions[1]!.onSelect).not.toHaveBeenCalled();
+    await userEvent.keyboard('{ArrowRight}');
+    await expect(fold).toHaveFocus();
+    await userEvent.keyboard('{End}{Enter}');
+    await expect(canvas.getByRole('button', { name: 'Raise' })).toHaveFocus();
+    await expect(args.actions[2]!.onSelect).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const Empty: Story = { tags: ['!autodocs'], args: { actions: [] } };
+
 /** Turn actions sit over a four-player table with a pot of 140. */
 export const InlineTableOverlay: Story = {
   name: 'Inline table overlay',
   parameters: {
+    layout: 'padded',
     docs: {
       description: { story: 'Place turn actions above a four-player table.' },
       source: {
@@ -218,7 +273,9 @@ const seats = [
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const toolbar = await canvas.findByRole('toolbar', { name: 'Table actions' });
-    await expect(toolbar).toBeInTheDocument();
+    const table = canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]')!;
+    await expect(table.getBoundingClientRect().width).toBeGreaterThanOrEqual(300);
+    await expectInside(toolbar, table);
   },
 };
 
@@ -357,6 +414,22 @@ const actions = [
   args: {
     orientation: 'vertical',
   },
+  play: async ({ canvas, userEvent }) => {
+    const buttons = canvas.getAllByRole('button');
+    await userEvent.tab();
+    await expect(buttons[0]).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(buttons[1]).toHaveFocus();
+    await userEvent.keyboard('{ArrowUp}');
+    await expect(buttons[0]).toHaveFocus();
+    await userEvent.keyboard('{ArrowUp}');
+    await expect(buttons.at(-1)).toHaveFocus();
+    await userEvent.keyboard('{Home}');
+    await expect(buttons[0]).toHaveFocus();
+    await userEvent.keyboard('{End}');
+    await expect(buttons.at(-1)).toHaveFocus();
+    await expect(getComputedStyle(buttons.at(-1)!).outlineStyle).not.toBe('none');
+  },
 };
 
 /** Turn actions use the light theme. */
@@ -394,6 +467,7 @@ export const KeyboardNavigation: Story = {
       source: {
         language: 'tsx',
         code: `import { GameActions, type GameActionItem } from '@jfrader/ui/game-actions';
+import { Button } from '@jfrader/ui/button';
 import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
@@ -406,9 +480,9 @@ const actions = [
 ] satisfies readonly GameActionItem[];
 
 <KeyboardFrame>
-  <button type="button" data-testid="before-button">Before</button>
+  <Button data-testid="before-button">Before</Button>
   <GameActions actions={actions} label="Turn actions" />
-  <button type="button" data-testid="after-button">After</button>
+  <Button data-testid="after-button">After</Button>
 </KeyboardFrame>`,
       },
     },
@@ -428,13 +502,13 @@ const actions = [
 
     return (
       <KeyboardFrame>
-        <button type="button" data-testid="before-button">
+        <Button data-testid="before-button">
           Before
-        </button>
+        </Button>
         <GameActions actions={actions} label="Turn actions" />
-        <button type="button" data-testid="after-button">
+        <Button data-testid="after-button">
           After
-        </button>
+        </Button>
       </KeyboardFrame>
     );
   },
@@ -442,6 +516,7 @@ const actions = [
     const canvas = within(canvasElement);
     const beforeBtn = canvas.getByTestId('before-button');
     const afterBtn = canvas.getByTestId('after-button');
+    for (const button of [beforeBtn, afterBtn]) await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
     const foldBtn = canvas.getByRole('button', { name: 'Fold' });
     const checkBtn = canvas.getByRole('button', { name: 'Check' });
     const callBtn = canvas.getByRole('button', { name: 'Call' });
