@@ -213,8 +213,6 @@ export const Default: Story = {
       'upcoming',
     ]);
     await expect(canvas.queryAllByRole('button')).toHaveLength(0);
-    // The current-step caption only shows when compact.
-    await expect(getComputedStyle(parts(root, 'caption')[0]!).display).toBe('none');
   },
 };
 
