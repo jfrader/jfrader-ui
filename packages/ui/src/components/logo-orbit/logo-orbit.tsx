@@ -22,6 +22,7 @@ import {
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
+import { FORCED_COLORS } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { motionDurationMs } from '../../styling/motion-timings';
 import {
@@ -163,6 +164,8 @@ const rootStyle = css({
   color: vars.color.text,
   fontFamily: vars.font.sans,
   maxInlineSize: '100%',
+  minInlineSize: 0,
+  overflowWrap: 'anywhere',
 });
 const controlsStyle = css({
   display: 'flex',
@@ -173,12 +176,15 @@ const controlsStyle = css({
 });
 const filterStyle = css({ borderRadius: vars.radius.full });
 const buttonStyle = css({
+  boxSizing: 'border-box',
   font: 'inherit',
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
   minBlockSize: vars.space[10],
   minInlineSize: vars.space[10],
+  maxInlineSize: '100%',
+  overflowWrap: 'anywhere',
   paddingInline: vars.space[3],
   border: `1px solid ${vars.color.borderControl}`,
   borderRadius: vars.radius.md,
@@ -193,6 +199,15 @@ const buttonStyle = css({
   '&:disabled, &[aria-disabled="true"]': {
     cursor: 'not-allowed',
     color: vars.color.textMuted,
+  },
+  [FORCED_COLORS]: {
+    '&:focus-visible': { outlineColor: 'Highlight' },
+    '&[aria-pressed="true"]': {
+      forcedColorAdjust: 'none',
+      background: 'Highlight',
+      borderColor: 'Highlight',
+      color: 'HighlightText',
+    },
   },
 });
 const stageStyle = css({
@@ -210,6 +225,9 @@ const stageStyle = css({
     border: `1px solid ${vars.color.border}`,
     borderRadius: vars.radius.full,
     pointerEvents: 'none',
+  },
+  '&:dir(rtl):not([data-list="true"])::before, &:dir(rtl):not([data-list="true"])::after': {
+    transform: 'translate(50%, -50%)',
   },
   '&:not([data-list="true"])::before': {
     inlineSize: `${OUTER_RADIUS_RATIO * 200}%`,
@@ -229,6 +247,7 @@ const centerStyle = css({
   fontSize: vars.textSize['3xl'],
   color: vars.color.accentText,
   pointerEvents: 'none',
+  '&:dir(rtl)': { transform: 'translate(50%, -50%)' },
 });
 const listStyle = css({
   listStyle: 'none',
@@ -243,6 +262,7 @@ const listStyle = css({
     gap: vars.space[3],
   },
 });
+const itemStyle = css({ minInlineSize: 0, maxInlineSize: '100%' });
 const logoStyle = css({
   padding: vars.space[2],
   minInlineSize: vars.space[12],
@@ -250,6 +270,7 @@ const logoStyle = css({
   '& svg': { inlineSize: vars.space[6], blockSize: vars.space[6] },
 });
 const detailStyle = css({
+  minInlineSize: 0,
   border: `1px solid ${vars.color.borderControl}`,
   borderRadius: vars.radius.lg,
   background: vars.color.surfaceRaised,
@@ -679,7 +700,7 @@ function LogoOrbitBody({
                   {matches.map((item, index) => (
                     <WithSx
                       key={item.id}
-                      styles={itemCss}
+                      styles={[itemStyle, itemCss]}
                       className={itemProps.className}
                     >
                       {(className) => (
