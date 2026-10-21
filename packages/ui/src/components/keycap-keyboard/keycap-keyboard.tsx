@@ -106,7 +106,7 @@ const keyStyle = css({
   minInlineSize: 0,
   minBlockSize: vars.space[6],
   justifyContent: 'center',
-  paddingInline: vars.space[1],
+  paddingInline: 0,
   paddingBlock: vars.space[2],
   whiteSpace: 'normal',
   borderColor: vars.color.borderStrong,
@@ -138,6 +138,9 @@ function equalCodes(a: readonly string[], b: readonly string[]) {
 }
 function unitsOf(key: KeycapSpec) {
   return key.units !== undefined && Number.isFinite(key.units) && key.units > 0 ? key.units : DEFAULT_UNITS;
+}
+function spanSize(units: number, totalUnits: number) {
+  return `calc((100% + ${vars.space[1]}) * ${units / totalUnits} - ${vars.space[1]})`;
 }
 
 /** Show a keyboard illustration. Supply text input, focus and shortcut descriptions separately. */
@@ -218,7 +221,6 @@ export function KeycapKeyboard({
   const Row = slots?.row ?? 'div';
   const Legend = slots?.legend ?? 'span';
   const widest = Math.max(DEFAULT_UNITS, ...rowUnits);
-  const maxGaps = Math.max(0, ...rows.map((row) => row.length - 1));
   return (
     <WithSx className={className} styles={rootStyle} sx={sx}>
       {(rootClass) => (
@@ -226,8 +228,8 @@ export function KeycapKeyboard({
           {rows.map((row, rowIndex) => (
             <Row {...withoutSx(slotProps?.row)} key={rowIndex} data-ui="keycap-keyboard-row" className={slotProps?.row?.className}
               css={[rowStyle, slotProps?.row?.sx]} style={{
-                gridTemplateColumns: row.map((key) => `minmax(0, ${unitsOf(key)}fr)`).join(' '),
-                inlineSize: `calc((100% - ${maxGaps} * ${vars.space[1]}) * ${(rowUnits[rowIndex] ?? 0) / widest} + ${Math.max(0, row.length - 1)} * ${vars.space[1]})`,
+                gridTemplateColumns: row.map((key) => `minmax(0, ${spanSize(unitsOf(key), rowUnits[rowIndex] || DEFAULT_UNITS)})`).join(' '),
+                inlineSize: `max(0px, ${spanSize(rowUnits[rowIndex] ?? 0, widest)})`,
               } satisfies CSSProperties}>
               {row.map((key, keyIndex) => (
                 <Key {...withoutSx(slotProps?.key)} key={`${key.code}-${keyIndex}`} data-ui="keycap-keyboard-key" data-code={key.code} data-state={active.includes(key.code) ? 'pressed' : 'idle'}

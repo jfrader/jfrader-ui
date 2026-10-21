@@ -23,6 +23,8 @@ const rootStyle = css({
   display: 'inline-flex',
   alignItems: 'center',
   boxSizing: 'border-box',
+  minInlineSize: 0,
+  maxInlineSize: '100%',
   paddingBlock: KEY_PADDING_BLOCK,
   paddingInline: KEY_PADDING_INLINE,
   backgroundColor: vars.color.surfaceHover,
@@ -35,12 +37,15 @@ const rootStyle = css({
   fontWeight: vars.fontWeight.medium,
   lineHeight: vars.lineHeight.tight,
   color: vars.color.text,
-  whiteSpace: 'nowrap',
+  whiteSpace: 'normal',
+  overflowWrap: 'anywhere',
   verticalAlign: 'middle',
 });
 
 const groupStyle = css({
   display: 'inline-flex',
+  flexWrap: 'wrap',
+  maxInlineSize: '100%',
   alignItems: 'center',
   gap: vars.space[1],
   verticalAlign: 'middle',

@@ -30,9 +30,9 @@ const expectPx = (value: string, px: number) =>
   expect(Math.abs(Number.parseFloat(value) - px)).toBeLessThan(PX_TOLERANCE);
 
 const Frame = styled.div({
-  inlineSize: `min(36rem, calc(100vw - ${vars.space[8]}))`,
+  inlineSize: '100%',
   minInlineSize: 0,
-  maxInlineSize: '100%',
+  maxInlineSize: '36rem',
   boxSizing: 'border-box',
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr)',
@@ -90,6 +90,7 @@ const meta = {
     ),
   ],
   parameters: {
+    layout: 'padded',
     docs: {
       description: {
         component: 'Compare two images by dragging a divider to reveal differences.',

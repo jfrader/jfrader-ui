@@ -4,6 +4,9 @@ import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Kbd } from './index';
+import { styled } from '../../index';
+
+const NarrowHint = styled.p({ margin: 0, inlineSize: '12rem', maxInlineSize: '100%', color: vars.color.text });
 
 const stackStyle = {
   display: 'grid',
@@ -235,5 +238,32 @@ export const LightTheme: Story = {
   ),
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelectorAll('[data-ui="kbd"]')).toHaveLength(6);
+  },
+};
+
+export const LongKey: Story = {
+  name: 'Long key',
+  args: { children: 'BrowserFavoritesAndHistory' },
+  render: (args) => <NarrowHint><Kbd {...args} /></NarrowHint>,
+  play: async ({ canvasElement }) => {
+    const key = canvasElement.querySelector('kbd')!;
+    const lane = key.parentElement!.getBoundingClientRect();
+    const rect = key.getBoundingClientRect();
+    await expect(rect.right).toBeLessThanOrEqual(lane.right + 1);
+    await expect(key.scrollWidth).toBeLessThanOrEqual(key.clientWidth + 1);
+  },
+};
+
+export const LongCombination: Story = {
+  name: 'Long combination',
+  render: () => <NarrowHint><Kbd.Group><Kbd>Control</Kbd><Kbd>Shift</Kbd><Kbd>Alt</Kbd><Kbd>ArrowRight</Kbd></Kbd.Group></NarrowHint>,
+  play: async ({ canvasElement }) => {
+    const group = canvasElement.querySelector<HTMLElement>('[data-ui="kbd-group"]')!;
+    const lane = group.parentElement!.getBoundingClientRect();
+    await expect(group.getBoundingClientRect().right).toBeLessThanOrEqual(lane.right + 1);
+    for (const key of group.querySelectorAll('kbd')) {
+      await expect(key.getBoundingClientRect().right).toBeLessThanOrEqual(lane.right + 1);
+    }
+    await expect(group.scrollWidth).toBeLessThanOrEqual(group.clientWidth + 1);
   },
 };

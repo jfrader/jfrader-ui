@@ -39,6 +39,7 @@
 ### Fixed
 
 - `ButtonGroup` keeps focused expanding actions in view as their labels resize, including in RTL. `ChipGroup` wraps long chip and overflow-toggle labels within the available width.
+- `Kbd` wraps long key names and shortcut combinations within narrow containers. `KeycapKeyboard` aligns equal-unit rows, keeps single-unit keys the same width across rows, and fits legends in compact previews. ImageCompare documentation examples fit narrow preview lanes.
 - The axe gate also runs the WCAG 2.2 A rules; `README.md`, `docs/qa-gates.md`, and `SKILL.md` list the exact rule set.
 - `InputGroup` wraps long addons without collapsing the editable control. `RadioCards` wraps long validation messages within narrow groups.
 - `LogoOrbit` centers its rings and mark in RTL, wraps long integration labels and details, and preserves selection in forced colors. `Emblem` fits longer monograms, keeps its size beside long text and preserves its silhouette in forced colors. `Stepper` gives narrow horizontal labels and errors room to wrap; Stepper and LogoOrbit examples fit phone screens.
