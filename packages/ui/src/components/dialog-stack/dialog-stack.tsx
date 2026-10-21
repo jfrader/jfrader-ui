@@ -366,6 +366,7 @@ const stageStyle = css({
 });
 
 const panelStyle = css({
+  overflowWrap: 'anywhere',
   boxSizing: 'border-box',
   position: 'absolute',
   zIndex: INDEX,

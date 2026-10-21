@@ -12,6 +12,7 @@
 
 - `InputGroup` wraps long addons without collapsing the editable control. `RadioCards` wraps long validation messages within narrow groups.
 - `LogoOrbit` centers its rings and mark in RTL, wraps long integration labels and details, and preserves selection in forced colors. `Emblem` fits longer monograms, keeps its size beside long text and preserves its silhouette in forced colors. `Stepper` gives narrow horizontal labels and errors room to wrap; Stepper and LogoOrbit examples fit phone screens.
+- `Dialog`, `Drawer`, `BottomSheet` and `DialogStack` wrap unbroken titles and content inside narrow panels without covering close controls. Custom Dialog panels stay within their shell, and padded Drawer shells fit the viewport.
 - `Slider` centers marks on its track in RTL. `SegmentedControl` and `ToggleGroup` keep compact choices at least 32px wide, and `ToggleGroup` contains long options in a scrollable group.
 - `Article` keeps responsive picture images inside their media figure in narrow layouts.
 - `SearchField`, `PasswordField` and `NumberField` give small inline actions a 32px-wide target. `NumberField` wraps long messages without overflowing narrow fields.
@@ -24,6 +25,7 @@
 - `Toast` keeps long queues inside a scrollable viewport and aligns loading indicators with their messages. `ToastStack` wraps long toggle labels, preserves their focus rings and keeps taller collapsed cards below its toggle; both contain scrolling within notifications.
 - `FileDropzone` keeps inside file lists within the drop surface. `CodeBlock` preserves the copy button's target size beside long filenames and language labels, and its examples fit phone screens.
 - `CommandPalette` fits phone screens without clipping and keeps its search field visible while results scroll in short viewports. `Popover` wraps long links inside its panel; both contain scrolling within their content.
+- `Dialog`, `Drawer`, `BottomSheet` and `DialogStack` wrap unbroken titles and content inside narrow panels without covering close controls. Custom Dialog panels stay within their shell, and padded Drawer shells fit the viewport.
 - `Menu` wraps unbroken action labels inside its popup and keeps separators visible in scrolling lists.
 - `TreeView` keeps deeply nested labels readable and keyboard targets usable in horizontally scrolling trees, and keeps selection visible in forced colors. `FilterToolbar` shows the configured empty message for each generated filter, and its narrow examples fit phone-width documentation previews.
 - `Carousel` keeps its viewport and indicators within narrow containers, wraps unbroken slide text, and fits its examples on phone screens.

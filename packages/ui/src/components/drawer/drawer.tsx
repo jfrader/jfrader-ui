@@ -257,6 +257,7 @@ const SAFE_AREA = {
 
 const dialogStyle = css({
   ...modalShellReset,
+  boxSizing: 'border-box',
   position: 'fixed',
   inset: 0,
   margin: 0,
@@ -279,6 +280,7 @@ const dialogSideStyles: Record<DrawerSide, SerializedStyles> = {
 };
 
 const panelStyle = css({
+  overflowWrap: 'anywhere',
   display: 'flex',
   flexDirection: 'column',
   minBlockSize: 0,
