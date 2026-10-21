@@ -452,8 +452,8 @@ export const GroupGeometry: Story = {
       range.setStart(text, 0);
       range.setEnd(text, 1);
       const prefix = range.getBoundingClientRect();
+      range.selectNodeContents(count);
       range.setStart(text, 1);
-      range.setEnd(text, text.textContent!.length);
       const digits = range.getBoundingClientRect();
       await expect(prefix.right).toBeLessThanOrEqual(digits.left + CSS_PIXEL);
     }
