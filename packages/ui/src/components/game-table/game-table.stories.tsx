@@ -446,7 +446,7 @@ export const Default: Story = {
   name: 'Poker table',
   args: { fit: 'fill', renderSeat: fn<GameTableProps<Player>['renderSeat']>(() => <PokerPlayerSeat />) },
   parameters: { docs: {
-    description: { story: 'Six players at a poker table with points, hidden cards, community cards, and a check action. The player whose turn it is shows a countdown. Resize the window to see the table refit its container.' },
+    description: { story: 'Six players at a poker table with points, hidden cards, community cards, and a check action. The player whose turn it is shows a countdown.' },
     source: { language: 'tsx', code: `import { Button, PersonAvatar, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -2084,7 +2084,7 @@ function SeatContent() {
 export default function Example() {
   return (
     <Frame>
-      <GameTable places={6} seatSlots={prebuiltSlots}>
+      <GameTable places={6} clearance={32} seatSlots={prebuiltSlots}>
         <GameTable.Header>Poker · 10 / 20</GameTable.Header>
         <GameTable.Seat>
           <SeatContent />
@@ -2108,7 +2108,7 @@ export default function Example() {
   );
 }` },
   } },
-  args: { fit: 'fill', seats: undefined, slots: buildAlternatingSlots([SEATS[2]], 6, 'clockwise') },
+  args: { fit: 'fill', clearance: 32, seats: undefined, slots: buildAlternatingSlots([SEATS[2]], 6, 'clockwise') },
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelectorAll('[data-ui="game-table-seat"]')).toHaveLength(6);
     await expect(within(canvasElement).getAllByText('Open seat')).toHaveLength(5);
@@ -2118,7 +2118,7 @@ export default function Example() {
 
 export const Lobby: Story = {
   name: 'Lobby surface',
-  args: { fit: 'fill', surface: 'lobby', places: 4, seats: seatsFor(4) },
+  args: { fit: 'fill', clearance: 32, surface: 'lobby', places: 4, seats: seatsFor(4) },
   parameters: { docs: {
     description: { story: 'Four players around a lobby surface. Set `surface="lobby"` to let the felt stretch with a wide container.' },
     source: { language: 'tsx', code: `import { Button, styled } from '@jfrader/ui';
@@ -2177,7 +2177,7 @@ function SeatContent() {
 export default function Example() {
   return (
     <Frame>
-      <GameTable places={4} seats={players} surface="lobby">
+      <GameTable places={4} clearance={32} seats={players} surface="lobby">
         <GameTable.Header>Poker · 10 / 20</GameTable.Header>
         <GameTable.Seat>
           <SeatContent />
@@ -3601,7 +3601,7 @@ function SeatContent() {
 export default function Example() {
   return (
     <Frame>
-      <GameTable places={6} seats={players}>
+      <GameTable places={6} clearance={32} seats={players}>
         <GameTable.Header>Poker · Avatars</GameTable.Header>
         <GameTable.Seat>
           <SeatContent />
@@ -3626,7 +3626,7 @@ export default function Example() {
 }` },
   } },
   args: {
-    places: 6, seats: SEATS, fit: 'fill',
+    places: 6, seats: SEATS, fit: 'fill', clearance: 32,
     renderSeat: fn((slot, _index, _geometry) => seatWithAvatar(slot, 'sm')),
     center, header: 'Poker · Avatars', dock: <Button>Check</Button>,
   },
