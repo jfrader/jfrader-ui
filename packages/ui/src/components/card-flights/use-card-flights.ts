@@ -231,8 +231,6 @@ export interface BoardFlightsOptions {
   plays: readonly PlayedFlightCard[];
   /** Index of the first seat to receive a card. Defaults to zero. */
   forehandIdx?: number;
-  /** @deprecated Use `forehandIdx`, e.g. `{ forehandIdx: 1 }`. Removed after one release. */
-  foregroundIdx?: number;
   resyncKey?: string | number;
   /** Override GameTable's registered seat order, for custom board compositions. */
   seats?: readonly FlightSeat[];
@@ -245,7 +243,7 @@ export interface BoardFlightsResult {
 }
 
 /** @deprecated Render <CardFlights deal={deal}> around the board instead. Removed in the next major release. */
-export function useBoardFlights({ hand, handKey, plays, forehandIdx, foregroundIdx, resyncKey, seats }: BoardFlightsOptions): BoardFlightsResult {
+export function useBoardFlights({ hand, handKey, plays, forehandIdx = 0, resyncKey, seats }: BoardFlightsOptions): BoardFlightsResult {
   assertLegacyFlightEngine(useFlightRegistry()?.treeOwned);
   const { landingTargets, reset } = useCardFlights();
   const registry = useFlightRegistry()!;
@@ -255,7 +253,7 @@ export function useBoardFlights({ hand, handKey, plays, forehandIdx, foregroundI
     cards: seat.isMe ? hand : [...(registry.hidden.get(seat.key)?.keys() ?? [])].sort((a, b) => a - b)
       .map((index) => ({ id: flightTarget.seatCard(seat.key, index), label: '' })),
   }));
-  useDealFlightEngine({ handIndex: handKey, dealt: plays.length === 0, forehandIdx: forehandIdx ?? foregroundIdx ?? 0, resyncKey }, getPlayers, registry);
+  useDealFlightEngine({ handIndex: handKey, dealt: plays.length === 0, forehandIdx, resyncKey }, getPlayers, registry);
   usePlayedFlightEngine({ plays, resyncKey }, () => getSeats().length, registry);
   return { landing: landingTargets, reset };
 }

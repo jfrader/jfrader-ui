@@ -37,9 +37,9 @@ const meta = {
       { title: 'Basic', stories: ['Default'] },
       { title: 'Hidden hand', stories: ['HiddenHands'] },
       { title: 'Layout', stories: ['Sizes'] },
-      { title: 'Interactions', stories: ['Controlled', 'AcceptedPlay', 'StableIdentity'] },
-      { title: 'States', stories: ['Selected', 'Disabled', 'Empty'] },
-      { title: 'Composition', stories: ['HiddenCardSlots'] },
+      { title: 'Interactions', stories: ['Controlled', 'AcceptedPlay', 'StableIdentity', 'SelectOnly'] },
+      { title: 'States', stories: ['Selected', 'Disabled', 'Empty', 'DisabledCards'] },
+      { title: 'Composition', stories: ['HiddenCardSlots', 'ConfirmPart'] },
     ],
     source: {
       language: 'tsx',
@@ -51,11 +51,9 @@ const cards = [
   { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
 ];
 
-<GameHand
-  cards={cards}
-  playLabel="Play card"
-  onPlayIntent={(card) => console.log(card)}
-/>`,
+<GameHand cards={cards}>
+  <GameHand.Confirm onPlay={(card) => console.log(card)}>Play card</GameHand.Confirm>
+</GameHand>`,
     },
     usage: `### When to use
 Let a player select a card and confirm a play. Your application accepts the play and updates the hand; selection alone does not play or remove a card. There is no drag gesture.
@@ -63,6 +61,10 @@ Let a player select a card and confirm a play. Your application accepts the play
 ### Card identity and hidden hands
 
 Keep each card's id unique and stable when reordering or removing cards so selection follows the same card. Use count-only hidden hands for opponents; never include secret values or revealing labels. Reserve enough space for the fan and its confirmation control. Radial hidden hands need a caller-positioned seat.
+
+Use value and onValueChange for controlled selection, or defaultValue for an initial selection. Compose GameHand.Confirm through children; its onPlay takes precedence over the root's onPlayIntent. Without children or legacy props, the hand is select-only. The legacy playLabel and onPlayIntent pair is deprecated for one release; explicit children replace its built-in confirmation.
+
+Per-card disabled blocks selection and play for that card; disabledReason supplies an accessible description. dimmed changes appearance without disabling selection. Confirmation captures the CardFlights origin before calling back. Active flights block both selection and confirmation.
 
 ### Keyboard and accessibility
 
@@ -131,6 +133,9 @@ async function checkFan(element: HTMLElement, count: number) {
 /** Three cards held in hand with an unselected play button. */
 export const Default: Story = {
   name: 'Choose a card',
+  render: (args) => <GameHand {...args} onPlayIntent={undefined}>
+    <GameHand.Confirm onPlay={args.onPlayIntent}>Play card</GameHand.Confirm>
+  </GameHand>,
   parameters: {
     docs: {
       description: { story: 'Select one of three cards, then confirm to request a play.' },
@@ -144,11 +149,9 @@ const cards = [
   { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
 ];
 
-<GameHand
-  cards={cards}
-  playLabel="Play card"
-  onPlayIntent={(card) => console.log(card)}
-/>`,
+<GameHand cards={cards}>
+  <GameHand.Confirm onPlay={(card) => console.log(card)}>Play card</GameHand.Confirm>
+</GameHand>`,
       },
     },
   },
@@ -664,4 +667,134 @@ export const RadialHiddenHands: Story = {
   render: () => <SpaciousHands>
     {SEAT_PARITY.map((seat, index) => <GameHand.Hidden key={index} count={3} label="Opponent hand" polar={seat.polar} />)}
   </SpaciousHands>,
+};
+
+/** Pick a card without adding a play action. */
+export const SelectOnly: Story = {
+  name: 'Select without confirming',
+  args: { playLabel: undefined, onPlayIntent: undefined },
+  parameters: { docs: { description: { story: 'Select a card without rendering a play action.' }, source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+
+const cards = [
+  { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+  { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
+  { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
+];
+
+<GameHand cards={cards} onValueChange={console.log} />` } } },
+  play: async ({ canvas, userEvent, args }) => {
+    await expect(canvas.getAllByRole('button')).toHaveLength(3);
+    await userEvent.tab();
+    const first = canvas.getByRole('button', { name: CARDS[0]!.label });
+    await expect(first).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    await expect(first).toHaveAttribute('aria-pressed', 'true');
+    await expect(args.onValueChange).toHaveBeenCalledWith(CARDS[0]!.id);
+  },
+};
+
+/** Compose a confirmation action with a separate play handler. */
+export const ConfirmPart: Story = {
+  name: 'Compose confirmation',
+  render: (args) => <GameHand {...args} onPlayIntent={undefined}>
+    <GameHand.Confirm onPlay={args.onPlayIntent}>Confirm card</GameHand.Confirm>
+  </GameHand>,
+  parameters: { docs: { description: { story: 'Add a confirmation part with its own play callback.' }, source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+
+const cards = [
+  { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+  { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
+  { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' } },
+];
+
+<GameHand cards={cards}>
+  <GameHand.Confirm onPlay={console.log}>Confirm card</GameHand.Confirm>
+</GameHand>` } } },
+  play: async ({ canvas, userEvent, args }) => {
+    await expect(canvas.queryByRole('button', { name: 'Play card' })).toBeNull();
+    const confirm = canvas.getByRole('button', { name: 'Confirm card' });
+    await expect(confirm).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.tab();
+    await userEvent.keyboard(' ');
+    await expect(args.onPlayIntent).not.toHaveBeenCalled();
+    await userEvent.tab(); await userEvent.tab(); await userEvent.tab();
+    await expect(confirm).toHaveFocus();
+    await expect(getComputedStyle(confirm).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onPlayIntent).toHaveBeenCalledTimes(1);
+    await expect(args.onPlayIntent).toHaveBeenCalledWith(CARDS[0]);
+  },
+};
+
+export const ConfirmRootFallback: Story = {
+  tags: ['!autodocs'],
+  render: (args) => <GameHand {...args}><GameHand.Confirm>Confirm card</GameHand.Confirm></GameHand>,
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('button', { name: CARDS[1]!.label }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Confirm card' }));
+    await expect(args.onPlayIntent).toHaveBeenCalledTimes(1);
+    await expect(args.onPlayIntent).toHaveBeenCalledWith(CARDS[1]);
+  },
+};
+
+export const ConfirmCallbackPrecedence: Story = {
+  tags: ['!autodocs'], args: { defaultValue: CARDS[0]!.id },
+  render: (args) => <GameHand {...args}>
+    <GameHand.Confirm onPlay={(card) => args.onValueChange?.(card.id)}>Confirm card</GameHand.Confirm>
+  </GameHand>,
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Confirm card' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(CARDS[0]!.id);
+    await expect(args.onPlayIntent).not.toHaveBeenCalled();
+  },
+};
+
+export const LegacyConfirmation: Story = {
+  tags: ['!autodocs'], ...KeyboardSelection,
+  name: 'Legacy playLabel and onPlayIntent',
+};
+
+/** One unavailable card remains focusable while the other cards can be selected. */
+export const DisabledCards: Story = {
+  name: 'Unavailable and dimmed cards',
+  args: {
+    cards: CARDS.slice(0, 3).map((card, index) => ({ ...card,
+      disabled: index === 0, disabledReason: index === 0 ? 'Follow the leading suit' : undefined, dimmed: index === 2 })),
+    defaultValue: CARDS[0]!.id,
+    slotProps: { card: { 'aria-describedby': 'hand-description' } },
+  },
+  render: (args) => <><p id="hand-description">Choose one card</p><GameHand {...args} /></>,
+  parameters: { docs: { description: { story: 'Block an unavailable card with an accessible reason while a dimmed card remains playable.' }, source: { language: 'tsx', code: `import { GameHand } from '@jfrader/ui/game-hand';
+
+<>
+  <p id="hand-description">Choose one card</p>
+  <GameHand defaultValue="ace-spades" slotProps={{ card: { 'aria-describedby': 'hand-description' } }} cards={[
+    { id: 'ace-spades', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' }, disabled: true, disabledReason: 'Follow the leading suit' },
+    { id: 'king-hearts', label: 'King of hearts', value: { deck: 'french', suit: 'hearts', rank: 'K' } },
+    { id: 'queen-clubs', label: 'Queen of clubs', value: { deck: 'french', suit: 'clubs', rank: 'Q' }, dimmed: true },
+  ]} playLabel="Play card" onPlayIntent={console.log} />
+</>` } } },
+  play: async ({ canvas, userEvent, args }) => {
+    const first = canvas.getByRole('button', { name: CARDS[0]!.label });
+    const confirm = canvas.getByRole('button', { name: 'Play card' });
+    await expect(first).toHaveAttribute('aria-disabled', 'true');
+    await expect(first).toHaveAttribute('data-disabled', 'true');
+    await expect(first).not.toHaveAttribute('disabled');
+    await expect(first).toHaveAccessibleDescription('Choose one card Follow the leading suit');
+    await userEvent.tab();
+    await expect(first).toHaveFocus();
+    await expect(getComputedStyle(first).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{Enter}'); await userEvent.keyboard(' ');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await userEvent.click(confirm);
+    await expect(args.onPlayIntent).not.toHaveBeenCalled();
+    const third = canvas.getByRole('button', { name: CARDS[2]!.label });
+    await expect(third).not.toHaveAttribute('aria-disabled', 'true');
+    await expect(getComputedStyle(third.querySelector('[data-ui="game-card"]')!).opacity).toBe('0.55');
+    await userEvent.click(third);
+    await userEvent.click(confirm);
+    await expect(args.onPlayIntent).toHaveBeenCalledTimes(1);
+    await expect(args.onPlayIntent).toHaveBeenCalledWith(args.cards[2]);
+  },
 };

@@ -18,7 +18,6 @@ export function buildSeatGeometries(totalSeats: number, measurement?: BoardMeasu
       playScale: point?.playScale ?? 1,
       rotationDeg: point?.rotationDeg ?? 0,
       scale: point?.scale ?? 1,
-      groupShiftY: 0, seatShiftX: 0, seatShiftY: 0,
     };
   });
   return { fitted, seatGeometries };

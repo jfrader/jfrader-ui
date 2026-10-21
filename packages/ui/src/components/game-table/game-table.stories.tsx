@@ -1718,7 +1718,6 @@ export const SlotOrderAndGeometry: Story = {
       await expect(layout.seatConfig.radiusX).toBe(0);
       for (const [index, seat] of layout.seatGeometries.entries()) {
         await expect(seat.angleDeg).toBeCloseTo(90 + 360 * index / players, 8);
-        await expect(seat.groupShiftY).toBe(0);
       }
     }
   },
@@ -2222,7 +2221,6 @@ export const MeasuredModel: Story = {
       await expect(layout.seatConfig.radiusX).toBe(0);
       for (const [index, seat] of layout.seatGeometries.entries()) {
         await expect(seat.angleDeg).toBeCloseTo(90 + 360 * index / players, 8);
-        await expect(seat.groupShiftY).toBe(0);
       }
     }
     const aspectSweep = [0.45, 0.75, 1.0, 1.33, 1.6, 2.0, 2.4] as const;
@@ -3918,12 +3916,11 @@ const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
 function TrucoPlayerSeat() {
   const { player, index } = useGameTableSeat<Player>();
   const name = player?.name ?? 'Lugar libre';
-  const now = Date.parse('2026-10-14T12:00:00Z');
   return <GameSeat name={name} avatar={<Avatar name={name} size="sm" aria-hidden="true" />}
     badges={<Badge>{player?.isMe ? 'Vos' : index === 1 ? 'Anfitrión' : 'Jugador'}</Badge>}
     points={index === 0 ? '12' : undefined}
     hand={<GameHand.Hidden count={3} size="sm" label="Tres cartas ocultas" playerKey={player?.key} />}
-    turn={index === 1 ? { deadline: now + 60000, durationMs: 60000, now: now + 15000 } : undefined}
+    turned={index === 1} turn={index === 1 ? { remainingMs: 45000, durationMs: 60000 } : undefined}
     chat={index === 1 ? <span aria-live="polite">Tu turno</span> : undefined} />;
 }
 
@@ -4015,12 +4012,11 @@ const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
 function TrucoPlayerSeat() {
   const { player, index } = useGameTableSeat<Player>();
   const name = player?.name ?? 'Lugar libre';
-  const now = Date.parse('2026-10-14T12:00:00Z');
   return <GameSeat name={name} avatar={<Avatar name={name} size="sm" aria-hidden="true" />}
     badges={<Badge>{player?.isMe ? 'Vos' : index === 1 ? 'Anfitrión' : 'Jugador'}</Badge>}
     points={index === 0 ? '12' : undefined}
     hand={<GameHand.Hidden count={3} size="sm" label="Tres cartas ocultas" playerKey={player?.key} />}
-    turn={index === 1 ? { deadline: now + 60000, durationMs: 60000, now: now + 15000 } : undefined}
+    turned={index === 1} turn={index === 1 ? { remainingMs: 45000, durationMs: 60000 } : undefined}
     chat={index === 1 ? <span aria-live="polite">Tu turno</span> : undefined} />;
 }
 

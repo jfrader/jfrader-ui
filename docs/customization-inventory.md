@@ -8,7 +8,7 @@ compound modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **163**; public callable parts: **186**.
+- Public callable families: **163**; public callable parts: **187**.
 - Families exposing `slots.root`: **113**; remaining without a family-level root slot: **50** (includes DOM-less providers).
 - Families exposing any non-root replacement slot: **125**; remaining without family-level interior slots: **38** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
@@ -204,7 +204,8 @@ panel material. The section has no background, border or radius to migrate.
 | [GameCard](../packages/ui/src/components/game-card/game-card.tsx) | yes | `back`, `face`, `root` | `back`, `face`, `root` | — | — | — |
 | [GameCardStack](../packages/ui/src/components/game-card-stack/game-card-stack.tsx) | yes | `card`, `pile`, `root`, `trigger` | `card`, `pile`, `root`, `trigger` | — | — | `Pile` |
 | [GameCardStack.Pile](../packages/ui/src/components/game-card-stack/game-card-stack.tsx) | — | `card`, `pile`, `trigger` | `card`, `pile`, `trigger` | — | — | — |
-| [GameHand](../packages/ui/src/components/game-hand/game-hand.tsx) | yes | `card`, `confirm`, `fan`, `root` | `card`, `confirm`, `fan`, `root` | — | — | `Hidden` |
+| [GameHand](../packages/ui/src/components/game-hand/game-hand.tsx) | yes | `card`, `confirm`, `fan`, `root` | `card`, `confirm`, `fan`, `root` | — | — | `Confirm`, `Hidden` |
+| [GameHand.Confirm](../packages/ui/src/components/game-hand/game-hand.tsx) | — | — | — | — | — | — |
 | [GameHand.Hidden](../packages/ui/src/components/game-hand/game-hand.tsx) | — | `card` | `card` | — | — | — |
 | [GameMarks](../packages/ui/src/components/game-marks/game-marks.tsx) | yes | `count`, `label`, `mark`, `marks`, `root` | `count`, `label`, `mark`, `marks`, `root` | — | — | — |
 | [GameResult](../packages/ui/src/components/game-result/game-result.tsx) | yes | `actions`, `celebration`, `eyebrow`, `reward`, `root`, `summary`, `title` | `actions`, `celebration`, `eyebrow`, `reward`, `root`, `summary`, `title` | — | — | — |

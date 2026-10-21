@@ -3,8 +3,6 @@ export { GameTable, GameTableSeatChrome, GameTableSeat, GameTablePlay, GameTable
 export type { GameTableProps, GameTablePartProps, GameTableSeatChromeProps, GameTableSeatProps,
   GameTablePlayProps, GameTableSeatContext } from './game-table';
 export type { GameTableRootProps, GameTableRootSlotProps, GameTableRootCustomization, GameTableSlots } from './table-root';
-export { DeckArtProvider, useDeckArt } from '../deck/art-context';
-export type { DeckArtOptions } from '../deck/art-context';
 export { buildAlternatingSlots, buildTableOrderSlots, getTablePointSeatIndexes, resolveTableTurnDirection } from './table-slots';
 export type { GameTableSlot, SeatLike, TableTurnDirection } from './table-slots';
 export { buildBoardLayoutModel } from './layout-model';

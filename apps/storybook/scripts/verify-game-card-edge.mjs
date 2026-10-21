@@ -7,15 +7,15 @@ const edgeRowCount = 3;
 const sizes = [32, 72, 112];
 const stories = [
   ...['diagonal', 'checks'].flatMap(pattern => [
-    ['games-gamecard--back-patterns', 'emoji', `[data-test-pattern="${pattern}"][data-face="emoji"]`, pattern],
+    ['games-gamecard--back-patterns', 'print', `[data-test-pattern="${pattern}"][data-face="print"]`, pattern],
     ['games-gamecard--back-patterns', 'back', `[data-test-pattern="${pattern}"][data-face="back"]`, pattern],
-    ['games-flipgamecard--pattern-fronts', 'emoji', `[data-test-pattern="${pattern}"] [data-face="emoji"]`, pattern],
+    ['games-flipgamecard--pattern-fronts', 'print', `[data-test-pattern="${pattern}"] [data-face="print"]`, pattern],
     ['games-flipgamecard--pattern-backs', 'back', `[data-test-pattern="${pattern}"] [data-face="back"]`, pattern],
   ]),
-  ['games-gamecard--default', 'emoji'],
+  ['games-gamecard--default', 'print'],
   ['games-gamecard--face-down', 'back'],
-  ['games-flipgamecard--default', 'emoji'],
-  ['games-flipgamecard--front-final-state', 'emoji'],
+  ['games-flipgamecard--default', 'print'],
+  ['games-flipgamecard--front-final-state', 'print'],
   ['games-flipgamecard--back-final-state', 'back'],
 ];
 

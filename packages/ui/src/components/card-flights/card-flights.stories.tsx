@@ -46,9 +46,9 @@ function MatchTree({ plays, onPlay, onBurst, onDeal, onResync, onClear }: {
     <Board><GameTable players={2} seats={seats}>
       <GameTable.Seat slotKey="rival"><GameHand.Hidden count={cards.length - rival.length} label="Rival hand" /></GameTable.Seat>
       <GameTable.Dock><ResponsiveHand cards={cards.filter((card) => !own.some((play) => play.cardId === card.id))}
-        playLabel="Play selected" onPlayIntent={onPlay} /></GameTable.Dock>
+        ><GameHand.Confirm onPlay={onPlay}>Play selected</GameHand.Confirm></ResponsiveHand></GameTable.Dock>
       {seats.map((seat) => <GameTable.Play key={seat.key} slotKey={seat.key}>
-        <GameCardStack.Pile playerKey={seat.key} label={`${seat.key} pile`} maxCards={3} cards={plays.filter((play) => play.playerKey === seat.key)} />
+        <GameCardStack.Pile playerKey={seat.key} label={`${seat.key} pile`} visible={3} cards={plays.filter((play) => play.playerKey === seat.key)} />
       </GameTable.Play>)}
     </GameTable></Board>
   </>;
@@ -166,10 +166,10 @@ export function Match() {
         </GameTable.Seat>
         <GameTable.Dock>
           <ResponsiveHand cards={cards.filter(card => !own.some(play => play.cardId === card.id))}
-            playLabel="Play selected" onPlayIntent={accept} />
+          ><GameHand.Confirm onPlay={accept}>Play selected</GameHand.Confirm></ResponsiveHand>
         </GameTable.Dock>
         {seats.map(seat => <GameTable.Play key={seat.key} slotKey={seat.key}>
-          <GameCardStack.Pile playerKey={seat.key} label={seat.key + ' pile'} maxCards={3}
+          <GameCardStack.Pile playerKey={seat.key} label={seat.key + ' pile'} visible={3}
             cards={plays.filter(play => play.playerKey === seat.key)} />
         </GameTable.Play>)}
       </GameTable></Board>
@@ -185,6 +185,10 @@ export function Match() {
 Use one table per flight board. The first render appears in place; later deals start at the deck or table centre and follow seat order, one card per seat per round. Accept a play by updating your rendered hand and piles. Keep source identities stable and give each play a unique identity. Missing origins appear in place.
 
 Apply server snapshots as resynchronizations so active flights are cancelled rather than replayed. Do not combine the rendered-tree engine with deprecated deal/play hooks.
+
+Give each play a unique id and preserve its source cardId when they differ. New play nodes fly from the previous matching hand card or the rival seat's last hidden card. GameHand.Confirm captures the hand position before accepting a play; custom drag controls capture it with useCardFlightOrigin(). Piles show all cards by default; visible limits destinations to the newest N cards.
+
+Use CardFlights.Target for custom hand, play or hidden-seat destinations. Hidden hands inherit their player key inside GameTable.Seat; pass an explicit playerKey outside it. Address hidden-seat targets by seatKey and card index. CardFlights.Deck supplies a custom deal origin.
 
 ### Keyboard and motion
 

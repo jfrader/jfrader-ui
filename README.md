@@ -125,7 +125,7 @@ practice. [QA gates](docs/qa-gates.md) covers what automation cannot check.
 - [Starter template](https://github.com/jfrader/jfrader-ui-boilerplate): minimal Vite app with a
   topbar, main content, and footer.
 - [Fivefold](https://github.com/jfrader/jfrader-ui-card-game-example): four-seat trick-taking card
-  game; table, hand, dialogs, scoreboard, and a phone board.
+  game; table, hand, dialogs, scoreboard, and a phone board. [Play the live demo](https://fivefold.jfrader.com).
 
 ## Contributing
 

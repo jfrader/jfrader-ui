@@ -83,8 +83,8 @@ export interface GameActionsProps
   variant?: ButtonVariant;
   /** Visual tone fallback for actions that do not set their own tone. Defaults to 'neutral'. */
   tone?: ButtonTone;
-  /** Accessible label for the toolbar landmark. Defaults to 'Game actions'. */
-  label?: string;
+  /** Accessible label for the toolbar, in the page's language. */
+  label: string;
   /** Disables the entire toolbar. Actions receive aria-disabled and cannot be activated. */
   disabled?: boolean;
   /** Sugar for slots.root. Replace the root element. */
@@ -203,7 +203,7 @@ export function GameActions({
     ...actionSlotRest
   } = slotProps?.action ?? {};
 
-  const accessibleName = label ?? ariaLabelProp ?? (ariaLabelledByProp ? undefined : 'Game actions');
+  const accessibleName = label ?? ariaLabelProp;
 
   return (
     <WithSx

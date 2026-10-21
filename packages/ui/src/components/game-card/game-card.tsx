@@ -23,11 +23,7 @@ export type GameCardSize = 'sm' | 'md' | 'lg';
 /**
  * Face to display. Defaults to `print` when `value` is present, or `back` when omitted.
  */
-export type GameCardFace =
-  | 'print'
-  | 'back'
-  /** @deprecated Use `'print'` instead. */
-  | 'emoji';
+export type GameCardFace = 'print' | 'back';
 
 /** Conventional backs by deck. Pass the matching value as `backPattern` to explicitly override the deck's back. */
 export const CARD_BACK_PATTERNS = {
@@ -62,7 +58,7 @@ export interface GameCardProps
   /** Selects art sets by card art id, overriding inherited entries and `artSet`. */
   cardArtSets?: Readonly<Record<string, string>>;
   slots?: GameCardSlots;
-  /** Defaults to `print` with a value and `back` without one. `'emoji'` is accepted as a deprecated alias for `'print'`. */
+  /** Defaults to `print` with a value and `back` without one. */
   face?: GameCardFace;
   /** Explicit back tile override. When omitted, the back is determined by the card's deck. */
   backPattern?: PatternVariant;
@@ -197,7 +193,7 @@ export function ResolvedGameCard({
 }: GameCardProps & { deck: Deck }) {
   const { artSet, cardArtSets } = useDeckArt({ artSet: explicitArtSet, cardArtSets: explicitCardArtSets });
   // Asking for `print` is a request for the printed face, so art stands aside for that card.
-  const requestedPrint = face === 'print' || face === 'emoji';
+  const requestedPrint = face === 'print';
   const resolvedFace: 'print' | 'back' =
     face === 'back'
       ? 'back'
