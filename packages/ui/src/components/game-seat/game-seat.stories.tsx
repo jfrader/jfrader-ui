@@ -2,9 +2,8 @@ import { StrictMode, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, spyOn, within } from 'storybook/test';
+import { expect, fn, spyOn } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-// `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { Avatar } from '../avatar';
 import { Badge } from '../badge';
@@ -14,9 +13,8 @@ import { GameSeat, type GameSeatTurnMilestone } from './index';
 import type { GameCardRootProps } from '../game-card/game-card-root';
 import type { GameSeatPartProps, GameSeatSlotProps } from './game-seat';
 
-const NOW = Date.parse('2026-10-14T12:00:00Z');
 const DURATION = 60000;
-const turn = { deadline: NOW + DURATION, durationMs: DURATION, now: NOW + DURATION / 4 };
+const turn = { remainingMs: DURATION * 0.75, durationMs: DURATION };
 const ClockRow = styled.div({ display: 'flex', gap: vars.space[8] });
 const TurnExample = styled.div({ display: 'grid', justifyItems: 'start', gap: vars.space[4] });
 const TURN_MESSAGES = { ready: 'Ready', started: 'Your turn', half: 'Half time', quarter: 'Final quarter', ending: 'Turn ended', extended: 'Turn extended' };
@@ -42,7 +40,9 @@ Show a player's identity and turn status on its own or inside a GameTable seat r
 
 ### Clock constraints
 
-Synchronize the initial clock for server rendering. The ring runs without React ticks; reduced motion keeps its sampled geometry still. Milestone notifications can arrive late in background tabs, so use authoritative game state to enforce a deadline.
+Pass turn={{ remainingMs, durationMs }} from authoritative game state, including for server rendering. The caller owns time: GameSeat never samples a clock or schedules timers. The ring shows the supplied fraction, clamped between zero and one, without a ticking animation. turned defaults to false independently of turn.
+
+Updating remainingMs crosses half (50%), quarter (25%) and ending (zero); a jump across several thresholds emits each in order, once per crossing. Initial values do not emit past milestones. Increasing remainingMs emits extended and rearms thresholds above the new value. Clear turn between turns to start fresh. Use authoritative game state to enforce a deadline.
 
 ### Keyboard and accessibility
 
@@ -50,98 +50,73 @@ The seat is a named group, not an interactive widget, and adds no focus target o
     source: { language: 'tsx', code: `import { Avatar, Badge } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
-const durationMs = 60000;
-
-const start = Date.parse('2026-10-14T12:00:00Z');
-
-const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
-
 <GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
-  handCount={3} badges={<Badge>Host</Badge>} points={0} turn={turn}
+  handCount={3} badges={<Badge>Host</Badge>} points={0}
+  turn={{ remainingMs: 45000, durationMs: 60000 }}
   chat={<span aria-live="polite">Your turn · 45 seconds</span>} />` },
   } },
 } satisfies Meta<typeof GameSeat>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Player seat displaying player identity, status badges, hand count, and turn timer ring. */
+/** Player identity, hand count and caller-owned remaining time. */
 export const Default: Story = {
   name: 'Player seat',
   parameters: { docs: { description: { story: 'Show a player with host status, points, hidden cards and a turn timer.' } } },
-  play: async ({ canvasElement }) => {
-    const seat = within(canvasElement).getByRole('group', { name: 'Alex' });
-    await expect(seat).toHaveAttribute('data-turned', 'true');
+  play: async ({ canvas, canvasElement }) => {
+    const seat = canvas.getByRole('group', { name: 'Alex' });
+    await expect(seat).toHaveAttribute('data-turned', 'false');
     await expect(seat.querySelector('[data-ui="game-seat-points"]')).toHaveTextContent('0');
-    await expect(seat.querySelector('[data-ui="game-seat-timer"]')).toHaveAttribute('aria-hidden', 'true');
+    await expect(canvasElement.querySelector('[data-ui="game-seat-timer"]')).toHaveAttribute('aria-hidden', 'true');
+    await expect(canvasElement.querySelector('circle')).toHaveAttribute('stroke-dashoffset', '25');
   },
 };
-
-/** Display player seat in light theme with turn timer ring. */
 export const Light: Story = {
-  name: 'Light theme',
-  globals: { theme: 'light' },
+  ...Default, name: 'Light theme', globals: { theme: 'light' },
   parameters: { docs: { source: { language: 'tsx', code: `import { Avatar, Badge, ThemeRoot } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
-const durationMs = 60000;
-const start = Date.parse('2026-10-14T12:00:00Z');
-const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
-
 <ThemeRoot theme="light">
   <GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
-    handCount={3} badges={<Badge>Host</Badge>} points={0} turn={turn}
+    handCount={3} badges={<Badge>Host</Badge>} points={0}
+    turn={{ remainingMs: 45000, durationMs: 60000 }}
     chat={<span aria-live="polite">Your turn · 45 seconds</span>} />
 </ThemeRoot>` } } },
 };
-
-/** Display disconnected player with dimmed avatar and badges. */
 export const Offline: Story = {
   name: 'Offline player',
   args: { turn: undefined, offline: true, dimmed: true, badges: <Badge>Disconnected</Badge>, chat: undefined },
   parameters: { docs: { description: { story: 'Pair a dimmed player seat with a visible disconnected label.' }, source: { language: 'tsx', code: `import { Avatar, Badge } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
-<GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
-  handCount={3} badges={<Badge>Disconnected</Badge>} points={0} offline dimmed />` } } },
+<GameSeat name="Alex" avatar={<Avatar name="Alex" aria-hidden="true" />}
+  offline dimmed badges={<Badge>Disconnected</Badge>} points={0} handCount={3} />` } } },
 };
-
-/** Display active turn countdown ring when avatar is omitted. */
+export const TurnedWithoutTimer: Story = {
+  tags: ['!autodocs'], args: { turned: true, turn: undefined },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.getByRole('group')).toHaveAttribute('data-turned', 'true');
+    await expect(canvasElement.querySelector('circle')).toBeNull();
+  },
+};
 export const TimerOnly: Story = {
   name: 'Turn timer only',
   args: { avatar: undefined },
-  parameters: { docs: { description: { story: 'Keep the turn countdown ring when no avatar is supplied.' }, source: { language: 'tsx', code: `import { Badge } from '@jfrader/ui';
-import { GameSeat } from '@jfrader/ui/game-seat';
+  parameters: { docs: { description: { story: 'Keep the turn countdown ring when no avatar is supplied.' }, source: { language: 'tsx', code: `import { GameSeat } from '@jfrader/ui/game-seat';
 
-const durationMs = 60000;
-
-const start = Date.parse('2026-10-14T12:00:00Z');
-
-const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
-
-<GameSeat name="Alex"
-  handCount={3} badges={<Badge>Host</Badge>} points={0} turn={turn}
-  chat={<span aria-live="polite">Your turn · 45 seconds</span>} />` } } },
+<GameSeat name="Alex" turn={{ remainingMs: 45000, durationMs: 60000 }}
+  chat={<span>Your turn · 45 seconds</span>} />` } } },
   play: async ({ canvasElement }) => {
     const anchor = canvasElement.querySelector<HTMLElement>('[data-ui~="game-seat-avatar"]')!;
-    const probe = anchor.ownerDocument.createElement('div');
-    probe.style.inlineSize = vars.space[10];
-    probe.style.blockSize = vars.space[10];
-    anchor.ownerDocument.body.append(probe);
-    try {
-      const expected = probe.getBoundingClientRect();
-      const actual = anchor.getBoundingClientRect();
-      await expect(actual.width).toBe(expected.width);
-      await expect(actual.height).toBe(expected.height);
-      await expect(anchor.querySelector('[data-ui~="game-seat-timer"]')).not.toBeNull();
-    } finally { probe.remove(); }
+    await expect(anchor).toHaveAttribute('data-timer-only', 'true');
+    await expect(anchor.getBoundingClientRect().width).toBeGreaterThan(0);
+    await expect(anchor.getBoundingClientRect().height).toBe(anchor.getBoundingClientRect().width);
   },
 };
 
 function ReplacementDiv(props: GameSeatPartProps) { return <div {...props} data-replacement="true" />; }
 function ReplacementName(props: NonNullable<GameSeatSlotProps['name']>) { return <span {...props} data-replacement="true" />; }
 function ReplacementTimer(props: NonNullable<GameSeatSlotProps['timer']>) { return <svg {...props} data-replacement="true" />; }
-
-/** Replace every interior anatomy part with custom elements. */
 export const InteriorReplacements: Story = {
   name: 'Replace the seat interior',
   parameters: { docs: { description: { story: 'Replace the interior elements while retaining the player name and timer semantics.' }, source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
@@ -149,8 +124,7 @@ import { Avatar, Badge } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
 const durationMs = 60000;
-const start = Date.parse('2026-10-14T12:00:00Z');
-const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
+const turn = { remainingMs: durationMs * 0.75, durationMs };
 
 function ReplacementDiv(props: ComponentPropsWithRef<'div'>) { return <div {...props} data-replacement="true" />; }
 function ReplacementName(props: ComponentPropsWithRef<'span'>) { return <span {...props} data-replacement="true" />; }
@@ -172,26 +146,23 @@ function ReplacementTimer(props: ComponentPropsWithRef<'svg'>) { return <svg {..
       await expect(element).toHaveAttribute('data-replacement', 'true');
       await expect(element.className).not.toBe('');
     }
-    const avatar = canvasElement.querySelector('[data-ui~="game-seat-avatar"]')!;
-    await expect(avatar).toHaveAttribute('data-ui', 'game-seat-avatar consumer');
-    await expect(within(canvasElement).getByRole('group', { name: 'Alex' })).toBeVisible();
+    await expect(canvasElement.querySelector('[data-ui~="game-seat-avatar"]')).toHaveAttribute('data-ui', 'game-seat-avatar consumer');
   },
 };
 
-/** Two seats show different remaining portions of the same turn. */
+/** Two explicit remaining-time values, with no internal clock or scheduled notifications. */
 export const InjectedClock: Story = {
   name: 'Synchronized turn clocks',
   render: (args) => <ClockRow>
     <GameSeat {...args} name="Earlier" turn={turn} />
-    <GameSeat {...args} name="Later" turn={{ ...turn, now: NOW + DURATION * 3 / 4 }} />
+    <GameSeat {...args} name="Later" turn={{ ...turn, remainingMs: DURATION / 4 }} chat={<span>Your turn · 15 seconds</span>} />
   </ClockRow>,
   parameters: { docs: { description: { story: 'Compare earlier and later clock samples within the same turn.' }, source: { language: 'tsx', code: `import { Avatar, Badge, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
 const durationMs = 60000;
-const start = Date.parse('2026-10-14T12:00:00Z');
-const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
+const turn = { remainingMs: durationMs * 0.75, durationMs };
 
 const ClockRow = styled.div({ display: 'flex', gap: vars.space[8] });
 
@@ -203,37 +174,32 @@ const common = {
 
 <ClockRow>
   <GameSeat {...common} name="Earlier" turn={turn} />
-  <GameSeat {...common} name="Later" turn={{ ...turn, now: start + durationMs * 3 / 4 }} />
+  <GameSeat {...common} name="Later" turn={{ ...turn, remainingMs: durationMs / 4 }}
+    chat={<span aria-live="polite">Your turn · 15 seconds</span>} />
 </ClockRow>` } } },
   play: async ({ canvasElement }) => {
     const circles = canvasElement.querySelectorAll('circle');
     await expect(circles[0]).toHaveAttribute('stroke-dashoffset', '25');
     await expect(circles[1]).toHaveAttribute('stroke-dashoffset', '75');
-    await expect(Number.parseFloat(getComputedStyle(circles[1]!).strokeDashoffset)
-      - Number.parseFloat(getComputedStyle(circles[0]!).strokeDashoffset)).toBeGreaterThan(45);
     const host = canvasElement.ownerDocument.createElement('div');
     canvasElement.append(host);
     const root = createRoot(host);
     const interval = spyOn(window, 'setInterval');
     const timeout = spyOn(window, 'setTimeout');
-    let intervals = 0;
-    let timeouts = 0;
+    const clock = spyOn(Date, 'now');
+    let calls: number[] = [];
     try {
-      flushSync(() => root.render(<StrictMode><GameSeat name="Measured" avatar={<Avatar name="Measured" aria-hidden="true" />} turn={turn} /></StrictMode>));
-      flushSync(() => root.render(<StrictMode><GameSeat name="Measured" avatar={<Avatar name="Measured" aria-hidden="true" />} turn={{ ...turn, deadline: turn.deadline + DURATION }} /></StrictMode>));
-      intervals = interval.mock.calls.length;
-      timeouts = timeout.mock.calls.length;
+      const callback = fn();
+      flushSync(() => root.render(<StrictMode><GameSeat name="Measured" turn={turn} onTurnMilestone={callback} /></StrictMode>));
+      flushSync(() => root.render(<StrictMode><GameSeat name="Measured" turn={{ ...turn, remainingMs: 0 }} onTurnMilestone={callback} /></StrictMode>));
+      calls = [interval.mock.calls.length, timeout.mock.calls.length, clock.mock.calls.length];
     } finally {
-      flushSync(() => root.unmount());
-      host.remove();
-      interval.mockRestore(); timeout.mockRestore();
+      flushSync(() => root.unmount()); host.remove();
+      interval.mockRestore(); timeout.mockRestore(); clock.mockRestore();
     }
-    await expect(intervals).toBe(0);
-    await expect(timeouts).toBe(0);
+    await expect(calls).toEqual([0, 0, 0]);
   },
 };
-
-/** Display right-to-left seat layout with custom hand cards. */
 export const RtlAndReducedMotion: Story = {
   name: 'RTL and reduced motion',
   args: { dir: 'rtl', hand: <GameHand.Hidden count={2} size="sm" label="Two hidden cards" playerKey="alex" /> },
@@ -241,20 +207,16 @@ export const RtlAndReducedMotion: Story = {
 import { Avatar, Badge } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
-const durationMs = 60000;
-
-const start = Date.parse('2026-10-14T12:00:00Z');
-
-const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
-
 <GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
-  handCount={3} badges={<Badge>Host</Badge>} points={0} turn={turn}
-  chat={<span aria-live="polite">Your turn · 45 seconds</span>} dir="rtl" hand={<GameHand.Hidden count={2} size="sm" label="Two hidden cards" playerKey="alex" />}/>` } } },
-  play: async ({ canvasElement, args }) => {
-    const seat = within(canvasElement).getByRole('group', { name: 'Alex' });
-    await expect(getComputedStyle(seat).direction).toBe('rtl');
-    await expect(seat.querySelectorAll('[data-ui="game-hand-hidden-card"]')).toHaveLength(2);
-    await expect(within(seat).getByRole('img', { name: 'Two hidden cards' })).toBeVisible();
+  handCount={3} badges={<Badge>Host</Badge>} points={0}
+  turn={{ remainingMs: 45000, durationMs: 60000 }}
+  chat={<span aria-live="polite">Your turn · 45 seconds</span>} dir="rtl"
+  hand={<GameHand.Hidden count={2} size="sm" label="Two hidden cards" playerKey="alex" />} />` } } },
+  play: async ({ canvas, canvasElement, args }) => {
+    await expect(getComputedStyle(canvas.getByRole('group')).direction).toBe('rtl');
+    await expect(canvasElement.querySelectorAll('[data-ui="game-hand-hidden-card"]')).toHaveLength(2);
+    await expect(canvas.getByRole('img', { name: 'Two hidden cards' })).toBeVisible();
+    await expect(canvasElement.querySelector('circle')).toHaveAttribute('stroke-dashoffset', '25');
     const original = window.matchMedia.bind(window);
     const media = spyOn(window, 'matchMedia').mockImplementation((query) => {
       const result = original(query);
@@ -267,64 +229,58 @@ const turn = { deadline: start + durationMs, durationMs, now: start + durationMs
     try {
       flushSync(() => root.render(<GameSeat {...args} name="Reduced" />));
       const circle = host.querySelector('circle')!;
-      await expect(circle.style.strokeDashoffset).toBe('25');
+      await expect(circle).toHaveAttribute('stroke-dashoffset', '25');
+      await expect(circle.getAnimations()).toHaveLength(0);
+      await expect(getComputedStyle(circle).transitionDuration).toBe('0s');
     } finally {
       flushSync(() => root.unmount()); host.remove(); media.mockRestore();
     }
   },
 };
-
 export const Milestones: Story = {
   tags: ['!autodocs'],
-  args: { onTurnMilestone: fn() },
   play: async ({ canvasElement }) => {
     const callback = fn();
-    const scheduled: { callback: () => void; delay: number }[] = [];
     const host = canvasElement.ownerDocument.createElement('div');
     canvasElement.append(host);
     const root = createRoot(host);
-    const originalTimeout = window.setTimeout.bind(window);
-    const timeout = spyOn(window, 'setTimeout').mockImplementation((handler, delay) => {
-      if (typeof handler !== 'function') throw new Error('Expected function timer');
-      scheduled.push({ callback: () => handler(), delay: delay ?? 0 });
-      return originalTimeout(() => {}, delay) as unknown as ReturnType<typeof window.setTimeout>;
-    });
-    let delays: number[] = [];
+    const render = (remainingMs: number) => flushSync(() => root.render(<StrictMode><GameSeat name="Milestones"
+      turn={{ remainingMs, durationMs: DURATION }} onTurnMilestone={callback} /></StrictMode>));
     try {
-      flushSync(() => root.render(<GameSeat name="Milestones" turn={turn} onTurnMilestone={callback} />));
-      delays = scheduled.map(({ delay }) => delay);
-      scheduled.forEach(({ callback: notify }) => notify());
-    } finally {
-      flushSync(() => root.unmount()); host.remove(); timeout.mockRestore();
-    }
-    await expect(delays).toEqual([15000, 30000, 45000]);
-    await expect(callback.mock.calls.map(([milestone]) => milestone)).toEqual(['half', 'quarter', 'ending']);
+      render(DURATION * 0.4);
+      await expect(callback).not.toHaveBeenCalled();
+      render(DURATION * 0.25);
+      render(DURATION * 0.25);
+      render(0);
+      render(-1);
+      render(DURATION);
+      render(0);
+      await expect(callback.mock.calls.map(([milestone]) => milestone)).toEqual(['quarter', 'ending', 'extended', 'half', 'quarter', 'ending']);
+      callback.mockClear();
+      render(DURATION * 0.5);
+      callback.mockClear();
+      render(DURATION * 0.49);
+      await expect(callback.mock.calls.map(([milestone]) => milestone)).toEqual(['half']);
+      await expect(host.querySelector('circle')).toHaveAttribute('stroke-dashoffset', '51');
+    } finally { flushSync(() => root.unmount()); host.remove(); }
   },
 };
 
 function TurnNotifications() {
-  const [startedAt, setStartedAt] = useState<number>();
+  const [remainingMs, setRemaining] = useState<number>();
   const [milestone, setMilestone] = useState<GameSeatTurnMilestone | 'ready' | 'started'>('ready');
   return <TurnExample>
-    <Button onClick={() => { setStartedAt(Date.now()); setMilestone('started'); }}>Start turn</Button>
-    <GameSeat name="Alex" handCount={3}
-      turn={startedAt === undefined ? undefined : { deadline: startedAt + DURATION, durationMs: DURATION, now: startedAt }}
+    <Button onClick={() => { setRemaining(DURATION); setMilestone('started'); }}>Start turn</Button>
+    <Button onClick={() => setRemaining(DURATION / 2)}>Half time</Button>
+    <Button onClick={() => setRemaining(0)}>End turn</Button>
+    <GameSeat name="Alex" handCount={3} turned={remainingMs !== undefined && remainingMs > 0}
+      turn={remainingMs === undefined ? undefined : { remainingMs, durationMs: DURATION }}
       onTurnMilestone={setMilestone} chat={<span aria-live="polite">{TURN_MESSAGES[milestone]}</span>} />
   </TurnExample>;
 }
-
-/** Turn announcements update live chat at milestone intervals. */
 export const TurnMilestoneNotifications: Story = {
   name: 'Turn announcements',
   render: () => <TurnNotifications />,
-  play: async ({ canvasElement, userEvent }) => {
-    const canvas = within(canvasElement);
-    const seat = canvas.getByRole('group', { name: 'Alex' });
-    await expect(within(seat).getByText('Ready')).toBeVisible();
-    await userEvent.click(canvas.getByRole('button', { name: 'Start turn' }));
-    await expect(seat).toHaveAttribute('data-turned', 'true');
-    await expect(within(seat).getByText('Your turn')).toBeVisible();
-  },
   parameters: { docs: { description: { story: 'Start a turn and announce its milestones through a polite live region.' }, source: { language: 'tsx', code: `import { useState } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -334,35 +290,38 @@ const DURATION = 60000;
 const TurnExample = styled.div({ display: 'grid', justifyItems: 'start', gap: vars.space[4] });
 const TURN_MESSAGES = { ready: 'Ready', started: 'Your turn', half: 'Half time', quarter: 'Final quarter', ending: 'Turn ended', extended: 'Turn extended' };
 
-export default function TurnNotifications() {
-  const [startedAt, setStartedAt] = useState<number>();
+function TurnNotifications() {
+  const [remainingMs, setRemaining] = useState<number>();
   const [milestone, setMilestone] = useState<GameSeatTurnMilestone | 'ready' | 'started'>('ready');
   return <TurnExample>
-    <Button onClick={() => { setStartedAt(Date.now()); setMilestone('started'); }}>Start turn</Button>
-    <GameSeat name="Alex" handCount={3}
-      turn={startedAt === undefined ? undefined : { deadline: startedAt + DURATION, durationMs: DURATION, now: startedAt }}
+    <Button onClick={() => { setRemaining(DURATION); setMilestone('started'); }}>Start turn</Button>
+    <Button onClick={() => setRemaining(DURATION / 2)}>Half time</Button>
+    <Button onClick={() => setRemaining(0)}>End turn</Button>
+    <GameSeat name="Alex" handCount={3} turned={remainingMs !== undefined && remainingMs > 0}
+      turn={remainingMs === undefined ? undefined : { remainingMs, durationMs: DURATION }}
       onTurnMilestone={setMilestone} chat={<span aria-live="polite">{TURN_MESSAGES[milestone]}</span>} />
   </TurnExample>;
 }` } } },
+  play: async ({ canvas, userEvent }) => {
+    await expect(canvas.getByRole('group')).toHaveTextContent('Ready');
+    await userEvent.click(canvas.getByRole('button', { name: 'Start turn' }));
+    await expect(canvas.getByRole('group')).toHaveAttribute('data-turned', 'true');
+    await expect(canvas.getByRole('group')).toHaveTextContent('Your turn');
+    await userEvent.click(canvas.getByRole('button', { name: 'Half time' }));
+    await expect(canvas.getByRole('group')).toHaveTextContent('Half time');
+    await userEvent.click(canvas.getByRole('button', { name: 'End turn' }));
+    await expect(canvas.getByRole('group')).toHaveTextContent('Turn ended');
+    await expect(canvas.getByRole('group')).toHaveAttribute('data-turned', 'false');
+  },
 };
 
-function Replacement(props: GameCardRootProps) {
-  return <div {...props} data-replacement="slot" />;
-}
-function UnusedReplacement(props: GameCardRootProps) {
-  return <div {...props} data-replacement="component" />;
-}
-
-/** Replace the root and pass native props to each generated part. */
+function Replacement(props: GameCardRootProps) { return <div {...props} data-replacement="slot" />; }
+function UnusedReplacement(props: GameCardRootProps) { return <div {...props} data-replacement="component" />; }
 export const Slots: Story = {
   name: 'Replace every part',
   parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { Avatar } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
-
-const durationMs = 60000;
-const start = Date.parse('2026-10-14T12:00:00Z');
-const turn = { deadline: start + durationMs, durationMs, now: start + durationMs / 4 };
 
 function Replacement(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replacement="slot" />;
@@ -373,7 +332,7 @@ function UnusedReplacement(props: ComponentPropsWithRef<'div'>) {
 }
 
 <GameSeat name="Alex" avatar={<Avatar name="Alex" size="lg" aria-hidden="true" />}
-  handCount={3} turn={turn} hand={null} badges={0} points={0} chat={0}
+  handCount={3} turn={{ remainingMs: 45000, durationMs: 60000 }} hand={null} badges={0} points={0} chat={0}
   component={UnusedReplacement} slots={{ root: Replacement }}
   className="host-class" style={{ fontWeight: 400 }} title="Host title"
   slotProps={{ root: { className: 'slot-class', style: { fontWeight: 700 }, title: 'Slot title' },
@@ -384,21 +343,18 @@ function UnusedReplacement(props: ComponentPropsWithRef<'div'>) {
     slotProps: { root: { className: 'slot-class', style: { fontWeight: 700 }, title: 'Slot title' },
       name: { id: 'consumer-seat-name', title: 'Player' }, chat: { 'aria-live': 'polite' } },
   },
-  play: async ({ canvasElement }) => {
-    const seat = within(canvasElement).getByRole('group', { name: 'Alex' });
+  play: async ({ canvas }) => {
+    const seat = canvas.getByRole('group', { name: 'Alex' });
     await expect(seat).toHaveAttribute('data-replacement', 'slot');
     await expect(seat).toHaveAttribute('title', 'Slot title');
     await expect(seat).toHaveClass('host-class', 'slot-class');
     await expect(seat.style.fontWeight).toBe('700');
     await expect(seat).toHaveAttribute('aria-labelledby', 'consumer-seat-name');
     await expect(seat.querySelector('[data-ui="game-seat-hand"]')).toBeNull();
-    for (const part of ['badges', 'points', 'chat']) {
-      await expect(seat.querySelector(`[data-ui="game-seat-${part}"]`)).toHaveTextContent('0');
-    }
+    for (const part of ['badges', 'points', 'chat']) await expect(seat.querySelector(`[data-ui="game-seat-${part}"]`)).toHaveTextContent('0');
   },
 };
 
-/** Omit now to sample the current clock at the start of each turn. */
 export const SampledClock: Story = {
   tags: ['!autodocs'],
   args: { turn: undefined, chat: undefined },
@@ -406,22 +362,19 @@ export const SampledClock: Story = {
     const host = canvasElement.ownerDocument.createElement('div');
     canvasElement.append(host);
     const root = createRoot(host);
-    const originalClock = Date.now;
-    let clockSamples = 0;
-    Date.now = () => { clockSamples += 1; return NOW; };
-    let samples: number[] = [];
+    const callback = fn();
     try {
-      const sampledTurn = { deadline: NOW + DURATION, durationMs: DURATION };
-      flushSync(() => root.render(<GameSeat name="Sampled" turn={sampledTurn} />));
-      samples.push(clockSamples);
-      flushSync(() => root.render(<GameSeat name="Same turn" turn={sampledTurn} points={0} />));
-      samples.push(clockSamples);
-      flushSync(() => root.render(<GameSeat name="New turn" turn={{ ...sampledTurn, deadline: NOW + DURATION * 2 }} />));
-      samples.push(clockSamples);
-    } finally {
-      flushSync(() => root.unmount()); host.remove(); Date.now = originalClock;
-    }
-    await expect(samples).toEqual([1, 1, 2]);
+      flushSync(() => root.render(<GameSeat name="Supplied" turn={turn} onTurnMilestone={callback} />));
+      const circle = host.querySelector('circle')!;
+      await expect(circle).toHaveAttribute('stroke-dashoffset', '25');
+      flushSync(() => root.render(<GameSeat name="Same sample" turn={{ ...turn }} points={0} onTurnMilestone={callback} />));
+      await expect(host.querySelector('circle')).toBe(circle);
+      await expect(circle).toHaveAttribute('stroke-dashoffset', '25');
+      await expect(callback).not.toHaveBeenCalled();
+      flushSync(() => root.render(<GameSeat name="New sample" turn={{ ...turn, remainingMs: DURATION / 4 }} onTurnMilestone={callback} />));
+      await expect(circle).toHaveAttribute('stroke-dashoffset', '75');
+      await expect(callback.mock.calls.map(([milestone]) => milestone)).toEqual(['half', 'quarter']);
+    } finally { flushSync(() => root.unmount()); host.remove(); }
   },
 };
 
@@ -432,70 +385,20 @@ export const RescheduledClock: Story = {
     const host = canvasElement.ownerDocument.createElement('div');
     canvasElement.append(host);
     const root = createRoot(host);
-    let now = NOW;
-    let timerId = 0;
-    const pending = new Map<number, { at: number; notify: () => void }>();
-    const originalClock = Date.now;
-    Date.now = () => now;
-    const timeout = spyOn(window, 'setTimeout').mockImplementation((handler, delay) => {
-      if (typeof handler !== 'function') throw new Error('Expected function timer');
-      const id = ++timerId;
-      pending.set(id, { at: now + (delay ?? 0), notify: () => handler() });
-      return id as unknown as ReturnType<typeof window.setTimeout>;
-    });
-    const clear = spyOn(window, 'clearTimeout').mockImplementation((id) => {
-      if (typeof id === 'number') pending.delete(id);
-    });
-    const advance = (target: number) => {
-      for (;;) {
-        const next = [...pending].sort((a, b) => a[1].at - b[1].at)[0];
-        if (!next || next[1].at > target) break;
-        now = next[1].at;
-        pending.delete(next[0]);
-        next[1].notify();
-      }
-      now = target;
-    };
-    const notifications: { milestone: string; at: number }[] = [];
-    const callback = (milestone: string) => { notifications.push({ milestone, at: now }); };
-    let transition = '';
-    let remainingOffset = '';
-    let due: number[] = [];
-    let lateDue: number[] = [];
-    const lateNotifications: string[] = [];
+    const callback = fn();
     try {
-      const sampledTurn = { deadline: NOW + DURATION, durationMs: DURATION };
-      flushSync(() => root.render(<GameSeat name="Rescheduled" turn={sampledTurn} />));
-      advance(NOW + DURATION / 4);
-      flushSync(() => root.render(<GameSeat name="Rescheduled" turn={sampledTurn} onTurnMilestone={callback} />));
-      due = [...pending.values()].map(({ at }) => at);
-      advance(NOW + DURATION);
-      flushSync(() => root.render(<GameSeat name="Duration" turn={{ deadline: NOW + DURATION * 2, durationMs: DURATION }} />));
-      advance(NOW + DURATION * 1.5);
-      flushSync(() => root.render(<GameSeat name="Duration" turn={{ deadline: NOW + DURATION * 2, durationMs: DURATION * 2 }} />));
-      const circle = host.querySelector('circle')!;
-      transition = circle.style.transitionDuration;
-      remainingOffset = circle.getAttribute('stroke-dashoffset')!;
-      advance(NOW + DURATION * 2);
-      const lateTurn = { deadline: NOW + DURATION * 3, durationMs: DURATION };
-      flushSync(() => root.render(<GameSeat name="Late" turn={lateTurn} />));
-      advance(NOW + DURATION * 2.625);
-      flushSync(() => root.render(<GameSeat name="Late" turn={lateTurn} onTurnMilestone={(milestone) => lateNotifications.push(milestone)} />));
-      lateDue = [...pending.values()].map(({ at }) => at);
-      advance(lateTurn.deadline);
-    } finally {
-      flushSync(() => root.unmount()); host.remove();
-      Date.now = originalClock; timeout.mockRestore(); clear.mockRestore();
-    }
-    await expect(due).toEqual([NOW + DURATION / 2, NOW + DURATION * 3 / 4, NOW + DURATION]);
-    await expect(notifications).toEqual([
-      { milestone: 'half', at: NOW + DURATION / 2 },
-      { milestone: 'quarter', at: NOW + DURATION * 3 / 4 },
-      { milestone: 'ending', at: NOW + DURATION },
-    ]);
-    await expect(transition).toBe('30000ms');
-    await expect(remainingOffset).toBe('75');
-    await expect(lateDue).toEqual([NOW + DURATION * 2.75, NOW + DURATION * 3]);
-    await expect(lateNotifications).toEqual(['quarter', 'ending']);
+      flushSync(() => root.render(<GameSeat name="Late callback" turn={turn} />));
+      flushSync(() => root.render(<GameSeat name="Late callback" turn={turn} onTurnMilestone={callback} />));
+      await expect(callback).not.toHaveBeenCalled();
+      flushSync(() => root.render(<GameSeat name="Late callback" turn={{ ...turn, remainingMs: 0 }} onTurnMilestone={callback} />));
+      await expect(callback.mock.calls.map(([milestone]) => milestone)).toEqual(['half', 'quarter', 'ending']);
+      callback.mockClear();
+      flushSync(() => root.render(<GameSeat name="Between turns" onTurnMilestone={callback} />));
+      flushSync(() => root.render(<GameSeat name="Next turn" turn={turn} onTurnMilestone={callback} />));
+      await expect(callback).not.toHaveBeenCalled();
+      flushSync(() => root.render(<GameSeat name="Next turn" turn={{ remainingMs: 0, durationMs: DURATION * 2 }} onTurnMilestone={callback} />));
+      await expect(callback.mock.calls.map(([milestone]) => milestone)).toEqual(['half', 'quarter', 'ending']);
+      await expect(host.querySelector('circle')).toHaveAttribute('stroke-dashoffset', '100');
+    } finally { flushSync(() => root.unmount()); host.remove(); }
   },
 };

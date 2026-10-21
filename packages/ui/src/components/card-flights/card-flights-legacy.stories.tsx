@@ -93,7 +93,7 @@ export function App() {
 - Wrap one board in CardFlightsProvider and call flight hooks in a child of the provider. It renders the scope div; ref points to that div.
 - Use component or slots.root to replace the root, and slotProps.root, className or sx to customize it. To use an existing wrapper instead, pass its scopeRef; no root div is rendered in that mode.
 - Change handKey when the next hand is ready, with plays empty. Initial and resync snapshots appear in place. Change resyncKey when applying a server snapshot; bursts larger than the seat count also appear in place.
-- Deal order starts at forehandIdx (default zero), follows the registered seat order and deals every card in each hand. foregroundIdx is a deprecated alias for one release. seats can override that order with records containing key and isMe. Deal duration is 380ms with 70ms stagger; own plays take 400ms and rival plays 520ms.
+- Deal order starts at forehandIdx (default zero), follows the registered seat order and deals every card in each hand. seats can override that order with records containing key and isMe. Deal duration is 380ms with 70ms stagger; own plays take 400ms and rival plays 520ms.
 - The previous hand nodes supply play origins. Mount measurable destinations in the same commit as new plays. Missing endpoints appear in place.
 - landing contains destinations still in flight. Disable play while necessary for your rules. reset() cancels flights and forgets origins and snapshot baselines; remount for a new match.
 - Destinations stay hidden until the tracks finish. Replacements cancel old tracks. A waiting portal completes at the duration deadline. Reduced motion completes without a flight, including preference changes during animation.
@@ -310,7 +310,6 @@ interface CardFlightsFixtureProps {
   externalScope?: boolean;
   seatShorthand?: boolean;
   largeHand?: boolean;
-  legacyAlias?: boolean;
 }
 
 function FlightIdentityProbe() {
@@ -334,7 +333,7 @@ function FlightIdentityProbe() {
   </div>;
 }
 
-function FlightScenarios({ theme = 'dark', initialDealt = false, initialPlayed = false, portalReady = true, externalScope = false, seatShorthand = false, largeHand = false, legacyAlias = false }: CardFlightsFixtureProps) {
+function FlightScenarios({ theme = 'dark', initialDealt = false, initialPlayed = false, portalReady = true, externalScope = false, seatShorthand = false, largeHand = false }: CardFlightsFixtureProps) {
   const scopeRef = useRef<HTMLDivElement>(null);
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   const [mounted, setMounted] = useState(true);
@@ -343,15 +342,15 @@ function FlightScenarios({ theme = 'dark', initialDealt = false, initialPlayed =
       <Button onClick={() => setMounted(!mounted)}>{mounted ? 'Unmount board' : 'Mount board'}</Button>
       {mounted && <div ref={externalScope ? scopeRef : undefined}>
         <CardFlightsProvider scopeRef={externalScope ? scopeRef : undefined}>
-          <FlightBoard initialDealt={initialDealt} initialPlayed={initialPlayed} seatShorthand={seatShorthand} largeHand={largeHand} legacyAlias={legacyAlias} />
+          <FlightBoard initialDealt={initialDealt} initialPlayed={initialPlayed} seatShorthand={seatShorthand} largeHand={largeHand} />
         </CardFlightsProvider>
       </div>}
     </ThemeRoot>
   </div>;
 }
 
-function FlightBoard({ initialDealt, initialPlayed, seatShorthand, largeHand, legacyAlias }: {
-  initialDealt: boolean; initialPlayed: boolean; seatShorthand: boolean; largeHand: boolean; legacyAlias: boolean;
+function FlightBoard({ initialDealt, initialPlayed, seatShorthand, largeHand }: {
+  initialDealt: boolean; initialPlayed: boolean; seatShorthand: boolean; largeHand: boolean;
 }) {
   const [handIndex, setHandIndex] = useState(initialDealt || initialPlayed ? 1 : 0);
   const [plays, setPlays] = useState<PlayedFlightCard[]>(initialPlayed ? [OWN_PLAY, RIVAL_PLAY] : []);
@@ -363,7 +362,7 @@ function FlightBoard({ initialDealt, initialPlayed, seatShorthand, largeHand, le
   const hand = handIndex ? (largeHand ? largeOwnHand : ownHand).filter((card) => !plays.some((entry) => entry.cardId === card.id)) : [];
   const rival = handIndex ? rivalHand.filter((card) => !plays.some((entry) => entry.cardId === card.id)) : [];
   const { landing: landingTargets, reset } = useBoardFlights({ hand, handKey: handIndex, plays,
-    ...(legacyAlias ? { foregroundIdx: 1 } : { forehandIdx: 1 }), resyncKey });
+    forehandIdx: 1, resyncKey });
   const deal = () => { setPlays([]); setHandIndex((index) => index + 1); };
   const play = (entry: PlayedFlightCard) => {
     setPlays((current) => [...current, entry]);
@@ -634,10 +633,10 @@ export const EveryCardDeals: Story = {
   },
 };
 
-export const DeprecatedDealAlias: Story = {
+export const ForehandDealOrder: Story = {
   tags: ['!autodocs'],
   beforeEach: () => mockPreference(),
-  render: () => <FlightScenarios legacyAlias />,
+  render: () => <FlightScenarios />,
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Deal hand' }));
     await expect(flights(canvasElement)).toHaveLength(6);
@@ -769,9 +768,9 @@ export const RealComponentsAndStagger: Story = {
       requestAnimationFrame(frame);
     });
     await userEvent.click(canvas.getByRole('button', { name: 'Deal hand' }));
-    await expect(canvasElement.querySelector('[data-ui="game-table"]')).not.toBeNull();
-    await expect(canvasElement.querySelector('[data-ui="game-hand-card"][data-hand-card="own:0"]')).not.toBeNull();
-    await expect(canvasElement.querySelector('[data-ui="game-hand-hidden-card"][data-seat-hidden-card="rival"][data-seat-hidden-card-index="0"]')).not.toBeNull();
+    await waitFor(() => expect(canvasElement.querySelector('[data-ui="game-table"]')).not.toBeNull());
+    await waitFor(() => expect(canvasElement.querySelector('[data-ui="game-hand-card"][data-hand-card="own:0"]')).not.toBeNull());
+    await waitFor(() => expect(canvasElement.querySelector('[data-ui="game-hand-hidden-card"][data-seat-hidden-card="rival"][data-seat-hidden-card-index="0"]')).not.toBeNull());
     await sampling;
     await expect(pendingPaints).toEqual([]);
     await expect(departures.size).toBe(6);

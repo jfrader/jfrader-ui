@@ -18,8 +18,9 @@ const SAMPLE_ACTIONS: readonly GameActionItem[] = [
 
 const TableFrame = styled.div({
   position: 'relative',
-  inlineSize: `calc(${vars.space[8]} * 26)`,
+  inlineSize: `min(calc(${vars.space[8]} * 26), 100%)`,
   maxInlineSize: '100%',
+  minInlineSize: 0,
   blockSize: `calc(${vars.space[4]} * 25)`,
 });
 const FloatingActions = styled.div({
@@ -32,8 +33,9 @@ const FloatingActions = styled.div({
 const ActionSurface = styled(Surface)({ padding: vars.space[2], borderRadius: vars.radius.xl });
 const TurnPanel = styled(Surface)({
   boxSizing: 'border-box',
-  inlineSize: `calc(${vars.space[8]} * 20)`,
+  inlineSize: `min(calc(${vars.space[8]} * 20), 100%)`,
   maxInlineSize: '100%',
+  minInlineSize: 0,
   padding: vars.space[6],
   display: 'grid',
   gap: vars.space[5],

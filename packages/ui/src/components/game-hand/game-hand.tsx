@@ -1,12 +1,12 @@
 'use client';
 
-import type { ComponentPropsWithRef, ComponentType, CSSProperties } from 'react';
+import { createContext, useContext, useId, useMemo, type ComponentPropsWithRef, type ComponentType, type CSSProperties, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
-import { Button } from '../button';
+import { Button, type ButtonProps } from '../button';
 import { useDeckArt } from '../deck/art-context';
 import { GameCard, type GameCardPartProps, type GameCardSize, type GameCardValue } from '../game-card';
 import { gameCardSizeStyles } from '../game-card/game-card';
@@ -25,6 +25,12 @@ import {
 
 export interface GameHandCard extends PlayingCard {
   value: GameCardValue;
+  /** Block selection and play without removing the card from keyboard navigation. */
+  disabled?: boolean;
+  /** Accessible description merged with the card button's aria-describedby. */
+  disabledReason?: string;
+  /** Dim the artwork without disabling selection or play. */
+  dimmed?: boolean;
 }
 
 export interface GameHandSlots {
@@ -39,6 +45,8 @@ export interface GameHandHiddenSlots {
 }
 
 export interface GameHandProps extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps {
+  /** Content rendered below the fan, such as GameHand.Confirm. */
+  children?: ReactNode;
   /** Replace the root; slots.root takes precedence. */
   component?: ComponentType<GameCardRootProps>;
   /** Choose the card artwork set, overriding the enclosing deck's selection. */
@@ -59,10 +67,16 @@ export interface GameHandProps extends Omit<ComponentPropsWithRef<'div'>, 'child
   defaultValue?: string | null;
   /** Receive the selected card id, or `null` when the selected card is clicked again. */
   onValueChange?: (cardId: string | null) => void;
-  /** Runs only when the confirmation button is activated, never on selection. */
+  /**
+   * Runs only when the confirmation button is activated, never on selection.
+   * @deprecated For one release. Use GameHand.Confirm onPlay instead.
+   */
   onPlayIntent?: (card: GameHandCard) => void;
-  /** Text for the explicit confirmation action, in your page's language. */
-  playLabel: string;
+  /**
+   * Text for the explicit confirmation action, in your page's language.
+   * @deprecated For one release. Use GameHand.Confirm children instead.
+   */
+  playLabel?: string;
   /** Block selection and confirmation. Card flights also disable the hand while busy. */
   disabled?: boolean;
   /** Pass props and styles to the root, fan, card buttons and confirmation button. */
@@ -116,6 +130,57 @@ const cardStyle = css({
   '&[aria-disabled="true"]': { cursor: 'default' },
 });
 
+interface HandSelection {
+  selectedCard?: GameHandCard;
+  disabled: boolean;
+  onPlayIntent?: GameHandProps['onPlayIntent'];
+  confirmProps?: NonNullable<GameHandProps['slotProps']>['confirm'];
+  Confirm?: GameHandSlots['confirm'];
+}
+const HandSelectionContext = createContext<HandSelection | null>(null);
+
+export interface GameHandConfirmProps extends Omit<ButtonProps, 'onPlay'> {
+  'data-ui'?: string;
+  /** Play the selected card after capturing its flight origin. Falls back to the root's onPlayIntent. */
+  onPlay?: (card: GameHandCard) => void;
+}
+
+function GameHandConfirm({ onPlay, onClick, disabled, children, ...props }: GameHandConfirmProps) {
+  const selection = useContext(HandSelectionContext);
+  const registry = useFlightRegistry();
+  const flights = useOptionalCardFlights();
+  if (!selection) throw new Error('GameHand.Confirm must be rendered inside GameHand.');
+  const { selectedCard, onPlayIntent, Confirm = 'button' } = selection;
+  const slot = selection.confirmProps;
+  const play = onPlay ?? onPlayIntent;
+  const blocked = disabled || selection.disabled || !selectedCard || selectedCard.disabled || !play;
+  return <Button {...slot} {...props} type="button"
+    data-ui={cardPartIdentity('game-hand-confirm', `${slot?.['data-ui'] ?? ''} ${props['data-ui'] ?? ''}`)}
+    render={props.render ?? ((buttonProps) => <Confirm {...buttonProps} />)}
+    className={[slot?.className, props.className].filter(Boolean).join(' ')}
+    sx={[slot?.sx, props.sx]} aria-disabled={blocked || props['aria-disabled']}
+    onClick={(event) => {
+      slot?.onClick?.(event);
+      onClick?.(event);
+      if (event.defaultPrevented || blocked) return;
+      const node = registry?.hand.get(selectedCard.id)?.node;
+      if (node) flights?.rememberPlayOrigin(selectedCard.id, node);
+      play(selectedCard);
+    }}>{children}</Button>;
+}
+GameHandConfirm.displayName = 'GameHand.Confirm';
+
+function HandCardButton({ component: Card, disabledReason, children, ...props }: ComponentPropsWithRef<'button'> & GameCardPartProps & {
+  component: NonNullable<GameHandSlots['card']> | 'button';
+  disabledReason?: string;
+}) {
+  const descriptionId = useId();
+  return <Card {...props} aria-describedby={[props['aria-describedby'], disabledReason ? descriptionId : undefined].filter(Boolean).join(' ') || undefined}>
+    {children}
+    {disabledReason && <span id={descriptionId} hidden>{disabledReason}</span>}
+  </Card>;
+}
+
 export function GameHand({
   ref,
   cards,
@@ -125,6 +190,7 @@ export function GameHand({
   onValueChange,
   onPlayIntent,
   playLabel,
+  children,
   disabled = false,
   slotProps,
   slots,
@@ -137,52 +203,45 @@ export function GameHand({
 }: GameHandProps) {
   const { artSet, cardArtSets } = useDeckArt({ artSet: explicitArtSet, cardArtSets: explicitCardArtSets });
   const seat = useOptionalGameTableSeat();
-  const flights = useOptionalCardFlights();
-  const registry = useFlightRegistry();
   const { busy } = useCardFlightStatus();
-  disabled = disabled || busy;
-  const artwork = (card: PlayingCard, face: 'front' | 'back') => <GameCard value={card.value} label={card.label} face={face === 'back' ? 'back' : undefined}
-    size={size} dimmed={disabled} artSet={artSet} cardArtSets={cardArtSets} />;
+  const blockedHand = disabled || busy;
+  const artwork = (card: PlayingCard & Pick<GameHandCard, 'dimmed'>, face: 'front' | 'back') => <GameCard value={card.value} label={card.label} face={face === 'back' ? 'back' : undefined}
+    size={size} dimmed={blockedHand || card.dimmed} artSet={artSet} cardArtSets={cardArtSets} />;
   const registrationRef = useCardRegistrationRefs('hand', cards, seat?.player?.key, artwork);
   const Fan = slots?.fan ?? 'div';
   const Card = slots?.card ?? 'button';
-  const Confirm = slots?.confirm ?? 'button';
   const [selectedId, select] = useControlledState<string | null>(value, defaultValue, onValueChange);
   const selectedCard = cards.find((card) => card.id === selectedId);
+  const selection = useMemo(() => ({ selectedCard, disabled: blockedHand, onPlayIntent, confirmProps: slotProps?.confirm, Confirm: slots?.confirm }),
+    [selectedCard, blockedHand, onPlayIntent, slotProps?.confirm, slots?.confirm]);
   const rotations = getHandFanRotations(cards.length);
   return (
-    <CardRoot {...rest} ref={ref} marker="game-hand" component={component} slots={slots}
+    <HandSelectionContext.Provider value={selection}><CardRoot {...rest} ref={ref} marker="game-hand" component={component} slots={slots}
       rootSlot={slotProps?.root} className={className} structure={[rootStyle, gameCardSizeStyles[size]]} sx={sx}>
       <Fan {...withoutSx(slotProps?.fan)} data-ui={cardPartIdentity('game-hand-fan', slotProps?.fan?.['data-ui'])} className={slotProps?.fan?.className} css={[fanStyle, slotProps?.fan?.sx]}>
         {cards.map((card, index) => {
           const angle = rotations[index] ?? 0;
           return (
             // CardFlights measures this wrapper using the shared card id.
-            <Card {...withoutSx(slotProps?.card)} key={card.id} type="button" data-ui={cardPartIdentity('game-hand-card', slotProps?.card?.['data-ui'])} data-hand-card={card.id}
+            <HandCardButton {...withoutSx(slotProps?.card)} component={Card} key={card.id} type="button" data-ui={cardPartIdentity('game-hand-card', slotProps?.card?.['data-ui'])} data-hand-card={card.id}
               ref={registrationRef(card.id)}
-              aria-pressed={selectedId === card.id} aria-disabled={disabled || undefined}
-              onClick={(event) => { slotProps?.card?.onClick?.(event); if (!event.defaultPrevented && !disabled) select(selectedId === card.id ? null : card.id); }}
+              aria-pressed={selectedId === card.id} aria-disabled={blockedHand || card.disabled || undefined}
+              data-disabled={blockedHand || card.disabled || undefined}
+              disabledReason={card.disabledReason}
+              onClick={(event) => { slotProps?.card?.onClick?.(event); if (!event.defaultPrevented && !blockedHand && !card.disabled) select(selectedId === card.id ? null : card.id); }}
               className={slotProps?.card?.className} css={[cardStyle, slotProps?.card?.sx]}
               style={{ '--hand-angle': `${angle}deg`, '--hand-drop': `${angle ? HAND_FAN_DROP_PX : 0}px`, ...slotProps?.card?.style } as CSSProperties}>
               {artwork(card, 'front')}
-            </Card>
+            </HandCardButton>
           );
         })}
       </Fan>
-      <Button {...slotProps?.confirm} type="button" data-ui={cardPartIdentity('game-hand-confirm', slotProps?.confirm?.['data-ui'])} aria-disabled={disabled || !selectedCard || !onPlayIntent}
-        render={(props) => <Confirm {...props} />}
-        className={slotProps?.confirm?.className} sx={slotProps?.confirm?.sx}
-        onClick={(event) => { slotProps?.confirm?.onClick?.(event); if (!event.defaultPrevented && !disabled && selectedCard) {
-          const node = registry?.hand.get(selectedCard.id)?.node;
-          if (node) flights?.rememberPlayOrigin(selectedCard.id, node);
-          onPlayIntent?.(selectedCard);
-        } }}>
-        {playLabel}
-      </Button>
-    </CardRoot>
+      {children !== undefined ? children : playLabel !== undefined ? <GameHandConfirm>{playLabel}</GameHandConfirm> : null}
+    </CardRoot></HandSelectionContext.Provider>
   );
 }
 GameHand.displayName = 'GameHand';
+GameHand.Confirm = GameHandConfirm;
 
 export interface GameHandHiddenProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
   /** Choose the card-back artwork set, overriding the enclosing deck's selection. */

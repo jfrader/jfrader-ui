@@ -11,7 +11,7 @@ import { GameCard, CARD_BACK_PATTERNS } from '../game-card';
 import { CARD_FRAME } from '../game-card/card-frame';
 import { GameTable } from '../game-table';
 import { Button } from '../button';
-import { GameCardStack, getPlayedCardKey, getPileOffset, getStableJitter, getStableRotation,
+import { GameCardStack, getPlayedCardKey, getPileOffset, getStableJitter, getStableRotation, getPlayerTableCards,
   type GameCardStackPile, type GameCardStackProps } from './index';
 
 const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', blockSize: 432 });
@@ -88,11 +88,13 @@ Give the grid a definite width and height; fitting reserves room for inspected f
 
 ### Cards
 
-Give every pile and card a name in the page's language and every play a unique identity. Only the newest cards up to the display limit are rendered. Do not send secret face values for hidden cards.
+Give every pile and card a name in the page's language and every play a unique identity. All cards render by default. visible limits the pile to the newest N cards; finite values round down and clamp to zero, while non-finite values show all cards. The deprecated maxCards alias remains for one release; visible wins when both are supplied. Do not send secret face values for hidden cards.
 
 ### Inspection and keyboard
 
-Tab reaches each pile's disclosure button. Enter or Space toggles inspection. Escape requests closure and returns focus after acceptance; a prevented key event cancels dismissal. Only one pile is inspected at a time. Revealed cards stay spread when inspection closes, and closed cards remain available to assistive technology. Reduced motion completes size and focus changes immediately.`,
+Tab reaches each pile's disclosure button. Enter or Space toggles inspection. Escape requests closure and returns focus after acceptance; a prevented key event cancels dismissal. Only one pile is inspected at a time. Revealed cards stay spread when inspection closes, and closed cards remain available to assistive technology. Reduced motion completes size and focus changes immediately.
+
+Standalone Pile uses open, defaultOpen and onOpenChange for boolean disclosure. In a stack, the root maps its single inspected player key to each pile's open state. The standalone key-based inspection props remain compatible for one release; prefer the boolean disclosure props.`,
   } },
 } satisfies Meta<typeof GameCardStack>;
 export default meta;
@@ -429,13 +431,19 @@ function GrowingFixture(args: GameCardStackProps) {
   return <><GameCardStack {...args} piles={args.piles.map((pile, index) => index === 0 && !show ? { ...pile, cards: [] } : pile)} />
     <Button onClick={() => setShow(!show)}>Toggle North cards</Button></>;
 }
-export const MaximumThree: Story = {
+export const AllCards: Story = {
   tags: ['!autodocs'],
   args: counts(2, 4),
   render: (args) => <GrowingFixture {...args} />,
   play: async ({ canvas, canvasElement, userEvent }) => {
     await noOverlap(canvasElement);
-    await expect(canvas.getAllByRole('img')).toHaveLength(6);
+    await expect(canvas.getAllByRole('img')).toHaveLength(8);
+    const pile = players(1, 5)[0]!;
+    const grouped = getPlayerTableCards(pile.cards.map((card) => [{ ...card, player: { key: pile.playerKey } }]),
+      { [pile.playerKey]: [pile.cards[0]!, { id: 'revealed-sixth', label: 'Sixth card' }] });
+    await expect(grouped.cardsByPlayerKey[pile.playerKey]!.map((card) => card.id)).toEqual([
+      ...pile.cards.map((card) => card.id), 'revealed-sixth',
+    ]);
     const east = canvasElement.querySelector('[data-ui="game-card-stack-pile"][data-player-key="East"]')!;
     const original = east.getBoundingClientRect().toJSON();
     await userEvent.click(canvas.getByRole('button', { name: 'Toggle North cards' }));
@@ -443,11 +451,84 @@ export const MaximumThree: Story = {
     await expect(east.getBoundingClientRect().toJSON()).toEqual(original);
   },
 };
+export const MaximumThree: Story = {
+  tags: ['!autodocs'],
+  args: { ...counts(2, 4), visible: 3 },
+  play: async ({ canvasElement }) => {
+    await expect([...canvasElement.querySelectorAll<HTMLElement>('[data-played-key]')].map((card) => card.dataset.playedKey))
+      .toEqual(['play-0-1', 'play-0-2', 'play-0-3', 'play-1-1', 'play-1-2', 'play-1-3']);
+  },
+};
 export const MaximumOne: Story = {
   tags: ['!autodocs'],
-  args: { maxCards: 1 },
+  args: { visible: 1 },
   play: async ({ canvas }) => {
     await expect(canvas.getAllByRole('img')).toHaveLength(2);
+  },
+};
+
+export const NewestCards: Story = {
+  tags: ['!autodocs'], args: { ...counts(2, 5), visible: 2, maxCards: 1 },
+  play: async ({ canvasElement, canvas, userEvent }) => {
+    await expect([...canvasElement.querySelectorAll<HTMLElement>('[data-played-key]')].map((card) => card.dataset.playedKey))
+      .toEqual(['play-0-3', 'play-0-4', 'play-1-3', 'play-1-4']);
+    await userEvent.click(canvas.getByRole('button', { name: "North's played cards" }));
+    await noOverlap(canvasElement);
+  },
+};
+export const LegacyMaxCards: Story = {
+  tags: ['!autodocs'], args: { ...counts(2, 5), maxCards: 1 },
+  play: async ({ canvasElement }) => {
+    await expect([...canvasElement.querySelectorAll<HTMLElement>('[data-played-key]')].map((card) => card.dataset.playedKey))
+      .toEqual(['play-0-4', 'play-1-4']);
+  },
+};
+
+function StandaloneDisclosureFixture({ controlled = false, reject = false, ...args }: GameCardStackProps & { controlled?: boolean; reject?: boolean }) {
+  const [open, setOpen] = useState(true);
+  const pile = args.piles[0]!;
+  return <PileFrame><GameCardStack.Pile {...pile} defaultOpen={!controlled} open={controlled ? open : undefined}
+    onOpenChange={(next) => { if (!reject) setOpen(next); args.onValueChange?.(next ? pile.playerKey : null); }} /></PileFrame>;
+}
+
+/** A standalone pile owns boolean disclosure state. */
+export const StandaloneDisclosure: Story = {
+  render: (args) => <StandaloneDisclosureFixture {...args} />,
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameCardStack } from '@jfrader/ui/game-card-stack';
+
+<GameCardStack.Pile playerKey="north" label="North's played cards"
+  cards={[
+    { id: 'ace', label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } },
+    { id: 'queen', label: 'Queen of hearts', value: { deck: 'french', suit: 'hearts', rank: 'Q' } },
+    { id: 'king', label: 'King of clubs', value: { deck: 'french', suit: 'clubs', rank: 'K' } },
+  ]} defaultOpen onOpenChange={console.log} />` } } },
+  play: async ({ canvas, userEvent, args }) => {
+    const trigger = canvas.getByRole('button');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.tab();
+    await expect(trigger).toHaveFocus();
+    await expect(getComputedStyle(trigger).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{Escape}');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).toHaveFocus();
+    await userEvent.keyboard(' ');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(1, null);
+    await expect(args.onValueChange).toHaveBeenNthCalledWith(2, 'North');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+  },
+};
+export const ControlledStandalone: Story = {
+  ...StandaloneDisclosure, tags: ['!autodocs'], render: (args) => <StandaloneDisclosureFixture {...args} controlled />,
+};
+export const RejectedStandaloneClose: Story = {
+  tags: ['!autodocs'], render: (args) => <StandaloneDisclosureFixture {...args} controlled reject />,
+  play: async ({ canvas, userEvent, args }) => {
+    const trigger = canvas.getByRole('button');
+    await userEvent.click(trigger);
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith(null);
   },
 };
 // Grid dimensions are scenario data supplied by the geometry matrix.
@@ -709,7 +790,7 @@ const PileFrame = styled.div({ inlineSize: vars.size.gameCardMd, aspectRatio: '7
 
 export function StandalonePileExample() {
   return <PileFrame>
-    <GameCardStack.Pile {...pile} onValueChange={(key) => console.log('Inspecting:', key)} />
+    <GameCardStack.Pile {...pile} onOpenChange={(open) => console.log('Inspecting:', open)} />
   </PileFrame>;
 }`,
       },
@@ -717,7 +798,8 @@ export function StandalonePileExample() {
   },
   render: (args) => (
     <PileFrame>
-      <GameCardStack.Pile {...args.piles[0]!} onValueChange={args.onValueChange} />
+      <GameCardStack.Pile {...args.piles[0]!}
+        onOpenChange={(open) => args.onValueChange?.(open ? args.piles[0]!.playerKey : null)} />
     </PileFrame>
   ),
   play: async ({ canvas, userEvent, args }) => {
