@@ -4,7 +4,7 @@ import { expect, fn, waitFor, within } from 'storybook/test';
 import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
-import { TreeView, type TreeNode, type TreeViewProps } from './index';
+import { TreeView, type TreeNode, type TreeNodeBase, type TreeViewProps } from './index';
 
 const nodes: readonly TreeNode[] = [
   {
@@ -23,6 +23,52 @@ const nodes: readonly TreeNode[] = [
   { id: 'beta', label: 'Beta' },
   { id: 'écho', label: 'Écho' },
 ];
+type FileNode = TreeNodeBase & { path: string };
+const fileNodes: readonly TreeNode<FileNode>[] = [
+  {
+    id: 'src',
+    label: 'src',
+    path: '/src',
+    children: [{ id: 'index', label: 'index.ts', path: '/src/index.ts' }],
+  },
+];
+
+/** Compile-time consumer checks; never rendered. */
+function TreeViewGenericChecks() {
+  return (
+    <>
+      <TreeView<FileNode>
+        nodes={fileNodes}
+        loadChildren={async (node) => {
+          const path: string = node.path;
+          return path ? [] : [];
+        }}
+      />
+      <TreeView
+        nodes={fileNodes}
+        loadChildren={async (node) => {
+          const path: string = node.path;
+          return path ? [] : [];
+        }}
+        onLoadError={(error, node) => {
+          const path: string = node.path;
+          void error;
+          void path;
+        }}
+      />
+      <TreeView<FileNode>
+        nodes={fileNodes}
+        loadChildren={async (node) => {
+          // @ts-expect-error node carries the caller's fields, not arbitrary ones
+          const missing = node.missing;
+          void missing;
+          return [];
+        }}
+      />
+    </>
+  );
+}
+
 const lazyNode: readonly TreeNode[] = [{ id: 'remote', label: 'Remote', hasChildren: true }];
 const treeNodesSource = `const nodes: TreeNode[] = [
   {

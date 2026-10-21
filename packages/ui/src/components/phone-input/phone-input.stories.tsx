@@ -10,6 +10,25 @@ import { expectNativeScrollbar } from '../../testing/theme-assertions';
 import { expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { PhoneInput, type PhoneInputProps, type PhoneCountryCode } from './index';
 
+/** Compile-time slot checks; never rendered. */
+function PhoneInputSlotTypeChecks() {
+  return (
+    <PhoneInput
+      label="Phone"
+      slotProps={{
+        number: {
+          inputMode: 'tel',
+          onChange: (event) => {
+            const value: string = event.currentTarget.value;
+            void value;
+          },
+        },
+        countryTrigger: { onClick: () => {}, 'aria-label': 'Country' },
+      }}
+    />
+  );
+}
+
 const Stack = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: 'min(100%, 400px)', fontFamily: vars.font.sans, color: vars.color.text });
 const Action = styled.button({ font: 'inherit', color: vars.color.text, backgroundColor: vars.color.surfaceRaised, border: `1px solid ${vars.color.borderControl}`, borderRadius: vars.radius.sm, minBlockSize: vars.space[8], paddingInline: vars.space[3] });
 const Hidden = styled.span({ position: 'absolute', inlineSize: 1, blockSize: 1, overflow: 'hidden', clipPath: 'inset(50%)' });

@@ -24,14 +24,18 @@ import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 
-export interface TreeNode {
+export interface TreeNodeBase {
   id: string;
   label: string;
-  children?: readonly TreeNode[];
   hasChildren?: boolean;
   icon?: ReactNode;
   disabled?: boolean;
 }
+
+/** A tree node carrying the caller's own fields, recursively through `children`. */
+export type TreeNode<T extends TreeNodeBase = TreeNodeBase> = Omit<T, 'children'> & {
+  children?: readonly TreeNode<T>[];
+};
 export interface TreeViewMessages {
   loading: (label: string) => string;
   error: (label: string) => string;
@@ -73,10 +77,10 @@ export interface TreeViewSlots {
   /** Live region announcing tree updates. */
   status?: ComponentType<NonNullable<TreeViewSlotProps['status']>>;
 }
-export interface TreeViewProps
+export interface TreeViewProps<T extends TreeNodeBase = TreeNodeBase>
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'>, SxProps {
   /** Render these root nodes and their descendants in order. */
-  nodes: readonly TreeNode[];
+  nodes: readonly TreeNode<T>[];
   /** Control the selected node id. `null` clears selection. */
   value?: string | null;
   /** Set the initial uncontrolled selection. Defaults to `null`. */
@@ -90,9 +94,9 @@ export interface TreeViewProps
   /** Receive the requested expanded branch ids. */
   onOpenChange?: (ids: readonly string[]) => void;
   /** Load missing children when a branch opens. Results are cached until remount. Honor the abort signal. */
-  loadChildren?: (node: TreeNode, options: { signal: AbortSignal }) => Promise<readonly TreeNode[]>;
+  loadChildren?: (node: TreeNode<T>, options: { signal: AbortSignal }) => Promise<readonly TreeNode<T>[]>;
   /** Receive a failed child load and the branch whose children were requested. */
-  onLoadError?: (error: unknown, node: TreeNode) => void;
+  onLoadError?: (error: unknown, node: TreeNode<T>) => void;
   /** Name the tree when no `aria-label` or `aria-labelledby` is supplied. Defaults to `Tree`. */
   label?: string;
   /** Override the loading, load-error and empty messages. Defaults to English. */
@@ -108,13 +112,13 @@ export interface TreeViewProps
   /** Replace tree parts with custom components. */
   slots?: TreeViewSlots;
 }
-interface Entry {
-  node: TreeNode;
+interface Entry<T extends TreeNodeBase = TreeNodeBase> {
+  node: TreeNode<T>;
   parent?: string;
   level: number;
   position: number;
   size: number;
-  children?: readonly TreeNode[];
+  children?: readonly TreeNode<T>[];
   branch: boolean;
 }
 interface Request {
@@ -241,7 +245,7 @@ const statusStyle = css({
  * Right expands or enters; Left collapses or moves to the parent, including in RTL.
  * Up/Down stop at the ends; Home/End jump; Enter/Space select. Typeahead resets after 500ms.
  * Loaded children are cached per instance. Remount with a new key to replace the cache. */
-export function TreeView({
+export function TreeView<T extends TreeNodeBase = TreeNodeBase>({
   nodes,
   value,
   defaultValue = null,
@@ -268,7 +272,7 @@ export function TreeView({
   'aria-labelledby': labelledBy,
   'aria-describedby': describedBy,
   ...rest
-}: TreeViewProps) {
+}: TreeViewProps<T>) {
   const Tree = slots?.tree ?? 'ul';
   const Row = slots?.row ?? 'div';
   const Label = slots?.label ?? 'span';
@@ -281,9 +285,9 @@ export function TreeView({
   const mergedTreeRef = useMergeRefs([treeElement, treeRef, slotProps?.tree?.ref]);
   const elements = useRef(new Map<string, HTMLDivElement>());
   const lastFocus = useRef<HTMLDivElement | null>(null);
-  const previousEntries = useRef(new Map<string, Entry>());
+  const previousEntries = useRef(new Map<string, Entry<T>>());
   const requests = useRef(new Map<string, Request>());
-  const [cache, setCache] = useState(new Map<string, readonly TreeNode[]>());
+  const [cache, setCache] = useState(new Map<string, readonly TreeNode<T>[]>());
   const [failures, setFailures] = useState(new Set<string>());
   const [busy, setBusy] = useState(new Set<string>());
   const [selected, requestSelected] = useControlledState(value, defaultValue, onValueChange);
@@ -295,13 +299,13 @@ export function TreeView({
     [locale],
   );
   const messages = { ...DEFAULT_MESSAGES, ...messageProps };
-  const entries = new Map<string, Entry>();
-  const visible: Entry[] = [];
+  const entries = new Map<string, Entry<T>>();
+  const visible: Entry<T>[] = [];
   const openSet = new Set(expanded);
-  const visit = (siblings: readonly TreeNode[], parent?: string, level = 1, shown = true) => {
+  const visit = (siblings: readonly TreeNode<T>[], parent?: string, level = 1, shown = true) => {
     siblings.forEach((node, index) => {
       const children = node.children ?? cache.get(node.id);
-      const entry: Entry = {
+      const entry: Entry<T> = {
         node,
         children,
         parent,
@@ -424,7 +428,7 @@ export function TreeView({
       next.delete(id);
       return next;
     });
-  const toggle = (entry: Entry) => {
+  const toggle = (entry: Entry<T>) => {
     const id = entry.node.id;
     if (!entry.branch || entry.node.disabled) return;
     if (openSet.has(id) && failures.has(id)) {
@@ -437,11 +441,11 @@ export function TreeView({
     if (next.size !== openSet.size || [...next].some((item) => !openSet.has(item)))
       requestExpanded([...next]);
   };
-  const activate = (entry: Entry) => {
+  const activate = (entry: Entry<T>) => {
     if (entry.node.disabled) return;
     requestSelected(entry.node.id);
   };
-  const handleKey = (event: KeyboardEvent<HTMLDivElement>, entry: Entry) => {
+  const handleKey = (event: KeyboardEvent<HTMLDivElement>, entry: Entry<T>) => {
     if (
       entry.node.disabled ||
       event.defaultPrevented ||
@@ -499,7 +503,7 @@ export function TreeView({
   };
   const nodeId = (id: string) =>
     `${baseId}-${Array.from(id, (character) => character.codePointAt(0)!.toString(16)).join('-')}`;
-  const renderNodes = (siblings: readonly TreeNode[]) =>
+  const renderNodes = (siblings: readonly TreeNode<T>[]) =>
     siblings.map((node) => {
       const entry = entries.get(node.id)!;
       const errorId = `${nodeId(node.id)}-error`;

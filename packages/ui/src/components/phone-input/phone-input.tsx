@@ -17,7 +17,8 @@ import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { isRenderable } from '../../utils/renderable';
-import { FieldRoot, FieldLabel, FieldDescription, FieldError, useFieldAnatomy, type FieldPartProps } from '../field/field-anatomy';
+import { FieldRoot, FieldLabel, FieldDescription, FieldError, useFieldAnatomy } from '../field/field-anatomy';
+import type { FieldParts } from '../field/field-slot';
 import { countDigits, describePhone, editPhone, mapPhoneCaret, nationalPhoneDigits, type PhoneCountryCode, type PhoneInputDetails } from './phone-number';
 
 export type { PhoneCountryCode, PhoneInputDetails } from './phone-number';
@@ -61,6 +62,13 @@ type Part =
     'error'
   | /** Renders a `span` by default. */
     'status';
+type PhoneInputAnatomy = {
+  root: 'div'; label: 'label'; control: 'div'; countryTrigger: 'button'; number: 'input';
+  search: 'input'; panel: 'div'; list: 'div'; option: 'div'; description: 'span'; error: 'span'; status: 'span';
+};
+
+export type PhoneInputSlotProps = FieldParts<PhoneInputAnatomy>;
+
 type FocusTarget = 'search' | 'number' | 'trigger' | null;
 export interface PhoneInputProps extends Omit<ComponentPropsWithRef<'input'>, 'size' | 'type' | 'value' | 'defaultValue'>, SxProps {
   /** Store a `+`-prefixed candidate, including incomplete numbers. */
@@ -104,7 +112,7 @@ export interface PhoneInputProps extends Omit<ComponentPropsWithRef<'input'>, 's
   /** Renders a decorative icon beside the selected country in the trigger. */
   renderCountryIcon?: (country: PhoneCountryCode) => ReactNode;
   /** Style internal parts without replacing their semantics or behavior. */
-  slotProps?: Partial<Record<Part, FieldPartProps>>;
+  slotProps?: PhoneInputSlotProps;
 }
 
 const ALL_COUNTRIES = getCountries();

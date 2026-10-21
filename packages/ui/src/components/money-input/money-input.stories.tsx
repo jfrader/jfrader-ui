@@ -10,6 +10,26 @@ import { expectInside, expectNoOverlap } from '../../testing/geometry-assertions
 import { MoneyInput, type MoneyInputProps } from './money-input';
 import { addMinor, assertMinor, currencyChoices, moneyFormat, MONEY_LIMIT } from './money-math';
 
+/** Compile-time slot checks; never rendered. */
+function MoneyInputSlotTypeChecks() {
+  return (
+    <MoneyInput
+      label="Amount"
+      currencies={['USD']}
+      slotProps={{
+        control: {
+          inputMode: 'decimal',
+          onChange: (event) => {
+            const value: string = event.currentTarget.value;
+            void value;
+          },
+        },
+        quickAddButton: { onClick: () => {}, 'aria-label': 'Add' },
+      }}
+    />
+  );
+}
+
 const Lane = styled.div({ inlineSize: '100%', maxInlineSize: '32rem', display: 'grid', gap: vars.space[4] });
 const NarrowLane = styled(Lane)({ maxInlineSize: '16rem' });
 const Form = styled.form({ display: 'grid', gap: vars.space[3] });
