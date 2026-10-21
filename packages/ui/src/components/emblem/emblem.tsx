@@ -165,6 +165,37 @@ const monogramStyle = css({
   whiteSpace: 'nowrap',
 });
 
+const fittedMonogramStyle = css({
+  minInlineSize: 0,
+  maxInlineSize: 'none',
+  overflow: 'visible',
+  scale: 'var(--emblem-monogram-fit, 1)',
+});
+
+function fitMonogram(element: HTMLSpanElement | null) {
+  const plate = element?.parentElement;
+  if (!element || !plate) return;
+  let width = 0;
+  let plateWidth = 0;
+  const observer = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const inlineSize = entry.borderBoxSize[0]?.inlineSize ?? entry.contentRect.width;
+      if (entry.target === element) width = inlineSize;
+      else plateWidth = inlineSize;
+    }
+    const available = Math.floor(plateWidth * MONOGRAM_WIDTH_RATIO);
+    if (width > 0 && available > 0) {
+      element.style.setProperty('--emblem-monogram-fit', String(Math.min(1, available / width)));
+    }
+  });
+  observer.observe(element, { box: 'border-box' });
+  observer.observe(plate, { box: 'border-box' });
+  return () => {
+    observer.disconnect();
+    element.style.removeProperty('--emblem-monogram-fit');
+  };
+}
+
 // The fill's contrast color, resolved against the gradient's light end. Engines without
 // contrast-color() keep the accent pair, which is the pair the default fill ships with.
 const inkStyle = css({
@@ -274,7 +305,8 @@ export function Emblem({
   const renderLabel = showImage ? name : `${name} — ${monogram}`;
 
   const initialCount = Array.from(graphemes.segment(monogram)).length;
-  const monogramScale = initialCount > FULL_SIZE_INITIALS ? MONOGRAM_WIDTH_RATIO / initialCount : MONOGRAM_FONT_RATIO;
+  const isLongMonogram = initialCount > FULL_SIZE_INITIALS;
+  const monogramScale = isLongMonogram ? MONOGRAM_WIDTH_RATIO / initialCount : MONOGRAM_FONT_RATIO;
   const customProperties: Record<string, string> = { '--emblem-monogram-scale': String(monogramScale) };
   if (color !== undefined) customProperties['--emblem-fill'] = color;
   if (secondaryColor !== undefined) customProperties['--emblem-secondary'] = secondaryColor;
@@ -293,10 +325,11 @@ export function Emblem({
         />
       ) : (
         <Monogram
+          ref={isLongMonogram ? fitMonogram : undefined}
           data-ui="emblem-ink"
           aria-hidden="true"
           className={slotProps?.monogram?.className}
-          css={[monogramStyle, inkStyle, slotProps?.monogram?.sx]}
+          css={[monogramStyle, isLongMonogram && fittedMonogramStyle, inkStyle, slotProps?.monogram?.sx]}
         >
           {monogram}
         </Monogram>

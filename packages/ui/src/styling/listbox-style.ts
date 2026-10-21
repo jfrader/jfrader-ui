@@ -1,12 +1,13 @@
 import { vars } from '@jfrader/tokens/vars';
 import { css } from './css';
 import { REDUCED_MOTION } from './media';
+import { nativeScrollbarStyle } from './native-scrollbar';
 
 // Shared fragments for listbox-like popups (Menu, Select, Combobox, CommandPalette). Components
 // compose them in the `css` prop and keep their own focus, sizing and visibility rules.
 
 /** Popup surface of Menu, Select and Combobox. */
-export const listboxSurfaceStyle = css({
+export const listboxSurfaceStyle = css(nativeScrollbarStyle, {
   boxSizing: 'border-box',
   display: 'flex',
   flexDirection: 'column',

@@ -28,6 +28,7 @@ import type { SxProps } from '../../styling/sx';
 import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { nativeScrollbarStyle } from '../../styling/native-scrollbar';
 import { raisedSurface, modalShellReset } from '../../styling/surface';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { ThemeScopeContext, useThemeScope, type ThemeScope } from '../../styling/theme-scope';
@@ -246,7 +247,7 @@ const inlinePanelStyle = css({
   inlineSize: '100%',
   maxBlockSize: 'none',
 });
-const panelStyle = css({
+const panelStyle = css(nativeScrollbarStyle, {
   ...raisedSurface,
   backgroundColor: 'transparent',
   boxSizing: 'border-box',

@@ -4,6 +4,9 @@ import { expect } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { Button } from '../components/button';
 import { Spinner } from '../components/spinner';
+import { Surface } from '../components/surface';
+import { ThemeRoot } from '../components/theme-root';
+import { expectNativeScrollbar } from '../testing/theme-assertions';
 import { css, type Interpolation, type Theme } from './css';
 import { disclosureCaret } from './disclosure-caret';
 import { listboxItemStyle, listboxScrollStyle, listboxSurfaceStyle } from './listbox-style';
@@ -12,10 +15,14 @@ import { WithSx, type SxProps } from './sx';
 
 const rowStyle = css({ display: 'flex', alignItems: 'center', gap: vars.space[4] });
 const caretStyle = css({ '&::after': disclosureCaret });
-const ownStyle = css({ paddingInlineStart: vars.space[1] });
-const slotStyle = css({ paddingInlineStart: vars.space[2] });
-const consumerStyle = css({ paddingInlineStart: vars.space[3] });
-const sxStyle = css({ paddingInlineStart: vars.space[4] });
+const ownStyle = css({ paddingInlineStart: vars.space[1], scrollbarColor: `${vars.color.text} transparent` });
+const slotStyle = css({ paddingInlineStart: vars.space[2], scrollbarColor: `${vars.color.textMuted} transparent` });
+const consumerStyle = css({ paddingInlineStart: vars.space[3], scrollbarColor: `${vars.color.accentText} transparent` });
+const sxStyle = css({ paddingInlineStart: vars.space[4], scrollbarColor: `${vars.color.border} transparent` });
+const scrollFixtureStyle = css({ overflow: 'auto', maxBlockSize: vars.space[12], inlineSize: '16rem' });
+const scrollContentStyle = css({ blockSize: '12rem' });
+const inheritedScrollStyle = css({ display: 'grid', gap: vars.space[4] });
+const scrollbarOverride = `${vars.color.text} transparent`;
 
 const meta = { title: 'Internal/Styling' } satisfies Meta;
 export default meta;
@@ -72,6 +79,17 @@ export const OverrideOrder: Story = {
     await expect(getComputedStyle(canvas.getByRole('button', { name: 'Slot' })).paddingInlineStart).toBe('8px');
     await expect(getComputedStyle(canvas.getByRole('button', { name: 'CSS' })).paddingInlineStart).toBe('12px');
     await expect(getComputedStyle(canvas.getByRole('button', { name: 'SX' })).paddingInlineStart).toBe('16px');
+    const probe = canvas.getByRole('button', { name: 'Own' }).ownerDocument.createElement('span');
+    try {
+      for (const [label, thumb] of [['Own', vars.color.text], ['Slot', vars.color.textMuted], ['CSS', vars.color.accentText], ['SX', vars.color.border]]) {
+        const button = canvas.getByRole('button', { name: label });
+        probe.style.scrollbarColor = `${thumb} transparent`;
+        button.append(probe);
+        await expect(getComputedStyle(button).scrollbarColor).toBe(getComputedStyle(probe).scrollbarColor);
+      }
+    } finally {
+      probe.remove();
+    }
   },
 };
 
@@ -112,6 +130,71 @@ export const SmallViewport: Story = {
       await expect(popup.getBoundingClientRect().width).toBeLessThanOrEqual(128);
     } finally {
       frame.remove();
+    }
+  },
+};
+
+export const NativeScrollbarScope: Story = {
+  render: () => (
+    <div css={inheritedScrollStyle}>
+      <Surface role="region" aria-label="Owned scroll region" tabIndex={0} sx={scrollFixtureStyle}>
+        <div css={scrollContentStyle}>Scrollable content</div>
+      </Surface>
+      <Surface>
+        <div role="region" aria-label="Inherited scroll region" tabIndex={0} css={scrollFixtureStyle}>
+          <div css={scrollContentStyle}>Scrollable content</div>
+        </div>
+      </Surface>
+      <ThemeRoot theme="light">
+        <Surface role="region" aria-label="Light scroll region" tabIndex={0} sx={scrollFixtureStyle}>
+          <div css={scrollContentStyle}>Scrollable content</div>
+        </Surface>
+      </ThemeRoot>
+      <Surface role="region" aria-label="Custom scroll region" tabIndex={0}
+        sx={[scrollFixtureStyle, { scrollbarColor: scrollbarOverride }]}>
+        <div css={scrollContentStyle}>Scrollable content</div>
+      </Surface>
+    </div>
+  ),
+  play: async ({ canvasElement, canvas }) => {
+    const document = canvasElement.ownerDocument;
+    const probe = document.createElement('div');
+    const host = document.createElement('div');
+    const hostContent = document.createElement('div');
+    const resolve = (element: HTMLElement, value: string) => {
+      probe.style.scrollbarColor = value;
+      element.append(probe);
+      return getComputedStyle(probe).scrollbarColor;
+    };
+    try {
+      for (const label of ['Owned scroll region', 'Inherited scroll region', 'Light scroll region']) {
+        const region = canvas.getByRole('region', { name: label });
+        await expect(region.scrollHeight).toBeGreaterThan(region.clientHeight);
+        await expectNativeScrollbar(region);
+      }
+      const custom = canvas.getByRole('region', { name: 'Custom scroll region' });
+      await expect(getComputedStyle(custom).scrollbarColor).toBe(resolve(custom, scrollbarOverride));
+      await expect(getComputedStyle(document.documentElement).scrollbarColor).toBe('auto');
+      await expect(getComputedStyle(document.body).scrollbarColor).toBe('auto');
+      host.style.overflow = 'auto';
+      host.style.blockSize = '32px';
+      hostContent.style.blockSize = '128px';
+      host.append(hostContent);
+      document.body.append(host);
+      await expect(host.scrollHeight).toBeGreaterThan(host.clientHeight);
+      await expect(getComputedStyle(host).scrollbarColor).toBe('auto');
+      const region = canvas.getByRole('region', { name: 'Owned scroll region' });
+      const mediaRules = Array.from(document.styleSheets)
+        .flatMap((sheet) => Array.from(sheet.cssRules))
+        .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule)
+        .filter((rule) => `@media ${rule.conditionText}` === FORCED_COLORS)
+        .flatMap((rule) => Array.from(rule.cssRules))
+        .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule)
+        .filter((rule) => region.matches(rule.selectorText));
+      await expect(mediaRules.some((rule) => rule.style.scrollbarColor === 'auto')).toBe(true);
+    } finally {
+      probe.remove();
+      host.remove();
     }
   },
 };

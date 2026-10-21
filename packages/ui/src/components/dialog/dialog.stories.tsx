@@ -9,6 +9,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
+import { expectInside } from '../../testing/geometry-assertions';
 import { Button } from '../button';
 import { TextField } from '../text-field';
 import { TextShimmer } from '../text-shimmer';
@@ -16,15 +17,21 @@ import { ThemeRoot } from '../theme-root';
 import { Surface, type SurfacePartProps } from '../surface';
 import { Card } from '../card';
 import { css } from '../../styling/css';
+import { motionDurationMs } from '../../styling/motion-timings';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useNativeDialog, useNativeDialogRoot } from '../../overlay/use-native-dialog';
-import { Dialog, type DialogPanelProps, type DialogCompoundProps, type DialogEasyProps } from './index';
+import { Dialog, type DialogPanelProps, type DialogCompoundProps, type DialogEasyProps, type DialogScroll } from './index';
 
 const TITLE = 'Edit profile';
+const LONG_REFERENCE = 'CustomerAccountExportConfirmationReference'.repeat(3);
 const DESCRIPTION = 'Update your display name and avatar.';
 const DELETE_LABEL = 'Delete account';
 const composedTriggerClick = fn();
 const composedTriggerRef = fn<(element: HTMLButtonElement | null) => void>();
+
+function setNativeAutoFocus(input: HTMLInputElement | null) {
+  input?.setAttribute('autofocus', '');
+}
 
 function ClosingParentFixture() {
   const [open, setOpen] = useState(true);
@@ -34,8 +41,8 @@ function ClosingParentFixture() {
     exit: () => new Promise(() => {}),
   });
   return <dialog {...shell} aria-label="Closing parent">
-    <button onClick={() => setOpen(false)}>Close parent</button>
-    <dialog aria-label="Nested native dialog"><button>Nested action</button></dialog>
+    <Button onClick={() => setOpen(false)}>Close parent</Button>
+    <dialog aria-label="Nested native dialog"><Button>Nested action</Button></dialog>
   </dialog>;
 }
 
@@ -78,7 +85,7 @@ const meta = {
       { title: 'Basic', stories: ['Default', 'Compound'] },
       { title: 'Composition', stories: ['SlotProps', 'CustomRoot', 'TriggerAsButton'] },
       { title: 'Behavior', stories: ['Controlled', 'CancelVeto', 'BackdropClick', 'NestedDialog', 'NativeClose'] },
-      { title: 'Content', stories: ['LongContent', 'NarrowLayout'] },
+      { title: 'Content', stories: ['ScrollModes', 'LongContent', 'NarrowLayout'] },
       { title: 'Appearance', stories: ['ContrastPanel'] },
     ],
     usage: `### When to use
@@ -90,6 +97,9 @@ Tab and Shift+Tab stay inside the open dialog; the rest of the page is inert. Es
 
 Give every dialog an accessible name. For structured or long content, set withDescription={false} so assistive technology can read the content in order rather than as one description.
 
+### Scrolling
+The default scroll="paper" keeps Dialog.Body scrollable while sibling headings and Dialog.Footer stay in place. Easy mode generates these regions. With scroll="body", the whole panel scrolls inside the overlay viewport, not the document body; the page behind remains locked. Use an autoFocus heading with tabIndex={-1} to start long structured content at its beginning.
+
 Accepted closure restores focus after exit motion. Reduced motion makes entry and exit instant.`,
   } },
 } satisfies Meta<typeof Dialog>;
@@ -98,6 +108,29 @@ export default meta;
 
 type Story = StoryObj<(props: DialogCompoundProps) => ReactNode>;
 type EasyStory = StoryObj<(props: DialogEasyProps) => ReactNode>;
+
+export const UnbrokenContent: EasyStory = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    triggerLabel: 'Open export',
+    title: LONG_REFERENCE,
+    content: <p>{LONG_REFERENCE}</p>,
+    closeLabel: 'Close',
+    slotProps: { content: { sx: { inlineSize: '320px' } } },
+  },
+  render: (args) => <Dialog {...args} />,
+  play: async ({ canvas }) => {
+    const dialog = await canvas.findByRole('dialog');
+    await settleMotion(dialog);
+    for (const direction of ['ltr', 'rtl']) {
+      dialog.dir = direction;
+      await expect(dialog.scrollWidth).toBeLessThanOrEqual(dialog.clientWidth + 1);
+      await expectInside(within(dialog).getByRole('button', { name: 'Close' }), dialog);
+    }
+    dialog.removeAttribute('dir');
+  },
+};
 // @ts-expect-error Generated-part slot keys are closed.
 type UnknownSlot = NonNullable<DialogEasyProps['slotProps']>['unknown'];
 // @ts-expect-error Replacement keys are closed.
@@ -138,6 +171,8 @@ export const ShellAndPanelSlots: EasyStory = {
     await userEvent.click(trigger);
     const shell = await canvas.findByRole('dialog', { name: TITLE });
     const panel = within(shell).getByTestId('replacement-panel');
+    await settleMotion(shell);
+    await expect(shell.scrollWidth).toBeLessThanOrEqual(shell.clientWidth);
     await expect(shell).toBe(canvas.getByTestId('replacement-shell'));
     await expect(shell).toHaveAttribute('data-ui', 'dialog');
     await expect(shell).toHaveClass('replacement-shell-class');
@@ -224,7 +259,7 @@ export const Default: EasyStory = {
     description: DESCRIPTION,
     content: (
       <>
-        <TextField label="Display name" defaultValue="Maya" />
+        <TextField label="Display name" defaultValue="Maya" autoFocus ref={setNativeAutoFocus} />
         <TextField label="Email" type="email" defaultValue="maya@example.com" />
       </>
     ),
@@ -241,13 +276,17 @@ export const Default: EasyStory = {
     source: { language: 'tsx', code: `import { Dialog, TextField } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
+function setNativeAutoFocus(input: HTMLInputElement | null) {
+  input?.setAttribute('autofocus', '');
+}
+
 <Dialog
   triggerLabel="Open profile"
   title="Edit profile"
   description="Update your display name and avatar."
   content={
     <>
-      <TextField label="Display name" defaultValue="Maya" />
+      <TextField label="Display name" defaultValue="Maya" autoFocus ref={setNativeAutoFocus} />
       <TextField label="Email" type="email" defaultValue="maya@example.com" />
     </>
   }
@@ -300,7 +339,7 @@ import { vars } from '@jfrader/tokens/vars';
 export const EasyModeNativeForm: EasyStory = {
   ...Default,
   name: 'Easy mode native form',
-  args: { ...Default.args, content: <form method="dialog"><button type="submit">Save profile</button></form> },
+  args: { ...Default.args, content: <form method="dialog"><Button type="submit">Save profile</Button></form> },
   play: async ({ canvasElement, canvas, args, userEvent }) => {
     const { trigger } = await openDialog(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: 'Save profile' }));
@@ -376,7 +415,7 @@ function rootAdapterStory(component: DialogPanelProps['component']): Story {
           ref: (node) => { if (node) node.dataset.rootRef = node.tagName; },
         } }}>
           <Dialog.Title>Adapter export</Dialog.Title>
-          <input aria-label="Export draft" defaultValue="Keep me" />
+          <TextField label="Export draft" defaultValue="Keep me" />
           <Dialog.Close>Close adapter</Dialog.Close>
         </Dialog.Panel>
       </Dialog.Content>
@@ -390,6 +429,7 @@ function rootAdapterStory(component: DialogPanelProps['component']): Story {
       await expect(shell.querySelectorAll('[data-ui~="dialog-panel"]')).toHaveLength(1);
       await expect(getComputedStyle(shell).outlineOffset).not.toBe(getComputedStyle(panel).outlineOffset);
       const input = canvas.getByRole('textbox', { name: 'Export draft' });
+      await expect(input.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
       await userEvent.type(input, ' edited');
       fireEvent(shell, new Event('cancel', { cancelable: true }));
       await waitFor(() => expect(shell).not.toHaveAttribute('open'));
@@ -495,7 +535,7 @@ function FormDialog(props: DialogCompoundProps) {
       <Dialog.Content>
         <Dialog.Title>Sign out</Dialog.Title>
         <form method="dialog">
-          <button type="submit">Confirm</button>
+          <Button type="submit">Confirm</Button>
         </form>
       </Dialog.Content>
     </Dialog>
@@ -604,7 +644,7 @@ const Footer = styled.div({
     const { trigger, dialog } = await openDialog(canvasElement);
     await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    await expect(dialog).toBeVisible();
+    await waitFor(() => expect(dialog).toBeVisible());
     await expect(dialog).toHaveAttribute('open');
     await expect(dialog).toHaveAttribute('aria-modal', 'true');
     const title = canvas.getByRole('heading', { name: TITLE });
@@ -702,8 +742,8 @@ export const SizingOverrides: Story = {
 
 async function playMotion(canvasElement: HTMLElement, onOpenChange: DialogCompoundProps['onOpenChange']) {
   const { canvas, trigger, dialog } = await openDialog(canvasElement);
-  const panel = dialog.firstElementChild!;
-  await expectEntranceMotion(panel);
+  const animated = dialog.dataset.scroll === 'body' ? dialog.querySelector<HTMLElement>('[data-ui~="dialog-panel"]')! : dialog;
+  await expectEntranceMotion(animated);
   await expect(dialog).toHaveAttribute('data-state', 'open');
 
   await userEvent.click(canvas.getByRole('button', { name: 'Close' }));
@@ -714,7 +754,7 @@ async function playMotion(canvasElement: HTMLElement, onOpenChange: DialogCompou
   requestEscape(dialog);
   await expect(onOpenChange).toHaveBeenCalledTimes(2);
 
-  await expectRetainedExit(panel, () => !dialog.hasAttribute('open'));
+  await expectRetainedExit(animated, () => !dialog.hasAttribute('open'));
   await expect(dialog).toHaveAttribute('data-state', 'closed');
   await expectClosed(canvasElement, trigger);
   await expect(onOpenChange).toHaveBeenCalledTimes(2);
@@ -733,6 +773,74 @@ export const MotionLight: Story = {
   args: { onOpenChange: fn() },
   render: (args) => <DialogExample {...args} />,
   play: async ({ args, canvasElement }) => playMotion(canvasElement, args.onOpenChange),
+};
+
+export const BodyMotion: Story = {
+  ...Motion,
+  args: { scroll: 'body', onOpenChange: fn() },
+};
+
+export const BodyProfileEditor: EasyStory = {
+  ...Default,
+  tags: ['!autodocs'],
+  args: { ...Default.args, scroll: 'body' },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const { dialog, trigger } = await openDialog(canvasElement);
+    const displayName = canvas.getByRole('textbox', { name: 'Display name' });
+    await expect(displayName).toHaveFocus();
+    await settleMotion(dialog);
+    const panel = dialog.querySelector('[data-ui~="dialog-panel"]')!.getBoundingClientRect();
+    const viewport = dialog.getBoundingClientRect();
+    const viewportStyle = getComputedStyle(dialog);
+    const gutterStart = Number.parseFloat(viewportStyle.paddingBlockStart);
+    const gutterEnd = Number.parseFloat(viewportStyle.paddingBlockEnd);
+    const availableHeight = dialog.clientHeight - gutterStart - gutterEnd;
+    const availableTop = viewport.top + dialog.clientTop + gutterStart;
+    const fits = panel.height <= availableHeight;
+    const expectControlVisible = async (control: HTMLElement) => {
+      const rect = control.getBoundingClientRect();
+      await expect(rect.top).toBeGreaterThanOrEqual(viewport.top + dialog.clientTop);
+      await expect(rect.bottom).toBeLessThanOrEqual(viewport.top + dialog.clientTop + dialog.clientHeight);
+    };
+    await expectControlVisible(displayName);
+    if (fits) {
+      await expect(Math.abs((panel.top + panel.bottom) / 2 - (availableTop + availableHeight / 2))).toBeLessThanOrEqual(1);
+      await expect(dialog.scrollHeight).toBe(dialog.clientHeight);
+    } else {
+      await expect(Math.abs(panel.top - availableTop)).toBeLessThanOrEqual(1);
+      await expect(dialog.scrollTop).toBe(0);
+      await expect(dialog.scrollHeight).toBeGreaterThan(dialog.clientHeight);
+      await expect(viewportStyle.overflowY).toBe('auto');
+    }
+    await userEvent.tab();
+    const email = canvas.getByRole('textbox', { name: 'Email' });
+    await expect(email).toHaveFocus();
+    await expectControlVisible(email);
+    await userEvent.tab();
+    const close = canvas.getByRole('button', { name: 'Close' });
+    await expect(close).toHaveFocus();
+    await expectControlVisible(close);
+    if (!fits) {
+      dialog.scrollTop = dialog.scrollHeight;
+      await expect(dialog.scrollTop).toBeGreaterThan(0);
+      await expectControlVisible(close);
+    }
+    await userEvent.click(close);
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
+export const BodyProfileEditorShortViewport: EasyStory = {
+  ...BodyProfileEditor,
+  parameters: {
+    viewport: { options: { shortPhone: { name: 'Short phone', styles: { width: '390px', height: '320px' } } } },
+  },
+  globals: { viewport: { value: 'shortPhone' } },
+  play: async (context) => {
+    await expect(context.canvasElement.ownerDocument.defaultView!.innerWidth).toBe(390);
+    await expect(context.canvasElement.ownerDocument.defaultView!.innerHeight).toBe(320);
+    await BodyProfileEditor.play!(context);
+  },
 };
 
 export const NarrowContent: Story = {
@@ -853,7 +961,7 @@ const Footer = styled.div({
     const { canvas, trigger, dialog } = await openDialog(canvasElement);
     fireEvent.click(canvas.getByRole('heading', { name: TITLE }));
     await expect(dialog).toHaveAttribute('open');
-    await expect(canvas.getByRole('dialog')).toBeVisible();
+    await waitFor(() => expect(canvas.getByRole('dialog')).toBeVisible());
 
     fireEvent.click(dialog);
     await expectClosed(canvasElement, trigger);
@@ -864,14 +972,14 @@ export const NativeClose: Story = {
   name: 'Native form submission',
   parameters: { docs: {
     description: { story: 'Submit a method="dialog" form to close the native dialog.' },
-    source: { language: 'tsx', code: `import { Dialog } from '@jfrader/ui';
+    source: { language: 'tsx', code: `import { Button, Dialog } from '@jfrader/ui';
 
 <Dialog>
   <Dialog.Trigger>Open form</Dialog.Trigger>
   <Dialog.Content>
     <Dialog.Title>Sign out</Dialog.Title>
     <form method="dialog">
-      <button type="submit">Confirm</button>
+      <Button type="submit">Confirm</Button>
     </form>
   </Dialog.Content>
 </Dialog>` },
@@ -883,8 +991,11 @@ export const NativeClose: Story = {
     // A <form method="dialog"> closes the native dialog without our click paths; the
     // close event must reconcile into a state request, not leave stale open state.
     await userEvent.click(canvas.getByRole('button', { name: 'Open form' }));
-    await canvas.findByRole('dialog');
-    await userEvent.click(canvas.getByRole('button', { name: 'Confirm' }));
+    const dialog = await canvas.findByRole('dialog');
+    await settleMotion(dialog);
+    const confirm = canvas.getByRole('button', { name: 'Confirm' });
+    await expect(confirm.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    await userEvent.click(confirm);
     await waitFor(() => expect(canvas.queryByRole('dialog')).toBeNull());
     // Two legitimate requests: open(true) from the trigger, then false from the form close.
     // The close-event reconciliation is a React state update — wait for it, not just the DOM.
@@ -921,14 +1032,14 @@ export const CancelVeto: Story = {
   name: 'Veto close requests',
   parameters: { docs: {
     description: { story: 'Veto Escape, backdrop, and close-button requests; submit Done to close.' },
-    source: { language: 'tsx', code: `import { Dialog } from '@jfrader/ui';
+    source: { language: 'tsx', code: `import { Button, Dialog } from '@jfrader/ui';
 
 <Dialog>
   <Dialog.Trigger>Open profile</Dialog.Trigger>
   <Dialog.Content onCancel={(event) => event.preventDefault()}>
     <Dialog.Title>Edit profile</Dialog.Title>
     <Dialog.Close>Close</Dialog.Close>
-    <form method="dialog"><button type="submit">Done</button></form>
+    <form method="dialog"><Button type="submit">Done</Button></form>
   </Dialog.Content>
 </Dialog>` },
   } },
@@ -938,7 +1049,7 @@ export const CancelVeto: Story = {
       <Dialog.Content onCancel={(event) => event.preventDefault()}>
         <Dialog.Title>{TITLE}</Dialog.Title>
         <Dialog.Close>Close</Dialog.Close>
-        <form method="dialog"><button type="submit">Done</button></form>
+        <form method="dialog"><Button type="submit">Done</Button></form>
       </Dialog.Content>
     </Dialog>
   ),
@@ -1071,7 +1182,7 @@ export const NestedDialog: Story = {
   name: 'Nested dialogs',
   parameters: { docs: {
     description: { story: 'Open a second dialog and return focus to its trigger when it closes.' },
-    source: { language: 'tsx', code: `import { Dialog } from '@jfrader/ui';
+    source: { language: 'tsx', code: `import { Button, Dialog } from '@jfrader/ui';
 
 <Dialog>
   <Dialog.Trigger>Open profile</Dialog.Trigger>
@@ -1082,7 +1193,7 @@ export const NestedDialog: Story = {
       <Dialog.Content>
         <Dialog.Title>Discard changes?</Dialog.Title>
         <form method="dialog">
-          <button type="submit">Keep editing</button>
+          <Button type="submit">Keep editing</Button>
         </form>
       </Dialog.Content>
     </Dialog>
@@ -1100,7 +1211,7 @@ export const NestedDialog: Story = {
           <Dialog.Content>
             <Dialog.Title>Discard changes?</Dialog.Title>
             <form method="dialog">
-              <button type="submit">Keep editing</button>
+              <Button type="submit">Keep editing</Button>
             </form>
           </Dialog.Content>
         </Dialog>
@@ -1146,6 +1257,18 @@ export const NestedDialog: Story = {
     await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
   },
+};
+
+export const BodyNestedDialog: Story = {
+  ...NestedDialog,
+  tags: ['!autodocs'],
+  args: { scroll: 'body', onOpenChange: fn() },
+};
+
+export const BodyVetoedClose: EasyStory = {
+  ...EasyModeVetoedClose,
+  tags: ['!autodocs'],
+  args: { ...EasyModeVetoedClose.args, scroll: 'body' },
 };
 
 
@@ -1257,8 +1380,8 @@ const exportNotes = [
   <Dialog.Trigger>Read export notes</Dialog.Trigger>
   <ScrollableContent withDescription={false}>
     <Dialog.Title tabIndex={-1} autoFocus>Before you export</Dialog.Title>
-    {exportNotes.map((note) => <Body key={note}>{note}</Body>)}
-    <Dialog.Close>Done</Dialog.Close>
+    <Dialog.Body>{exportNotes.map((note) => <Body key={note}>{note}</Body>)}</Dialog.Body>
+    <Dialog.Footer><Dialog.Close>Done</Dialog.Close></Dialog.Footer>
   </ScrollableContent>
 </Dialog>` },
   } },
@@ -1267,8 +1390,8 @@ const exportNotes = [
       <Dialog.Trigger>Read export notes</Dialog.Trigger>
       <ScrollableContent withDescription={false}>
         <Dialog.Title tabIndex={-1} autoFocus>Before you export</Dialog.Title>
-        {exportNotes.map((note) => <Body key={note}>{note}</Body>)}
-        <Dialog.Close>Done</Dialog.Close>
+        <Dialog.Body>{exportNotes.map((note) => <Body key={note}>{note}</Body>)}</Dialog.Body>
+        <Dialog.Footer><Dialog.Close>Done</Dialog.Close></Dialog.Footer>
       </ScrollableContent>
     </Dialog>
   ),
@@ -1277,10 +1400,416 @@ const exportNotes = [
     const dialog = await canvas.findByRole('dialog', { name: 'Before you export' });
     await settleMotion(dialog);
     await expect(within(dialog).getByRole('heading', { name: 'Before you export' })).toHaveFocus();
+    const body = dialog.querySelector<HTMLElement>('[data-ui="dialog-body"]')!;
     await expect(dialog.scrollTop).toBe(0);
+    await expect(body.scrollHeight).toBeGreaterThan(body.clientHeight);
+    body.scrollTop = body.scrollHeight;
+    const done = within(dialog).getByRole('button', { name: 'Done' });
+    await expect(body.scrollTop).toBeGreaterThan(0);
+    await expect(done.getBoundingClientRect().bottom).toBeLessThanOrEqual(dialog.getBoundingClientRect().bottom);
+    await userEvent.click(done);
+    await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
+  },
+};
+
+export const PaperScrolling: EasyStory = {
+  name: 'Scroll inside the panel',
+  tags: ['!autodocs'],
+  args: {
+    triggerLabel: 'Read notes', title: 'Export notes', closeLabel: 'Done',
+    content: Array.from({ length: 20 }, (_, index) => <Body key={index}>{exportNotes[index % exportNotes.length]}</Body>),
+    slotProps: { content: { withDescription: false, sx: { maxBlockSize: '240px' } } },
+  },
+  render: (args) => <Dialog {...args} />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: 'Read notes' });
+    await userEvent.click(trigger);
+    const dialog = await canvas.findByRole('dialog', { name: 'Export notes' });
+    await settleMotion(dialog);
+    const body = dialog.querySelector<HTMLElement>('[data-ui="dialog-body"]')!;
+    await expect(body).not.toBeNull();
+    await expect(body).toHaveFocus();
+    await expect(body).toHaveAttribute('tabindex', '0');
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(getComputedStyle(body).outlineStyle).not.toBe('none');
+    const bodyRect = body.getBoundingClientRect();
+    const panelRect = dialog.querySelector('[data-ui~="dialog-panel"]')!.getBoundingClientRect();
+    const bodyStyle = getComputedStyle(body);
+    const ringExtent = Number.parseFloat(bodyStyle.outlineWidth) + Number.parseFloat(bodyStyle.outlineOffset);
+    await expect(bodyStyle.outlineOffset).toBe('2px');
+    await expect(bodyRect.left - ringExtent).toBeGreaterThanOrEqual(panelRect.left);
+    await expect(bodyRect.right + ringExtent).toBeLessThanOrEqual(panelRect.right);
+    const title = within(dialog).getByRole('heading');
+    const close = within(dialog).getByRole('button', { name: 'Done' });
+    await expect(bodyRect.top - ringExtent).toBeGreaterThanOrEqual(title.getBoundingClientRect().bottom);
+    await expect(bodyRect.bottom + ringExtent).toBeLessThanOrEqual(close.getBoundingClientRect().top);
+    const titleTop = title.getBoundingClientRect().top;
+    const closeTop = close.getBoundingClientRect().top;
+    await expect(dialog.getBoundingClientRect().height).toBeLessThanOrEqual(240);
+    await expect(body.scrollHeight).toBeGreaterThan(body.clientHeight);
+    body.scrollTop = body.scrollHeight;
+    await expect(body.scrollTop).toBeGreaterThan(0);
+    await expect(title.getBoundingClientRect().top).toBe(titleTop);
+    await expect(close.getBoundingClientRect().top).toBe(closeTop);
+    await expect(dialog.scrollTop).toBe(0);
+    await expect(close.getBoundingClientRect().bottom).toBeLessThanOrEqual(dialog.getBoundingClientRect().bottom);
+    await userEvent.click(close);
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
+export const BodyScrolling: EasyStory = {
+  ...PaperScrolling,
+  name: 'Scroll the whole panel',
+  args: { ...PaperScrolling.args, scroll: 'body', slotProps: { content: { withDescription: false } } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: 'Read notes' });
+    await userEvent.click(trigger);
+    const dialog = await canvas.findByRole('dialog', { name: 'Export notes' });
+    await settleMotion(dialog);
+    const title = within(dialog).getByRole('heading');
+    const initialTop = title.getBoundingClientRect().top;
+    await expect(initialTop).toBeGreaterThanOrEqual(0);
     await expect(dialog.scrollHeight).toBeGreaterThan(dialog.clientHeight);
+    await expect(canvasElement.ownerDocument.documentElement.style.overflow).toBe('hidden');
+    await expect(dialog).not.toHaveAttribute('scroll');
+    const panel = dialog.querySelector('[data-ui~="dialog-panel"]')!;
+    await expect(panel).not.toHaveAttribute('scroll');
+    const viewport = dialog.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const scrollbar = {
+      clientX: dialog.clientLeft > 0
+        ? viewport.left + dialog.clientLeft / 2
+        : viewport.left + dialog.clientWidth + (viewport.width - dialog.clientWidth) / 2,
+      clientY: viewport.top + dialog.clientTop + 40,
+    };
+    const backdrop = {
+      clientX: viewport.left + dialog.clientLeft + 1,
+      clientY: viewport.top + dialog.clientTop + 1,
+    };
+    fireEvent.pointerDown(dialog, scrollbar);
+    fireEvent.click(dialog, scrollbar);
+    await expect(dialog).toHaveAttribute('data-state', 'open');
+    fireEvent.pointerDown(panel, { clientX: panelRect.left + 1, clientY: panelRect.top + 1 });
+    fireEvent.click(dialog, backdrop);
+    await expect(dialog).toHaveAttribute('data-state', 'open');
+    const close = within(dialog).getByRole('button', { name: 'Done' });
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      await expect(dialog).toHaveAttribute('data-state', 'open');
+      await expect(title.getBoundingClientRect().top).toBeGreaterThanOrEqual(0);
+      await expect(dialog.scrollTop).toBe(0);
+      dialog.scrollTop = dialog.scrollHeight;
+      await expect(dialog.scrollTop).toBeGreaterThan(0);
+      await expect(title.getBoundingClientRect().top).toBeLessThan(initialTop);
+      await expect(close.getBoundingClientRect().bottom).toBeLessThanOrEqual(dialog.getBoundingClientRect().bottom);
+      await userEvent.click(close);
+      await expectClosed(canvasElement, trigger);
+      await userEvent.click(trigger);
+      await settleMotion(dialog);
+    }
+    await expect(title.getBoundingClientRect().top).toBeGreaterThanOrEqual(0);
+    await expect(dialog.scrollTop).toBe(0);
+    fireEvent.pointerDown(dialog, backdrop);
+    fireEvent.click(dialog, backdrop);
+    await expectClosed(canvasElement, trigger);
+    await userEvent.click(trigger);
+    requestEscape(dialog);
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
+export const BodyScrollingRTL: EasyStory = {
+  ...BodyScrolling,
+  decorators: [(Story) => <div dir="rtl"><Story /></div>],
+};
+
+export const BodyScrollingLight: EasyStory = {
+  ...BodyScrolling,
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+};
+
+export const BodyScrollingMobile: EasyStory = {
+  ...BodyScrolling,
+  parameters: {
+    viewport: { options: { phone: { name: 'Phone', styles: { width: '390px', height: '844px' } } } },
+  },
+  globals: { viewport: { value: 'phone' } },
+  play: async (context) => {
+    await expect(context.canvasElement.ownerDocument.defaultView!.innerWidth).toBe(390);
+    await expect(context.canvasElement.ownerDocument.defaultView!.innerHeight).toBe(844);
+    await BodyScrolling.play!(context);
+  },
+};
+
+export const BodyScrollingMobileRTL: EasyStory = {
+  ...BodyScrollingMobile,
+  decorators: [(Story) => <div dir="rtl"><Story /></div>],
+};
+
+export const BodyExitResumePreservesScroll: EasyStory = {
+  ...BodyScrollingMobile,
+  args: { ...BodyScrolling.args, defaultOpen: true },
+  play: async ({ canvas, canvasElement }) => {
+    const dialog = await canvas.findByRole('dialog', { name: 'Export notes' });
+    await settleMotion(dialog);
+    const body = dialog.querySelector<HTMLElement>('[data-ui="dialog-body"]')!;
+    await expect(body).toHaveFocus();
+    dialog.scrollTop = Math.floor((dialog.scrollHeight - dialog.clientHeight) / 2);
+    const scrollTop = dialog.scrollTop;
+    await expect(scrollTop).toBeGreaterThan(0);
+    const retention = dialog.animate({ opacity: [1, 1] }, { duration: motionDurationMs.slow });
+    retention.playbackRate = 0;
+    try {
+      await expect(retention.playState).toBe('running');
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
+      await expect(dialog).toHaveAttribute('data-state', 'closing');
+      await expect(dialog).toHaveAttribute('open');
+      await expect(body).toHaveFocus();
+      fireEvent.click(canvas.getByRole('button', { name: 'Read notes' }));
+      await expect(dialog).toHaveAttribute('data-state', 'open');
+      await expect(canvasElement.querySelector('dialog')).toBe(dialog);
+      await expect(dialog.querySelector('[data-ui="dialog-body"]')).toBe(body);
+      await expect(body).toHaveFocus();
+      await expect(dialog.scrollTop).toBe(scrollTop);
+    } finally {
+      retention.cancel();
+    }
+    await settleMotion(dialog);
+    await expect(dialog.scrollTop).toBe(scrollTop);
+  },
+};
+
+export const BodyMobileExplicitFieldFocus: EasyStory = {
+  ...BodyScrollingMobile,
+  args: {
+    ...BodyScrolling.args,
+    defaultOpen: false,
+    content: <>{PaperScrolling.args?.content}<TextField label="Archive filename" autoFocus ref={setNativeAutoFocus} /></>,
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: 'Read notes' });
+    await userEvent.click(trigger);
+    const dialog = await canvas.findByRole('dialog', { name: 'Export notes' });
+    await settleMotion(dialog);
+    const input = within(dialog).getByRole('textbox', { name: 'Archive filename' });
+    const view = canvasElement.ownerDocument.defaultView!;
+    await expect(view.innerWidth).toBe(390);
+    await expect(view.innerHeight).toBe(844);
+    for (let cycle = 0; cycle < 3; cycle += 1) {
+      await expect(input).toHaveFocus();
+      await expect(input.getBoundingClientRect().top).toBeGreaterThanOrEqual(0);
+      await expect(input.getBoundingClientRect().bottom).toBeLessThanOrEqual(view.innerHeight);
+      await expect(dialog.scrollTop).toBeGreaterThan(0);
+      await expect(within(dialog).getByRole('heading').getBoundingClientRect().top).toBeLessThan(0);
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
+      await expectClosed(canvasElement, trigger);
+      await userEvent.click(trigger);
+      await settleMotion(dialog);
+    }
+    await expect(input).toHaveFocus();
+    await expect(input.getBoundingClientRect().top).toBeGreaterThanOrEqual(0);
+    await expect(input.getBoundingClientRect().bottom).toBeLessThanOrEqual(view.innerHeight);
+  },
+};
+
+export const BodyMobileExplicitHeadingFocus: EasyStory = {
+  ...BodyScrollingMobile,
+  args: {
+    ...BodyScrolling.args,
+    defaultOpen: true,
+    slotProps: { content: { withDescription: false }, title: { autoFocus: true, tabIndex: -1 } },
+  },
+  play: async ({ canvas }) => {
+    const dialog = await canvas.findByRole('dialog', { name: 'Export notes' });
+    await settleMotion(dialog);
+    const title = within(dialog).getByRole('heading');
+    await expect(title).toHaveFocus();
+    await expect(title.getBoundingClientRect().top).toBeGreaterThanOrEqual(0);
+  },
+};
+
+export const BodyProfileEditorMobile: EasyStory = {
+  ...BodyProfileEditor,
+  parameters: BodyScrollingMobile.parameters,
+  globals: BodyScrollingMobile.globals,
+};
+
+export const CrampedPaper: EasyStory = {
+  ...PaperScrolling,
+  args: { ...PaperScrolling.args, slotProps: { content: { withDescription: false, sx: { maxBlockSize: '96px' } } } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: 'Read notes' });
+    await userEvent.click(trigger);
+    const dialog = await canvas.findByRole('dialog', { name: 'Export notes' });
+    await settleMotion(dialog);
+    const close = within(dialog).getByRole('button', { name: 'Done' });
+    close.focus();
+    await expect(close).toHaveFocus();
+    await expect(close.getBoundingClientRect().top).toBeGreaterThanOrEqual(dialog.getBoundingClientRect().top);
+    await expect(close.getBoundingClientRect().bottom).toBeLessThanOrEqual(dialog.getBoundingClientRect().bottom);
+    await userEvent.click(close);
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
+const ScrollNote = styled.p({ marginBlock: vars.space[3], fontSize: vars.textSize.sm });
+const scrollingNotes = Array.from({ length: 20 }, (_, index) => (
+  <ScrollNote key={index}>Your export includes your profile settings and saved drafts. Keep the archive somewhere private.</ScrollNote>
+));
+
+export const ScrollModes: Story = {
+  name: 'Scrolling modes',
+  parameters: { docs: {
+    description: { story: 'Keep headings and actions in place, or scroll the whole panel in the overlay.' },
+    source: { language: 'tsx', code: `import { Dialog, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const ScrollNote = styled.p({ marginBlock: vars.space[3], fontSize: vars.textSize.sm });
+const notes = Array.from({ length: 20 }, (_, index) => (
+  <ScrollNote key={index}>Your export includes your profile settings and saved drafts. Keep the archive somewhere private.</ScrollNote>
+));
+
+<>
+  <Dialog triggerLabel="Scroll inside" title="Export notes" content={notes} closeLabel="Done" />
+  <Dialog scroll="body" triggerLabel="Scroll whole panel" title="Export notes" content={notes} closeLabel="Done" />
+</>` },
+  } },
+  render: () => <>
+    <Dialog triggerLabel="Scroll inside" title="Export notes" closeLabel="Done" content={scrollingNotes} />
+    <Dialog scroll="body" triggerLabel="Scroll whole panel" title="Export notes" closeLabel="Done" content={scrollingNotes} />
+  </>,
+  play: async ({ canvas, userEvent }) => {
+    for (const [mode, label] of Object.entries({ paper: 'Scroll inside', body: 'Scroll whole panel' })) {
+      await userEvent.click(canvas.getByRole('button', { name: label }));
+      const dialog = await canvas.findByRole('dialog', { name: 'Export notes' });
+      await settleMotion(dialog);
+      const viewport = mode === 'paper' ? dialog.querySelector<HTMLElement>('[data-ui="dialog-body"]')! : dialog;
+      await expect(viewport.scrollHeight).toBeGreaterThan(viewport.clientHeight);
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
+      await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
+    }
+  },
+};
+
+function ChangingScrollMode() {
+  const [scroll, setScroll] = useState<DialogScroll>('paper');
+  return <Dialog
+    defaultOpen
+    scroll={scroll}
+    triggerLabel="Open draft"
+    title="Export draft"
+    closeLabel="Done"
+    slotProps={{ content: { withDescription: false } }}
+    content={<>
+      <TextField label="Draft name" defaultValue="Profile" />
+      <Button onClick={() => setScroll((current) => current === 'paper' ? 'body' : 'paper')}>Change scrolling</Button>
+      {scrollingNotes}
+    </>}
+  />;
+}
+
+export const PreserveDraftAcrossScrollModes: Story = {
+  tags: ['!autodocs'],
+  render: () => <ChangingScrollMode />,
+  play: async ({ canvas, userEvent }) => {
+    const dialog = await canvas.findByRole('dialog', { name: 'Export draft' });
+    await settleMotion(dialog);
+    const panel = dialog.querySelector('[data-ui~="dialog-panel"]');
+    const body = dialog.querySelector('[data-ui="dialog-body"]');
+    const input = within(dialog).getByRole('textbox', { name: 'Draft name' });
+    await expect(dialog.firstElementChild).toBe(panel);
+    await userEvent.type(input, ' edited');
+    const change = within(dialog).getByRole('button', { name: 'Change scrolling' });
+    for (const mode of ['body', 'paper']) {
+      await userEvent.click(change);
+      await expect(dialog).toHaveAttribute('data-scroll', mode);
+      await expect(dialog.querySelector('[data-ui~="dialog-panel"]')).toBe(panel);
+      await expect(dialog.firstElementChild).toBe(panel);
+      await expect(dialog.querySelector('[data-ui="dialog-body"]')).toBe(body);
+      await expect(within(dialog).getByRole('textbox', { name: 'Draft name' })).toBe(input);
+      await expect(input).toHaveValue('Profile edited');
+    }
     await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
     await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
+  },
+};
+
+function RemovableBodyControl() {
+  const [present, setPresent] = useState(true);
+  return present ? <button onClick={() => setPresent(false)}>Remove action</button> : <p>Action removed.</p>;
+}
+
+function BodyKeyboardFixture({ children, tabIndex, autoFocus }: { children?: ReactNode; tabIndex?: number; autoFocus?: boolean }) {
+  return <Dialog defaultOpen>
+    <Dialog.Content>
+      <Dialog.Title tabIndex={-1} autoFocus={!autoFocus}>Keyboard notes</Dialog.Title>
+      <Dialog.Body tabIndex={tabIndex} autoFocus={autoFocus}>{children}<p>Read the export notes.</p></Dialog.Body>
+      <Dialog.Footer><Dialog.Close>Done</Dialog.Close></Dialog.Footer>
+    </Dialog.Content>
+  </Dialog>;
+}
+
+async function expectBodyKeyboardEntry(canvasElement: HTMLElement, user: Pick<typeof userEvent, 'tab'>) {
+  const dialog = within(canvasElement).getByRole('dialog');
+  const title = within(dialog).getByRole('heading');
+  const body = dialog.querySelector<HTMLElement>('[data-ui="dialog-body"]')!;
+  title.focus();
+  await user.tab();
+  await expect(body).toHaveFocus();
+  await expect(getComputedStyle(body).outlineStyle).not.toBe('none');
+  for (const key of ['ArrowDown', 'PageDown', 'Home', 'End']) {
+    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+    fireEvent(body, event);
+    await expect(event.defaultPrevented).toBe(false);
+  }
+}
+
+export const BodyWithHiddenControl: Story = {
+  tags: ['!autodocs'],
+  render: () => <BodyKeyboardFixture><button hidden>Hidden action</button></BodyKeyboardFixture>,
+  play: async ({ canvasElement, userEvent }) => expectBodyKeyboardEntry(canvasElement, userEvent),
+};
+
+export const BodyWithInertControl: Story = {
+  ...BodyWithHiddenControl,
+  render: () => <BodyKeyboardFixture><div inert><button>Inert action</button></div></BodyKeyboardFixture>,
+};
+
+export const BodyWithNegativeTabIndex: Story = {
+  ...BodyWithHiddenControl,
+  render: () => <BodyKeyboardFixture><button tabIndex={-1}>Programmatic action</button></BodyKeyboardFixture>,
+};
+
+export const BodyAfterIndependentControlRemoval: Story = {
+  tags: ['!autodocs'],
+  render: () => <BodyKeyboardFixture><RemovableBodyControl /></BodyKeyboardFixture>,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Remove action' }));
+    await expect(canvas.queryByRole('button', { name: 'Remove action' })).toBeNull();
+    await expectBodyKeyboardEntry(canvasElement, userEvent);
+  },
+};
+
+export const BodyTabIndexOverride: Story = {
+  tags: ['!autodocs'],
+  render: () => <BodyKeyboardFixture tabIndex={-1} />,
+  play: async ({ canvas, userEvent }) => {
+    await expect(canvas.getByRole('heading')).toHaveFocus();
+    await userEvent.tab();
+    await expect(canvas.getByRole('button', { name: 'Done' })).toHaveFocus();
+  },
+};
+
+export const BodyAutoFocusOverride: Story = {
+  tags: ['!autodocs'],
+  render: () => <BodyKeyboardFixture tabIndex={-1} autoFocus />,
+  play: async ({ canvasElement }) => {
+    const body = canvasElement.querySelector('[data-ui="dialog-body"]')!;
+    await expect(body).toHaveFocus();
+    await expect(body).toHaveAttribute('autofocus');
+    await expect(body).toHaveAttribute('tabindex', '-1');
   },
 };
 
@@ -1311,6 +1840,86 @@ const NarrowContent = styled(Dialog.Content)({ inlineSize: '280px', minInlineSiz
       </NarrowDialogContent>
     </Dialog>
   ),
+};
+
+export const MotionWithoutScrollbars: Story = {
+  ...NarrowLayout,
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const dialog = canvasElement.querySelector('dialog')!;
+    const view = canvasElement.ownerDocument.defaultView!;
+    const trigger = canvas.getByRole('button', { name: 'View confirmation' });
+    let verticalOverflow = 0;
+    let horizontalOverflow = 0;
+    let frame = 0;
+    const measure = () => {
+      if (!dialog.open) return;
+      const ports = [dialog, ...dialog.querySelectorAll<HTMLElement>('[data-ui~="dialog-panel"], [data-ui="dialog-body"]')];
+      for (const port of ports) {
+        verticalOverflow = Math.max(verticalOverflow, port.scrollHeight - port.clientHeight);
+        horizontalOverflow = Math.max(horizontalOverflow, port.scrollWidth - port.clientWidth);
+      }
+    };
+    const sample = () => {
+      measure();
+      frame = view.requestAnimationFrame(sample);
+    };
+    const observer = new MutationObserver(measure);
+    observer.observe(dialog, { attributes: true, attributeFilter: ['open', 'data-state'] });
+    sample();
+    try {
+      for (let cycle = 0; cycle < 2; cycle += 1) {
+        await userEvent.click(trigger);
+        await waitFor(() => expect(dialog).toHaveAttribute('open'));
+        await settleMotion(dialog);
+        measure();
+        await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
+        await expectClosed(canvasElement, trigger);
+      }
+      await expect(verticalOverflow).toBe(0);
+      await expect(horizontalOverflow).toBe(0);
+    } finally {
+      observer.disconnect();
+      view.cancelAnimationFrame(frame);
+    }
+  },
+};
+
+export const MotionWithoutScrollbarsLight: Story = {
+  ...MotionWithoutScrollbars,
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+};
+
+export const MotionWithoutScrollbarsRTL: Story = {
+  ...MotionWithoutScrollbars,
+  decorators: [(Story) => <div dir="rtl"><Story /></div>],
+};
+
+export const BodyMotionWithoutScrollbars: Story = {
+  ...MotionWithoutScrollbars,
+  render: (args) => <Dialog {...args} scroll="body">
+    <Dialog.Trigger>View confirmation</Dialog.Trigger>
+    <Dialog.Content>
+      <Dialog.Title>Saved</Dialog.Title>
+      <Dialog.Body><Body>Profile updated.</Body></Dialog.Body>
+      <Dialog.Footer><Dialog.Close>Done</Dialog.Close></Dialog.Footer>
+    </Dialog.Content>
+  </Dialog>,
+};
+
+export const NearlyFittingBodyMotion: Story = {
+  ...BodyMotionWithoutScrollbars,
+  render: (args) => <Dialog {...args} scroll="body">
+    <Dialog.Trigger>View confirmation</Dialog.Trigger>
+    <Dialog.Content>
+      <Dialog.Panel sx={{ minBlockSize: 'calc(100dvh - 32px)' }}>
+        <Dialog.Title>Saved</Dialog.Title>
+        <Dialog.Body><Body>Profile updated.</Body></Dialog.Body>
+        <Dialog.Footer><Dialog.Close>Done</Dialog.Close></Dialog.Footer>
+      </Dialog.Panel>
+    </Dialog.Content>
+  </Dialog>,
 };
 
 export const ContrastPanel: Story = {

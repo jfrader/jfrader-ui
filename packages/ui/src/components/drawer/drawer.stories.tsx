@@ -6,7 +6,9 @@ import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { findConditionalStyle } from '../../testing/conditional-style';
 import { expectContrastSurface, expectThemedSurface } from '../../testing/theme-assertions';
+import { Button as FixtureButton } from '../button';
 import { Checkbox } from '../checkbox';
 import { Dialog } from '../dialog';
 import { Popover } from '../popover';
@@ -94,14 +96,10 @@ const FieldStack = styled.div({
   gap: vars.space[4],
 });
 
-const FixtureButton = styled.button({ minHeight: vars.space[6], minWidth: vars.space[6], padding: `${vars.space[1]} calc(${vars.space[2]} + ${vars.space[1]} / 2)`, boxSizing: 'border-box' });
-
 const FieldLabel = styled.p({
   margin: 0,
   fontSize: vars.textSize.sm,
 });
-
-const FixtureSelectTrigger = styled(Select.Trigger)({ minHeight: vars.space[6], minWidth: vars.space[6], padding: `${vars.space[1]} calc(${vars.space[2]} + ${vars.space[1]} / 2)`, boxSizing: 'border-box' });
 
 const meta = {
   title: 'Surfaces/Drawer',
@@ -297,23 +295,6 @@ function rect(element: Element) {
   return element.getBoundingClientRect();
 }
 
-/** The authored rule inside `condition` that targets one of `element`'s classes. */
-function findConditionalRule(element: HTMLElement, condition: string, suffix = '') {
-  for (const sheet of Array.from(element.ownerDocument.styleSheets)) {
-    for (const rule of Array.from(sheet.cssRules)) {
-      if (!(rule instanceof CSSMediaRule) || !rule.conditionText.includes(condition)) continue;
-      for (const inner of Array.from(rule.cssRules)) {
-        if (!(inner instanceof CSSStyleRule)) continue;
-        const matches = Array.from(element.classList).some((name) =>
-          inner.selectorText.split(',').some((selector) => selector.trim() === `.${name}${suffix}`),
-        );
-        if (matches) return inner;
-      }
-    }
-  }
-  return undefined;
-}
-
 function findRule(element: HTMLElement, suffix: string) {
   for (const sheet of Array.from(element.ownerDocument.styleSheets)) {
     for (const rule of Array.from(sheet.cssRules)) {
@@ -335,6 +316,34 @@ async function expectInlineSize(panel: HTMLElement, dialog: HTMLElement, size: D
   await expect(Math.abs(rect(panel).width - expected)).toBeLessThan(1);
   await expect(rect(panel).height).toBeCloseTo(rect(dialog).height, 0);
 }
+
+const LONG_REFERENCE = 'CustomerAccountExportConfirmationReference'.repeat(3);
+
+export const UnbrokenContent: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    triggerLabel: 'Open export',
+    title: LONG_REFERENCE,
+    content: <p>{LONG_REFERENCE}</p>,
+    closeLabel: 'Close',
+    sx: { inlineSize: '320px' },
+  },
+  render: (args) => <Drawer {...args} />,
+  play: async ({ canvas }) => {
+    const dialog = await canvas.findByRole('dialog');
+    await settle(dialog);
+    const title = within(dialog).getByRole('heading');
+    const body = dialog.querySelector<HTMLElement>('[data-ui="drawer-body"]')!;
+    for (const direction of ['ltr', 'rtl']) {
+      dialog.dir = direction;
+      for (const part of [title, body]) {
+        await expect(part.scrollWidth).toBeLessThanOrEqual(part.clientWidth + 1);
+      }
+    }
+    dialog.removeAttribute('dir');
+  },
+};
 
 export const Default: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
   name: 'Easy mode',
@@ -1814,8 +1823,11 @@ export const NativeFormClose: Story = {
     const { documentElement } = canvasElement.ownerDocument;
     const { dialog } = parts(canvasElement);
     await waitFor(() => expect(documentElement.style.overflow).toBe('hidden'));
+    await settle(dialog);
+    const apply = canvas.getByRole('button', { name: 'Apply' });
+    await expect(rect(apply).height).toBeGreaterThanOrEqual(32);
     // A native form close cannot be vetoed: the rejected request still releases the scroll lock.
-    await userEvent.click(canvas.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(apply);
     await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
     await waitFor(() => expect(args.onOpenChange).toHaveBeenCalledTimes(1));
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
@@ -2375,9 +2387,9 @@ function NestedSelectBody() {
           Status
         </FieldLabel>
         <Select>
-          <FixtureSelectTrigger aria-labelledby={labelId} >
+          <Select.Trigger aria-labelledby={labelId}>
             <Select.Value placeholder="Choose a status" />
-          </FixtureSelectTrigger>
+          </Select.Trigger>
           <Select.Content>
             {STATUSES.map((status) => (
               <Select.Item key={status} value={status}>
@@ -2501,6 +2513,7 @@ function StatusFilters() {
   render: (args) => <DrawerExample {...args} body={<NestedSelectBody />} />,
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
+    await expect(rect(canvas.getByRole('combobox', { name: 'Status' })).height).toBeGreaterThanOrEqual(32);
 
     // With the select closed, Escape is the drawer's: its mounted-but-hidden popup is not a layer.
     await userEvent.keyboard('{Escape>}');
@@ -2657,7 +2670,7 @@ export const ReducedMotion: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, panel, header } = parts(canvasElement);
     await settle(dialog);
-    await expect(findConditionalRule(header, 'prefers-reduced-motion: reduce')?.style.cursor).toBe('auto');
+    await expect(findConditionalStyle(header, 'prefers-reduced-motion: reduce', 'cursor')).toBe('auto');
     // The marker follows the prop alone, so server and client markup match.
     await expect(header).toHaveAttribute('data-draggable');
 
@@ -2725,9 +2738,8 @@ export const ForcedColors: Story = {
   play: async ({ canvasElement }) => {
     const { dialog, panel } = parts(canvasElement);
     await settle(dialog);
-    const rule = findConditionalRule(panel, 'forced-colors: active');
-    await expect(rule?.style.boxShadow).toBe('none');
-    await expect(rule?.style.borderColor.toLowerCase()).toBe('canvastext');
+    await expect(findConditionalStyle(panel, 'forced-colors: active', 'box-shadow')).toBe('none');
+    await expect(findConditionalStyle(panel, 'forced-colors: active', 'border-color')?.toLowerCase()).toBe('canvastext');
   },
 };
 
@@ -2759,6 +2771,8 @@ export const PartStyling: Story = {
     await expect(getComputedStyle(body).paddingTop).toBe(base.space[2]);
     await expect(getComputedStyle(footer).justifyContent).toBe('flex-start');
     await expect(getComputedStyle(dialog).paddingLeft).toBe(base.space[2]);
+    await expect(rect(dialog).left).toBeGreaterThanOrEqual(0);
+    await expect(rect(dialog).right).toBeLessThanOrEqual(dialog.ownerDocument.documentElement.clientWidth);
     const remPx = Number.parseFloat(getComputedStyle(canvasElement.ownerDocument.documentElement).fontSize);
     await expect(Number.parseFloat(getComputedStyle(within(dialog).getByRole('heading')).fontSize)).toBeCloseTo(
       Number.parseFloat(base.textSize.xl) * remPx,

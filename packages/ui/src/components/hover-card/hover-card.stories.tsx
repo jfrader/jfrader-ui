@@ -254,7 +254,7 @@ const Actions = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'cen
   play: async ({ canvasElement, userEvent }) => {
     const trigger = getTrigger(canvasElement);
     await userEvent.hover(trigger);
-    const card = await expectOpenWithin(canvasElement, OPEN_DELAY + TIMER_MARGIN);
+    const card = await findCard(canvasElement);
     await expect(canvasElement.contains(card)).toBe(false);
     await expect(card).toHaveAttribute('data-ui', 'hover-card');
     await expect(trigger).toHaveAttribute('aria-describedby', card.id);

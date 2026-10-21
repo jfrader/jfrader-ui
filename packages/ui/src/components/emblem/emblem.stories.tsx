@@ -344,12 +344,30 @@ export const LongName: Story = {
   args: { name: 'World Wide Wanderers' },
   render: (args) => <div style={rowStyle}>{SHAPES.map((shape) => <Emblem {...args} key={shape} shape={shape} />)}</div>,
   play: async ({ canvasElement }) => {
-    for (const ink of canvasElement.querySelectorAll<HTMLElement>('[data-ui="emblem-ink"]')) {
+    const monograms = canvasElement.querySelectorAll<HTMLElement>('[data-ui="emblem-ink"]');
+    await expect(monograms).toHaveLength(SHAPES.length);
+    for (const ink of monograms) {
       await expect(ink).toHaveTextContent('WWW');
-      await expect(ink.scrollWidth).toBeLessThanOrEqual(ink.clientWidth);
-      await expectInside(ink, ink.parentElement!);
-      await expect(ink.getBoundingClientRect().width).toBeLessThanOrEqual(ink.parentElement!.getBoundingClientRect().width * 0.7);
+      await waitFor(async () => {
+        await expect(ink.scrollWidth).toBeLessThanOrEqual(ink.clientWidth);
+        await expectInside(ink, ink.parentElement!);
+        const budget = ink.parentElement!.getBoundingClientRect().width * 0.7;
+        await expect(ink.getBoundingClientRect().width).toBeLessThanOrEqual(budget);
+        const range = ink.ownerDocument.createRange();
+        range.selectNodeContents(ink);
+        await expect(range.getBoundingClientRect().width).toBeLessThanOrEqual(budget);
+      });
     }
+  },
+};
+
+export const WideMonogram: Story = {
+  ...LongName,
+  tags: ['!autodocs'],
+  args: {
+    ...LongName.args,
+    slots: { monogram: SlotMonogram },
+    slotProps: { monogram: { sx: { letterSpacing: vars.space[2] } } },
   },
 };
 
