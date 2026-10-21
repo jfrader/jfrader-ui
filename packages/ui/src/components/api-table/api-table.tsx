@@ -241,14 +241,24 @@ const badgeStyle = css({
   lineHeight: 1.6,
   whiteSpace: 'nowrap',
 });
-const requiredStyle = css({ color: vars.color.textMuted, border: `1px solid ${vars.color.borderSubtle}` });
+const requiredStyle = css({ color: vars.color.accentText, border: `1px solid ${vars.color.accentBorder}` });
 const deprecatedStyle = css({ color: vars.color.dangerText, backgroundColor: vars.color.dangerSoft });
 const partBadgeStyle = css({ color: vars.color.accentText, backgroundColor: vars.color.accentSoft });
 const modeBadgeStyle = css({ color: vars.color.textMuted, backgroundColor: vars.color.surfaceHover, border: `1px solid ${vars.color.borderSubtle}` });
 const unavailableStyle = css({ color: vars.color.warning, backgroundColor: vars.color.warningSoft });
 
-const typeCellStyle = css({ minInlineSize: 0 });
+const typeCellStyle = css({
+  minInlineSize: 0,
+  '@media (min-width: 700px)': { borderInlineStart: `1px solid ${vars.color.borderSubtle}`, paddingInlineStart: vars.space[4] },
+});
 const typeStyle = css({ display: 'block', fontFamily: vars.font.mono, fontSize: vars.textSize.sm, lineHeight: 1.7, overflowWrap: 'anywhere', whiteSpace: 'normal' });
+const complexTypeStyle = css({
+  paddingBlock: vars.space[1],
+  paddingInline: vars.space[2],
+  borderRadius: vars.radius.sm,
+  backgroundColor: vars.color.surfaceInset,
+  border: `1px solid ${vars.color.borderSubtle}`,
+});
 const typeKeywordStyle = css({ color: vars.color.syntaxKeyword });
 const typeTypeStyle = css({ color: vars.color.syntaxType });
 const typePunctuationStyle = css({ color: vars.color.syntaxPunctuation });
@@ -266,7 +276,17 @@ const typeNumberStyle = css({
   paddingInline: '0.25em',
 });
 
-const defaultStyle = css({ display: 'inline-flex', alignItems: 'baseline', gap: '0.3em', color: vars.color.textMuted, fontFamily: vars.font.mono, fontSize: vars.textSize.xs });
+const defaultStyle = css({
+  display: 'inline-flex',
+  alignItems: 'baseline',
+  gap: '0.3em',
+  paddingInline: vars.space[1],
+  borderRadius: vars.radius.sm,
+  backgroundColor: vars.color.surfaceHover,
+  color: vars.color.textMuted,
+  fontFamily: vars.font.mono,
+  fontSize: vars.textSize.xs,
+});
 const defaultLabelStyle = css({ color: vars.color.textMuted });
 const metaStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: vars.space[1], color: vars.color.textMuted, fontSize: vars.textSize.xs });
 const metaLinkStyle = css({ color: vars.color.accentText, textDecoration: 'underline', textUnderlineOffset: '0.15em', '&:focus-visible': focusRingInset });
@@ -395,6 +415,14 @@ const slotTypeSummaryStyle = css({ color: vars.color.textMuted, fontSize: vars.t
 
 type TypeTokenKind = 'literal' | 'keyword' | 'type' | 'punctuation' | 'operator';
 
+const NATIVE_INHERITED = /(?:HTMLAttributes|DOMAttributes|AriaAttributes|ClassAttributes|RefAttributes|CSSProperties|DetailedHTMLProps|SVGAttributes|HTMLProps|ComponentProps|EventHandler|EventTarget|ElementType)/;
+
+/** Native DOM/React contracts are covered by the "Also accepts native <el>" note, not by rows. */
+function isNativeInherited(prop: ApiPropDoc): boolean {
+  if (prop.name === 'className' || prop.name === 'sx') return false;
+  return Boolean(prop.inheritedFrom) && !prop.inheritedComponent && NATIVE_INHERITED.test(prop.inheritedFrom ?? '');
+}
+
 const TYPE_KEYWORDS = new Set([
   'any',
   'bigint',
@@ -519,12 +547,7 @@ function Signatures({ signatures, propType }: { signatures: readonly ApiSignatur
                   <dd style={{ margin: 0, minInlineSize: 0 }}>
                     <TypeText type={parameter.type} />
                     {parameter.description ? <span css={memberNoteStyle}>{parameter.description}</span> : null}
-                    {parameter.members?.length ? (
-                      <details css={slotTypeDetailsStyle}>
-                        <summary css={slotTypeSummaryStyle}>{parameter.members.length} fields</summary>
-                        <MemberRows members={parameter.members} />
-                      </details>
-                    ) : null}
+                    {parameter.members?.length ? <MemberRows members={parameter.members} /> : null}
                   </dd>
                 </div>
               ))}
@@ -672,7 +695,9 @@ function PropRow({ prop, density }: { prop: ApiPropDoc; density: ApiTableDensity
         {prop.typeUnavailable ? (
           <span css={[badgeStyle, unavailableStyle]}>type unavailable</span>
         ) : (
-          <TypeText type={prop.type} />
+          <div css={prop.members?.length || prop.element?.members.length || prop.signatures?.length ? complexTypeStyle : undefined}>
+            <TypeText type={prop.type} />
+          </div>
         )}
 
         {prop.description ? <p css={descriptionStyle}>{prop.description}</p> : null}
@@ -757,7 +782,7 @@ function ApiPart({
 }) {
   const [showInherited, setShowInherited] = useState(false);
   const own = component.props.filter((prop) => !prop.inheritedFrom);
-  const inherited = component.props.filter((prop) => prop.inheritedFrom);
+  const inherited = component.props.filter((prop) => prop.inheritedFrom && !isNativeInherited(prop));
   const ownMatches = own.filter((prop) => matchesTerm(prop, term));
   const inheritedMatches = inherited.filter((prop) => matchesTerm(prop, term));
   const inheritedVisible = term ? inheritedMatches : showInherited ? inherited : [];
@@ -843,7 +868,7 @@ export function ApiTable({
         .map((entry) => ({
           entry,
           own: entry.props.filter((prop) => !prop.inheritedFrom && matchesTerm(prop, term)),
-          inherited: entry.props.filter((prop) => Boolean(prop.inheritedFrom) && matchesTerm(prop, term)),
+          inherited: entry.props.filter((prop) => Boolean(prop.inheritedFrom) && !isNativeInherited(prop) && matchesTerm(prop, term)),
         }))
         .filter(({ own, inherited }) => !term || own.length > 0 || inherited.length > 0),
     [components, term],
