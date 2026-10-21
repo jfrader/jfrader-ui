@@ -193,7 +193,7 @@ const marker = `var(${MARKER_SIZE})`;
 const AUTO_COMPACT_QUERY = '@container stepper (max-width: 30rem)';
 
 /** Styles for a part while the stepper is compact, manually or by the responsive container query. */
-const whenCompact = <Styles extends object>(styles: Styles) => ({
+const whenCompact = <const Styles extends object>(styles: Styles) => ({
   '[data-compact] &': styles,
   [AUTO_COMPACT_QUERY]: { '[data-auto-compact] &': styles },
 });
@@ -301,6 +301,7 @@ const headStyle = css({
   transitionDuration: vars.motion.duration.base,
   transitionTimingFunction: vars.motion.easeStandard,
   [REDUCED_MOTION]: { transitionDuration: '0s' },
+  ...whenCompact({ '&[data-state="error"]': { flexDirection: 'column', gap: vars.space[1] } }),
 });
 
 const headOrientationStyles: Record<StepperOrientation, SerializedStyles> = {
@@ -405,6 +406,7 @@ const descriptionOrientationStyles: Record<StepperOrientation, SerializedStyles>
   horizontal: css({
     gridColumn: '1 / -1',
     paddingInlineStart: `calc(${vars.space[1]} + ${marker} + ${vars.space[3]})`,
+    ...whenCompact({ '&[data-state="error"]': { paddingInlineStart: vars.space[1] } }),
   }),
   vertical: css({ gridColumn: 2, paddingInlineStart: vars.space[2], paddingBlockEnd: vars.space[2] }),
 };

@@ -496,6 +496,9 @@ export const ErrorCompleted: Story = {
     await expect(item).toHaveAttribute('data-state', 'error');
     // Compact never hides a non-current error or its step label.
     await expect(getComputedStyle(parts(item, 'label')[0]!).display).not.toBe('none');
+    const label = parts(item, 'label')[0]!.getBoundingClientRect();
+    const marker = parts(item, 'marker')[0]!.getBoundingClientRect();
+    await expect(label.top).toBeGreaterThanOrEqual(marker.bottom);
     const detail = parts(item, 'description')[0]!;
     await expect(getComputedStyle(detail).display).not.toBe('none');
     await expect(detail).toHaveTextContent('Handle is already taken');
