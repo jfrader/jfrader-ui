@@ -253,6 +253,14 @@ const badgeStyle = css({
   whiteSpace: 'nowrap',
 });
 const requiredStyle = css({ color: vars.color.accentText, border: `1px solid ${vars.color.accentBorder}` });
+const inlineCodeStyle = css({
+  paddingInline: '0.28em',
+  borderRadius: vars.radius.sm,
+  backgroundColor: vars.color.surfaceInset,
+  color: vars.color.text,
+  fontFamily: vars.font.mono,
+  fontSize: '0.94em',
+});
 const deprecatedStyle = css({ color: vars.color.dangerText, backgroundColor: vars.color.dangerSoft });
 const partBadgeStyle = css({ color: vars.color.accentText, backgroundColor: vars.color.accentSoft });
 const modeBadgeStyle = css({ color: vars.color.textMuted, backgroundColor: vars.color.surfaceHover, border: `1px solid ${vars.color.borderSubtle}` });
@@ -549,7 +557,7 @@ function MemberRows({ members, depth = 0 }: { members: readonly ApiPropDoc[]; de
                 Renders <code>{`<${member.defaultElement}>`}</code>
               </span>
             ) : null}
-            {member.description ? <span css={memberNoteStyle}>{member.description}</span> : null}
+            {member.description ? <span css={memberNoteStyle}><InlineText text={member.description} /></span> : null}
             {member.members?.length ? <MemberRows members={member.members} depth={depth + 1} /> : null}
           </dd>
         </div>
@@ -573,7 +581,7 @@ function Signatures({ signatures, propType }: { signatures: readonly ApiSignatur
                   <dt css={memberNameStyle}>{parameter.name}</dt>
                   <dd style={{ margin: 0, minInlineSize: 0 }}>
                     <TypeText type={parameter.type} />
-                    {parameter.description ? <span css={memberNoteStyle}>{parameter.description}</span> : null}
+                    {parameter.description ? <span css={memberNoteStyle}><InlineText text={parameter.description} /></span> : null}
                     {parameter.members?.length ? <MemberRows members={parameter.members} /> : null}
                   </dd>
                 </div>
@@ -667,7 +675,7 @@ function ApiSlots({
                   )}
                 </span>
               ) : null}
-              {slot.description ? <p css={slotDescriptionStyle}>{slot.description}</p> : null}
+              {slot.description ? <p css={slotDescriptionStyle}><InlineText text={slot.description} /></p> : null}
               {slot.type ? (
                 <details css={slotTypeDetailsStyle}>
                   <summary css={slotTypeSummaryStyle}>
@@ -727,7 +735,7 @@ function PropRow({ prop, density }: { prop: ApiPropDoc; density: ApiTableDensity
           </div>
         )}
 
-        {prop.description ? <p css={descriptionStyle}>{prop.description}</p> : null}
+        {prop.description ? <p css={descriptionStyle}><InlineText text={prop.description} /></p> : null}
 
         <div css={metaStyle}>
           {prop.defaultValue !== null && prop.defaultValue !== undefined ? (
@@ -832,7 +840,7 @@ function ApiPart({
           />
         </p>
       ) : null}
-      {component.description ? <p css={descriptionStyle}>{component.description}</p> : null}
+      {component.description ? <p css={descriptionStyle}><InlineText text={component.description} /></p> : null}
       {component.native ? (
         <p css={nativeStyle}>
           Also accepts native <code>{`<${component.native}>`}</code> props.
