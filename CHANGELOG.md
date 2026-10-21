@@ -2,7 +2,13 @@
 
 ## Unreleased
 
+## 0.10.0 — 2026-10-21
+
 ### Added
+
+- `GameSeat` now leads with an opaque 48px medallion, a three-card shoulder fan, a hugging plaque and a card-face score coin; `GamePanel` adds the neutral raised surface, `GameScore.Table` the scorekeeper ledger, `GameRounds` a round ribbon and `GameMarks` card-ratio trick pips. `GameTable` composes the real `GameSeat` in its docs.
+- Games state axes have one owner: `GameHand` selects while `GameHand.Confirm` plays, a card carries its disabled reason, `GameCardStack.Pile` opens as a controlled disclosure, `GameSeat` takes `remainingMs`/`durationMs` and `GameActions` requires a label.
+- `GameTable` sizes from its container: cards scale below `sm`, only real controls keep the 24/32px floor, and `places` replaces `players` (deprecated alias for one release).
 
 - Component documentation ends with one API section (root and parts, native element, slots and dependencies) generated from the component sources; curated examples carry authored code. `packages/ui/src/components/dialog` is the reference page.
 - `LinkUnfurl`, `ChatMessage`, `HoldToConfirm` and `AttachmentList` accept `slots.root`, `slotProps.root` and `component` to replace their native root while retaining generated content, props, refs and styling.
