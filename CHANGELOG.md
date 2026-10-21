@@ -10,6 +10,7 @@
 ### Changed
 
 - The Deck page is rebuilt around illustrated decks: a seeded `Scene` expedition deck, `PersonAvatar` crew and Spanish court cards, relic printings, and suitless prompt cards, each with authored code.
+- `ApiTable` resolves catalog references to docs links, searches nested member/signature fields, and expands local array record contracts (`ThreadComment[]`, `FilterToolbarDefinition[]`, `DialogStackPageRecord[]`).
 - `ApiTable` hides inherited HTML/React props (`className`/`sx` stay), renders complex types in a dedicated panel, and shows signature parameter fields inline.
 - `ApiTable` expands fields for slot props and callback parameter types (`ThreadPartProps`, `MoneyInputDetails`), so named contracts are inspectable in the Slots panel and Signature details.
 - `MoneyInput<C>` infers its currency union from `currencies` for `currency`, `onCurrencyChange` and `details.currency`.

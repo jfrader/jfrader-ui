@@ -55,20 +55,17 @@ try {
         && Boolean(document.querySelector('.main h1')), entry.slug, { timeout });
       await page.waitForTimeout(250);
       const pageData = await page.evaluate(() => new Promise((resolve) => {
-        for (const details of document.querySelectorAll('.frame .code-toggle')) {
-          if (!details.open) {
-            details.open = true;
-            details.dispatchEvent(new Event('toggle'));
-          }
+        for (const toggle of document.querySelectorAll('.frame header [aria-controls][aria-expanded="false"]')) {
+          toggle.click();
         }
         // React renders the code panel on the toggle event; measure after it settles.
         setTimeout(() => {
           const frames = [...document.querySelectorAll('.frame')].map((frame) => {
-            const toggle = frame.querySelector('.code-toggle');
-            const code = toggle?.querySelector('.sd-demo-code pre, .sd-demo-code code')?.textContent ?? '';
+            const panel = frame.querySelector('.sd-frame-code');
+            const code = panel?.querySelector('.sd-demo-code pre, .sd-demo-code code')?.textContent ?? '';
             return {
               story: frame.dataset.story ?? frame.querySelector('header span')?.textContent ?? '',
-              noCode: Boolean(toggle?.querySelector('.sd-demo-code p')),
+              noCode: Boolean(panel?.querySelector('.sd-demo-code p')),
               codeLength: code.length,
             };
           });
