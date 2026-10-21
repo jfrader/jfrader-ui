@@ -7,6 +7,15 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectAligned, expectInside, expectMirroredDirection } from '../../testing/geometry-assertions';
 import { Calendar, type CalendarComposedProps as CalendarProps, type CalendarShorthandProps } from './index';
+import {
+  civilMonthOf,
+  formatCivilDate,
+  formatCivilMonth,
+  parseCivilDate,
+  parseCivilDateRange,
+  parseCivilMonth,
+  todayCivilDate,
+} from '../../utils/civil-date';
 
 const LOCALE = 'en-US';
 // Rejected by the controlled parent in the Controlled story.
@@ -603,6 +612,73 @@ export const RightToLeft: Story = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('2026-09-15');
     await userEvent.keyboard('{ArrowRight}');
     await expect(selected).toHaveFocus();
+  },
+};
+
+export const CivilDateHelpers: Story = {
+  tags: ['!autodocs'],
+  args: { defaultValue: '2028-02-29' },
+  render: (args) => <CalendarExample {...args} />,
+  play: async () => {
+    for (const value of ['2026-10-14', '2028-02-29', '2000-02-29', '0000-02-29', '0099-01-01', '9999-12-31']) {
+      await expect(parseCivilDate(value)).toBe(value);
+    }
+    for (const value of [
+      '2028-02-30', '1900-02-29', '2026-02-29', '2026-00-01', '2026-13-01', '2026-01-00',
+      '2026-04-31', '2026-10', '2026-1-01', '10000-01-01', '-0001-01-01', '+2026-01-01',
+      ' 2026-10-14', '2026-10-14\n', '2026-10-14T00:00:00Z', '', 20261014, null, undefined,
+    ]) {
+      await expect(parseCivilDate(value)).toBeNull();
+    }
+    for (const value of ['2026-10', '0000-01', '9999-12']) {
+      await expect(parseCivilMonth(value)).toBe(value);
+    }
+    for (const value of ['2026-10-14', '2026-00', '2026-13', '2026-1', '2026-10 ', 202610, null]) {
+      await expect(parseCivilMonth(value)).toBeNull();
+    }
+
+    const date = parseCivilDate('2028-02-29');
+    const month = parseCivilMonth('2028-02');
+    if (date === null || month === null) throw new Error('Valid civil values must parse.');
+    await expect(civilMonthOf(date)).toBe(month);
+    await expect(formatCivilDate(date, 'ja-JP', { year: 'numeric', month: 'long', day: 'numeric' }))
+      .toBe('2028年2月29日');
+    await expect(formatCivilDate(date, 'en-US')).toBe('Feb 29, 2028');
+    await expect(formatCivilDate(date, 'en-US', { dateStyle: undefined, numberingSystem: 'latn' }))
+      .toBe('Feb 29, 2028');
+    await expect(formatCivilDate(date, 'en-US', { day: 'numeric' })).toBe('29');
+    await expect(formatCivilMonth(month, 'en-US')).toBe('February 2028');
+    const runtimeOptions = { timeZone: 'Pacific/Honolulu', calendar: 'persian', dateStyle: 'short' } as const;
+    await expect(formatCivilDate(date, 'fa-IR-u-nu-latn', runtimeOptions)).toBe(
+      new Intl.DateTimeFormat('fa-IR-u-nu-latn', {
+        dateStyle: 'short', calendar: 'gregory', timeZone: 'UTC',
+      }).format(new Date('2028-02-29T00:00:00Z')),
+    );
+    const skippedDay = parseCivilDate('2011-12-30');
+    if (skippedDay === null) throw new Error('A skipped local day is still a civil date.');
+    await expect(formatCivilDate(skippedDay, 'en-US')).toBe('Dec 30, 2011');
+
+    const range = { start: '2028-02-28', end: '2028-02-29' };
+    await expect(parseCivilDateRange(range)).toEqual(range);
+    await expect(parseCivilDateRange(range)).not.toBe(range);
+    await expect(parseCivilDateRange({ start: date, end: date })).toEqual({ start: date, end: date });
+    for (const value of [null, {}, [], { start: date }, { start: date, end: '2028-02-28' }, { start: date, end: '2028-02-30' }]) {
+      await expect(parseCivilDateRange(value)).toBeNull();
+    }
+
+    const now = new Date('2028-03-01T00:30:00Z');
+    await expect(todayCivilDate({ timeZone: 'UTC', now })).toBe('2028-03-01');
+    await expect(todayCivilDate({ timeZone: 'America/Los_Angeles', now })).toBe('2028-02-29');
+    await expect(todayCivilDate({ timeZone: 'Pacific/Apia', now: new Date('2011-12-30T10:00:00Z') }))
+      .toBe('2011-12-31');
+    for (const value of ['0000-01-01', '0099-01-01', '9999-12-31']) {
+      await expect(todayCivilDate({ timeZone: 'UTC', now: new Date(`${value}T00:00:00Z`) })).toBe(value);
+    }
+    await expect(() => todayCivilDate({ timeZone: 'Not/AZone', now })).toThrow(RangeError);
+    await expect(() => todayCivilDate({ timeZone: '', now })).toThrow(RangeError);
+    await expect(() => todayCivilDate({ timeZone: 'UTC', now: new Date(Number.NaN) })).toThrow(RangeError);
+    await expect(() => todayCivilDate({ timeZone: 'UTC', now: new Date('+010000-01-01T00:00:00Z') }))
+      .toThrow(RangeError);
   },
 };
 
