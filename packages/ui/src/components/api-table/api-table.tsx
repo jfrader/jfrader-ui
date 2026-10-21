@@ -495,10 +495,21 @@ function inheritedLabel(count: number): string {
   return count === 1 ? '1 inherited prop' : `${count} inherited props`;
 }
 
-function matchesTerm(prop: ApiPropDoc, term: string): boolean {
+function matchesTerm(prop: ApiPropDoc, term: string, depth = 0): boolean {
   if (!term) return true;
-  return [prop.name, prop.type, prop.description, prop.inheritedFrom, prop.defaultValue]
+  const own = [prop.name, prop.type, prop.description, prop.inheritedFrom, prop.defaultValue, prop.part, prop.component?.name]
     .some((value) => value?.toLowerCase().includes(term));
+  if (own) return true;
+  if (depth >= 2) return false;
+  return Boolean(
+    prop.members?.some((member) => matchesTerm(member, term, depth + 1))
+      || prop.element?.members.some((member) => matchesTerm(member, term, depth + 1))
+      || prop.signatures?.some((signature) => signature.type.toLowerCase().includes(term)
+        || signature.parameters.some((parameter) => parameter.name.toLowerCase().includes(term)
+          || parameter.type.toLowerCase().includes(term)
+          || parameter.description?.toLowerCase().includes(term)
+          || parameter.members?.some((member) => matchesTerm(member, term, depth + 1)))),
+  );
 }
 
 function MemberRows({ members, depth = 0 }: { members: readonly ApiPropDoc[]; depth?: number }) {
@@ -809,7 +820,7 @@ function ApiPart({
     <section css={[partStyle, tailStyle]}>
       <div css={partHeaderStyle}>
         <Heading css={partNameStyle}>{component.name}</Heading>
-        <span css={partCountStyle}>{countLabel(own.length)}</span>
+        <span css={partCountStyle}>{countLabel(term ? ownMatches.length : own.length)}</span>
       </div>
       {component.typeParameters?.length ? (
         <p css={signatureLineStyle}>
@@ -913,7 +924,7 @@ export function ApiTable({
               size="sm"
               label="Filter props"
               labelPlacement="hidden"
-              placeholder="Filter by prop, type or description"
+              placeholder="Filter by prop, type, field or description"
               value={query}
               onValueChange={setQuery}
               clearable
