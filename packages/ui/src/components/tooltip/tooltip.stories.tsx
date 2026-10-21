@@ -7,7 +7,7 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Popover } from '../popover';
-import { Tooltip, type TooltipCompoundProps as TooltipProps, type TooltipEasyProps } from './index';
+import { Tooltip, type TooltipComposedProps as TooltipProps, type TooltipShorthandProps } from './index';
 
 const TRIGGER = 'Copy';
 const TIP = 'Copy to clipboard';
@@ -24,7 +24,7 @@ const meta: Meta<TooltipProps> = {
     docs: {
       description: { component: 'Show help when someone hovers over or focuses a control.' },
       sections: [
-        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'Basic', stories: ['Default', 'Composed'] },
         { title: 'State', stories: ['Controlled'] },
       ],
       usage: `### Content
@@ -46,24 +46,24 @@ type Story = StoryObj<typeof meta>;
 type CheckedTooltip<Props extends import('./index').TooltipProps> = Props;
 export type TooltipTypeRegression = {
   // @ts-expect-error The non-DOM provider root has no component sugar.
-  providerComponent: TooltipEasyProps['component'];
+  providerComponent: TooltipShorthandProps['component'];
   // @ts-expect-error Replace the native content or trigger, not the provider root.
-  providerRootSlot: NonNullable<TooltipEasyProps['slots']>['root'];
+  providerRootSlot: NonNullable<TooltipShorthandProps['slots']>['root'];
   // @ts-expect-error The provider has no root element to receive native props.
-  providerRootProps: NonNullable<TooltipEasyProps['slotProps']>['root'];
-  // @ts-expect-error Easy help and compound children are mutually exclusive.
+  providerRootProps: NonNullable<TooltipShorthandProps['slotProps']>['root'];
+  // @ts-expect-error Shorthand help and composed children are mutually exclusive.
   mixed: CheckedTooltip<{ triggerLabel: string; content: string; children: string }>;
-  // @ts-expect-error Easy mode needs both its trigger label and help text.
+  // @ts-expect-error Shorthand mode needs both its trigger label and help text.
   incomplete: CheckedTooltip<{ triggerLabel: string }>;
-  // @ts-expect-error Compound mode rejects generated-part props.
+  // @ts-expect-error Composed mode rejects generated-part props.
   compoundSlots: CheckedTooltip<{ children: string; slotProps: { trigger: { disabled: true } } }>;
 };
 
-function EasyControlledTooltip(props: TooltipEasyProps) {
+function ShorthandControlledTooltip(props: TooltipShorthandProps) {
   const [open, setOpen] = useState(false);
   return <Tooltip {...props} open={open} onOpenChange={(next) => { setOpen(next); props.onOpenChange?.(next); }} />;
 }
-EasyControlledTooltip.displayName = 'EasyControlledTooltip';
+ShorthandControlledTooltip.displayName = 'ShorthandControlledTooltip';
 
 function TooltipButtonRoot(props: ComponentPropsWithRef<'button'>) {
   return <button {...props} data-generated-trigger="" />;
@@ -125,7 +125,7 @@ async function tabToOpen(canvasElement: HTMLElement) {
   return { trigger, tooltip };
 }
 
-export const Default: StoryObj<TooltipEasyProps> = {
+export const Default: StoryObj<TooltipShorthandProps> = {
   name: 'Control help',
   args: { triggerLabel: TRIGGER, content: TIP },
   render: (args) => <Tooltip {...args} />,
@@ -144,7 +144,7 @@ export const Default: StoryObj<TooltipEasyProps> = {
 };
 
 /** Assemble the trigger and help text for a custom layout. */
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Composed help',
   render: (args) => <TooltipExample {...args} />,
   parameters: { docs: { description: { story: 'Compose a trigger and help text beside another action.' }, source: { language: 'tsx', code: `import { Button, Tooltip, styled } from '@jfrader/ui';
@@ -185,7 +185,7 @@ const Actions = styled.div({ display: 'flex', gap: vars.space[3] });
 };
 
 /** Set props on the generated button and tooltip. */
-export const CustomParts: StoryObj<TooltipEasyProps> = {
+export const CustomParts: StoryObj<TooltipShorthandProps> = {
   args: {
     triggerLabel: TRIGGER,
     content: TIP,
@@ -211,7 +211,7 @@ export const CustomParts: StoryObj<TooltipEasyProps> = {
   },
 };
 
-export const EasyDisabled: StoryObj<TooltipEasyProps> = {
+export const ShorthandDisabled: StoryObj<TooltipShorthandProps> = {
   args: { triggerLabel: TRIGGER, content: TIP, slotProps: { trigger: { disabled: true } } },
   render: (args) => <Tooltip {...args} />,
   play: async ({ canvasElement, userEvent }) => {
@@ -221,9 +221,9 @@ export const EasyDisabled: StoryObj<TooltipEasyProps> = {
   },
 };
 
-export const EasyControlled: StoryObj<TooltipEasyProps> = {
+export const ShorthandControlled: StoryObj<TooltipShorthandProps> = {
   args: { triggerLabel: TRIGGER, content: TIP, onOpenChange: fn() },
-  render: (args) => <EasyControlledTooltip {...args} />,
+  render: (args) => <ShorthandControlledTooltip {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     await userEvent.tab();
     await bodyOf(canvasElement).findByRole('tooltip');

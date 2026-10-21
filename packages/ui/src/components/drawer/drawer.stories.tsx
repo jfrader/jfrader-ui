@@ -19,9 +19,9 @@ import { Surface, type SurfacePartProps } from '../surface';
 import { Card } from '../card';
 import {
   Drawer,
-  type DrawerCompoundProps,
+  type DrawerComposedProps,
   type DrawerContentProps,
-  type DrawerEasyProps,
+  type DrawerShorthandProps,
   type DrawerPanelProps,
   type DrawerProps,
   type DrawerSide,
@@ -113,8 +113,8 @@ const meta = {
           'Open a panel from the edge of the page to show settings, filters or details.',
       },
       sections: [
-        { title: 'Easy mode', stories: ['Default'] },
-        { title: 'Compound anatomy', stories: ['Compound'] },
+        { title: 'Shorthand mode', stories: ['Default'] },
+        { title: 'Composed anatomy', stories: ['Composed'] },
         { title: 'Placements', stories: ['InlineStart', 'InlineEnd', 'Top', 'Bottom'] },
         { title: 'Sizes', stories: ['Small', 'Medium', 'Large'] },
         { title: 'Controlled and cancel', stories: ['Controlled', 'CancelVeto'] },
@@ -144,12 +144,12 @@ Use a drawer for a task, filter panel, or set of details that needs focus withou
 
 export default meta;
 
-type Story = Omit<StoryObj<DrawerCompoundProps>, 'render' | 'play'> & {
-  render?: (args: DrawerCompoundProps) => ReactNode;
-  play?: (context: StoryContext<DrawerCompoundProps>) => Promise<void>;
+type Story = Omit<StoryObj<DrawerComposedProps>, 'render' | 'play'> & {
+  render?: (args: DrawerComposedProps) => ReactNode;
+  play?: (context: StoryContext<DrawerComposedProps>) => Promise<void>;
 };
 
-interface ExampleProps extends DrawerCompoundProps {
+interface ExampleProps extends DrawerComposedProps {
   contentProps?: DrawerContentProps;
   panelProps?: DrawerPanelProps;
   body?: ReactNode;
@@ -261,7 +261,7 @@ function isMonotonic(values: number[], direction: 1 | -1) {
   return values.every((value, index) => index === 0 || (value - values[index - 1]!) * direction >= -0.01);
 }
 
-async function openDrawer({ canvasElement, userEvent }: Pick<StoryContext<DrawerCompoundProps>, 'canvasElement' | 'userEvent'>) {
+async function openDrawer({ canvasElement, userEvent }: Pick<StoryContext<DrawerComposedProps>, 'canvasElement' | 'userEvent'>) {
   const canvas = within(canvasElement);
   const trigger = canvas.getByRole('button', { name: TRIGGER });
   await userEvent.click(trigger);
@@ -319,7 +319,7 @@ async function expectInlineSize(panel: HTMLElement, dialog: HTMLElement, size: D
 
 const LONG_REFERENCE = 'CustomerAccountExportConfirmationReference'.repeat(3);
 
-export const UnbrokenContent: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
+export const UnbrokenContent: StoryObj<(props: DrawerShorthandProps) => ReactNode> = {
   tags: ['!autodocs'],
   args: {
     defaultOpen: true,
@@ -345,8 +345,8 @@ export const UnbrokenContent: StoryObj<(props: DrawerEasyProps) => ReactNode> = 
   },
 };
 
-export const Default: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
-  name: 'Easy mode',
+export const Default: StoryObj<(props: DrawerShorthandProps) => ReactNode> = {
+  name: 'Shorthand mode',
   args: {
     triggerLabel: TRIGGER,
     title: TITLE,
@@ -416,12 +416,12 @@ const FieldStack = styled.div({
   },
 };
 
-export const Compound: Story = {
-  name: 'Compound',
+export const Composed: Story = {
+  name: 'Composed',
   parameters: {
     docs: {
       description: {
-        story: 'Assemble a drawer with compound parts for custom header, body, and footer layout.',
+        story: 'Assemble a drawer with composed parts for custom header, body, and footer layout.',
       },
       source: {
         language: 'tsx',
@@ -488,7 +488,7 @@ const FieldStack = styled.div({
   },
 };
 
-function ControlledEasyDrawer(props: DrawerEasyProps) {
+function ControlledShorthandDrawer(props: DrawerShorthandProps) {
   const [open, setOpen] = useState(false);
   return (
     <Drawer
@@ -501,10 +501,10 @@ function ControlledEasyDrawer(props: DrawerEasyProps) {
     />
   );
 }
-ControlledEasyDrawer.displayName = 'ControlledEasyDrawer';
+ControlledShorthandDrawer.displayName = 'ControlledShorthandDrawer';
 
-export const EasyModeControlled: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
-  name: 'Easy mode controlled',
+export const ShorthandModeControlled: StoryObj<(props: DrawerShorthandProps) => ReactNode> = {
+  name: 'Shorthand mode controlled',
   parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
 import { Drawer, TextField } from '@jfrader/ui';
 
@@ -530,7 +530,7 @@ function Filters() {
     closeLabel: 'Close',
     onOpenChange: fn(),
   },
-  render: (args) => <ControlledEasyDrawer {...args} />,
+  render: (args) => <ControlledShorthandDrawer {...args} />,
   play: async ({ canvasElement, canvas, args, userEvent }) => {
     const trigger = canvas.getByRole('button', { name: TRIGGER });
     await userEvent.click(trigger);
@@ -546,8 +546,8 @@ function Filters() {
   },
 };
 
-export const EasyModeDisabled: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
-  name: 'Easy mode disabled',
+export const ShorthandModeDisabled: StoryObj<(props: DrawerShorthandProps) => ReactNode> = {
+  name: 'Shorthand mode disabled',
   parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
 
 <Drawer
@@ -588,8 +588,8 @@ function CustomDrawerPanel(props: DrawerPanelProps) {
   return <Drawer.Panel {...props} data-slot="drawer-panel" />;
 }
 
-export const EasyModeCustomizationSlotProps: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
-  name: 'Easy mode customization slotProps',
+export const ShorthandModeCustomizationSlotProps: StoryObj<(props: DrawerShorthandProps) => ReactNode> = {
+  name: 'Shorthand mode customization slotProps',
   parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField, styled, type SurfacePartProps } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
@@ -675,9 +675,9 @@ function FilterPanel(props: SurfacePartProps) {
   },
 };
 
-export const EasyModeWithoutDescription: StoryObj<(props: DrawerEasyProps) => ReactNode> = {
+export const ShorthandModeWithoutDescription: StoryObj<(props: DrawerShorthandProps) => ReactNode> = {
   tags: ['!autodocs'],
-  name: 'Easy mode without description',
+  name: 'Shorthand mode without description',
   args: {
     triggerLabel: TRIGGER,
     title: TITLE,
@@ -695,15 +695,15 @@ export const EasyModeWithoutDescription: StoryObj<(props: DrawerEasyProps) => Re
   },
 };
 
-function easyModeTypeContracts() {
-  // @ts-expect-error Presentation mode rejects compound children.
-  <Drawer triggerLabel="Open" title="Filters" content="Filters" closeLabel="Close">Compound</Drawer>;
+function shorthandModeTypeContracts() {
+  // @ts-expect-error Presentation mode rejects composed children.
+  <Drawer triggerLabel="Open" title="Filters" content="Filters" closeLabel="Close">Composed</Drawer>;
   // @ts-expect-error Presentation mode requires title and closeLabel.
   <Drawer triggerLabel="Open" content="Filters" />;
-  // @ts-expect-error Named presentation props cannot leak into compound mode.
+  // @ts-expect-error Named presentation props cannot leak into composed mode.
   <Drawer title="Filters"><Drawer.Content /></Drawer>;
 }
-void easyModeTypeContracts;
+void shorthandModeTypeContracts;
 
 export const InlineStart: Story = {
   name: 'Inline start',
@@ -1880,7 +1880,7 @@ function Filters() {
   },
 };
 
-function UnmountFixture({ removeTrigger = false, ...props }: DrawerCompoundProps & { removeTrigger?: boolean }) {
+function UnmountFixture({ removeTrigger = false, ...props }: DrawerComposedProps & { removeTrigger?: boolean }) {
   const [mounted, setMounted] = useState(true);
   return (
     <Drawer {...props}>

@@ -7,7 +7,7 @@ import { withLightTheme } from '../../testing/story-decorators';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { ThemeRoot } from '../theme-root';
-import { ButtonGroup, type ButtonGroupCompoundProps, type ButtonGroupEasyProps, type ButtonGroupItemProps, type ButtonGroupItemRecord, type ButtonGroupCompoundProps as ButtonGroupProps } from './index';
+import { ButtonGroup, type ButtonGroupComposedProps, type ButtonGroupShorthandProps, type ButtonGroupItemProps, type ButtonGroupItemRecord, type ButtonGroupComposedProps as ButtonGroupProps } from './index';
 
 const FixtureButton = styled.button({
   minInlineSize: vars.space[8],
@@ -69,7 +69,7 @@ const meta = {
           'Place related actions together, with an optional menu for more commands.',
       },
       sections: [
-        { title: 'Actions', stories: ['Default', 'Compound'] },
+        { title: 'Actions', stories: ['Default', 'Composed'] },
         { title: 'Composition', stories: ['NativeFormActions', 'Link', 'WithMenu'] },
         { title: 'Layout', stories: ['Vertical'] },
       ],
@@ -95,14 +95,14 @@ Accepted Escape or menu selection returns focus to the trigger; outside press an
       },
     },
   },
-  render: (args: ButtonGroupCompoundProps) => (
+  render: (args: ButtonGroupComposedProps) => (
     <ButtonGroup {...args}>
       <ButtonGroup.Item>Share</ButtonGroup.Item>
       <ButtonGroup.Item>Duplicate</ButtonGroup.Item>
       <ButtonGroup.Item>Archive</ButtonGroup.Item>
     </ButtonGroup>
   ),
-} satisfies Meta<ButtonGroupCompoundProps>;
+} satisfies Meta<ButtonGroupComposedProps>;
 export default meta;
 
 function ButtonGroupHost(props: ComponentPropsWithRef<'div'>) {
@@ -113,14 +113,14 @@ function CustomItem(props: ButtonGroupItemProps) {
 }
 
 type Story = StoryObj<
-  Omit<ButtonGroupCompoundProps, 'onClick' | 'component'> & {
+  Omit<ButtonGroupComposedProps, 'onClick' | 'component'> & {
     onClick?: MouseEventHandler<HTMLElement>;
     onMenuSelect?: () => void;
     onPartRef?: RefCallback<HTMLElement>;
   }
 >;
 
-export const Default: StoryObj<Omit<ButtonGroupEasyProps, 'component'>> = {
+export const Default: StoryObj<Omit<ButtonGroupShorthandProps, 'component'>> = {
   name: 'Document actions',
   args: {
     label: 'Document actions',
@@ -174,7 +174,7 @@ export function DocumentActions({ share, archive }: { share: () => void; archive
   },
 };
 
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Composed actions',
   parameters: { docs: {
     description: { story: 'Write each action as a child when composing the group yourself.' },
@@ -219,7 +219,7 @@ export const Compound: Story = {
   },
 };
 
-export const NativeFormActions: StoryObj<Omit<ButtonGroupEasyProps, 'component'> & { onSave: () => void }> = {
+export const NativeFormActions: StoryObj<Omit<ButtonGroupShorthandProps, 'component'> & { onSave: () => void }> = {
   name: 'Form actions',
   args: {
     label: 'Document actions',
@@ -259,7 +259,7 @@ export function DocumentForm({ saveDocument }: { saveDocument: () => void }) {
 };
 
 // The slot API takes `css` values, so this story keeps the documented spelling.
-export const GeneratedPartProps: StoryObj<Omit<ButtonGroupEasyProps, 'component'>> = {
+export const GeneratedPartProps: StoryObj<Omit<ButtonGroupShorthandProps, 'component'>> = {
   name: 'Generated part props',
   args: {
     label: 'Document actions',
@@ -294,7 +294,7 @@ export const GeneratedPartProps: StoryObj<Omit<ButtonGroupEasyProps, 'component'
   },
 };
 
-export const ReplacedParts: StoryObj<Omit<ButtonGroupEasyProps, 'component'>> = {
+export const ReplacedParts: StoryObj<Omit<ButtonGroupShorthandProps, 'component'>> = {
   name: 'Replaced parts',
   args: {
     items: [
@@ -332,16 +332,16 @@ export const ReplacedParts: StoryObj<Omit<ButtonGroupEasyProps, 'component'>> = 
   },
 };
 
-function easyModeTypeContracts() {
+function shorthandModeTypeContracts() {
   const items: readonly ButtonGroupItemRecord[] = [{ label: 'Action' }];
-  // @ts-expect-error Easy mode rejects compound children.
+  // @ts-expect-error Shorthand mode rejects composed children.
   <ButtonGroup items={items}>Child</ButtonGroup>;
-  // @ts-expect-error Compound mode rejects items.
+  // @ts-expect-error Composed mode rejects items.
   <ButtonGroup items={items} label="Group">Child</ButtonGroup>;
-  // @ts-expect-error Compound mode rejects slotProps.
+  // @ts-expect-error Composed mode rejects slotProps.
   <ButtonGroup slotProps={{ root: {} }}>Child</ButtonGroup>;
 }
-void easyModeTypeContracts;
+void shorthandModeTypeContracts;
 
 export const Variants: Story = {
   render: (args) => (

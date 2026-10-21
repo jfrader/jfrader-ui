@@ -4,7 +4,7 @@ import { expect, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
-import { ToggleSubscription, type ToggleSubscriptionCompoundProps as ToggleSubscriptionProps, type ToggleSubscriptionEasyProps } from './index';
+import { ToggleSubscription, type ToggleSubscriptionComposedProps as ToggleSubscriptionProps, type ToggleSubscriptionShorthandProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
@@ -63,7 +63,7 @@ const meta = {
   parameters: {
     docs: {
       sections: [
-        { title: 'Choose a billing period', stories: ['Easy', 'MonthlyYearly'] },
+        { title: 'Choose a billing period', stories: ['Shorthand', 'MonthlyYearly'] },
         { title: 'Price displays', stories: ['SeveralPrices', 'IntlCurrencies'] },
       ],
       description: {
@@ -73,7 +73,7 @@ const meta = {
       usage: `### Prices and forms
 - Supply the billing amounts and savings; the component does not calculate them or create a form field.
 - With mapped prices, no selection displays no price; a selected period without a mapped price throws.
-- In a compound composition, keep displayed prices in sync with the selected period yourself.
+- In a composed layout, keep displayed prices in sync with the selected period yourself.
 - Use finite amounts and ISO currencies. Give a previous price an accessible label and set an explicit locale for server rendering.
 - Keep badges free of interactive controls.
 
@@ -87,7 +87,7 @@ const meta = {
 } satisfies Meta<ToggleSubscriptionProps>;
 export default meta;
 type Story = StoryObj<Omit<ToggleSubscriptionProps, 'component'>>;
-type EasyStory = StoryObj<Omit<ToggleSubscriptionEasyProps, 'component'>>;
+type ShorthandStory = StoryObj<Omit<ToggleSubscriptionShorthandProps, 'component'>>;
 const periods = [
   { value: 'monthly', label: 'Monthly' },
   { value: 'quarterly', label: 'Quarterly', disabled: true },
@@ -106,7 +106,7 @@ async function expectSettledPrice(root: HTMLElement, formatted: string) {
     await expect(getComputedStyle(visual!.firstElementChild!).opacity).toBe('1');
   });
 }
-export const Easy: EasyStory = {
+export const Shorthand: ShorthandStory = {
   name: 'Mapped billing prices',
   parameters: { docs: {
     description: { story: 'Choose Monthly or Annual to update the price; Quarterly is unavailable.' },
@@ -142,7 +142,7 @@ const prices = {
     await expectSettledPrice(canvasElement, '$230.00');
   },
 };
-function EasyControlledExample(args: ToggleSubscriptionEasyProps) {
+function ShorthandControlledExample(args: ToggleSubscriptionShorthandProps) {
   const [value, setValue] = useState('monthly');
   return (
     <ToggleSubscription {...args} value={value} onValueChange={(next) => {
@@ -151,10 +151,10 @@ function EasyControlledExample(args: ToggleSubscriptionEasyProps) {
     }} />
   );
 }
-export const EasyControlled: EasyStory = { ...Easy, render: (args) => <EasyControlledExample {...args} /> };
-export const EasyNoSelection: EasyStory = {
-  ...Easy,
-  args: { ...Easy.args, defaultValue: undefined },
+export const ShorthandControlled: ShorthandStory = { ...Shorthand, render: (args) => <ShorthandControlledExample {...args} /> };
+export const ShorthandNoSelection: ShorthandStory = {
+  ...Shorthand,
+  args: { ...Shorthand.args, defaultValue: undefined },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await expect(canvas.queryByText('/ month')).not.toBeInTheDocument();
     await expect(canvasElement.querySelector('[data-ui="toggle-subscription-price"]')).not.toBeInTheDocument();
@@ -167,8 +167,8 @@ export const EasyNoSelection: EasyStory = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
-export const EasyRejected: EasyStory = {
-  ...Easy, args: { ...Easy.args, value: 'monthly' },
+export const ShorthandRejected: ShorthandStory = {
+  ...Shorthand, args: { ...Shorthand.args, value: 'monthly' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('radio', { name: 'Annual' }));
     await expect(canvas.getByRole('radio', { name: 'Monthly' })).toHaveAttribute('aria-checked', 'true');
@@ -179,8 +179,8 @@ export const EasyRejected: EasyStory = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('annual');
   },
 };
-export const EasyKeyboard: EasyStory = {
-  ...Easy,
+export const ShorthandKeyboard: ShorthandStory = {
+  ...Shorthand,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.tab();
     await assertFocus(canvas.getByRole('radio', { name: 'Monthly' }));
@@ -194,8 +194,8 @@ export const EasyKeyboard: EasyStory = {
     await expectSettledPrice(canvasElement, '$230.00');
   },
 };
-export const EasyRTL: EasyStory = {
-  ...Easy, args: { ...Easy.args, dir: 'rtl', locale: 'de-DE' },
+export const ShorthandRTL: ShorthandStory = {
+  ...Shorthand, args: { ...Shorthand.args, dir: 'rtl', locale: 'de-DE' },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.keyboard('{ArrowLeft}');
@@ -206,17 +206,17 @@ export const EasyRTL: EasyStory = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('annual');
   },
 };
-function EasyRoot(props: ComponentPropsWithRef<'div'>) {
+function ShorthandRoot(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replacement="toggle-subscription" />;
 }
 // This story tests the documented css/slot API and native style merging.
-export const EasyCustomization: EasyStory = {
-  ...Easy,
+export const ShorthandCustomization: ShorthandStory = {
+  ...Shorthand,
   parameters: { docs: { source: { code: `<ToggleSubscription label="Billing period" options={periods} prices={prices} defaultValue="monthly" locale="en-US"
   slotProps={{ label: { title: 'Billing label' }, item: { slotProps: { badge: { style: { borderRadius: 0 } } } } }}
 />` } } },
   args: {
-    ...Easy.args,
+    ...Shorthand.args,
     ref: fn(),
     slotProps: {
       root: { title: 'Billing selector' },
@@ -225,19 +225,19 @@ export const EasyCustomization: EasyStory = {
       price: { slotProps: { amount: { style: { fontSize: vars.textSize.xl } } } },
     },
   },
-  render: (args) => <ToggleSubscription {...args} component={EasyRoot} />,
+  render: (args) => <ToggleSubscription {...args} component={ShorthandRoot} />,
   play: async (context) => {
-    await Easy.play?.(context);
+    await Shorthand.play?.(context);
     await expect(context.canvas.getByTitle('Billing selector')).toHaveAttribute('data-replacement', 'toggle-subscription');
     await expect(context.args.ref).toHaveBeenCalledWith(context.canvas.getByTitle('Billing selector'));
     await expect(context.canvas.getByTitle('Billing label')).toHaveTextContent('Billing period');
   },
 };
 type AssertToggleSubscriptionProps<T extends import('./index').ToggleSubscriptionProps> = T;
-export type ToggleSubscriptionEasyTypeRegression = {
+export type ToggleSubscriptionShorthandTypeRegression = {
   // @ts-expect-error Options and children are mutually exclusive.
   mixed: AssertToggleSubscriptionProps<{ options: typeof periods; prices: typeof prices; children: string }>;
-  // @ts-expect-error Easy mode requires an explicit price mapping.
+  // @ts-expect-error Shorthand mode requires an explicit price mapping.
   missingPrices: AssertToggleSubscriptionProps<{ options: typeof periods }>;
 };
 function contrastRatio(document: Document, foreground: string, ...layers: string[]) {

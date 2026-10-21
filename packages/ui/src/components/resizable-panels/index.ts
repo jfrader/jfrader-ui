@@ -1,8 +1,8 @@
 export { ResizablePanels } from './resizable-panels';
 export type {
   ResizablePanelsBaseProps,
-  ResizablePanelsCompoundProps,
-  ResizablePanelsEasyProps,
+  ResizablePanelsComposedProps,
+  ResizablePanelsShorthandProps,
   ResizablePanelsPanelItem,
   ResizablePanelsPanelProps,
   ResizablePanelsProps,

@@ -7,7 +7,7 @@ import { css } from '../../styling/css';
 import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
-import { RadioCards, type RadioCardsCompoundProps as RadioCardsProps, type RadioCardsEasyProps } from './index';
+import { RadioCards, type RadioCardsComposedProps as RadioCardsProps, type RadioCardsShorthandProps } from './index';
 
 function ReplacementCardPart(props: ComponentPropsWithRef<'span'>) {
   return <span {...props} data-replaced="true" />;
@@ -91,7 +91,7 @@ const meta = {
   parameters: {
     docs: {
       sections: [
-        { title: 'Basic', stories: ['DefaultGrid', 'Easy'] },
+        { title: 'Basic', stories: ['DefaultGrid', 'Shorthand'] },
         { title: 'Layouts', stories: ['List'] },
         { title: 'Descriptions and icons', stories: ['DescriptionsMeta', 'Icons'] },
         { title: 'States', stories: ['DisabledReason', 'Disabled'] },
@@ -123,13 +123,13 @@ Use cards when a single choice needs descriptions, icons or supporting details. 
 } satisfies Meta<RadioCardsProps>;
 export default meta;
 type Story = StoryObj<Omit<RadioCardsProps, 'component'>>;
-type EasyStory = StoryObj<Omit<RadioCardsEasyProps, 'component'>>;
+type ShorthandStory = StoryObj<Omit<RadioCardsShorthandProps, 'component'>>;
 const shipping = [
   { value: 'standard', label: 'Standard', description: '4–6 business days' },
   { value: 'express', label: 'Express', disabled: true },
   { value: 'pickup', label: 'Pickup', description: 'Collect at the store' },
 ] as const;
-export const Easy: EasyStory = {
+export const Shorthand: ShorthandStory = {
   name: 'Options from data',
   parameters: { docs: {
     description: { story: 'Build a shipping field from options, including an unavailable delivery method.' },
@@ -159,7 +159,7 @@ const shipping = [
     await expect(args.onValueChange).toHaveBeenLastCalledWith('pickup');
   },
 };
-function EasyControlledExample(args: RadioCardsEasyProps) {
+function ShorthandControlledExample(args: RadioCardsShorthandProps) {
   const [value, setValue] = useState('standard');
   return (
     <RadioCards {...args} value={value} onValueChange={(next) => {
@@ -168,9 +168,9 @@ function EasyControlledExample(args: RadioCardsEasyProps) {
     }} />
   );
 }
-export const EasyControlled: EasyStory = { ...Easy, name: 'Easy controlled', render: (args) => <EasyControlledExample {...args} /> };
-export const EasyRejected: EasyStory = {
-  ...Easy, name: 'Easy rejected', args: { ...Easy.args, value: 'standard' },
+export const ShorthandControlled: ShorthandStory = { ...Shorthand, name: 'Shorthand controlled', render: (args) => <ShorthandControlledExample {...args} /> };
+export const ShorthandRejected: ShorthandStory = {
+  ...Shorthand, name: 'Shorthand rejected', args: { ...Shorthand.args, value: 'standard' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('radio', { name: 'Pickup' }));
     await expect(canvas.getByRole('radio', { name: 'Standard' })).toBeChecked();
@@ -179,9 +179,9 @@ export const EasyRejected: EasyStory = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('pickup');
   },
 };
-export const EasyKeyboard: EasyStory = {
-  ...Easy,
-  name: 'Easy keyboard',
+export const ShorthandKeyboard: ShorthandStory = {
+  ...Shorthand,
+  name: 'Shorthand keyboard',
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     await assertFocus(canvas.getByRole('radio', { name: 'Standard' }));
@@ -193,8 +193,8 @@ export const EasyKeyboard: EasyStory = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('pickup');
   },
 };
-export const EasyRTL: EasyStory = {
-  ...EasyKeyboard, name: 'Easy RTL', args: { ...Easy.args, dir: 'rtl' },
+export const ShorthandRTL: ShorthandStory = {
+  ...ShorthandKeyboard, name: 'Shorthand RTL', args: { ...Shorthand.args, dir: 'rtl' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.keyboard('{ArrowLeft}');
@@ -205,17 +205,17 @@ export const EasyRTL: EasyStory = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('pickup');
   },
 };
-function EasyRoot(props: ComponentPropsWithRef<'div'>) {
+function ShorthandRoot(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replacement="radio-cards" />;
 }
-export const EasyCustomization: EasyStory = {
-  ...Easy,
-  name: 'Easy customization',
+export const ShorthandCustomization: ShorthandStory = {
+  ...Shorthand,
+  name: 'Shorthand customization',
   parameters: { docs: { source: { code: `<RadioCards label="Shipping speed" options={shipping} defaultValue="standard"
   slotProps={{ label: { title: 'Shipping label' }, item: { slotProps: { control: { sx: { borderRadius: 0 } } } } }}
 />` } } },
   args: {
-    ...Easy.args,
+    ...Shorthand.args,
     ref: fn(),
     slotProps: {
       root: { title: 'Shipping choices' },
@@ -223,9 +223,9 @@ export const EasyCustomization: EasyStory = {
       item: { slotProps: { control: { sx: { borderRadius: 0 } } } },
     },
   },
-  render: (args) => <RadioCards {...args} component={EasyRoot} />,
+  render: (args) => <RadioCards {...args} component={ShorthandRoot} />,
   play: async (context) => {
-    await Easy.play?.(context);
+    await Shorthand.play?.(context);
     await expect(context.canvas.getByRole('radiogroup', { name: 'Shipping speed' })).toHaveAttribute('data-replacement', 'radio-cards');
     await expect(context.args.ref).toHaveBeenCalledWith(context.canvas.getByRole('radiogroup', { name: 'Shipping speed' }));
     await expect(context.canvas.getByTitle('Shipping label')).toHaveTextContent('Shipping speed');
@@ -234,7 +234,7 @@ export const EasyCustomization: EasyStory = {
   },
 };
 type AssertRadioCardsProps<T extends import('./index').RadioCardsProps> = T;
-export type RadioCardsEasyTypeRegression = {
+export type RadioCardsShorthandTypeRegression = {
   // @ts-expect-error Options and children are mutually exclusive.
   mixed: AssertRadioCardsProps<{ options: typeof shipping; children: string }>;
 };

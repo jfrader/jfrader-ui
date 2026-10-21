@@ -3,7 +3,7 @@ import { expect, fireEvent, fn } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { expectTranslucentContrast } from '../../testing/contrast-assertions';
-import { Navigation, type NavigationEasyProps } from './navigation';
+import { Navigation, type NavigationShorthandProps } from './navigation';
 
 const Frame = styled.div({ boxSizing: 'border-box', inlineSize: `min(40rem, calc(100vw - ${vars.space[8]}))`, padding: vars.space[4], minBlockSize: '18rem' });
 const Outside = styled.button({ marginBlockStart: '12rem', font: 'inherit', color: vars.color.text, background: vars.color.surfaceRaised, border: `1px solid ${vars.color.borderControl}`, padding: vars.space[3], borderRadius: vars.radius.md });
@@ -32,7 +32,7 @@ const meta = {
   parameters: { docs: { description: { component: 'Group links into navigation sections and mark the current page.' }, source: { language: 'tsx', code: source } } },
   decorators: [(Story) => <Frame><Story /></Frame>],
   render: (args) => <><Navigation {...args} /><Outside>Continue</Outside></>,
-} satisfies Meta<NavigationEasyProps>;
+} satisfies Meta<NavigationShorthandProps>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 

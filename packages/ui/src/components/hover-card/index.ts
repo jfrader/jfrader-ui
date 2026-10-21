@@ -1,9 +1,9 @@
 export { HoverCard } from './hover-card';
 export type {
   HoverCardBaseProps,
-  HoverCardCompoundProps,
+  HoverCardComposedProps,
   HoverCardContentProps,
-  HoverCardEasyProps,
+  HoverCardShorthandProps,
   HoverCardGroupProps,
   HoverCardProfilePartProps,
   HoverCardProfileProps,

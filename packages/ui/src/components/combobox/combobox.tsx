@@ -165,7 +165,7 @@ export interface ComboboxBaseProps {
   onInputChange?: (query: string) => void;
 }
 
-export interface ComboboxCompoundProps extends ComboboxBaseProps {
+export interface ComboboxComposedProps extends ComboboxBaseProps {
   options?: never;
   /** Composes the input, list, items and empty state instead of using `options`. */
   children?: ReactNode;
@@ -185,7 +185,7 @@ export interface ComboboxCompoundProps extends ComboboxBaseProps {
   slotProps?: never;
 }
 
-export interface ComboboxEasyProps extends ComboboxBaseProps {
+export interface ComboboxShorthandProps extends ComboboxBaseProps {
   /** Supplies the suggestions rendered in the popup. */
   options: readonly ComboboxOption[];
   children?: never;
@@ -219,7 +219,7 @@ export interface ComboboxEasyProps extends ComboboxBaseProps {
   slotProps?: ComboboxSlotProps;
 }
 
-export type ComboboxProps = ComboboxCompoundProps | ComboboxEasyProps;
+export type ComboboxProps = ComboboxComposedProps | ComboboxShorthandProps;
 
 export interface ComboboxInputProps extends Omit<TextFieldProps, 'value' | 'defaultValue' | 'onValueChange'> {
   /** Root `name` submits the selected value. Input `name` submits an extra text entry. */

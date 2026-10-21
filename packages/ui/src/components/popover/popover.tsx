@@ -56,7 +56,7 @@ export interface PopoverBaseProps {
   children?: ReactNode;
 }
 
-export interface PopoverCompoundProps extends PopoverBaseProps {
+export interface PopoverComposedProps extends PopoverBaseProps {
   triggerLabel?: never;
   label?: never;
   content?: never;
@@ -67,7 +67,7 @@ export interface PopoverCompoundProps extends PopoverBaseProps {
 
 type PopoverGeneratedPartProps<Props> = Omit<Props, 'children'> & { sx?: Interpolation<Theme> };
 
-export interface PopoverEasyProps extends Omit<PopoverBaseProps, 'children'>, Omit<GeneratedRootProps, 'children' | 'content'> {
+export interface PopoverShorthandProps extends Omit<PopoverBaseProps, 'children'>, Omit<GeneratedRootProps, 'children' | 'content'> {
   /** Name the generated trigger button. */
   triggerLabel: ReactNode;
   /** Name the non-modal dialog. */
@@ -94,10 +94,10 @@ export interface PopoverEasyProps extends Omit<PopoverBaseProps, 'children'>, Om
     content?: PopoverGeneratedPartProps<PopoverContentProps>;
   };
   /** Replace the outer wrapper; `slots.root` takes precedence. */
-  component?: NonNullable<PopoverEasyProps['slots']>['root'];
+  component?: NonNullable<PopoverShorthandProps['slots']>['root'];
 }
 
-export type PopoverProps = PopoverCompoundProps | PopoverEasyProps;
+export type PopoverProps = PopoverComposedProps | PopoverShorthandProps;
 
 export interface PopoverTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
 export interface PopoverContentProps extends ComponentPropsWithRef<'div'>, SxProps {}
@@ -105,7 +105,7 @@ export interface PopoverContentProps extends ComponentPropsWithRef<'div'>, SxPro
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
 interface PopoverContextValue {
-  slots: PopoverEasyProps['slots'];
+  slots: PopoverShorthandProps['slots'];
   open: boolean;
   refs: OverlayFloating['refs'];
   floatingContext: OverlayFloating['context'];
@@ -143,7 +143,7 @@ function PopoverLayer({
   placement = 'bottom',
   children,
   slots,
-}: PopoverBaseProps & Pick<PopoverEasyProps, 'slots'> & { nodeId: string | undefined }) {
+}: PopoverBaseProps & Pick<PopoverShorthandProps, 'slots'> & { nodeId: string | undefined }) {
   const [open = false, requestOpenChange] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const pendingFocusRestoreRef = useRef(false);
   const [availableHeight, setAvailableHeight] = useState<number>();

@@ -84,7 +84,7 @@ export interface HoverCardBaseProps {
   closeDelay?: number;
 }
 
-export interface HoverCardCompoundProps extends HoverCardBaseProps {
+export interface HoverCardComposedProps extends HoverCardBaseProps {
   /** Composes the card from `HoverCard.Trigger` and `HoverCard.Content`. */
   children?: ReactNode;
   triggerLabel?: never;
@@ -102,7 +102,7 @@ export interface HoverCardSlotProps {
   profile?: Partial<HoverCardProfileProps>;
 }
 
-export interface HoverCardEasyProps extends HoverCardBaseProps {
+export interface HoverCardShorthandProps extends HoverCardBaseProps {
   /** Label or element that triggers the hover card. */
   triggerLabel: ReactNode;
   /** Profile attributes to render inside the card. */
@@ -121,7 +121,7 @@ export interface HoverCardEasyProps extends HoverCardBaseProps {
   };
 }
 
-export type HoverCardProps = HoverCardCompoundProps | HoverCardEasyProps;
+export type HoverCardProps = HoverCardComposedProps | HoverCardShorthandProps;
 
 export interface HoverCardGroupProps {
   /** The open member's `value`, or `null` when none is open. */
@@ -485,10 +485,10 @@ function HoverCardLayer({
 
 function HoverCardRoot(props: HoverCardProps) {
   const { open, defaultOpen, onOpenChange, value, placement, openDelay, closeDelay } = props;
-  const easyProps = props.profile !== undefined ? props : undefined;
-  const Trigger = easyProps?.slots?.trigger ?? HoverCardTrigger;
-  const Content = easyProps?.slots?.content ?? HoverCardContent;
-  const Profile = easyProps?.slots?.profile ?? HoverCardProfile;
+  const shorthandProps = props.profile !== undefined ? props : undefined;
+  const Trigger = shorthandProps?.slots?.trigger ?? HoverCardTrigger;
+  const Content = shorthandProps?.slots?.content ?? HoverCardContent;
+  const Profile = shorthandProps?.slots?.profile ?? HoverCardProfile;
 
   return (
     <OverlayLayer>
@@ -503,16 +503,16 @@ function HoverCardRoot(props: HoverCardProps) {
           closeDelay={closeDelay}
           nodeId={nodeId}
         >
-          {easyProps ? (
+          {shorthandProps ? (
             <>
-              <Trigger {...easyProps.slotProps?.trigger}>{easyProps.triggerLabel}</Trigger>
-              <Content {...easyProps.slotProps?.content}>
+              <Trigger {...shorthandProps.slotProps?.trigger}>{shorthandProps.triggerLabel}</Trigger>
+              <Content {...shorthandProps.slotProps?.content}>
                 <Profile
-                  {...easyProps.profile}
-                  {...easyProps.slotProps?.profile}
+                  {...shorthandProps.profile}
+                  {...shorthandProps.slotProps?.profile}
                   slotProps={{
-                    ...easyProps.profile.slotProps,
-                    ...easyProps.slotProps?.profile?.slotProps,
+                    ...shorthandProps.profile.slotProps,
+                    ...shorthandProps.slotProps?.profile?.slotProps,
                   }}
                 />
               </Content>

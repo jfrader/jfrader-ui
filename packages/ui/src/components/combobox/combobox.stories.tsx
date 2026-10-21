@@ -9,8 +9,8 @@ import { Button } from '../button';
 import { Popover } from '../popover';
 import {
   Combobox,
-  type ComboboxCompoundProps,
-  type ComboboxEasyProps,
+  type ComboboxComposedProps,
+  type ComboboxShorthandProps,
   type ComboboxInputProps,
   type ComboboxListProps,
   type ComboboxOption,
@@ -86,7 +86,7 @@ const stackStyle = {
   maxInlineSize: '100%',
 } satisfies CSSProperties;
 
-const meta: Meta<ComboboxCompoundProps> = {
+const meta: Meta<ComboboxComposedProps> = {
   title: 'Inputs/Combobox',
   component: Combobox,
   parameters: {
@@ -96,12 +96,12 @@ const meta: Meta<ComboboxCompoundProps> = {
           'Type to filter a list and choose an option.',
       },
       sections: [
-        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'Basic', stories: ['Default', 'Composed'] },
         { title: 'Filtering and empty results', stories: ['Empty'] },
         { title: 'Free text', stories: ['UncommittedText'] },
         { title: 'Grouped options', stories: ['Destinations'] },
         { title: 'States', stories: ['DisabledItem', 'UnavailableField'] },
-        { title: 'Forms and controlled selection', stories: ['EasyFormReset', 'ControlledSelection'] },
+        { title: 'Forms and controlled selection', stories: ['ShorthandFormReset', 'ControlledSelection'] },
         { title: 'Slots', stories: ['SlotProps'] },
       ],
       usage: `### When to use
@@ -126,14 +126,14 @@ Use a combobox to choose one item from a searchable list. Typed text is a search
 export default meta;
 
 type Story = StoryObj<typeof meta>;
-type EasyStory = StoryObj<(props: ComboboxEasyProps) => ReactNode>;
+type ShorthandStory = StoryObj<(props: ComboboxShorthandProps) => ReactNode>;
 // @ts-expect-error Generated-part slot keys are closed.
-type UnknownSlot = NonNullable<ComboboxEasyProps['slotProps']>['unknown'];
+type UnknownSlot = NonNullable<ComboboxShorthandProps['slotProps']>['unknown'];
 // @ts-expect-error Replacement slot keys are closed.
-type UnknownReplacement = NonNullable<ComboboxEasyProps['slots']>['unknown'];
+type UnknownReplacement = NonNullable<ComboboxShorthandProps['slots']>['unknown'];
 
 /** Restyle the generated field label without nesting input slotProps. */
-export const SlotProps: EasyStory = {
+export const SlotProps: ShorthandStory = {
   name: 'Style field parts',
   parameters: { docs: { description: { story: 'Style the label and pass classes to the description, input and options.' }, source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { Combobox } from '@jfrader/ui';
@@ -187,15 +187,15 @@ type CheckedCombobox<Props extends ComboboxProps> = Props;
 export type ComboboxTypeRegression = {
   // @ts-expect-error Options and children are mutually exclusive.
   optionsWithChildren: CheckedCombobox<{ options: typeof FRUITS; children: ReactNode }>;
-  // @ts-expect-error Presentation props are rejected in compound mode without options.
+  // @ts-expect-error Presentation props are rejected in composed mode without options.
   childrenWithLabel: CheckedCombobox<{ label: string; children: ReactNode }>;
-  // @ts-expect-error Presentation props are rejected in compound mode without options.
+  // @ts-expect-error Presentation props are rejected in composed mode without options.
   childrenWithPlaceholder: CheckedCombobox<{ placeholder: string; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects slots and slotProps.
+  // @ts-expect-error Composed mode rejects slots and slotProps.
   childrenWithSlots: CheckedCombobox<{ slots: { root?: () => null }; children: ReactNode }>;
 };
 
-interface ComboboxExampleProps extends ComboboxCompoundProps {
+interface ComboboxExampleProps extends ComboboxComposedProps {
   inputProps?: ComboboxInputProps;
   listId?: string;
 }
@@ -257,7 +257,7 @@ async function focusInput(canvasElement: HTMLElement) {
   return input;
 }
 
-export const Default: EasyStory = {
+export const Default: ShorthandStory = {
   name: 'Choose a fruit',
   args: {
     label: LABEL,
@@ -338,7 +338,7 @@ export const Default: EasyStory = {
   },
 };
 
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Compose a fruit picker',
   render: (args) => <ComboboxExample {...args} inputProps={{ description: DESCRIPTION }} />,
   parameters: {
@@ -391,7 +391,7 @@ function CustomComboboxError(props: ComponentPropsWithRef<'span'>) {
   return <span {...props} data-testid="custom-error" />;
 }
 
-export const CustomSlots: EasyStory = {
+export const CustomSlots: ShorthandStory = {
   parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { Combobox, styled } from '@jfrader/ui';
 
@@ -449,7 +449,7 @@ const FruitError = styled.span({ fontWeight: 600 });
   },
 };
 
-function EasyControlledCombobox(props: ComboboxEasyProps) {
+function ShorthandControlledCombobox(props: ComboboxShorthandProps) {
   const [value, setValue] = useState<string | null>('apple');
   return (
     <div style={stackStyle}>
@@ -465,10 +465,10 @@ function EasyControlledCombobox(props: ComboboxEasyProps) {
   );
 }
 
-export const EasyControlled: EasyStory = {
+export const ShorthandControlled: ShorthandStory = {
   tags: ['!autodocs'],
   args: { label: LABEL, options: FRUITS, onValueChange: fn() },
-  render: (args) => <EasyControlledCombobox {...args} />,
+  render: (args) => <ShorthandControlledCombobox {...args} />,
   play: async ({ args, canvasElement }) => {
     const input = getInput(canvasElement);
     await waitFor(() => expect(input).toHaveValue('Apple'));
@@ -482,7 +482,7 @@ export const EasyControlled: EasyStory = {
   },
 };
 
-export const EasyRejectedControlled: EasyStory = {
+export const ShorthandRejectedControlled: ShorthandStory = {
   tags: ['!autodocs'],
   args: { label: LABEL, options: FRUITS, value: 'apple', onValueChange: fn() },
   render: (args) => (
@@ -503,7 +503,7 @@ export const EasyRejectedControlled: EasyStory = {
   },
 };
 
-export const EasyDisabledOption: EasyStory = {
+export const ShorthandDisabledOption: ShorthandStory = {
   tags: ['!autodocs'],
   args: { label: LABEL, options: FRUITS, defaultValue: 'apple', onValueChange: fn() },
   render: (args) => (
@@ -523,7 +523,7 @@ export const EasyDisabledOption: EasyStory = {
   },
 };
 
-export const EasyKeyboard: EasyStory = {
+export const ShorthandKeyboard: ShorthandStory = {
   tags: ['!autodocs'],
   args: { label: LABEL, options: FRUITS, defaultValue: 'apple', onValueChange: fn() },
   render: (args) => (
@@ -552,7 +552,7 @@ const CUSTOM_COMBOBOX_OPTIONS: readonly ComboboxOption[] = [
   { value: 'cherry', label: 'Cherry', id: 'custom-cherry-cb-opt', textValue: 'Zucchini' },
 ];
 
-export const EasyOptionIdsAndTextValue: EasyStory = {
+export const ShorthandOptionIdsAndTextValue: ShorthandStory = {
   tags: ['!autodocs'],
   args: { label: LABEL, options: CUSTOM_COMBOBOX_OPTIONS, defaultValue: 'apple' },
   render: (args) => (
@@ -576,7 +576,7 @@ export const EasyOptionIdsAndTextValue: EasyStory = {
   },
 };
 
-function DisabledWhileOpenCombobox(props: ComboboxCompoundProps) {
+function DisabledWhileOpenCombobox(props: ComboboxComposedProps) {
   const [disabled, setDisabled] = useState(false);
   return (
     <>
@@ -621,7 +621,7 @@ export const ReadOnlySelection: Story = {
   },
 };
 
-export const EasyFormReset: EasyStory = {
+export const ShorthandFormReset: ShorthandStory = {
   name: 'Reset a form selection',
   parameters: { docs: { description: { story: 'Choose another fruit, then reset the form to Apple.' }, source: { language: 'tsx', code: `import { Button, Combobox } from '@jfrader/ui';
 
@@ -692,7 +692,7 @@ export const NativeFormReset: Story = {
   },
 };
 
-function AssociatedFormResetCombobox(props: ComboboxCompoundProps) {
+function AssociatedFormResetCombobox(props: ComboboxComposedProps) {
   const formId = useId();
   const [cancelReset, setCancelReset] = useState(true);
   return (
@@ -1066,7 +1066,7 @@ export const SameOptionReselection: Story = {
   },
 };
 
-function RejectFirstSelectionExample({ onValueChange, ...props }: ComboboxCompoundProps) {
+function RejectFirstSelectionExample({ onValueChange, ...props }: ComboboxComposedProps) {
   const [value, setValue] = useState<string | null>('apple');
   const [reject, setReject] = useState(true);
   return (
@@ -1217,7 +1217,7 @@ const LONG_OPTIONS = Array.from({ length: 40 }, (_, index) => ({
   value: String(index), label: `${LONG_LABEL} ${index}`,
 }));
 
-export const ViewportEdge: EasyStory = {
+export const ViewportEdge: ShorthandStory = {
   tags: ['!autodocs'],
   args: { label: 'Workspace', options: LONG_OPTIONS },
   render: (args) => (
@@ -1254,7 +1254,7 @@ export const ViewportEdge: EasyStory = {
   },
 };
 
-export const FieldStates: EasyStory = {
+export const FieldStates: ShorthandStory = {
   tags: ['!autodocs'],
   render: () => (
     <div style={stackStyle}>
@@ -1303,7 +1303,7 @@ export const Grouped: Story = {
   },
 };
 
-export const UncommittedText: EasyStory = {
+export const UncommittedText: ShorthandStory = {
   name: 'Text without a selection',
   parameters: { docs: {
     description: { story: 'Start with a draft query; it is not submitted as a selected fruit.' },
@@ -1354,7 +1354,7 @@ export const Destinations: Story = {
   ),
 };
 
-export const UnavailableField: EasyStory = {
+export const UnavailableField: ShorthandStory = {
   name: 'Disabled field',
   parameters: { docs: {
     description: { story: 'Show a selected fruit in a field that cannot be edited.' },
@@ -1366,7 +1366,7 @@ export const UnavailableField: EasyStory = {
   render: () => <Combobox label="Fruit" disabled defaultValue="apple" options={[{ value: 'apple', label: 'Apple' }]} />,
 };
 
-export const ControlledSelection: EasyStory = {
+export const ControlledSelection: ShorthandStory = {
   name: 'Controlled fruit selection',
   parameters: { docs: {
     description: { story: 'Keep the selected fruit in application state while the input manages its query.' },
@@ -1384,5 +1384,5 @@ function FruitPicker() {
     ]} />;
 }` },
   } },
-  render: () => <EasyControlledCombobox label="Fruit" options={FRUITS} />,
+  render: () => <ShorthandControlledCombobox label="Fruit" options={FRUITS} />,
 };

@@ -8,8 +8,8 @@ import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import {
   ResizablePanels,
-  type ResizablePanelsCompoundProps,
-  type ResizablePanelsEasyProps,
+  type ResizablePanelsComposedProps,
+  type ResizablePanelsShorthandProps,
   type ResizablePanelsPanelItem,
   type ResizablePanelsProps,
 } from './index';
@@ -75,7 +75,7 @@ const snippet = `<ResizablePanels
   defaultValue={[30, 70]}
 />`;
 
-const meta: Meta<ResizablePanelsCompoundProps> = {
+const meta: Meta<ResizablePanelsComposedProps> = {
   title: 'Layout/ResizablePanels',
   component: ResizablePanels,
   tags: ['autodocs'],
@@ -106,9 +106,9 @@ const meta: Meta<ResizablePanelsCompoundProps> = {
   parameters: {
     docs: {
       sections: [
-        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'Basic', stories: ['Default', 'Composed'] },
         { title: 'Sizes', stories: ['MinMax'] },
-        { title: 'Controlled', stories: ['EasyModeControlled'] },
+        { title: 'Controlled', stories: ['ShorthandModeControlled'] },
         { title: 'Collapse', stories: ['Collapsible'] },
         { title: 'Keyboard', stories: ['KeyboardNavigation'] },
         { title: 'Composition', stories: ['ThreePanels', 'NestedGroups'] },
@@ -138,18 +138,18 @@ Percentages follow the selected locale. Translate any custom state wording used 
   },
 };
 export default meta;
-type Story = StoryObj<(props: ResizablePanelsCompoundProps) => ReactNode>;
-type EasyStory = StoryObj<(props: ResizablePanelsEasyProps) => ReactNode>;
+type Story = StoryObj<(props: ResizablePanelsComposedProps) => ReactNode>;
+type ShorthandStory = StoryObj<(props: ResizablePanelsShorthandProps) => ReactNode>;
 
 type CheckedResizablePanels<Props extends ResizablePanelsProps> = Props;
 export type ResizablePanelsTypeRegression = {
   // @ts-expect-error Panels and children are mutually exclusive.
   panelsWithChildren: CheckedResizablePanels<{ panels: typeof PANELS; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects label.
+  // @ts-expect-error Composed mode rejects label.
   childrenWithLabel: CheckedResizablePanels<{ label: string; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects slots.
+  // @ts-expect-error Composed mode rejects slots.
   childrenWithSlots: CheckedResizablePanels<{ slots: { panel?: () => null }; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects component.
+  // @ts-expect-error Composed mode rejects component.
   childrenWithComponent: CheckedResizablePanels<{ component: () => null; children: ReactNode }>;
 };
 
@@ -216,7 +216,7 @@ function pointerOn(separator: HTMLElement) {
   };
 }
 
-export const Default: EasyStory = {
+export const Default: ShorthandStory = {
   name: 'Mail workspace',
   args: {
     label: 'Mail',
@@ -315,7 +315,7 @@ function Messages() {
   },
 };
 
-export const EasyModeControlled: EasyStory = {
+export const ShorthandModeControlled: ShorthandStory = {
   parameters: {
     docs: {
       description: {
@@ -410,8 +410,8 @@ export function MailWorkspace() {
   },
 };
 
-export const EasyModeSlots: EasyStory = {
-  name: 'Easy mode slots',
+export const ShorthandModeSlots: ShorthandStory = {
+  name: 'Shorthand mode slots',
   args: {
     label: 'Mail',
     panels: PANELS,
@@ -443,8 +443,8 @@ function CustomPanelBox(props: ComponentPropsWithRef<'div'>) {
 }
 
 // Inline root/slot styles here exercise the documented style-merge contract.
-export const EasyModeOverrides: EasyStory = {
-  name: 'Easy mode overrides',
+export const ShorthandModeOverrides: ShorthandStory = {
+  name: 'Shorthand mode overrides',
   render: () => {
     return (
       <ResizablePanels
@@ -502,8 +502,8 @@ export const EasyModeOverrides: EasyStory = {
   },
 };
 
-export const EasyModeKeyboard: EasyStory = {
-  name: 'Easy mode keyboard',
+export const ShorthandModeKeyboard: ShorthandStory = {
+  name: 'Shorthand mode keyboard',
   args: {
     label: 'Mail',
     panels: PANELS,
@@ -539,7 +539,7 @@ export const EasyModeKeyboard: EasyStory = {
   },
 };
 
-export const Compound: Story = {
+export const Composed: Story = {
   parameters: {
     docs: {
       description: {
@@ -595,7 +595,7 @@ function Messages() {
       },
     },
   },
-  name: 'Compound panels',
+  name: 'Composed panels',
   play: async ({ canvas, canvasElement }) => {
     const root = rootOf(canvasElement);
     await expect(root).toHaveAccessibleName('Mail');
@@ -1714,7 +1714,7 @@ const twoPanels = [
   <ResizablePanels.Panel key="a" value="a" aria-label="A" />,
   <ResizablePanels.Panel key="b" value="b" aria-label="B" />,
 ];
-const invalidConfigurations: { props?: Partial<ResizablePanelsCompoundProps>; children: ReactNode }[] = [
+const invalidConfigurations: { props?: Partial<ResizablePanelsComposedProps>; children: ReactNode }[] = [
   { children: [twoPanels[0], <div key="x">Stray</div>] },
   { children: [] },
   {

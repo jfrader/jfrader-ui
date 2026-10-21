@@ -2,8 +2,8 @@ export { SwipeActions } from './swipe-actions';
 export type {
   SwipeAction,
   SwipeActionsProps,
-  SwipeActionsCompoundProps,
-  SwipeActionsEasyProps,
+  SwipeActionsComposedProps,
+  SwipeActionsShorthandProps,
   SwipeActionsRecord,
   SwipeActionsSlotProps,
   SwipeActionsSlots,

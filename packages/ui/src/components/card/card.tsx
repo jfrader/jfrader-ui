@@ -82,7 +82,7 @@ interface CardBaseProps
   slotProps?: CardSlotProps;
 }
 
-export interface CardCompoundProps extends CardBaseProps {
+export interface CardComposedProps extends CardBaseProps {
   /** Compose the card with `Card.Header`, `Card.Content` and other parts instead of generated content. */
   children?: ReactNode;
   title?: string;
@@ -91,7 +91,7 @@ export interface CardCompoundProps extends CardBaseProps {
   footer?: never;
 }
 
-export interface CardEasyProps extends CardBaseProps {
+export interface CardShorthandProps extends CardBaseProps {
   /** Show a heading in the generated header. */
   title?: ReactNode;
   /** Describe the card below its heading. */
@@ -104,7 +104,7 @@ export interface CardEasyProps extends CardBaseProps {
   children?: never;
 }
 
-export type CardProps = CardCompoundProps | CardEasyProps;
+export type CardProps = CardComposedProps | CardShorthandProps;
 
 export type CardHeaderProps = ComponentPropsWithRef<'div'> & SxProps;
 
@@ -225,10 +225,10 @@ const footerStyle = css({
   '& > :only-child': { marginInlineStart: 'auto' },
 });
 
-function CardRoot(props: CardEasyProps): ReactElement;
-function CardRoot(props: CardCompoundProps): ReactElement;
+function CardRoot(props: CardShorthandProps): ReactElement;
+function CardRoot(props: CardComposedProps): ReactElement;
 function CardRoot(allProps: CardProps) {
-  const easy = 'content' in allProps && allProps.children === undefined;
+  const shorthand = 'content' in allProps && allProps.children === undefined;
   const { variant: variantProp, appearance: appearanceProp, holoTilt = false, slots, slotProps, children, title, description, content, footer, ...props } = allProps;
   const customization = useMemo(() => ({ slots, slotProps }), [slots, slotProps]);
   const variant = resolveSurfaceValue('Card', 'variant', variantProp, variants, 'raised');
@@ -240,9 +240,9 @@ function CardRoot(allProps: CardProps) {
         {...props}
         appearance={appearance === 'contrast' ? 'contrast' : 'default'}
         internalRef={tilt.ref}
-        title={!easy && typeof title === 'string' ? title : undefined}
-        content={!easy && typeof content === 'string' ? content : undefined}
-        children={easy ? (
+        title={!shorthand && typeof title === 'string' ? title : undefined}
+        content={!shorthand && typeof content === 'string' ? content : undefined}
+        children={shorthand ? (
           <>
             {(isRenderable(title) || isRenderable(description)) && (
               <CardHeader>

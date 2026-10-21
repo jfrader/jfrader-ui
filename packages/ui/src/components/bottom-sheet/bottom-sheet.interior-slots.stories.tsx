@@ -15,12 +15,12 @@ import {
 } from '../../testing/interior-slot-assertions';
 import {
   BottomSheet,
-  type BottomSheetEasyProps,
+  type BottomSheetShorthandProps,
   type BottomSheetHeaderProps,
 } from './bottom-sheet';
 
-// @ts-expect-error Unknown slot key is rejected on BottomSheetEasyProps['slots']
-type UnknownBottomSheetSlot = NonNullable<BottomSheetEasyProps['slots']>['unknownKey'];
+// @ts-expect-error Unknown slot key is rejected on BottomSheetShorthandProps['slots']
+type UnknownBottomSheetSlot = NonNullable<BottomSheetShorthandProps['slots']>['unknownKey'];
 
 const CustomSheetMaterial = styled.div({
   backgroundColor: vars.color.surfaceRaised,
@@ -95,7 +95,7 @@ const meta = {
 
 export default meta;
 
-type Story = StoryObj<(props: BottomSheetEasyProps) => ReactNode>;
+type Story = StoryObj<(props: BottomSheetShorthandProps) => ReactNode>;
 
 /** Customize the bottom sheet panel surface and header using slots. */
 export const Customization: Story = {

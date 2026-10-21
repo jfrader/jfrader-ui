@@ -27,7 +27,7 @@ import { useControlledState } from '../../utils/use-controlled-state';
 
 export type RadioCardsLayout = 'grid' | 'list';
 export type RadioCardsSize = 'sm' | 'md';
-export interface RadioCardsCompoundProps
+export interface RadioCardsComposedProps
   extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
   /** Controls the selected card's value. */
   value?: string;
@@ -84,7 +84,7 @@ export interface RadioCardsSlotProps {
   /** Validation error message displayed when invalid. */
   error?: Omit<ComponentPropsWithRef<'span'>, 'children'> & { sx?: Interpolation<Theme> };
 }
-export interface RadioCardsEasyProps extends Omit<RadioCardsCompoundProps, 'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component'> {
+export interface RadioCardsShorthandProps extends Omit<RadioCardsComposedProps, 'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component'> {
   /** Supplies the cards to render in the generated group. */
   options: readonly RadioCardsOption[];
   /** Names the generated radio group. */
@@ -98,7 +98,7 @@ export interface RadioCardsEasyProps extends Omit<RadioCardsCompoundProps, 'chil
   /** Passes props and style overrides to generated group parts. */
   slotProps?: RadioCardsSlotProps;
 }
-export type RadioCardsProps = RadioCardsCompoundProps | RadioCardsEasyProps;
+export type RadioCardsProps = RadioCardsComposedProps | RadioCardsShorthandProps;
 export type RadioCardsPartProps = ComponentPropsWithRef<'span'> & { sx?: Interpolation<Theme> };
 export interface RadioCardsItemSlots {
   /** Container surrounding the option content. */
@@ -404,7 +404,7 @@ function RadioCardsRoot({
   'aria-describedby': describedBy,
   'aria-invalid': ariaInvalid,
   ...rest
-}: RadioCardsCompoundProps & {
+}: RadioCardsComposedProps & {
   rootElement?: 'div' | RadioCardsSlots['root'];
   slotStyles?: Interpolation<Theme>;
 

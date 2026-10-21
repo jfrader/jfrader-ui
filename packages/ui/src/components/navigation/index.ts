@@ -1,7 +1,7 @@
 export { Navigation } from './navigation';
 export type {
-  NavigationCompoundProps,
-  NavigationEasyProps,
+  NavigationComposedProps,
+  NavigationShorthandProps,
   NavigationGroupProps,
   NavigationGroupRecord,
   NavigationItemProps,

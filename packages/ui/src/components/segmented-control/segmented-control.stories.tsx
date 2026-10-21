@@ -6,7 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { ThemeRoot } from '../theme-root';
-import { SegmentedControl, type SegmentedControlCompoundProps as SegmentedControlProps, type SegmentedControlEasyProps } from './index';
+import { SegmentedControl, type SegmentedControlComposedProps as SegmentedControlProps, type SegmentedControlShorthandProps } from './index';
 
 function ReplacementSegmentTrack(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replaced="track" />;
@@ -93,7 +93,7 @@ const meta = {
   parameters: {
     docs: {
       sections: [
-        { title: 'Basic', stories: ['Default', 'Easy'] },
+        { title: 'Basic', stories: ['Default', 'Shorthand'] },
         { title: 'Sizes', stories: ['Sizes'] },
         { title: 'Icons and labels', stories: ['Icons', 'Accessories'] },
         { title: 'Controlled', stories: ['Controlled'] },
@@ -124,9 +124,9 @@ Choose one view or display mode from a short row of options. Use Tabs for associ
 } satisfies Meta<SegmentedControlProps>;
 export default meta;
 type Story = StoryObj<Omit<SegmentedControlProps, 'component'>>;
-type EasyStory = StoryObj<Omit<SegmentedControlEasyProps, 'component'>>;
+type ShorthandStory = StoryObj<Omit<SegmentedControlShorthandProps, 'component'>>;
 const layouts = OPTIONS.map((value) => ({ value, label: value, disabled: value === 'Board' }));
-export const Easy: EasyStory = {
+export const Shorthand: ShorthandStory = {
   name: 'Options from data',
   parameters: { docs: {
     description: { story: 'Build a layout selector from a list of labeled options.' },
@@ -154,7 +154,7 @@ const layouts = [
     await expect(args.onValueChange).toHaveBeenLastCalledWith('Grid');
   },
 };
-function EasyControlledExample(args: SegmentedControlEasyProps) {
+function ShorthandControlledExample(args: SegmentedControlShorthandProps) {
   const [value, setValue] = useState('List');
   return (
     <SegmentedControl {...args} value={value} onValueChange={(next) => {
@@ -163,9 +163,9 @@ function EasyControlledExample(args: SegmentedControlEasyProps) {
     }} />
   );
 }
-export const EasyControlled: EasyStory = { ...Easy, name: 'Easy controlled', render: (args) => <EasyControlledExample {...args} /> };
-export const EasyRejected: EasyStory = {
-  ...Easy, name: 'Easy rejected', args: { ...Easy.args, value: 'List' },
+export const ShorthandControlled: ShorthandStory = { ...Shorthand, name: 'Shorthand controlled', render: (args) => <ShorthandControlledExample {...args} /> };
+export const ShorthandRejected: ShorthandStory = {
+  ...Shorthand, name: 'Shorthand rejected', args: { ...Shorthand.args, value: 'List' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('radio', { name: 'Grid' }));
     await expect(canvas.getByRole('radio', { name: 'List' })).toHaveAttribute('aria-checked', 'true');
@@ -174,9 +174,9 @@ export const EasyRejected: EasyStory = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('Grid');
   },
 };
-export const EasyKeyboard: EasyStory = {
-  ...Easy,
-  name: 'Easy keyboard',
+export const ShorthandKeyboard: ShorthandStory = {
+  ...Shorthand,
+  name: 'Shorthand keyboard',
   play: async ({ canvas, userEvent, args }) => {
     const list = canvas.getByRole('radio', { name: 'List' });
     const table = canvas.getByRole('radio', { name: 'Table' });
@@ -189,8 +189,8 @@ export const EasyKeyboard: EasyStory = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('Table');
   },
 };
-export const EasyRTL: EasyStory = {
-  ...Easy, name: 'Easy RTL', args: { ...Easy.args, dir: 'rtl' },
+export const ShorthandRTL: ShorthandStory = {
+  ...Shorthand, name: 'Shorthand RTL', args: { ...Shorthand.args, dir: 'rtl' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.keyboard('{ArrowLeft}');
@@ -201,17 +201,17 @@ export const EasyRTL: EasyStory = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('Grid');
   },
 };
-function EasyRoot(props: ComponentPropsWithRef<'div'>) {
+function ShorthandRoot(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replacement="segmented-control" />;
 }
-export const EasyCustomization: EasyStory = {
-  ...Easy,
-  name: 'Easy customization',
+export const ShorthandCustomization: ShorthandStory = {
+  ...Shorthand,
+  name: 'Shorthand customization',
   parameters: { docs: { source: { code: `<SegmentedControl label="Layout" options={layouts} defaultValue="List"
   slotProps={{ root: { title: 'Layout selector' }, item: { sx: { borderRadius: 0 } } }}
 />` } } },
   args: {
-    ...Easy.args,
+    ...Shorthand.args,
     ref: fn(),
     slotProps: {
       root: { title: 'Layout selector' },
@@ -219,9 +219,9 @@ export const EasyCustomization: EasyStory = {
       track: { style: { gap: 8 } },
     },
   },
-  render: (args) => <SegmentedControl {...args} slots={{ root: EasyRoot }} />,
+  render: (args) => <SegmentedControl {...args} slots={{ root: ShorthandRoot }} />,
   play: async (context) => {
-    await Easy.play?.(context);
+    await Shorthand.play?.(context);
     const group = context.canvas.getByRole('radiogroup', { name: 'Layout' });
     await expect(group).toHaveAttribute('data-replacement', 'segmented-control');
     await expect(context.args.ref).toHaveBeenCalledWith(group);
@@ -230,7 +230,7 @@ export const EasyCustomization: EasyStory = {
   },
 };
 type AssertSegmentedControlProps<T extends import('./index').SegmentedControlProps> = T;
-export type SegmentedControlEasyTypeRegression = {
+export type SegmentedControlShorthandTypeRegression = {
   // @ts-expect-error Options and children are mutually exclusive.
   mixed: AssertSegmentedControlProps<{ options: typeof layouts; children: string }>;
 };

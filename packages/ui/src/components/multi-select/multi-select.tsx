@@ -138,7 +138,7 @@ export interface MultiSelectBaseProps {
   /** Positions the popup relative to the trigger. Defaults to `bottom-start`. */
   placement?: Placement;
 }
-export interface MultiSelectCompoundProps extends MultiSelectBaseProps {
+export interface MultiSelectComposedProps extends MultiSelectBaseProps {
   options?: never;
   /** Composes the field from `MultiSelect` parts instead of `options`. */
   children?: ReactNode;
@@ -155,7 +155,7 @@ export interface MultiSelectCompoundProps extends MultiSelectBaseProps {
   component?: never;
   slotProps?: never;
 }
-export interface MultiSelectEasyProps extends MultiSelectBaseProps {
+export interface MultiSelectShorthandProps extends MultiSelectBaseProps {
   /** Supplies the options rendered in the popup. */
   options: readonly MultiSelectOption[];
   children?: never;
@@ -184,7 +184,7 @@ export interface MultiSelectEasyProps extends MultiSelectBaseProps {
   /** Passes props to field parts. */
   slotProps?: MultiSelectSlotProps;
 }
-export type MultiSelectProps = MultiSelectCompoundProps | MultiSelectEasyProps;
+export type MultiSelectProps = MultiSelectComposedProps | MultiSelectShorthandProps;
 export interface MultiSelectTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
   /** Sets trigger height. Defaults to `md`. */
   size?: 'sm' | 'md' | 'lg';

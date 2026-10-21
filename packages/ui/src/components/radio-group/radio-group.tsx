@@ -25,7 +25,7 @@ import { useControlledState } from '../../utils/use-controlled-state';
 
 export type RadioGroupOrientation = 'vertical' | 'horizontal';
 
-export interface RadioGroupCompoundProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
+export interface RadioGroupComposedProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
   /** Controls the selected radio value. */
   value?: string;
   /** Sets the initial uncontrolled selection; omitted values leave all radios unchecked. */
@@ -68,8 +68,8 @@ export interface RadioGroupSlotProps {
   /** Radio button option within the group. Default: `RadioGroup.Radio`. */
   radio?: Omit<RadioGroupRadioProps, 'value' | 'label' | 'description' | 'disabled' | 'id' | 'children'>;
 }
-export interface RadioGroupEasyProps extends Omit<RadioGroupCompoundProps, 'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component'> {
-  /** Renders radio options in array order instead of compound children. */
+export interface RadioGroupShorthandProps extends Omit<RadioGroupComposedProps, 'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component'> {
+  /** Renders radio options in array order instead of composed children. */
   options: readonly RadioGroupOption[];
   /** Displays the group heading and supplies its accessible name. */
   label?: ReactNode;
@@ -82,7 +82,7 @@ export interface RadioGroupEasyProps extends Omit<RadioGroupCompoundProps, 'chil
   /** Passes props to the group container, heading and radio options. */
   slotProps?: RadioGroupSlotProps;
 }
-export type RadioGroupProps = RadioGroupCompoundProps | RadioGroupEasyProps;
+export type RadioGroupProps = RadioGroupComposedProps | RadioGroupShorthandProps;
 
 export interface RadioGroupRadioPartProps extends ComponentPropsWithRef<'span'> {
   className?: string;
@@ -218,7 +218,7 @@ function RadioGroupRoot({
   className,
   sx,
   ...rest
-}: RadioGroupCompoundProps & { rootElement?: 'div' | RadioGroupSlots['root']; slotStyles?: Interpolation<Theme> }) {
+}: RadioGroupComposedProps & { rootElement?: 'div' | RadioGroupSlots['root']; slotStyles?: Interpolation<Theme> }) {
   const generatedName = useId();
   const name = nameProp ?? generatedName;
   const [value, setValue] = useControlledState<string>(valueProp, defaultValue, onValueChange);

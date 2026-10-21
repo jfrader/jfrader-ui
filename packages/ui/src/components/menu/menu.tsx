@@ -102,7 +102,7 @@ export type MenuAction = {
   disabled?: never;
 };
 
-export interface MenuCompoundProps extends MenuStateProps, MenuAppearanceProps {
+export interface MenuComposedProps extends MenuStateProps, MenuAppearanceProps {
   /** Compose the menu trigger, content, items and separators. */
   children?: ReactNode;
   items?: never;
@@ -112,7 +112,7 @@ export interface MenuCompoundProps extends MenuStateProps, MenuAppearanceProps {
   component?: never;
 }
 
-export interface MenuEasyProps extends MenuStateProps, MenuAppearanceProps, Omit<GeneratedRootProps, 'children'> {
+export interface MenuShorthandProps extends MenuStateProps, MenuAppearanceProps, Omit<GeneratedRootProps, 'children'> {
   /** Name the button that opens the menu. */
   triggerLabel: ReactNode;
   /** Render actions and separators in order. */
@@ -152,7 +152,7 @@ export interface MenuSlotProps {
   separator?: MenuSeparatorProps;
 }
 
-export type MenuProps = MenuCompoundProps | MenuEasyProps;
+export type MenuProps = MenuComposedProps | MenuShorthandProps;
 
 export interface MenuTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
 export interface MenuContentProps extends ComponentPropsWithRef<'div'>, SxProps {}

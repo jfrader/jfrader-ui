@@ -62,14 +62,14 @@ export interface SwipeActionsRecord extends Omit<SwipeActionsRowProps, 'children
   /** Render the row's body. */
   content: ReactNode;
 }
-export interface SwipeActionsCompoundProps extends SwipeActionsBaseProps {
+export interface SwipeActionsComposedProps extends SwipeActionsBaseProps {
   /** Renders `SwipeActions.Row` children when `rows` is not supplied. */
   children?: ReactNode;
   rows?: never;
   slotProps?: never;
   slots?: never;
 }
-export interface SwipeActionsEasyProps extends SwipeActionsBaseProps {
+export interface SwipeActionsShorthandProps extends SwipeActionsBaseProps {
   /** Render rows in order using their stable ids. */
   rows: readonly SwipeActionsRecord[];
   children?: never;
@@ -112,7 +112,7 @@ export interface SwipeActionsSlotProps {
   /** Swipeable row item element (`li`) inside the list. */
   row?: Omit<SwipeActionsRowProps, 'id' | 'label' | 'actionsLabel' | 'leading' | 'trailing' | 'children' | 'content'>;
 }
-export type SwipeActionsProps = SwipeActionsCompoundProps | SwipeActionsEasyProps;
+export type SwipeActionsProps = SwipeActionsComposedProps | SwipeActionsShorthandProps;
 export interface SwipeActionsRowProps extends ComponentPropsWithRef<'li'>, SxProps {
   /** Replaces the row's content, action and overflow-menu parts. */
   slots?: SwipeActionsRowSlots;

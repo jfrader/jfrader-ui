@@ -2,9 +2,9 @@ export { UserMenu } from './user-menu';
 export type {
   UserMenuAction,
   UserMenuBaseProps,
-  UserMenuCompoundProps,
+  UserMenuComposedProps,
   UserMenuContentProps,
-  UserMenuEasyProps,
+  UserMenuShorthandProps,
   UserMenuGroupSlotProps,
   UserMenuGroupSlots,
   UserMenuIdentityProps,

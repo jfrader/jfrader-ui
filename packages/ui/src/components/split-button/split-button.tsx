@@ -140,7 +140,7 @@ export interface SplitButtonBaseProps extends Omit<ComponentPropsWithRef<'div'>,
   placement?: Placement;
 }
 
-export interface SplitButtonCompoundProps extends SplitButtonBaseProps {
+export interface SplitButtonComposedProps extends SplitButtonBaseProps {
   /** Compose the action, trigger, and menu using `SplitButton` parts. */
   children?: ReactNode;
   label?: never;
@@ -152,7 +152,7 @@ export interface SplitButtonCompoundProps extends SplitButtonBaseProps {
   slotProps?: never;
 }
 
-export interface SplitButtonEasyProps extends SplitButtonBaseProps {
+export interface SplitButtonShorthandProps extends SplitButtonBaseProps {
   /** Name the primary action. */
   label: ReactNode;
   /** Called only when the primary action is activated; does NOT bubble from or attach to the root. */
@@ -170,7 +170,7 @@ export interface SplitButtonEasyProps extends SplitButtonBaseProps {
   slotProps?: SplitButtonSlotProps;
 }
 
-export type SplitButtonProps = SplitButtonCompoundProps | SplitButtonEasyProps;
+export type SplitButtonProps = SplitButtonComposedProps | SplitButtonShorthandProps;
 
 export interface SplitButtonActionProps extends Omit<ButtonProps, 'render'> {
   /**
@@ -347,7 +347,7 @@ function SplitButtonRoot({
   slotProps,
   ...rest
 }: SplitButtonProps) {
-  const isEasyMode = items !== undefined;
+  const isShorthandMode = items !== undefined;
   const Root = component ?? slots?.root ?? 'div';
   const Action = slots?.action ?? SplitButtonAction;
   const Trigger = slots?.trigger ?? SplitButtonTrigger;
@@ -404,7 +404,7 @@ function SplitButtonRoot({
   const mergedClassName = [rootSlotClassName, className].filter(Boolean).join(' ') || undefined;
   const mergedStyle = { ...style, ...rootSlotStyle };
 
-  const rootOnClick = isEasyMode
+  const rootOnClick = isShorthandMode
     ? rootSlotOnClick
     : (rootSlotOnClick ?? (onClick as ComponentPropsWithRef<'div'>['onClick']));
 
@@ -423,7 +423,7 @@ function SplitButtonRoot({
               className={resolvedClassName}
               onClick={rootOnClick}
             >
-              {isEasyMode ? (
+              {isShorthandMode ? (
                 <>
                   <Action
                     {...slotProps?.action}

@@ -74,7 +74,7 @@ interface DialogStateProps {
 }
 
 /** Compose a modal dialog from its trigger and content parts. */
-export interface DialogCompoundProps extends DialogStateProps {
+export interface DialogComposedProps extends DialogStateProps {
   /** Compose the dialog with `Dialog.Trigger`, `Dialog.Content` and other parts. */
   children?: ReactNode;
   triggerLabel?: never;
@@ -88,7 +88,7 @@ export interface DialogCompoundProps extends DialogStateProps {
 }
 
 /** Open a modal dialog with generated heading, content, and close controls. */
-export interface DialogEasyProps extends DialogStateProps, Omit<DialogPanelProps, 'children' | 'title' | 'content' | 'slots' | 'slotProps'> {
+export interface DialogShorthandProps extends DialogStateProps, Omit<DialogPanelProps, 'children' | 'title' | 'content' | 'slots' | 'slotProps'> {
   /** Name the button that opens the dialog. */
   triggerLabel: ReactNode;
   /** Name the dialog with a visible heading. */
@@ -108,7 +108,7 @@ export interface DialogEasyProps extends DialogStateProps, Omit<DialogPanelProps
   slotProps?: DialogSlotProps;
 }
 
-/** Props for the generated elements in easy mode. */
+/** Props for the generated elements in shorthand mode. */
 export interface DialogSlotProps {
   /** Customize the panel's adopted div, not the native dialog shell. */
   root?: NonNullable<DialogPanelProps['slotProps']>['root'];
@@ -132,7 +132,7 @@ export interface DialogSlotProps {
   close?: Omit<DialogCloseProps, 'children'>;
 }
 
-/** Replacement elements for easy mode; forward all supplied props and refs. */
+/** Replacement elements for shorthand mode; forward all supplied props and refs. */
 export interface DialogSlots {
   /** Replaces the panel's adopted div; renders a `div` by default. */
   root?: NonNullable<DialogPanelProps['slots']>['root'];
@@ -156,8 +156,8 @@ export interface DialogSlots {
   close?: ComponentType<DialogCloseProps>;
 }
 
-/** Choose generated content or compound children for a modal dialog. */
-export type DialogProps = DialogCompoundProps | DialogEasyProps;
+/** Choose generated content or composed children for a modal dialog. */
+export type DialogProps = DialogComposedProps | DialogShorthandProps;
 
 /** Props a part's `render` callback spreads onto the element it returns (e.g. a `Button`). */
 export interface DialogPartRenderProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -369,7 +369,7 @@ const closeStyle = css({
   },
 });
 
-/** Open a modal dialog with generated content or compound parts. */
+/** Open a modal dialog with generated content or composed parts. */
 function DialogRoot(props: DialogProps) {
   const {
     open: openProp,
@@ -727,7 +727,7 @@ function DialogClose({ ref = null, onClick, render, className, sx, ...rest }: Di
 
 DialogClose.displayName = 'Dialog.Close';
 
-/** Show a modal task or decision with generated content or compound parts. */
+/** Show a modal task or decision with generated content or composed parts. */
 export const Dialog = Object.assign(DialogRoot, {
   Trigger: DialogTrigger,
   Content: DialogContent,

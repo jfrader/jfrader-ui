@@ -199,8 +199,8 @@ export interface SelectBaseProps<V extends string = string> extends SelectStateP
   name?: string;
 }
 
-/** Compound mode declares its own values, so its root state stays a string. */
-export interface SelectCompoundProps extends SelectBaseProps<string> {
+/** Composed mode declares its own values, so its root state stays a string. */
+export interface SelectComposedProps extends SelectBaseProps<string> {
   options?: never;
   /** Composes the trigger, value, content and option parts instead of supplying `options`. */
   children?: ReactNode;
@@ -216,8 +216,8 @@ export interface SelectCompoundProps extends SelectBaseProps<string> {
   slotProps?: never;
 }
 
-/** Easy mode infers `V` from `options`, narrowing selection state and callbacks to those values. */
-export interface SelectEasyProps<V extends string = string> extends SelectBaseProps<V> {
+/** Shorthand mode infers `V` from `options`, narrowing selection state and callbacks to those values. */
+export interface SelectShorthandProps<V extends string = string> extends SelectBaseProps<V> {
   /** Supplies the options rendered by the shorthand select. */
   options: readonly SelectOption<V>[];
   children?: never;
@@ -243,7 +243,7 @@ export interface SelectEasyProps<V extends string = string> extends SelectBasePr
   slotProps?: SelectSlotProps;
 }
 
-export type SelectProps<V extends string = string> = SelectCompoundProps | SelectEasyProps<V>;
+export type SelectProps<V extends string = string> = SelectComposedProps | SelectShorthandProps<V>;
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
@@ -412,7 +412,7 @@ function SelectOverlay<V extends string = string>({ nodeId, ...props }: SelectPr
   const [labelId, setLabelId] = useState<string>();
   const [descriptionId, setDescriptionId] = useState<string>();
   const [errorId, setErrorId] = useState<string>();
-  // Options only carry `V`; compound children carry strings. The internal store stays a string and
+  // Options only carry `V`; composed children carry strings. The internal store stays a string and
   // this single boundary widens the emit, so the public callback keeps the option union.
   const notifyValueChange = useCallback((next: string) => {
     (onValueChange as ((value: string) => void) | undefined)?.(next);
@@ -1106,9 +1106,9 @@ SelectEmpty.displayName = 'Select.Empty';
 
 /** `Object.assign` instantiates the root with its default type argument; this keeps the generic call signature. */
 export interface SelectComponent {
-  <V extends string = string>(props: SelectEasyProps<V>): ReactElement;
-  (props: SelectCompoundProps): ReactElement;
-  /** Accepts a pre-built easy/compound union, e.g. `SelectProps<Status>` spread into the component. */
+  <V extends string = string>(props: SelectShorthandProps<V>): ReactElement;
+  (props: SelectComposedProps): ReactElement;
+  /** Accepts a pre-built shorthand/composed union, e.g. `SelectProps<Status>` spread into the component. */
   <V extends string = string>(props: SelectProps<V>): ReactElement;
   Trigger: typeof SelectTrigger;
   Value: typeof SelectValue;

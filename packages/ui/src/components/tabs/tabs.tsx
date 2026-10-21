@@ -92,7 +92,7 @@ export interface TabsSection {
   badgeLabel?: string;
 }
 
-export interface TabsCompoundProps extends TabsStateProps {
+export interface TabsComposedProps extends TabsStateProps {
   /** Compose `Tabs.List`, `Tabs.Tab` and `Tabs.Panel` parts. */
   children?: ReactNode;
   items?: never;
@@ -102,7 +102,7 @@ export interface TabsCompoundProps extends TabsStateProps {
   component?: never;
 }
 
-export interface TabsEasyProps extends TabsStateProps {
+export interface TabsShorthandProps extends TabsStateProps {
   /** Name the tab list. */
   label: string;
   /** Pair each tab with its panel by value. */
@@ -138,7 +138,7 @@ export interface TabsSlotProps {
   panel?: Omit<TabsPanelProps, 'children' | 'value'>;
 }
 
-export type TabsProps = TabsCompoundProps | TabsEasyProps;
+export type TabsProps = TabsComposedProps | TabsShorthandProps;
 
 export type TabsListProps = ComponentPropsWithRef<'div'> & SxProps;
 

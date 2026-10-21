@@ -94,7 +94,7 @@ function ContextSeat() {
     data-context-slot={slot.key} data-context-total={geometry.totalSeats}>{player?.name ?? 'Open seat'}</span>;
 }
 const partEvents = { root: fn(), slot: fn(), attaches: 0, cleanups: 0 };
-function CompoundPartsFixture() {
+function ComposedPartsFixture() {
   const [mounted, setMounted] = useState(true);
   const [alternative, setAlternative] = useState(false);
   return <>
@@ -799,9 +799,9 @@ export const ReplacedRootKeepsFrame: Story = {
 };
 
 /** Native region props, replacement roots and seat context. */
-export const CompoundParts: Story = {
+export const ComposedParts: Story = {
   tags: ['!autodocs'],
-  render: () => <CompoundPartsFixture />,
+  render: () => <ComposedPartsFixture />,
   beforeEach: () => { partEvents.root.mockClear(); partEvents.slot.mockClear(); partEvents.attaches = 0; partEvents.cleanups = 0; },
   play: async ({ canvasElement, userEvent }) => {
     const table = required(canvasElement.querySelector<HTMLElement>('[data-ui~="game-table"]') ?? undefined);

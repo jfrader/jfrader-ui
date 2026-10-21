@@ -114,8 +114,8 @@ export interface ContextMenuStateProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-export interface ContextMenuCompoundProps extends ContextMenuStateProps {
-  /** Composes the target, optional trigger and menu content in compound mode. */
+export interface ContextMenuComposedProps extends ContextMenuStateProps {
+  /** Composes the target, optional trigger and menu content in composed mode. */
   children?: ReactNode;
   targetLabel?: never;
   items?: never;
@@ -140,7 +140,7 @@ export interface ContextMenuSlotProps {
   separator?: ContextMenuSeparatorProps;
 }
 
-export interface ContextMenuEasyProps extends ContextMenuStateProps, Omit<GeneratedRootProps, 'children' | 'content'> {
+export interface ContextMenuShorthandProps extends ContextMenuStateProps, Omit<GeneratedRootProps, 'children' | 'content'> {
   /** Name the context target for assistive technologies. */
   targetLabel: string;
   /** Actions and separators displayed in the menu. */
@@ -173,7 +173,7 @@ export interface ContextMenuSlots {
   separator?: ComponentType<ContextMenuSeparatorProps>;
 }
 
-export type ContextMenuProps = ContextMenuCompoundProps | ContextMenuEasyProps;
+export type ContextMenuProps = ContextMenuComposedProps | ContextMenuShorthandProps;
 
 export interface ContextMenuTargetProps extends ComponentPropsWithRef<'div'>, SxProps {
   /** Also open on a plain click or tap (and Enter/Space on the Target). Only for inert objects:

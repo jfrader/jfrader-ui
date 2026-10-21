@@ -58,8 +58,8 @@ export interface ApiPropDoc {
   defaultElement?: string;
   /** `data-ui` token of the part this prop configures. */
   part?: string;
-  /** Easy/compound mode this prop belongs to when the other mode excludes it. */
-  mode?: 'easy' | 'compound';
+  /** Shorthand/composed mode this prop belongs to when the other mode excludes it. */
+  mode?: 'shorthand' | 'composed';
   tags?: readonly ApiTagDoc[];
   /** Expanded object type: members of `slots`, `slotProps`, `messages` and friends. */
   members?: readonly ApiPropDoc[];

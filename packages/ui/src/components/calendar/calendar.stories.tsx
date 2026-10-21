@@ -6,7 +6,7 @@ import { expect, fn, spyOn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectAligned, expectInside, expectMirroredDirection } from '../../testing/geometry-assertions';
-import { Calendar, type CalendarCompoundProps as CalendarProps, type CalendarEasyProps } from './index';
+import { Calendar, type CalendarComposedProps as CalendarProps, type CalendarShorthandProps } from './index';
 
 const LOCALE = 'en-US';
 // Rejected by the controlled parent in the Controlled story.
@@ -18,9 +18,9 @@ const meta: Meta<CalendarProps> = {
   parameters: { docs: {
     description: { component: 'Choose a date or show a range of dates in a month grid.' },
     sections: [
-      { title: 'Choose a date', stories: ['Default', 'EasyControlled', 'EasyMinMax'] },
-      { title: 'Composition', stories: ['Compound', 'RangeSelection'] },
-      { title: 'Localization', stories: ['EasyLocale'] },
+      { title: 'Choose a date', stories: ['Default', 'ShorthandControlled', 'ShorthandMinMax'] },
+      { title: 'Composition', stories: ['Composed', 'RangeSelection'] },
+      { title: 'Localization', stories: ['ShorthandLocale'] },
     ],
     usage: `### Values
 - Use date-only \`YYYY-MM-DD\` strings for \`value\`, \`min\` and \`max\`, and \`YYYY-MM\` for \`visibleMonth\`. Dates use the Gregorian calendar without storing a time or time zone.
@@ -58,9 +58,9 @@ export type CalendarTypeRegression = {
   }>;
   // @ts-expect-error Root replacements use component types, not intrinsic tag strings.
   intrinsicRoot: CheckedCalendar<{ component: 'div' }>;
-  // @ts-expect-error Compound children cannot accompany generated-part props.
+  // @ts-expect-error Composed children cannot accompany generated-part props.
   compoundSlots: CheckedCalendar<{ children: string; slotProps: { header: { className: string } } }>;
-  // @ts-expect-error Compound children cannot accompany root replacement sugar.
+  // @ts-expect-error Composed children cannot accompany root replacement sugar.
   compoundComponent: CheckedCalendar<{ children: string; component: (props: ComponentPropsWithRef<'div'>) => null }>;
 };
 
@@ -84,11 +84,11 @@ function CalendarGridRoot(props: ComponentPropsWithRef<'table'>) {
 }
 CalendarGridRoot.displayName = 'CalendarGridRoot';
 
-function EasyControlledCalendar(props: CalendarEasyProps) {
+function ShorthandControlledCalendar(props: CalendarShorthandProps) {
   const [value, setValue] = useState('2026-10-14');
   return <Calendar {...props} value={value} onValueChange={(next) => { setValue(next); props.onValueChange?.(next); }} />;
 }
-EasyControlledCalendar.displayName = 'EasyControlledCalendar';
+ShorthandControlledCalendar.displayName = 'ShorthandControlledCalendar';
 
 function CalendarExample(props: CalendarProps) {
   return (
@@ -170,7 +170,7 @@ async function expectSelected(canvasElement: HTMLElement, name: string) {
   await expect(selected[0]).toContainElement(day(canvasElement, name));
 }
 
-export const Default: StoryObj<Meta<CalendarEasyProps>> = {
+export const Default: StoryObj<Meta<CalendarShorthandProps>> = {
   name: 'Choose a day',
   args: { locale: LOCALE, defaultValue: '2026-10-14', today: '2026-10-14', onValueChange: fn() },
   render: (args) => <Calendar {...args} />,
@@ -194,7 +194,7 @@ export const Default: StoryObj<Meta<CalendarEasyProps>> = {
 };
 
 /** Assemble the month header and grid for a custom layout. */
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Header and grid',
   args: { defaultValue: '2026-10-12' },
   render: (args) => <CalendarExample {...args} />,
@@ -241,7 +241,7 @@ export const Compound: Story = {
 };
 
 /** Set props on the generated root, header and grid. */
-export const CustomParts: StoryObj<Meta<CalendarEasyProps>> = {
+export const CustomParts: StoryObj<Meta<CalendarShorthandProps>> = {
   args: {
     locale: LOCALE, defaultValue: '2026-10-14', today: '2026-10-14', className: 'calendar-consumer', ref: fn(), title: 'Consumer title', style: { marginBlock: 0, marginInline: vars.space[3] },
     slots: { header: CalendarHeaderRoot, grid: CalendarGridRoot },
@@ -267,7 +267,7 @@ export const CustomParts: StoryObj<Meta<CalendarEasyProps>> = {
 };
 
 /** Replace the root div without changing the header or grid. */
-export const RootReplacement: StoryObj<Meta<CalendarEasyProps>> = {
+export const RootReplacement: StoryObj<Meta<CalendarShorthandProps>> = {
   args: {
     locale: LOCALE,
     defaultValue: '2026-10-14',
@@ -304,7 +304,7 @@ export const RootReplacement: StoryObj<Meta<CalendarEasyProps>> = {
 };
 
 /** slots.root takes precedence over the component shorthand. */
-export const RootSlotPrecedence: StoryObj<Meta<CalendarEasyProps>> = {
+export const RootSlotPrecedence: StoryObj<Meta<CalendarShorthandProps>> = {
   args: { locale: LOCALE, defaultValue: '2026-10-14', component: CalendarFallbackRoot, slots: { root: CalendarRootReplacement } },
   render: (args) => <Calendar {...args} />,
   play: async ({ canvasElement }) => {
@@ -314,7 +314,7 @@ export const RootSlotPrecedence: StoryObj<Meta<CalendarEasyProps>> = {
   },
 };
 
-export const EasyControlled: StoryObj<Meta<CalendarEasyProps>> = {
+export const ShorthandControlled: StoryObj<Meta<CalendarShorthandProps>> = {
   name: 'Controlled selection',
   parameters: { docs: {
     description: { story: 'Keep the selected date in application state while navigating months independently.' },
@@ -327,7 +327,7 @@ export function AppointmentDate() {
 }` },
   } },
   args: { locale: LOCALE, today: '2026-10-14', onValueChange: fn() },
-  render: (args) => <EasyControlledCalendar {...args} />,
+  render: (args) => <ShorthandControlledCalendar {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     await userEvent.click(day(canvasElement, 'October 15, 2026'));
     await expectSelected(canvasElement, 'October 15, 2026');
@@ -337,7 +337,7 @@ export function AppointmentDate() {
 };
 
 /** Days outside the bounds cannot be selected. */
-export const EasyMinMax: StoryObj<Meta<CalendarEasyProps>> = {
+export const ShorthandMinMax: StoryObj<Meta<CalendarShorthandProps>> = {
   name: 'Available dates',
   parameters: { docs: {
     description: { story: 'Limit selection to October 14 and 15; dates outside the interval are disabled.' },
@@ -357,7 +357,7 @@ export const EasyMinMax: StoryObj<Meta<CalendarEasyProps>> = {
 };
 
 /** The header, weekdays and day names follow the locale. */
-export const EasyLocale: StoryObj<Meta<CalendarEasyProps>> = {
+export const ShorthandLocale: StoryObj<Meta<CalendarShorthandProps>> = {
   name: 'Spanish calendar',
   parameters: { docs: {
     description: { story: 'Read month headings, weekday labels, and day names in Spanish.' },
@@ -373,7 +373,7 @@ export const EasyLocale: StoryObj<Meta<CalendarEasyProps>> = {
   },
 };
 
-/** Explicit null children keep the compound root empty. */
+/** Explicit null children keep the composed root empty. */
 export const EmptyCompound: Story = {
   render: (args) => <Calendar {...args}>{null}</Calendar>,
   play: async ({ canvasElement }) => {

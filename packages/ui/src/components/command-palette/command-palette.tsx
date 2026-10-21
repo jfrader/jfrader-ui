@@ -158,7 +158,7 @@ export interface CommandPaletteBaseProps {
   formatResultCount?: (count: number) => string;
 }
 
-export interface CommandPaletteCompoundProps extends CommandPaletteBaseProps {
+export interface CommandPaletteComposedProps extends CommandPaletteBaseProps {
   /** Compose the palette trigger, dialog and command list. */
   children?: ReactNode;
   items?: never;
@@ -174,7 +174,7 @@ export interface CommandPaletteCompoundProps extends CommandPaletteBaseProps {
   style?: never;
 }
 
-export interface CommandPaletteEasyProps<T extends CommandPaletteItemRecord = CommandPaletteItemRecord>
+export interface CommandPaletteShorthandProps<T extends CommandPaletteItemRecord = CommandPaletteItemRecord>
   extends CommandPaletteBaseProps,
     Omit<ComponentPropsWithRef<'div'>, keyof CommandPaletteBaseProps | 'children' | 'onSelect'>,
     SxProps {
@@ -202,8 +202,8 @@ export interface CommandPaletteEasyProps<T extends CommandPaletteItemRecord = Co
 }
 
 export type CommandPaletteProps<T extends CommandPaletteItemRecord = CommandPaletteItemRecord> =
-  | CommandPaletteCompoundProps
-  | CommandPaletteEasyProps<T>;
+  | CommandPaletteComposedProps
+  | CommandPaletteShorthandProps<T>;
 
 export interface CommandPaletteTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
 export interface CommandPaletteContentProps extends Omit<ComponentPropsWithRef<'dialog'>, 'open'>, SxProps {}

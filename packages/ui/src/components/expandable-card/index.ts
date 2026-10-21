@@ -2,8 +2,8 @@ export { ExpandableCard } from './expandable-card';
 export type {
   ExpandableCardSlots,
   ExpandableCardSlotProps,
-  ExpandableCardCompoundProps,
-  ExpandableCardEasyProps,
+  ExpandableCardComposedProps,
+  ExpandableCardShorthandProps,
   ExpandableCardProps,
   ExpandableCardTriggerProps,
   ExpandableCardTitleProps,

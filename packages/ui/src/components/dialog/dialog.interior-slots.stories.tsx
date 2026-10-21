@@ -12,12 +12,12 @@ import {
   expectRootPrecedence,
   expectSameDomIdentity,
 } from '../../testing/interior-slot-assertions';
-import { Dialog, type DialogBodyProps, type DialogEasyProps, type DialogFooterProps } from './dialog';
+import { Dialog, type DialogBodyProps, type DialogShorthandProps, type DialogFooterProps } from './dialog';
 import { expectInside } from '../../testing/geometry-assertions';
 import { settleMotion } from '../../testing/motion-assertions';
 
-// @ts-expect-error Unknown slot key is rejected on DialogEasyProps['slots']
-type UnknownDialogSlot = NonNullable<DialogEasyProps['slots']>['unknownKey'];
+// @ts-expect-error Unknown slot key is rejected on DialogShorthandProps['slots']
+type UnknownDialogSlot = NonNullable<DialogShorthandProps['slots']>['unknownKey'];
 
 const CustomPanelMaterial = styled.div({
   backgroundColor: vars.color.surfaceRaised,
@@ -106,7 +106,7 @@ const meta = {
 
 export default meta;
 
-type Story = StoryObj<(props: DialogEasyProps) => ReactNode>;
+type Story = StoryObj<(props: DialogShorthandProps) => ReactNode>;
 
 /** Customize the dialog panel surface and header using slots. */
 export const Customization: Story = {

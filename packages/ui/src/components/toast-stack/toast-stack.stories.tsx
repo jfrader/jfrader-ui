@@ -253,7 +253,7 @@ export const Default: Story = {
   },
 };
 
-export const Compound: Story = { render: (args) => <Harness {...args} /> };
+export const Composed: Story = { render: (args) => <Harness {...args} /> };
 
 // This story tests the documented css/slot API and native style merging.
 export const GeneratedPartCustomization: Story = {

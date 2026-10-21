@@ -2,9 +2,9 @@ export { ContextMenu } from './context-menu';
 export type {
   ContextMenuAction,
   ContextMenuCheckboxItemProps,
-  ContextMenuCompoundProps,
+  ContextMenuComposedProps,
   ContextMenuContentProps,
-  ContextMenuEasyProps,
+  ContextMenuShorthandProps,
   ContextMenuItemAction,
   ContextMenuItemProps,
   ContextMenuItemTone,

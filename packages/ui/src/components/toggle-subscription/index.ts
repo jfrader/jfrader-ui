@@ -1,7 +1,7 @@
 export { ToggleSubscription } from './toggle-subscription';
 export type {
-  ToggleSubscriptionCompoundProps,
-  ToggleSubscriptionEasyProps,
+  ToggleSubscriptionComposedProps,
+  ToggleSubscriptionShorthandProps,
   ToggleSubscriptionOption,
   ToggleSubscriptionPriceDefinition,
   ToggleSubscriptionSlots,

@@ -2,8 +2,8 @@ export { MultiSelect } from './multi-select';
 export type {
   MultiSelectProps,
   MultiSelectBaseProps,
-  MultiSelectCompoundProps,
-  MultiSelectEasyProps,
+  MultiSelectComposedProps,
+  MultiSelectShorthandProps,
   MultiSelectOption,
   MultiSelectMessages,
   MultiSelectTriggerProps,

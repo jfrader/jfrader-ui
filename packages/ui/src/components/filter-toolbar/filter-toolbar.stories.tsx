@@ -10,9 +10,9 @@ import { TextField } from '../text-field';
 import { ThemeRoot } from '../theme-root';
 import {
   FilterToolbar,
-  type FilterToolbarCompoundProps,
+  type FilterToolbarComposedProps,
   type FilterToolbarDefinition,
-  type FilterToolbarEasyProps,
+  type FilterToolbarShorthandProps,
   type FilterToolbarMultiSelectOption,
   type FilterToolbarProps,
   type FilterToolbarSlots,
@@ -31,7 +31,7 @@ const CLOSED: FilterValue = { ...OPEN, value: 'closed', valueLabel: 'Closed' };
 const OWNER: FilterValue = { id: 'owner', label: 'Owner', value: 'me', valueLabel: 'Me' };
 const FILTERS = [OPEN, OWNER];
 const OWNER_CHIP: FilterValue = { ...OWNER, id: 'owner-me' };
-const EASY_FILTERS = [OPEN, OWNER_CHIP];
+const SHORTHAND_FILTERS = [OPEN, OWNER_CHIP];
 
 const DEFINITIONS: readonly FilterToolbarDefinition[] = [
   {
@@ -158,15 +158,15 @@ export type FilterToolbarTypeRegression = {
   missingOptionId: CheckedMultiOption<{ value: 'me'; label: 'Me' }>;
   // @ts-expect-error Filters and children are mutually exclusive.
   filtersWithChildren: CheckedFilterToolbar<{ filters: typeof DEFINITIONS; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects resultCount.
+  // @ts-expect-error Composed mode rejects resultCount.
   childrenWithResultCount: CheckedFilterToolbar<{ resultCount: number; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects slots.
+  // @ts-expect-error Composed mode rejects slots.
   childrenWithSlots: CheckedFilterToolbar<{ slots: FilterToolbarSlots; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects slotProps.
+  // @ts-expect-error Composed mode rejects slotProps.
   childrenWithSlotProps: CheckedFilterToolbar<{ slotProps: FilterToolbarSlotProps; children: ReactNode }>;
 };
 
-function Example(args: FilterToolbarCompoundProps) {
+function Example(args: FilterToolbarComposedProps) {
   return (
     <FilterToolbar {...args}>
       <FilterToolbar.Controls>
@@ -202,11 +202,11 @@ const meta = {
       },
       sections: [
         { title: 'Basic', stories: ['Default'] },
-        { title: 'Filters and controls', stories: ['EasyActivation', 'SearchTextField', 'Compound'] },
+        { title: 'Filters and controls', stories: ['ShorthandActivation', 'SearchTextField', 'Composed'] },
         { title: 'Result counts', stories: ['ZeroResults', 'CommittedResultCount'] },
-        { title: 'Clear', stories: ['EasyKeyboardRemoveAndClear'] },
+        { title: 'Clear', stories: ['ShorthandKeyboardRemoveAndClear'] },
         { title: 'Layout and overflow', stories: ['LongChips'] },
-        { title: 'States', stories: ['Empty', 'LoadingResults', 'EasyDisabled'] },
+        { title: 'States', stories: ['Empty', 'LoadingResults', 'ShorthandDisabled'] },
       ],
       usage: `### When to use
 Use a filter toolbar above a collection to edit criteria, review active filters and clear them. Keep the collection and its filtering logic in your application.
@@ -222,10 +222,10 @@ Keep multiselect chip IDs stable and unique across the toolbar. Do not switch be
 Tab and Shift+Tab follow control order. Enter and Space activate remove and clear buttons. Each control keeps its own editing and selection keys. Removing a chip moves focus to a neighboring chip, then an available control, or the toolbar when none remain.`,
     },
   },
-} satisfies Meta<FilterToolbarCompoundProps>;
+} satisfies Meta<FilterToolbarComposedProps>;
 
 export default meta;
-type Story = StoryObj<Meta<FilterToolbarCompoundProps>>;
+type Story = StoryObj<Meta<FilterToolbarComposedProps>>;
 
 async function focus(element: HTMLElement) {
   await expect(element.ownerDocument.activeElement).toBe(element);
@@ -247,7 +247,7 @@ export const Default: Story = {
   ),
 };
 
-export const EasyActivation: Story = {
+export const ShorthandActivation: Story = {
   name: 'Single and multiple selection',
   parameters: { docs: {
     description: { story: 'Choose a status and one or more owners to add active filter chips.' },
@@ -291,7 +291,7 @@ ${definitionsSource}
   },
 };
 
-export const EasyKeyboardRemoveAndClear: Story = {
+export const ShorthandKeyboardRemoveAndClear: Story = {
   name: 'Remove a filter or clear all',
   parameters: { docs: {
     description: { story: 'Remove individual chips with Enter, or use Clear all to reset both controls.' },
@@ -308,7 +308,7 @@ ${definitionsSource}
   render: (args) => (
     <FilterToolbar
       filters={DEFINITIONS}
-      defaultValue={EASY_FILTERS}
+      defaultValue={SHORTHAND_FILTERS}
       resultCount={12}
       onValueChange={args.onValueChange}
     />
@@ -334,7 +334,7 @@ ${definitionsSource}
   },
 };
 
-export const EasyDisabled: Story = {
+export const ShorthandDisabled: Story = {
   name: 'Disabled filters',
   parameters: { docs: {
     description: { story: 'Keep the active filters and count visible while disabling all editing controls.' },
@@ -351,7 +351,7 @@ ${definitionsSource}
   render: (args) => (
     <FilterToolbar
       filters={DEFINITIONS}
-      defaultValue={EASY_FILTERS}
+      defaultValue={SHORTHAND_FILTERS}
       disabled
       slotProps={{ select: { disabled: false }, multiSelect: { disabled: false } }}
       resultCount={12}
@@ -375,8 +375,8 @@ ${definitionsSource}
   },
 };
 
-function EasyControlledExample({ onValueChange }: { onValueChange?: (filters: readonly FilterValue[]) => void }) {
-  const [value, setValue] = useState<readonly FilterValue[]>(EASY_FILTERS);
+function ShorthandControlledExample({ onValueChange }: { onValueChange?: (filters: readonly FilterValue[]) => void }) {
+  const [value, setValue] = useState<readonly FilterValue[]>(SHORTHAND_FILTERS);
   return (
     <>
       <FilterToolbar
@@ -393,9 +393,9 @@ function EasyControlledExample({ onValueChange }: { onValueChange?: (filters: re
   );
 }
 
-export const EasyControlled: Story = {
+export const ShorthandControlled: Story = {
   args: { onValueChange: fn() },
-  render: (args) => <EasyControlledExample onValueChange={args.onValueChange} />,
+  render: (args) => <ShorthandControlledExample onValueChange={args.onValueChange} />,
   play: async ({ canvas, args, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Remove Status: Open' }));
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
@@ -407,7 +407,7 @@ export const EasyControlled: Story = {
   },
 };
 
-export const EasyUncontrolled: Story = {
+export const ShorthandUncontrolled: Story = {
   args: { onValueChange: fn() },
   render: (args) => (
     <FilterToolbar
@@ -435,18 +435,18 @@ export const EasyUncontrolled: Story = {
 
 function CustomRoot({ children, ...props }: ComponentPropsWithRef<'div'>) {
   return (
-    <div data-testid="custom-easy-root" {...props}>
+    <div data-testid="custom-shorthand-root" {...props}>
       {children}
     </div>
   );
 }
 
 // This story tests native inline style merging through the slot API.
-export const EasySlotPropsOverride: Story = {
+export const ShorthandSlotPropsOverride: Story = {
   render: () => (
     <FilterToolbar
       filters={DEFINITIONS}
-      defaultValue={EASY_FILTERS}
+      defaultValue={SHORTHAND_FILTERS}
       resultCount={12}
       component={CustomRoot}
       className="consumer-root"
@@ -499,7 +499,7 @@ export const EasySlotPropsOverride: Story = {
   },
 };
 
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Compose a custom filter action',
   parameters: { docs: {
     description: { story: 'Add a Closed action that replaces the status filter without removing the owner.' },
@@ -563,7 +563,7 @@ export const ClearAll: Story = {
   },
 };
 
-function FacetExample({ persistent = false, ...args }: FilterToolbarCompoundProps & { persistent?: boolean }) {
+function FacetExample({ persistent = false, ...args }: FilterToolbarComposedProps & { persistent?: boolean }) {
   return (
     <FilterToolbar {...args}>
       <FilterToolbar.Controls>
@@ -630,7 +630,7 @@ export const PersistentSelect: Story = {
   },
 };
 
-function SearchExample(args: FilterToolbarCompoundProps) {
+function SearchExample(args: FilterToolbarComposedProps) {
   return (
     <FilterToolbar {...args}>
       <FilterToolbar.Controls>
@@ -781,7 +781,7 @@ export const RawVsDisplayValue: Story = {
   },
 };
 
-function ControlledExample(args: FilterToolbarCompoundProps) {
+function ControlledExample(args: FilterToolbarComposedProps) {
   const [value, setValue] = useState<readonly FilterValue[]>(FILTERS);
   return (
     <>
@@ -1005,7 +1005,7 @@ export const DuplicateIds: Story = {
   },
 };
 
-function AriaExample(args: FilterToolbarCompoundProps) {
+function AriaExample(args: FilterToolbarComposedProps) {
   const name = useId();
   const description = useId();
   const unresolved = useId();
@@ -1146,7 +1146,7 @@ export const UnknownResults: Story = {
   },
 };
 
-function CommittedCountExample(args: FilterToolbarCompoundProps) {
+function CommittedCountExample(args: FilterToolbarComposedProps) {
   const [count, setCount] = useState(12);
   return (
     <FilterToolbar {...args}>
@@ -1357,7 +1357,7 @@ export const RefsAndMarkers: Story = {
   },
 };
 
-function RefFixture(args: FilterToolbarCompoundProps) {
+function RefFixture(args: FilterToolbarComposedProps) {
   const [mounted, setMounted] = useState(true);
   return (
     <StrictMode>

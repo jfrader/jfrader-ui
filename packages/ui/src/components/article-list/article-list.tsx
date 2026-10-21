@@ -56,7 +56,7 @@ export interface ArticleListSlotProps {
   item?: Partial<ArticleListItemProps>;
 }
 export type ArticleListProps = Omit<ComponentPropsWithRef<'ul'>, 'children'> & SxProps & ({
-  /** Supplies keyed article records instead of compound children. A list with no renderable headlines is omitted. */
+  /** Supplies keyed article records instead of composed children. A list with no renderable headlines is omitted. */
   items: readonly ArticleListEntry[];
   children?: never;
 } | {

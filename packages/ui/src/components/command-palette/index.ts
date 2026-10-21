@@ -1,9 +1,9 @@
 export { CommandPalette } from './command-palette';
 export type {
   CommandPaletteBaseProps,
-  CommandPaletteCompoundProps,
+  CommandPaletteComposedProps,
   CommandPaletteContentProps,
-  CommandPaletteEasyProps,
+  CommandPaletteShorthandProps,
   CommandPaletteEmptyProps,
   CommandPaletteGroupProps,
   CommandPaletteInputProps,

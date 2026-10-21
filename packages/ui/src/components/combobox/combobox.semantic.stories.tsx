@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
-import { Combobox, type ComboboxEasyProps, type ComboboxOption } from './index';
+import { Combobox, type ComboboxShorthandProps, type ComboboxOption } from './index';
 
 const Frame = styled.div({ inlineSize: `min(24rem, calc(100vw - ${vars.space[8]}))`, maxInlineSize: '100%' });
 const Result = styled.span({ display: 'grid', gap: vars.space[1], whiteSpace: 'normal', overflowWrap: 'anywhere' });
@@ -40,7 +40,7 @@ const percent = new Intl.NumberFormat(locale, { style: 'percent' });
   onValueChange={openDocument}
   empty="No matching documents" />`;
 
-function Search(args: ComboboxEasyProps) {
+function Search(args: ComboboxShorthandProps) {
   const [query, setQuery] = useState('');
   return <Frame><Combobox {...args} inputValue={query} onInputChange={(next) => { setQuery(next); args.onInputChange?.(next); }} /></Frame>;
 }
@@ -55,7 +55,7 @@ const meta = {
   parameters: { docs: { source: { code: snippet, language: 'tsx' }, description: {
     component: 'Search by meaning and choose a ranked document with the existing combobox.',
   }, usage: 'Supply results in retrieval rank order and disable substring filtering with filter={() => true}. The application owns retrieval, scores, debouncing and stale-response cancellation. These stories use supplied sample ranks, not embeddings or projected distances. textValue keeps source and score text out of the committed query. Options remain listbox options; Up/Down and Home/End move virtual focus, Enter selects, Escape closes, and Tab exits. onInputChange also reports selected-label and Escape writes; use onValueChange to open a document. There is no separate VectorSearch export or animation engine.' } },
-} satisfies Meta<ComboboxEasyProps>;
+} satisfies Meta<ComboboxShorthandProps>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 

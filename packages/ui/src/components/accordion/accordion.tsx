@@ -98,7 +98,7 @@ export interface AccordionSlotProps {
 }
 
 type AccordionStateProps = Omit<AccordionSingleProps, 'children'> | Omit<AccordionMultipleProps, 'children'>;
-export type AccordionCompoundProps = AccordionStateProps & {
+export type AccordionComposedProps = AccordionStateProps & {
   /** Compose accordion items with their triggers and panels. */
   children?: ReactNode;
   items?: never;
@@ -106,7 +106,7 @@ export type AccordionCompoundProps = AccordionStateProps & {
   slots?: never;
   slotProps?: never;
 };
-export type AccordionEasyProps = AccordionStateProps & {
+export type AccordionShorthandProps = AccordionStateProps & {
   /** Generate sections in this order, using each section's value, label and panel. */
   items: readonly AccordionSection[];
   children?: never;
@@ -117,7 +117,7 @@ export type AccordionEasyProps = AccordionStateProps & {
   /** Pass props and `sx` to generated accordion parts. */
   slotProps?: AccordionSlotProps;
 };
-export type AccordionProps = AccordionCompoundProps | AccordionEasyProps;
+export type AccordionProps = AccordionComposedProps | AccordionShorthandProps;
 
 export interface AccordionItemProps extends ComponentPropsWithRef<'div'>, SxProps {
   /** Identify this item in the root's open values. Must be unique within the accordion. */

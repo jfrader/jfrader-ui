@@ -6,7 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectAligned, expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { Button } from '../button';
-import { RadioGroup, type RadioGroupOrientation, type RadioGroupCompoundProps as RadioGroupProps, type RadioGroupEasyProps } from './index';
+import { RadioGroup, type RadioGroupOrientation, type RadioGroupComposedProps as RadioGroupProps, type RadioGroupShorthandProps } from './index';
 
 function ReplacementRadioLabel(props: ComponentPropsWithRef<'label'>) {
   return <label {...props} data-replaced="root" />;
@@ -64,7 +64,7 @@ const meta = {
   parameters: {
     docs: {
       sections: [
-        { title: 'Basic', stories: ['Easy'] },
+        { title: 'Basic', stories: ['Shorthand'] },
         { title: 'Labels', stories: ['Default', 'WithoutDescriptions'] },
         { title: 'States', stories: ['DisabledOption', 'DisabledGroup'] },
         { title: 'Required and invalid', stories: ['RequiredField'] },
@@ -83,7 +83,7 @@ Give form fields a stable name. Only the selected, enabled radio contributes a v
 
 Name the group and each option. Tab enters on the checked radio; with no selection, the entry depends on the Tab direction. Arrow keys move focus and selection, wrapping and skipping disabled radios. Space selects the focused option.
 
-Both arrow pairs work in either layout. Selecting the checked radio leaves it selected. Supply either options or compound children, not both.`,
+Both arrow pairs work in either layout. Selecting the checked radio leaves it selected. Supply either options or composed children, not both.`,
     },
   },
   argTypes: {
@@ -95,9 +95,9 @@ Both arrow pairs work in either layout. Selecting the checked radio leaves it se
 export default meta;
 
 type Story = StoryObj<Omit<RadioGroupProps, 'component'>>;
-type EasyStory = StoryObj<Omit<RadioGroupEasyProps, 'component'>>;
+type ShorthandStory = StoryObj<Omit<RadioGroupShorthandProps, 'component'>>;
 
-export const Easy: EasyStory = {
+export const Shorthand: ShorthandStory = {
   name: 'Choose a plan',
   parameters: { docs: { description: { story: 'Choose a plan from labeled options with supporting descriptions.' }, source: { language: 'tsx', code: `import { RadioGroup } from '@jfrader/ui';
 
@@ -125,7 +125,7 @@ const plans = [
   },
 };
 
-function EasyControlledExample(args: RadioGroupEasyProps) {
+function ShorthandControlledExample(args: RadioGroupShorthandProps) {
   const [value, setValue] = useState('free');
   return (
     <RadioGroup {...args} value={value} onValueChange={(next) => {
@@ -134,11 +134,11 @@ function EasyControlledExample(args: RadioGroupEasyProps) {
     }} />
   );
 }
-export const EasyControlled: EasyStory = { ...Easy, name: 'Controlled options', render: (args) => <EasyControlledExample {...args} /> };
-export const EasyRejected: EasyStory = {
-  ...Easy,
+export const ShorthandControlled: ShorthandStory = { ...Shorthand, name: 'Controlled options', render: (args) => <ShorthandControlledExample {...args} /> };
+export const ShorthandRejected: ShorthandStory = {
+  ...Shorthand,
   name: 'Rejected option change',
-  args: { ...Easy.args, value: 'free' },
+  args: { ...Shorthand.args, value: 'free' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('radio', { name: 'Pro' }));
     await expect(canvas.getByRole('radio', { name: 'Free' })).toBeChecked();
@@ -147,10 +147,10 @@ export const EasyRejected: EasyStory = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('pro');
   },
 };
-export const EasyKeyboard: EasyStory = {
-  ...Easy,
+export const ShorthandKeyboard: ShorthandStory = {
+  ...Shorthand,
   name: 'Options keyboard navigation',
-  args: { ...Easy.args, options: OPTIONS.map((option) => ({ ...option, disabled: option.value === 'pro' })) },
+  args: { ...Shorthand.args, options: OPTIONS.map((option) => ({ ...option, disabled: option.value === 'pro' })) },
   play: async ({ canvas, userEvent, args }) => {
     const free = canvas.getByRole('radio', { name: 'Free' });
     const team = canvas.getByRole('radio', { name: 'Team' });
@@ -165,19 +165,19 @@ export const EasyKeyboard: EasyStory = {
     await expect(args.onValueChange).toHaveBeenLastCalledWith('team');
   },
 };
-function EasyRoot(props: ComponentPropsWithRef<'div'>) {
+function ShorthandRoot(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replacement="radio-group" />;
 }
 const StyledRadioGroup = styled(RadioGroup)({ borderRadius: vars.radius.sm });
-export const EasyCustomization: EasyStory = {
-  ...Easy,
+export const ShorthandCustomization: ShorthandStory = {
+  ...Shorthand,
   name: 'Options customization',
   parameters: { docs: { source: { code: `<RadioGroup label="Plan" options={plans} defaultValue="free"
   sx={{ borderRadius: 0 }}
   slotProps={{ label: { title: 'Plan label' }, radio: { slotProps: { control: { sx: { borderRadius: theme.radius.sm } } } } }}
 />` } } },
   args: {
-    ...Easy.args,
+    ...Shorthand.args,
     ref: fn(),
     className: 'consumer-root',
     style: { padding: 4 },
@@ -193,9 +193,9 @@ export const EasyCustomization: EasyStory = {
       radio: { slotProps: { control: { sx: { borderRadius: vars.radius.sm } } } },
     },
   },
-  render: (args) => <StyledRadioGroup {...args} data-custom-root="consumer-root" component={EasyRoot} />,
+  render: (args) => <StyledRadioGroup {...args} data-custom-root="consumer-root" component={ShorthandRoot} />,
   play: async (context) => {
-    await Easy.play?.(context);
+    await Shorthand.play?.(context);
     const group = context.canvas.getByRole('radiogroup', { name: 'Plan' });
     await expect(group).toHaveAttribute('data-replacement', 'radio-group');
     await expect(group).toHaveAttribute('data-custom-root', 'slot-root');
@@ -208,7 +208,7 @@ export const EasyCustomization: EasyStory = {
 };
 
 type AssertRadioGroupProps<T extends import('./index').RadioGroupProps> = T;
-export type RadioGroupEasyTypeRegression = {
+export type RadioGroupShorthandTypeRegression = {
   // @ts-expect-error Options and children are mutually exclusive.
   mixed: AssertRadioGroupProps<{ options: typeof OPTIONS; children: string }>;
 };
@@ -259,8 +259,8 @@ const getGroup = (canvasElement: HTMLElement, name = 'Plan') =>
   within(within(canvasElement).getByRole('radiogroup', { name }));
 
 export const Default: Story = {
-  name: 'Compound field label',
-  parameters: { docs: { description: { story: 'Name a compound group with a visible field label.' }, source: { language: 'tsx', code: `import { useId } from 'react';
+  name: 'Composed field label',
+  parameters: { docs: { description: { story: 'Name a composed group with a visible field label.' }, source: { language: 'tsx', code: `import { useId } from 'react';
 import { RadioGroup } from '@jfrader/ui';
 
 function PlanField() {
@@ -580,7 +580,7 @@ export const Rtl: Story = {
   },
 };
 
-export const LongContent: EasyStory = {
+export const LongContent: ShorthandStory = {
   render: () => (
     <NarrowChoices>
       <RadioGroup label="Delivery" orientation="horizontal" defaultValue="standard" options={[

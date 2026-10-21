@@ -56,7 +56,7 @@
             }
           ]
         },
-        "mode": "easy"
+        "mode": "shorthand"
       },
       {
         "name": "children",
@@ -64,7 +64,7 @@
         "required": false,
         "defaultValue": null,
         "description": "Composes the trigger, value, content and option parts instead of supplying `options`.",
-        "mode": "compound"
+        "mode": "composed"
       },
       {
         "name": "component",
@@ -72,7 +72,7 @@
         "required": false,
         "defaultValue": null,
         "description": "Replaces the root element. Shorthand for `slots.root`.",
-        "mode": "easy"
+        "mode": "shorthand"
       },
       {
         "name": "defaultOpen",
@@ -94,7 +94,7 @@
         "required": false,
         "defaultValue": null,
         "description": "Shows helper text associated with the trigger.",
-        "mode": "easy"
+        "mode": "shorthand"
       },
       {
         "name": "disabled",
@@ -109,7 +109,7 @@
         "required": false,
         "defaultValue": null,
         "description": "Shows content in the popup when the options list is empty.",
-        "mode": "easy"
+        "mode": "shorthand"
       },
       {
         "name": "error",
@@ -117,7 +117,7 @@
         "required": false,
         "defaultValue": null,
         "description": "Marks the trigger invalid and shows an associated error message.",
-        "mode": "easy"
+        "mode": "shorthand"
       },
       {
         "name": "initialActiveValue",
@@ -132,7 +132,7 @@
         "required": false,
         "defaultValue": null,
         "description": "Shows a label associated with the trigger.",
-        "mode": "easy"
+        "mode": "shorthand"
       },
       {
         "name": "labelPlacement",
@@ -140,7 +140,7 @@
         "required": false,
         "defaultValue": "'above'",
         "description": "Label placement. `hidden` keeps the accessible name without taking layout space.",
-        "mode": "easy"
+        "mode": "shorthand"
       },
       {
         "name": "name",
@@ -200,7 +200,7 @@
         "required": false,
         "defaultValue": null,
         "description": "Shows content in the trigger when no option matches the selected value.",
-        "mode": "easy"
+        "mode": "shorthand"
       },
       {
         "name": "placement",
@@ -215,7 +215,7 @@
         "required": false,
         "defaultValue": "'md'",
         "description": "Sets the trigger height and text size. Defaults to `md`.",
-        "mode": "easy"
+        "mode": "shorthand"
       },
       {
         "name": "slotProps",
@@ -319,7 +319,7 @@
             }
           }
         ],
-        "mode": "easy"
+        "mode": "shorthand"
       },
       {
         "name": "slots",
@@ -423,7 +423,7 @@
             }
           }
         ],
-        "mode": "easy"
+        "mode": "shorthand"
       },
       {
         "name": "value",

@@ -37,7 +37,7 @@ type SlotProps<Element extends 'div' | 'span'> = ComponentPropsWithRef<Element> 
   sx?: Interpolation<Theme>;
 };
 
-export interface SegmentedControlCompoundProps
+export interface SegmentedControlComposedProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {
   /** Controls which segment is selected. */
   value?: string;
@@ -84,7 +84,7 @@ export interface SegmentedControlSlots {
   /** Button representing an individual segment option. Default: `SegmentedControl.Item`. */
   item?: ComponentType<SegmentedControlItemProps>;
 }
-export interface SegmentedControlSlotProps extends NonNullable<SegmentedControlCompoundProps['slotProps']> {
+export interface SegmentedControlSlotProps extends NonNullable<SegmentedControlComposedProps['slotProps']> {
   /** Outer container wrapping the segmented control. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
 
@@ -93,7 +93,7 @@ export interface SegmentedControlSlotProps extends NonNullable<SegmentedControlC
   /** Button representing an individual segment option. Default: `SegmentedControl.Item`. */
   item?: Omit<SegmentedControlItemProps, 'value' | 'children' | 'disabled' | 'id' | 'accessory'>;
 }
-export interface SegmentedControlEasyProps extends Omit<SegmentedControlCompoundProps, 'children' | 'options' | 'slots' | 'slotProps' | 'component'> {
+export interface SegmentedControlShorthandProps extends Omit<SegmentedControlComposedProps, 'children' | 'options' | 'slots' | 'slotProps' | 'component'> {
   /** Renders segments in order using each option's value as its key. */
   options: readonly SegmentedControlOption[];
   /** Not accepted when `options` supplies the segments. */
@@ -105,7 +105,7 @@ export interface SegmentedControlEasyProps extends Omit<SegmentedControlCompound
   /** Passes props to the generated root, items, track and selection indicator. */
   slotProps?: SegmentedControlSlotProps;
 }
-export type SegmentedControlProps = SegmentedControlCompoundProps | SegmentedControlEasyProps;
+export type SegmentedControlProps = SegmentedControlComposedProps | SegmentedControlShorthandProps;
 
 export interface SegmentedControlItemProps extends Omit<ComponentPropsWithRef<'button'>, 'value'>, SxProps {
   /** Identifies this segment for selection and change callbacks. */
@@ -284,7 +284,7 @@ function SegmentedControlRoot({
   children,
   onKeyDown,
   ...rest
-}: SegmentedControlCompoundProps & { rootElement?: 'div' | SegmentedControlSlots['root']; slotStyles?: Interpolation<Theme> }) {
+}: SegmentedControlComposedProps & { rootElement?: 'div' | SegmentedControlSlots['root']; slotStyles?: Interpolation<Theme> }) {
   const Track = slots?.track ?? 'div';
   const [value, requestChange] = useControlledState(valueProp, defaultValue, onValueChange);
   const [focused, setFocused] = useState<string | null>(null);

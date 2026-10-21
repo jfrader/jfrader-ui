@@ -7,8 +7,8 @@ import { ThemeRoot } from '../theme-root';
 import { Button } from '../button';
 import {
   MultiSelect,
-  type MultiSelectCompoundProps,
-  type MultiSelectEasyProps,
+  type MultiSelectComposedProps,
+  type MultiSelectShorthandProps,
   type MultiSelectOption,
   type MultiSelectProps,
   type MultiSelectLabelProps,
@@ -48,7 +48,7 @@ const snippet = `import { MultiSelect } from '@jfrader/ui';
 />`;
 
 type CheckedMultiSelect<Props extends MultiSelectProps> = Props;
-const compoundSnippet = `<MultiSelect defaultValue={['bug']}>
+const composedSnippet = `<MultiSelect defaultValue={['bug']}>
   <MultiSelect.Label>Labels</MultiSelect.Label>
   <MultiSelect.Trigger><MultiSelect.Value placeholder="Select labels" /></MultiSelect.Trigger>
   <MultiSelect.Clear />
@@ -63,16 +63,16 @@ const compoundSnippet = `<MultiSelect defaultValue={['bug']}>
 export type MultiSelectTypeRegression = {
   // @ts-expect-error Options and children are mutually exclusive.
   optionsWithChildren: CheckedMultiSelect<{ options: typeof OPTIONS; children: ReactNode }>;
-  // @ts-expect-error Presentation props are rejected in compound mode without options.
+  // @ts-expect-error Presentation props are rejected in composed mode without options.
   childrenWithLabel: CheckedMultiSelect<{ label: string; children: ReactNode }>;
-  // @ts-expect-error Presentation props are rejected in compound mode without options.
+  // @ts-expect-error Presentation props are rejected in composed mode without options.
   childrenWithClearable: CheckedMultiSelect<{ clearable: true; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects slots and slotProps.
+  // @ts-expect-error Composed mode rejects slots and slotProps.
   childrenWithSlots: CheckedMultiSelect<{ slots: { root?: () => null }; children: ReactNode }>;
 };
 
 type ExampleProps = Omit<
-  MultiSelectCompoundProps,
+  MultiSelectComposedProps,
   'size' | 'empty' | 'maxVisible' | 'error' | 'description'
 > & {
   empty?: boolean;
@@ -116,7 +116,7 @@ function Example({ empty, maxVisible, size, error, description, forced, children
     </ExampleFrame>
   );
 }
-const meta: Meta<MultiSelectCompoundProps> = {
+const meta: Meta<MultiSelectComposedProps> = {
   title: 'Inputs/MultiSelect',
   component: MultiSelect,
   tags: ['autodocs'],
@@ -132,7 +132,7 @@ const meta: Meta<MultiSelectCompoundProps> = {
         { title: 'Choose options', stories: ['Default'] },
         { title: 'Selection summaries', stories: ['Overflow', 'OverflowOnly'] },
         { title: 'Field size and feedback', stories: ['Sizes', 'Empty', 'Error'] },
-        { title: 'Controlled state and forms', stories: ['EasyControlled', 'Required', 'EasyFormReset'] },
+        { title: 'Controlled state and forms', stories: ['ShorthandControlled', 'Required', 'ShorthandFormReset'] },
         { title: 'Keyboard', stories: ['Keyboard', 'Typeahead'] },
       ],
       usage: `### When to use
@@ -154,18 +154,18 @@ const meta: Meta<MultiSelectCompoundProps> = {
 };
 export default meta;
 type Story = StoryObj<typeof meta>;
-type EasyStory = StoryObj<(props: MultiSelectEasyProps) => ReactNode>;
+type ShorthandStory = StoryObj<(props: MultiSelectShorthandProps) => ReactNode>;
 // @ts-expect-error Generated-part slot keys are closed.
-type UnknownSlot = NonNullable<MultiSelectEasyProps['slotProps']>['unknown'];
+type UnknownSlot = NonNullable<MultiSelectShorthandProps['slotProps']>['unknown'];
 // @ts-expect-error Replacement slot keys are closed.
-type UnknownReplacement = NonNullable<MultiSelectEasyProps['slots']>['unknown'];
+type UnknownReplacement = NonNullable<MultiSelectShorthandProps['slots']>['unknown'];
 
 function MultiSelectRootAdapter(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-testid="custom-multi-select-root" />;
 }
 
 /** Restyle the generated label and every option with slotProps. */
-export const SlotProps: EasyStory = {
+export const SlotProps: ShorthandStory = {
   parameters: { docs: { source: { language: 'tsx', code: `import type { ComponentPropsWithRef } from 'react';
 import { MultiSelect } from '@jfrader/ui';
 
@@ -209,7 +209,7 @@ async function active(canvasElement: HTMLElement, name: string) {
   });
   await expect(canvasElement.ownerDocument.activeElement).toBe(triggerOf(canvasElement));
 }
-export const Default: EasyStory = {
+export const Default: ShorthandStory = {
   name: 'Choose project labels',
   args: {
     label: LABEL,
@@ -249,13 +249,13 @@ export const Default: EasyStory = {
   },
 };
 
-export const Compound: Story = {
+export const Composed: Story = {
   render: (args) => <Example {...args} defaultValue={['bug']} />,
   parameters: {
     docs: {
       source: {
         language: 'tsx',
-        code: compoundSnippet,
+        code: composedSnippet,
       },
     },
   },
@@ -268,7 +268,7 @@ function CustomTrigger(props: MultiSelectTriggerProps) {
   return <MultiSelect.Trigger {...props} data-testid="custom-trigger" />;
 }
 
-export const CustomSlots: EasyStory = {
+export const CustomSlots: ShorthandStory = {
   parameters: { docs: { source: { language: 'tsx', code: `import { MultiSelect, styled } from '@jfrader/ui';
 
 const LabelsLabel = styled(MultiSelect.Label)({ fontStyle: 'italic' });
@@ -307,7 +307,7 @@ const LabelsTrigger = styled(MultiSelect.Trigger)({ fontWeight: 600 });
   },
 };
 
-export const EasyClearable: EasyStory = {
+export const ShorthandClearable: ShorthandStory = {
   parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect label="Labels" defaultValue={['bug']} clearable options={[
   { value: 'bug', label: 'Bug' },
   { value: 'locked', label: 'Locked', disabled: true },
@@ -330,11 +330,11 @@ export const EasyClearable: EasyStory = {
   },
 };
 
-export const EasyFormReset: EasyStory = {
+export const ShorthandFormReset: ShorthandStory = {
   name: 'Reset a form',
   parameters: { docs: { description: { story: 'Select more labels, then reset the form to restore Bug.' }, source: { language: 'tsx', code: `import { Button, MultiSelect } from '@jfrader/ui';
 
-<form aria-label="Easy multi-select form">
+<form aria-label="Shorthand multi-select form">
   <MultiSelect label="Labels" name="labels" defaultValue={['bug']} options={[
     { value: 'bug', label: 'Bug' },
     { value: 'locked', label: 'Locked', disabled: true },
@@ -344,7 +344,7 @@ export const EasyFormReset: EasyStory = {
   <Button type="reset">Reset</Button>
 </form>` } } },
   render: () => (
-    <form aria-label="Easy multi-select form">
+    <form aria-label="Shorthand multi-select form">
       <MultiSelect
         label={LABEL}
         name="labels"
@@ -368,7 +368,7 @@ export const EasyFormReset: EasyStory = {
   },
 };
 
-function EasyControlledExample(props: MultiSelectEasyProps) {
+function ShorthandControlledExample(props: MultiSelectShorthandProps) {
   const [value, setValue] = useState<readonly string[]>(['bug']);
   const [open, setOpen] = useState(false);
   return <MultiSelect {...props} value={value} open={open}
@@ -376,7 +376,7 @@ function EasyControlledExample(props: MultiSelectEasyProps) {
     onOpenChange={(next) => { setOpen(next); props.onOpenChange?.(next); }} />;
 }
 
-export const EasyControlled: EasyStory = {
+export const ShorthandControlled: ShorthandStory = {
   name: 'Control selection and visibility',
   parameters: { docs: { description: { story: 'Keep the selected labels and popup visibility in React state.' }, source: { language: 'tsx', code: `import { useState } from 'react';
 import { MultiSelect } from '@jfrader/ui';
@@ -393,7 +393,7 @@ function LabelsPicker() {
     ]} />;
 }` } } },
   args: { label: LABEL, options: OPTIONS, onValueChange: fn(), onOpenChange: fn() },
-  render: (args) => <EasyControlledExample {...args} />,
+  render: (args) => <ShorthandControlledExample {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.click(triggerOf(canvasElement));
     await userEvent.click(body(canvasElement).getByRole('option', { name: 'Feature' }));
@@ -405,7 +405,7 @@ function LabelsPicker() {
   },
 };
 
-export const EasyRejectedControlled: EasyStory = {
+export const ShorthandRejectedControlled: ShorthandStory = {
   parameters: { docs: { source: { language: 'tsx', code: `<MultiSelect label="Labels" value={['bug']} options={[
   { value: 'bug', label: 'Bug' },
   { value: 'locked', label: 'Locked', disabled: true },
@@ -423,7 +423,7 @@ export const EasyRejectedControlled: EasyStory = {
   },
 };
 
-export const EasyKeyboard: EasyStory = {
+export const ShorthandKeyboard: ShorthandStory = {
   args: { label: LABEL, options: OPTIONS, onValueChange: fn() },
   render: (args) => <MultiSelect {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
@@ -445,18 +445,18 @@ export const EasyKeyboard: EasyStory = {
   },
 };
 
-export const EasyOptionMetadata: EasyStory = {
-  args: { label: LABEL, options: [{ value: 'bug', label: 'Bug', textValue: 'Issue', id: 'easy-multi-issue' }], onValueChange: fn() },
+export const ShorthandOptionMetadata: ShorthandStory = {
+  args: { label: LABEL, options: [{ value: 'bug', label: 'Bug', textValue: 'Issue', id: 'shorthand-multi-issue' }], onValueChange: fn() },
   render: (args) => <MultiSelect {...args} />,
   play: async ({ canvasElement, userEvent, args }) => {
     await userEvent.click(triggerOf(canvasElement));
-    await expect(body(canvasElement).getByRole('option', { name: 'Bug' })).toHaveAttribute('id', 'easy-multi-issue');
+    await expect(body(canvasElement).getByRole('option', { name: 'Bug' })).toHaveAttribute('id', 'shorthand-multi-issue');
     await userEvent.keyboard('i{Enter}');
     await expect(args.onValueChange).toHaveBeenLastCalledWith(['bug']);
   },
 };
 
-function ControlledExample(props: MultiSelectCompoundProps) {
+function ControlledExample(props: MultiSelectComposedProps) {
   const [value, setValue] = useState<readonly string[]>(['bug']);
   const [open, setOpen] = useState(false);
   return (
@@ -693,7 +693,7 @@ const LONG_OPTIONS: readonly MultiSelectOption[] = Array.from({ length: 30 }, (_
   label: `Label ${index + 1}: Documentation and international accessibility requirements`,
 }));
 
-export const NarrowSelection: EasyStory = {
+export const NarrowSelection: ShorthandStory = {
   tags: ['!autodocs'],
   args: {
     label: 'Project labels',
@@ -1057,7 +1057,7 @@ export const ControlledOpenUncontrolledValue: Story = {
     );
   },
 };
-function ExternalUpdatesExample(props: MultiSelectCompoundProps) {
+function ExternalUpdatesExample(props: MultiSelectComposedProps) {
   const [value, setValue] = useState<readonly string[]>(['bug']);
   const [open, setOpen] = useState(false);
   return (
@@ -1405,7 +1405,7 @@ function LabelsPicker() {
     await expect(args.onValueChange).not.toHaveBeenCalled();
   },
 };
-function DynamicItems(props: MultiSelectCompoundProps) {
+function DynamicItems(props: MultiSelectComposedProps) {
   const [updated, setUpdated] = useState(false);
   return (
     <>

@@ -1,8 +1,8 @@
 export { EditableDetails } from './editable-details';
 export type {
   EditableDetailsProps,
-  EditableDetailsCompoundProps,
-  EditableDetailsEasyProps,
+  EditableDetailsComposedProps,
+  EditableDetailsShorthandProps,
   EditableDetailsBaseProps,
   EditableDetailsSectionRecord,
   EditableDetailsItemRecord,

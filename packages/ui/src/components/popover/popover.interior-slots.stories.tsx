@@ -14,11 +14,11 @@ import {
 } from '../../testing/interior-slot-assertions';
 import {
   Popover,
-  type PopoverEasyProps,
+  type PopoverShorthandProps,
 } from './popover';
 
-// @ts-expect-error Unknown slot key is rejected on PopoverEasyProps['slots']
-type UnknownPopoverSlot = NonNullable<PopoverEasyProps['slots']>['unknownKey'];
+// @ts-expect-error Unknown slot key is rejected on PopoverShorthandProps['slots']
+type UnknownPopoverSlot = NonNullable<PopoverShorthandProps['slots']>['unknownKey'];
 
 function CustomPopoverRoot({ className, ref, ...props }: ComponentPropsWithRef<'div'>) {
   return <div ref={ref} {...props} className={className} data-slot="popover-root-winner" />;
@@ -86,7 +86,7 @@ const meta = {
 
 export default meta;
 
-type Story = StoryObj<(props: PopoverEasyProps) => ReactNode>;
+type Story = StoryObj<(props: PopoverShorthandProps) => ReactNode>;
 
 /** Customize the popover root wrapper and content container using slots. */
 export const Customization: Story = {

@@ -166,7 +166,7 @@ export default function Page() {
 }
 ```
 
-Use a Client Component for event handlers, hooks, theme callbacks, `styled`, or compound parts such as
+Use a Client Component for event handlers, hooks, theme callbacks, `styled`, or composed parts such as
 `Dialog.Trigger`. The published modules carry a `'use client'` boundary, so accessing a part on that
 client reference from a Server Component is not supported.
 

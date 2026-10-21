@@ -19,7 +19,7 @@ import { useControlledState } from '../../utils/use-controlled-state';
 import { Avatar } from '../avatar';
 import { Button, type ButtonProps } from '../button';
 import { Combobox, type ComboboxInputProps } from '../combobox';
-import { Select, type SelectEasyProps } from '../select';
+import { Select, type SelectShorthandProps } from '../select';
 import { ShareSheet, type ShareSheetProps } from '../share-sheet';
 
 export type ShareRole = 'editor' | 'commenter' | 'viewer';
@@ -84,7 +84,7 @@ export interface ShareAccessMessages {
 }
 type NativeSlot<E extends 'section' | 'ul' | 'div'> = ComponentPropsWithRef<E> & SxProps;
 type ActionSlot = Omit<ButtonProps, 'sx'> & SxProps;
-type RoleSlot = Omit<SelectEasyProps<ShareRole>, 'sx' | 'options'> & SxProps;
+type RoleSlot = Omit<SelectShorthandProps<ShareRole>, 'sx' | 'options'> & SxProps;
 export interface ShareAccessSlotProps {
   root?: NativeSlot<'section'>;
   /** Uses `Combobox.Input` by default. */
@@ -112,9 +112,9 @@ export interface ShareAccessSlots {
   chipList?: ComponentType<ComponentPropsWithRef<'ul'>>;
   memberList?: ComponentType<ComponentPropsWithRef<'ul'>>;
   undoList?: ComponentType<ComponentPropsWithRef<'ul'>>;
-  inviteRole?: ComponentType<SelectEasyProps<ShareRole>>;
-  memberRole?: ComponentType<SelectEasyProps<ShareRole>>;
-  linkRole?: ComponentType<SelectEasyProps<ShareRole>>;
+  inviteRole?: ComponentType<SelectShorthandProps<ShareRole>>;
+  memberRole?: ComponentType<SelectShorthandProps<ShareRole>>;
+  linkRole?: ComponentType<SelectShorthandProps<ShareRole>>;
   inviteButton?: ComponentType<ButtonProps>;
   removeButton?: ComponentType<ButtonProps>;
   undoButton?: ComponentType<ButtonProps>;

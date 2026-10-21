@@ -8,7 +8,7 @@ import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Popover } from '../popover';
 import { TextField, type TextFieldProps } from '../text-field';
-import { DatePicker, type DatePickerCompoundProps as DatePickerProps, type DatePickerEasyProps } from './index';
+import { DatePicker, type DatePickerComposedProps as DatePickerProps, type DatePickerShorthandProps } from './index';
 
 const LABEL = 'Departure';
 const LOCALE = 'en-US';
@@ -64,7 +64,7 @@ const meta: Meta<DatePickerProps> = {
     docs: {
       description: { component: 'Choose a date from a calendar.' },
       sections: [
-        { title: 'Basic', stories: ['Default', 'Compound', 'EasyControlled'] },
+        { title: 'Basic', stories: ['Default', 'Composed', 'ShorthandControlled'] },
         { title: 'Constraints', stories: ['MinMax'] },
         { title: 'States', stories: ['Disabled'] },
         { title: 'Forms', stories: ['FormValue'] },
@@ -86,7 +86,7 @@ Selecting a date requests a value change before requesting closure; rejecting on
 ### Forms
 
 Empty fields submit an empty string; disabled fields are omitted. Native required validation does not validate a read-only input; validate selection in your form.
-Give the field a text label. With a non-string compound label, supply an explicit accessible name so the open popup keeps its name.`,
+Give the field a text label. With a non-string label, supply an explicit accessible name so the open popup keeps its name.`,
     },
     // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
     // immediately; axe flags them as aria-hidden-focus (known false positive). Every other
@@ -103,7 +103,7 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-export const EdgeGeometry: StoryObj<DatePickerEasyProps> = {
+export const EdgeGeometry: StoryObj<DatePickerShorthandProps> = {
   tags: ['!autodocs'],
   args: {
     label: 'Departure date for the selected journey and all connecting flights',
@@ -138,7 +138,7 @@ export const EdgeGeometry: StoryObj<DatePickerEasyProps> = {
   },
 };
 
-export const RTL: StoryObj<DatePickerEasyProps> = {
+export const RTL: StoryObj<DatePickerShorthandProps> = {
   tags: ['!autodocs'],
   args: { label: 'تاريخ المغادرة', locale: 'ar-EG', defaultValue: '2026-10-12' },
   render: (args) => <div dir="rtl"><DatePicker {...args} /></div>,
@@ -159,27 +159,27 @@ export const RTL: StoryObj<DatePickerEasyProps> = {
 type CheckedDatePicker<Props extends import('./index').DatePickerProps> = Props;
 export type DatePickerTypeRegression = {
   // @ts-expect-error The non-DOM provider root has no component sugar.
-  providerComponent: DatePickerEasyProps['component'];
+  providerComponent: DatePickerShorthandProps['component'];
   // @ts-expect-error The field and portaled popup have separate replacement seams.
-  providerRootSlot: NonNullable<DatePickerEasyProps['slots']>['root'];
+  providerRootSlot: NonNullable<DatePickerShorthandProps['slots']>['root'];
   // @ts-expect-error The provider has no root element to receive native props.
-  providerRootProps: NonNullable<DatePickerEasyProps['slotProps']>['root'];
-  // @ts-expect-error Easy label and compound children are mutually exclusive.
+  providerRootProps: NonNullable<DatePickerShorthandProps['slotProps']>['root'];
+  // @ts-expect-error Shorthand label and composed children are mutually exclusive.
   mixed: CheckedDatePicker<{ label: string; children: string }>;
-  // @ts-expect-error Generated-part props require the easy label.
+  // @ts-expect-error Generated-part props require the shorthand label.
   incomplete: CheckedDatePicker<{ slotProps: { input: { description: string } } }>;
-  // @ts-expect-error Compound mode rejects generated-part props.
+  // @ts-expect-error Composed mode rejects generated-part props.
   compoundSlots: CheckedDatePicker<{ children: string; slotProps: { popup: { className: string } } }>;
 };
 
-function EasyControlledDatePicker(props: DatePickerEasyProps) {
+function ShorthandControlledDatePicker(props: DatePickerShorthandProps) {
   const [value, setValue] = useState('2026-10-12');
   const [open, setOpen] = useState(false);
   return <DatePicker {...props} value={value} open={open}
     onValueChange={(next) => { setValue(next); props.onValueChange?.(next); }}
     onOpenChange={(next) => { setOpen(next); props.onOpenChange?.(next); }} />;
 }
-EasyControlledDatePicker.displayName = 'EasyControlledDatePicker';
+ShorthandControlledDatePicker.displayName = 'ShorthandControlledDatePicker';
 
 function DateFieldReplacement(props: TextFieldProps) {
   return <TextField {...props} data-generated-field="" />;
@@ -249,7 +249,7 @@ async function focusInput(canvasElement: HTMLElement) {
   return input;
 }
 
-export const Default: StoryObj<DatePickerEasyProps> = {
+export const Default: StoryObj<DatePickerShorthandProps> = {
   name: 'Choose a date',
   args: { label: LABEL, locale: LOCALE, defaultValue: '2026-10-12', onValueChange: fn() },
   render: (args) => <DatePicker {...args} />,
@@ -276,7 +276,7 @@ export const Default: StoryObj<DatePickerEasyProps> = {
 };
 
 /** Assemble the date field and popup for a custom layout. */
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Compose the field and calendar',
   args: { defaultValue: '2026-10-12', onValueChange: fn(), onOpenChange: fn() },
   render: (args) => <DatePickerExample {...args} />,
@@ -352,7 +352,7 @@ export const Compound: Story = {
 };
 
 /** Set props on the generated input and popup. */
-export const CustomParts: StoryObj<DatePickerEasyProps> = {
+export const CustomParts: StoryObj<DatePickerShorthandProps> = {
   args: {
     label: LABEL, locale: LOCALE, defaultValue: '2026-10-12',
     slots: { input: DateFieldReplacement, popup: DatePopupRoot },
@@ -376,7 +376,7 @@ export const CustomParts: StoryObj<DatePickerEasyProps> = {
   },
 };
 
-export const EasyDisabled: StoryObj<DatePickerEasyProps> = {
+export const ShorthandDisabled: StoryObj<DatePickerShorthandProps> = {
   tags: ['!autodocs'],
   args: { label: LABEL, locale: LOCALE, disabled: true, open: true },
   render: (args) => <DatePicker {...args} />,
@@ -387,7 +387,7 @@ export const EasyDisabled: StoryObj<DatePickerEasyProps> = {
   },
 };
 
-export const EasyControlled: StoryObj<DatePickerEasyProps> = {
+export const ShorthandControlled: StoryObj<DatePickerShorthandProps> = {
   name: 'Control the selected date',
   parameters: { docs: {
     description: { story: 'Keep the date and popup visibility in React state.' },
@@ -402,7 +402,7 @@ export function DepartureDate() {
 }` },
   } },
   args: { label: LABEL, locale: LOCALE, onValueChange: fn(), onOpenChange: fn() },
-  render: (args) => <EasyControlledDatePicker {...args} />,
+  render: (args) => <ShorthandControlledDatePicker {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     await userEvent.click(getInput(canvasElement));
     await bodyOf(canvasElement).findByRole('dialog', { name: LABEL });
@@ -416,7 +416,7 @@ export function DepartureDate() {
 };
 
 /** Dates follow the field's locale. */
-export const EasyLocale: StoryObj<DatePickerEasyProps> = {
+export const ShorthandLocale: StoryObj<DatePickerShorthandProps> = {
   args: { label: 'Salida', locale: 'es-ES', defaultValue: '2026-10-12' },
   render: (args) => <DatePicker {...args} />,
   play: async ({ canvasElement, userEvent }) => {

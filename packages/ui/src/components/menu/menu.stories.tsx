@@ -7,7 +7,7 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
 import { Popover } from '../popover';
-import { Menu, type MenuCompoundProps, type MenuEasyProps } from './index';
+import { Menu, type MenuComposedProps, type MenuShorthandProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
@@ -29,7 +29,7 @@ const meta = {
     docs: {
       description: { component: 'Open a menu and choose an action.' },
       sections: [
-        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'Basic', stories: ['Default', 'Composed'] },
         { title: 'Customization', stories: ['SlotProps', 'Glass'] },
         { title: 'State', stories: ['Controlled'] },
         { title: 'Keyboard and focus', stories: ['Keyboard', 'Typeahead', 'OutsidePress', 'SelectPreventDefault', 'SelectMovesFocus'] },
@@ -60,12 +60,12 @@ Use a menu for a short list of actions. Use a select for choosing a form value. 
 
 export default meta;
 
-type Story = StoryObj<(props: MenuCompoundProps) => ReactNode>;
-type EasyStory = StoryObj<(props: MenuEasyProps) => ReactNode>;
+type Story = StoryObj<(props: MenuComposedProps) => ReactNode>;
+type ShorthandStory = StoryObj<(props: MenuShorthandProps) => ReactNode>;
 // @ts-expect-error Generated-part slot keys are closed.
-type UnknownSlot = NonNullable<MenuEasyProps['slotProps']>['unknown'];
+type UnknownSlot = NonNullable<MenuShorthandProps['slotProps']>['unknown'];
 // @ts-expect-error Replacement slot keys are closed.
-type UnknownReplacement = NonNullable<MenuEasyProps['slots']>['unknown'];
+type UnknownReplacement = NonNullable<MenuShorthandProps['slots']>['unknown'];
 
 function MenuRootAdapter(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-testid="custom-menu-root" />;
@@ -85,7 +85,7 @@ function ReplacementSeparator(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-testid="replacement-separator" />;
 }
 
-export const ReplacementSlots: EasyStory = {
+export const ReplacementSlots: ShorthandStory = {
   args: {
     triggerLabel: 'Replacement actions',
     items: [{ type: 'item', label: 'Edit' }, { type: 'separator' }],
@@ -139,7 +139,7 @@ export const ReplacementSlots: EasyStory = {
 
 /** Restyle the generated trigger and every action with slotProps. */
 // This story tests native props and sx forwarded through the slot API.
-export const SlotProps: EasyStory = {
+export const SlotProps: ShorthandStory = {
   name: 'Part props and replacement',
   parameters: { docs: {
     description: { story: 'Replace the outer wrapper and customize the generated trigger and actions.' },
@@ -185,8 +185,8 @@ function MenuRoot(props: ComponentPropsWithRef<'div'>) {
   },
 };
 
-export const Default: EasyStory = {
-  name: 'Easy mode',
+export const Default: ShorthandStory = {
+  name: 'Shorthand mode',
   args: {
     triggerLabel: TRIGGER,
     items: [
@@ -196,7 +196,7 @@ export const Default: EasyStory = {
       { type: 'item', label: 'Delete', onSelect: onDelete },
     ],
     onOpenChange: fn(),
-    slotProps: { content: { className: 'easy-menu-content' } },
+    slotProps: { content: { className: 'shorthand-menu-content' } },
   },
   parameters: { docs: {
     description: { story: 'Open Options to choose an action, with a disabled command and a separator.' },
@@ -212,7 +212,7 @@ const actions = [
 ] satisfies MenuAction[];
 
 <Row>
-  <Menu triggerLabel="Options" items={actions} slotProps={{ content: { className: 'easy-menu-content' } }} />
+  <Menu triggerLabel="Options" items={actions} slotProps={{ content: { className: 'shorthand-menu-content' } }} />
   <Button>After</Button>
 </Row>` } } },
   render: (args) => <Row><Menu {...args} /><Button>After</Button></Row>,
@@ -222,7 +222,7 @@ const actions = [
     const trigger = await focusTrigger(canvasElement);
     await userEvent.keyboard('{ArrowDown}');
     const menu = await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER });
-    await expect(menu).toHaveClass('easy-menu-content');
+    await expect(menu).toHaveClass('shorthand-menu-content');
     await expect(trigger).toHaveAttribute('aria-controls', menu.id);
     await expect(menu).toHaveAttribute('aria-labelledby', trigger.id);
     await expectFocused(canvasElement, 'Edit');
@@ -259,11 +259,11 @@ const actions = [
   },
 };
 
-export const EasyModeOpen: EasyStory = { ...Default, tags: ['!autodocs'], name: 'Easy mode open', args: { ...Default.args, defaultOpen: true }, play: undefined };
-export const EasyModeLight: EasyStory = { ...EasyModeOpen, tags: ['!autodocs'], name: 'Easy mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
+export const ShorthandModeOpen: ShorthandStory = { ...Default, tags: ['!autodocs'], name: 'Shorthand mode open', args: { ...Default.args, defaultOpen: true }, play: undefined };
+export const ShorthandModeLight: ShorthandStory = { ...ShorthandModeOpen, tags: ['!autodocs'], name: 'Shorthand mode light', decorators: [withLightTheme], globals: { theme: 'light' } };
 
 /** Open a translucent action menu. */
-export const Glass: EasyStory = {
+export const Glass: ShorthandStory = {
   args: {
     appearance: 'glass',
     triggerLabel: TRIGGER,
@@ -307,7 +307,7 @@ export const Glass: EasyStory = {
 };
 
 /** The glass popup retains the scoped light palette through its portal. */
-export const GlassLight: EasyStory = {
+export const GlassLight: ShorthandStory = {
   ...Glass,
   decorators: [withLightTheme],
   globals: { theme: 'light' },
@@ -331,7 +331,7 @@ export const GlassCompound: Story = {
 };
 
 /** Align glass menu actions for right-to-left text. */
-export const GlassRTL: EasyStory = {
+export const GlassRTL: ShorthandStory = {
   ...Glass,
   args: { ...Glass.args, slotProps: { trigger: { dir: 'rtl' }, content: { dir: 'rtl' } } },
   parameters: { docs: { source: { language: 'tsx', code: '<Menu appearance="glass" triggerLabel="Options" items={[{ type: "item", label: "Edit" }, { type: "item", label: "Delete" }]} slotProps={{ trigger: { dir: "rtl" }, content: { dir: "rtl" } }} />' } } },
@@ -344,7 +344,7 @@ export const GlassRTL: EasyStory = {
 };
 
 /** Reduced transparency replaces the glass popup with an opaque surface. */
-export const ReducedTransparency: EasyStory = {
+export const ReducedTransparency: ShorthandStory = {
   ...Glass,
   name: 'Reduced Transparency',
   tags: ['!autodocs'],
@@ -366,10 +366,10 @@ export const ReducedTransparency: EasyStory = {
   },
 };
 
-export const EasyModeRejectedClose: EasyStory = {
+export const ShorthandModeRejectedClose: ShorthandStory = {
   ...Default,
   tags: ['!autodocs'],
-  name: 'Easy mode rejected close',
+  name: 'Shorthand mode rejected close',
   args: { ...Default.args, open: true },
   play: async ({ canvasElement, args, userEvent }) => {
     await expectFocused(canvasElement, 'Edit');
@@ -380,17 +380,17 @@ export const EasyModeRejectedClose: EasyStory = {
   },
 };
 
-function easyModeTypeContracts() {
-  // @ts-expect-error Collection mode rejects compound children.
-  <Menu triggerLabel="Actions" items={[]}>Compound</Menu>;
+function shorthandModeTypeContracts() {
+  // @ts-expect-error Collection mode rejects composed children.
+  <Menu triggerLabel="Actions" items={[]}>Composed</Menu>;
   // @ts-expect-error Collection mode requires its trigger label.
   <Menu items={[]} />;
   // @ts-expect-error Separators cannot carry selection callbacks.
   <Menu triggerLabel="Actions" items={[{ type: 'separator', onSelect: onEdit }]} />;
 }
-void easyModeTypeContracts;
+void shorthandModeTypeContracts;
 
-function MenuExample(props: MenuCompoundProps) {
+function MenuExample(props: MenuComposedProps) {
   return (
     <Row>
       <Menu {...props}>
@@ -408,7 +408,7 @@ function MenuExample(props: MenuCompoundProps) {
 }
 MenuExample.displayName = 'MenuExample';
 
-function ControlledMenu(props: MenuCompoundProps) {
+function ControlledMenu(props: MenuComposedProps) {
   const [open, setOpen] = useState(false);
   return (
     <MenuExample
@@ -468,8 +468,8 @@ async function focusTrigger(canvasElement: HTMLElement) {
   return trigger;
 }
 
-export const Compound: Story = {
-  name: 'Compound anatomy',
+export const Composed: Story = {
+  name: 'Composed anatomy',
   parameters: { docs: {
     description: { story: 'Compose the trigger, actions, and separator explicitly.' },
     source: { language: 'tsx', code: `import { Button, Menu, styled } from '@jfrader/ui';
@@ -895,7 +895,7 @@ export const SelectPreventDefault: Story = {
   },
 };
 
-function RenameExample(props: MenuCompoundProps) {
+function RenameExample(props: MenuComposedProps) {
   const input = useRef<HTMLInputElement>(null);
   return (
     <Row>
@@ -999,7 +999,7 @@ export const TriggerRole: Story = {
 
 const popoverOpenChange = fn<(open: boolean) => void>();
 
-function PopoverHost(props: MenuCompoundProps) {
+function PopoverHost(props: MenuComposedProps) {
   return (
     <Row>
       <Popover defaultOpen onOpenChange={popoverOpenChange}>

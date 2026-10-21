@@ -7,8 +7,8 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import {
   CommandPalette,
-  type CommandPaletteCompoundProps,
-  type CommandPaletteEasyProps,
+  type CommandPaletteComposedProps,
+  type CommandPaletteShorthandProps,
   type CommandPaletteItemRecord,
   type CommandPaletteProps,
 } from './index';
@@ -43,7 +43,7 @@ function Commands({ runCommand }: { runCommand: (value: string) => void }) {
 />;
 }`;
 
-const compoundSnippet = `import { useState } from 'react';
+const composedSnippet = `import { useState } from 'react';
 import { CommandPalette } from '@jfrader/ui';
 
 function Commands() {
@@ -71,7 +71,7 @@ function Commands() {
   </>;
 }`;
 
-const meta: Meta<CommandPaletteCompoundProps> = {
+const meta: Meta<CommandPaletteComposedProps> = {
   title: 'Surfaces/CommandPalette',
   component: CommandPalette,
   parameters: {
@@ -81,11 +81,11 @@ const meta: Meta<CommandPaletteCompoundProps> = {
       },
       sections: [
         { title: 'Basic', stories: ['Default'] },
-        { title: 'Items and groups', stories: ['EasyModeAppAndItemSelect'] },
+        { title: 'Items and groups', stories: ['ShorthandModeAppAndItemSelect'] },
         { title: 'Filtering and empty results', stories: ['Filter'] },
         { title: 'Shortcuts', stories: ['Shortcut'] },
-        { title: 'Controlled', stories: ['EasyModeControlled'] },
-        { title: 'Composition', stories: ['Compound'] },
+        { title: 'Controlled', stories: ['ShorthandModeControlled'] },
+        { title: 'Composition', stories: ['Composed'] },
         { title: 'Keyboard', stories: ['KeyboardWrap'] },
       ],
       usage: `### When to use
@@ -93,7 +93,7 @@ Use a command palette for searchable application actions. Use a menu for a short
 
 ### Values and constraints
 
-Command values must be unique. Choose generated items or compound content, not both. Register application shortcuts yourself; the palette does not install a global shortcut.
+Command values must be unique. Choose generated items or composed content, not both. Register application shortcuts yourself; the palette does not install a global shortcut.
 
 Selection requests closure immediately, without waiting for asynchronous command work. Disabled commands stay visible but cannot run. If application state controls opening, accept close requests to dismiss the palette.
 
@@ -112,30 +112,30 @@ Matching is case-insensitive and includes keywords. Each query change highlights
 
 export default meta;
 
-type Story = StoryObj<(props: CommandPaletteCompoundProps) => ReactNode>;
-type EasyStory = StoryObj<(props: CommandPaletteEasyProps<CommandItem>) => ReactNode>;
+type Story = StoryObj<(props: CommandPaletteComposedProps) => ReactNode>;
+type ShorthandStory = StoryObj<(props: CommandPaletteShorthandProps<CommandItem>) => ReactNode>;
 
 type CheckedCommandPalette<Props extends CommandPaletteProps> = Props;
 export type CommandPaletteTypeRegression = {
   // @ts-expect-error Items and children are mutually exclusive.
   itemsWithChildren: CheckedCommandPalette<{ items: typeof COMMANDS; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects triggerLabel.
+  // @ts-expect-error Composed mode rejects triggerLabel.
   childrenWithTriggerLabel: CheckedCommandPalette<{ triggerLabel: string; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects onSelect.
+  // @ts-expect-error Composed mode rejects onSelect.
   childrenWithOnSelect: CheckedCommandPalette<{ onSelect: (item: unknown) => void; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects slots.
+  // @ts-expect-error Composed mode rejects slots.
   childrenWithSlots: CheckedCommandPalette<{ slots: { root?: () => null }; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects slotProps.
+  // @ts-expect-error Composed mode rejects slotProps.
   childrenWithSlotProps: CheckedCommandPalette<{ slotProps: { root?: {} }; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects component.
+  // @ts-expect-error Composed mode rejects component.
   childrenWithComponent: CheckedCommandPalette<{ component: () => null; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects placeholder.
+  // @ts-expect-error Composed mode rejects placeholder.
   childrenWithPlaceholder: CheckedCommandPalette<{ placeholder: string; children: ReactNode }>;
-  // @ts-expect-error Compound mode rejects empty.
+  // @ts-expect-error Composed mode rejects empty.
   childrenWithEmpty: CheckedCommandPalette<{ empty: ReactNode; children: ReactNode }>;
 };
 
-function CommandPaletteExample(props: CommandPaletteCompoundProps) {
+function CommandPaletteExample(props: CommandPaletteComposedProps) {
   const [selections, setSelections] = useState<string[]>([]);
   const select = (value: string) => () => setSelections((previous) => [...previous, value]);
   return (
@@ -206,7 +206,7 @@ async function expectClosed(canvasElement: HTMLElement, trigger: HTMLElement) {
   await expect(trigger).toHaveFocus();
 }
 
-export const Default: EasyStory = {
+export const Default: ShorthandStory = {
   name: 'Search application commands',
   args: {
     triggerLabel: TRIGGER,
@@ -247,8 +247,8 @@ export const Default: EasyStory = {
   },
 };
 
-export const EasyModeFilterAndDismiss: EasyStory = {
-  name: 'Easy mode filter and dismiss',
+export const ShorthandModeFilterAndDismiss: ShorthandStory = {
+  name: 'Shorthand mode filter and dismiss',
   args: {
     triggerLabel: TRIGGER,
     label: LABEL,
@@ -327,7 +327,7 @@ function Commands() {
   },
 };
 
-function ControlledEasyFixture() {
+function ControlledShorthandFixture() {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string>('none');
   return (
@@ -345,7 +345,7 @@ function ControlledEasyFixture() {
   );
 }
 
-export const EasyModeControlled: StoryObj = {
+export const ShorthandModeControlled: StoryObj = {
   name: 'Open from application state',
   parameters: { docs: {
     description: { story: 'Open the palette from an external button and keep the selected command in state.' },
@@ -370,7 +370,7 @@ function Commands() {
   </>;
 }` },
   } },
-  render: () => <ControlledEasyFixture />,
+  render: () => <ControlledShorthandFixture />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const opener = canvas.getByRole('button', { name: 'External open' });
@@ -386,8 +386,8 @@ function Commands() {
   },
 };
 
-export const EasyModeSlots: EasyStory = {
-  name: 'Easy mode slots',
+export const ShorthandModeSlots: ShorthandStory = {
+  name: 'Shorthand mode slots',
   args: {
     triggerLabel: TRIGGER,
     label: LABEL,
@@ -422,9 +422,9 @@ function CustomRootBox({ children, ...props }: ComponentPropsWithRef<'div'>) {
   );
 }
 
-export const EasyModeOverrides: EasyStory = {
+export const ShorthandModeOverrides: ShorthandStory = {
   // Inline styles exercise the documented root/slot style-merging API.
-  name: 'Easy mode overrides',
+  name: 'Shorthand mode overrides',
   render: () => {
     return (
       <CommandPalette
@@ -489,7 +489,7 @@ export const EasyModeOverrides: EasyStory = {
 
 const itemSelectSpy = fn();
 
-export const EasyModeAppAndItemSelect: EasyStory = {
+export const ShorthandModeAppAndItemSelect: ShorthandStory = {
   name: 'Item actions and unavailable commands',
   parameters: { docs: {
     description: { story: 'Run an item action while keeping an unavailable command visible but inactive.' },
@@ -540,8 +540,8 @@ function AuditCommands({ runAudit, recordCommand }: {
   },
 };
 
-export const EasyModeUncontrolledDismiss: EasyStory = {
-  name: 'Easy mode uncontrolled dismiss',
+export const ShorthandModeUncontrolledDismiss: ShorthandStory = {
+  name: 'Shorthand mode uncontrolled dismiss',
   tags: ['!autodocs'],
   args: {
     defaultOpen: true,
@@ -563,11 +563,11 @@ export const EasyModeUncontrolledDismiss: EasyStory = {
   },
 };
 
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Compose grouped commands',
   parameters: { docs: {
     description: { story: 'Compose the input, groups, items and empty state, then record selections.' },
-    source: { language: 'tsx', code: compoundSnippet },
+    source: { language: 'tsx', code: composedSnippet },
   } },
   render: (args) => <CommandPaletteExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -601,7 +601,7 @@ export const Filter: Story = {
   name: 'Search text, keywords and empty results',
   parameters: { docs: {
     description: { story: 'Search for disk to match Save file, or enter zzz to show the empty state.' },
-    source: { language: 'tsx', code: compoundSnippet },
+    source: { language: 'tsx', code: composedSnippet },
   } },
   render: (args) => <CommandPaletteExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -648,7 +648,7 @@ export const KeyboardWrap: Story = {
   name: 'Navigate across groups',
   parameters: { docs: {
     description: { story: 'Use arrows, Home and End to move the highlight while focus stays in the search input.' },
-    source: { language: 'tsx', code: compoundSnippet },
+    source: { language: 'tsx', code: composedSnippet },
   } },
   render: (args) => <CommandPaletteExample {...args} />,
   play: async ({ canvasElement }) => {
@@ -712,7 +712,7 @@ export const DisabledAndScrollable: Story = {
   },
 };
 
-function NativeCloseExample(props: CommandPaletteCompoundProps) {
+function NativeCloseExample(props: CommandPaletteComposedProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   return (
     <CommandPalette {...props}>

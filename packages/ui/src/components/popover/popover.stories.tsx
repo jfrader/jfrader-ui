@@ -6,7 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
-import { Popover, type PopoverCompoundProps as PopoverProps, type PopoverEasyProps } from './index';
+import { Popover, type PopoverComposedProps as PopoverProps, type PopoverShorthandProps } from './index';
 
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
@@ -74,9 +74,9 @@ const meta: Meta<PopoverProps> = {
     docs: {
       description: { component: 'Open a panel beside a button without blocking the rest of the page.' },
       sections: [
-        { title: 'Basic', stories: ['Default', 'Compound'] },
+        { title: 'Basic', stories: ['Default', 'Composed'] },
         { title: 'Composition', stories: ['CustomParts', 'Controlled'] },
-        { title: 'Interaction', stories: ['EasyDisabled', 'EscapeReturnFocus', 'KeyboardEntry', 'OutsideClick', 'NestedEscapeFromChild'] },
+        { title: 'Interaction', stories: ['ShorthandDisabled', 'EscapeReturnFocus', 'KeyboardEntry', 'OutsideClick', 'NestedEscapeFromChild'] },
       ],
       usage: `### When to use
 Show related information or actions beside a button while keeping the rest of the page available. Use a modal dialog when the task must block the page.
@@ -96,22 +96,22 @@ type Story = StoryObj<typeof meta>;
 
 type CheckedPopover<Props extends import('./index').PopoverProps> = Props;
 export type PopoverTypeRegression = {
-  providerComponent: PopoverEasyProps['component'];
-  providerRootSlot: NonNullable<PopoverEasyProps['slots']>['root'];
-  providerRootProps: NonNullable<PopoverEasyProps['slotProps']>['root'];
-  // @ts-expect-error Easy presentation and compound children are mutually exclusive.
+  providerComponent: PopoverShorthandProps['component'];
+  providerRootSlot: NonNullable<PopoverShorthandProps['slots']>['root'];
+  providerRootProps: NonNullable<PopoverShorthandProps['slotProps']>['root'];
+  // @ts-expect-error Shorthand presentation and composed children are mutually exclusive.
   mixed: CheckedPopover<{ triggerLabel: string; label: string; content: string; children: string }>;
-  // @ts-expect-error Easy mode requires a dialog name.
+  // @ts-expect-error Shorthand mode requires a dialog name.
   unnamed: CheckedPopover<{ triggerLabel: string; content: string }>;
-  // @ts-expect-error Compound mode rejects generated-part props.
+  // @ts-expect-error Composed mode rejects generated-part props.
   compoundSlots: CheckedPopover<{ children: string; slotProps: { trigger: { disabled: true } } }>;
 };
 
-function EasyControlledPopover(props: PopoverEasyProps) {
+function ShorthandControlledPopover(props: PopoverShorthandProps) {
   const [open, setOpen] = useState(false);
   return <Popover {...props} open={open} onOpenChange={(next) => { setOpen(next); props.onOpenChange?.(next); }} />;
 }
-EasyControlledPopover.displayName = 'EasyControlledPopover';
+ShorthandControlledPopover.displayName = 'ShorthandControlledPopover';
 
 function PopoverButtonRoot(props: ComponentPropsWithRef<'button'>) {
   return <button {...props} data-generated-trigger="" />;
@@ -215,7 +215,7 @@ async function expectClosed(canvasElement: HTMLElement, trigger: HTMLElement) {
   await expect(trigger).toHaveAttribute('aria-expanded', 'false');
 }
 
-export const Default: StoryObj<(props: PopoverEasyProps) => ReactNode> = {
+export const Default: StoryObj<(props: PopoverShorthandProps) => ReactNode> = {
   name: 'Share a link',
   args: { triggerLabel: TRIGGER, label: HEADING, content: <ShareLink /> },
   render: (args) => <Popover {...args} />,
@@ -250,7 +250,7 @@ const LinkText = styled.p({ margin: 0, marginBlockEnd: theme.space[3] });
 };
 
 /** Assemble a trigger and panel with a visible heading. */
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Trigger and panel',
   render: (args) => <PopoverExample {...args} />,
   parameters: { docs: {
@@ -276,7 +276,7 @@ export const Compound: Story = {
 };
 
 /** Set props on the generated trigger and panel. */
-export const CustomParts: StoryObj<(props: PopoverEasyProps) => ReactNode> = {
+export const CustomParts: StoryObj<(props: PopoverShorthandProps) => ReactNode> = {
   name: 'Custom trigger and panel',
   args: {
     triggerLabel: TRIGGER, label: HEADING, content: <Button size="sm">Copy link</Button>,
@@ -321,7 +321,7 @@ function SharePanel(props: ComponentPropsWithRef<'div'>) {
   },
 };
 
-export const EasyDisabled: StoryObj<(props: PopoverEasyProps) => ReactNode> = {
+export const ShorthandDisabled: StoryObj<(props: PopoverShorthandProps) => ReactNode> = {
   name: 'Disabled trigger',
   parameters: { docs: {
     description: { story: 'A disabled Share button cannot open the panel.' },
@@ -339,9 +339,9 @@ export const EasyDisabled: StoryObj<(props: PopoverEasyProps) => ReactNode> = {
   },
 };
 
-export const EasyControlled: StoryObj<(props: PopoverEasyProps) => ReactNode> = {
+export const ShorthandControlled: StoryObj<(props: PopoverShorthandProps) => ReactNode> = {
   args: { triggerLabel: TRIGGER, label: HEADING, content: 'Share options', onOpenChange: fn() },
-  render: (args) => <EasyControlledPopover {...args} />,
+  render: (args) => <ShorthandControlledPopover {...args} />,
   play: async ({ args, canvasElement, userEvent }) => {
     const trigger = within(canvasElement).getByRole('button', { name: TRIGGER });
     await userEvent.click(trigger);

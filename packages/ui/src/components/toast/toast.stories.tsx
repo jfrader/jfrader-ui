@@ -31,7 +31,7 @@ const meta = {
       description: { component: 'Show messages when actions succeed, fail or need attention.' },
       sections: [
         { title: 'Tones', stories: ['Default'] },
-        { title: 'Title and description', stories: ['Compound'] },
+        { title: 'Title and description', stories: ['Composed'] },
         { title: 'Actions', stories: ['Action'] },
         { title: 'Dismissal', stories: ['Persistent'] },
         { title: 'Stacking and placement', stories: ['MaxStack'] },
@@ -197,7 +197,7 @@ function Notifications() {
   },
 };
 
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Title and supporting text',
   parameters: { docs: {
     description: { story: 'Mount the viewport explicitly and show a title with supporting detail.' },

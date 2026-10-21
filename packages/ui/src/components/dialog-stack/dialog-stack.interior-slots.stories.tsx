@@ -14,12 +14,12 @@ import {
 } from '../../testing/interior-slot-assertions';
 import {
   DialogStack,
-  type DialogStackEasyProps,
+  type DialogStackShorthandProps,
   type DialogStackPageRecord,
 } from './dialog-stack';
 
-// @ts-expect-error Unknown slot key is rejected on DialogStackEasyProps['slots']
-type UnknownDialogStackSlot = NonNullable<DialogStackEasyProps['slots']>['unknownKey'];
+// @ts-expect-error Unknown slot key is rejected on DialogStackShorthandProps['slots']
+type UnknownDialogStackSlot = NonNullable<DialogStackShorthandProps['slots']>['unknownKey'];
 
 const CustomContentMaterial = styled.div({
   backgroundColor: vars.color.surfaceRaised,
@@ -103,7 +103,7 @@ const meta = {
 
 export default meta;
 
-type Story = StoryObj<(props: DialogStackEasyProps) => ReactNode>;
+type Story = StoryObj<(props: DialogStackShorthandProps) => ReactNode>;
 
 /** Customize stack panels and body wrapper using slots. */
 export const Customization: Story = {

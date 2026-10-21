@@ -4,7 +4,7 @@ import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Popover } from '../popover';
-import { ExpandableCard, type ExpandableCardCompoundProps as ExpandableCardProps, type ExpandableCardEasyProps } from './index';
+import { ExpandableCard, type ExpandableCardComposedProps as ExpandableCardProps, type ExpandableCardShorthandProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
@@ -61,7 +61,7 @@ const meta = {
     docs: {
       sections: [
         { title: 'Basic', stories: ['Default'] },
-        { title: 'Composition', stories: ['Compound'] },
+        { title: 'Composition', stories: ['Composed'] },
         { title: 'Sizing', stories: ['Small', 'WidthMorph'] },
       ],
       description: {
@@ -83,10 +83,10 @@ When you control expansion, accept a request by updating the open state.`,
 } satisfies Meta<ExpandableCardProps>;
 export default meta;
 type Story = StoryObj<Omit<ExpandableCardProps, 'component'>>;
-type CheckedEasyArgs<Args extends ExpandableCardEasyProps> = Args;
-export type EasyModeTypeRegression = {
-  // @ts-expect-error Presentation props cannot be combined with compound children.
-  mixed: CheckedEasyArgs<{ title: string; content: string; children: string }>;
+type CheckedShorthandArgs<Args extends ExpandableCardShorthandProps> = Args;
+export type ShorthandModeTypeRegression = {
+  // @ts-expect-error Presentation props cannot be combined with composed children.
+  mixed: CheckedShorthandArgs<{ title: string; content: string; children: string }>;
 };
 function ExpandableHost(props: ComponentPropsWithRef<'article'> & { 'data-ui'?: string }) {
   return <article {...props} data-ui={`${props['data-ui']} custom-root`} data-testid="expandable-host" />;
@@ -123,7 +123,7 @@ async function settledAt(measure: () => number, expected: () => number) {
     { timeout: 4000, interval: 50 },
   );
 }
-export const Default: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
+export const Default: StoryObj<Omit<ExpandableCardShorthandProps, 'component'>> = {
   name: 'Plan details',
   args: { title: 'Studio plan', description: 'Billing and team details', content: 'Billed annually. 5 seats, renews on 12 Jan.', onOpenChange: fn() },
   render: (args) => <ExpandableCard {...args} />,
@@ -144,7 +144,7 @@ export const Default: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
 };
 
 // This story tests native style and sx forwarding through the slot API.
-export const GeneratedPartProps: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
+export const GeneratedPartProps: StoryObj<Omit<ExpandableCardShorthandProps, 'component'>> = {
   tags: ['!autodocs'],
   args: { title: 'Studio plan', content: 'Plan details', defaultOpen: true, slotProps: { title: { style: { fontStyle: 'italic' } }, content: { sx: { color: vars.color.accentText } } } },
   render: (args) => <ExpandableCard {...args} />,
@@ -152,7 +152,7 @@ export const GeneratedPartProps: StoryObj<Omit<ExpandableCardEasyProps, 'compone
   play: async ({ canvas }) => { await expect(canvas.getByText('Studio plan')).toHaveStyle({ fontStyle: 'italic' }); },
 };
 
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Editable details',
   parameters: { docs: { description: { story: 'Edit the team name, then collapse and reopen the card to keep editing.' }, source: { language: 'tsx', code: `import { ExpandableCard, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
@@ -198,7 +198,7 @@ const TeamInput = styled.input({
   },
 };
 
-export const EasyControlled: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
+export const ShorthandControlled: StoryObj<Omit<ExpandableCardShorthandProps, 'component'>> = {
   args: { title: 'Studio plan', content: 0, open: false, onOpenChange: fn() },
   render: (args) => <ExpandableCard {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -209,7 +209,7 @@ export const EasyControlled: StoryObj<Omit<ExpandableCardEasyProps, 'component'>
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
   },
 };
-export const EasyDisabled: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
+export const ShorthandDisabled: StoryObj<Omit<ExpandableCardShorthandProps, 'component'>> = {
   args: { title: 'Studio plan', content: 'Details', disabled: true, onOpenChange: fn() },
   render: (args) => <ExpandableCard {...args} />,
   play: async ({ canvas, userEvent, args }) => {
@@ -219,7 +219,7 @@ export const EasyDisabled: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> 
     await expect(args.onOpenChange).not.toHaveBeenCalled();
   },
 };
-export const ReplacedParts: StoryObj<Omit<ExpandableCardEasyProps, 'component'>> = {
+export const ReplacedParts: StoryObj<Omit<ExpandableCardShorthandProps, 'component'>> = {
   tags: ['!autodocs'],
   args: { title: 'Studio plan', content: 0, slots: { root: ExpandableHost, content: DetailsPanel }, defaultOpen: true, slotProps: { root: { 'aria-label': 'Plan details' } } },
   render: (args) => <ExpandableCard {...args} />,

@@ -22,8 +22,8 @@ import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button, type ButtonProps } from '../button';
-import { Select, type SelectEasyProps } from '../select';
-import { MultiSelect, type MultiSelectEasyProps } from '../multi-select';
+import { Select, type SelectShorthandProps } from '../select';
+import { MultiSelect, type MultiSelectShorthandProps } from '../multi-select';
 
 export interface FilterValue {
   id: string;
@@ -154,9 +154,9 @@ export interface FilterToolbarSlots {
   /** Replaces the filter controls container. */
   controls?: ComponentType<FilterToolbarControlsProps>;
   /** Replaces the single-select filter dropdown. */
-  select?: ComponentType<SelectEasyProps>;
+  select?: ComponentType<SelectShorthandProps>;
   /** Replaces the multi-select filter dropdown. */
-  multiSelect?: ComponentType<MultiSelectEasyProps>;
+  multiSelect?: ComponentType<MultiSelectShorthandProps>;
   /** Replaces the active filter chips summary. */
   activeFilters?: ComponentType<FilterToolbarActiveFiltersProps>;
   /** Replaces the clear-all filters button. */
@@ -165,7 +165,7 @@ export interface FilterToolbarSlots {
   resultCount?: ComponentType<FilterToolbarResultCountProps>;
 }
 
-export type FilterToolbarSelectSlotProps = Partial<Omit<SelectEasyProps, 'options' | 'value' | 'defaultValue' | 'children'>> &
+export type FilterToolbarSelectSlotProps = Partial<Omit<SelectShorthandProps, 'options' | 'value' | 'defaultValue' | 'children'>> &
   SxProps & {
     className?: string;
     style?: CSSProperties;
@@ -173,7 +173,7 @@ export type FilterToolbarSelectSlotProps = Partial<Omit<SelectEasyProps, 'option
     [attribute: `data-${string}`]: unknown;
   };
 
-export type FilterToolbarMultiSelectSlotProps = Partial<Omit<MultiSelectEasyProps, 'options' | 'value' | 'defaultValue' | 'children'>> &
+export type FilterToolbarMultiSelectSlotProps = Partial<Omit<MultiSelectShorthandProps, 'options' | 'value' | 'defaultValue' | 'children'>> &
   SxProps & {
     className?: string;
     style?: CSSProperties;
@@ -221,7 +221,7 @@ export interface FilterToolbarBaseProps
   [attribute: `data-${string}`]: unknown;
 }
 
-export interface FilterToolbarCompoundProps extends FilterToolbarBaseProps {
+export interface FilterToolbarComposedProps extends FilterToolbarBaseProps {
   /** Composes toolbar parts manually instead of generating them from `filters`. */
   children?: ReactNode;
   filters?: never;
@@ -230,7 +230,7 @@ export interface FilterToolbarCompoundProps extends FilterToolbarBaseProps {
   slotProps?: never;
 }
 
-export interface FilterToolbarEasyProps extends FilterToolbarBaseProps {
+export interface FilterToolbarShorthandProps extends FilterToolbarBaseProps {
   children?: never;
   /** Generates select controls, active chips and the clear action from filter definitions. */
   filters: readonly FilterToolbarDefinition[];
@@ -242,7 +242,7 @@ export interface FilterToolbarEasyProps extends FilterToolbarBaseProps {
   slotProps?: FilterToolbarSlotProps;
 }
 
-export type FilterToolbarProps = FilterToolbarCompoundProps | FilterToolbarEasyProps;
+export type FilterToolbarProps = FilterToolbarComposedProps | FilterToolbarShorthandProps;
 
 const EMPTY: readonly FilterValue[] = [];
 const CONTROL_SELECTOR = [

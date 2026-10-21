@@ -166,8 +166,8 @@ export interface DialogStackBaseProps {
   contained?: boolean;
 }
 
-export interface DialogStackCompoundProps extends DialogStackBaseProps {
-  /** Supplies stack triggers and panels in compound mode. */
+export interface DialogStackComposedProps extends DialogStackBaseProps {
+  /** Supplies stack triggers and panels in composed mode. */
   children?: ReactNode;
   pages?: never;
   triggerLabel?: never;
@@ -177,7 +177,7 @@ export interface DialogStackCompoundProps extends DialogStackBaseProps {
   component?: never;
 }
 
-export interface DialogStackEasyProps extends DialogStackBaseProps {
+export interface DialogStackShorthandProps extends DialogStackBaseProps {
   /** Name the button that opens the stack. */
   triggerLabel?: ReactNode;
   /** The panel key opened by the trigger button. Defaults to the first page's value. */
@@ -193,7 +193,7 @@ export interface DialogStackEasyProps extends DialogStackBaseProps {
   component?: DialogStackSlots['root'];
 }
 
-export type DialogStackProps = DialogStackCompoundProps | DialogStackEasyProps;
+export type DialogStackProps = DialogStackComposedProps | DialogStackShorthandProps;
 
 export interface DialogStackTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
   /** Opens this panel key. An open key removes the panels above it. */

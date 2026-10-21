@@ -7,7 +7,7 @@ import { expect, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
-import { Breadcrumbs, type BreadcrumbsCompoundProps, type BreadcrumbsEasyProps } from './index';
+import { Breadcrumbs, type BreadcrumbsComposedProps, type BreadcrumbsShorthandProps } from './index';
 
 const LEVELS = [
   { label: 'Home', href: '/' },
@@ -33,7 +33,7 @@ const meta = {
       { title: 'Links and current page', stories: ['ExplicitCurrent'] },
       { title: 'Long labels', stories: ['LongLabels'] },
       { title: 'Separators', stories: ['CustomSeparator'] },
-      { title: 'Composition', stories: ['Compound', 'DynamicItems'] },
+      { title: 'Composition', stories: ['Composed', 'DynamicItems'] },
       { title: 'Keyboard', stories: ['WithHref'] },
     ],
     usage: `### When to use
@@ -47,15 +47,15 @@ The last item becomes current unless another item is explicitly marked. Mark the
 
 Tab and Shift+Tab move through links in page order; Enter follows a link. Text items and decorative separators are not tab stops. Give each breadcrumb landmark a distinct accessible name when a page has more than one trail.`,
   } },
-} satisfies Meta<BreadcrumbsCompoundProps>;
+} satisfies Meta<BreadcrumbsComposedProps>;
 
 export default meta;
 
-type Story = StoryObj<Omit<BreadcrumbsCompoundProps, 'component'>>;
-type CheckedEasyArgs<Args extends BreadcrumbsEasyProps> = Args;
-export type EasyModeTypeRegression = {
-  // @ts-expect-error Easy items cannot be combined with compound children.
-  mixed: CheckedEasyArgs<{ items: readonly []; children: string }>;
+type Story = StoryObj<Omit<BreadcrumbsComposedProps, 'component'>>;
+type CheckedShorthandArgs<Args extends BreadcrumbsShorthandProps> = Args;
+export type ShorthandModeTypeRegression = {
+  // @ts-expect-error Shorthand items cannot be combined with composed children.
+  mixed: CheckedShorthandArgs<{ items: readonly []; children: string }>;
 };
 function BreadcrumbHost(props: ComponentPropsWithRef<'nav'>) {
   return <nav {...props} data-testid="breadcrumb-host" />;
@@ -68,7 +68,7 @@ const getSeparators = (nav: HTMLElement) =>
   Array.from(nav.querySelectorAll<HTMLElement>('[data-ui="breadcrumbs-separator"]'));
 
 // The last level renders as plain text: it is the current page.
-export const Default: StoryObj<Omit<BreadcrumbsEasyProps, 'component'>> = {
+export const Default: StoryObj<Omit<BreadcrumbsShorthandProps, 'component'>> = {
   name: 'Page hierarchy',
   args: { items: [ { key: 'home', label: 'Home', href: '/' }, { key: 'projects', label: 'Projects', href: '/projects' }, { key: 'current', label: 'jfrader-ui' } ] },
   render: (args) => <Breadcrumbs {...args} />,
@@ -89,7 +89,7 @@ export const Default: StoryObj<Omit<BreadcrumbsEasyProps, 'component'>> = {
   },
 };
 
-export const GeneratedPartProps: StoryObj<Omit<BreadcrumbsEasyProps, 'component'>> = {
+export const GeneratedPartProps: StoryObj<Omit<BreadcrumbsShorthandProps, 'component'>> = {
   // Inline slot styles exercise the documented generated-part props API.
   args: { items: [ { key: 'home', label: 'Home', href: '/' }, { key: 'current', label: 'Project' } ], slotProps: { separator: { style: { fontWeight: 700 } }, item: { style: { fontStyle: 'italic' } } } },
   render: (args) => <Breadcrumbs {...args} />,
@@ -99,7 +99,7 @@ export const GeneratedPartProps: StoryObj<Omit<BreadcrumbsEasyProps, 'component'
   },
 };
 
-export const Compound: Story = {
+export const Composed: Story = {
   name: 'Compose the trail',
   parameters: { docs: { description: { story: 'Build the same page hierarchy from individual breadcrumb items.' }, source: { language: 'tsx', code: `import { Breadcrumbs } from '@jfrader/ui';
 
@@ -143,7 +143,7 @@ export const Compound: Story = {
   },
 };
 
-export const ReplacedParts: StoryObj<Omit<BreadcrumbsEasyProps, 'component'>> = {
+export const ReplacedParts: StoryObj<Omit<BreadcrumbsShorthandProps, 'component'>> = {
   args: { items: [ { key: 'home', label: 'Home', href: '/' }, { key: 'current', label: 'Project', href: '/project' } ], slots: { root: BreadcrumbHost, item: PathItem }, slotProps: { root: { 'aria-label': 'Project path' } } },
   render: (args) => <Breadcrumbs {...args} />,
   parameters: { docs: { source: { code: `<Breadcrumbs items={path} component={BreadcrumbHost} slotProps={{ root: { 'aria-label': 'Project path' } }} />` } } },

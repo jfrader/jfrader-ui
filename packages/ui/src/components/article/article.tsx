@@ -120,12 +120,12 @@ export type ArticleContentProps = {
   /** Adds media beneath the headline. */
   media?: ReactNode;
 };
-type EasyContent = ArticleContentProps & { children?: never };
-type CompoundContent = {
+type ShorthandContent = ArticleContentProps & { children?: never };
+type ComposedContent = {
   /** Composes card content manually instead of using `headline` and the content props. */
   children?: ReactNode;
-} & { [K in keyof Omit<EasyContent, 'children'>]?: never };
-export type ArticleProps = Omit<ComponentPropsWithRef<'article'>, 'children'> & SxProps & (EasyContent | CompoundContent) & {
+} & { [K in keyof Omit<ShorthandContent, 'children'>]?: never };
+export type ArticleProps = Omit<ComponentPropsWithRef<'article'>, 'children'> & SxProps & (ShorthandContent | ComposedContent) & {
   /** Sets headline typography and card spacing. Defaults to `standard`. */
   size?: ArticleSize;
   /** Sets the card's editorial layout and treatment. Defaults to `standard`. */
@@ -173,11 +173,11 @@ const ruleStyle = css({ inlineSize: vars.space[10], borderBlockStart: `${vars.ed
 
 function ArticleRoot({ size = 'standard', variant = 'standard', component, slots, slotProps, children, headline, href, renderLink, level, kicker, dek, lede, meta, time, media, ...props }: ArticleProps) {
   const context = useMemo(() => ({ size, variant, slots, slotProps }), [size, variant, slots, slotProps]);
-  const easy = headline !== undefined;
+  const shorthand = headline !== undefined;
   const hasTime = time !== undefined && isRenderable(time.label);
   return <ArticleContext.Provider value={context}>
     <PresentationSlot {...props} element="article" component={slots?.root ?? component} slotProps={slotProps?.root} marker="article" data-size={size} data-variant={variant} styles={[rootStyle, variants[variant], variant === 'time-column' && !hasTime && timeColumnSingleStyle, variant === 'standard' && (size === 'lead' ? leadSpacing : standardSpacing)]}>
-      {easy ? <>
+      {shorthand ? <>
         {hasTime && time && <PresentationSlot element="time" component={slots?.time} slotProps={slotProps?.time} data-ui="article-time" dateTime={time.dateTime} styles={[articleLabelStyle, articleTimeStyle]}>{time.label}</PresentationSlot>}
         <PresentationSlot element="div" component={slots?.content} slotProps={slotProps?.content} data-ui="article-content" styles={contentStyle}>
           {variant !== 'rule-bottom' && isRenderable(kicker) && <PresentationSlot element="div" component={slots?.kicker} slotProps={slotProps?.kicker} data-ui="article-kicker">{kicker}</PresentationSlot>}
