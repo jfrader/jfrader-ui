@@ -84,6 +84,8 @@ export interface GameResultProps
 const rootStyle = css({
   position: 'relative',
   boxSizing: 'border-box',
+  minInlineSize: 0,
+  maxInlineSize: '100%',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
@@ -97,6 +99,8 @@ const rootStyle = css({
   lineHeight: vars.lineHeight.base,
   color: vars.color.text,
   textAlign: 'center',
+  overflowWrap: 'anywhere',
+  '& > *': { minInlineSize: 0, maxInlineSize: '100%', boxSizing: 'border-box' },
   overflow: 'clip',
   // ensure state visible in forced colors too
   [FORCED_COLORS]: {
@@ -165,6 +169,7 @@ const actionsStyle = css({
   gap: vars.space[2],
   justifyContent: 'center',
   marginBlockStart: vars.space[2],
+  '& > *': { minInlineSize: 0, maxInlineSize: '100%' },
 });
 
 const celebrationStyle = css({

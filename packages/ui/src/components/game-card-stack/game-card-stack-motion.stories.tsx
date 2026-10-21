@@ -4,11 +4,11 @@ import { GameCardStack } from './game-card-stack';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
-const StackFrame = styled.div({ inlineSize: 900, blockSize: 432 });
+const StackFrame = styled.div({ inlineSize: 'min(900px, 100%)', blockSize: 432 });
 
 const meta = {
   title: 'Games/GameCardStack', component: GameCardStack, tags: ['!autodocs'],
-  parameters: { docs: { description: { component: 'Inspect piles without motion when reduced motion is enabled.' } } },
+  parameters: { layout: 'fullscreen', docs: { description: { component: 'Inspect piles without motion when reduced motion is enabled.' } } },
   args: { piles: [{ playerKey: 'North', label: "North's played cards", cards: [
     { id: 'ace', label: 'Ace of spades', value: { suit: 'spades', rank: 'A' } },
     { id: 'queen', label: 'Queen of hearts', value: { suit: 'hearts', rank: 'Q' } },

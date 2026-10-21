@@ -76,7 +76,7 @@ const labelStyle = css({ fontSize: vars.textSize.xs, fontWeight: vars.fontWeight
 });
 const marksStyle = css({
   display: 'grid', gridTemplateColumns: 'repeat(var(--game-marks-columns), max-content)', alignItems: 'center', gap: vars.space[1],
-  '&[data-layout="pile"]': { columnGap: 0 },
+  '&[data-layout="pile"]': { columnGap: 0, paddingInlineEnd: vars.space[2] },
 });
 const markStyle = css({ display: 'inline-grid', placeItems: 'center', boxSizing: 'border-box', inlineSize: PIP, blockSize: `calc(${PIP} * ${CARD_FRAME.ratio})`,
   borderRadius: `calc(${PIP} / ${CARD_FRAME.cornerDivisor})`, border: `1px solid ${vars.color.borderSubtle}`, backgroundColor: vars.color.surfaceInset,

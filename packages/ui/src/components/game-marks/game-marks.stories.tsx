@@ -9,7 +9,7 @@ const meta = {
   args: { label: 'Tricks won', count: 3, max: 5, locale: 'en-US' },
   parameters: { docs: {
     description: { component: 'Track tricks won or round marks against a fixed goal.' },
-    sections: [{ title: 'Round progress', stories: ['Default'] }],
+    sections: [{ title: 'Round progress', stories: ['Default', 'Pile'] }],
     usage: `### Limits
 Count is a nonnegative safe integer; max and maxPerRow are positive safe integers. Invalid values throw RangeError. The track always renders max slots and shows +N for marks beyond the goal. Keep max small enough to render one element per slot.
 
@@ -46,6 +46,27 @@ export const Empty: Story = {
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelectorAll('[data-filled="false"]')).toHaveLength(5);
     await expect(canvasElement.querySelectorAll('[data-filled="true"]')).toHaveLength(0);
+  },
+};
+
+/** Overlapping marks stay inside their panel in both directions. */
+export const Pile: Story = {
+  args: { layout: 'pile', count: 8, max: 8 },
+  parameters: { docs: { source: { language: 'tsx', code: `import { GameMarks } from '@jfrader/ui/game-marks';
+
+<GameMarks label="Tricks won" count={8} max={8} layout="pile" locale="en-US" />` } } },
+  play: async ({ canvas }) => {
+    const root = canvas.getByRole('group');
+    const track = root.querySelector<HTMLElement>('[data-ui="game-marks-marks"]')!;
+    for (const direction of ['ltr', 'rtl']) {
+      root.dir = direction;
+      const bounds = track.getBoundingClientRect();
+      for (const mark of track.children) {
+        const box = mark.getBoundingClientRect();
+        await expect(box.left).toBeGreaterThanOrEqual(bounds.left - 1);
+        await expect(box.right).toBeLessThanOrEqual(bounds.right + 1);
+      }
+    }
   },
 };
 export const Overflow: Story = {
