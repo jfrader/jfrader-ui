@@ -1412,6 +1412,22 @@ const exportNotes = [
   },
 };
 
+async function expectBodyInsets(body: HTMLElement, inset: number) {
+  const bounds = body.getBoundingClientRect();
+  const first = body.firstElementChild!.getBoundingClientRect();
+  const rtl = getComputedStyle(body).direction === 'rtl';
+  const start = rtl ? bounds.right - first.right : first.left - bounds.left - body.clientLeft;
+  const end = rtl ? first.left - bounds.left - body.clientLeft : bounds.left + body.clientLeft + body.clientWidth - first.right;
+  await expect(start).toBeCloseTo(0, 0);
+  await expect(end).toBeCloseTo(inset, 0);
+  await expect(first.top - bounds.top + body.scrollTop).toBeCloseTo(inset, 0);
+  const originalScrollTop = body.scrollTop;
+  body.scrollTop = body.scrollHeight;
+  const last = body.lastElementChild!.getBoundingClientRect();
+  await expect(bounds.top + body.clientHeight - last.bottom).toBeCloseTo(inset, 0);
+  body.scrollTop = originalScrollTop;
+}
+
 export const PaperScrolling: EasyStory = {
   name: 'Scroll inside the panel',
   tags: ['!autodocs'],
@@ -1428,6 +1444,7 @@ export const PaperScrolling: EasyStory = {
     await settleMotion(dialog);
     const body = dialog.querySelector<HTMLElement>('[data-ui="dialog-body"]')!;
     await expect(body).not.toBeNull();
+    await expectBodyInsets(body, parseFloat(getComputedStyle(body).getPropertyValue('--ui-space-3')));
     await expect(body).toHaveFocus();
     await expect(body).toHaveAttribute('tabindex', '0');
     await userEvent.keyboard('{ArrowDown}');
@@ -1458,6 +1475,12 @@ export const PaperScrolling: EasyStory = {
   },
 };
 
+export const PaperScrollingRTL: EasyStory = {
+  ...PaperScrolling,
+  name: 'Scroll inside the panel (RTL)',
+  decorators: [(Story) => <div dir="rtl"><Story /></div>],
+};
+
 export const BodyScrolling: EasyStory = {
   ...PaperScrolling,
   name: 'Scroll the whole panel',
@@ -1467,6 +1490,7 @@ export const BodyScrolling: EasyStory = {
     await userEvent.click(trigger);
     const dialog = await canvas.findByRole('dialog', { name: 'Export notes' });
     await settleMotion(dialog);
+    await expectBodyInsets(dialog.querySelector<HTMLElement>('[data-ui="dialog-body"]')!, 0);
     const title = within(dialog).getByRole('heading');
     const initialTop = title.getBoundingClientRect().top;
     await expect(initialTop).toBeGreaterThanOrEqual(0);
@@ -1729,6 +1753,9 @@ export const PreserveDraftAcrossScrollModes: Story = {
       await expect(dialog.querySelector('[data-ui="dialog-body"]')).toBe(body);
       await expect(within(dialog).getByRole('textbox', { name: 'Draft name' })).toBe(input);
       await expect(input).toHaveValue('Profile edited');
+      const inset = mode === 'paper' ? getComputedStyle(body!).getPropertyValue('--ui-space-3').trim() : '0px';
+      await expect(getComputedStyle(body!).paddingBlockStart).toBe(inset);
+      await expect(getComputedStyle(body!).paddingInlineEnd).toBe(inset);
     }
     await userEvent.click(within(dialog).getByRole('button', { name: 'Done' }));
     await waitFor(() => expect(dialog).not.toHaveAttribute('open'));

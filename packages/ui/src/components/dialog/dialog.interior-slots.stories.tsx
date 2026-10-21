@@ -81,7 +81,7 @@ function DialogCustomizationFixture() {
           data-winner="host"
           style={{ textTransform: 'none', letterSpacing: '1px' }}
           slotProps={{
-            body: { ref: bodyRefTracker.ref, className: 'body-slot', sx: { paddingInline: vars.space[1] } },
+            body: { ref: bodyRefTracker.ref, className: 'body-slot', sx: { paddingInline: vars.space[1], paddingBlock: vars.space[1] } },
             footer: { ref: footerRefTracker.ref, className: 'footer-slot', sx: { gap: vars.space[3] } },
             root: {
               ref: rootRefTracker.ref,
@@ -167,6 +167,9 @@ export const Customization: Story = {
     await expect(bodyRefTracker.getNode()).toBe(body);
     await expect(footerRefTracker.getNode()).toBe(footer);
     await expect(getComputedStyle(body!).paddingInlineStart).toBe('4px');
+    await expect(getComputedStyle(body!).paddingInlineEnd).toBe('4px');
+    await expect(getComputedStyle(body!).paddingBlockStart).toBe('4px');
+    await expect(getComputedStyle(body!).paddingBlockEnd).toBe('4px');
     await expect(getComputedStyle(footer!).gap).toBe('12px');
     await expect(Dialog.Body.displayName).toBe('Dialog.Body');
     await expect(Dialog.Footer.displayName).toBe('Dialog.Footer');

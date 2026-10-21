@@ -307,6 +307,11 @@ const bodyStyle = css({
   },
 });
 
+const paperBodyStyle = css({
+  paddingBlock: vars.space[3],
+  paddingInlineEnd: vars.space[3],
+});
+
 const footerStyle = css({
   display: 'flex',
   flexShrink: 0,
@@ -618,14 +623,14 @@ DialogPanel.displayName = 'Dialog.Panel';
 
 /** Render the native scrolling region without moving sibling headings and actions. */
 function DialogBody({ ref, className, sx, tabIndex = 0, autoFocus, ...props }: DialogBodyProps) {
-  useDialogContext('Body');
+  const { scroll } = useDialogContext('Body');
   const prepare = useCallback((element: HTMLDivElement | null) => {
     if (!element) return;
     element.toggleAttribute('autofocus', Boolean(autoFocus));
   }, [autoFocus]);
   const mergedRef = useMergeRefs([ref, prepare]);
   return (
-    <WithSx className={className} styles={bodyStyle} sx={sx}>
+    <WithSx className={className} styles={[bodyStyle, scroll === 'paper' && paperBodyStyle]} sx={sx}>
       {(className) => (
         <div {...props} ref={mergedRef} tabIndex={tabIndex} autoFocus={autoFocus} data-ui="dialog-body" className={className} />
       )}
