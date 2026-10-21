@@ -60,9 +60,11 @@ const meta = {
 Name the navigation landmark. The current destination is announced as the current page; a floating disclosure marks its active section as the current location. Leading icons are decorative. Collapsible groups use native disclosures; after their initial state, the browser owns toggling.
 
 ### Floating bar keyboard
+
 Left/Right and Home/End move between top-level controls. Down opens a disclosure and focuses its first link; Up from its first link returns to the summary. Escape closes and returns focus; outside pointer or focus closes without restoring it. Tab keeps native link order. Enter/Space retain native anchor or disclosure behaviour.
 
 ### Layout and routing
+
 Floating groups wrap at narrow widths. Below 420px, disclosure panels use one column. Supply routing, scroll thresholds and responsive navigation in your application; search can be composed separately with Combobox.`,
     },
   },

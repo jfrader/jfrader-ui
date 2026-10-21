@@ -182,9 +182,11 @@ const meta = {
 Source is plain text, never executable markup. Copy includes the full source even when some lines are collapsed. Line limits count logical lines, not wrapped visual lines.
 
 ### Highlighting
+
 The optional Shiki adapter requires the \`shiki\` peer dependency. It supports JavaScript, TypeScript, JSX, TSX, JSON, CSS, Bash, and HTML. Unsupported languages, pending loads, and failed loads stay readable as plain text.
 
-### Keyboard
+### Keyboard and accessibility
+
 Tab reaches copy, source, then disclosure. Enter or Space activates the buttons. Source scrolling uses native keyboard behavior.`,
     },
   },

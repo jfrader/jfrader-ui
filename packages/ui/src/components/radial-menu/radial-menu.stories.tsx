@@ -63,9 +63,11 @@ const meta = {
       },
       usage: `### Keyboard
 Enter, Space and ArrowDown open the menu. ArrowUp opens on the last action. Up/Down and Left/Right wrap between enabled actions; horizontal arrows follow RTL. Home/End jump, and typing finds an action. Escape returns to the trigger after an accepted close. Tab leaves without moving focus back.
-### Pointer
+### Keyboard and accessibility
+
 Click the trigger, then an action. Hold the trigger for 250ms and drag over an action to select on release. Release elsewhere to cancel. Disabled actions cannot run. A pending action blocks repeat requests; a rejection leaves a readable failure and allows retry.
 ### Geometry
+
 Use three to six actions. The menu uses a vertical layout when targets overlap or the viewport cannot fit the radial stage. Reduced motion removes the entrance animation.`,
       source: {
         language: 'tsx',

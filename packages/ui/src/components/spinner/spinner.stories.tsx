@@ -34,7 +34,8 @@ const meta = {
       usage: `### When to use
 Show activity while an operation has no measurable completion. Use Progress when completion can be measured, or Skeleton when reserving a known content layout.
 
-### Accessibility
+### Keyboard and accessibility
+
 Name the operation, such as “Saving changes”. Mounting a status region does not guarantee an announcement; update an already-mounted live region when an announcement is required. Mark the actual control or content region busy yourself. Inside a named button, keep the indicator decorative to avoid duplicate announcements. Reduced motion keeps morph shapes still and replaces ring rotation with a pulse.`,
     },
   },

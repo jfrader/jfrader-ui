@@ -126,7 +126,8 @@ const meta = {
     usage: `### When to use
 Explain why a collection is empty and offer a next step. Use Skeleton while content is loading and Alert for an error alongside existing content.
 
-### Accessibility
+### Keyboard and accessibility
+
 Keep illustrations decorative and include their meaning in the text. Choose a heading level that fits the page. Empty states do not announce search results or move focus; provide result announcements in the surrounding application when needed.`,
   } },
   args: {

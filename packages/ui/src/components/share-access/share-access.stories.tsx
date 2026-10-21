@@ -59,12 +59,14 @@ const meta = {
 - Owners cannot be changed or removed. Persist invitations in your app; no network calls or permission enforcement are included. A rejected invitation preserves the draft. When controlling members, reflect invited email addresses in the member list to clear submitted chips.
 - Undo remains available until dismissed and inserts the removed person around their surviving neighbours.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Type an email and press Enter, comma or semicolon to add it. Tab adds the draft and advances focus. Enter on an empty field sends existing chips.
 - Up/Down navigate directory suggestions; Home/End select the edges while open. Escape closes suggestions before the host overlay. Focus stays in the field.
 - Empty Backspace selects the final chip; press again to remove it. Buttons use Enter/Space; role and access pickers use Select's keyboard map.
 
 ### Hosting
+
 - Put it inside a Dialog or Popover; the host owns opening and focus containment. Inside a native modal, scope nested portals to the modal subtree with ThemeRoot's portalContainer.
 - Translate labels and announcements for your audience.`,
       source: { code: snippet, language: 'tsx' },

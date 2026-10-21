@@ -1,14 +1,21 @@
 # AGENTS.md
 
-Conventions for agents working in this repo. **For the full component authoring and maintenance
-guide (accessibility, performance, state ownership, review checklist), read `SKILL.md`.**
+Conventions for agents working in this repo. Commands and boundaries live here; the rules for writing
+a component live in `SKILL.md`, which is the deep guide (accessibility, performance, state ownership,
+documentation spec, review checklist).
 
-## Purpose & layout
+## Purpose and layout
 
-- Purpose: from-scratch React component system; Emotion for styling, CSS custom properties for theming.
-- `packages/tokens`: typed token source (`src/tokens.ts`) and the generator that emits CSS vars and typed `var()` references.
+- Purpose: a from-scratch React component system, styled with Emotion and themed with CSS custom
+  properties.
+- `packages/tokens`: typed token source (`src/tokens.ts`) and the generator that emits CSS variables
+  and typed `var()` references.
 - `packages/ui`: components, one folder per component under `src/components/`.
-- `apps/storybook`: Storybook workbench, docs and browser tests.
+- `apps/storybook`: workbench, component docs, and browser tests.
+- `apps/docs`: documentation site published at `ui.jfrader.com`, built from the same Markdown files
+  the workbench renders. Its overview page is synced from `README.md` by
+  `apps/docs/scripts/sync-readme.mjs`, so `README.md` stays the single source for that page, and
+  `apps/docs/guidance/` is generated and ignored.
 
 ## Commands
 
@@ -16,90 +23,67 @@ guide (accessibility, performance, state ownership, review checklist), read `SKI
 | --- | --- |
 | `pnpm generate` | Generate `packages/tokens/dist/tokens.css` and `packages/tokens/src/generated/vars.ts` |
 | `pnpm dev` | Generate tokens and start Storybook on port 6006 |
-| `pnpm build` | Generate tokens and build static Storybook |
-| `pnpm og:image` | Regenerate the Open Graph share card (`apps/storybook/public/og-image.png`) |
+| `pnpm build` | Generate tokens and build static Storybook; with `DOCS_BUILD=1` it also builds the docs site into the same publish directory |
+| `pnpm og:image` | Generate tokens and regenerate the Open Graph share card (`apps/storybook/public/og-image.png`) |
 | `pnpm test` | Generate tokens and run Storybook Vitest browser tests |
 | `pnpm typecheck` | Generate tokens and typecheck every package |
-| `pnpm verify:docs` | Check component documentation coverage (also runs before the Storybook build) |
-| `pnpm verify:api` | Check sx-only public styling types, slot props and authored examples |
-| `pnpm --filter @jfrader/storybook audit:docs` | Crawl the docs front and report examples without code and API coverage (`DOCS_URL`, `--only`, `--check`) |
+| `pnpm verify:docs` | Check component documentation coverage; also runs before the Storybook build |
+| `pnpm verify:api` | Check sx-only public styling types, slot props, and authored examples |
 | `pnpm verify:slots` | Check that every replacement key a family declares is rendered |
-| `pnpm verify:exports` | Check every component's subpath export resolves and matches the index |
+| `pnpm verify:exports` | Check that every component's subpath export resolves and matches the index |
+| `pnpm --filter @jfrader/storybook audit:docs` | Crawl the docs site and report examples without code and API coverage (`DOCS_URL`, `--only`, `--check`) |
 | `pnpm --filter @jfrader/storybook exec vitest run --project=storybook --maxWorkers=2 packages/ui/src/components/<name>/<name>.stories.tsx` | Run one story file from the repo root (fast loop; tokens must already be generated) |
 
-## Styling rules
+Packing and publishing are in `docs/releasing.md`.
 
-- Import `css` and `keyframes` only from `packages/ui/src/styling/css.ts`. Never import them from `@emotion/react` directly. Never use `styled()` inside the library.
-- Compose styles with arrays (`[base, sizeStyles[size]]`). Public part roots pass them to `WithSx` (`styles`) with the part's `className` and `sx`, and render the `className` it returns; internal elements use the `css` prop.
-- `sx` (`SxProps`) is the ONLY public styling prop, including every `slotProps` part: own styles → `slotProps` sx → consumer `sx`. The Emotion `css` prop is internal-only: public part props types never declare it, components never destructure it, and a stray `css` prop folds into `className`, which still lands before `sx`. Context/provider components render no DOM and take no `sx`. Internal elements consume slot `sx` in their style array and strip it from native attributes.
-- App-facing styling API: `styled`, `ThemeProvider`, `useTheme`, `theme` (the token object; `ThemeRoot` mounts the provider) and `createTheme` (accent-family overrides for `ThemeRoot tokens`).
-- Define styles as module-level `css()` constants. Never build style objects per render.
-- Express state through attributes and pseudo-classes: `:hover`, `[aria-disabled="true"]`, `[data-state]`, `:focus-visible`.
-- Use logical properties (`marginInline`, `paddingBlock`, `insetInlineStart`, …) so layouts work in RTL.
-- Tokens only: import typed references from `@jfrader/tokens/vars`. Raw hex/rgba values are forbidden outside `packages/tokens`.
-- Immutable illustration data (PersonAvatar skin, hair, eye and artwork palettes) imports typed literal tables from `@jfrader/tokens`, outside the theme trees; these are content, not CSS variables. UI chrome still uses `@jfrader/tokens/vars`. Frozen upstream parity fixtures retain their source literals.
-- Portal overlays through `OverlayPortal` (`packages/ui/src/overlay/overlay-portal.tsx`), never a bare `FloatingPortal`; a custom `createPortal` wraps its content in `ThemeBoundary` and honors the scope's `portalContainer` (see Toast). This keeps the nearest scope's theme and appearance (`data-theme` + `data-appearance`) inside the portal.
+## Where each rule lives
 
-## API conventions
+- `SKILL.md`: component rules, accessibility contracts, styling, API conventions, performance, motion,
+  testing, and the documentation writing spec.
+- Everything Markdown in this repo, whether a guide, a README, or an agent file, follows the voice and
+  mechanics in the `SKILL.md` documentation spec: US English, Oxford comma, no em dashes, sentence
+  case headings, one home per fact.
+- Before choosing a structure, read the component folder, its siblings, and the family owners in
+  `SKILL.md` §4.
 
-- Visual props are `variant`, `tone` and `size`.
-- Controlled state uses `value` / `defaultValue` / `onValueChange` and `open` / `defaultOpen` / `onOpenChange`. Support controlled and uncontrolled use.
-- Composite widgets are compound components whose roots are callable (`Dialog`, `Tabs`, `Select`, …) with the same part names (`Dialog.Trigger`, `Dialog.Content`, …).
-- A part that accepts props is also replaceable: every key in a family's `slotProps` map has the same key in its `slots` map. Being in `slots` is what makes a part replaceable, so nothing else has to say so. This is a deliberate departure from MUI, whose styling-only parts are addressed by CSS class keys: here a consumer replaces the element instead of only restyling it.
-- Root and adopted interior-part replacement uses `component` + `slots` + `slotProps`. `component` is exactly sugar for `slots.root`; `slots` replaces structure, `slotProps` passes props. Root extra props flow into `slotProps.root`, whose conflicts win except merged `className`/`style`. Existing `render` props remain leaf-control replacement APIs; do not extend them to panels. No `asChild` or element-valued replacement props.
-- A replacement receives what its default element receives: the `slotProps.x` spread, the `className` the part's own styles resolve to, `data-ui`, its ref, and the internal props the component owns (ids, aria wiring, handlers). One key is one element: a part that renders twice gets two keys.
-- `Surface` owns panel material and inherited/contrast appearance scope, not spacing or behavior. Surface, Card, Drawer.Panel, BottomSheet.Panel, Dialog.Panel, DialogStack.Content, CodeBlock, TypewriterTerminal and JsonViewer share the private Surface root seam and `slots.root`; Card also adopts header/title/description/content/footer replacement slots alongside its anatomy `slotProps`. Reuse the private Surface root seam for new adopters. Root replacement components render one native root (section for CodeBlock, figure for TypewriterTerminal, div otherwise), forward all received props/ref, apply material before the supplied className, and are declared outside render. Card interior replacements forward all received props/ref and retain the supplied className. Styling order remains own styles → slot sx → consumer sx. Dialog.Content remains the native shell; use one direct Dialog.Panel (fragments allowed) for explicit material, or plain children for the default panel.
-- React 19 ref-as-prop: components are plain functions that read `ref` from props typed with `ComponentPropsWithRef<'el'>`; never `forwardRef`. Set a dotted `displayName` on every public component and part (`Card.Header.displayName === 'Card.Header'`). React peer range is `^19.0.0`.
-- Put `data-ui="<name>"` on every component root. Composed roots preserve deduplicated whitespace tokens; selectors on them use `[data-ui~="<name>"]`.
-- Callbacks receive values for state changes (`onValueChange`, `onCheckedChange`); native event
-  callbacks (`onChange`, `onClick`, `onCancel`) keep their native event signature.
-- Use `useId()` for all internal id relationships (`aria-*` wiring); never list keys or counters.
-- Ref-composition helpers preserve function-ref cleanup (StrictMode attach/cleanup cycles tested).
+## Dependencies
 
-## React 19 notes
-
-- RSC boundary: client components start with the `'use client'` prologue at file top; props crossing the boundary are serializable; no server-only imports.
-- Forms: `action`/`formAction` are preserved through props; React resets uncontrolled fields after a successful Action; `useActionState` receives the previous state.
-- StrictMode: effects double-invoke on mount, so listeners and scroll locks clean up idempotently. The JSX spelling is `autoFocus`.
-
-## Dependency allowlist
-
-- `@emotion/react`, `@emotion/styled` (re-exported as the app-facing `styled`; components never use it) and `@floating-ui/react` (Popover, Tooltip, Menu) are installed now.
-- `motion` (v14.x, imported as `motion/react`) is installed; components that animate use `MotionConfig reducedMotion="user"` + `useReducedMotion()`, keep an explicit reduced-motion branch, and take durations from `src/styling/motion-timings.ts`.
-- `lucide-react` is approved for consumer apps and examples (e.g. `apps/pilot`); `@jfrader/ui` itself must not depend on it.
-- `shiki` is an optional peer (`peerDependenciesMeta.optional`; devDependency for stories). Only `packages/ui/src/components/code-block/shiki.ts`, published as the `./code-block/shiki` subpath, may import it; nothing in the main graph does.
-- `react-hook-form` is approved only as an `apps/storybook` devDependency for app-owned editor fixtures. No runtime or peer dependency, import, or declaration in `@jfrader/ui` may depend on it.
-- `@internationalized/number` and `decimal.js` are approved for locale-aware parsing/formatting and exact minor-unit arithmetic in NumberField and MoneyInput. Never hand-roll a locale number parser.
-- `libphonenumber-js` (the `/max` build) is approved for PhoneInput country metadata, AsYouType formatting and E.164 validation. Never hand-roll country or format datasets.
-- `culori` is approved for ColorPicker color-space conversion and contrast math. Never hand-roll OKLCH/contrast conversions.
-- `next` and `@emotion/cache` are optional peers (`peerDependenciesMeta.optional`; devDependencies for build and stories). Runtime imports stay in `packages/ui/src/components/next/`, published as the `./next` subpath; nothing in the main graph imports them. Iframe stories may use `@emotion/cache` with the frame's head as `container`, plus the generated token and base styles in that document.
+- `@emotion/react`, `@emotion/styled` (re-exported as the app-facing `styled`; components never use
+  it), and `@floating-ui/react` (Popover, Tooltip, Menu).
+- `motion` (v14.x, imported as `motion/react`).
+- `lucide-react` is approved for consumer apps and examples (for example `apps/pilot`); `@jfrader/ui`
+  must not depend on it.
+- `shiki` is an optional peer and a devDependency for stories. Only
+  `packages/ui/src/components/code-block/shiki.ts`, published as the `./code-block/shiki` subpath, may
+  import it.
+- `react-hook-form` is approved only as an `apps/storybook` devDependency for app-owned editor
+  fixtures. No runtime dependency, peer dependency, import, or declaration in `@jfrader/ui` may
+  depend on it.
+- `@internationalized/number` and `decimal.js` for locale-aware parsing and formatting, and for exact
+  minor-unit arithmetic (NumberField, MoneyInput).
+- `libphonenumber-js` (the `/max` build) for PhoneInput country metadata, AsYouType formatting, and
+  E.164 validation.
+- `culori` for ColorPicker color-space conversion and contrast math.
+- `next` and `@emotion/cache` are optional peers and devDependencies. Runtime imports stay in
+  `packages/ui/src/components/next/`, published as the `./next` subpath. Iframe stories may use
+  `@emotion/cache` with the frame's head as the container, plus the generated token and base styles in
+  that document.
+- `typescript-compiler` (an alias of TypeScript 5.9) is development-only, for the customization
+  inventory. TypeScript 7 remains the typecheck command.
 - Any other dependency requires updating this file first.
-- `typescript-compiler` (an alias of TypeScript 5.9) is development-only for the customization inventory; TypeScript 7 remains the typecheck command.
 
 ## Generated files
 
-- Never edit `packages/tokens/src/generated/vars.ts` or `packages/tokens/dist/*`.
+- Never edit `packages/tokens/src/generated/vars.ts`, `packages/tokens/dist/*`, or
+  `docs/customization-inventory.md`.
 - Run `pnpm generate` after editing `packages/tokens/src/tokens.ts`.
+- Regenerate the inventory with `node scripts/customization-inventory.mjs` after an API or slot
+  change.
 
-## Component definition of done
+## Definition of done
 
-- [ ] WAI-ARIA APG pattern and keyboard map documented.
-- [ ] Works controlled and uncontrolled.
-- [ ] Focus behavior verified by a keyboard play test.
-- [ ] Reduced motion respected.
-- [ ] Dark and light stories.
-- [ ] axe clean (a11y gate is `error`, WCAG 2.0–2.2 AA + best-practice ruleset).
-- [ ] Exported from the package index.
-- [ ] Docs via autodocs; follow the documentation writing spec in `SKILL.md`.
-- [ ] Visual pass done, not deferred: the docs page and every story (including "Other stories") opened at 1440×900, 768×900 and 390×844; overlays opened; dark, light, RTL, forced colors and reduced motion checked; no clipped content, detached overlays or collisions. Fix what it surfaces in the same branch.
-
-A component is not done in one pass. After the first working version, run the visual pass and iterate; a green test run is not visual proof. Put the screenshots that show the pass in the PR.
-
-## Accessibility
-
-- WCAG AA contrast for text and interactive states.
-- Visible focus ring using `--ui-color-focus-ring`.
-- Never signal state with color alone.
+`SKILL.md` owns the component contract, the test requirements, the visual pass, and the review
+checklist. A green test run is not completion; the checklist in `SKILL.md` §7 and §8 is.
 
 ## Linear workflow
 

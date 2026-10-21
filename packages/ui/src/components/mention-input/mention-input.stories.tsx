@@ -109,7 +109,8 @@ const meta = {
       usage: `### When to use
 Write short messages that refer to people or channels. Use a document editor for long-form content.
 
-### Keyboard and focus
+### Keyboard and accessibility
+
 - @ and # open suggestions at word boundaries.
 - Up/Down moves through suggestions and wraps.
 - Enter or unmodified Tab inserts the active result. Space and punctuation edit text.
@@ -120,10 +121,12 @@ Write short messages that refer to people or channels. Use a document editor for
 - Give the textarea a visible label. Focus stays there while navigating suggestions.
 
 ### Saving messages
+
 - Forms submit displayed text, not mention IDs. Save validated references separately when identity matters, and escape serialized output for your storage format.
 - Treat text and mention ranges as one immutable value. Invalid ranges do not highlight or serialize as references; their plain text remains.
 
 ### Undo and limits
+
 - Undo depends on the browser accepting the text insertion. If insertion uses the fallback, undo may not work.
 - Edits, undo and redo drop mention ranges that were changed or no longer match. IDs are never inferred from labels; undo may not restore them.
 - If you change text styles or padding, apply the same change to the input and mirror.

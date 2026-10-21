@@ -201,10 +201,12 @@ const meta = {
       usage: `### When to use
 Use a split button when one action is the default and related alternatives belong in a menu. Use Menu when there is no default action, or Button when there are no alternatives.
 
-### Constraints
+### Values and constraints
+
 Opening the menu never runs the primary action. Choosing a menu item does not replace the default action. Keep both halves named: the icon-only opener needs a translated accessible name.
 
 ### Keyboard and accessibility
+
 Tab visits the primary action, then the menu opener. Enter or Space runs the focused action. On the opener, Enter, Space or ArrowDown opens at the first enabled item; ArrowUp opens at the last.
 
 Inside the menu, arrows wrap and skip disabled items; Home and End reach the ends, and typing searches item labels. Enter or Space selects. Escape closes and returns focus to the opener. Tab from the last item closes the menu and moves to the next control.`,

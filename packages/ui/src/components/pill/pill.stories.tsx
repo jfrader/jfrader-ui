@@ -36,6 +36,7 @@ const meta = {
 - Text stays on one line without truncation. Keep the label short or give it room in your layout.
 
 ### Actions
+
 - Pill renders a span with no interaction or live-region role. Use a button for an action and a status region when updates need to be announced.`,
     },
   },

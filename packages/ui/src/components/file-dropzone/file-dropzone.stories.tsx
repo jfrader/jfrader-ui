@@ -165,11 +165,13 @@ const meta = {
 Collect attachments through the file picker, drag and drop, or focused paste. Use a regular file input when a selection list and upload feedback are not needed.
 
 ### Limits and uploads
+
 Validate files on the server as well as in the browser. File sizes use decimal 1000 scaling. Uploads and image previews start only after a selection is committed; existing rows never auto-upload.
 
 Submit the selected items, not input.files: dropped and accumulated files are absent from native FormData. Required validation checks the committed list. Paste accepts files only while focus is inside the dropzone, excluding editable controls.
 
 ### Keyboard and accessibility
+
 Click the surface to open the native picker. Tab reaches the file input, with a focus ring around the surface, then the row actions. Enter/Space open the picker. ArrowUp/ArrowDown move between rows without wrapping and retain the action; Delete/Backspace remove a file. Escape passes through.
 
 Provide localized action labels, validation messages and announcements. Check the OS picker, dragging, screen readers and mobile selection in your application.`,

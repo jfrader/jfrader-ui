@@ -39,6 +39,7 @@ const meta = {
 Identify a person beside a message, task or profile. Use AvatarGroup for a compact list of people and PersonAvatar for generated portrait artwork.
 
 ### Content and accessibility
+
 Keep fallback artwork noninteractive and decorative so the identity is announced once. Use a durable member id for generated portraits. Provide a separate named button or link for profile actions; the avatar itself is not a keyboard target.
 
 An external accessible label takes precedence over the generated name and status. Localize presence labels with the surrounding interface. Presence is not a live announcement; use a separate status message for changes that need attention.

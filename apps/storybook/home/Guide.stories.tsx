@@ -17,7 +17,7 @@ const document = [
   `\`\`\`bash\n${command}\`\`\``,
   `\`\`\`ini\n${config}\`\`\``,
   '```\nplain <code> & text\n```',
-  '[Setup](./consuming-jfrader-ui.md) · [Examples](#guide-examples)',
+  '[Setup](./getting-started.md) · [Examples](#guide-examples)',
 ].join('\n\n');
 
 const meta = {

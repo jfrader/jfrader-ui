@@ -43,6 +43,7 @@ const meta = {
 Use a search field to filter content or submit a query. Your application owns results, fetching and debounce; the field does not provide a results popup or combobox navigation. Keep results and loading status accessible outside the input.
 
 ### Keyboard and accessibility
+
 Give the searchbox an accessible name. Tab and Shift+Tab move between the input, clear button and page. Enter or Space on clear empties the query and returns focus to the input.
 
 Escape clears a nonempty editable query, except during text composition or when a handler prevents it. When empty or not clearable, Escape remains available to parent dismissals. Enter in the input submits its form natively.`,

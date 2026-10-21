@@ -98,12 +98,14 @@ const meta = {
       usage: `### When to use
 Provide quick access to workspace preferences such as focus sessions, notification routing, alert volume, and display scaling.
 
-### Behaviour and constraints
+### Values and constraints
+
 Persist settings with \`value\` and \`onValueChange\`. The component manages preference state only; it does not change browser zoom, operating system volume, or platform notification permissions directly.
 
 Focus session edits inside the details dialog are drafts. Close or Escape discards edits; Start and Update request one value and leave the dialog open. A rejected controlled request leaves the committed tile and status unchanged. Session expiry does not write settings.
 
 ### Keyboard and accessibility
+
 Press Enter or Space to toggle tiles or open detail dialogs. Detail dialogs contain focus and restore focus to the trigger on close. Use arrows to choose focus modes and adjust sliders, including duration. Slider arrows, Home, End, Page Up and Page Down use the configured bounds; horizontal direction follows RTL.`,
       source: {
         language: 'tsx',

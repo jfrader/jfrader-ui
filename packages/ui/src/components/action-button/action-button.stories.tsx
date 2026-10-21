@@ -48,9 +48,11 @@ const meta = {
 Return the real promise from \`onAction\`. Use \`Button loading\` when you do not need a result label. Use a confirmation dialog for destructive work.
 
 ### State
+
 A rejected controlled state request does not cancel the action. Concurrent activations are blocked until its promise settles. Errors remain until retry or an external update. Success normally returns to idle after 2400ms; these examples keep the result visible.
 
 ### Keyboard and accessibility
+
 Tab reaches the native button. Enter and Space activate once. Pending keeps focus and announces the busy state. The default accessible name starts with the idle label and appends the visible pending or result label. A persistent sibling status announces results. A custom name must include the visible label in every state. Reduced motion makes width and pending feedback static.`,
     },
   },

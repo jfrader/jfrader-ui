@@ -187,6 +187,7 @@ Use one table per flight board. The first render appears in place; later deals s
 Apply server snapshots as resynchronizations so active flights are cancelled rather than replayed. Do not combine the rendered-tree engine with deprecated deal/play hooks.
 
 ### Keyboard and motion
+
 Flights are decorative and hidden from assistive technology. Select a hand card with Enter or Space, then activate Play selected. The hand blocks selection and confirmation during flights. Custom controls must handle busy state themselves. Reduced motion places cards immediately and interrupts active flights.`,
   } },
 } satisfies Meta<typeof CardFlights>;

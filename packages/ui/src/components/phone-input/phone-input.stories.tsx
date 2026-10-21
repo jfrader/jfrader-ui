@@ -36,11 +36,13 @@ const meta = {
 Collect a telephone number with a country and national formatting. Use a TextField with type="tel" for unrestricted telephone text, extensions or non-geographic calling codes.
 
 ### Constraints and validation
+
 An incomplete number is still an editable draft, not a valid E.164 number. Metadata validation does not verify ownership or deliverability. Validation runs on field exit by default; empty optional numbers are not invalid. Required checks nonempty text, not metadata validity.
 
 Pasting an international number selects a country only when its calling code and metadata identify one. Shared calling codes alone do not identify a country. A number that disagrees with an explicit country remains international and invalid. Incomplete national numbers retain typed trunk prefixes until they can be normalized. There is no digit cap; unsupported punctuation, extensions and non-geographic numbers are rejected without discarding accepted digits.
 
 ### Keyboard and accessibility
+
 Enter, Space or a vertical arrow on the country button opens search. Letters start a country search; plus in the number field starts a calling-code search. Arrows move one result, PageUp/PageDown move eight, and Home/End reach endpoints when search is empty. Navigation does not wrap; Enter selects.
 
 Escape closes and returns focus to the country button. Tab, Shift+Tab and outside press close without restoring focus. Backspace/Delete beside formatting separators remove the adjacent digit; range selection, composition and modifier chords retain native editing behavior.

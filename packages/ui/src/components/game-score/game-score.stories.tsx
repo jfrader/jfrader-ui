@@ -39,7 +39,8 @@ const meta = {
     usage: `### Values
 Use the same locale on server and client for number formatting. Stage text is displayed as written. Your application owns scoring rules; updates do not run a count-up animation.
 
-### Accessibility
+### Keyboard and accessibility
+
 The named group contains a native description list. It adds no keyboard commands or live announcements. Announce score changes in your application when needed.`,
     source: { language: 'tsx', code: source },
   } },

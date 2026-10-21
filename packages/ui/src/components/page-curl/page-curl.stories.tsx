@@ -137,13 +137,16 @@ const meta = {
       usage: `### Reading order
 Use stable, unique page ids. The cover sits alone at the logical end, followed by facing pairs. An even final page sits alone at the logical start. Only the accepted spread is mounted; page content remains selectable.
 
-### Keyboard
+### Keyboard and accessibility
+
 Focus the named book group. Left/Right turn with RTL reversal; PageUp/PageDown always move backward/forward. Home/End select the first/last spread. Nested page controls keep their native keys. Navigation buttons work with Enter/Space.
 
 ### Turning pages
+
 Drag Next horizontally toward the spine to preview a paper flap. Release past the midpoint or flick to request the next spread; Escape cancels. Previous navigation is button/keyboard only. Reduced motion swaps pages immediately. The fold is noninteractive artwork, not another mount of the page content.
 
 ### State
+
 Controlled requests leave page content unchanged until accepted. Out-of-range spread indices clamp for rendering without notifying.`,
     },
   },

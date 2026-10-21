@@ -67,10 +67,10 @@ const preview: Preview = {
         color: /(background|color)$/i,
       },
     },
-    // WCAG 2.0–2.2 AA plus best-practice rules; `test: 'error'` fails the run on violations.
+    // WCAG 2.0, 2.1 and 2.2 A and AA plus best-practice rules; `test: 'error'` fails the run on violations.
     a11y: {
       test: 'error',
-      options: { runOnly: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'] },
+      options: { runOnly: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa', 'best-practice'] },
     },
     docs: {
       container: ThemedDocsContainer,

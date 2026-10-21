@@ -73,15 +73,18 @@ const meta: Meta<DatePickerProps> = {
       usage: `### When to use
 Choose a single calendar date, such as a departure or appointment day. The field is read-only; select from the calendar rather than typing.
 
-### Values and limits
+### Values and constraints
+
 Dates are Gregorian date-only \`YYYY-MM-DD\` strings, without a time zone. Supply the same locale on the server and client. Bounds are inclusive and prevent new selections, but do not rewrite an initial or controlled date outside the interval.
 Selecting a date requests a value change before requesting closure; rejecting one request does not reject the other.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Click the input or press Enter, Down or Space to open and focus a day. Use the Calendar arrow, Home, End and Page Up/Page Down keys to navigate, then Enter or Space to select.
 - Selection or Escape returns focus to the input once the popup closes. Tabbing out or pressing outside closes without returning focus. Reopening discards month navigation and starts on the selected month, or the current month, within the bounds.
 
-### Forms and accessibility
+### Forms
+
 Empty fields submit an empty string; disabled fields are omitted. Native required validation does not validate a read-only input; validate selection in your form.
 Give the field a text label. With a non-string compound label, supply an explicit accessible name so the open popup keeps its name.`,
     },

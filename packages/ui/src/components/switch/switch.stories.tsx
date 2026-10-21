@@ -35,9 +35,11 @@ const meta = {
 Use a switch for an on/off setting that takes effect immediately. Use a checkbox for consent or a choice that waits for form submission.
 
 ### Forms
+
 Only enabled switches that are on contribute a value to native form submission.
 
 ### Keyboard and accessibility
+
 Give each switch an accessible name. Keep its label unchanged when the setting changes. Tab focuses enabled switches; Space toggles the focused setting. Disabled switches cannot change and are skipped by Tab.`,
     },
   },

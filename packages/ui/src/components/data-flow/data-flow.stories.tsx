@@ -168,13 +168,15 @@ const meta = {
       usage: `### When to use
 Use DataFlow to illustrate data pipelines, ingest topologies, and transform flows with synthetic particles and a semantic summary. It is an illustration for documentation and overviews, not a real-time monitoring dashboard or live pipeline controller.
 
-### Constraints
+### Values and constraints
+
 - Destination routing shares range from 0 (receives no emitted records) to 1 (receives every emitted record). Fractional shares accumulate across cycles.
 - Playback supports controlled and uncontrolled pause states. Pausing freezes the animation immediately.
 - When paused, at speed 0, or under reduced motion, the Step control advances through ingest, transform, and route snapshots. Replay resets the cycle and counter to countStart.
 - Every pipeline requires an ordered summary describing sources, core transformation, and destination shares.
 
 ### Keyboard and accessibility
+
 Native transport controls (Pause/Resume, Step, Replay) sit in standard tab order and activate with Enter or Space. The Step control is disabled during active playback. The animated canvas is hidden from assistive technology; screen readers navigate the structured summary list.`,
       source: {
         language: 'tsx',

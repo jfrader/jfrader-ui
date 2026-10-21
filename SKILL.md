@@ -1,4 +1,4 @@
-# SKILL.md — Creating and maintaining components in jfrader-ui
+# SKILL.md: creating and maintaining components in jfrader-ui
 
 Operational guide for anyone (human or agent) creating, changing, or reviewing a component in this
 library. Read `AGENTS.md` first for commands and the short conventions; this file is the deep guide.
@@ -17,11 +17,11 @@ Not for: application composition (consumers), token-only work, repo tooling. Tho
 
 ## 1. Read before writing
 
-1. `AGENTS.md` — commands, repo conventions, dependency allowlist.
-2. `PLAN.md` — pointer to Linear planning and headline decisions; detailed history is in git. Keep it a pointer; record progress in Linear.
-3. The nearest sibling component — `button/`, `text-field/`, `checkbox/`, `switch/` are the reference
+1. `AGENTS.md`: commands, repo conventions, dependency allowlist.
+2. `PLAN.md`: pointer to Linear planning and headline decisions; detailed history is in git. Keep it a pointer; record progress in Linear.
+3. The nearest sibling component: `button/`, `text-field/`, `checkbox/`, and `switch/` are the reference
    implementations for patterns in this file.
-4. `packages/tokens/src/tokens.ts` — the token source. If a needed color/size role is missing, add a
+4. `packages/tokens/src/tokens.ts`: the token source. If a needed color/size role is missing, add a
    token (base + light) and regenerate; never inline a raw value.
 5. Verify with the repo commands: `pnpm generate`, `pnpm typecheck`, `pnpm test`, `pnpm build`,
    `pnpm verify:exports`, `pnpm verify:slots`, `pnpm verify:docs`. Never claim a check you did not run.
@@ -46,7 +46,7 @@ These are the rules that repeatedly caught real defects in this repo's review cy
   internal state; callbacks fire from interactions, never from render or observing effects; a
   controlled request does not visually commit until the parent updates the prop. Use the shared
   `src/utils/use-controlled-state.ts` hook (Tabs, Dialog); do not hand-roll another copy.
-- **Presence checks are not truthiness.** `false`, `0` and `''` are legitimate values. For ReactNode
+- **Presence checks are not truthiness.** `false`, `0`, and `''` are legitimate values. For ReactNode
   content use `isRenderable()` from `src/utils/renderable.ts`; for controlled props compare
   `!== undefined` (or `!== null` for explicit opt-outs).
 - **Focus is always visible and tested.** Keyboard focus draws the 2px `--ui-color-focus-ring`
@@ -55,10 +55,10 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - **Overlays return focus deliberately.** A *modal* dialog moves focus inside on open and returns it
   to the invoker when it closes. Overlays dismissed by focus leaving (hover cards, non-modal
   popovers) must NOT steal focus back; a menu closed with Escape returns focus to its trigger.
-- **Hidden native inputs stay operable.** Visually hide with `position:absolute; opacity:0` — never
+- **Hidden native inputs stay operable.** Visually hide with `position:absolute; opacity:0`, never
   `display:none`, `visibility:hidden`, `hidden`, or `aria-hidden`. The visible control shows the focus
   ring when the hidden input is focused.
-- **Non-text contrast ≥ 3:1** for required cues (WCAG 1.4.11) — and, as stricter library policy, for
+- **Non-text contrast ≥ 3:1** for required cues (WCAG 1.4.11) and, as stricter library policy, for
   every control boundary. Use `--ui-color-borderControl` for control boundaries; verify new pairs with
   the contrast script pattern (oklch→sRGB math), never by eye. Text contrast ≥ 4.5:1 for normal text in
   **both** themes.
@@ -74,14 +74,14 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - **Ref callbacks preserve cleanup.** A ref-composition helper must pass through the cleanup function a
   function ref returns; never return the assignment expression implicitly. StrictMode attach/cleanup
   cycles are part of the contract (test them).
-- **Accessibility relationships use `useId()`** — never list keys or hand-rolled counters. Instance ids
+- **Accessibility relationships use `useId()`**: never list keys or hand-rolled counters. Instance ids
   stay unique across multiple React roots via distinct `identifierPrefix`; SSR and hydration must produce
   matching ids.
 - **`useEffectEvent` is effect-local.** Stable since React 19.2; it reads the latest committed values for
   one effect. It is not a general stable-callback escape hatch, and it cannot be used unconditionally
-  while the package peer floor is `^19.0.0` — guard it if used.
+  while the package peer floor is `^19.0.0`, so guard it if used.
 - **Accordion-like disclosures:** heading level should follow page hierarchy (make it configurable when
-  building disclosure patterns); region semantics on panels are optional — avoid landmark proliferation
+  building disclosure patterns); region semantics on panels are optional, so avoid landmark proliferation
   with many expanded panels at once.
 
 ### Styling and code
@@ -93,7 +93,7 @@ These are the rules that repeatedly caught real defects in this repo's review cy
   MoneyInput); country metadata, AsYouType formatting and E.164 validation go through
   `libphonenumber-js/max` (PhoneInput); color-space conversion and contrast go through `culori`
   (ColorPicker). Never hand-roll a locale parser, a country/format table or OKLCH math.
-- **Illustration content.** PersonAvatar imports immutable typed skin, hair, eye and artwork tables from
+- **Illustration content.** PersonAvatar imports immutable typed skin, hair, eye, and artwork tables from
   `@jfrader/tokens`, outside the theme trees. They do not generate CSS variables or change with themes.
   This exception permits typed illustration data, not raw colors in UI code or theme-free chrome.
   Frozen upstream parity fixtures retain source literals. Preserve illustration fills in forced colors
@@ -111,14 +111,14 @@ These are the rules that repeatedly caught real defects in this repo's review cy
   `withoutSx` when spreading native attributes; public components receive it through their `sx` prop.
 - **The styling seam**: import `css`/`keyframes`/types only from `src/styling/css.ts`. Never from
   `@emotion/react` directly, never `styled()` inside the library. `styled`, `ThemeProvider`,
-  `useTheme`, `theme` and `createTheme` are the app-facing styling API; library internals stay on `css()` constants.
-- **Examples, guides and app chrome use `styled`**, built at module scope from library components
-  (`styled(Surface)({ … })`) or plain tags, with token values for every colour, space, radius and
+  `useTheme`, `theme`, and `createTheme` are the app-facing styling API; library internals stay on `css()` constants.
+- **Examples, guides, and app chrome use `styled`**, built at module scope from library components
+  (`styled(Surface)({ … })`) or plain tags, with token values for every color, space, radius and
   font. Never a `css` prop, an inline `style` object, a Tailwind-style class or a literal value in
   example or app code: a reader copies what we show, so the sample has to be the pattern we want
   them to keep.
 - **State through attributes**: `:hover`, `[aria-disabled="true"]`, `[aria-invalid="true"]`,
-  `[data-state]`, `:checked`, `:focus-visible` — not class soup.
+  `[data-state]`, `:checked`, `:focus-visible`, not class soup.
 - **Transitions list properties explicitly** (`background-color, border-color`), never `transition: all`.
   Declare `keyframes` at module scope.
 - **Dynamic values** (progress, coordinates) go through inline CSS custom properties or `style`
@@ -128,18 +128,18 @@ These are the rules that repeatedly caught real defects in this repo's review cy
   surface may also wear `appearance="contrast"`: the dark theme with the eight
   charcoal overrides, on any page (Drawer.Panel by default). Components read tokens only and never pick a theme themselves. The Emotion
   theme (`theme`, mounted by `ThemeProvider` and by `ThemeRoot`) is the token object itself, so it
-  never changes between dark and light. Consumer setup lives in `docs/consuming-jfrader-ui.md`.
+  never changes between dark and light. Consumer setup lives in `docs/getting-started.md`.
 - **Portaled content goes through the theme scope.** Floating overlays portal with `OverlayPortal`
   (`src/overlay/overlay-portal.tsx`), never a bare `FloatingPortal`; a custom `createPortal` wraps
   its content in `ThemeBoundary` and honors `useThemeScope()?.portalContainer` (see Toast). This
-  re-applies the nearest scope's theme and appearance inside the portal and routes it to the root's
+  re-applies the nearest scope's theme and appearance (`data-theme` and `data-appearance`) inside the portal and routes it to the root's
   `portalContainer`. Native `<dialog>` is not portaled and needs neither.
 - **No deep descendant-chain styling.** Direct relations from the component's own DOM are fine
   (`input:checked + span`, `&[data-indeterminate] input + span svg`); avoid unrelated descendant
   selectors and tag-only chains beyond one level.
 - **Emotion JSX runtime.** Automatic JSX with `jsxImportSource: '@emotion/react'` is required (Babel
   plugin not used); `css()` returns serialized styles, not a class-name string.
-- **Emotion labels.** `label: 'component-name'` on `css()` aids class names in dev — never `:label`.
+- **Emotion labels.** `label: 'component-name'` on `css()` aids class names in dev, never `:label`.
 
 ### Motion (the `motion` library, only when a component needs it)
 
@@ -147,7 +147,7 @@ These are the rules that repeatedly caught real defects in this repo's review cy
   on 19.3.
 - Reduced motion: mount `<MotionConfig reducedMotion="user">` where motion runs and read
   `useReducedMotion()` when behavior must change. The default policy is `"never"`. Automatic reduction
-  disables transform/layout animations but not every opacity/color animation — keep explicit
+  disables transform/layout animations but not every opacity/color animation. Keep explicit
   reduced-motion branches where the lifecycle must still complete.
 - Prefer `layout` for measured layout animation and `layoutId` for shared elements; springs via
   `transition={{ type: 'spring', … }}` or `useSpring()`. Change layout through styles/classes; never let
@@ -169,12 +169,20 @@ These are the rules that repeatedly caught real defects in this repo's review cy
   heights mid-transition and freezes the spring on a stale target (NowPlaying, GURI-2553: the face
   settled at 451px over 97px of content and cut the action row).
 
+### React 19 authoring contracts
+
+- `action` and `formAction` pass through props unchanged. React resets uncontrolled fields after a
+  successful Action, so Action editors keep drafts in controlled fields. `useActionState` receives the
+  previous state.
+- Ref-as-prop: components are plain functions reading `ref` from props typed with
+  `ComponentPropsWithRef<'el'>`, never `forwardRef`. The JSX spelling is `autoFocus`.
+
 ### Performance (author-level)
 
 - Static styles serialized once at module scope; finite variant maps precomputed (`Record<Size, SerializedStyles>`).
 - Context-heavy compound components: keep provider values stable (memoize the context object);
   split frequently-changing state from stable actions only when profiling shows fan-out.
-- Do not add `memo`/`useCallback` ceremony by default — the repo does not assume React Compiler;
+- Do not add `memo`/`useCallback` ceremony by default: the repo does not assume React Compiler;
   optimize measured boundaries, not guessed ones.
 - `will-change` only for a demonstrated rendering problem, removed afterwards.
 
@@ -184,51 +192,53 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - `options` is a readonly array of `{ value, label, disabled?, textValue?, id? }`.
 - Presentation props (`label`, `description`, `error`, `placeholder`, `size`, plus `clearable` on MultiSelect only) configure the generated field anatomy.
 - Easy mode composes the existing compound parts internally (no parallel implementations) and preserves existing state, controlled/uncontrolled axes, and native form reset semantics.
-- Generated parts expose typed `slotProps` with singular, lower-camel-case anatomy keys: `root`, `label`, `description`, `error`, `trigger`, `value`, `content`, `item`, `empty`, and family parts such as `clear`, `input`, `list`, `tab`, `panel`, `separator`, `header`, `title`, `close`. Expose only parts the family generates; provider-only roots need no DOM slot. Repeated parts share one props object; record values, ids and disabled state remain authoritative. Part props accept `className` and `sx` plus the existing part API; unknown keys are rejected.
+- Generated parts expose typed `slotProps` with singular, lower-camel-case anatomy keys: `root`, `label`, `description`, `error`, `trigger`, `value`, `content`, `item`, `empty`, and family parts such as `clear`, `input`, `list`, `tab`, `panel`, `separator`, `header`, `title`, `close`. Expose only parts the family generates; provider-only roots need no DOM slot. Repeated parts share one props object; record values, ids, and disabled state remain authoritative. Part props accept `className` and `sx` plus the existing part API; unknown keys are rejected.
 - `slots` replaces generated compound parts with adapters that forward props/ref to the original part; `component` is sugar for `slots.root`, and `slots.root` wins. Preserve existing leaf `render` APIs. Dialog adopts only its Panel div for `slots.root` / `slotProps.root`; `slotProps.content` targets the native shell. Combobox's direct field `label` / `description` / `error` props win over the same nested `slotProps.input.slotProps` keys. Provider families may add an optional easy-mode wrapper only when a root override is supplied.
-- Overlay generated-part adapters forward props/ref to the original compound part to retain focus, scrolling, gestures and ARIA registration. Dialog, Drawer and BottomSheet keep the native Content shell; their easy `root` slot targets Panel. DialogStack's easy `root` targets each Content. Native `header`/`body` wrappers (Dialog header, DialogStack header/body) forward to one div. Menu, ContextMenu, Popover and UserMenu add a wrapper only when root customization is supplied; native root props merge into `slotProps.root`. UserMenu.Content's `menu`, `handle` and `close` slots replace native elements and forward all supplied props/ref. Declare replacement types outside render. A part that takes props is also replaceable: every `slotProps` key has the same key in `slots`, and one key is one element, so a part that renders twice gets two keys. See [the generated API inventory](docs/customization-inventory.md) for supported keys.
+- Overlay generated-part adapters forward props/ref to the original compound part to retain focus, scrolling, gestures, and ARIA registration. Dialog, Drawer, and BottomSheet keep the native Content shell; their easy `root` slot targets Panel. DialogStack's easy `root` targets each Content. Native `header`/`body` wrappers (Dialog header, DialogStack header/body) forward to one div. Menu, ContextMenu, Popover, and UserMenu add a wrapper only when root customization is supplied; native root props merge into `slotProps.root`. UserMenu.Content's `menu`, `handle`, and `close` slots replace native elements and forward all supplied props/ref. Declare replacement types outside render. A part that takes props is also replaceable: every `slotProps` key has the same key in `slots`, and one key is one element, so a part that renders twice gets two keys. See [the generated API inventory](docs/customization-inventory.md) for supported keys.
 - Form-field native attributes and top-level refs keep their existing control targets; wrapper refs use `slotProps.root.ref`. Native generated-part replacements forward props/ref to the same element kind. InlineEdit's `control` adapter handles both input and textarea props. FileDropzone's `action` and `progress` adapters forward to Button and Progress. ExpandingSearch uses `container` for its animated shell, `field` for SearchField, and `fieldRoot` for that field's wrapper; its existing SearchField keys remain available. Legacy `slotProps.root` className/sx still style the inner field as well as the outer wrapper; use `slotProps.field.slotProps.root` to target only the inner field.
 - Component documentation and the primary story snippet show the easy path first as the default usage, followed by compound examples for custom anatomy.
 - Incompatible modes (passing both `options` and `children`) are rejected at compile time with TypeScript type errors.
 
 ### Families and composition
 
-- Before adding a variant or sibling, name its family and the module that already owns its material, content generation, anatomy, state and accessibility. Reuse those modules; do not copy their JSX or event logic.
+- Before adding a variant or sibling, name its family and the module that already owns its material, content generation, anatomy, state, and accessibility. Reuse those modules; do not copy their JSX or event logic.
 - Compose different responsibilities. Avatar owns a person's accessible identity and presence; PersonAvatar owns deterministic person artwork; Scene owns procedural scene artwork. Avatar content may be PersonAvatar; neither renderer reimplements presence or initials.
 - Ordinary children are content. `slots` replaces structure and `slotProps` forwards its props. A replacement preserves its host element/ref contract; an SVG is not an img replacement. Generated semantics and lifecycle stay owned by the host.
 - Keep serializable data and deterministic resolvers below UI shells. Kit vocabulary/resolution lives in person-avatar/kit; geometry imports it, never the shell. Existing public imports survive internal moves.
 - Easy mode calls the same parts as compound mode. A sibling may share a material/collection/field seam without sharing a semantic role or state machine.
 - The family catalog is: Avatar/artwork; Surface/panels/disclosures; native modal shells; selection collections; Tabs/value choices; field anatomy; viewer chrome. Record adoption gaps explicitly, not as claims that the entire family is already generalized.
-- Examples use the library's own artwork, layout, fields, buttons and surfaces. Use Scene/sceneSource for generated imagery and PersonAvatar for generated people. Raw fixtures are reserved for the specific native/error behavior under test, not copied application UI.
+- Examples use the library's own artwork, layout, fields, buttons, and surfaces. Use Scene/sceneSource for generated imagery and PersonAvatar for generated people. Raw fixtures are reserved for the specific native/error behavior under test, not copied application UI.
 
 ## 3. Component contract worksheet
 
 Fill this in the spec/PR before coding (it prevents 80% of review findings):
 
-1. **Anatomy** — parts and their roles (root, label, control, description…), compound only when
+1. **Anatomy**: parts and their roles (root, label, control, description…), compound only when
    structure is meaningful.
-2. **Semantics** — APG pattern used; role/state/property map; keyboard map.
-3. **State axes** — controlled/uncontrolled prop pairs (`value/defaultValue/onValueChange`,
+2. **Semantics**: APG pattern used; role/state/property map; keyboard map.
+3. **State axes**: controlled/uncontrolled prop pairs (`value/defaultValue/onValueChange`,
    `open/defaultOpen/onOpenChange`, `checked/defaultChecked/onCheckedChange`).
-4. **Events** — state callbacks receive values (`onValueChange`, `onCheckedChange`, `onOpenChange`);
+4. **Events**: state callbacks receive values (`onValueChange`, `onCheckedChange`, `onOpenChange`);
    native event callbacks (`onChange`, `onClick`, `onCancel`) keep their native event signature.
-5. **Ref target** — which DOM element the `ref` prop reaches.
-6. **Customization surface** — `className`, `css` and `sx` on every public visual part root,
+5. **Ref target**: which DOM element the `ref` prop reaches.
+6. **Customization surface**: `className`, `css`, and `sx` on every public visual part root,
    `component` (exactly sugar for `slots.root`) and `slots` for adopted part replacement,
    `slotProps` for part props. Root extra props merge as `slotProps.root`: slot conflicts win,
    except combined className and shallow-merged style. Existing leaf-control `render` APIs stay;
    no new panel render APIs, `asChild`, or element-valued replacements.
-7. **Environments** — RTL, reduced motion, forced colors, SSR/hydration notes.
-8. **Lifecycle status** — new / stable / deprecated (with replacement).
+7. **Environments**: RTL, reduced motion, forced colors, SSR/hydration notes.
+8. **Lifecycle status**: new / stable / deprecated (with replacement).
 
-## 4. File and naming conventions
+## 4. Files, naming, and shared modules
 
-**Naming**
+### Naming
 
 - Use Function+Shape in 1–2 words: `SearchField`, `TimePicker`, `SplitButton`.
 - Materials and styles (`glass`, `holo`) are props or variants, never component names.
 - Flavor names must state a clear function.
-- Consolidate hold, stack and thread variants when their relevant spec ships.
+- Consolidate hold, stack, and thread variants when their relevant spec ships.
+
+### Source layout
 
 ```
 src/components/<kebab-case>/
@@ -236,31 +246,31 @@ src/components/<kebab-case>/
   <kebab-case>.stories.tsx  # CSF3 + play tests
   index.ts                  # re-exports component + types
 src/utils/                  # shared helpers: attachment, collection-registry, duration-format, generated-root, initials, intl, part-id, renderable, roving-focus, use-controlled-state, use-form-reset, use-image-status, use-latest-callback, use-reduced-motion
-src/overlay/                # internal: overlay-portal, overlay-layer, use-scroll-lock, use-native-dialog, use-overlay-floating — not exported
+src/overlay/                # internal: overlay-portal, overlay-layer, use-scroll-lock, use-native-dialog, use-overlay-floating; not exported
 src/styling/                # styling modules (see list below); public API: styled, theme, JfraderTheme, SxProps; ThemeProvider/useTheme via theme-provider/
 src/testing/                # story-only assertions (see list below)
 ```
 
-Shared styling modules in `src/styling/` (reuse before writing a local copy):
+Shared styling modules in `src/styling/`, reused before writing a local copy:
 
-- `css` — the styling seam (`css`, `keyframes`, types, Emotion's theme provider/hook).
-- `sx` — `SxProps` and `WithSx`, which merges own styles, consumer `css` and `sx` for a part root.
-- `theme` — the token `theme` and the Emotion `Theme` augmentation (public).
-- `create-theme` — `createTheme`, `ThemeTokens` and `themeTokenStyle`; the custom-palette API (public).
-- `theme-scope` — ThemeRoot's scope context (`useThemeScope`), the `appearance` axis
+- `css`: the styling seam (`css`, `keyframes`, types, Emotion's theme provider/hook).
+- `sx`: `SxProps` and `WithSx`, which merges own styles, consumer `css` and `sx` for a part root.
+- `theme`: the token `theme` and the Emotion `Theme` augmentation (public).
+- `create-theme`: `createTheme`, `ThemeTokens`, and `themeTokenStyle`; the custom-palette API (public).
+- `theme-scope`: ThemeRoot's scope context (`useThemeScope`), the `appearance` axis
   (`AppearanceScope`), `themeScopeStyle` and `ThemeBoundary` for portaled content.
-- `styled` — re-export of `@emotion/styled` for apps (public; never used by components).
-- `media` — `REDUCED_MOTION`, `FORCED_COLORS` and `REDUCED_TRANSPARENCY` query keys; payloads stay
+- `styled`: re-export of `@emotion/styled` for apps (public; never used by components).
+- `media`: `REDUCED_MOTION`, `FORCED_COLORS`, and `REDUCED_TRANSPARENCY` query keys; payloads stay
   component-local.
-- `focus-ring` — `focusRingOutset` / `focusRingInset` declarations; the selector stays local.
-- `visually-hidden` — screen-reader-only text.
-- `disclosure-caret` — `disclosureCaret` (the triangle: border-drawn, currentColor, with its forced-colors override) and `disclosureCaretInlineSize` (the glyph's inline size). A component owns the pseudo-element it draws on, the rotation and the reduced-motion override.
-- `icon-wrapper` — sizes a decorative icon to the surrounding font size.
-- `loading-ring` — spinning ring and its reduced-motion pulse (Button, Spinner).
-- `surface` — `raisedSurface` panel, the surface appearance helpers and `modalShellReset` for native
+- `focus-ring`: `focusRingOutset` / `focusRingInset` declarations; the selector stays local.
+- `visually-hidden`: screen-reader-only text.
+- `disclosure-caret`: `disclosureCaret` (the triangle: border-drawn, currentColor, with its forced-colors override) and `disclosureCaretInlineSize` (the glyph's inline size). A component owns the pseudo-element it draws on, the rotation and the reduced-motion override.
+- `icon-wrapper`: sizes a decorative icon to the surrounding font size.
+- `loading-ring`: spinning ring and its reduced-motion pulse (Button, Spinner).
+- `surface`: `raisedSurface` panel, the surface appearance helpers and `modalShellReset` for native
   `<dialog>` shells.
-- `components/surface/surface-root` — private root seam shared by Surface, Card, Drawer.Panel,
-   BottomSheet.Panel, Dialog.Panel, DialogStack.Content, CodeBlock, TypewriterTerminal and JsonViewer: separates
+- `components/surface/surface-root`: private root seam shared by Surface, Card, Drawer.Panel,
+   BottomSheet.Panel, Dialog.Panel, DialogStack.Content, CodeBlock, TypewriterTerminal, and JsonViewer: separates
   default material from retained host structure, resolves inherited appearance once, carries
   same-theme tokens, merges root props and style lanes, composes refs with cleanup, and diagnoses
   missing/non-div refs, roots outside their owning shell/stage and changed replacement identity.
@@ -276,32 +286,36 @@ Shared styling modules in `src/styling/` (reuse before writing a local copy):
   get one default Dialog.Panel; explicit composition accepts one direct Panel through fragments,
   without substantive siblings. DialogStack keeps its stage-directed portal inside a declaration-site
   ThemeBoundary. Host motion/measurement inline styles are reserved from ordinary root props.
-- `components/viewer-chrome/viewer-chrome` — private media-viewer chrome shared by LightboxGallery and
+- `components/viewer-chrome/viewer-chrome`: private media-viewer chrome shared by LightboxGallery and
   PhotoGrid: `ChromeAction` (ghost icon Button with a `focusVisibleOnly` tooltip, optional
   `aria-pressed`; unportaled inside a modal dialog, `portaled` elsewhere), the stroke glyphs and the
   thumbnail-strip styles.
-- `trigger-style` — overlay trigger button (Dialog, Popover, Menu).
-- `listbox-style` — popup surface, item and option fragments (Menu, Select, Combobox, CommandPalette, PhoneInput).
-- `input-control` — text-input control skin (TextField, Textarea, SearchField, TagInput, MentionInput, PasswordField, NumberField, MoneyInput, PhoneInput, InlineEdit, InputGroup, LinkUnfurl).
-- `choice-control` — root, row and hidden-input fragments (Checkbox, Switch, RadioGroup.Radio).
-- `layout-style` — `flexLayoutStyles` (Flex, Stack) and the layout space scale (Container).
-- `motion-timings` — `motionDurationMs`, the numeric side of the duration tokens for Motion and timers.
-- `overlay-motion` — `@starting-style` entrances and `data-state="closing"` exits shared by native
+- `trigger-style`: overlay trigger button (Dialog, Popover, Menu).
+- `listbox-style`: popup surface, item, and option fragments (Menu, Select, Combobox, CommandPalette, PhoneInput).
+- `input-control`: text-input control skin (TextField, Textarea, SearchField, TagInput, MentionInput, PasswordField, NumberField, MoneyInput, PhoneInput, InlineEdit, InputGroup, LinkUnfurl).
+- `choice-control`: root, row, and hidden-input fragments (Checkbox, Switch, RadioGroup.Radio).
+- `layout-style`: `flexLayoutStyles` (Flex, Stack) and the layout space scale (Container).
+- `motion-timings`: `motionDurationMs`, the numeric side of the duration tokens for Motion and timers.
+- `overlay-motion`: `@starting-style` entrances and `data-state="closing"` exits shared by native
   dialogs and floating surfaces; see the overlay motion contract in section 6.
 
-Family owners (repository paths):
+### Family owners
+
+Repository paths:
 
 | Family | Owners and dependency direction | Adoption gaps / distinctions |
 | --- | --- | --- |
 | Avatar/artwork | [Avatar](packages/ui/src/components/avatar/avatar.tsx) owns identity/presence; [PersonAvatar](packages/ui/src/components/person-avatar/person-avatar.tsx) calls [appearance](packages/ui/src/components/person-avatar/appearance.ts) and [kit](packages/ui/src/components/person-avatar/kit.ts) resolvers, then [PersonArt](packages/ui/src/components/person-avatar/person-art.tsx). Internal [kit art](packages/ui/src/components/person-avatar/art/kit-art.tsx) and [staff art](packages/ui/src/components/person-avatar/art/staff-art.tsx) depend downward on kit data/tokens, never the shell. [Scene](packages/ui/src/components/scene/scene.tsx) owns independent scene generation. | AvatarGroup delegates member identity to Avatar; artwork stays ordinary content. |
 | Surface/panels/disclosures | [SurfaceRoot](packages/ui/src/components/surface/surface-root.tsx) owns material and appearance. | ExpandableCard still uses raisedSurface directly; disclosure/measurement remains its own responsibility. |
-| Native modal shells | [useNativeDialog](packages/ui/src/overlay/use-native-dialog.ts) owns native lifecycle; SurfaceRoot owns panel material. | Dialog, Drawer, BottomSheet and DialogStack retain distinct host behavior. Shared panel types currently live in Drawer. |
-| Selection collections | [collection-registry](packages/ui/src/utils/collection-registry.ts) owns registration; [OverlayLayer](packages/ui/src/overlay/overlay-layer.tsx) owns dismissal-tree membership. | MultiSelect still uses IsolatedOverlay. Select-only, editable-text and multi-value state remain distinct. |
+| Native modal shells | [useNativeDialog](packages/ui/src/overlay/use-native-dialog.ts) owns native lifecycle; SurfaceRoot owns panel material. | Dialog, Drawer, BottomSheet, and DialogStack retain distinct host behavior. Shared panel types currently live in Drawer. |
+| Selection collections | [collection-registry](packages/ui/src/utils/collection-registry.ts) owns registration; [OverlayLayer](packages/ui/src/overlay/overlay-layer.tsx) owns dismissal-tree membership. | MultiSelect still uses IsolatedOverlay. Select-only, editable-text, and multi-value state remain distinct. |
 | Tabs/value choices | [roving-focus](packages/ui/src/utils/roving-focus.ts) owns shared focus helpers. | Tabs owns panels/activation; SegmentedControl owns value choice. Indicators remain family-local. |
 | Field anatomy | [FieldRoot](packages/ui/src/components/field/field-anatomy.tsx) owns labeled anatomy; adopter list below. | Each control retains its native target and edit/commit axes. |
-| Viewer chrome | [viewer-chrome](packages/ui/src/components/viewer-chrome/viewer-chrome.tsx) owns LightboxGallery/PhotoGrid actions, glyphs and thumbnail styles. | Modal versus portaled tooltip ownership remains with the host. |
+| Viewer chrome | [viewer-chrome](packages/ui/src/components/viewer-chrome/viewer-chrome.tsx) owns LightboxGallery/PhotoGrid actions, glyphs, and thumbnail styles. | Modal versus portaled tooltip ownership remains with the host. |
 
-Shared story assertions in `src/testing/` (reuse before writing a local copy):
+### Shared story assertions
+
+Shared assertions in `src/testing/`, reused before writing a local copy:
 
 - `design-assertions.ts`: `auditDesign` checks native-control typography, painted text/background/border
   colors against the scoped token palette (including token-only `color-mix` derivations), and corner
@@ -326,6 +340,8 @@ Shared story assertions in `src/testing/` (reuse before writing a local copy):
 - `field-slot-fixtures.tsx`: `expectFieldSlotCustomization` and the field replacement fixtures shared by
   the form-field families.
 
+### Registration and exports
+
 - PascalCase components, `<Name>Props` types, explicit public exports; helpers stay private.
 - Storybook groups components by the `storySort` order in `apps/storybook/.storybook/preview.tsx` (`Home`,
   `Foundations`, `Inputs`, `Data display`, `Data`, `Media`, `Feedback`, `Navigation`,
@@ -339,7 +355,7 @@ Shared story assertions in `src/testing/` (reuse before writing a local copy):
 - `data-ui="<name>"` on every component root (and `data-ui="<name>-<part>"` on compound parts).
   Composed roots retain deduplicated identity tokens; use `[data-ui~="<name>"]` selectors.
   Surface uses `data-surface-variant`, leaving host `data-variant` untouched.
-- One folder per component; `field/` and `thread/` hold shared internal anatomy rather than public components. A shared hook only when a second consumer exists. `field/field-anatomy.tsx` (`FieldRoot`) owns the labeled-field anatomy, the optional `dir` route to the visual root and `minInlineSize: 0`; TextField, Textarea, SearchField, TagInput, MentionInput, PasswordField, NumberField, MoneyInput, PhoneInput and ColorPicker compose it instead of forking a visual root.
+- One folder per component; `field/` and `thread/` hold shared internal anatomy rather than public components. A shared hook only when a second consumer exists. `field/field-anatomy.tsx` (`FieldRoot`) owns the labeled-field anatomy, the optional `dir` route to the visual root and `minInlineSize: 0`; TextField, Textarea, SearchField, TagInput, MentionInput, PasswordField, NumberField, MoneyInput, PhoneInput, and ColorPicker compose it instead of forking a visual root.
 - The package index re-exports components + types with `export *`, plus the styling API (`styled`,
   `theme`, `ThemeProvider`, `useTheme`, `createTheme`, `themeTokenStyle`, `SxProps`). `theme-provider/` has no `index.ts`, so it gets
   no subpath export.
@@ -360,7 +376,7 @@ Pitfalls this pattern exists to avoid:
 - Do not notify when the value did not change (controlled stories assert exact call counts).
 - Do not commit controlled state visually before the parent updates the prop.
 - Do not derive state in effects; handle it in the initiating interaction.
-- Do not switch modes during an instance's lifetime — mode is detected per render but switching is
+- Do not switch modes during an instance's lifetime: mode is detected per render, but switching is
   unsupported and untested (consumer constraint).
 - Native checkboxes have a second state axis (`indeterminate` DOM property): sync it in an effect and
   restore it on activation while the controlled prop remains set.
@@ -376,8 +392,8 @@ Pitfalls this pattern exists to avoid:
 | Tabs | `tablist`/`tab`/`tabpanel` with `aria-controls`/`aria-labelledby`/`aria-selected`; roving tabindex on the **focused** tab (falls back to selected, then first enabled) | horizontal/vertical arrows (RTL-aware), Home/End; `auto` activation selects on focus, `manual` needs Enter/Space; Tab exits into the active panel | the focused tab carries the ring (it may be unselected in manual mode); panels keep state while hidden. Caveats: auto activation requires negligible panel latency; keeping focus on an unselected tab in manual mode is an intentional variation from the APG default; non-focusable panels belong to the tab sequence |
 | Dialog | native `<dialog>.showModal()` + `aria-modal`; `aria-labelledby`/`describedby` merged from Title/Description when present (`withDescription={false}` opts out) | Escape closes via one Root-owned path; backdrop click only when it targets the dialog element | focus moves inside on open, returns to the invoker on close or unmount; background inert via top layer |
 | Popover | `role="dialog"` (non-modal) via `useRole`; trigger `aria-haspopup="dialog"`/`aria-expanded`/`aria-controls`; name via `aria-labelledby` (preferred) or `aria-label` | Enter/Space toggle; Escape closes; outside press closes | non-modal focus management preserves page tab order (`modal={false}`, no initial focus, `returnFocus={false}`, no trap); Escape returns focus to the trigger only after an accepted close; outside press never moves focus |
-| Tooltip | `role="tooltip"`; trigger `aria-describedby` (merged with consumer ids) while open | hover (open/close delays), focus-visible opens; Escape closes | never focusable or interactive; hoverable per WCAG 1.4.13 (the content keeps it open); focus stays on the trigger. (APG Tooltip remains a work-in-progress pattern without task-force consensus.) |
-| Menu | `menu`/`menuitem` (`aria-disabled` for disabled), menu labelled by the trigger; trigger `aria-haspopup="menu"`/`aria-expanded`/`aria-controls` | Enter/Space/ArrowDown open on first enabled item, ArrowUp on last; arrows wrap and skip disabled (**intentional APG deviation**: APG keeps disabled items focusable but non-activatable; ours are skipped and stay in the list so pointer users still see them); Home/End; typeahead (`resetMs: 500` is our configured value; upstream default is 750ms); Escape closes; Tab out of the content closes (**intentional APG deviation**: APG closes on Shift+Tab too; Shift+Tab from the first item returns to the trigger, where the menu stays open and Tab re-enters — revisit on screen-reader feedback) | `FloatingFocusManager modal={false}` (`returnFocus` off); pointer open also focuses the first item; an accepted Escape/selection restores focus to the trigger explicitly — outside press and Tab-out never move focus |
+| Tooltip | `role="tooltip"`; trigger `aria-describedby` (merged with consumer ids) while open | hover (open/close delays), focus-visible opens; Escape closes | never focusable or interactive; hoverable per WCAG 1.4.13 (the content keeps it open, never `pointer-events: none`); focus stays on the trigger. (APG Tooltip remains a work-in-progress pattern without task-force consensus.) |
+| Menu | `menu`/`menuitem` (`aria-disabled` for disabled), menu labeled by the trigger; trigger `aria-haspopup="menu"`/`aria-expanded`/`aria-controls` | Enter/Space/ArrowDown open on first enabled item, ArrowUp on last; arrows wrap and skip disabled (**intentional APG deviation**: APG keeps disabled items focusable but non-activatable; ours are skipped and stay in the list so pointer users still see them); Home/End; typeahead (`resetMs: 500` is our configured value; upstream default is 750ms); Escape closes; Tab out of the content closes (**intentional APG deviation**: APG closes on Shift+Tab too; Shift+Tab from the first item returns to the trigger, where the menu stays open and Tab re-enters, to revisit on screen-reader feedback) | `FloatingFocusManager modal={false}` (`returnFocus` off); pointer open also focuses the first item; an accepted Escape/selection restores focus to the trigger explicitly; outside press and Tab-out never move focus |
 | Toast | text-only `status`/`alert` live region with explicit `aria-atomic`; interactive controls sit outside it; imperative queue via `useToast()` | Tab between controls; Enter/Space activate | appearing never moves focus; hover/focus pauses auto-dismiss; removing a focused toast continues focus to the next toast's dismiss button; closing toasts are inert |
 | Accordion | `h3` heading wrapping a native button (`aria-expanded`/`aria-controls`); panel is `role="region"` + `aria-labelledby`, kept mounted, `hidden` when closed | Enter/Space toggle; ArrowUp/Down wrap between enabled headers; Home/End | focus ring on the trigger; disabled triggers (Item or Trigger) are skipped and non-activatable |
 | Select | select-only combobox: `role="combobox"` trigger + portaled `listbox` with **virtual focus** (`aria-activedescendant`; DOM focus never leaves the trigger) | Enter/Space/ArrowDown open on the selected/first enabled option; arrows + Home/End move the highlight; typeahead (500ms buffer, continues across opening); Enter/Space select; Escape closes without selecting; Tab closes | never moves DOM focus; `value` and `open` are independent controlled axes; hidden input carries the form value |
@@ -393,31 +409,17 @@ Overlay family contracts (Popover/Tooltip/Menu follow these):
   `.close()` through the `ref`) is reconciled into `onOpenChange`; only lock scroll after `showModal()`
   succeeds.
 - **Native dialog motion:** a full-viewport shell that slides a child panel uses `overflow: clip`,
-  never `hidden` — a hidden-overflow dialog is still a scroll container, so focus landing on the
+  never `hidden`: a hidden-overflow dialog is still a scroll container, so focus landing on the
   offscreen panel scrolls the shell and cancels the travel on screen. Enter/exit go through
   `useNativeDialog`'s transition: a logical close keeps the dialog open (modal, scroll-locked)
   until the exit settles; reduced motion returns no exit and closes at once.
 - **Dialog cancel semantics:** `onCancel` is the *close request* (cancelable) and `onClose` the
-  *completed closure*. React bubbles both, unlike native DOM — nested handlers must check the
+  *completed closure*. React bubbles both, unlike native DOM, so nested handlers must check the
   originating dialog (`event.target === dialogElement`). A consumer `preventDefault()` on `cancel`
   vetoes closure only when the event is cancelable; platform close requests can be noncancelable
   (CloseWatcher safeguards), so never promise a veto for every path and always reconcile `close`.
   `requestClose()` must be feature-detected; a plain `.close()` fallback does **not** dispatch a
   native `cancel`, so provide equivalent veto semantics or document the difference.
-- **Non-modal popover:** preserve the page tab order across the portal with non-modal focus
-  management (`FloatingFocusManager modal={false} initialFocus={-1} returnFocus={false}`), but no
-  trap and no initial focus; Escape returns focus to the trigger only after an accepted close; a
-  focus-out dismissal must **not** restore focus.
-- **Tooltip:** never focusable, no interactive content, activated by hover **and** keyboard focus,
-  dismissed by Escape, wired with `aria-describedby`; hoverable per WCAG 1.4.13 — the content stays
-  open while the pointer rests on it (never `pointer-events: none`), with generous timing.
-- **Menu:** opening moves focus to the first item (or the typeahead match); arrows move, typeahead
-  jumps, Home/End optional; Escape closes and returns focus to the trigger; Tab out of the content
-  closes and lets focus move on. Two **intentional APG deviations** (keep the behavior; revisit on
-  screen-reader feedback): (1) APG closes the menu on both `Tab` and `Shift+Tab`; we keep it open
-  when Shift+Tab leaves from the first item, so focus lands on the trigger and Tab re-enters;
-  (2) APG keeps disabled items focusable but non-activatable; ours are skipped by arrows and stay in
-  the list, so pointer users still see them.
 - **Overlay motion (house pattern):** every native dialog animates through `useNativeDialog`'s
   `NativeDialogTransition` (above); there is no second exit mechanism. Spring-driven surfaces
   (Drawer, BottomSheet) pass their own enter/exit. Styled surfaces (Dialog, CommandPalette,
@@ -445,23 +447,23 @@ Overlay family contracts (Popover/Tooltip/Menu follow these):
   focus reads and scroll locks to the floating element's `ownerDocument`; disable positioning
   middleware when the surface is closed. Native `menu`/`listbox` roles need explicit item roles
   through the getters. Keep `FloatingPortal` (via `OverlayPortal`) with its default
-  `preserveTabOrder` — the focus manager depends on it; a bare custom portal is not a substitute.
+  `preserveTabOrder`: the focus manager depends on it. a bare custom portal is not a substitute.
 - **Initial focus:** the JSX spelling is `autoFocus` on the intended descendant; the browser's dialog
   focus algorithm honors the attribute (there is no universal "first input" guarantee). React calls
   `focus()` on mount instead of rendering the attribute, so inside a native `<dialog>` that mounts
   closed, set the `autofocus` attribute through a ref (see CommandPalette).
 - **Platform adoption notes (docs verified 2026-10-11):** use `dialog.requestClose()` for close
   affordances so they share cancel semantics (Baseline since May 2025; fall back to a state close
-  on older Safari — see the cancel-semantics bullet). `closedby` is *not* Baseline (Safari preview) —
+  on older Safari, as the cancel-semantics bullet describes). `closedby` is *not* Baseline (Safari preview):
   keep manual backdrop handling. `@starting-style` entry transitions and `transition-behavior`
   (`allow-discrete`, Baseline since August 2024) are available; the limited-availability part of
-  top-layer **exit** animation is the `overlay` property — ship exit transitions only with
+  top-layer **exit** animation is the `overlay` property, so ship exit transitions only with
   per-browser testing. `:user-invalid` is Widely Available for post-interaction native validation.
   `field-sizing: content` (Baseline June 2026) is the right tool if a future Textarea autosizes.
   CSS anchor positioning reaches Baseline per property (`anchor-name` / `position-area` /
   `position-try` January 2026; `position-anchor` September 2026); `@floating-ui/react` remains the
   choice for behavior and support. `color-mix()` (since May 2023) and `light-dark()` (since May 2024)
-  are available for token derivation, but `light-dark()` follows `color-scheme`, not `data-theme` —
+  are available for token derivation, but `light-dark()` follows `color-scheme`, not `data-theme`, so
   tokens stay the theming contract.
 
 ## 7. Testing requirements (definition of done, expanded)
@@ -491,7 +493,7 @@ Stories are CSF3 (`satisfies Meta` / `StoryObj`). Storybook's CSF Next factory A
 (`definePreview` → `meta.story`) exists in preview; this repo stays on CSF3 unless a migration is
 explicitly approved.
 
-Use the shared assertions listed in [section 4](#4-file-and-naming-conventions) for motion,
+Use the shared assertions listed in [section 4](#4-files-naming-and-shared-modules) for motion,
 theme and geometry play tests. For browser measurements, use
 [measure-geometry.mjs](apps/storybook/scripts/measure-geometry.mjs) with Storybook running.
 It is a check: contract violations or measurement errors return a nonzero exit code.
@@ -522,9 +524,10 @@ Per component (all in the colocated stories file):
    (form-closed dialogs), dimension assertions (`getBoundingClientRect`) where size is contract.
 5. **Timing**: before reading computed styles, wait for the component's transition duration (current
    tokens: 120/160/240ms) or disable motion in the test; never assert a mid-transition value.
-6. **Axe**: the global gate must pass for every story. It is `test: 'error'` with the WCAG 2.0–2.2 AA
-   + best-practice ruleset (`apps/storybook/.storybook/preview.tsx`). It runs after play completes,
-   on the state present at the end — that is why persistent-open/state stories exist; open, error,
+6. **Axe**: the global gate must pass for every story. It is `test: 'error'` with the
+   `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22a`, `wcag22aa`, and `best-practice` rules
+   (`apps/storybook/.storybook/preview.tsx`). It runs after play completes,
+   on the state present at the end, which is why persistent-open/state stories exist. Open, error,
    selected or other states closed or replaced before play ends need their own story. axe-core
    detects ~57% of WCAG issues on average; a green gate is not accessibility verification.
 7. **Play mechanics**: use `canvas` and the play-context `userEvent`; import `expect`, `fn` and
@@ -556,7 +559,7 @@ Manual gates before calling a component 1.0 (record what was and wasn't tested):
 - Keyboard-only pass in a real browser (order, every key, no duplicate activation, visible focus).
 - Screen-reader smoke test (NVDA+Firefox or VoiceOver+Safari): name, state, description, error,
   modal title and containment.
-- Forced-colors, reduced-motion and RTL spot checks.
+- Forced-colors, reduced-motion, and RTL spot checks.
 - axe finds ~57% of WCAG issues on average; never present a passing axe run as accessibility
   verification.
 
@@ -567,10 +570,37 @@ Manual gates before calling a component 1.0 (record what was and wasn't tested):
 Write for someone choosing and using a component. Say what it does and what to do next.
 This applies to Storybook, public JSDoc, examples, READMEs, and consumer guides.
 
+**Voice and mechanics**
+
+One house style covers every Markdown file in the repo: `README.md`, `docs/`, `SKILL.md`,
+`AGENTS.md`, the Storybook guides, and component prose.
+
+- US English: `color`, `behavior`, `labeled`, `center`. Identifiers stay as they are.
+- Oxford comma in every series of three or more: "colors, spacing, and fonts".
+- Backticks for anything a reader can copy: identifiers, props, parts, paths, commands, file names.
+  Headings too: "## Reuse styles with `styled`".
+- No em dashes. Use a period, a comma, a colon, or parentheses. Definition lists read
+  "`css`: the styling seam", not "`css` — the styling seam".
+- Straight apostrophes and quotes, never typographic ones.
+- Sentence case headings, no trailing period. Name the thing instead of asking: "Style precedence",
+  not "Which style wins?".
+- Write "for example", never "e.g.". No "etc." in prose.
+- One name per concept: the library, the docs site, a consumer, a part, a slot, a token, the
+  workbench. "Docs front" is not a second name for the docs site.
+- Instruct in the imperative; describe in the present tense. Address the reader as "you" in
+  consumer guides. Use "we" only in maintenance prose that records a decision.
+- No adverbs of ease ("simply", "just", "easily"), no praise adjectives, no reassurance, and no
+  explanation of why a design decision was made.
+- One point per paragraph, four sentences at most. Tables for reference material, prose for
+  sequences a reader follows.
+- Dates are `YYYY-MM-DD`; viewport sizes are `1440×900`; units sit against their number (`24px`).
+- One home per fact. Setup, installation, publishing, and token generation live in `README.md` and
+  the guides; other files link to them instead of restating them.
+
 **Page structure**
 
 - One line in `description.component` says what the component is for. Keep the introduction to that.
-- `usage` carries behaviour, constraints and accessibility only. Props, slots, anatomy and
+- `usage` carries behavior, constraints, and accessibility only. Props, slots, anatomy and
   root-replacement mechanics belong in the API, sourced from TSDoc, never restated here.
 - Curate the examples with `parameters.docs.sections`: ordered `{ title, stories }` using story
   export names. The first listed story is the featured example above Usage; stories not listed
@@ -578,34 +608,37 @@ This applies to Storybook, public JSDoc, examples, READMEs, and consumer guides.
 - Every listed example needs a usable code sample. Author `source.code` when the derived snippet
   cannot reproduce a compound, a custom render or non-serializable data. The code must match the
   canvas, read like a consumer wrote it, and include the import.
-- Props, parts and slot descriptions are written once as TSDoc on the source contract; the
+- Props, parts, and slot descriptions are written once as TSDoc on the source contract; the
   generated API renders them with Slots and Also uses. Do not describe them a second time in prose.
 - `packages/ui/src/components/dialog/dialog.stories.tsx` is the reference page.
 
 **Component introduction**
 
 - Explain enough for the reader to choose and use the component. Keep the purpose easy to find.
-- Start with the action or result: “Choose a date”, “Show progress toward a goal”.
+- Start with the action or result: "Choose a date", "Show progress toward a goal".
 - Use everyday words. Leave props, DOM roles, state ownership, and implementation details for
   usage notes or the prop table.
-- Use nouns and verbs instead of adjectives. Omit praise such as “powerful”, “flexible”,
-  “seamless”, “intuitive”, and “beautiful”. Keep words required to name an API state or type,
-  such as `disabled` or “plain text”.
+- Use nouns and verbs instead of adjectives. Omit praise such as "powerful", "flexible",
+  "seamless", "intuitive", and "beautiful". Keep words required to name an API state or type,
+  such as `disabled` or "plain text".
 - Use paragraphs, headings, or lists when they make the explanation easier to follow.
 
-MentionInput's introduction: “Write a message and mention people with @ or channels with #.”
+MentionInput's introduction: "Write a message and mention people with @ or channels with #."
 
 **Details and examples**
 
 - Put the introduction in `parameters.docs.description.component` as a string or template literal.
   Put any usage notes in `parameters.docs.usage` as Markdown. The shared docs page shows
-  those notes in a “Usage notes” disclosure after the first example.
-- Group notes by the question they answer: Keyboard, Values, Forms, or Limits. Include only
-  sections the component needs. Use short bullets or paragraphs, one point at a time.
+  those notes in a "Usage notes" disclosure after the first example.
+- Group notes by the question they answer. These headings cover most components: "When to use",
+  "Keyboard and accessibility", "Values and constraints", "Forms", "Customization". Add a heading
+  only when a component needs it, and reuse one of these names when it fits. Never add a near-synonym
+  beside one of them ("Keyboard" next to "Keyboard and accessibility", "Limits" next to
+  "Constraints"). Use short bullets or paragraphs, one point at a time.
 - Preserve requirements, defaults, units, callback order, keyboard behavior, and limits.
   Shortening prose must not remove a condition or turn an untested behavior into a guarantee.
   Put a warning that changes how someone uses an example beside that example or prop too.
-- Describe each story's difference or the action to try. Skip “This story demonstrates” and
+- Describe each story's difference or the action to try. Skip "This story demonstrates" and
   test-result narration. Story JSDoc appears in the docs; keep test rationale in code comments.
 - Docs pages render every story of a component at once. Keep an overlay whose initial state covers
   the page out of that page: render it inside its own demo surface (`contained` with a positioned
@@ -614,8 +647,8 @@ MentionInput's introduction: “Write a message and mention people with @ or cha
 - A docs page renders every non-!autodocs story, so NO story may mount with an open overlay: every open-on-mount story (`defaultOpen`/`open: true`, or hardcoded in render) carries `tags: ['!autodocs']`. Readers open the frames' triggers themselves; overlays must never appear by themselves.
 - Prop JSDoc starts with what the prop changes. Add a default, unit, or exception when needed.
   Keep API names exact and use backticks around them.
-- Prefer “Press Escape to close” to “Escape dismissal is supported”. Address the reader as
-  “you” when needed. Avoid semicolon chains, sales copy, reassurance, and design justification.
+- Prefer "Press Escape to close" to "Escape dismissal is supported". Address the reader as
+  "you" when needed. Avoid semicolon chains, sales copy, reassurance, and design justification.
 - Keep each fact in one home. Link to setup or QA instructions instead of copying them into
   every description. Code examples should show usage, not test fixtures.
 - Style example and guide code with `styled` components over tokens, not with `css` props or inline
@@ -642,7 +675,7 @@ disclosure with the keyboard, and check the first example and prop table still a
 - **Do not hide the only rendered state behind `play`, `beforeEach`, `loaders` or `viewport`.** Consumers that render stories as documentation do not execute them or emulate the viewport, so a state that exists only after an interaction shows as an empty or bare example. Render the state directly (an `open`/`defaultOpen` variant), or exclude the story with `tags: ['!autodocs']`.
 - **Keep self-contained visual examples published.** If setup only makes `play` assertions deterministic, keep the setup-free render in docs and move the setup-dependent assertions to an `!autodocs` companion. Exclude a visual example only when its render itself requires that setup; verify restored frames in the built docs and preserve their assertions.
 - **Author `parameters.docs.source.code` when the anatomy matters.** Consumers can derive a snippet from a story's `args`, and some read the story's own JSX, but neither can describe a compound: an args-derived snippet cannot invent `Dialog` + `Dialog.Content` + `Dialog.Footer`, and an extractor stops at conditional or multiple returns and at maps over data it does not define. A single literal JSX return per story, or an authored `source.code` (with `source.language`), is what makes a usable code example.
-- **Examples are style-isolated from the page around them.** A story that renders bare `<a>`, `<code>`, `<table>`, `<h3>` or `<li>` elements gets the browser's defaults, not the host's typography — a raw link inside an example renders in the user agent's blue. Use the library's own components inside examples, and style anything you render raw.
+- **Examples are style-isolated from the page around them.** A story that renders bare `<a>`, `<code>`, `<table>`, `<h3>` or `<li>` elements gets the browser's defaults, not the host's typography: a raw link inside an example renders in the user agent's blue. Use the library's own components inside examples, and style anything you render raw.
 - **A story's `name:` is what readers see in navigation and in the page's table of contents.** Keep display names unique per component; when two stories share one, consumers have to disambiguate them. A component that renders its own `h3` headings will also have those headings confused with the page's sections unless the consumer filters them out.
 - **A component's page opens with one story chosen for it, and a state or environment story is not it.** Consumers pick a primary or rich composition and skip `Loading`, `Disabled`, `Error`, `RTL`, `ForcedColors`, `Keyboard…`-style states. Keep one obvious primary story per component so that choice is deliberate rather than accidental.
 
@@ -655,7 +688,7 @@ disclosure with the keyboard, and check the first example and prop table still a
 
 - [ ] Need + API approved; no duplicate component; contract worksheet filled.
 - [ ] Family sibling integration tested; one owner per semantic/state axis.
-- [ ] Replacement props, refs and children forwarded with the host contract preserved.
+- [ ] Replacement props, refs, and children forwarded with the host contract preserved.
 - [ ] Examples compose library pieces; no story-local reimplementations of artwork, layouts, controls or surfaces.
 - [ ] Controlled/uncontrolled matrix incl. falsy values, rejected controlled requests, callback
       count/order, external prop updates, reset behavior.
@@ -684,9 +717,9 @@ disclosure with the keyboard, and check the first example and prop table still a
   `scripts/customization-inventory.mjs` (`pnpm verify:docs` checks it); regenerate it after an API or
   slot change, never hand-edit it.
 - **Compound part naming stays consistent** across components: callable roots (`Tabs`, `Dialog`) with
-  the same part names — `Trigger`, `Content`, `Title`, `Description`, `Close`, `List`, `Tab`, `Panel`.
-- Keep `SKILL.md`, `AGENTS.md`, `PLAN.md` and `README.md` status in sync in the same change that
-  invalidates them.
+  the same part names: `Trigger`, `Content`, `Title`, `Description`, `Close`, `List`, `Tab`, `Panel`.
+- Keep `SKILL.md`, `AGENTS.md`, `PLAN.md`, `README.md`, `llms.txt`, and `docs/` in sync in the same
+  change that invalidates them.
 
 ## 10. References
 

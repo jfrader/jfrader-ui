@@ -1,14 +1,14 @@
 /**
  * jfrader/ui's documentation front: a configuration for @jfrader/storybook-docs.
  * The tool lives in its own repository (jfrader/storybook-docs) and knows nothing about
- * this design system; everything it needs to know is the file below.
+ * this component library; everything it needs to know is the file below.
  */
 export default {
   site: {
     title: 'jfrader/ui',
     mark: 'j',
     tagline:
-      'The component system behind our products — navigation and examples from the library’s Storybook stories, API from the component sources.',
+      'React component library based on Emotion and CSS custom properties. Navigation and examples come from the library’s Storybook stories; the API comes from the component sources.',
     links: [
       { label: 'Storybook', href: '/storybook/' },
       { label: 'GitHub', href: 'https://github.com/jfrader/jfrader-ui' },

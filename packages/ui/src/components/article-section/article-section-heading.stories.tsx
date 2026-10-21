@@ -17,6 +17,7 @@ const meta = {
 Choose a heading level that fits the page outline. Supporting content adds no section, navigation or heading semantics of its own. An empty title renders nothing.
 
 ### Links
+
 Tab focuses the title link and Enter follows it. Keep linked titles free of nested links.` } },
 } satisfies Meta<typeof ArticleSection.Heading>;
 export default meta;

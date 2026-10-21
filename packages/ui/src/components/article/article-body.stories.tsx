@@ -35,6 +35,7 @@ const meta = {
 Choose headings to fit the surrounding article outline. A split requires exactly two cells, including memoized cells; they stack in the same reading order on narrow screens.
 
 ### Content
+
 Supply React content, not an HTML string to parse. Links in the body retain native Tab and Enter behavior.` } },
   render: (args) => <Article.Body {...args}>
     <Article.Body.Paragraph variant="drop-cap">The morning edition reached Northline before the first train.</Article.Body.Paragraph>

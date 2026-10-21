@@ -87,9 +87,11 @@ const meta = {
 Give the grid a definite width and height; fitting reserves room for inspected fans. Include empty piles to reserve positions. In free or mixed placement, your application must prevent collisions. Standalone piles fill their host and do not position themselves on a table.
 
 ### Cards
+
 Give every pile and card a name in the page's language and every play a unique identity. Only the newest cards up to the display limit are rendered. Do not send secret face values for hidden cards.
 
 ### Inspection and keyboard
+
 Tab reaches each pile's disclosure button. Enter or Space toggles inspection. Escape requests closure and returns focus after acceptance; a prevented key event cancels dismissal. Only one pile is inspected at a time. Revealed cards stay spread when inspection closes, and closed cards remain available to assistive technology. Reduced motion completes size and focus changes immediately.`,
   } },
 } satisfies Meta<typeof GameCardStack>;

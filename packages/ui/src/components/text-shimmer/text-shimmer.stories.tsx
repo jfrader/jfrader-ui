@@ -24,9 +24,11 @@ const meta = {
       usage: `### Activity and announcements
 Stop activity when work completes. Labels update immediately without width or text transitions. Active text is marked busy unless you override its accessibility state. Put task announcements in a separate live region outside the busy text; shimmer does not announce progress. Use Progress for measurable work.
 ### Motion
+
 Motion stops after 4000ms of running time by default, leaving solid text without marking the task complete. Positive motion budgets cannot exceed 5000ms. A short budget may end mid-sweep. Pausing, leaving the viewport, or hiding the page preserves the remaining budget. Text changes do not restart it; starting activity again does.
 Zero or negative budgets allow continuous motion. Always provide a named pause or stop control for continuous animation to meet WCAG 2.2.2. Reduced motion, forced colors and missing background-clip support leave solid text.
-### Keyboard
+### Keyboard and accessibility
+
 Text has no widget role or keyboard handlers. Tab skips the label and reaches surrounding native controls.`,
       source: {
         code: '<TextShimmer active={busy}>{busy ? "Generating summary" : "Summary ready"}</TextShimmer>',

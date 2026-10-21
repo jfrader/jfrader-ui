@@ -49,15 +49,18 @@ const meta = {
       usage: `### When to use
 Use tabs for related views within the same page. Use links for navigation to another page, or an accordion when readers need to compare several sections at once.
 
-### Content constraints
+### Values and constraints
+
 Start with a matching selection so a panel is visible. Hidden panels stay mounted and preserve their child state. Use manual activation when panel content takes time to load so moving focus does not start each load.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Use Left and Right horizontally, or Up and Down vertically, to move between enabled tabs with wrapping. Horizontal keys reverse in RTL. Home and End reach the ends.
 - Automatic activation selects the focused tab; manual activation waits for Enter or Space.
 - The focused tab is the list's Tab stop even when it is not selected. Press Tab to leave the list for the active panel.
 
 ### Accessibility and layout
+
 Name the tab list and keep a text name for each tab, including icon-only tabs. Translate badge descriptions as well as labels. Reduced transparency and forced colors use an opaque material fallback.
 
 Use line tabs for vertical layouts. Horizontal overflow preserves target sizes. If your app positions a floating list, reserve its height and the device safe-area inset in the content below it.`,

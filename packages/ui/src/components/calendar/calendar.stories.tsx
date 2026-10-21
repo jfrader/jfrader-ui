@@ -27,16 +27,17 @@ const meta: Meta<CalendarProps> = {
 - Changing selection does not control the displayed month for you; keep selection and month navigation in sync when owning both.
 - Set \`selectionRange\`, including \`null\` for no range, to enter range mode. Handle \`onDayActivate\` and update the interval yourself; range activation does not call \`onValueChange\`. \`previewRange\` only decorates dates, without selecting them.
 
-### Keyboard
+### Keyboard and accessibility
+
 - In the grid, press Left or Right to move a day (reversed in RTL), or Up or Down to move a week. Home and End move to the week's edges. Press Enter or Space to select.
 - Press Page Up or Page Down to move a month, or hold Shift to move a year. Moves clamp to \`min\` and \`max\` and to the destination month's last day.
 - If you pass \`tabStopDate\`, you own focus movement: handle \`onFocusedDateChange\`, reveal the destination month, update \`tabStopDate\` and focus the day. The calendar no longer changes the month or DOM focus on keyboard moves.
 
-### Limits
+### Values and constraints
+
 - \`min\` and \`max\` are inclusive. Days outside them cannot be selected, but header buttons stay focusable at the boundary. Supply valid bounds in chronological order.
 - The locale defaults to \`navigator.language\`, and its week start is used when available, otherwise Sunday. Set \`locale\` and \`firstDayOfWeek\` when you need a specific display or week start.
 
-### Accessibility
 - Keep the month header for month-change announcements.`,
   } },
   args: { locale: LOCALE },

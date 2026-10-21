@@ -72,9 +72,11 @@ const meta = {
 Show site-wide news or a deadline above the main content. Keep urgent errors beside the affected task instead. Store persistent dismissal preferences in your application.
 
 ### Rotation
+
 Focus stops rotation until Resume. Hover and a hidden document pause it temporarily. Reduced motion disables autoplay. Do not switch between controlled and uncontrolled state while mounted.
 
-### Accessibility
+### Keyboard and accessibility
+
 Give the announcements region a localized name and choose a focus destination after dismissal. Live announcements are off by default; enabled announcements exclude the countdown timer. Tab visits controls; Enter or Space activates buttons, and Enter activates links. Arrow keys and Escape retain their native behavior.`,
     },
   },

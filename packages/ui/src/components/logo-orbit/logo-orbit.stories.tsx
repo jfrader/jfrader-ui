@@ -83,11 +83,14 @@ const meta = {
       },
       usage: `### Content
 Supply stable ids, names and decorative logo nodes. No logos or remote assets are bundled. Use variant="list" for a static catalog. Filters retain a selected detail even when its logo is excluded. A missing selected id shows no detail.
-### Keyboard
+### Keyboard and accessibility
+
 Tab enters one logo. Arrows move focus without selecting; Home/End jump. Horizontal arrows follow RTL. Enter/Space toggle details. Escape closes details and returns to the selected logo after an accepted request. Details are a named region, not an overlay or focus trap.
 ### Motion
+
 Pause stops the orbit. Hover and focus rest the targets immediately; details, hidden pages and offscreen stages also pause. Reduced motion and speed=0 keep positions static. The semantic list order does not rotate.
 ### Connections
+
 Connection requests must return a real promise. Pending blocks duplicate calls and rejection exposes Retry. Promise completion never marks an item connected: update the supplied item when your application confirms it. Without a connection handler, no connection button appears.`,
     },
   },

@@ -30,7 +30,8 @@ const meta: Meta<TooltipProps> = {
       usage: `### Content
 Keep help short and non-interactive. Use Popover for a link, button or input. Keep the trigger's accessible name about its action; help supplements that name.
 
-### Pointer and keyboard
+### Keyboard and accessibility
+
 Hover opens after a delay; focus opens immediately. Move the pointer onto the help to keep reading. Leaving both the trigger and help closes it after a delay.
 
 Press Escape to close without moving focus. Moving focus away from the trigger also closes it. The help has no tab stop.`,

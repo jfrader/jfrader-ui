@@ -38,7 +38,8 @@ const meta = {
 - Each server render pass emits newly inserted styles as \`<style data-emotion>\` tags. Without the registry, Emotion inserts inline style nodes during SSR that cause hydration mismatches.
 - \`cacheKey\` sets the class name prefix and \`data-emotion\` cache key. It defaults to \`css\`.
 
-### Limits
+### Values and constraints
+
 - The adapter is for the App Router. Apps that do not import \`@jfrader/ui/next\` do not load or need to install Next.js.
 - These examples use the underlying cache. \`EmotionRegistry\` itself requires Next's server renderer.`,
       source: {

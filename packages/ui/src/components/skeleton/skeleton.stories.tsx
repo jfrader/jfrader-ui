@@ -54,7 +54,8 @@ const meta = {
       usage: `### When to use
 Reserve the shape of content whose layout is known while it loads. Match the eventual content to reduce layout shifts. Use a Spinner for an operation without a known content layout.
 
-### Accessibility
+### Keyboard and accessibility
+
 Placeholders are hidden from assistive technology. Announce loading separately and mark the affected region busy. Loading morph content is unmounted, so do not keep unsaved form state inside it. On reload, focus moves to the shell only when a removed control held focus. Reduced motion swaps content immediately.`,
     },
   },

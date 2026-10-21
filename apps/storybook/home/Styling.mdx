@@ -9,9 +9,10 @@ import * as StylingStories from '../showcase/Styling.stories';
 
 ## Compare the overrides
 
-The first button uses `sx` over `css`. The second uses `css` alone. The third keeps its default corners.
+One styled wrapper sets small corners. The first button also receives `sx`, and `sx` wins over the
+wrapper. The second keeps the wrapper's corners. The third keeps the default radius.
 
-<Canvas of={StylingStories.SxOverCss} />
+<Canvas of={StylingStories.SxOverStyled} />
 
 ## Reusable styles
 

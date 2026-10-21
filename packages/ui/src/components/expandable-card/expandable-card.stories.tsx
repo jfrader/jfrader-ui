@@ -72,9 +72,11 @@ const meta = {
 Press Enter or Space on the summary to toggle details. Press Escape to request collapse. Tab and Shift+Tab follow document order.
 
 ### Content
+
 Details remain mounted when collapsed, so form values survive reopening. Keep other controls out of the summary button and place them in the details. Choose a heading level that fits the page hierarchy.
 
 ### State
+
 When you control expansion, accept a request by updating the open state.`,
     },
   },

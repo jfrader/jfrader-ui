@@ -49,8 +49,10 @@ const meta = {
       usage: `### Content
 Wrap text in your heading or paragraph to inherit its typography. Newlines and repeated spaces are preserved. Server output and the first client render contain readable text. After mount, Intl.Segmenter splits words; platforms without Segmenter reveal each line together. Server and browser ICU versions do not need to match.
 ### Motion
+
 The entrance starts after client mount, not on scroll. Delay is capped at 1000ms and total word stagger at the slow motion token. Change text or the React key to replay. Reduced motion shows text immediately; forced colors uses solid text.
-### Keyboard
+### Keyboard and accessibility
+
 Text is not a widget and has no keyboard handlers. Tab skips it; surrounding controls keep their native keys. The complete sentence is exposed once to assistive technology. Avoid long body copy and task-critical notices.`,
       source: {
         code: '<h2><TextReveal text={"Build better\\ninterfaces"} /></h2>',

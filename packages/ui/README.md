@@ -1,24 +1,45 @@
 # @jfrader/ui
 
-React components styled with Emotion and themed through the CSS custom properties from `@jfrader/tokens`.
+React components styled with Emotion and themed through the CSS custom properties from
+`@jfrader/tokens`.
 
-## Start here
+- [Getting started](https://github.com/jfrader/jfrader-ui/blob/master/docs/getting-started.md):
+  installation and complete React / Vite and Next.js examples.
+- [Theming](https://github.com/jfrader/jfrader-ui/blob/master/docs/theming.md): light and dark
+  palettes, brand accents, token overrides.
+- [Styling](https://github.com/jfrader/jfrader-ui/blob/master/docs/styling.md): instances, parts, and
+  reusable wrappers.
+- [Live documentation](https://ui.jfrader.com) and the
+  [Storybook](https://ui.jfrader.com/storybook/).
 
-- [Getting started](https://github.com/jfrader/jfrader-ui/blob/master/docs/consuming-jfrader-ui.md): installation and complete React / Vite and Next.js examples.
-- [Theming](https://github.com/jfrader/jfrader-ui/blob/master/docs/theming.md): light/dark palettes, brand accents and token overrides.
-- [Styling](https://github.com/jfrader/jfrader-ui/blob/master/docs/styling.md): customize instances, public parts and reusable wrappers.
+Requires React 19 and the `@jfrader/tokens/tokens.css` stylesheet. The library is pre-1.0: the public
+API can change between minor versions, and the
+[changelog](https://github.com/jfrader/jfrader-ui/blob/master/CHANGELOG.md) marks every breaking
+change.
 
-Requires React 19 and the `@jfrader/tokens/tokens.css` stylesheet. The same guides appear under **Foundations** in Storybook.
+## Install
 
-## Component subpath examples
+```sh
+pnpm add @jfrader/ui @jfrader/tokens
+```
+
+```tsx
+import { Button, Dialog, ThemeRoot } from '@jfrader/ui';
+```
+
+`react` and `react-dom` (`^19.0.0`) are peer dependencies.
+
+## Common subpaths
+
+Every component also exports from its own subpath, with its prop types. This is the common set; the
+complete inventory is
+[`packages/ui/src/index.ts`](https://github.com/jfrader/jfrader-ui/blob/master/packages/ui/src/index.ts).
 
 | Subpath | Exports |
 | --- | --- |
 | `@jfrader/ui/accordion` | `Accordion` |
 | `@jfrader/ui/alert` | `Alert` |
 | `@jfrader/ui/avatar` | `Avatar` |
-| `@jfrader/ui/person-avatar` | `PersonAvatar` |
-| `@jfrader/ui/person-avatar/appearance` | Pure v3 appearance recipe and palettes |
 | `@jfrader/ui/badge` | `Badge` |
 | `@jfrader/ui/breadcrumbs` | `Breadcrumbs` |
 | `@jfrader/ui/button` | `Button` |
@@ -35,12 +56,10 @@ Requires React 19 and the `@jfrader/tokens/tokens.css` stylesheet. The same guid
 | `@jfrader/ui/editable-details` | `EditableDetails` |
 | `@jfrader/ui/emblem` | `Emblem` |
 | `@jfrader/ui/flex` | `Flex` |
-| `@jfrader/ui/flip-game-card` | `FlipGameCard` |
-| `@jfrader/ui/game-card` | `GameCard` |
-| `@jfrader/ui/game-table` | `GameTable`, viewport layout and seat-order helpers |
 | `@jfrader/ui/kbd` | `Kbd` |
 | `@jfrader/ui/menu` | `Menu` |
 | `@jfrader/ui/pagination` | `Pagination` |
+| `@jfrader/ui/person-avatar` | `PersonAvatar` |
 | `@jfrader/ui/pill` | `Pill` |
 | `@jfrader/ui/popover` | `Popover` |
 | `@jfrader/ui/progress` | `Progress` |
@@ -59,72 +78,22 @@ Requires React 19 and the `@jfrader/tokens/tokens.css` stylesheet. The same guid
 | `@jfrader/ui/toggle-group` | `ToggleGroup` |
 | `@jfrader/ui/tooltip` | `Tooltip` |
 
-Each component subpath also exports its prop types. The package root re-exports general component APIs; game components (`@jfrader/ui/game-table`, `@jfrader/ui/game-card`, …), procedural scene (`@jfrader/ui/scene`), and optional integrations such as `@jfrader/ui/next` and `@jfrader/ui/code-block/shiki` remain separate subpath imports.
-
-## Usage
-
-```tsx
-import { Button, Dialog, ThemeRoot } from '@jfrader/ui';
-```
-
-Or import each component by subpath:
-
-```tsx
-import { Button } from '@jfrader/ui/button';
-import { Dialog } from '@jfrader/ui/dialog';
-import { ThemeRoot } from '@jfrader/ui/theme-root';
-```
-
-`react` and `react-dom` (`^19.0.0`) are peer dependencies.
+Game components (`GameTable`, `GameCard`, `FlipGameCard`, and the rest of the `@jfrader/ui/game-*`
+subpaths), the procedural scene (`@jfrader/ui/scene`), and optional integrations such as `@jfrader/ui/next` and
+`@jfrader/ui/code-block/shiki` are subpath-only imports.
 
 ## Next.js App Router
 
-Use the `EmotionRegistry` adapter from `@jfrader/ui/next`. See the complete [App Router layout](https://github.com/jfrader/jfrader-ui/blob/master/docs/consuming-jfrader-ui.md#nextjs-app-router), including dependencies and Server Component boundaries.
+Use the `EmotionRegistry` adapter from `@jfrader/ui/next`. The
+[App Router layout](https://github.com/jfrader/jfrader-ui/blob/master/docs/getting-started.md#nextjs-app-router)
+covers dependencies and the Server Component boundary.
 
 ## Theming
 
-Set `data-theme` on `<html>` for the page, or use `ThemeRoot` for a subtree. `ThemeProvider` supplies styling callbacks with token references; it does not choose light or dark. See [Theming](https://github.com/jfrader/jfrader-ui/blob/master/docs/theming.md) for complete recipes and portal behavior.
+Set `data-theme` on `<html>` for the page, or use `ThemeRoot` for a subtree. `ThemeProvider` supplies
+styling callbacks with token references; it does not choose light or dark.
 
-## Build
-
-```sh
-pnpm --filter @jfrader/tokens build && pnpm --filter @jfrader/ui build
-```
-
-The build writes ES modules to `dist/` (`dist/index.js` plus one `dist/<name>.js` per component) and declarations to `dist/types/`. It does not bundle `react`, `react-dom` or any package in `dependencies`.
-
-## Publishing
-
-`@jfrader/ui` and `@jfrader/tokens` publish together from `.github/workflows/publish.yml` to npmjs and GitHub Packages.
-
-1. Set the same `version` in `packages/ui/package.json` and `packages/tokens/package.json` and merge to `master`.
-2. Push an annotated tag on that commit: `git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z`.
-3. CI checks the tag against both manifests, runs typecheck, tests and `verify:exports`, builds both packages, switches `exports` to `dist/` and packs each package once with `pnpm pack`. `workspace:*` becomes the published version.
-4. CI verifies or publishes the same tarballs to npmjs, then to GitHub Packages, tokens before UI. A matching artifact already at that version is accepted; a different one fails the release.
-
-To re-run a release without re-tagging:
-
-```sh
-gh workflow run publish.yml --repo jfrader/jfrader-ui --ref v0.1.1
-```
-
-npmjs authenticates through the package's trusted publisher for `jfrader/jfrader-ui` → `.github/workflows/publish.yml`, configured on npmjs after the first version is published by hand. GitHub Packages uses the workflow's `GITHUB_TOKEN`. See the [root README](https://github.com/jfrader/jfrader-ui#publishing) for the full release setup.
-
-In the repo, `exports` point at `src/` so workspace apps use the source. `node scripts/flip-exports.mjs dist` validates and switches both packages to the publish layout. `node scripts/flip-exports.mjs src` switches both back. The UI `prepack` builds UI and switches only its manifest with `--package ui`; `postpack` restores only UI. Each switch validates only the selected package's export targets.
-
-Build tokens before packing UI. UI depends on the published `@jfrader/tokens` package and does not bundle it. The UI hook does not build or validate tokens. Run from the repo root:
-
-```sh
-pnpm --filter @jfrader/tokens build && pnpm --filter @jfrader/ui build
-pnpm --filter @jfrader/ui exec npm pack --dry-run --json
-pnpm --filter @jfrader/ui pack --pack-destination /tmp/opencode
-```
-
-Root `pnpm build` builds Storybook, not the published packages. If packing fails after `prepack`, run `node scripts/flip-exports.mjs src` from the repo root to restore workspace exports.
-
-The tarball must contain only `dist/**`, `package.json`, `README.md` and `LICENSE`.
-
-### Person appearance data
+## Person appearance data
 
 ```ts
 import { resolveAppearanceId, resolvePersonAppearance } from '@jfrader/ui/person-avatar/appearance';
@@ -132,18 +101,18 @@ import { resolveAppearanceId, resolvePersonAppearance } from '@jfrader/ui/person
 const appearance = resolvePersonAppearance(resolveAppearanceId('person-42', 'durable-visual-seed'));
 ```
 
-The pure entry imports no React, Emotion or DOM code. Version 3 preserves the original recipe and
+The pure entry imports no React, Emotion, or DOM code. Version 3 preserves the original recipe and
 palette ordering. A blank override falls back to the untrimmed seed. Signatures are not unique IDs.
 
-<a id="registry-choice--installing"></a>
+## Build and release
 
-### Registry choice
-
-npmjs needs no authentication; GitHub Packages requires authentication even for public packages. To install from GitHub Packages, add this to `.npmrc`:
-
-```ini
-@jfrader:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```sh
+pnpm --filter @jfrader/tokens build && pnpm --filter @jfrader/ui build
 ```
 
-See the [root README's registry section](https://github.com/jfrader/jfrader-ui#registry-choice) for details.
+The build writes ES modules to `dist/` (`dist/index.js` plus one `dist/<name>.js` per component) and
+declarations to `dist/types/`. It bundles neither React nor anything in `dependencies`.
+
+Both published packages release together. See
+[Releasing](https://github.com/jfrader/jfrader-ui/blob/master/docs/releasing.md) for the version
+policy, packing, the publish workflow, and registry authentication.

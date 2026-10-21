@@ -89,10 +89,12 @@ import { GameCard } from '@jfrader/ui/game-card';
       usage: `### When to use
 Share printed suits, ranks and artwork across cards in a game. A deck definition is a visual catalog, not a shuffled pile or a card-count manager; keep dealing and game rules in your application.
 
-### Constraints
+### Values and constraints
+
 Keep artwork in client modules and reference decks by string id in card values. Definitions are not runtime-validated. Register custom decks before rendering their cards; an unknown deck id throws. Missing artwork falls back to a printed face, so provide readable rank and suit labels even for illustrated decks.
 
-### Accessibility
+### Keyboard and accessibility
+
 Name each visible card in the player's language and give hidden cards a neutral back label that does not reveal their value. The provider adds no focus target or keyboard behavior.`,
     },
   },

@@ -149,10 +149,12 @@ const meta = {
       usage: `### Content
 Supply unique item ids and noninteractive content. Do not put links, buttons or focusable descendants in tiles. This is a named group containing a list, not a selectable grid or gallery.
 
-### Keyboard
+### Keyboard and accessibility
+
 Tab reaches the field and then the pause button. Arrow keys move the visual marker by row or column, with Left/Right reversed in RTL. Home and End move to the first and last item. Enter or Space requests one pulse. Moving the marker does not select an item. In controlled use, accept location requests in your application before the marker moves.
 
 ### Motion
+
 Use the pause button to freeze motion. Reduced motion and forced colors show static tiles. More than 60 items render without animated transforms.`,
     },
   },

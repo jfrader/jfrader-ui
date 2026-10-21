@@ -107,11 +107,13 @@ const meta = {
 Use cards when a single choice needs descriptions, icons or supporting details. Use a compact radio group for short labels alone.
 
 ### Content and forms
+
 - Give every group a name and use unique values. Do not put links or buttons inside items.
 - Native radios provide validation and form submission. Reset restores the initial uncontrolled selection without reporting a change.
 - Format numeric metadata with Intl.
 
-### Keyboard
+### Keyboard and accessibility
+
 - Tab enters the checked enabled radio. Without a selection, Tab enters the first enabled radio and Shift+Tab the last.
 - Arrows select in DOM order, wrap and skip disabled options. Horizontal arrows reverse in RTL.
 - Home/End select the first/last option. Enter selects without submitting; Space follows native radio behavior.

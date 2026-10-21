@@ -24,7 +24,8 @@ const meta = {
     usage: `### Sources
 Supply prepared source labels and destinations with stable ids. Empty collections render nothing.
 
-### Accessibility
+### Keyboard and accessibility
+
 Give the source section an accessible name, even when it has no visible title. Choose a title heading level that fits the article outline. Tab moves between links and Enter follows them; plain source labels are not keyboard stops.`,
   } },
 } satisfies Meta<typeof Article.Sources>;

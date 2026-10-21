@@ -83,13 +83,16 @@ export function Reservation({ onConfirm }: Pick<BookingPillProps, 'onConfirm'>) 
 Edits request a whole draft. Changing party size or date clears a time that is no longer available. Next validates the accepted draft; availability changes never silently select a replacement.
 
 ### Confirmation
+
 Connect confirmation to your reservation service. A resolved request shows the submitted snapshot; rejection leaves the review and an alert. The application owns network cancellation, availability, venue timezone and daylight-saving validation. Pending confirmation blocks close, back, reset and duplicate submission.
 
-### Keyboard
+### Keyboard and accessibility
+
 This is an inline group, not a dialog. Tab and Shift+Tab follow document order; Enter and Space activate controls. Escape returns through review, time, date and party, then closes. Prevented events and pending confirmation suppress Escape.
 The calendar uses day/week arrows, Home/End for the week, PageUp/PageDown for the month and Shift for the year. The time picker uses Select keyboard navigation. Accepted navigation moves focus only when it was already inside the journey.
 
 ### Language and motion
+
 Translate complete phrases and format dates, times and guest counts for the reader's locale. Reduced motion skips resizing animation.`,
     },
   },

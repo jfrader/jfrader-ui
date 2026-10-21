@@ -282,7 +282,8 @@ const meta = {
       usage: `### When to use
 Use GameTable to arrange players, played cards, community cards, and game actions around an oval or circular playing surface. For standalone card displays or single hands without a table, use GameHand or GameCardStack directly.
 
-### Constraints
+### Values and constraints
+
 Give the parent container explicit inline and block sizes. GameTable measures its container using container queries and ResizeObserver rather than the browser viewport.
 
 Keep seat and region content in normal document flow so ResizeObserver can measure footprints accurately; absolute elements must reserve their footprint in a parent wrapper. Interactive controls preserve a minimum footprint of 24px on both axes (32px on the primary axis).
@@ -290,6 +291,7 @@ Keep seat and region content in normal document flow so ResizeObserver can measu
 Use at least two places with unique player and slot keys. Team assignments must fit the available places. Keep player chrome concise: it does not reserve layout space. If card and control minimum sizes cannot fit, overflow or collisions may remain; give the parent more space or reduce the composition. Do not scale measured child sizes a second time.
 
 ### Keyboard and accessibility
+
 GameTable provides passive layout and adds no custom roles, landmarks, focus traps, or roving tabindex. Supply accessible names for all seats, cards, and buttons. Interactive controls retain their native semantics and natural Tab order. Floating content stays local to the table; it is not a modal dialog.`,
     },
   },

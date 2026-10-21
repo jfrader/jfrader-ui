@@ -72,13 +72,16 @@ const meta = {
       usage: `### Policy
 Use PasswordField for sign-in and confirmation. Rules must be synchronous and have unique IDs. The level measures the share of rules met, not entropy, dictionary resistance or breach exposure. Enforce the same policy on the server; level 4 is not proof of security.
 
-### Values and forms
+### Values and constraints
+
 Rejecting a controlled edit leaves the displayed score unchanged. Native form reset restores the initial uncontrolled value without callbacks; controlled state remains parent-owned.
 
 ### Keyboard and accessibility
+
 Native editing and submission apply. Tab moves through input and reveal; Enter or Space toggles reveal once. The read-only meter and requirements are not tab stops. Requirements include Met/Not met text; the atomic status never contains the password.
 
 ### Localization
+
 Translate complete phrases and supply the same locale on the server and client. Transitions stop under reduced motion.`,
     },
   },

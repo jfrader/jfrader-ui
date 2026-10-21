@@ -107,7 +107,8 @@ const meta = {
 - Nonzero deltas display an explicit sign and directional arrow. Non-finite or missing numbers render fallback text.
 - Specify an explicit locale to guarantee consistent formatting across server rendering and client hydration.
 
-### Accessibility
+### Keyboard and accessibility
+
 - Cards display read-only values and are skipped during tab navigation; place interactive actions outside.
 - Value updates apply immediately without live region announcements. Wrap in an external live region if updates require screen-reader announcements.
 - Loading states indicate background fetching with \`aria-busy="true"\`.`,

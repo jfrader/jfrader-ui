@@ -248,11 +248,13 @@ const meta = {
 Offer account actions, appearance and presence choices, and sign out from an avatar button. Connect preference changes to your application's services; choosing a theme or status does not update them automatically. Shortcut hints do not register keyboard shortcuts.
 
 ### Presentation and async actions
+
 The adaptive presentation opens beside the avatar on wider screens and as a modal bottom sheet below 640px by default. The sheet contains focus, makes the rest of the page inert, and locks page scrolling.
 
 A sign-out promise keeps the action busy until it settles. Success closes the surface that started it; failure keeps that surface open and announces an alert for retry. A pending action cannot be started again, and settling it does not close a newly reopened surface.
 
 ### Keyboard and accessibility
+
 Give the avatar button an accessible name that identifies the account. The sheet is named by the displayed identity.
 
 Enter, Space, or ArrowDown opens the first enabled command; ArrowUp opens the last. Arrows wrap over commands and radio options, Home/End jump, and typeahead resets after 500ms. Disabled commands stay visible but are skipped. Left/Right moves within a choice group without selecting; Enter/Space selects and keeps it open.

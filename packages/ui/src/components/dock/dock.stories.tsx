@@ -57,12 +57,14 @@ const meta = {
       usage: `### When to use
 Use Dock for persistent or floating toolbars that hold creative canvas tools, drawing modes, and quick actions. Group related sub-tools into trays to keep primary navigation compact.
 
-### Constraints
+### Values and constraints
+
 - Each item and group requires a unique \`id\` across the dock. Nested groups are not supported.
 - Trays support one level of grouping and open above or adjacent to their trigger.
 - Shortcut badges are visual hints and do not register global keyboard shortcuts.
 
 ### Keyboard and accessibility
+
 - Left and Right arrow keys move focus through toolbar items and wrap at ends (direction reverses in RTL); Home and End jump to the first and last item.
 - Enter or Space activates a tool; on a group, it activates the active child and toggles the tray.
 - Arrow Up opens a group tray and focuses the active child item.

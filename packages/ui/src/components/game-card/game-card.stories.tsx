@@ -159,9 +159,11 @@ const meta = {
 Display a single playing card in a board, pile or hand. Use GameHand for selecting and confirming a card, rather than making an image behave like a button.
 
 ### Hidden cards and artwork
+
 Do not send secret card values to a client that should not know them. A face-down card hides its printed data, not information already held by your application. Custom artwork must not reveal a hidden value either.
 
-### Accessibility
+### Keyboard and accessibility
+
 Give every card a localized accessible name. Use a neutral name for a hidden card and mark nested artwork decorative to avoid duplicate announcements. Cards add no keyboard interaction. Dimming is visual, not a disabled state; enforce play restrictions in the surrounding controls.`,
     },
   },

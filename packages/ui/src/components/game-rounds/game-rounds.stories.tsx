@@ -29,7 +29,8 @@ const meta = {
     usage: `### Results
 Keep rounds in play order and give every result a nonempty name in your game's language. Result text accompanies each tone; pending rounds also have a dashed boundary. Your application owns game rules and result transitions.
 
-### Accessibility
+### Keyboard and accessibility
+
 The named group contains an ordered list and preserves input order in RTL. It adds no keyboard commands, animation or live announcements. Announce result changes in your application when needed.`,
     source: { language: 'tsx', code: source },
   } },

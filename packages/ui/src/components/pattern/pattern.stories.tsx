@@ -65,12 +65,14 @@ export function PatternExamples() {
 Give the enclosing surface an explicit size. Nonpositive or nonfinite tile scales fall back to 1. Reserve card ink for card backs.
 
 ### Accessibility and environments
+
 - Patterns are always decorative and not focusable. Give the enclosing card or surface its own name when needed.
 - Inherited direction and a root \`dir\` prop mirror diagonal and chevron patterns in RTL; other variants keep their orientation.
 - Forced colors suppresses the pattern with a transparent fill; the enclosing surface and its border remain visible. Do not use patterns to convey information.
 - Patterns have no motion. IDs come from React \`useId\`; give separate SSR roots distinct \`identifierPrefix\` values and reuse them during hydration.
 
 ### Card artwork
+
 - Give a patterned card back its own accessible name. Never put secret card data in a flipped wrapper, whose two faces stay mounted.`,
     },
   },

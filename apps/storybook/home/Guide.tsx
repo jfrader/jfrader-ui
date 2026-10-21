@@ -6,7 +6,7 @@ import { css } from '../../../packages/ui/src/styling/css';
 import './guide.css';
 
 const guidePaths: Record<string, string> = {
-  './consuming-jfrader-ui.md': 'foundations-getting-started',
+  './getting-started.md': 'foundations-getting-started',
   './theming.md': 'foundations-theming',
   './styling.md': 'foundations-styling',
 };

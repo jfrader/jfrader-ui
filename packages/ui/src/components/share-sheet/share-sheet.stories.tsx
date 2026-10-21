@@ -103,11 +103,13 @@ const meta = {
 Let people copy a link, choose collaborators, and share access from one place. Sharing can stay in the page, open beside its trigger on desktop, or use a modal sheet on a phone.
 
 ### Keyboard and accessibility
+
 Enter or Space opens the overlay and focuses Copy link. The desktop popover is nonmodal; the phone sheet is modal. The access picker uses virtual focus: use any arrow key, Home or End to navigate and Enter or Space to choose. Escape closes the access list before the sharing surface. People buttons announce their pressed state.
 
 Close and Done return focus to the trigger; an outside desktop press does not. A rejected controlled request leaves the current open state, selection, or access unchanged.
 
 ### Sending
+
 Choose at least one person before sending. Confirmation appears only after a successful send and stays until dismissed. A send that finishes after closing and reopening does not replace the new session. Sharing actions are unavailable without an enabled access option; send and channel actions also require application handlers.`,
     },
   },

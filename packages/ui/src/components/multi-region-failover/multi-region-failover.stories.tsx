@@ -238,12 +238,13 @@ const meta = {
 This is an illustration, not live monitoring or a traffic controller. Supply six ordered stages: balanced, degraded, failover, rerouted, recovery and rebalanced. Durations must be positive. Region weights must sum to one, instance counts are integers from zero to six, and checks are nonnegative integers. Invalid data shows the fallback without playback. All six narratives and their region metrics remain visible outside the decorative scene.
 
 ### Playback
+
 Stage selection and pause are independent; initial defaults seed once. Seeking requests pause before a stage. Rejecting a controlled pause blocks the seek; activate again after accepting pause. A rejected autonomous boundary holds without repeating callbacks. Replay preserves pause. Non-loop playback holds the final frame. Hidden or offscreen pages suspend local time and resume without catch-up. Reduced motion disables travel and automatic progression, but manual navigation still works. Metrics change at stage boundaries, not as live telemetry.
 
-### Keyboard
+### Keyboard and accessibility
+
 Tab and Shift+Tab reach the buttons. Enter or Space activates once. Left/Right (RTL-aware) and Home/End move focus between stage buttons without selecting. Automatic playback never moves focus.
 
-### Accessibility
 Translate names, statuses, captions and metric/control labels. Intl formats numbers, percentages and latency units. The scene is hidden from assistive technology; the ordered narrative is its accessible equivalent.`,
     },
   },

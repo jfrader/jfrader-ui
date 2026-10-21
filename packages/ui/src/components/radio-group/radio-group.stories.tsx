@@ -76,9 +76,11 @@ const meta = {
 Use a radio group for one choice from a short, visible list. Use checkboxes when choices are independent.
 
 ### Forms
+
 Give form fields a stable name. Only the selected, enabled radio contributes a value. Put native required validation on the radio inputs; an invalid announcement alone does not enforce a selection.
 
 ### Keyboard and accessibility
+
 Name the group and each option. Tab enters on the checked radio; with no selection, the entry depends on the Tab direction. Arrow keys move focus and selection, wrapping and skipping disabled radios. Space selects the focused option.
 
 Both arrow pairs work in either layout. Selecting the checked radio leaves it selected. Supply either options or compound children, not both.`,

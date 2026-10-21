@@ -47,10 +47,12 @@ const meta = {
       usage: `### When to use
 Use a textarea for messages, notes and other multi-line text. Use TextField for a single line. Use InputGroup.Textarea when text needs an addon inside the frame.
 
-### Limits
+### Values and constraints
+
 Automatic growth depends on browser support for CSS field-sizing. Supporting browsers size to the text and ignore the row count; other browsers keep the row-based height. Keep a usable fallback height and enough space for long content.
 
-### Forms and accessibility
+### Forms
+
 Give the control an accessible name even when its label is hidden. Placeholders are not labels. Validate in your form and provide a specific error message; displaying an error does not validate the text.
 
 Tab and Shift+Tab move between controls; Enter inserts a line break. Disabled textareas are omitted from form data; read-only textareas remain focusable and are submitted.`,

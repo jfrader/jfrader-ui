@@ -107,12 +107,14 @@ const meta: Meta<ComboboxCompoundProps> = {
       usage: `### When to use
 Use a combobox to choose one item from a searchable list. Typed text is a search query, not a committed selection; use a text field when arbitrary text is the answer.
 
-### Constraints
+### Values and constraints
+
 - Editing text keeps the selected value until you clear the input or choose another option.
 - Matching is case-insensitive and uses substrings by default. Application-ranked results need application-owned retrieval, debouncing and stale-response cancellation.
 - Forms submit the selected value, not the query. Native required validation does not validate the selection; check it in your form.
 
 ### Keyboard and accessibility
+
 - Give the field a visible label. Focus stays in the input while the list highlight moves.
 - Up/Down opens the list and moves through enabled matches, wrapping at the ends. Home/End moves to the first/last enabled match while open.
 - Enter selects the highlighted option. Escape closes and restores the selected label. Tab or an outside press closes without selecting.

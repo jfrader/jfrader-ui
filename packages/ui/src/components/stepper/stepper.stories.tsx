@@ -66,13 +66,14 @@ const meta = {
 Show a finite, ordered task such as account setup or checkout. Use a static indicator when readers cannot revisit earlier steps. Interactive progress lets them return to enabled completed steps, not skip ahead.
 
 ### Flow constraints
+
 Render step content, validate it, and handle forward progress in your application. Keep stable, unique step identifiers when the list changes. Errors remain visible even in compact layouts; an error alone does not block returning to a completed step. Horizontal layouts fold to markers and a current-step caption in containers of 30rem or less.
 
-### Keyboard
+### Keyboard and accessibility
+
 - In interactive mode, Tab enters at one step. Use Left and Right horizontally, or Up and Down vertically, to move through the current step and enabled completed steps. Horizontal keys reverse in RTL; movement stops at the ends.
 - Home and End reach the first and last reachable steps. Focus movement does not advance progress; press Enter or Space on a completed step to return to it.
 
-### Accessibility
 Name the flow and translate status text as well as numerals. Change announcements are optional and polite; initial rendering and focus moves are not announced. Errors are descriptions, not interrupting alerts, so announce validation failures in the app when needed.`,
     },
   },

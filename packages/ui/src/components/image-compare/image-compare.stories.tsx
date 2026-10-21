@@ -104,7 +104,8 @@ const meta = {
       usage: `### When to use
 Compare two images that share identical dimensions, framing, and alignment, such as color grading, photo restoration, or visual diffs.
 
-### Behaviour and constraints
+### Values and constraints
+
 The slider value represents the visible percentage of the Before image. Horizontal comparisons reveal from inline-start; vertical comparisons reveal from the top. At 0 only the After image is shown, and at 100 only the Before image is shown.
 
 Both images stay mounted. Give each meaningful, distinct alternative text and keep interactive content out of the images. Captions are decorative and describe the slider.
@@ -112,6 +113,7 @@ Both images stay mounted. Give each meaningful, distinct alternative text and ke
 Tap the frame to jump or drag anywhere on it. Double-clicking the handle or pressing the reset button requests 50%. The slider reports the accepted value. Keyboard, tap and reset changes animate the reveal; dragging follows the pointer. Reduced motion makes changes immediate. Touch dragging starts along the reveal axis, allowing orthogonal scrolling past the component.
 
 ### Keyboard and accessibility
+
 The divider follows the WAI-ARIA slider pattern. Arrows move one step; Shift+Arrow and Page Up/Page Down move a large step. Home jumps to 0% and End to 100%. Left and Right follow physical screen direction in RTL; Up always increases.
 
 Name the slider, not just its wrapper. Localize its name, captions, value text and reset action; percentages use Intl.NumberFormat. Test touch screen-reader operation on a device.`,
