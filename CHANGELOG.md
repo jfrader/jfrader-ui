@@ -4,6 +4,7 @@
 
 ### Fixed
 
+- `GameRounds` contains long result labels and keeps its ribbon markers aligned. `GameScore` wraps long player names and stages. `GravityWell` scrolls fixed columns within narrow panels, keeps keyboard locations visible, and uses system colors in forced colors. GravityWell and Deck examples fit narrow documentation previews.
 - `GameActions` wraps long action labels, `GameResult` contains long result text and actions, and overlapping `GameMarks` stay within their track. Played-pile examples fit narrow screens and use the shared player seats.
 - `ThemeSwitch` gives its clickable appearance icon a 32px target. `ToggleSubscription` wraps long billing labels and badges within each option. `TypewriterTerminal` reveals its transcript when a link receives keyboard focus and wraps long transcript text within the terminal.
 - `BookingPill` keeps its calendar and long venue details within narrow panels. `CardFlights` keeps card corners scaled to the flight frame. `BookingPill` and `ControlCenter` previews fit phone screens, and `CardFlights` previews keep tables, long hands, and measured flight probes within the available width.

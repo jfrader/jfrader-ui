@@ -4,6 +4,7 @@ import { expect, fn, within } from 'storybook/test';
 import { GameRounds, type GameRoundsPartProps } from './index';
 import { styled } from '../../index';
 import { vars } from '@jfrader/tokens/vars';
+import { expectAligned, expectInside } from '../../testing/geometry-assertions';
 
 const RoundDemo = styled.div({ inlineSize: `calc(12 * ${vars.space[12]})`, maxInlineSize: '100%', marginInline: 'auto' });
 const PhoneRoundDemo = styled.div({ inlineSize: `calc(7 * ${vars.space[12]} + ${vars.space[4]})`, maxInlineSize: '100%', marginInline: 'auto' });
@@ -121,11 +122,44 @@ export const CompactStrip: Story = {
       const label = item.querySelector('[data-ui="game-rounds-round-label"]')!;
       const range = canvasElement.ownerDocument.createRange();
       range.selectNodeContents(label);
-      await expect(range.getClientRects()).toHaveLength(1);
+      const rects = Array.from(range.getClientRects());
+      await expect(rects.length).toBeGreaterThan(0);
+      for (const rect of rects) await expect(rect.top).toBe(rects[0]!.top);
     }
     for (const outcome of outcomes) await expect(outcome.getBoundingClientRect().top).toBe(outcomes[0]!.getBoundingClientRect().top);
     const panel = canvas.getByRole('group', { name: 'Rounds' });
     await expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth);
+  },
+};
+export const LongContent: Story = {
+  tags: ['!autodocs'],
+  args: {
+    rounds: rounds.map(round => ({ ...round, label: 'InternationalChampionshipFinalists' })),
+    outcomeLabels: { won: 'ChampionshipVictory', lost: 'ChampionshipDefeat', pending: 'AwaitingChampionshipResult' },
+  },
+  render: (args) => <div style={{ inlineSize: 280, maxInlineSize: '100%' }}><GameRounds {...args} /></div>,
+  play: async ({ canvas }) => {
+    const panel = canvas.getByRole('group', { name: 'Rounds' });
+    await expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth);
+    const items = canvas.getAllByRole('listitem');
+    for (const item of items) {
+      const outcome = item.querySelector<HTMLElement>('[data-ui="game-rounds-outcome"]')!;
+      await expect(item.scrollWidth).toBeLessThanOrEqual(item.clientWidth + 1);
+      await expectInside(outcome, item);
+    }
+    await expectAligned(items.map(item => item.querySelector('[data-ui="game-rounds-outcome"]')!), 'top');
+  },
+};
+
+export const Boxes: Story = {
+  tags: ['!autodocs'],
+  args: { variant: 'boxes' },
+  render: (args) => <div style={{ inlineSize: 280, maxInlineSize: '100%' }}><GameRounds {...args} /></div>,
+  play: async ({ canvas }) => {
+    const panel = canvas.getByRole('group', { name: 'Rounds' });
+    await expect(panel.scrollWidth).toBeLessThanOrEqual(panel.clientWidth);
+    for (const item of canvas.getAllByRole('listitem')) await expectInside(item, panel);
+    await expect(canvas.getByText('Lead').closest('li')).toHaveAttribute('aria-current', 'step');
   },
 };
 export const ReducedMotion: Story = {

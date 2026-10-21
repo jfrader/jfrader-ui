@@ -21,7 +21,8 @@ const Row = styled('div')({
   gap: vars.space[4],
 });
 
-const BoardFrame = styled.div({ inlineSize: `calc(${vars.space[4]} * 75)`, blockSize: `calc(${vars.space[4]} * 50)` });
+const BoardFrame = styled.div({ inlineSize: `min(calc(${vars.space[4]} * 75), calc(100vw - ${vars.space[4]} * 2))`, maxInlineSize: '100%', blockSize: `calc(${vars.space[4]} * 50)` });
+const BoardCards = styled(Row)({ inlineSize: `min(calc(${vars.space[4]} * 30), calc(100cqi - ${vars.space[4]} * 4))`, justifyContent: 'center' });
 
 const ArtLabel = styled.text({ fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold });
 
@@ -67,6 +68,7 @@ const meta = {
   tags: ['autodocs'],
   args: { children: null },
   parameters: {
+    layout: 'padded',
     docs: {
       description: { component: 'Declare card decks with suits, ranks, card art sets and backs.' },
       sections: [
@@ -655,7 +657,8 @@ import { GameHand } from '@jfrader/ui/game-hand';
 import { FlipGameCard } from '@jfrader/ui/flip-game-card';
 
 const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
-const BoardFrame = styled.div({ inlineSize: \`calc(\${vars.space[4]} * 75)\`, blockSize: \`calc(\${vars.space[4]} * 50)\` });
+const BoardFrame = styled.div({ inlineSize: \`min(calc(\${vars.space[4]} * 75), calc(100vw - \${vars.space[4]} * 2))\`, maxInlineSize: '100%', blockSize: \`calc(\${vars.space[4]} * 50)\` });
+const BoardCards = styled(Row)({ inlineSize: \`min(calc(\${vars.space[4]} * 30), calc(100cqi - \${vars.space[4]} * 4))\`, justifyContent: 'center' });
 const ArtLabel = styled.text({ fontSize: vars.textSize.xs, fontWeight: vars.fontWeight.semibold });
 function FaceArt({ text }: { text: string }) {
   return <svg viewBox="0 0 72 106" width="100%" height="100%" aria-hidden="true">
@@ -674,26 +677,26 @@ const deck = defineDeck({ id: 'celestial',
 
 <DeckProvider decks={[deck]} default="celestial" backLabel="Card back">
   <BoardFrame><GameTable places={2} seats={[]} artSet="rare">
-    <GameTable.Center><Row>
+    <GameTable.Center><BoardCards>
       <GameCard label="Inherited board art" value={{ suit: 'stars', rank: 'I' }} />
       <GameCard label="Card override" value={{ suit: 'stars', rank: 'I' }} cardArtSets={{ 'stars-I': 'release-2/spooky' }} />
       <GameCard label="Printed fallback" value={{ suit: 'moons', rank: 'III' }} />
       <GameHand playLabel="Play" cards={[{ id: 'inherited', label: 'Inherited hand art', value: { suit: 'stars', rank: 'I' } }]} />
       <FlipGameCard label="Inherited flip art" value={{ suit: 'stars', rank: 'I' }} />
-    </Row></GameTable.Center>
+    </BoardCards></GameTable.Center>
   </GameTable></BoardFrame>
 </DeckProvider>` } } },
   render: () => (
     <DeckProvider decks={[celestialDeck]} default="celestial" backLabel="Card back">
       <BoardFrame><GameTable places={2} seats={[]} artSet="rare">
         <GameTable.Center>
-          <Row>
+          <BoardCards>
             <GameCard label="Inherited board art" value={{ suit: 'stars', rank: 'I' }} />
             <GameCard label="Card override" value={{ suit: 'stars', rank: 'I' }} cardArtSets={{ 'stars-I': 'release-2/spooky' }} />
             <GameCard label="Printed fallback" value={{ suit: 'moons', rank: 'III' }} />
             <GameHand playLabel="Play" cards={[{ id: 'inherited', label: 'Inherited hand art', value: { suit: 'stars', rank: 'I' } }]} />
             <FlipGameCard label="Inherited flip art" value={{ suit: 'stars', rank: 'I' }} />
-          </Row>
+          </BoardCards>
         </GameTable.Center>
       </GameTable></BoardFrame>
     </DeckProvider>
@@ -701,12 +704,21 @@ const deck = defineDeck({ id: 'celestial',
   play: async ({ canvas, canvasElement }) => {
     const table = canvasElement.querySelector('[data-ui="game-table"]');
     await waitFor(() => expect(table).toHaveAttribute('data-layout-fit', 'fitted'));
+    const frame = table!.parentElement!;
+    await expect(frame.getBoundingClientRect().width).toBeLessThanOrEqual(frame.parentElement!.clientWidth);
+    await expect(canvasElement.ownerDocument.body.scrollWidth).toBeLessThanOrEqual(canvasElement.ownerDocument.documentElement.clientWidth);
     await expect(canvas.getByRole('img', { name: 'Inherited board art' })).toHaveTextContent('RARE I');
     await expect(canvas.getByRole('img', { name: 'Card override' })).toHaveTextContent('SPOOKY I');
     await expect(canvas.getByRole('img', { name: 'Printed fallback' })).toHaveTextContent('III');
     await expect(canvas.getByRole('img', { name: 'Inherited hand art' })).toHaveTextContent('RARE I');
     await expect(canvas.getByRole('img', { name: 'Inherited flip art' })).toHaveTextContent('RARE I');
   },
+};
+
+export const NarrowBoardInheritance: Story = {
+  ...BoardInheritance,
+  tags: ['!autodocs'],
+  decorators: [(Story) => <div style={{ inlineSize: 280, maxInlineSize: '100%' }}><Story /></div>],
 };
 
 /** Spanish and French faces and backs sit on a light surface. */

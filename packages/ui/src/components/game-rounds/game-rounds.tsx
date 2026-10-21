@@ -85,7 +85,7 @@ const roundStyle = css({ position: 'relative', display: 'inline-flex', alignItem
   },
   [FORCED_COLORS]: { backgroundColor: 'Canvas', '[data-variant="strip"] &::before': { backgroundColor: 'CanvasText' } },
 });
-const headStyle = css({ display: 'inline-flex', alignItems: 'baseline', justifyContent: 'center', gap: vars.space[1], maxInlineSize: '100%', paddingBlockEnd: vars.space[1],
+const headStyle = css({ gridRow: 1, gridColumn: 1, display: 'inline-flex', alignItems: 'baseline', justifyContent: 'center', gap: vars.space[1], minInlineSize: 0, maxInlineSize: '100%', paddingBlockEnd: vars.space[1],
   borderBlockEnd: '2px solid transparent', fontSize: vars.textSize.xs,
   '[aria-current="step"] > &': { borderBlockEndColor: vars.color.accent, color: vars.color.accentText },
   [FORCED_COLORS]: { borderBlockEndColor: 'Canvas', '[aria-current="step"] > &': { color: 'CanvasText', borderBlockEndColor: 'Highlight' } },
@@ -97,14 +97,14 @@ const numberStyle = css({ color: vars.color.textSubtle, fontWeight: vars.fontWei
 const roundLabelStyle = css({ fontWeight: vars.fontWeight.semibold, minInlineSize: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   '[data-variant="boxes"] &': { fontSize: vars.textSize.sm },
 });
-const detailStyle = css({ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: vars.space[1],
+const detailStyle = css({ gridRow: 2, gridColumn: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: vars.space[1],
   '&:not(:empty)': { boxSizing: 'border-box', minInlineSize: PICTURE, blockSize: `calc(${PICTURE} * ${CARD_FRAME.ratio})`, paddingInline: '2px',
     borderRadius: `calc(${PICTURE} / ${CARD_FRAME.cornerDivisor})`, backgroundColor: vars.color.cardFace, color: vars.color.cardInk,
     boxShadow: `inset 0 -1px 0 ${vars.color.borderControl}, ${vars.shadow.raised}`, fontSize: vars.textSize.sm, lineHeight: 1 },
   [FORCED_COLORS]: { '&:not(:empty)': { border: '1px solid CanvasText', backgroundColor: 'Canvas', color: 'CanvasText', boxShadow: 'none' } },
 });
-const outcomeStyle = css({ position: 'relative', zIndex: 1, display: 'inline-flex', alignItems: 'center', gap: vars.space[1], fontSize: vars.textSize.xs, color: vars.color.textMuted,
-  '[data-variant="strip"] &': { flexDirection: 'column' },
+const outcomeStyle = css({ position: 'relative', zIndex: 1, display: 'inline-flex', alignItems: 'center', gap: vars.space[1], minInlineSize: 0, maxInlineSize: '100%', overflowWrap: 'anywhere', fontSize: vars.textSize.xs, color: vars.color.textMuted,
+  '[data-variant="strip"] &': { gridRow: 3, gridColumn: 1, alignSelf: 'start', flexDirection: 'column' },
   '&::before': { content: '""', flex: 'none', boxSizing: 'border-box', inlineSize: PIP, blockSize: PIP, borderRadius: '50%',
     border: `1px solid ${vars.color.textSubtle}`, backgroundColor: vars.color.surface },
   '[data-outcome="won"] > &': { color: vars.color.text, '&::before': { borderColor: vars.color.success, backgroundColor: vars.color.success } },
