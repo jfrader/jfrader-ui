@@ -17,7 +17,7 @@ const rootStyle = css({
   display: 'inline-flex',
   alignItems: 'center',
   boxSizing: 'border-box',
-  blockSize: vars.space[5],
+  minBlockSize: vars.space[5],
   paddingInline: vars.space[2],
   borderRadius: vars.radius.full,
   fontSize: vars.textSize.xs,

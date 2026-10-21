@@ -17,6 +17,7 @@ export const proseTypography = css({
   lineHeight: vars.lineHeight.relaxed,
   overflowWrap: 'anywhere',
   minInlineSize: 0,
+  '& :where(img, video, svg)': { maxInlineSize: '100%', blockSize: 'auto' },
   '& :where(h1, h2, h3, h4, h5, h6)': {
     fontWeight: vars.fontWeight.semibold,
     lineHeight: vars.lineHeight.tight,

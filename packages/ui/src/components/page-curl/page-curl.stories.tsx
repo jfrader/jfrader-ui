@@ -5,6 +5,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { PageCurl } from './index';
 import { Button } from '../button';
+import { expectInside } from '../../testing/geometry-assertions';
 
 const Frame = styled.div({
   inlineSize: `min(720px, calc(100vw - ${vars.space[4]} * 2))`,
@@ -116,6 +117,7 @@ const meta = {
   component: PageCurl,
   tags: ['autodocs'],
   args: { pages, label: 'Field notes', locale: 'en-GB', onValueChange: fn() },
+  argTypes: { pages: { control: false } },
   decorators: [
     (Story) => (
       <Frame>
@@ -299,7 +301,9 @@ export const Default: Story = {
   } },
   play: async ({ canvas }) => {
     const cover = canvas.getByRole('group', { name: 'Cover' });
-    await expect(cover.getBoundingClientRect().width).toBeGreaterThan(250);
+    const book = canvas.getByRole('group', { name: 'Field notes' });
+    await expectInside(cover, book);
+    await expect(cover.getBoundingClientRect().width).toBeCloseTo(book.getBoundingClientRect().width / 2, 0);
     await expect(canvas.getByRole('heading', { name: 'Field notes' })).toBeVisible();
     await expect(canvas.getByText('A walking journal from the coast to the river.')).toBeVisible();
   },
@@ -364,6 +368,27 @@ export const OddPages: Story = {
   },
 };
 export const Empty: Story = { args: { pages: [] } };
+
+export const LongLabels: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultValue: 1,
+    labels: { previous: 'Return to the previous journal spread', next: 'Continue to the following journal spread', pageCount: () => 'CurrentSpreadWithAnUnbrokenLocalizedStatusLabel' },
+    hint: 'JournalReferenceWithoutAnyBreakOpportunities'.repeat(3),
+  },
+  render: (args) => <div style={{ inlineSize: 240, maxInlineSize: '100%' }}><PageCurl {...args} /></div>,
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="page-curl"]')!;
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+    const controls = root.querySelector('[data-ui="page-curl-controls"]')!;
+    await expect(getComputedStyle(controls).position).toBe('relative');
+    await expect(getComputedStyle(controls).zIndex).toBe('1');
+    for (const button of root.querySelectorAll('button')) {
+      await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+      await expectInside(button, root);
+    }
+  },
+};
 export const OnePage: Story = {
   name: 'Single-page book',
   args: { pages: pages.slice(0, 1) },

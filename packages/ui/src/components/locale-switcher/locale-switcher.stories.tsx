@@ -3,6 +3,7 @@ import type { Decorator, Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, userEvent, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside } from '../../testing/geometry-assertions';
 import { Popover } from '../popover';
 import { LocaleSwitcher, type LocaleSwitcherLinkProps, type LocaleSwitcherOption, type LocaleSwitcherSlots } from './index';
 
@@ -343,6 +344,39 @@ export const MenuOpen: Story = {
 };
 
 export const MenuLightTheme: Story = { ...MenuOpen, decorators: [withLightTheme] };
+
+export const LongLabels: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultOpen: true,
+    options: [
+      { value: 'en', label: 'English (United Kingdom and Northern Ireland)', lang: 'en-GB', href: '/en' },
+      { value: 'de', label: 'DeutschMitEinerSehrLangenRegionalbezeichnungOhneLeerzeichen', lang: 'de', href: '/de' },
+    ],
+  },
+  render: (args) => (
+    <div style={{ ...stackStyle, inlineSize: 240, maxInlineSize: '100%' }}>
+      {(['menu', 'inline', 'pills', 'swap'] as const).map((variant) => (
+        <LocaleSwitcher {...args} key={variant} variant={variant} label={`${NAV_LABEL} ${variant}`} />
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const root of canvasElement.querySelectorAll<HTMLElement>('[data-ui="locale-switcher"]')) {
+      await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+      for (const option of root.querySelectorAll('[data-ui="locale-switcher-option"], [data-ui="locale-switcher-trigger"]')) {
+        await expectInside(option, root);
+      }
+    }
+    const menu = await bodyOf(canvasElement).findByRole('menu');
+    await expect(menu.scrollWidth).toBeLessThanOrEqual(menu.clientWidth + 1);
+    for (const item of within(menu).getAllByRole('menuitem')) {
+      await expect(item.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    }
+    const pills = canvasElement.querySelector('[data-variant="pills"] ul')!;
+    await expect(parseFloat(getComputedStyle(pills).borderTopLeftRadius)).toBeLessThan(pills.getBoundingClientRect().height / 2);
+  },
+};
 
 const popoverOpenChange = fn<(open: boolean) => void>();
 
