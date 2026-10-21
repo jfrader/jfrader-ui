@@ -39,7 +39,7 @@ for (const entry of readdirSync(published)) {
   if (entry !== 'storybook') rmSync(path.join(published, entry), { recursive: true, force: true });
 }
 // 2. The docs front, based at the root of the domain.
-run('pnpm', ['build'], docsApp, { DOCS_BASE: '/', NODE_OPTIONS: [process.env.NODE_OPTIONS, '--max-old-space-size=1536'].filter(Boolean).join(' ') });
+run('pnpm', ['build'], docsApp, { DOCS_BASE: '/', NODE_OPTIONS: process.env.NODE_OPTIONS ?? '--max-old-space-size=4096' });
 const dist = path.join(docsApp, 'dist');
 if (!existsSync(dist)) {
   console.error('docs: apps/docs/dist is missing; build the docs app first.');
