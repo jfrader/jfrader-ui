@@ -54,10 +54,13 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
+import { getInputReferenceProps } from '../../overlay/input-reference-props';
 import { dateTimeFormatter, defaultLocale } from '../../utils/intl';
+import { CIVIL_DATE_FORMAT_OPTIONS, parseCivilDate, todayCivilDate, dateFromIso } from '../../utils/civil-date';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Calendar, type CalendarWeekday } from '../calendar';
+import { clampDate } from '../calendar/calendar.utils';
 import { TextField, type TextFieldProps } from '../text-field';
 
 const PLACEMENT = 'bottom-start';
@@ -68,10 +71,8 @@ const SPACE = ' ';
 // A Calendar onSelect-style callback is a follow-up alternative to this coupling.
 const TAB_STOP_DAY = '[data-ui="calendar-day"][tabindex="0"]';
 const DAY = '[data-ui="calendar-day"]';
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const CIVIL_DATE_FORMAT_OPTIONS = {
-  calendar: 'gregory',
-  timeZone: 'UTC',
+const DATE_PICKER_FORMAT_OPTIONS = {
+  ...CIVIL_DATE_FORMAT_OPTIONS,
   dateStyle: 'medium',
 } satisfies Intl.DateTimeFormatOptions;
 
@@ -157,7 +158,7 @@ export interface DatePickerInputProps
 /** The popup renders its own calendar. */
 export type DatePickerPopupProps = Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps;
 
-type OverlayFloating = ReturnType<typeof useOverlayFloating>;
+type OverlayFloating = ReturnType<typeof useOverlayFloating<HTMLInputElement>>;
 
 interface InputLabelling {
   labelledBy?: string;
@@ -196,35 +197,6 @@ function useDatePickerContext(part: string): DatePickerContextValue {
   const context = useContext(DatePickerContext);
   if (!context) throw new Error(`DatePicker.${part} must be rendered inside <DatePicker>.`);
   return context;
-}
-
-// ---- Date-only values ('YYYY-MM-DD', read as UTC calendar fields).
-
-const pad = (value: number, length: number) => String(value).padStart(length, '0');
-
-const isoFromParts = (year: number, month: number, day: number) => `${pad(year, 4)}-${pad(month, 2)}-${pad(day, 2)}`;
-
-function civilDate(iso: string | undefined): Date | undefined {
-  if (iso === undefined || !ISO_DATE.test(iso)) return undefined;
-  const [year = Number.NaN, month = Number.NaN, day = Number.NaN] = iso.split('-').map(Number);
-  // setUTCFullYear keeps years 0–99 literal; the round trip rejects overflowing days.
-  const date = new Date(Date.UTC(0, 0, 1));
-  date.setUTCFullYear(year, month - 1, day);
-  return isoFromParts(date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()) === iso ? date : undefined;
-}
-
-const validDate = (iso: string | undefined) => (civilDate(iso) ? iso : undefined);
-
-function clampDate(iso: string, min: string | undefined, max: string | undefined): string {
-  if (min !== undefined && iso < min) return min;
-  if (max !== undefined && iso > max) return max;
-  return iso;
-}
-
-function localToday(): string {
-  // The user's local civil day, as Calendar marks it.
-  const now = new Date();
-  return isoFromParts(now.getFullYear(), now.getMonth() + 1, now.getDate());
 }
 
 /** The date format's fields in the locale's order, e.g. "month day, year". */
@@ -292,15 +264,19 @@ function DatePickerOverlay({
     () => dateTimeFormatter(localeProp ?? defaultLocale()).resolvedOptions().locale,
     [localeProp],
   );
-  const formatter = useMemo(() => dateTimeFormatter(locale, CIVIL_DATE_FORMAT_OPTIONS), [locale]);
+  const formatter = useMemo(() => dateTimeFormatter(locale, DATE_PICKER_FORMAT_OPTIONS), [locale]);
   const defaultPlaceholder = useMemo(() => fieldPlaceholder(formatter, locale), [formatter, locale]);
-  const selectedDate = civilDate(value);
-  const displayValue = selectedDate ? formatter.format(selectedDate) : '';
-  const min = validDate(minProp);
-  const max = validDate(maxProp);
-  const initialMonth = clampDate(validDate(value) ?? localToday(), min, max).slice(0, 7);
+  const selectedDate = parseCivilDate(value);
+  const displayValue = selectedDate ? formatter.format(dateFromIso(selectedDate)) : '';
+  const min = parseCivilDate(minProp) ?? undefined;
+  const max = parseCivilDate(maxProp) ?? undefined;
+  const initialMonth = clampDate(
+    selectedDate ?? todayCivilDate({ timeZone: dateTimeFormatter().resolvedOptions().timeZone }),
+    min,
+    max,
+  ).slice(0, 7);
 
-  const { refs, floatingStyles, context } = useOverlayFloating({
+  const { refs, floatingStyles, context } = useOverlayFloating<HTMLInputElement>({
     nodeId,
     open,
     placement: PLACEMENT,
@@ -430,6 +406,7 @@ DatePickerRoot.displayName = 'DatePicker';
 function DatePickerInput({
   ref,
   label,
+  size,
   id: idProp,
   disabled: disabledProp,
   slotProps,
@@ -451,8 +428,7 @@ function DatePickerInput({
     slots,
   } = useDatePickerContext('Input');
   const Input = slots?.input ?? TextField;
-  // The floating reference is typed for button triggers; any element positions the same.
-  const mergedRef = useMergeRefs([refs.setReference as (node: Element | null) => void, ref]);
+  const mergedRef = useMergeRefs([refs.setReference, ref]);
   const generatedId = useId();
   const id = idProp ?? generatedId;
   const labelId = `${id}-label`;
@@ -510,8 +486,9 @@ function DatePickerInput({
 
   return (
     <Input
-      {...getReferenceProps({ ...rest, onKeyDown: handleKeyDown, onKeyUp: handleKeyUp } as unknown as Parameters<typeof getReferenceProps>[0])}
+      {...getInputReferenceProps(getReferenceProps, { ...rest, onKeyDown: handleKeyDown, onKeyUp: handleKeyUp })}
       ref={mergedRef}
+      size={size}
       id={id}
       label={hasLabel ? <span id={labelId}>{label}</span> : label}
       slotProps={{ ...slotProps, control: { ...slotProps?.control, sx: [inputStyle, slotProps?.control?.sx] } }}
@@ -576,8 +553,8 @@ function DatePickerPopup({ ref, style, className, sx, ...rest }: DatePickerPopup
   const handleGridClick = (event: MouseEvent<HTMLTableElement>) => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>(DAY);
     if (button?.disabled) return;
-    const date = button?.dataset.date;
-    if (date !== undefined) selectDate(date);
+    const date = parseCivilDate(button?.dataset.date);
+    if (date !== null) selectDate(date);
   };
 
   const handleGridPointerDown = (event: PointerEvent<HTMLTableElement>) => {

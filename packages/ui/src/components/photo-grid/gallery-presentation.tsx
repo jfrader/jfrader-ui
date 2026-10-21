@@ -113,8 +113,8 @@ const clearStyle = css({
   '&:focus-visible': focusRingOutset,
 });
 
-interface Props {
-  photos: readonly PhotoGridPhoto[];
+interface Props<P extends PhotoGridPhoto = PhotoGridPhoto> {
+  photos: readonly P[];
   selected: string | null | undefined;
   select: (id: string | null) => void;
   variant: 'product' | 'cover-flow';
@@ -126,7 +126,7 @@ interface Props {
   format: Intl.NumberFormat;
   slots?: PhotoGridSlots;
   slotProps?: PhotoGridSlotProps;
-  colors: readonly PhotoGridColor[];
+  colors: readonly PhotoGridColor<P>[];
   options: readonly PhotoGridOption[];
   color: string | undefined;
   option: string | null | undefined;
@@ -135,10 +135,10 @@ interface Props {
   onOpen: () => void;
   header?: ReactNode;
   footer?: ReactNode;
-  renderCaption?: (photo: PhotoGridPhoto, index: number) => ReactNode;
+  renderCaption?: (photo: P, index: number) => ReactNode;
 }
 
-export function GalleryPresentation({
+export function GalleryPresentation<P extends PhotoGridPhoto = PhotoGridPhoto>({
   photos,
   selected,
   select,
@@ -161,7 +161,7 @@ export function GalleryPresentation({
   header,
   footer,
   renderCaption,
-}: Props) {
+}: Props<P>) {
   const id = useId();
   const reduced = useReducedMotion();
   const swiped = useRef(false);

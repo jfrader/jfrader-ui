@@ -56,10 +56,10 @@ export interface PhotoGridPhoto {
   detail?: ReactNode;
 }
 
-export interface PhotoGridColor {
+export interface PhotoGridColor<P extends PhotoGridPhoto = PhotoGridPhoto> {
   value: string;
   label: string;
-  photos: readonly PhotoGridPhoto[];
+  photos: readonly P[];
   soldOut?: boolean;
 }
 
@@ -192,10 +192,10 @@ export interface PhotoGridLabels {
   photoCount: (count: string, total: number) => string;
 }
 
-export interface PhotoGridProps
+export interface PhotoGridProps<P extends PhotoGridPhoto = PhotoGridPhoto>
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps {
   /** Photo collection; product colors may supply their own collections instead. */
-  photos?: readonly PhotoGridPhoto[];
+  photos?: readonly P[];
   /** Shorthand for slots.root. */
   component?: PhotoGridSlots['root'];
   /** Name the gallery and display its heading. */
@@ -207,7 +207,7 @@ export interface PhotoGridProps
   /** Show reflected images in the cover-flow rail. Defaults to `false`. */
   reflection?: boolean;
   /** Supply product color choices and their photo collections. */
-  colors?: readonly PhotoGridColor[];
+  colors?: readonly PhotoGridColor<P>[];
   /** Supply product options, including availability by color. */
   options?: readonly PhotoGridOption[];
   /** Control the selected product color by its `value`. */
@@ -227,7 +227,7 @@ export interface PhotoGridProps
   /** Content below the product or cover-flow presentation; ignored by `variant="grid"`. */
   footer?: ReactNode;
   /** Render the current product or cover-flow caption; ignored by `variant="grid"`. */
-  renderCaption?: (photo: PhotoGridPhoto, index: number) => ReactNode;
+  renderCaption?: (photo: P, index: number) => ReactNode;
   /** Fine-pointer inspection. The modal zoom controls remain available when false. */
   magnifier?: boolean;
   /** Positive product image ratio; defaults to 4 / 5. */
@@ -277,8 +277,8 @@ declare const process: { env: { NODE_ENV?: string } };
 const DEFAULT_STEPS = [5, 3, 2] as const;
 const DEFAULT_DENSITY = 3;
 const EMPTY_IDS: readonly string[] = [];
-const EMPTY_PHOTOS: readonly PhotoGridPhoto[] = [];
-const EMPTY_COLORS: readonly PhotoGridColor[] = [];
+const EMPTY_PHOTOS: readonly never[] = [];
+const EMPTY_COLORS: readonly never[] = [];
 const EMPTY_OPTIONS: readonly PhotoGridOption[] = [];
 interface PhotoSelection {
   id: string | null;
@@ -1069,7 +1069,7 @@ function PhotoViewer({
   );
 }
 
-export function PhotoGrid({
+export function PhotoGrid<P extends PhotoGridPhoto = PhotoGridPhoto>({
   ref,
   photos: photosProp = EMPTY_PHOTOS,
   title,
@@ -1113,7 +1113,7 @@ export function PhotoGrid({
   sx,
   onKeyDown,
   ...rest
-}: PhotoGridProps) {
+}: PhotoGridProps<P>) {
   const [color, setColor] = useControlledState(
     colorProp,
     defaultSelectedColor ?? colors.find((item) => !item.soldOut)?.value,

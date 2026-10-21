@@ -30,6 +30,37 @@ function MoneyInputSlotTypeChecks() {
   );
 }
 
+type Currency = 'USD' | 'EUR';
+
+/** Compile-time currency checks; never rendered. */
+function MoneyInputCurrencyChecks() {
+  return (
+    <>
+      <MoneyInput<Currency>
+        currencies={['USD', 'EUR']}
+        onCurrencyChange={(currency) => {
+          const narrowed: Currency = currency;
+          void narrowed;
+        }}
+        onValueChange={(amount, details) => {
+          const narrowed: Currency = details.currency;
+          void amount;
+          void narrowed;
+        }}
+      />
+      <MoneyInput
+        currencies={['USD', 'EUR'] as const}
+        onCurrencyChange={(currency) => {
+          const narrowed: 'USD' | 'EUR' = currency;
+          void narrowed;
+        }}
+      />
+      {/* @ts-expect-error currency must be in currencies */}
+      <MoneyInput<Currency> currencies={['USD', 'EUR']} currency="GBP" />
+    </>
+  );
+}
+
 const Lane = styled.div({ inlineSize: '100%', maxInlineSize: '32rem', display: 'grid', gap: vars.space[4] });
 const NarrowLane = styled(Lane)({ maxInlineSize: '16rem' });
 const Form = styled.form({ display: 'grid', gap: vars.space[3] });
@@ -615,7 +646,7 @@ export const ArabicLocale: Story = { args: { currencies: ['EGP'], locale: 'ar-EG
 export const Narrow: Story = {
   render: (args) => (
     <NarrowLane>
-      <MoneyInput {...args} currencies={['USD', 'JPY']} quickAdd={[500, 1000]} />
+      <MoneyInput<string> {...args} currencies={['USD', 'JPY']} quickAdd={[500, 1000]} />
     </NarrowLane>
   ),
 };

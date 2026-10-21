@@ -6,7 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectInside } from '../../testing/geometry-assertions';
-import { PhotoGrid, type PhotoGridPhoto } from './index';
+import { PhotoGrid, type PhotoGridColor, type PhotoGridPhoto, type PhotoGridProps } from './index';
 import { sceneSource } from '../scene';
 import { ChromeAction, type ChromeActionProps } from '../viewer-chrome/viewer-chrome';
 
@@ -119,6 +119,55 @@ const photos: PhotoGridPhoto[] = [
   { id: 'p11', src: sceneSource('cove-swell-11', { variant: 'tide' }), alt: 'Cove Swell', width: 1000, height: 1000, title: 'Cove Swell', detail: 'Square crop, incoming tide' },
   { id: 'p12', src: sceneSource('hills-night-12', { variant: 'dusk' }), alt: 'Night over the Hills', width: 800, height: 1200, title: 'Night over the Hills', detail: 'Portrait: first stars' },
 ];
+interface PhotographerPhoto extends PhotoGridPhoto {
+  photographer: string;
+}
+const photographerPhotos: readonly PhotographerPhoto[] = photos.slice(0, 2).map((photo) => ({
+  ...photo,
+  photographer: 'Alex Morgan',
+}));
+const photographerColors: readonly PhotoGridColor<PhotographerPhoto>[] = [
+  { value: 'original', label: 'Original', photos: photographerPhotos },
+];
+const photographerProductProps: PhotoGridProps<PhotographerPhoto> = {
+  title: 'Photographer credits',
+  variant: 'product',
+  colors: photographerColors,
+  renderCaption: (photo) => photo.photographer,
+};
+
+export const PhotoMetadata: Story = {
+  tags: ['!autodocs'],
+  render: () => (
+    <PhotoGrid
+      title="Photographer credits"
+      variant="cover-flow"
+      photos={photographerPhotos}
+      renderCaption={(photo, index) => {
+        // @ts-expect-error Unknown metadata must not be accepted by the caption renderer.
+        void photo.unknownField;
+        return `${photo.photographer}: ${index + 1}`;
+      }}
+    />
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('Alex Morgan: 1')).toBeVisible();
+  },
+};
+
+export const ColorPhotoMetadata: Story = {
+  tags: ['!autodocs'],
+  render: () => (
+    <PhotoGrid
+      {...photographerProductProps}
+      renderCaption={(photo) => photo.photographer}
+    />
+  ),
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('Alex Morgan')).toBeVisible();
+  },
+};
+
 const Frame = styled.div({
   inlineSize: '48rem',
   maxInlineSize: '100%',

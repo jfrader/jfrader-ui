@@ -1,3 +1,4 @@
+export type { CivilDate, CivilMonth, CivilDateRange } from './utils/civil-date';
 export * from './components/accordion';
 export * from './components/action-button';
 export * from './components/action-morph';

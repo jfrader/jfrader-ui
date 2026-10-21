@@ -31,8 +31,8 @@ import type { FieldParts } from '../field/field-slot';
 import { Select } from '../select';
 import { addMinor, assertDecimals, assertMinor, currencyChoices, moneyFormat, MONEY_LIMIT } from './money-math';
 
-export interface MoneyInputDetails {
-  currency: string;
+export interface MoneyInputDetails<C extends string = string> {
+  currency: C;
   /** Display amount in major units; store the callback's integer minor units instead. */
   major: number | null;
   formatted: string;
@@ -69,7 +69,7 @@ type MoneyInputAnatomy = {
 
 export type MoneyInputSlotProps = FieldParts<MoneyInputAnatomy>;
 
-export interface MoneyInputProps
+export interface MoneyInputProps<C extends string = string>
   extends
     Omit<
       ComponentPropsWithRef<'input'>,
@@ -81,13 +81,13 @@ export interface MoneyInputProps
   /** Sets the initial amount in integer minor units. Defaults to `null` (empty). */
   defaultValue?: number | null;
   /** Receives the amount in integer minor units, or `null`, with currency and display details. */
-  onValueChange?: (value: number | null, details: MoneyInputDetails) => void;
+  onValueChange?: (value: number | null, details: MoneyInputDetails<C>) => void;
   /** Controls the selected currency. Must be included in `currencies`. */
-  currency?: string;
+  currency?: NoInfer<C>;
   /** Sets the initial currency. Defaults to the first entry in `currencies`. */
-  defaultCurrency?: string;
+  defaultCurrency?: NoInfer<C>;
   /** Receives the selected currency code. Changing currency preserves minor units. */
-  onCurrencyChange?: (currency: string) => void;
+  onCurrencyChange?: (currency: C) => void;
   /** Controls whether the currency selector is open. */
   currencyOpen?: boolean;
   /** Opens the uncontrolled currency selector initially. Defaults to `false`. */
@@ -95,7 +95,7 @@ export interface MoneyInputProps
   /** Receives changes to the currency selector's open state. */
   onCurrencyOpenChange?: (open: boolean) => void;
   /** Unique ISO currency codes, or free-form asset codes when `decimals` is set. Changing currency preserves minor units. */
-  currencies: readonly string[];
+  currencies: readonly C[];
   /** Use non-ISO base units with this precision. Must be an integer from 0 to 18. */
   decimals?: number;
   /** Prefix for non-ISO amounts; defaults to the currency code. */
@@ -221,7 +221,7 @@ const chipStyle = css({
 });
 const rangeStyle = css({ fontSize: vars.textSize.sm, color: vars.color.textMuted, overflowWrap: 'anywhere' });
 
-export function MoneyInput({
+export function MoneyInput<C extends string = string>({
   ref,
   value,
   defaultValue = null,
@@ -270,7 +270,7 @@ export function MoneyInput({
   style,
   title,
   ...native
-}: MoneyInputProps) {
+}: MoneyInputProps<C>) {
   assertDecimals(decimals);
   useMemo(() => currencyChoices(currencies, decimals), [currencies, decimals]);
   const [code, requestCurrency, resetCurrency] = useControlledState(
@@ -533,7 +533,8 @@ export function MoneyInput({
             <Select
               value={code}
               onValueChange={(next) => {
-                if (!readOnly && !disabled) requestCurrency(next);
+                // The Select options are exactly `currencies` (C), so an emitted string is a C.
+                if (!readOnly && !disabled) requestCurrency(next as C);
               }}
               open={currencyOpen}
               defaultOpen={defaultCurrencyOpen}

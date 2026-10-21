@@ -30,6 +30,56 @@ const columns: readonly DataColumn<Project>[] = [
 ];
 const getRowId = (row: Project) => row.id;
 const getRowLabel = (row: Project) => row.name;
+function checkConsumerTypes() {
+  type Person = { id: 'alice' | 'bob'; name: string; age: number };
+  const people: readonly Person[] = [{ id: 'alice', name: 'Alice', age: 30 }];
+  const personColumns = [
+    { id: 'name', header: 'Name', accessor: (person: Person) => person.name },
+    { id: 'age', header: 'Age', accessor: (person: Person) => person.age },
+  ] as const satisfies readonly DataColumn<Person, 'name' | 'age'>[];
+  const base = { rows: people, columns: personColumns, getRowId: (person: Person) => person.id, caption: 'People' };
+  const acceptSort = (_sort: SortState<'name' | 'age'> | null) => {};
+  const acceptKeys = (_keys: readonly Person['id'][]) => {};
+
+  <SortableDataTable {...base} defaultValue={{ columnId: 'age', direction: 'asc' }}
+    onValueChange={sort => acceptSort(sort)} onSelectionChange={keys => acceptKeys(keys)} />;
+  <SortableDataTable {...base} columns={[
+    { id: 'name', header: 'Name', accessor: person => person.name },
+    { id: 'age', header: 'Age', accessor: person => person.age },
+  ]} onValueChange={sort => acceptSort(sort)} />;
+  <SortableDataTable<Person, 'name' | 'age', string> {...base} value={{ columnId: 'name', direction: 'asc' }} />;
+  // @ts-expect-error Explicit column ids reject unknown sort columns.
+  <SortableDataTable<Person, 'name' | 'age', string> {...base} value={{ columnId: 'unknown', direction: 'asc' }} />;
+  // @ts-expect-error Controlled values cannot widen ids inferred from columns.
+  <SortableDataTable {...base} value={{ columnId: 'unknown', direction: 'asc' }} />;
+  // @ts-expect-error Default values cannot widen ids inferred from columns.
+  <SortableDataTable {...base} defaultValue={{ columnId: 'unknown', direction: 'asc' }} />;
+  // @ts-expect-error Selected keys must come from the getRowId return type.
+  <SortableDataTable {...base} selectedKeys={['unknown']} />;
+  // @ts-expect-error Initial keys cannot widen the getRowId return type.
+  <SortableDataTable {...base} defaultSelectedKeys={['unknown']} />;
+  // @ts-expect-error Manual sorting still requires a controlled value.
+  <SortableDataTable {...base} sortMode="manual" />;
+  // @ts-expect-error Selection still requires row labels.
+  <SortableDataTable {...base} selectable />;
+  <SortableDataTable {...base} sortMode="manual" value={null} selectable getRowLabel={person => person.name} />;
+
+  const computedColumns = [
+    { id: 'nameLength', header: 'Name length', accessor: (person: Person) => person.name.length },
+    { id: 'adult', header: 'Adult', cell: (person: Person) => String(person.age >= 18),
+      compare: (a: Person, b: Person) => a.age - b.age },
+  ] as const satisfies readonly DataColumn<Person>[];
+  <SortableDataTable {...base} columns={computedColumns} defaultValue={{ columnId: 'nameLength', direction: 'asc' }} />;
+
+  const dynamicId: string = 'remote-column';
+  const dynamicColumns: readonly DataColumn<Person>[] = [{ id: dynamicId, header: 'Remote' }];
+  <SortableDataTable {...base} columns={dynamicColumns} value={{ columnId: dynamicId, direction: 'desc' }}
+    onValueChange={sort => { const broad: SortState | null = sort; void broad; }} />;
+  <SortableDataTable<Person> {...base} value={{ columnId: dynamicId, direction: 'asc' }} selectedKeys={['off-page']} />;
+  const legacyProps: SortableDataTableProps<Person> = { ...base, value: { columnId: dynamicId, direction: 'asc' } };
+  <SortableDataTable {...legacyProps} />;
+}
+void checkConsumerTypes;
 const Table = (props: SortableDataTableProps<Project>) => <SortableDataTable {...props} />;
 Table.displayName = 'SortableDataTable';
 const meta = {

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Changed
+
+- `MoneyInput<C>` infers its currency union from `currencies` for `currency`, `onCurrencyChange` and `details.currency`.
+- `PhotoGrid<P>` keeps custom photo fields through `photos`, color collections and `renderCaption`.
+- `SortableDataTable<T, Id, Key>` types sort column ids and selected row keys, with string defaults for existing callers.
+- `Combobox` and `DatePicker` compose native input props and refs without component-boundary assertions.
+- A shared civil-date validation core now backs Calendar and DatePicker; public date inputs and callbacks remain strings.
+
 ### Fixed
 
 - `GameCard` fits unknown suit names and long rank labels within its printed face. `GameSeat` truncates long hand-count labels within its plaque. Card and hand examples wrap on narrow screens and keep focus rings visible. Fixed-size table examples scroll within their documentation previews.
