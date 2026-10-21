@@ -1,0 +1,1037 @@
+[
+  {
+    "name": "Select",
+    "description": "",
+    "props": [
+      {
+        "name": "children",
+        "type": "ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": ""
+      },
+      {
+        "name": "component",
+        "type": "ComponentType<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>>",
+        "required": false,
+        "defaultValue": null,
+        "description": ""
+      },
+      {
+        "name": "defaultOpen",
+        "type": "boolean",
+        "required": false,
+        "defaultValue": "false",
+        "description": ""
+      },
+      {
+        "name": "defaultValue",
+        "type": "string",
+        "required": false,
+        "defaultValue": null,
+        "description": ""
+      },
+      {
+        "name": "description",
+        "type": "ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": ""
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "required": false,
+        "defaultValue": "false",
+        "description": ""
+      },
+      {
+        "name": "empty",
+        "type": "ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": ""
+      },
+      {
+        "name": "error",
+        "type": "ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": ""
+      },
+      {
+        "name": "initialActiveValue",
+        "type": "string",
+        "required": false,
+        "defaultValue": null,
+        "description": "Highlight this enabled option on opening when no selected option exists. Typeahead takes precedence."
+      },
+      {
+        "name": "label",
+        "type": "ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": ""
+      },
+      {
+        "name": "labelPlacement",
+        "type": "\"above\" | \"hidden\"",
+        "required": false,
+        "defaultValue": "'above'",
+        "description": "Label placement. `hidden` keeps the accessible name without taking layout space."
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "required": false,
+        "defaultValue": null,
+        "description": "Adds a hidden input to submit the value with a native form."
+      },
+      {
+        "name": "onOpenChange",
+        "type": "(open: boolean) => void",
+        "required": false,
+        "defaultValue": null,
+        "description": "",
+        "signatures": [
+          {
+            "type": "(open: boolean) => void",
+            "parameters": [
+              {
+                "name": "open",
+                "type": "boolean",
+                "description": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "onValueChange",
+        "type": "(value: string) => void",
+        "required": false,
+        "defaultValue": null,
+        "description": "Fires once per accepted selection with the option's `value`.",
+        "signatures": [
+          {
+            "type": "(value: string) => void",
+            "parameters": [
+              {
+                "name": "value",
+                "type": "string",
+                "description": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "open",
+        "type": "boolean",
+        "required": false,
+        "defaultValue": null,
+        "description": ""
+      },
+      {
+        "name": "options",
+        "type": "readonly SelectOption[]",
+        "required": false,
+        "defaultValue": null,
+        "description": "",
+        "element": {
+          "type": "SelectOption",
+          "members": [
+            {
+              "name": "value",
+              "type": "string",
+              "required": true,
+              "defaultValue": null,
+              "description": ""
+            },
+            {
+              "name": "label",
+              "type": "ReactNode",
+              "required": true,
+              "defaultValue": null,
+              "description": ""
+            },
+            {
+              "name": "disabled",
+              "type": "boolean",
+              "required": false,
+              "defaultValue": null,
+              "description": ""
+            },
+            {
+              "name": "textValue",
+              "type": "string",
+              "required": false,
+              "defaultValue": null,
+              "description": ""
+            },
+            {
+              "name": "id",
+              "type": "string",
+              "required": false,
+              "defaultValue": null,
+              "description": ""
+            }
+          ]
+        }
+      },
+      {
+        "name": "placeholder",
+        "type": "ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": ""
+      },
+      {
+        "name": "placement",
+        "type": "\"top\" | \"right\" | \"bottom\" | \"left\" | \"top-start\" | \"top-end\" | \"right-start\" | \"right-end\" | \"bottom-start\" | \"bottom-end\" | \"left-start\" | \"left-end\"",
+        "required": false,
+        "defaultValue": "'bottom-start'",
+        "description": ""
+      },
+      {
+        "name": "size",
+        "type": "\"sm\" | \"md\" | \"lg\"",
+        "required": false,
+        "defaultValue": "'md'",
+        "description": ""
+      },
+      {
+        "name": "slotProps",
+        "type": "SelectSlotProps",
+        "required": false,
+        "defaultValue": null,
+        "description": "",
+        "members": [
+          {
+            "name": "root",
+            "type": "ClassAttributes<HTMLDivElement> & HTMLAttributes<HTMLDivElement> & SxProps & { [attribute: `data-${string}`]: unknown; }",
+            "required": false,
+            "defaultValue": null,
+            "description": "Container element wrapping the select field."
+          },
+          {
+            "name": "label",
+            "type": "Partial<SelectLabelProps>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Label element associated with the select. Default: `Select.Label`.",
+            "part": "select-label",
+            "component": {
+              "name": "Select.Label"
+            }
+          },
+          {
+            "name": "description",
+            "type": "Partial<SelectDescriptionProps>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Helper text element displayed below or above the trigger. Default: `Select.Description`.",
+            "part": "select-description",
+            "component": {
+              "name": "Select.Description"
+            }
+          },
+          {
+            "name": "error",
+            "type": "Partial<SelectErrorProps>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Validation error message element displayed when invalid. Default: `Select.Error`.",
+            "part": "select-error",
+            "component": {
+              "name": "Select.Error"
+            }
+          },
+          {
+            "name": "trigger",
+            "type": "Partial<SelectTriggerProps>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Button trigger that opens the select dropdown. Default: `Select.Trigger`.",
+            "part": "select-trigger",
+            "component": {
+              "name": "Select.Trigger"
+            }
+          },
+          {
+            "name": "value",
+            "type": "Partial<SelectValueProps>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Text container displaying the selected option label. Default: `Select.Value`.",
+            "part": "select-value",
+            "component": {
+              "name": "Select.Value"
+            }
+          },
+          {
+            "name": "content",
+            "type": "Partial<SelectContentProps>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Floating popup panel holding the options list. Default: `Select.Content`.",
+            "component": {
+              "name": "Select.Content"
+            }
+          },
+          {
+            "name": "item",
+            "type": "Partial<Omit<SelectItemProps, \"id\" | \"disabled\" | \"value\" | \"textValue\">>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Selectable option item within the list. Default: `Select.Item`.",
+            "part": "select-item",
+            "component": {
+              "name": "Select.Item"
+            }
+          },
+          {
+            "name": "empty",
+            "type": "Partial<SelectEmptyProps>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Message container displayed when no options are available. Default: `Select.Empty`.",
+            "part": "select-empty",
+            "component": {
+              "name": "Select.Empty"
+            }
+          }
+        ]
+      },
+      {
+        "name": "slots",
+        "type": "SelectSlots",
+        "required": false,
+        "defaultValue": null,
+        "description": "",
+        "members": [
+          {
+            "name": "root",
+            "type": "ComponentType<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Container element wrapping the select field."
+          },
+          {
+            "name": "label",
+            "type": "ComponentType<SelectLabelProps>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Label element associated with the select. Default: `Select.Label`.",
+            "part": "select-label",
+            "component": {
+              "name": "Select.Label"
+            }
+          },
+          {
+            "name": "description",
+            "type": "ComponentType<SelectDescriptionProps>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Helper text element displayed below or above the trigger. Default: `Select.Description`.",
+            "part": "select-description",
+            "component": {
+              "name": "Select.Description"
+            }
+          },
+          {
+            "name": "error",
+            "type": "ComponentType<SelectErrorProps>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Validation error message element displayed when invalid. Default: `Select.Error`.",
+            "part": "select-error",
+            "component": {
+              "name": "Select.Error"
+            }
+          },
+          {
+            "name": "trigger",
+            "type": "ComponentType<SelectTriggerProps>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Button trigger that opens the select dropdown. Default: `Select.Trigger`.",
+            "part": "select-trigger",
+            "component": {
+              "name": "Select.Trigger"
+            }
+          },
+          {
+            "name": "value",
+            "type": "ComponentType<SelectValueProps>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Text container displaying the selected option label. Default: `Select.Value`.",
+            "part": "select-value",
+            "component": {
+              "name": "Select.Value"
+            }
+          },
+          {
+            "name": "content",
+            "type": "ComponentType<SelectContentProps>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Floating popup panel holding the options list. Default: `Select.Content`.",
+            "component": {
+              "name": "Select.Content"
+            }
+          },
+          {
+            "name": "item",
+            "type": "ComponentType<SelectItemProps>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Selectable option item within the list. Default: `Select.Item`.",
+            "part": "select-item",
+            "component": {
+              "name": "Select.Item"
+            }
+          },
+          {
+            "name": "empty",
+            "type": "ComponentType<SelectEmptyProps>",
+            "required": false,
+            "defaultValue": null,
+            "description": "Message container displayed when no options are available. Default: `Select.Empty`.",
+            "part": "select-empty",
+            "component": {
+              "name": "Select.Empty"
+            }
+          }
+        ]
+      },
+      {
+        "name": "value",
+        "type": "string",
+        "required": false,
+        "defaultValue": null,
+        "description": ""
+      },
+      {
+        "name": "variant",
+        "type": "\"default\" | \"morph\"",
+        "required": false,
+        "defaultValue": "'default'",
+        "description": "Morph the pill trigger into the floating panel. Default: `default`."
+      }
+    ]
+  },
+  {
+    "name": "Select.Trigger",
+    "description": "",
+    "props": [
+      {
+        "name": "id",
+        "type": "string",
+        "required": false,
+        "defaultValue": null,
+        "description": ""
+      },
+      {
+        "name": "size",
+        "type": "\"sm\" | \"md\" | \"lg\"",
+        "required": false,
+        "defaultValue": "'md'",
+        "description": ""
+      },
+      {
+        "name": "sx",
+        "type": "Interpolation<Theme>",
+        "required": false,
+        "defaultValue": null,
+        "description": "The public style-override prop. Accepts theme-aware style values and applies last.",
+        "inheritedFrom": "SxProps"
+      }
+    ]
+  },
+  {
+    "name": "Select.Value",
+    "description": "",
+    "props": [
+      {
+        "name": "placeholder",
+        "type": "ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": "Shown when no option matches the selected value."
+      },
+      {
+        "name": "sx",
+        "type": "Interpolation<Theme>",
+        "required": false,
+        "defaultValue": null,
+        "description": "The public style-override prop. Accepts theme-aware style values and applies last.",
+        "inheritedFrom": "SxProps"
+      }
+    ]
+  },
+  {
+    "name": "Select.Content",
+    "description": "",
+    "props": [
+      {
+        "name": "sx",
+        "type": "Interpolation<Theme>",
+        "required": false,
+        "defaultValue": null,
+        "description": "The public style-override prop. Accepts theme-aware style values and applies last.",
+        "inheritedFrom": "SxProps"
+      }
+    ]
+  },
+  {
+    "name": "Select.Item",
+    "description": "",
+    "props": [
+      {
+        "name": "value",
+        "type": "string",
+        "required": true,
+        "defaultValue": null,
+        "description": "Unique within the select."
+      },
+      {
+        "name": "disabled",
+        "type": "boolean",
+        "required": false,
+        "defaultValue": "false",
+        "description": ""
+      },
+      {
+        "name": "sx",
+        "type": "Interpolation<Theme>",
+        "required": false,
+        "defaultValue": null,
+        "description": "The public style-override prop. Accepts theme-aware style values and applies last.",
+        "inheritedFrom": "SxProps"
+      },
+      {
+        "name": "textValue",
+        "type": "string",
+        "required": false,
+        "defaultValue": null,
+        "description": ""
+      }
+    ]
+  },
+  {
+    "name": "Select.Label",
+    "description": "",
+    "props": [
+      {
+        "name": "sx",
+        "type": "Interpolation<Theme>",
+        "required": false,
+        "defaultValue": null,
+        "description": "The public style-override prop. Accepts theme-aware style values and applies last.",
+        "inheritedFrom": "SxProps"
+      }
+    ]
+  },
+  {
+    "name": "Select.Description",
+    "description": "",
+    "props": [
+      {
+        "name": "sx",
+        "type": "Interpolation<Theme>",
+        "required": false,
+        "defaultValue": null,
+        "description": "The public style-override prop. Accepts theme-aware style values and applies last.",
+        "inheritedFrom": "SxProps"
+      }
+    ]
+  },
+  {
+    "name": "Select.Error",
+    "description": "",
+    "props": [
+      {
+        "name": "sx",
+        "type": "Interpolation<Theme>",
+        "required": false,
+        "defaultValue": null,
+        "description": "The public style-override prop. Accepts theme-aware style values and applies last.",
+        "inheritedFrom": "SxProps"
+      }
+    ]
+  },
+  {
+    "name": "Select.Empty",
+    "description": "",
+    "props": [
+      {
+        "name": "sx",
+        "type": "Interpolation<Theme>",
+        "required": false,
+        "defaultValue": null,
+        "description": "The public style-override prop. Accepts theme-aware style values and applies last.",
+        "inheritedFrom": "SxProps"
+      }
+    ]
+  },
+  {
+    "name": "MoneyInput",
+    "description": "",
+    "props": [
+      {
+        "name": "currencies",
+        "type": "readonly string[]",
+        "required": true,
+        "defaultValue": null,
+        "description": "Unique ISO currency codes, or free-form asset codes when `decimals` is set. Changing currency preserves minor units."
+      },
+      {
+        "name": "currency",
+        "type": "string",
+        "required": false,
+        "defaultValue": null,
+        "description": "Controls the selected currency. Must be included in `currencies`."
+      },
+      {
+        "name": "currencyDisplay",
+        "type": "\"symbol\" | \"code\" | \"name\" | \"narrowSymbol\"",
+        "required": false,
+        "defaultValue": "'symbol'",
+        "description": "Chooses the ISO currency's display notation. Defaults to `symbol`."
+      },
+      {
+        "name": "currencyOpen",
+        "type": "boolean",
+        "required": false,
+        "defaultValue": null,
+        "description": "Controls whether the currency selector is open."
+      },
+      {
+        "name": "decimals",
+        "type": "number",
+        "required": false,
+        "defaultValue": null,
+        "description": "Use non-ISO base units with this precision. Must be an integer from 0 to 18."
+      },
+      {
+        "name": "defaultCurrency",
+        "type": "string",
+        "required": false,
+        "defaultValue": null,
+        "description": "Sets the initial currency. Defaults to the first entry in `currencies`."
+      },
+      {
+        "name": "defaultCurrencyOpen",
+        "type": "boolean",
+        "required": false,
+        "defaultValue": "false",
+        "description": "Opens the uncontrolled currency selector initially. Defaults to `false`."
+      },
+      {
+        "name": "defaultValue",
+        "type": "number | null",
+        "required": false,
+        "defaultValue": "null",
+        "description": "Sets the initial amount in integer minor units. Defaults to `null` (empty)."
+      },
+      {
+        "name": "description",
+        "type": "ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": "Adds supporting text associated with the amount field."
+      },
+      {
+        "name": "error",
+        "type": "ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": "Displays an error instead of the generated validation message."
+      },
+      {
+        "name": "hideLabel",
+        "type": "boolean",
+        "required": false,
+        "defaultValue": "false",
+        "description": "Visually hides the label while retaining its accessible name. Defaults to `false`."
+      },
+      {
+        "name": "label",
+        "type": "ReactNode",
+        "required": false,
+        "defaultValue": null,
+        "description": "Names the amount field with a linked label."
+      },
+      {
+        "name": "locale",
+        "type": "LocalesArgument",
+        "required": false,
+        "defaultValue": null,
+        "description": "Selects amount formatting, parsing and currency-name locale. Defaults to the runtime locale."
+      },
+      {
+        "name": "max",
+        "type": "number",
+        "required": false,
+        "defaultValue": "MONEY_LIMIT",
+        "description": "Inclusive integer minor-unit upper bound."
+      },
+      {
+        "name": "messages",
+        "type": "Partial<MoneyInputMessages>",
+        "required": false,
+        "defaultValue": null,
+        "description": "Overrides validation, currency and quick-add messages. Defaults to English.",
+        "members": [
+          {
+            "name": "currencyName",
+            "type": "(name: string) => string",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "signatures": [
+              {
+                "type": "(name: string) => string",
+                "parameters": [
+                  {
+                    "name": "name",
+                    "type": "string",
+                    "description": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "empty",
+            "type": "string",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "range",
+            "type": "(min: string, max: string) => string",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "signatures": [
+              {
+                "type": "(min: string, max: string) => string",
+                "parameters": [
+                  {
+                    "name": "min",
+                    "type": "string",
+                    "description": ""
+                  },
+                  {
+                    "name": "max",
+                    "type": "string",
+                    "description": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "min",
+            "type": "(min: string) => string",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "signatures": [
+              {
+                "type": "(min: string) => string",
+                "parameters": [
+                  {
+                    "name": "min",
+                    "type": "string",
+                    "description": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "max",
+            "type": "(max: string) => string",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "signatures": [
+              {
+                "type": "(max: string) => string",
+                "parameters": [
+                  {
+                    "name": "max",
+                    "type": "string",
+                    "description": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "invalid",
+            "type": "string",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "add",
+            "type": "(amount: string) => string",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "signatures": [
+              {
+                "type": "(amount: string) => string",
+                "parameters": [
+                  {
+                    "name": "amount",
+                    "type": "string",
+                    "description": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "quickAdd",
+            "type": "string",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "changed",
+            "type": "(amount: string) => string",
+            "required": false,
+            "defaultValue": null,
+            "description": "",
+            "signatures": [
+              {
+                "type": "(amount: string) => string",
+                "parameters": [
+                  {
+                    "name": "amount",
+                    "type": "string",
+                    "description": ""
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "min",
+        "type": "number",
+        "required": false,
+        "defaultValue": "0",
+        "description": "Inclusive integer minor-unit lower bound."
+      },
+      {
+        "name": "onCurrencyChange",
+        "type": "(currency: string) => void",
+        "required": false,
+        "defaultValue": null,
+        "description": "Receives the selected currency code. Changing currency preserves minor units.",
+        "signatures": [
+          {
+            "type": "(currency: string) => void",
+            "parameters": [
+              {
+                "name": "currency",
+                "type": "string",
+                "description": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "onCurrencyOpenChange",
+        "type": "(open: boolean) => void",
+        "required": false,
+        "defaultValue": null,
+        "description": "Receives changes to the currency selector's open state.",
+        "signatures": [
+          {
+            "type": "(open: boolean) => void",
+            "parameters": [
+              {
+                "name": "open",
+                "type": "boolean",
+                "description": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "onValueChange",
+        "type": "(value: number | null, details: MoneyInputDetails) => void",
+        "required": false,
+        "defaultValue": null,
+        "description": "Receives the amount in integer minor units, or `null`, with currency and display details.",
+        "signatures": [
+          {
+            "type": "(value: number | null, details: MoneyInputDetails) => void",
+            "parameters": [
+              {
+                "name": "value",
+                "type": "number | null",
+                "description": ""
+              },
+              {
+                "name": "details",
+                "type": "MoneyInputDetails",
+                "description": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "quickAdd",
+        "type": "readonly number[]",
+        "required": false,
+        "defaultValue": "[]",
+        "description": "Positive integer minor-unit increments."
+      },
+      {
+        "name": "size",
+        "type": "\"sm\" | \"md\" | \"lg\"",
+        "required": false,
+        "defaultValue": "'md'",
+        "description": "Sets the control height and text size. Defaults to `md`."
+      },
+      {
+        "name": "slotProps",
+        "type": "Partial<Record<\"root\" | \"label\" | \"range\" | \"quickAdd\" | \"shell\" | \"control\" | \"currency\" | \"quickAddButton\" | \"description\" | \"error\" | \"status\", FieldPartProps>>",
+        "required": false,
+        "defaultValue": null,
+        "description": "Passes props and style overrides to named field parts.",
+        "members": [
+          {
+            "name": "root",
+            "type": "FieldPartProps",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "label",
+            "type": "FieldPartProps",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "range",
+            "type": "FieldPartProps",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "quickAdd",
+            "type": "FieldPartProps",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "shell",
+            "type": "FieldPartProps",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "control",
+            "type": "FieldPartProps",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "currency",
+            "type": "FieldPartProps",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "quickAddButton",
+            "type": "FieldPartProps",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "description",
+            "type": "FieldPartProps",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "error",
+            "type": "FieldPartProps",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          },
+          {
+            "name": "status",
+            "type": "FieldPartProps",
+            "required": false,
+            "defaultValue": null,
+            "description": ""
+          }
+        ]
+      },
+      {
+        "name": "step",
+        "type": "number",
+        "required": false,
+        "defaultValue": null,
+        "description": "Positive integer minor-unit increment; defaults to one major unit for ISO currencies, one base unit for non-ISO assets."
+      },
+      {
+        "name": "sx",
+        "type": "Interpolation<Theme>",
+        "required": false,
+        "defaultValue": null,
+        "description": "The public style-override prop. Accepts theme-aware style values and applies last.",
+        "inheritedFrom": "SxProps"
+      },
+      {
+        "name": "symbol",
+        "type": "string",
+        "required": false,
+        "defaultValue": null,
+        "description": "Prefix for non-ISO amounts; defaults to the currency code."
+      },
+      {
+        "name": "value",
+        "type": "number | null",
+        "required": false,
+        "defaultValue": null,
+        "description": "Integer minor units; `null` is controlled empty."
+      },
+      {
+        "name": "variant",
+        "type": "\"standard\" | \"prominent\"",
+        "required": false,
+        "defaultValue": "'standard'",
+        "description": "Chooses the standard or enlarged amount presentation. Defaults to `standard`."
+      }
+    ]
+  }
+]

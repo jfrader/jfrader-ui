@@ -4,6 +4,7 @@ export * from './components/action-morph';
 export * from './components/activity-rings';
 export * from './components/alert';
 export * from './components/announcement-bar';
+export * from './components/api-table';
 export * from './components/article';
 export * from './components/article-list';
 export * from './components/article-section';

@@ -51,6 +51,7 @@
     "./activity-rings": { "types": "./src/components/activity-rings/index.ts", "import": "./src/components/activity-rings/index.ts" },
     "./alert": { "types": "./src/components/alert/index.ts", "import": "./src/components/alert/index.ts" },
     "./announcement-bar": { "types": "./src/components/announcement-bar/index.ts", "import": "./src/components/announcement-bar/index.ts" },
+    "./api-table": { "types": "./src/components/api-table/index.ts", "import": "./src/components/api-table/index.ts" },
     "./attachment-list": { "types": "./src/components/attachment-list/index.ts", "import": "./src/components/attachment-list/index.ts" },
     "./avatar": { "types": "./src/components/avatar/index.ts", "import": "./src/components/avatar/index.ts" },
     "./avatar-group": { "types": "./src/components/avatar-group/index.ts", "import": "./src/components/avatar-group/index.ts" },

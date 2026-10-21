@@ -1,0 +1,15 @@
+export {
+  ApiTable,
+  type ApiComponentDoc,
+  type ApiElementDoc,
+  type ApiParameterDoc,
+  type ApiPropDoc,
+  type ApiSignatureDoc,
+  type ApiSlotDoc,
+  type ApiTagDoc,
+  type ApiTableDensity,
+  type ApiTableProps,
+  type ApiTableSlotProps,
+  type ApiTableSlots,
+  type ApiTypeRef,
+} from './api-table';
