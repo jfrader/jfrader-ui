@@ -7,6 +7,7 @@ import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectContrastSurface, expectThemedSurface } from '../../testing/theme-assertions';
+import { Button as FixtureButton } from '../button';
 import { Checkbox } from '../checkbox';
 import { Dialog } from '../dialog';
 import { Popover } from '../popover';
@@ -94,14 +95,10 @@ const FieldStack = styled.div({
   gap: vars.space[4],
 });
 
-const FixtureButton = styled.button({ minHeight: vars.space[6], minWidth: vars.space[6], padding: `${vars.space[1]} calc(${vars.space[2]} + ${vars.space[1]} / 2)`, boxSizing: 'border-box' });
-
 const FieldLabel = styled.p({
   margin: 0,
   fontSize: vars.textSize.sm,
 });
-
-const FixtureSelectTrigger = styled(Select.Trigger)({ minHeight: vars.space[6], minWidth: vars.space[6], padding: `${vars.space[1]} calc(${vars.space[2]} + ${vars.space[1]} / 2)`, boxSizing: 'border-box' });
 
 const meta = {
   title: 'Surfaces/Drawer',
@@ -1840,8 +1837,11 @@ export const NativeFormClose: Story = {
     const { documentElement } = canvasElement.ownerDocument;
     const { dialog } = parts(canvasElement);
     await waitFor(() => expect(documentElement.style.overflow).toBe('hidden'));
+    await settle(dialog);
+    const apply = canvas.getByRole('button', { name: 'Apply' });
+    await expect(rect(apply).height).toBeGreaterThanOrEqual(32);
     // A native form close cannot be vetoed: the rejected request still releases the scroll lock.
-    await userEvent.click(canvas.getByRole('button', { name: 'Apply' }));
+    await userEvent.click(apply);
     await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
     await waitFor(() => expect(args.onOpenChange).toHaveBeenCalledTimes(1));
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
@@ -2401,9 +2401,9 @@ function NestedSelectBody() {
           Status
         </FieldLabel>
         <Select>
-          <FixtureSelectTrigger aria-labelledby={labelId} >
+          <Select.Trigger aria-labelledby={labelId}>
             <Select.Value placeholder="Choose a status" />
-          </FixtureSelectTrigger>
+          </Select.Trigger>
           <Select.Content>
             {STATUSES.map((status) => (
               <Select.Item key={status} value={status}>
@@ -2527,6 +2527,7 @@ function StatusFilters() {
   render: (args) => <DrawerExample {...args} body={<NestedSelectBody />} />,
   play: async ({ canvasElement, userEvent }) => {
     const { dialog, canvas, trigger } = await openDrawer({ canvasElement, userEvent });
+    await expect(rect(canvas.getByRole('combobox', { name: 'Status' })).height).toBeGreaterThanOrEqual(32);
 
     // With the select closed, Escape is the drawer's: its mounted-but-hidden popup is not a layer.
     await userEvent.keyboard('{Escape>}');

@@ -36,8 +36,8 @@ function ClosingParentFixture() {
     exit: () => new Promise(() => {}),
   });
   return <dialog {...shell} aria-label="Closing parent">
-    <button onClick={() => setOpen(false)}>Close parent</button>
-    <dialog aria-label="Nested native dialog"><button>Nested action</button></dialog>
+    <Button onClick={() => setOpen(false)}>Close parent</Button>
+    <dialog aria-label="Nested native dialog"><Button>Nested action</Button></dialog>
   </dialog>;
 }
 
@@ -324,7 +324,7 @@ import { vars } from '@jfrader/tokens/vars';
 export const EasyModeNativeForm: EasyStory = {
   ...Default,
   name: 'Easy mode native form',
-  args: { ...Default.args, content: <form method="dialog"><button type="submit">Save profile</button></form> },
+  args: { ...Default.args, content: <form method="dialog"><Button type="submit">Save profile</Button></form> },
   play: async ({ canvasElement, canvas, args, userEvent }) => {
     const { trigger } = await openDialog(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: 'Save profile' }));
@@ -400,7 +400,7 @@ function rootAdapterStory(component: DialogPanelProps['component']): Story {
           ref: (node) => { if (node) node.dataset.rootRef = node.tagName; },
         } }}>
           <Dialog.Title>Adapter export</Dialog.Title>
-          <input aria-label="Export draft" defaultValue="Keep me" />
+          <TextField label="Export draft" defaultValue="Keep me" />
           <Dialog.Close>Close adapter</Dialog.Close>
         </Dialog.Panel>
       </Dialog.Content>
@@ -519,7 +519,7 @@ function FormDialog(props: DialogCompoundProps) {
       <Dialog.Content>
         <Dialog.Title>Sign out</Dialog.Title>
         <form method="dialog">
-          <button type="submit">Confirm</button>
+          <Button type="submit">Confirm</Button>
         </form>
       </Dialog.Content>
     </Dialog>
@@ -888,14 +888,14 @@ export const NativeClose: Story = {
   name: 'Native form submission',
   parameters: { docs: {
     description: { story: 'Submit a method="dialog" form to close the native dialog.' },
-    source: { language: 'tsx', code: `import { Dialog } from '@jfrader/ui';
+    source: { language: 'tsx', code: `import { Button, Dialog } from '@jfrader/ui';
 
 <Dialog>
   <Dialog.Trigger>Open form</Dialog.Trigger>
   <Dialog.Content>
     <Dialog.Title>Sign out</Dialog.Title>
     <form method="dialog">
-      <button type="submit">Confirm</button>
+      <Button type="submit">Confirm</Button>
     </form>
   </Dialog.Content>
 </Dialog>` },
@@ -907,8 +907,11 @@ export const NativeClose: Story = {
     // A <form method="dialog"> closes the native dialog without our click paths; the
     // close event must reconcile into a state request, not leave stale open state.
     await userEvent.click(canvas.getByRole('button', { name: 'Open form' }));
-    await canvas.findByRole('dialog');
-    await userEvent.click(canvas.getByRole('button', { name: 'Confirm' }));
+    const dialog = await canvas.findByRole('dialog');
+    await settleMotion(dialog);
+    const confirm = canvas.getByRole('button', { name: 'Confirm' });
+    await expect(confirm.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+    await userEvent.click(confirm);
     await waitFor(() => expect(canvas.queryByRole('dialog')).toBeNull());
     // Two legitimate requests: open(true) from the trigger, then false from the form close.
     // The close-event reconciliation is a React state update — wait for it, not just the DOM.
@@ -945,14 +948,14 @@ export const CancelVeto: Story = {
   name: 'Veto close requests',
   parameters: { docs: {
     description: { story: 'Veto Escape, backdrop, and close-button requests; submit Done to close.' },
-    source: { language: 'tsx', code: `import { Dialog } from '@jfrader/ui';
+    source: { language: 'tsx', code: `import { Button, Dialog } from '@jfrader/ui';
 
 <Dialog>
   <Dialog.Trigger>Open profile</Dialog.Trigger>
   <Dialog.Content onCancel={(event) => event.preventDefault()}>
     <Dialog.Title>Edit profile</Dialog.Title>
     <Dialog.Close>Close</Dialog.Close>
-    <form method="dialog"><button type="submit">Done</button></form>
+    <form method="dialog"><Button type="submit">Done</Button></form>
   </Dialog.Content>
 </Dialog>` },
   } },
@@ -962,7 +965,7 @@ export const CancelVeto: Story = {
       <Dialog.Content onCancel={(event) => event.preventDefault()}>
         <Dialog.Title>{TITLE}</Dialog.Title>
         <Dialog.Close>Close</Dialog.Close>
-        <form method="dialog"><button type="submit">Done</button></form>
+        <form method="dialog"><Button type="submit">Done</Button></form>
       </Dialog.Content>
     </Dialog>
   ),
@@ -1095,7 +1098,7 @@ export const NestedDialog: Story = {
   name: 'Nested dialogs',
   parameters: { docs: {
     description: { story: 'Open a second dialog and return focus to its trigger when it closes.' },
-    source: { language: 'tsx', code: `import { Dialog } from '@jfrader/ui';
+    source: { language: 'tsx', code: `import { Button, Dialog } from '@jfrader/ui';
 
 <Dialog>
   <Dialog.Trigger>Open profile</Dialog.Trigger>
@@ -1106,7 +1109,7 @@ export const NestedDialog: Story = {
       <Dialog.Content>
         <Dialog.Title>Discard changes?</Dialog.Title>
         <form method="dialog">
-          <button type="submit">Keep editing</button>
+          <Button type="submit">Keep editing</Button>
         </form>
       </Dialog.Content>
     </Dialog>
@@ -1124,7 +1127,7 @@ export const NestedDialog: Story = {
           <Dialog.Content>
             <Dialog.Title>Discard changes?</Dialog.Title>
             <form method="dialog">
-              <button type="submit">Keep editing</button>
+              <Button type="submit">Keep editing</Button>
             </form>
           </Dialog.Content>
         </Dialog>
