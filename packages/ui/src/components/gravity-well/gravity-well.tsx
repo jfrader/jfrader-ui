@@ -140,12 +140,17 @@ const rootStyle = css({
   fontSize: vars.textSize.sm,
   lineHeight: vars.lineHeight.base,
   boxSizing: 'border-box',
+  minInlineSize: 0,
+  maxInlineSize: '100%',
+  [FORCED_COLORS]: { color: 'CanvasText' },
 });
 
 const fieldStyle = css({
   position: 'relative',
   boxSizing: 'border-box',
-  overflow: 'hidden',
+  minInlineSize: 0,
+  overflowX: 'auto',
+  overflowY: 'hidden',
   borderRadius: vars.radius.lg,
   border: `1px solid ${vars.color.border}`,
   backgroundColor: vars.color.surface,
@@ -155,6 +160,8 @@ const fieldStyle = css({
   '&:focus-visible': focusRingOutset,
   [FORCED_COLORS]: {
     borderColor: 'CanvasText',
+    backgroundColor: 'Canvas',
+    color: 'CanvasText',
   },
 });
 
@@ -211,7 +218,9 @@ const tileStyle = css({
     transform: 'none !important',
   },
   [FORCED_COLORS]: {
-    forcedColorAdjust: 'none',
+    backgroundColor: 'Canvas',
+    color: 'CanvasText',
+    borderColor: 'CanvasText',
     transform: 'none !important',
     '&[data-active="true"]': {
       outline: '2px solid Highlight',
@@ -241,7 +250,7 @@ const buttonStyle = css({
   '&:hover': {
     backgroundColor: vars.color.surfaceHover,
   },
-  [FORCED_COLORS]: { borderColor: 'ButtonText' },
+  [FORCED_COLORS]: { borderColor: 'ButtonText', color: 'ButtonText', backgroundColor: 'ButtonFace' },
   [REDUCED_MOTION]: { transition: 'none' },
 });
 
@@ -834,7 +843,21 @@ export function GravityWell<T extends GravityWellItem = GravityWellItem>({
 
   const gridTemplateColumns = hasFixedColumns
     ? `repeat(${fixedColCount}, minmax(${minTileSizePx}px, 1fr))`
-    : `repeat(auto-fill, minmax(${minTileSizePx}px, 1fr))`;
+    : `repeat(auto-fill, minmax(min(100%, ${minTileSizePx}px), 1fr))`;
+
+  useLayoutEffect(() => {
+    const field = fieldRef.current;
+    const item = activeItemId ? itemElementsRef.current.get(activeItemId) : undefined;
+    if (!field || !item || field.ownerDocument.activeElement !== field) return;
+    const fieldBox = field.getBoundingClientRect();
+    const itemBox = item.getBoundingClientRect();
+    const padding = getComputedStyle(field);
+    const left = fieldBox.left + parseFloat(padding.paddingLeft);
+    const right = fieldBox.right - parseFloat(padding.paddingRight);
+    if (itemBox.left < left) field.scrollLeft += itemBox.left - left;
+    else if (itemBox.right > right) field.scrollLeft += itemBox.right - right;
+    updateGeometry();
+  }, [activeItemId]);
 
   const showControls = Boolean(interactive && items.length > 0 && controlLabels);
 
@@ -878,6 +901,7 @@ export function GravityWell<T extends GravityWellItem = GravityWellItem>({
           onClick: isFocusable ? handleFieldClick : undefined,
           onFocus: isFocusable ? startAnimationIfNeeded : undefined,
           onBlur: isFocusable ? startAnimationIfNeeded : undefined,
+          onScroll: updateGeometry,
         }}
       >
         <FieldSlot
@@ -889,6 +913,9 @@ export function GravityWell<T extends GravityWellItem = GravityWellItem>({
           styles={listStyle}
           style={{
             gridTemplateColumns,
+            minInlineSize: hasFixedColumns
+              ? `calc(${fixedColCount} * ${minTileSizePx}px + ${fixedColCount! - 1} * ${gapPx === undefined ? vars.space[2] : `${gapPx}px`})`
+              : undefined,
             gap: gapPx === undefined ? undefined : `${gapPx}px`,
           }}
         >

@@ -79,6 +79,8 @@ const storyMediaPreferences: Readonly<Record<string, string | undefined>> = {
   'Game Rounds Forced Colors': 'forced-colors',
   'Game Marks Forced Colors': 'forced-colors',
   'Game Seat Forced Colors': 'forced-colors',
+  'Gravity Well Forced Colors': 'forced-colors',
+  'Gravity Well Reduced Motion': 'prefers-reduced-motion',
 };
 
 beforeEach(async ({ task }) => {

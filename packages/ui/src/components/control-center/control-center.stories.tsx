@@ -10,6 +10,7 @@ const SettingsPanel = styled(Surface)({
   inlineSize: `calc(${vars.space[8]} * 18)`,
   maxInlineSize: '100%',
   padding: vars.space[6],
+  marginInline: 'auto',
   display: 'grid',
   gap: vars.space[5],
 });
@@ -23,7 +24,7 @@ const PanelLabel = styled.p({
 const SettingsRows = styled.div({
   '&&': {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
     gap: vars.space[3],
   },
   '& > :last-child': { gridColumn: '1 / -1' },
@@ -85,6 +86,7 @@ const meta = {
     onOpenChange: fn(),
   },
   parameters: {
+    layout: 'padded',
     docs: {
       description: {
         component:
@@ -132,7 +134,7 @@ const PanelLabel = styled.p({
 const SettingsRows = styled.div({
   '&&': {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
     gap: vars.space[3],
   },
   '& > :last-child': { gridColumn: '1 / -1' },
@@ -225,7 +227,7 @@ const PanelLabel = styled.p({
 const SettingsRows = styled.div({
   '&&': {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
     gap: vars.space[3],
   },
   '& > :last-child': { gridColumn: '1 / -1' },
@@ -318,7 +320,7 @@ const PanelLabel = styled.p({
 const SettingsRows = styled.div({
   '&&': {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
     gap: vars.space[3],
   },
   '& > :last-child': { gridColumn: '1 / -1' },
@@ -457,7 +459,7 @@ const PanelLabel = styled.p({
 const SettingsRows = styled.div({
   '&&': {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
     gap: vars.space[3],
   },
   '& > :last-child': { gridColumn: '1 / -1' },
@@ -542,7 +544,7 @@ const PanelLabel = styled.p({
 const SettingsRows = styled.div({
   '&&': {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
     gap: vars.space[3],
   },
   '& > :last-child': { gridColumn: '1 / -1' },
@@ -656,7 +658,7 @@ const PanelLabel = styled.p({
 const SettingsRows = styled.div({
   '&&': {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) auto',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
     gap: vars.space[3],
   },
   '& > :last-child': { gridColumn: '1 / -1' },
