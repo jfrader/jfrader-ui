@@ -9,6 +9,7 @@ import {
   useFloatingTree,
   type OpenChangeReason,
   type Placement,
+  type ReferenceType,
   type Strategy,
   type UseFloatingReturn,
 } from '@floating-ui/react';
@@ -50,7 +51,11 @@ export interface OverlayAvailableSize {
  * Shared positioning for Popover, Tooltip and Menu. `autoUpdate` only runs while both
  * elements are mounted, so a closed (unmounted) surface does no positioning work.
  */
-export function useOverlayFloating({
+export function useOverlayFloating<Reference extends ReferenceType = HTMLButtonElement>(
+  options: OverlayFloatingOptions,
+): UseFloatingReturn<Reference>;
+export function useOverlayFloating(options: OverlayFloatingOptions): UseFloatingReturn<HTMLButtonElement>;
+export function useOverlayFloating<Reference extends ReferenceType = HTMLButtonElement>({
   open,
   onOpenChange,
   placement,
@@ -62,11 +67,11 @@ export function useOverlayFloating({
   transform,
   collision = 'shift',
   shiftCrossAxis = true,
-}: OverlayFloatingOptions): UseFloatingReturn<HTMLButtonElement> {
+}: OverlayFloatingOptions): UseFloatingReturn<Reference> {
   const tree = useFloatingTree();
   const childOwnsPointerRef = useRef(false);
   const detectOverflow = { padding: VIEWPORT_PADDING, ...(boundary ? { boundary } : {}) };
-  const floating = useFloating<HTMLButtonElement>({
+  const floating = useFloating<Reference>({
     open,
     onOpenChange: (next, event, reason) => {
       if (!next && reason === 'focus-out' && childOwnsPointerRef.current) return;

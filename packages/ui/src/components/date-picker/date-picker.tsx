@@ -54,6 +54,7 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
+import { getInputReferenceProps } from '../../overlay/input-reference-props';
 import { dateTimeFormatter, defaultLocale } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -157,7 +158,7 @@ export interface DatePickerInputProps
 /** The popup renders its own calendar. */
 export type DatePickerPopupProps = Omit<ComponentPropsWithRef<'div'>, 'children'> & SxProps;
 
-type OverlayFloating = ReturnType<typeof useOverlayFloating>;
+type OverlayFloating = ReturnType<typeof useOverlayFloating<HTMLInputElement>>;
 
 interface InputLabelling {
   labelledBy?: string;
@@ -300,7 +301,7 @@ function DatePickerOverlay({
   const max = validDate(maxProp);
   const initialMonth = clampDate(validDate(value) ?? localToday(), min, max).slice(0, 7);
 
-  const { refs, floatingStyles, context } = useOverlayFloating({
+  const { refs, floatingStyles, context } = useOverlayFloating<HTMLInputElement>({
     nodeId,
     open,
     placement: PLACEMENT,
@@ -430,6 +431,7 @@ DatePickerRoot.displayName = 'DatePicker';
 function DatePickerInput({
   ref,
   label,
+  size,
   id: idProp,
   disabled: disabledProp,
   slotProps,
@@ -451,8 +453,7 @@ function DatePickerInput({
     slots,
   } = useDatePickerContext('Input');
   const Input = slots?.input ?? TextField;
-  // The floating reference is typed for button triggers; any element positions the same.
-  const mergedRef = useMergeRefs([refs.setReference as (node: Element | null) => void, ref]);
+  const mergedRef = useMergeRefs([refs.setReference, ref]);
   const generatedId = useId();
   const id = idProp ?? generatedId;
   const labelId = `${id}-label`;
@@ -510,8 +511,9 @@ function DatePickerInput({
 
   return (
     <Input
-      {...getReferenceProps({ ...rest, onKeyDown: handleKeyDown, onKeyUp: handleKeyUp } as unknown as Parameters<typeof getReferenceProps>[0])}
+      {...getInputReferenceProps(getReferenceProps, { ...rest, onKeyDown: handleKeyDown, onKeyUp: handleKeyUp })}
       ref={mergedRef}
+      size={size}
       id={id}
       label={hasLabel ? <span id={labelId}>{label}</span> : label}
       slotProps={{ ...slotProps, control: { ...slotProps?.control, sx: [inputStyle, slotProps?.control?.sx] } }}

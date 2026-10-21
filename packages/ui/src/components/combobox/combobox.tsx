@@ -69,6 +69,7 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
+import { getInputReferenceProps } from '../../overlay/input-reference-props';
 import {
   collectionItemId,
   useCollectionItem,
@@ -244,7 +245,7 @@ export interface ComboboxItemProps extends ComponentPropsWithRef<'div'>, SxProps
 }
 export interface ComboboxEmptyProps extends ComponentPropsWithRef<'div'>, SxProps {}
 
-type OverlayFloating = ReturnType<typeof useOverlayFloating>;
+type OverlayFloating = ReturnType<typeof useOverlayFloating<HTMLInputElement>>;
 
 interface OptionRecord {
   index: number;
@@ -399,7 +400,7 @@ function ComboboxOverlay<V extends string = string>({ nodeId, ...props }: Combob
     return { valuesByIndex: values, skippedIndices: skipped, matchCount: count };
   }, [options, query, matchesQuery]);
 
-  const { refs, floatingStyles, context } = useOverlayFloating({
+  const { refs, floatingStyles, context } = useOverlayFloating<HTMLInputElement>({
     nodeId,
     open,
     placement: PLACEMENT,
@@ -661,9 +662,8 @@ function ComboboxInput({
     setInputReadOnly,
     setInputForm,
   } = useComboboxContext('Input');
-  // The floating reference is typed for button triggers; any element positions the same.
   const inputRef = useRef<HTMLInputElement>(null);
-  const mergedRef = useMergeRefs([inputRef, refs.setReference as (node: Element | null) => void, ref]);
+  const mergedRef = useMergeRefs([inputRef, refs.setReference, ref]);
   const generatedId = useId();
   const id = idProp ?? generatedId;
   const labelId = `${id}-label`;
@@ -780,11 +780,11 @@ function ComboboxInput({
     if (open) requestOpenChange(false);
   };
 
-  const referenceProps = getReferenceProps({
+  const referenceProps = getInputReferenceProps(getReferenceProps, {
     ...rest,
     onKeyDown: handleKeyDown,
     onBlur: handleBlur,
-  }) as ComponentPropsWithRef<'input'>;
+  });
 
   return (
     <TextField
