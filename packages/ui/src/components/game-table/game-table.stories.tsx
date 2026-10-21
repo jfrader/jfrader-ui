@@ -5,9 +5,8 @@ import { vars } from '@jfrader/tokens/vars';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { Avatar, type AvatarSize } from '../avatar';
-import { Badge } from '../badge';
 import { GameSeat } from '../game-seat';
-import { GameHand } from '../game-hand';
+import { PersonAvatar } from '../person-avatar';
 import { Button } from '../button';
 import { CARD_BACK_PATTERNS, GameCard } from '../game-card';
 import { DeckProvider } from '../deck';
@@ -414,24 +413,30 @@ export default function Example() {
   },
 };
 
+function PokerPlayerSeat() {
+  const { player, index } = useGameTableSeat<Player>();
+  const name = player?.name ?? 'Open seat';
+  return <GameSeat name={name} avatar={<PersonAvatar seed={name} size="full" />}
+    handCount={2} points={35}
+    badges={player?.isMe ? 'Your turn · 45s' : index === 1 ? 'Dealer' : 'Playing'}
+    turned={player?.isMe}
+    turn={player?.isMe ? { remainingMs: 45000, durationMs: 60000 } : undefined} />;
+}
+
 export const Default: Story = {
   name: 'Poker table',
+  args: { renderSeat: fn<GameTableProps<Player>['renderSeat']>(() => <PokerPlayerSeat />) },
   parameters: { docs: {
-    description: { story: 'Show six players with hidden cards, community cards and a check action.' },
-    source: { language: 'tsx', code: `import { Button, styled } from '@jfrader/ui';
+    description: { story: 'Show six player seats with points, hidden cards, a turn timer, community cards and a check action.' },
+    source: { language: 'tsx', code: `import { Button, PersonAvatar, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
+import { GameSeat } from '@jfrader/ui/game-seat';
 import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
 
 const Frame = styled.div({
   inlineSize: 412,
   blockSize: 816,
-});
-
-const SeatCards = styled.div({
-  position: 'relative',
-  display: 'flex',
-  gap: vars.space[1],
 });
 
 const CenterContent = styled.div({
@@ -458,19 +463,14 @@ const players: Player[] = [
   { key: 'frankie', name: 'Frankie', teamIdx: 1 },
 ];
 
-function SeatContent() {
-  const { player } = useGameTableSeat<Player>();
+function PokerPlayerSeat() {
+  const { player, index } = useGameTableSeat<Player>();
   const name = player?.name ?? 'Open seat';
-
-  return (
-    <SeatCards>
-      <GameTable.SeatChrome>
-        <span>{name}</span>
-      </GameTable.SeatChrome>
-      <GameCard size="sm" label={\`\${name}: first hidden card\`} />
-      <GameCard size="sm" label={\`\${name}: second hidden card\`} />
-    </SeatCards>
-  );
+  return <GameSeat name={name} avatar={<PersonAvatar seed={name} size="full" />}
+    handCount={2} points={35}
+    badges={player?.isMe ? 'Your turn · 45s' : index === 1 ? 'Dealer' : 'Playing'}
+    turned={player?.isMe}
+    turn={player?.isMe ? { remainingMs: 45000, durationMs: 60000 } : undefined} />;
 }
 
 export default function Example() {
@@ -479,7 +479,7 @@ export default function Example() {
       <GameTable places={6} seats={players}>
         <GameTable.Header>Poker · 10 / 20</GameTable.Header>
         <GameTable.Seat>
-          <SeatContent />
+          <PokerPlayerSeat />
         </GameTable.Seat>
         <GameTable.Play />
         <GameTable.Center>
@@ -510,6 +510,9 @@ export default function Example() {
     const slots = buildAlternatingSlots(SEATS, 6, 'counterclockwise');
     const seats = table.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]');
     await expect(seats).toHaveLength(6);
+    await expect(table.querySelectorAll('[data-ui~="game-seat"]')).toHaveLength(6);
+    await expect(table.querySelectorAll('[data-ui="game-hand-hidden-card"]')).toHaveLength(12);
+    await expect(table.querySelectorAll('[data-ui="game-seat-timer"]')).toHaveLength(1);
     for (const [index, slot] of slots.entries()) {
       await expect(seats[index]).toHaveAttribute('data-slot-key', slot.key);
       await expect(args.renderSeat).toHaveBeenCalledWith(slot, index, expect.objectContaining({ index, totalSeats: 6 }));
@@ -519,7 +522,7 @@ export default function Example() {
     const surfaceBox = surface.getBoundingClientRect();
     const ownBox = required(seats[0]).getBoundingClientRect();
     await expect(ownBox.y + ownBox.height / 2).toBeGreaterThan(surfaceBox.y + surfaceBox.height / 2);
-    await expectSeatFraming(table, 6, 'portraitShort');
+    await expectSeatFraming(table, 6, 'portraitShort', 'scaled');
     await userEvent.tab();
     const button = within(table).getByRole('button', { name: 'Check' });
     await expect(table.ownerDocument.activeElement).toBe(button);
@@ -4214,12 +4217,10 @@ const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
 function TrucoPlayerSeat() {
   const { player, index } = useGameTableSeat<Player>();
   const name = player?.name ?? 'Lugar libre';
-  return <GameSeat name={name} avatar={<Avatar name={name} size="sm" aria-hidden="true" />}
-    badges={<Badge>{player?.isMe ? 'Vos' : index === 1 ? 'Anfitrión' : 'Jugador'}</Badge>}
-    points={index === 0 ? '12' : undefined}
-    hand={<GameHand.Hidden count={3} size="sm" label="Tres cartas ocultas" playerKey={player?.key} />}
-    turned={index === 1} turn={index === 1 ? { remainingMs: 45000, durationMs: 60000 } : undefined}
-    chat={index === 1 ? <span aria-live="polite">Tu turno</span> : undefined} />;
+  return <GameSeat name={name} avatar={<PersonAvatar seed={name} size="full" />}
+    badges={index === 1 ? 'Tu turno · 45s' : player?.isMe ? 'Vos' : 'Jugador'}
+    points={player?.teamIdx === 0 ? 12 : 8} handCount={3}
+    turned={index === 1} turn={index === 1 ? { remainingMs: 45000, durationMs: 60000 } : undefined} />;
 }
 
 /** Each seat shows the player, badges, hidden hand and turn. */
@@ -4237,100 +4238,49 @@ export const TrucoPlayerChrome: Story = {
       </Table>
     </ViewportFrame>
   </DeckProvider>,
-  parameters: { docs: { source: { language: "tsx", code: `import { type ReactNode } from 'react';
-import { Avatar, Badge, Button, styled } from '@jfrader/ui';
-import { vars } from '@jfrader/tokens/vars';
+  parameters: { docs: { source: { language: 'tsx', code: `import { Button, PersonAvatar, styled } from '@jfrader/ui';
 import { GameCard } from '@jfrader/ui/game-card';
-import { GameHand } from '@jfrader/ui/game-hand';
 import { GameSeat } from '@jfrader/ui/game-seat';
 import { DeckProvider } from '@jfrader/ui/deck';
-import { GameTable as Table, useGameTableSeat, type SeatLike, type BoardSeatGeometry, type GameTableSlot, type GameTableProps as TableProps } from '@jfrader/ui/game-table';
+import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
 
-const viewportSize = ({ viewport }: { viewport: { width: number; height: number } }) => ({ inlineSize: viewport.width, blockSize: viewport.height });
-
-const ViewportFrame = styled.div(viewportSize);
-
-const CardsRow = styled.div({ display: 'flex', gap: vars.space[1] });
-
-const BoardCenter = styled.div({ display: 'grid', justifyItems: 'center', gap: vars.space[2] });
-
-type RegionFixture<T extends SeatLike> = (slot: GameTableSlot<T>, index: number, geometry: BoardSeatGeometry) => ReactNode;
-
-type GameTableProps<T extends SeatLike = SeatLike> = Omit<TableProps<T>, 'slots' | 'seatSlots'> & {
-  slots?: readonly GameTableSlot<T>[];
-  renderSeat: RegionFixture<T>;
-  renderPlay?: RegionFixture<T>;
-  header?: ReactNode; center?: ReactNode; dock?: ReactNode; footer?: ReactNode; floating?: ReactNode;
-};
-
-function FixtureContent<T extends SeatLike>({ content }: { content?: RegionFixture<T> }) {
-  const { slot, index, geometry } = useGameTableSeat<T>();
-  return content?.(slot, index, geometry);
-}
+const Frame = styled.div({ inlineSize: 1440, blockSize: 900 });
 
 interface Player extends SeatLike { name: string }
 
-const SEATS: [Player, Player, Player, Player, Player, Player] = [
+const players: Player[] = [
   { key: 'alex', teamIdx: 0, name: 'Alex' },
   { key: 'blair', teamIdx: 1, name: 'Blair' },
   { key: 'you', teamIdx: 0, isMe: true, name: 'You' },
   { key: 'drew', teamIdx: 1, name: 'Drew' },
-  { key: 'emery', teamIdx: 0, name: 'Emery' },
-  { key: 'frankie', teamIdx: 1, name: 'Frankie' },
 ];
 
-const VIEWPORTS = {
-  portraitShort: { width: 412, height: 816 },
-  portrait: { width: 390, height: 844 },
-  wide: { width: 840, height: 360 },
-  square: { width: 834, height: 1112 },
-  squareWide: { width: 1000, height: 900 },
-  wideLarge: { width: 1440, height: 900 },
-} satisfies Record<string, { width: number; height: number }>;
-
-const seatsFor = (players: number) => players === 2 ? [SEATS[1], SEATS[2]] : SEATS.slice(0, players);
-
-const center = (
-  <BoardCenter>
-    <span>Pot: 240</span>
-    <CardsRow>
-      <GameCard size="sm" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
-      <GameCard size="sm" label="King of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'K' }} />
-      <GameCard size="sm" label="Queen of clubs" value={{ deck: 'french', suit: 'clubs', rank: 'Q' }} />
-    </CardsRow>
-  </BoardCenter>
-);
-
-const spanishPlay: GameTableProps<Player>['renderPlay'] = (_slot, index) => (
-  index % 2 === 0
+function PlayedCard() {
+  const { index } = useGameTableSeat<Player>();
+  return index % 2 === 0
     ? <GameCard size="sm" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} label="as de oros" />
-    : <GameCard size="sm" value={{ deck: 'spanish', suit: 'copas', rank: 10 }} label="sota de copas" />
-);
+    : <GameCard size="sm" value={{ deck: 'spanish', suit: 'copas', rank: 10 }} label="sota de copas" />;
+}
 
 function TrucoPlayerSeat() {
   const { player, index } = useGameTableSeat<Player>();
   const name = player?.name ?? 'Lugar libre';
-  return <GameSeat name={name} avatar={<Avatar name={name} size="sm" aria-hidden="true" />}
-    badges={<Badge>{player?.isMe ? 'Vos' : index === 1 ? 'Anfitrión' : 'Jugador'}</Badge>}
-    points={index === 0 ? '12' : undefined}
-    hand={<GameHand.Hidden count={3} size="sm" label="Tres cartas ocultas" playerKey={player?.key} />}
-    turned={index === 1} turn={index === 1 ? { remainingMs: 45000, durationMs: 60000 } : undefined}
-    chat={index === 1 ? <span aria-live="polite">Tu turno</span> : undefined} />;
+  return <GameSeat name={name} avatar={<PersonAvatar seed={name} size="full" />}
+    badges={index === 1 ? 'Tu turno · 45s' : player?.isMe ? 'Vos' : 'Jugador'}
+    points={player?.teamIdx === 0 ? 12 : 8} handCount={3}
+    turned={index === 1} turn={index === 1 ? { remainingMs: 45000, durationMs: 60000 } : undefined} />;
 }
 
 export default function Example() {
-  return (<DeckProvider default="spanish">
-  <ViewportFrame viewport={VIEWPORTS.wideLarge}>
-<Table places={4} seats={seatsFor(4)} >
-    <Table.Seat><TrucoPlayerSeat /></Table.Seat>
-    <Table.Play><FixtureContent<Player> content={spanishPlay} /></Table.Play>
-    <Table.Center>Truco</Table.Center>
-    <Table.Header>Nosotros 12 · Ellos 8</Table.Header>
-    <Table.Dock><Button>Quiero</Button></Table.Dock>
-
-  </Table>
-</ViewportFrame>
-</DeckProvider>);
+  return <DeckProvider default="spanish">
+    <Frame><GameTable places={4} seats={players}>
+      <GameTable.Seat><TrucoPlayerSeat /></GameTable.Seat>
+      <GameTable.Play><PlayedCard /></GameTable.Play>
+      <GameTable.Center>Truco</GameTable.Center>
+      <GameTable.Header>Nosotros 12 · Ellos 8</GameTable.Header>
+      <GameTable.Dock><Button>Quiero</Button></GameTable.Dock>
+    </GameTable></Frame>
+  </DeckProvider>;
 }` } } },
   play: async ({ canvasElement }) => {
     const table = required(canvasElement.querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
