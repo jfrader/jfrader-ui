@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, within } from 'storybook/test';
+import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside } from '../../testing/geometry-assertions';
 import { Prose } from './index';
 
 const meta = {
@@ -145,4 +147,28 @@ export const LightTheme: Story = {
   </table>
   <p><a href="#field-notes">Read the field notes</a></p>
 </Prose>` } } },
+};
+
+export const LongContent: Story = {
+  tags: ['!autodocs'],
+  args: { sx: { maxInlineSize: '65ch' }, children: <>
+    <h2>Expedition archive</h2>
+    <p>{'The route follows the river from the coast to the forest. '.repeat(20)}</p>
+    <p><a href="#archive">https://example.com/{'unbroken-archive-reference'.repeat(12)}</a></p>
+    <pre tabIndex={0} aria-label="Archive code"><code>{'recordExpedition(distance, elevation, temperature);'.repeat(10)}</code></pre>
+    <table tabIndex={0} aria-label="Archive routes"><tbody><tr>{Array.from({ length: 10 }, (_, i) => <td key={i}>Expedition route {i + 1}</td>)}</tr></tbody></table>
+    <img alt="Route elevation" width={1200} height={240} src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='240'%3E%3Crect width='1200' height='240' fill='%23577a70'/%3E%3C/svg%3E" />
+  </> },
+  render: (args) => <div style={{ inlineSize: `min(1000px, calc(100vw - ${vars.space[4]} * 2))`, maxInlineSize: '100%' }}><Prose {...args} /></div>,
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="prose"]')!;
+    await expect(root.getBoundingClientRect().width).toBeLessThan(800);
+    await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+    for (const scroll of root.querySelectorAll('pre, table')) {
+      await expect(scroll.scrollWidth).toBeGreaterThan(scroll.clientWidth);
+    }
+    const image = root.querySelector('img')!;
+    await expectInside(image, root);
+    await expect(image.getBoundingClientRect().height / image.getBoundingClientRect().width).toBeCloseTo(0.2);
+  },
 };

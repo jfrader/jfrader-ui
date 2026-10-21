@@ -118,6 +118,7 @@ const rootStyle = css({
   display: 'grid',
   gap: vars.space[3],
   minInlineSize: 0,
+  overflowWrap: 'anywhere',
   color: vars.color.text,
   fontFamily: vars.font.sans,
 });
@@ -160,6 +161,7 @@ const controlsStyle = css({
   alignItems: 'center',
   justifyContent: 'center',
   gap: vars.space[3],
+  '& > [data-ui]': { minInlineSize: 0, maxInlineSize: '100%', whiteSpace: 'normal' },
 });
 const hintStyle = css({
   color: vars.color.textMuted,

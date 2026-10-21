@@ -153,3 +153,12 @@ export const LightTheme: Story = {
     await expect(canvasElement.querySelectorAll('[data-ui="pill"]')).toHaveLength(TONES.length);
   },
 };
+
+export const EnlargedLabel: Story = {
+  tags: ['!autodocs'],
+  args: { children: 'Awaiting review', sx: { fontSize: '2rem' } },
+  play: async ({ canvasElement }) => {
+    const pill = within(canvasElement).getByText('Awaiting review');
+    await expect(pill.getBoundingClientRect().height).toBeGreaterThanOrEqual(parseFloat(getComputedStyle(pill).fontSize));
+  },
+};
