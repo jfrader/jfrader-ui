@@ -84,7 +84,7 @@ export interface ShareAccessMessages {
 }
 type NativeSlot<E extends 'section' | 'ul' | 'div'> = ComponentPropsWithRef<E> & SxProps;
 type ActionSlot = Omit<ButtonProps, 'sx'> & SxProps;
-type RoleSlot = Omit<SelectEasyProps, 'sx' | 'options'> & SxProps;
+type RoleSlot = Omit<SelectEasyProps<ShareRole>, 'sx' | 'options'> & SxProps;
 export interface ShareAccessSlotProps {
   root?: NativeSlot<'section'>;
   /** Uses `Combobox.Input` by default. */
@@ -112,9 +112,9 @@ export interface ShareAccessSlots {
   chipList?: ComponentType<ComponentPropsWithRef<'ul'>>;
   memberList?: ComponentType<ComponentPropsWithRef<'ul'>>;
   undoList?: ComponentType<ComponentPropsWithRef<'ul'>>;
-  inviteRole?: ComponentType<SelectEasyProps>;
-  memberRole?: ComponentType<SelectEasyProps>;
-  linkRole?: ComponentType<SelectEasyProps>;
+  inviteRole?: ComponentType<SelectEasyProps<ShareRole>>;
+  memberRole?: ComponentType<SelectEasyProps<ShareRole>>;
+  linkRole?: ComponentType<SelectEasyProps<ShareRole>>;
   inviteButton?: ComponentType<ButtonProps>;
   removeButton?: ComponentType<ButtonProps>;
   undoButton?: ComponentType<ButtonProps>;

@@ -35,6 +35,7 @@ import {
   type KeyboardEvent,
   type MouseEvent,
   type MutableRefObject,
+  type ReactElement,
   type ReactNode,
 } from 'react';
 import {
@@ -90,8 +91,8 @@ const morphPanelStyle = css({
   borderRadius: vars.radius.lg,
 });
 
-export interface SelectOption {
-  value: string;
+export interface SelectOption<V extends string = string> {
+  value: V;
   label: ReactNode;
   disabled?: boolean;
   textValue?: string;
@@ -170,17 +171,20 @@ export interface SelectSlotProps {
   empty?: Partial<SelectEmptyProps>;
 }
 
-export interface SelectBaseProps {
+export interface SelectStateProps<V extends string = string> {
+  /** Controls the selected option value. */
+  value?: NoInfer<V>;
+  /** Sets the initial uncontrolled selection. Omit to start without a selection. */
+  defaultValue?: NoInfer<V>;
+  /** Highlight this enabled option on opening when no selected option exists. Typeahead takes precedence. */
+  initialActiveValue?: NoInfer<V>;
+  /** Fires once per accepted selection with the option's `value`. */
+  onValueChange?: (value: V) => void;
+}
+
+export interface SelectBaseProps<V extends string = string> extends SelectStateProps<V> {
   /** Morph the pill trigger into the floating panel. Default: `default`. */
   variant?: 'default' | 'morph';
-  /** Controls the selected option value. */
-  value?: string;
-  /** Sets the initial uncontrolled selection. Omit to start without a selection. */
-  defaultValue?: string;
-  /** Highlight this enabled option on opening when no selected option exists. Typeahead takes precedence. */
-  initialActiveValue?: string;
-  /** Fires once per accepted selection with the option's `value`. */
-  onValueChange?: (value: string) => void;
   /** Controls whether the option popup is open. A disabled select stays closed. */
   open?: boolean;
   /** Opens the uncontrolled popup initially. Defaults to `false`. */
@@ -195,7 +199,8 @@ export interface SelectBaseProps {
   name?: string;
 }
 
-export interface SelectCompoundProps extends SelectBaseProps {
+/** Compound mode declares its own values, so its root state stays a string. */
+export interface SelectCompoundProps extends SelectBaseProps<string> {
   options?: never;
   /** Composes the trigger, value, content and option parts instead of supplying `options`. */
   children?: ReactNode;
@@ -211,9 +216,10 @@ export interface SelectCompoundProps extends SelectBaseProps {
   slotProps?: never;
 }
 
-export interface SelectEasyProps extends SelectBaseProps {
+/** Easy mode infers `V` from `options`, narrowing selection state and callbacks to those values. */
+export interface SelectEasyProps<V extends string = string> extends SelectBaseProps<V> {
   /** Supplies the options rendered by the shorthand select. */
-  options: readonly SelectOption[];
+  options: readonly SelectOption<V>[];
   children?: never;
   /** Shows a label associated with the trigger. */
   label?: ReactNode;
@@ -237,7 +243,7 @@ export interface SelectEasyProps extends SelectBaseProps {
   slotProps?: SelectSlotProps;
 }
 
-export type SelectProps = SelectCompoundProps | SelectEasyProps;
+export type SelectProps<V extends string = string> = SelectCompoundProps | SelectEasyProps<V>;
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
@@ -388,7 +394,7 @@ const tokens = (...values: Array<unknown>): string | undefined => {
   return list.join(' ') || undefined;
 };
 
-function SelectOverlay({ nodeId, ...props }: SelectProps & { nodeId: string | undefined }) {
+function SelectOverlay<V extends string = string>({ nodeId, ...props }: SelectProps<V> & { nodeId: string | undefined }) {
   const {
     variant = 'default',
     value: valueProp,
@@ -406,7 +412,12 @@ function SelectOverlay({ nodeId, ...props }: SelectProps & { nodeId: string | un
   const [labelId, setLabelId] = useState<string>();
   const [descriptionId, setDescriptionId] = useState<string>();
   const [errorId, setErrorId] = useState<string>();
-  const [selectedValue, requestValueChange, resetValue] = useControlledState<string>(valueProp, defaultValue, onValueChange);
+  // Options only carry `V`; compound children carry strings. The internal store stays a string and
+  // this single boundary widens the emit, so the public callback keeps the option union.
+  const notifyValueChange = useCallback((next: string) => {
+    (onValueChange as ((value: string) => void) | undefined)?.(next);
+  }, [onValueChange]);
+  const [selectedValue, requestValueChange, resetValue] = useControlledState<string>(valueProp, defaultValue, notifyValueChange);
   const [openState = false, requestOpen] = useControlledState<boolean>(openProp, defaultOpen, onOpenChange);
   const open = openState && !disabled;
   const requestOpenChange = useCallback((next: boolean) => {
@@ -1093,6 +1104,22 @@ function SelectEmpty({ ref, children, className, sx, ...rest }: SelectEmptyProps
 
 SelectEmpty.displayName = 'Select.Empty';
 
+/** `Object.assign` instantiates the root with its default type argument; this keeps the generic call signature. */
+export interface SelectComponent {
+  <V extends string = string>(props: SelectEasyProps<V>): ReactElement;
+  (props: SelectCompoundProps): ReactElement;
+  /** Accepts a pre-built easy/compound union, e.g. `SelectProps<Status>` spread into the component. */
+  <V extends string = string>(props: SelectProps<V>): ReactElement;
+  Trigger: typeof SelectTrigger;
+  Value: typeof SelectValue;
+  Content: typeof SelectContent;
+  Item: typeof SelectItem;
+  Label: typeof SelectLabel;
+  Description: typeof SelectDescription;
+  Error: typeof SelectError;
+  Empty: typeof SelectEmpty;
+}
+
 export const Select = Object.assign(SelectRoot, {
   Trigger: SelectTrigger,
   Value: SelectValue,
@@ -1102,4 +1129,4 @@ export const Select = Object.assign(SelectRoot, {
   Description: SelectDescription,
   Error: SelectError,
   Empty: SelectEmpty,
-});
+}) as SelectComponent;

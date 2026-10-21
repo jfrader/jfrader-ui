@@ -587,6 +587,31 @@ export type SelectTypeRegression = {
   childrenWithSlots: CheckedSelect<{ slots: { root?: () => null }; children: ReactNode }>;
 };
 
+type Status = 'draft' | 'live';
+const STATUS_OPTIONS = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'live', label: 'Live' },
+] as const satisfies readonly SelectOption<Status>[];
+
+/** Compile-time consumer checks; never rendered. */
+function SelectFromProps(props: SelectProps<Status>) {
+  return <Select {...props} />;
+}
+
+function SelectGenericChecks() {
+  const saveStatus = (status: Status) => status;
+  return (
+    <>
+      <Select<Status> options={STATUS_OPTIONS} value="draft" onValueChange={saveStatus} />
+      <Select options={STATUS_OPTIONS as readonly SelectOption<Status>[]} onValueChange={(next) => saveStatus(next)} />
+      {/* @ts-expect-error value must be one of the options */}
+      <Select<Status> options={STATUS_OPTIONS} value="paused" />
+      {/* @ts-expect-error the callback must accept every option value */}
+      <Select<Status> options={STATUS_OPTIONS} onValueChange={(next: 'paused') => next} />
+    </>
+  );
+}
+
 function SelectExample(props: SelectCompoundProps) {
   const labelId = useId();
   return (
