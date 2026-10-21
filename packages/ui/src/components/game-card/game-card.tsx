@@ -5,7 +5,7 @@ import { withoutSx } from '../../styling/sx';
 // suit watermarks are presentational children, so a screen reader hears the playing card once, in the
 // consumer's own words. A face-down card omits built-in rank, suit and deck data; consumer artwork
 // remains visible, so consumers must keep private values out of their own art.
-import type { ComponentPropsWithRef, ComponentType, HTMLAttributes, ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ComponentPropsWithRef, type ComponentType, type HTMLAttributes, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import type { SxProps } from '../../styling/sx';
@@ -114,6 +114,7 @@ const layerStyle = css({
 
 const printStyle = css({
   display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr)',
   placeItems: 'center',
   paddingInline: `${CARD_FACE.contentPaddingPercent}%`,
   fontSize: `${CARD_FACE.markWidthRatio * 100}cqw`,
@@ -137,6 +138,8 @@ const markStyle = css({
   gridAutoFlow: 'column',
   alignItems: 'center',
   gap: '0.1em',
+  inlineSize: 'max-content',
+  transform: 'scale(var(--game-card-mark-scale, 1))',
 });
 
 const watermarkStyle = css({
@@ -351,6 +354,29 @@ interface PrintedFaceProps {
 }
 
 function PrintedFace({ deck, value, rankLabel, slots, slotProps }: PrintedFaceProps) {
+  const markRef = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const mark = markRef.current;
+    const face = mark?.parentElement;
+    const view = mark?.ownerDocument.defaultView;
+    if (!mark || !face || !view) return;
+    const fit = () => {
+      const style = view.getComputedStyle(face);
+      const width = face.clientWidth - parseFloat(style.paddingInlineStart) - parseFloat(style.paddingInlineEnd);
+      const height = face.clientHeight - parseFloat(style.paddingBlockStart) - parseFloat(style.paddingBlockEnd);
+      const scale = Math.min(1, width / mark.offsetWidth, height / mark.offsetHeight);
+      mark.style.setProperty('--game-card-mark-scale', String(Math.max(0, scale)));
+    };
+    fit();
+    const observer = new view.ResizeObserver(fit);
+    observer.observe(face);
+    observer.observe(mark);
+    mark.ownerDocument.fonts.addEventListener('loadingdone', fit);
+    return () => {
+      observer.disconnect();
+      mark.ownerDocument.fonts.removeEventListener('loadingdone', fit);
+    };
+  }, [deck, value.suit, value.rank, rankLabel, slots?.face]);
   const Face = slots?.face ?? 'span';
   const suitConfig = deck.suits[value.suit];
   const rankConfig = deck.ranks[String(value.rank)];
@@ -383,7 +409,7 @@ function PrintedFace({ deck, value, rankLabel, slots, slotProps }: PrintedFacePr
       css={[layerStyle, printStyle, ink !== undefined && suitInkStyles[ink], slotProps?.face?.sx]}
     >
       {hasGlyph && <span css={[watermarkStyle, watermarkTopStyle]}>{suitGlyph}</span>}
-      <span css={markStyle}>
+      <span ref={markRef} data-card-mark="" css={markStyle}>
         <span>{mark}</span>
         <span>{suitGlyph}</span>
       </span>

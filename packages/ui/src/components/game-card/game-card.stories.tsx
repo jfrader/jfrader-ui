@@ -118,10 +118,11 @@ const DeckGrid = styled.div({
 
 const Row = styled.div({
   display: 'flex',
+  flexWrap: 'wrap',
   alignItems: 'center',
   gap: vars.space[4],
 });
-const NarrowRow = styled(Row)({ inlineSize: vars.size.gameCardLg });
+const NarrowRow = styled(Row)({ inlineSize: vars.size.gameCardLg, flexWrap: 'nowrap' });
 
 const meta = {
   title: 'Games/GameCard',
@@ -260,7 +261,7 @@ export const Default: Story = {
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
-const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[4] });
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
 
 export function CardPatterns() {
   return (
@@ -314,7 +315,7 @@ import { ThemeRoot } from '@jfrader/ui/theme-root';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
-const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[4] });
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
 
 export function DeckBacksLight() {
   return (
@@ -544,7 +545,7 @@ export const FaceDown: Story = {
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
-const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[4] });
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
 
 export function FaceDownExamples() {
   return (
@@ -613,7 +614,7 @@ export const Sizes: Story = {
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
-const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[4] });
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
 
 export function CardSizes() {
   return (
@@ -660,6 +661,28 @@ export const NarrowFlexRow: Story = {
       const rect = card.getBoundingClientRect();
       await expect(rect.width).toBe(72);
       await expect(rect.height).toBeCloseTo(106.56, 1);
+    }
+  },
+};
+
+export const LongPrintedValues: Story = {
+  tags: ['!autodocs'],
+  render: () => <Row>
+    {SIZES.map((size) => <GameCard key={size} size={size} label={`${size} queen of comets`}
+      value={{ deck: 'french', suit: 'comets', rank: 'Q' }} />)}
+    <GameCard label="Long rank" rankLabel="Supernova" value={QUEEN_OF_HEARTS} />
+  </Row>,
+  play: async ({ canvasElement }) => {
+    for (const card of within(canvasElement).getAllByRole('img')) {
+      const face = card.querySelector<HTMLElement>('[data-ui="game-card-print"]')!;
+      const mark = face.querySelector<HTMLElement>('[data-card-mark]')!;
+      const bounds = face.getBoundingClientRect();
+      const printed = mark.getBoundingClientRect();
+      await expect(printed.left).toBeGreaterThanOrEqual(bounds.left);
+      await expect(printed.right).toBeLessThanOrEqual(bounds.right + 0.5);
+      await expect(printed.top).toBeGreaterThanOrEqual(bounds.top);
+      await expect(printed.bottom).toBeLessThanOrEqual(bounds.bottom);
+      await expect(mark).toHaveTextContent(card.getAttribute('aria-label') === 'Long rank' ? 'Supernova' : 'comets');
     }
   },
 };
@@ -782,7 +805,7 @@ import { Scene } from '@jfrader/ui/scene';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
-const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[4] });
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
 
 export function SceneBackCards() {
   return (
@@ -865,7 +888,7 @@ export const RankLabelAndDimmed: Story = {
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
-const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[4] });
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
 
 export function RankLabelAndDimmedExample() {
   return (
@@ -911,7 +934,7 @@ import { ThemeRoot } from '@jfrader/ui/theme-root';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 
-const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[4] });
+const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
 
 <ThemeRoot theme="light">
   <Row>

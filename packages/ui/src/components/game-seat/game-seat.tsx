@@ -163,6 +163,7 @@ const handStyle = css({ gridArea: 'hand', color: vars.color.textMuted, fontSize:
   '[data-variant="panel"] > &': { marginBlockStart: vars.space[3] },
   [FORCED_COLORS]: { color: 'CanvasText' },
 });
+const handCountStyle = css({ minInlineSize: 0, maxInlineSize: '100%', overflow: 'hidden', textOverflow: 'ellipsis' });
 const chatStyle = css({ gridArea: 'chat', boxSizing: 'border-box', marginBlockStart: vars.space[3], paddingBlock: vars.space[2], paddingInline: vars.space[3],
   display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden',
   borderRadius: vars.radius.sm, backgroundColor: vars.color.surfaceInset, boxShadow: `inset 0 1px 0 ${vars.color.borderSubtle}`,
@@ -273,7 +274,7 @@ export function GameSeat({ name, avatar, badges, points, hand, handCount, chat, 
     </WithSx>
     {isRenderable(badges) && <SeatPart {...slotProps?.badges} component={slots?.badges} marker="badges" styles={badgesStyle}>{badges}</SeatPart>}
     {isRenderable(points) && <SeatPart {...slotProps?.points} component={slots?.points} marker="points" styles={pointsStyle}>{points}</SeatPart>}
-    {isRenderable(handContent) && <SeatPart {...slotProps?.hand} component={slots?.hand} marker="hand" styles={handStyle}>{handContent}</SeatPart>}
+    {isRenderable(handContent) && <SeatPart {...slotProps?.hand} component={slots?.hand} marker="hand" styles={[handStyle, hand === undefined && handCountStyle]}>{handContent}</SeatPart>}
     {variant === 'panel' && isRenderable(chat) && <SeatPart {...slotProps?.chat} component={slots?.chat} marker="chat" styles={chatStyle}>{chat}</SeatPart>}
   </GamePanel></DeckArtProvider>;
 }

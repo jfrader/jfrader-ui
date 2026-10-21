@@ -12,6 +12,7 @@ import { GameHand } from '../game-hand';
 import { GameSeat, type GameSeatTurnMilestone } from './index';
 import type { GameCardRootProps } from '../game-card/game-card-root';
 import type { GameSeatPartProps, GameSeatSlotProps } from './game-seat';
+import { expectInside } from '../../testing/geometry-assertions';
 
 const DURATION = 60000;
 const turn = { remainingMs: DURATION * 0.75, durationMs: DURATION };
@@ -293,6 +294,20 @@ export const StableFootprint: Story = {
     } finally { flushSync(() => root.unmount()); host.remove(); }
   },
 };
+export const LongHandCount: Story = {
+  tags: ['!autodocs'],
+  args: { handDisplay: 'count', handCount: 999999, locale: 'en-US', formatHandCount: (_count, formatted) => `${formatted} cards remaining in hand` },
+  play: async ({ canvasElement }) => {
+    const seat = canvasElement.querySelector<HTMLElement>('[data-ui="game-seat"]')!;
+    const hand = seat.querySelector<HTMLElement>('[data-ui="game-seat-hand"]')!;
+    await expect(hand).toHaveTextContent('999,999 cards remaining in hand');
+    await expect(hand.scrollWidth).toBeGreaterThan(hand.clientWidth);
+    await expect(getComputedStyle(hand).overflow).toBe('hidden');
+    await expect(getComputedStyle(hand).textOverflow).toBe('ellipsis');
+    await expectInside(hand, seat);
+  },
+};
+
 export const Light: Story = {
   tags: ['!autodocs'],
   ...Default, name: 'Light theme', globals: { theme: 'light' },
