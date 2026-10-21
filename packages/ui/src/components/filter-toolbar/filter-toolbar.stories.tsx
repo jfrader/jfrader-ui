@@ -613,6 +613,7 @@ export const FacetSelect: Story = {
 };
 
 export const PersistentSelect: Story = {
+  parameters: { docs: { story: { inline: false, height: '320px' } } },
   render: (args) => (
     <ThemeRoot theme="light">
       <FacetExample {...args} persistent />
