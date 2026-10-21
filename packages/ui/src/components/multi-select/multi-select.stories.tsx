@@ -60,6 +60,25 @@ const composedSnippet = `<MultiSelect defaultValue={['bug']}>
     <MultiSelect.Empty />
   </MultiSelect.Content>
 </MultiSelect>`;
+type Role = 'reader' | 'editor';
+const ROLE_OPTIONS = [
+  { value: 'reader', label: 'Reader' },
+  { value: 'editor', label: 'Editor' },
+] as const satisfies readonly MultiSelectOption<Role>[];
+
+/** Compile-time consumer checks; never rendered. */
+function MultiSelectGenericChecks() {
+  const saveRoles = (roles: Role[]) => roles;
+  return (
+    <>
+      <MultiSelect<Role> options={ROLE_OPTIONS} value={['reader']} onValueChange={saveRoles} />
+      <MultiSelect options={ROLE_OPTIONS} onValueChange={(next) => saveRoles(next)} />
+      {/* @ts-expect-error value must be one of the options */}
+      <MultiSelect<Role> options={ROLE_OPTIONS} value={['owner']} />
+    </>
+  );
+}
+
 export type MultiSelectTypeRegression = {
   // @ts-expect-error Options and children are mutually exclusive.
   optionsWithChildren: CheckedMultiSelect<{ options: typeof OPTIONS; children: ReactNode }>;

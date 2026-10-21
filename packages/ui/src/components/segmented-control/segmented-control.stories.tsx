@@ -6,7 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { ThemeRoot } from '../theme-root';
-import { SegmentedControl, type SegmentedControlComposedProps as SegmentedControlProps, type SegmentedControlShorthandProps } from './index';
+import { SegmentedControl, type SegmentedControlComposedProps as SegmentedControlProps, type SegmentedControlOption, type SegmentedControlShorthandProps } from './index';
 
 function ReplacementSegmentTrack(props: ComponentPropsWithRef<'div'>) {
   return <div {...props} data-replaced="track" />;
@@ -62,6 +62,25 @@ const usage = `import { SegmentedControl } from '@jfrader/ui';
   <SegmentedControl.Item value="Board" disabled>Board</SegmentedControl.Item>
   <SegmentedControl.Item value="Table">Table</SegmentedControl.Item>
 </SegmentedControl>`;
+
+type View = 'list' | 'grid';
+const VIEW_OPTIONS = [
+  { value: 'list', label: 'List' },
+  { value: 'grid', label: 'Grid' },
+] as const satisfies readonly SegmentedControlOption<View>[];
+
+/** Compile-time consumer checks; never rendered. */
+function SegmentedControlGenericChecks() {
+  const saveView = (view: View) => view;
+  return (
+    <>
+      <SegmentedControl<View> options={VIEW_OPTIONS} value="list" onValueChange={saveView} aria-label="View" />
+      <SegmentedControl options={VIEW_OPTIONS} onValueChange={(next) => saveView(next)} aria-label="View" />
+      {/* @ts-expect-error value must be one of the options */}
+      <SegmentedControl<View> options={VIEW_OPTIONS} value="board" aria-label="View" />
+    </>
+  );
+}
 
 function Example({
   options = OPTIONS,

@@ -7,7 +7,7 @@ import { css } from '../../styling/css';
 import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
-import { RadioCards, type RadioCardsComposedProps as RadioCardsProps, type RadioCardsShorthandProps } from './index';
+import { RadioCards, type RadioCardsComposedProps as RadioCardsProps, type RadioCardsOption, type RadioCardsShorthandProps } from './index';
 
 function ReplacementCardPart(props: ComponentPropsWithRef<'span'>) {
   return <span {...props} data-replaced="true" />;
@@ -65,6 +65,25 @@ function DeliveryIcon() {
     </svg>
   );
 }
+type Delivery = 'standard' | 'express';
+const DELIVERY_OPTIONS = [
+  { value: 'standard', label: 'Standard' },
+  { value: 'express', label: 'Express' },
+] as const satisfies readonly RadioCardsOption<Delivery>[];
+
+/** Compile-time consumer checks; never rendered. */
+function RadioCardsGenericChecks() {
+  const saveDelivery = (delivery: Delivery) => delivery;
+  return (
+    <>
+      <RadioCards<Delivery> options={DELIVERY_OPTIONS} value="standard" onValueChange={saveDelivery} label="Delivery" />
+      <RadioCards options={DELIVERY_OPTIONS} onValueChange={(next) => saveDelivery(next)} label="Delivery" />
+      {/* @ts-expect-error value must be one of the options */}
+      <RadioCards<Delivery> options={DELIVERY_OPTIONS} value="overnight" label="Delivery" />
+    </>
+  );
+}
+
 function Example({ disabledOption = false, ...args }: RadioCardsProps & { disabledOption?: boolean }) {
   return (
     <RadioCards {...args}>

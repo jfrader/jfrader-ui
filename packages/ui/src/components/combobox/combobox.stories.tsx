@@ -195,6 +195,25 @@ export type ComboboxTypeRegression = {
   childrenWithSlots: CheckedCombobox<{ slots: { root?: () => null }; children: ReactNode }>;
 };
 
+type Status = 'draft' | 'live';
+const STATUS_OPTIONS = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'live', label: 'Live' },
+] as const satisfies readonly ComboboxOption<Status>[];
+
+/** Compile-time consumer checks; never rendered. */
+function ComboboxGenericChecks() {
+  const saveStatus = (status: Status | null) => status;
+  return (
+    <>
+      <Combobox<Status> options={STATUS_OPTIONS} value="draft" onValueChange={saveStatus} />
+      <Combobox options={STATUS_OPTIONS} onValueChange={(next) => saveStatus(next)} />
+      {/* @ts-expect-error value must be one of the options */}
+      <Combobox<Status> options={STATUS_OPTIONS} value="paused" />
+    </>
+  );
+}
+
 interface ComboboxExampleProps extends ComboboxComposedProps {
   inputProps?: ComboboxInputProps;
   listId?: string;

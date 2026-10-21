@@ -83,7 +83,7 @@ export interface ControlCenterSlots extends FieldSlots<NativeAnatomy> {
   detailTrigger?: ComponentType<ButtonProps>;
   meter?: ComponentType<SliderProps>;
   dial?: ComponentType<SliderProps>;
-  modes?: ComponentType<RadioGroupProps>;
+  modes?: ComponentType<RadioGroupShorthandProps>;
   channel?: ComponentType<SwitchProps>;
   person?: ComponentType<SwitchProps>;
   /** Uses `Dialog.Content` by default. */

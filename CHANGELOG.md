@@ -35,6 +35,7 @@
 ### Changed
 
 - Dual-mode prop types rename `*EasyProps` to `*ShorthandProps` and `*CompoundProps` to `*ComposedProps`; docs and stories say "shorthand" and "composed". The component APIs are unchanged.
+- `Combobox`, `MultiSelect`, `Tabs`, `RadioGroup`, `SegmentedControl` and `RadioCards` infer their option or item value union in shorthand mode; composed mode stays string-based.
 - `Select` shorthand mode infers its option value union (`<Select<Status> options={...} />`) for `value`, `defaultValue` and `onValueChange`; composed mode stays string-based. `GravityWell` keeps custom item fields through `renderItem` (`GravityWell<T>`).
 - Breaking pre-1.0 article API cleanup: use `Article` with `Article.Body`, `Article.Kicker`, `Article.Meta` and `Article.Sources` instead of the separate article components. `ArticleList` stays standalone. `ArticleSection` composes ordered articles into mixed editorial layouts, and `SectionHeading` moves to `ArticleSection.Heading`.
 - `CardFlights` now animates the rendered board tree, with `Deck`, custom `Target` destinations, `deal`/`revision`, automatic hand locking and `onBusyChange`. The provider, explicit deal/play hooks, measurement helpers and flight-spec exports are deprecated until the next major release; replace them with `CardFlights` and `useCardFlightStatus`. Piles now retain the newest `maxCards` cards.

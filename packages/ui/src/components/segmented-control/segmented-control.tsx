@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useId,
@@ -13,6 +14,7 @@ import {
   type ComponentPropsWithRef,
   type ComponentType,
   type KeyboardEvent,
+  type ReactElement,
   type ReactNode,
 } from 'react';
 import { LayoutGroup, MotionConfig, motion, useReducedMotion } from 'motion/react';
@@ -37,14 +39,19 @@ type SlotProps<Element extends 'div' | 'span'> = ComponentPropsWithRef<Element> 
   sx?: Interpolation<Theme>;
 };
 
-export interface SegmentedControlComposedProps
-  extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {
+export interface SegmentedControlValueProps<V extends string = string> {
   /** Controls which segment is selected. */
-  value?: string;
+  value?: NoInfer<V>;
   /** Selects the initial segment when uncontrolled; omitted leaves all segments unselected. */
-  defaultValue?: string;
+  defaultValue?: NoInfer<V>;
   /** Called with the requested segment value on activation or keyboard navigation. */
-  onValueChange?: (value: string) => void;
+  onValueChange?: (value: V) => void;
+}
+
+export interface SegmentedControlComposedProps
+  extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>,
+    SxProps,
+    SegmentedControlValueProps<string> {
   /** Disables every segment. Defaults to `false`. */
   disabled?: boolean;
   /** Sets segment height and text size. Defaults to `md`. */
@@ -67,8 +74,8 @@ export interface SegmentedControlComposedProps
   slots?: Pick<SegmentedControlSlots, 'track' | 'selection'>;
   component?: never;
 }
-export interface SegmentedControlOption {
-  value: string;
+export interface SegmentedControlOption<V extends string = string> {
+  value: V;
   label: ReactNode;
   disabled?: boolean;
   id?: string;
@@ -93,9 +100,14 @@ export interface SegmentedControlSlotProps extends NonNullable<SegmentedControlC
   /** Button representing an individual segment option. Default: `SegmentedControl.Item`. */
   item?: Omit<SegmentedControlItemProps, 'value' | 'children' | 'disabled' | 'id' | 'accessory'>;
 }
-export interface SegmentedControlShorthandProps extends Omit<SegmentedControlComposedProps, 'children' | 'options' | 'slots' | 'slotProps' | 'component'> {
+export interface SegmentedControlShorthandProps<V extends string = string>
+  extends Omit<
+      SegmentedControlComposedProps,
+      'children' | 'options' | 'slots' | 'slotProps' | 'component' | 'value' | 'defaultValue' | 'onValueChange'
+    >,
+    SegmentedControlValueProps<V> {
   /** Renders segments in order using each option's value as its key. */
-  options: readonly SegmentedControlOption[];
+  options: readonly SegmentedControlOption<V>[];
   /** Not accepted when `options` supplies the segments. */
   children?: never;
   /** Replaces the generated root, items, track or selection indicator. */
@@ -105,7 +117,7 @@ export interface SegmentedControlShorthandProps extends Omit<SegmentedControlCom
   /** Passes props to the generated root, items, track and selection indicator. */
   slotProps?: SegmentedControlSlotProps;
 }
-export type SegmentedControlProps = SegmentedControlComposedProps | SegmentedControlShorthandProps;
+export type SegmentedControlProps<V extends string = string> = SegmentedControlComposedProps | SegmentedControlShorthandProps<V>;
 
 export interface SegmentedControlItemProps extends Omit<ComponentPropsWithRef<'button'>, 'value'>, SxProps {
   /** Identifies this segment for selection and change callbacks. */
@@ -265,7 +277,13 @@ function SelectionSurface({
 }
 const MotionSelection = motion.create(SelectionSurface);
 
-function SegmentedControlRoot({
+type SegmentedControlRootProps<V extends string = string> = Omit<
+  SegmentedControlComposedProps,
+  'value' | 'defaultValue' | 'onValueChange'
+> &
+  SegmentedControlValueProps<V>;
+
+function SegmentedControlRoot<V extends string = string>({
   rootElement: Root = 'div',
   slotStyles,
   ref,
@@ -284,9 +302,13 @@ function SegmentedControlRoot({
   children,
   onKeyDown,
   ...rest
-}: SegmentedControlComposedProps & { rootElement?: 'div' | SegmentedControlSlots['root']; slotStyles?: Interpolation<Theme> }) {
+}: SegmentedControlRootProps<V> & { rootElement?: 'div' | SegmentedControlSlots['root']; slotStyles?: Interpolation<Theme> }) {
   const Track = slots?.track ?? 'div';
-  const [value, requestChange] = useControlledState(valueProp, defaultValue, onValueChange);
+  // Options only carry `V`; composed items carry strings. One boundary widens the emit.
+  const notifyChange = useCallback((next: string) => {
+    (onValueChange as ((value: string) => void) | undefined)?.(next);
+  }, [onValueChange]);
+  const [value, requestChange] = useControlledState<string>(valueProp, defaultValue, notifyChange);
   const [focused, setFocused] = useState<string | null>(null);
   const [tabStop, setTabStop] = useState<string>();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -531,7 +553,7 @@ function SegmentedControlItem({
 }
 SegmentedControlItem.displayName = 'SegmentedControl.Item';
 
-function SegmentedControlComponent(props: SegmentedControlProps) {
+function SegmentedControlComponent<V extends string = string>(props: SegmentedControlProps<V>) {
   if (props.options === undefined) return <SegmentedControlRoot {...props} />;
   const { options, component, slots, slotProps, ...rest } = props;
   const { className, style, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
@@ -557,4 +579,12 @@ function SegmentedControlComponent(props: SegmentedControlProps) {
   );
 }
 SegmentedControlComponent.displayName = 'SegmentedControl';
-export const SegmentedControl = Object.assign(SegmentedControlComponent, { Item: SegmentedControlItem });
+export interface SegmentedControlComponentContract {
+  <V extends string = string>(props: SegmentedControlShorthandProps<V>): ReactElement;
+  (props: SegmentedControlComposedProps): ReactElement;
+  /** Accepts a pre-built shorthand/composed union, e.g. `SegmentedControlProps<View>` spread into the component. */
+  <V extends string = string>(props: SegmentedControlProps<V>): ReactElement;
+  Item: typeof SegmentedControlItem;
+}
+
+export const SegmentedControl = Object.assign(SegmentedControlComponent, { Item: SegmentedControlItem }) as SegmentedControlComponentContract;

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
-import { Tabs, type TabsComposedProps, type TabsShorthandProps } from './index';
+import { Tabs, type TabsComposedProps, type TabsShorthandProps, type TabsSection } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { Card } from '../card';
@@ -16,6 +16,25 @@ const sections = [
   { value: 'two', label: 'Security', panel: 'Password and two-factor sign-in.' },
   { value: 'three', label: 'Billing', panel: 'Plan, invoices and payment method.' },
 ];`;
+
+type TabId = 'account' | 'billing';
+const TYPED_ITEMS = [
+  { value: 'account', label: 'Account', panel: 'Name and email.' },
+  { value: 'billing', label: 'Billing', panel: 'Plan and invoices.' },
+] as const satisfies readonly TabsSection<TabId>[];
+
+/** Compile-time consumer checks; never rendered. */
+function TabsGenericChecks() {
+  const saveTab = (id: TabId) => id;
+  return (
+    <>
+      <Tabs<TabId> label="Settings" items={TYPED_ITEMS} value="account" onValueChange={saveTab} />
+      <Tabs label="Settings" items={TYPED_ITEMS} onValueChange={(next) => saveTab(next)} />
+      {/* @ts-expect-error value must be one of the tab ids */}
+      <Tabs<TabId> label="Settings" items={TYPED_ITEMS} value="profile" />
+    </>
+  );
+}
 
 const ITEMS = [
   { value: 'one', label: 'Account', panel: 'Name, email and avatar.' },

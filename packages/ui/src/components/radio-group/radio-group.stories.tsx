@@ -6,7 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectAligned, expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { Button } from '../button';
-import { RadioGroup, type RadioGroupOrientation, type RadioGroupComposedProps as RadioGroupProps, type RadioGroupShorthandProps } from './index';
+import { RadioGroup, type RadioGroupOrientation, type RadioGroupComposedProps as RadioGroupProps, type RadioGroupOption, type RadioGroupShorthandProps } from './index';
 
 function ReplacementRadioLabel(props: ComponentPropsWithRef<'label'>) {
   return <label {...props} data-replaced="root" />;
@@ -212,6 +212,26 @@ export type RadioGroupShorthandTypeRegression = {
   // @ts-expect-error Options and children are mutually exclusive.
   mixed: AssertRadioGroupProps<{ options: typeof OPTIONS; children: string }>;
 };
+
+type Plan = 'free' | 'pro' | 'team';
+const TYPED_OPTIONS = [
+  { value: 'free', label: 'Free' },
+  { value: 'pro', label: 'Pro' },
+  { value: 'team', label: 'Team' },
+] as const satisfies readonly RadioGroupOption<Plan>[];
+
+/** Compile-time consumer checks; never rendered. */
+function RadioGroupGenericChecks() {
+  const savePlan = (plan: Plan) => plan;
+  return (
+    <>
+      <RadioGroup<Plan> options={TYPED_OPTIONS} value="free" onValueChange={savePlan} />
+      <RadioGroup options={TYPED_OPTIONS} onValueChange={(next) => savePlan(next)} />
+      {/* @ts-expect-error value must be one of the options */}
+      <RadioGroup<Plan> options={TYPED_OPTIONS} value="enterprise" />
+    </>
+  );
+}
 
 function RadioExample({
   groupLabel = 'Plan',
