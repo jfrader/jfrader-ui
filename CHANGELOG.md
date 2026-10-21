@@ -2,8 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- `GameCard` adds an `xl` size (160px) for illustrated and collection cards, with the same frame ratio and corner radius as the smaller sizes.
+- `Deck` supports cards without suits: `GameCardValue.suit` is optional, a deck of unique cards names each card in `ranks`, and its artwork keys default to the rank.
+
 ### Changed
 
+- The Deck page is rebuilt around illustrated decks: a seeded `Scene` expedition deck, `PersonAvatar` crew and Spanish court cards, relic printings, and suitless prompt cards, each with authored code.
 - `ApiTable` hides inherited HTML/React props (`className`/`sx` stay), renders complex types in a dedicated panel, and shows signature parameter fields inline.
 - `ApiTable` expands fields for slot props and callback parameter types (`ThreadPartProps`, `MoneyInputDetails`), so named contracts are inspectable in the Slots panel and Signature details.
 - `MoneyInput<C>` infers its currency union from `currencies` for `currency`, `onCurrencyChange` and `details.currency`.
