@@ -1104,7 +1104,7 @@ function SelectEmpty({ ref, children, className, sx, ...rest }: SelectEmptyProps
 
 SelectEmpty.displayName = 'Select.Empty';
 
-/** `Object.assign` instantiates the root with its default type argument; this keeps the generic call signature. */
+// `Object.assign` instantiates the root with its default type argument; this keeps the generic call signature.
 export interface SelectComponent {
   <V extends string = string>(props: SelectShorthandProps<V>): ReactElement;
   (props: SelectComposedProps): ReactElement;

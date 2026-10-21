@@ -34,6 +34,7 @@
 
 ### Changed
 
+- The docs site runs on `@jfrader/react-storydocs` 0.16 and renders every API section with the library's own `ApiTable`; the old `@jfrader/storybook-docs` dependency is gone.
 - Dual-mode prop types rename `*EasyProps` to `*ShorthandProps` and `*CompoundProps` to `*ComposedProps`; docs and stories say "shorthand" and "composed". The component APIs are unchanged.
 - `Combobox`, `MultiSelect`, `Tabs`, `RadioGroup`, `SegmentedControl` and `RadioCards` infer their option or item value union in shorthand mode; composed mode stays string-based.
 - `Select` shorthand mode infers its option value union (`<Select<Status> options={...} />`) for `value`, `defaultValue` and `onValueChange`; composed mode stays string-based. `GravityWell` keeps custom item fields through `renderItem` (`GravityWell<T>`).
