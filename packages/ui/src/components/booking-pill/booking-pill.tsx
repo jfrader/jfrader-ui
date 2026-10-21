@@ -269,6 +269,7 @@ const contentStyle = css({
 });
 const stackStyle = css({
   display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr)',
   gap: vars.space[4],
   minInlineSize: 0,
 });

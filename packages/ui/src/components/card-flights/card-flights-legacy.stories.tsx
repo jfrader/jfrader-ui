@@ -10,6 +10,7 @@ import { styled } from '../../index';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { Button } from '../button';
 import { GameCard } from '../game-card';
+import { CARD_FRAME } from '../game-card/card-frame';
 import { GameHand } from '../game-hand';
 import { GameTable } from '../game-table';
 import { GameSeat } from '../game-seat';
@@ -395,7 +396,7 @@ function FlightBoard({ initialDealt, initialPlayed, seatShorthand, largeHand }: 
         seats={[{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 1 }]}
       >
         <GameTable.Seat slotKey="rival">{seatShorthand ? <GameSeat name="Rival" handCount={rival.length} /> : <GameHand.Hidden playerKey="rival" count={rival.length} label="Rival hand" />}</GameTable.Seat>
-        <GameTable.Dock><GameHand playLabel="Play selected" disabled={landingTargets.size > 0}
+        <GameTable.Dock><GameHand size="sm" playLabel="Play selected" disabled={landingTargets.size > 0}
           onPlayIntent={(card) => play({ ...card, cardId: card.id, id: crypto.randomUUID(), playerKey: 'own', isOwn: true })}
            cards={hand} /></GameTable.Dock>
         {[{ key: 'own', isOwn: true }, { key: 'rival', isOwn: false }].map((player) => <GameTable.Play key={player.key} slotKey={player.key}>
@@ -953,11 +954,12 @@ export const SeatShorthandDealAndPlay: Story = {
 function SpanishFlightProbe() {
   const [destination, setDestination] = useState<HTMLDivElement | null>(null);
   const value = { deck: 'spanish', suit: 'oros', rank: 1 } as const;
+  const box = destination && measureCardBox(destination);
   return <>
-    <div ref={setDestination}><GameCard label="Spanish back" value={value} face="back" /></div>
-    {destination && <CardFlight flightId={1} spec={{ destination, target: 'spanish',
-      from: { cx: 200, cy: 200, width: 140, height: 200, rotate: 0 },
-      to: { cx: 400, cy: 200, width: 140, height: 200, rotate: 0 },
+    <GameCard ref={setDestination} size="sm" label="Spanish back" value={value} face="back" />
+    {destination && box && <CardFlight flightId={1} spec={{ destination, target: 'spanish',
+      from: { ...box, cx: box.cx + box.width },
+      to: box,
       card: { id: 'spanish', label: 'Spanish card', value }, face: 'down', durationMs: 10000,
     }} onFinish={() => undefined} />}
   </>;
@@ -975,6 +977,7 @@ export const SpanishFlightBack: Story = {
     card.setAttribute('data-ui', 'game-card custom-card');
     await expect(parseFloat(getComputedStyle(card).width)).toBeCloseTo(parseFloat(getComputedStyle(flight).width), 2);
     await expect(parseFloat(getComputedStyle(card).height)).toBeCloseTo(parseFloat(getComputedStyle(flight).height), 2);
+    await expect(parseFloat(getComputedStyle(card).borderRadius)).toBeCloseTo(parseFloat(getComputedStyle(flight).width) / CARD_FRAME.cornerDivisor, 2);
   },
 };
 

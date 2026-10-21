@@ -14,25 +14,32 @@ test('booking and game previews keep their controls inside narrow viewports', as
       for (const [story, marker] of [
         ['showcase-bookingpill--date', 'booking-pill'],
         ['showcase-bookingpill--long-content', 'booking-pill'],
+        ['showcase-bookingpill--docs', 'booking-pill'],
         ['showcase-controlcenter--default', 'control-center'],
         ['showcase-controlcenter--docs', 'control-center'],
         ['games-cardflights--deal-and-play', 'game-table'],
         ['games-cardflights--composed-board', 'game-table'],
+        ['games-cardflights--every-card-deals', 'game-table'],
+        ['games-cardflights--spanish-flight-back', 'card-flight'],
         ['games-flipgamecard--sizes', 'flip-game-card'],
       ]) {
         await page.goto(`${workbench.baseURL}/iframe.html?id=${story}&viewMode=${story.endsWith('--docs') ? 'docs' : 'story'}`);
-        const root = page.locator(`[data-ui="${marker}"]`).first();
-        await root.waitFor();
+        const roots = page.locator(`[data-ui="${marker}"]`);
+        await roots.first().waitFor();
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${story}: preview overflows at ${viewport.width}px`);
-        const bounds = await root.boundingBox();
-        if (marker === 'game-table') assert.ok(bounds.width >= Math.min(600, viewport.width - 32), `${story}: table collapses to its controls' intrinsic width`);
-        for (const control of await root.locator('button, [role="slider"]').all()) {
-          const box = await control.boundingBox();
-          if (!box) continue;
-          assert.ok(box.x >= bounds.x - 1 && box.x + box.width <= bounds.x + bounds.width + 1, `${story}: control escapes the panel`);
-          assert.ok(box.width >= 24 && box.height >= 24, `${story}: target is smaller than 24px`);
-          if (await control.evaluate((element) => element.tagName === 'BUTTON')) {
-            assert.ok(await control.evaluate((element) => element.scrollWidth <= element.clientWidth), `${story}: button text overflows its target`);
+        for (const root of await roots.all()) {
+          if (!await root.isVisible()) continue;
+          const bounds = await root.boundingBox();
+          assert.ok(bounds.x >= -1 && bounds.x + bounds.width <= viewport.width + 1, `${story}: root escapes the viewport`);
+          if (marker === 'game-table') assert.ok(bounds.width >= Math.min(600, viewport.width - 32), `${story}: table collapses to its controls' intrinsic width`);
+          for (const control of await root.locator('button, [role="slider"]').all()) {
+            const box = await control.boundingBox();
+            if (!box) continue;
+            assert.ok(box.x >= bounds.x - 1 && box.x + box.width <= bounds.x + bounds.width + 1, `${story}: control escapes the panel`);
+            assert.ok(box.width >= 24 && box.height >= 24, `${story}: target is smaller than 24px`);
+            if (await control.evaluate((element) => element.tagName === 'BUTTON')) {
+              assert.ok(await control.evaluate((element) => element.scrollWidth <= element.clientWidth), `${story}: button text overflows its target`);
+            }
           }
         }
       }
