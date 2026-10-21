@@ -5,7 +5,7 @@
 ### Fixed
 
 - `RadialMenu` contains long fallback lists in a scrollable menu and wraps long action labels. `SignaturePad` focuses the canvas after drawing so keyboard shortcuts work immediately. `StreamingCaret` stays visible in forced colors.
-- `LocaleSwitcher` wraps long language labels within narrow layouts. `PageCurl` contains long navigation labels, status text, and hints, and its documentation renders page content without a circular-data error. `Pill` grows with enlarged text. `Prose` keeps images, video, and SVG artwork within its reading column.
+- `LocaleSwitcher` wraps long language labels within narrow layouts. `PageCurl` contains long navigation labels, status text, and hints, keeps its turning flap behind navigation controls, and renders documentation page content without a circular-data error. `Pill` grows with enlarged text. `Prose` keeps images, video, and SVG artwork within its reading column.
 
 ## 0.10.0 — 2026-10-21
 

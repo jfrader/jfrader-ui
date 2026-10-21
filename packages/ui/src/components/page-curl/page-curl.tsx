@@ -156,6 +156,8 @@ const foldStyle = css({
   [FORCED_COLORS]: { background: 'Canvas', borderColor: 'CanvasText' },
 });
 const controlsStyle = css({
+  position: 'relative',
+  zIndex: 1,
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'center',

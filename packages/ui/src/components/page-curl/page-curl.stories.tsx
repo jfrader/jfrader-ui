@@ -380,6 +380,9 @@ export const LongLabels: Story = {
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector<HTMLElement>('[data-ui="page-curl"]')!;
     await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+    const controls = root.querySelector('[data-ui="page-curl-controls"]')!;
+    await expect(getComputedStyle(controls).position).toBe('relative');
+    await expect(getComputedStyle(controls).zIndex).toBe('1');
     for (const button of root.querySelectorAll('button')) {
       await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
       await expectInside(button, root);
