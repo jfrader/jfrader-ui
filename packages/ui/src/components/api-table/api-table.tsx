@@ -1012,6 +1012,9 @@ export function ApiTable({
   const [query, setQuery] = useState('');
   const term = query.trim().toLowerCase();
 
+  const slotDocs = useMemo(() => collectSlots(components), [components]);
+  const visibleSlots = useMemo(() => (term ? slotDocs.filter((slot) => matchesSlot(slot, term)) : slotDocs), [slotDocs, term]);
+  const slotOwners = useMemo(() => new Set(visibleSlots.map((slot) => slot.owner)), [visibleSlots]);
   const visible = useMemo(
     () =>
       components
@@ -1020,14 +1023,11 @@ export function ApiTable({
           own: entry.props.filter((prop) => !prop.inheritedFrom && !isNativeInherited(prop) && matchesTerm(prop, term)),
           inherited: entry.props.filter((prop) => Boolean(prop.inheritedFrom) && !isNativeInherited(prop) && matchesTerm(prop, term)),
         }))
-        .filter(({ own, inherited }) => !term || own.length > 0 || inherited.length > 0),
-    [components, term],
+        .filter(({ entry, own, inherited }) => !term || own.length > 0 || inherited.length > 0 || slotOwners.has(entry.name)),
+    [components, term, slotOwners],
   );
 
   const total = visible.reduce((sum, { own, inherited }) => sum + (term ? own.length + inherited.length : own.length), 0);
-  const slotDocs = useMemo(() => collectSlots(components), [components]);
-  const visibleSlots = useMemo(() => (term ? slotDocs.filter((slot) => matchesSlot(slot, term)) : slotDocs), [slotDocs, term]);
-  const slotOwners = useMemo(() => new Set(visibleSlots.map((slot) => slot.owner)), [visibleSlots]);
   const status = term ? `${total} ${total === 1 ? 'prop matches' : 'props match'} “${query.trim()}”` : `${total} documented props`;
 
   return (
