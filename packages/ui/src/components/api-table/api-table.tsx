@@ -88,10 +88,18 @@ export interface ApiTypeParameterDoc {
   description?: string;
 }
 
+export interface ApiComponentCustomization {
+  slots?: ApiPropDoc;
+  slotProps?: ApiPropDoc;
+}
+
 export interface ApiComponentDoc {
   name: string;
   description?: string;
+  /** Ordinary props. `slots` and `slotProps` live in `customization`, not here. */
   props: readonly ApiPropDoc[];
+  /** Slot replacement and slot configuration contracts, rendered by the Slots section. */
+  customization?: ApiComponentCustomization;
   /** Generic parameters declared by the component, e.g. `V extends string = string`. */
   typeParameters?: readonly ApiTypeParameterDoc[];
   /** Native element whose props also apply, e.g. `button`. */
@@ -454,7 +462,6 @@ const slotOwnerHeadingStyle = css({
 const slotPropsOnlyStyle = css({ color: vars.color.textMuted, border: `1px solid ${vars.color.borderSubtle}` });
 const slotContractStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: vars.space[1], marginBlock: `${vars.space[2]} 0`, marginInline: 0, color: vars.color.textMuted, fontSize: vars.textSize.xs });
 const slotContractLabel = css({ color: vars.color.textMuted, fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.06em' });
-const slotLinkStyle = css({ display: 'inline-flex', marginBlockStart: vars.space[2], color: vars.color.accentText, fontSize: vars.textSize.xs, textDecoration: 'underline', textUnderlineOffset: '0.15em', '&:focus-visible': focusRingInset });
 const slotNameStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[1], fontFamily: vars.font.mono, fontSize: vars.textSize.sm, fontWeight: vars.fontWeight.semibold });
 const slotPartStyle = css({
   paddingInline: vars.space[1],
@@ -680,6 +687,20 @@ function slotTypeLabel(type: string): string {
   return omitted?.[1] ?? current;
 }
 
+const CUSTOMIZATION_PROP_NAMES = ['slots', 'slotProps'] as const;
+
+/** Move customization maps out of the ordinary prop list at the docs boundary. */
+function normalizeComponent(component: ApiComponentDoc): ApiComponentDoc {
+  const slots = component.customization?.slots ?? component.props.find((prop) => prop.name === 'slots');
+  const slotProps = component.customization?.slotProps ?? component.props.find((prop) => prop.name === 'slotProps');
+  if (!slots && !slotProps) return component;
+  return {
+    ...component,
+    props: component.props.filter((prop) => !(CUSTOMIZATION_PROP_NAMES as readonly string[]).includes(prop.name)),
+    customization: { slots, slotProps },
+  };
+}
+
 function slotAnchor(owner: string): string {
   return `slots-${owner.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
 }
@@ -688,7 +709,7 @@ function collectSlots(components: readonly ApiComponentDoc[]): ApiSlotDoc[] {
   const slots = new Map<string, ApiSlotDoc>();
   // A slot identity is the owner plus the name: every compound part may have its own `root`.
   for (const component of components) {
-    for (const member of component.props.find((prop) => prop.name === 'slots')?.members ?? []) {
+    for (const member of component.customization?.slots?.members ?? []) {
       const key = `${component.name}:${member.name}`;
       slots.set(key, {
         owner: component.name,
@@ -703,7 +724,7 @@ function collectSlots(components: readonly ApiComponentDoc[]): ApiSlotDoc[] {
     }
   }
   for (const component of components) {
-    for (const member of component.props.find((prop) => prop.name === 'slotProps')?.members ?? []) {
+    for (const member of component.customization?.slotProps?.members ?? []) {
       const key = `${component.name}:${member.name}`;
       const slot = slots.get(key);
       if (!slot) {
@@ -818,18 +839,19 @@ function ApiSlots({
 }
 
 function matchesSlot(slot: ApiSlotDoc, term: string): boolean {
+  if (term === 'slots' || term === 'slotprops') return true;
   return [slot.owner, slot.name, slot.description, slot.replacementType, slot.propsType, slot.part]
     .some((value) => value?.toLowerCase().includes(term))
     || Boolean(slot.members?.some((member) => matchesTerm(member, term)));
 }
 
-function PropRow({ prop, density, slotLink }: { prop: ApiPropDoc; density: ApiTableDensity; slotLink?: string }) {
+function PropRow({ prop, density }: { prop: ApiPropDoc; density: ApiTableDensity }) {
   const [open, setOpen] = useState(false);
   const detailsId = useId();
   const deprecated = prop.tags?.find((tag) => tag.name === 'deprecated');
   const since = prop.tags?.find((tag) => tag.name === 'since');
   const example = prop.tags?.find((tag) => tag.name === 'example');
-  const expandable = !slotLink && Boolean(prop.members?.length || prop.element?.members.length || prop.signatures?.length || example || deprecated);
+  const expandable = Boolean(prop.members?.length || prop.element?.members.length || prop.signatures?.length || example || deprecated);
   const detailsLabel = prop.members?.length
     ? `${prop.members.length} ${prop.members.length === 1 ? 'member' : 'members'}`
     : prop.element?.members.length
@@ -898,10 +920,6 @@ function PropRow({ prop, density, slotLink }: { prop: ApiPropDoc; density: ApiTa
           {since ? <span>Since {since.text}</span> : null}
         </div>
 
-        {slotLink ? (
-          <a css={slotLinkStyle} href={slotLink}>View slot contracts →</a>
-        ) : null}
-
         {expandable ? (
           <button
             type="button"
@@ -941,13 +959,11 @@ function ApiPart({
   density,
   headingLevel,
   term,
-  slotsAvailable,
 }: {
   component: ApiComponentDoc;
   density: ApiTableDensity;
   headingLevel: 2 | 3 | 4;
   term: string;
-  slotsAvailable: boolean;
 }) {
   const [showInherited, setShowInherited] = useState(false);
   const own = component.props.filter((prop) => !prop.inheritedFrom && !isNativeInherited(prop));
@@ -984,7 +1000,7 @@ function ApiPart({
       {ownMatches.length > 0 ? (
         <dl css={rowsStyle}>
           {ownMatches.map((prop) => (
-            <PropRow key={prop.name} prop={prop} density={density} slotLink={slotsAvailable && (prop.name === 'slots' || prop.name === 'slotProps') ? `#${slotAnchor(component.name)}` : undefined} />
+            <PropRow key={prop.name} prop={prop} density={density} />
           ))}
         </dl>
       ) : (
@@ -1000,7 +1016,7 @@ function ApiPart({
       {inheritedVisible.length > 0 ? (
         <dl css={rowsStyle}>
           {inheritedVisible.map((prop) => (
-            <PropRow key={prop.name} prop={prop} density={density} slotLink={slotsAvailable && (prop.name === 'slots' || prop.name === 'slotProps') ? `#${slotAnchor(component.name)}` : undefined} />
+            <PropRow key={prop.name} prop={prop} density={density} />
           ))}
         </dl>
       ) : null}
@@ -1030,20 +1046,21 @@ export function ApiTable({
 }: ApiTableProps) {
   const [query, setQuery] = useState('');
   const term = query.trim().toLowerCase();
+  const normalizedComponents = useMemo(() => components.map(normalizeComponent), [components]);
 
-  const slotDocs = useMemo(() => collectSlots(components), [components]);
+  const slotDocs = useMemo(() => collectSlots(normalizedComponents), [normalizedComponents]);
   const visibleSlots = useMemo(() => (term ? slotDocs.filter((slot) => matchesSlot(slot, term)) : slotDocs), [slotDocs, term]);
   const slotOwners = useMemo(() => new Set(visibleSlots.map((slot) => slot.owner)), [visibleSlots]);
   const visible = useMemo(
     () =>
-      components
+      normalizedComponents
         .map((entry) => ({
           entry,
           own: entry.props.filter((prop) => !prop.inheritedFrom && !isNativeInherited(prop) && matchesTerm(prop, term)),
           inherited: entry.props.filter((prop) => Boolean(prop.inheritedFrom) && !isNativeInherited(prop) && matchesTerm(prop, term)),
         }))
         .filter(({ entry, own, inherited }) => !term || own.length > 0 || inherited.length > 0 || slotOwners.has(entry.name)),
-    [components, term, slotOwners],
+    [normalizedComponents, term, slotOwners],
   );
 
   const total = visible.reduce((sum, { own, inherited }) => sum + (term ? own.length + inherited.length : own.length), 0);
@@ -1077,7 +1094,7 @@ export function ApiTable({
           </div>
         ) : null}
         <span css={summaryStyle} aria-hidden="true">
-          {term ? `${total} of ${components.reduce((sum, entry) => sum + entry.props.filter((prop) => !prop.inheritedFrom && !isNativeInherited(prop)).length, 0)} props` : countLabel(total)}
+          {term ? `${total} of ${normalizedComponents.reduce((sum, entry) => sum + entry.props.filter((prop) => !prop.inheritedFrom && !isNativeInherited(prop)).length, 0)} props` : countLabel(total)}
         </span>
       </div>
 
@@ -1089,7 +1106,7 @@ export function ApiTable({
         <p css={emptyStyle}>{emptyMessage}</p>
       ) : (
         visible.map(({ entry }) => (
-          <ApiPart key={entry.name} component={entry} density={density} headingLevel={headingLevel} term={term} slotsAvailable={slotOwners.has(entry.name)} />
+          <ApiPart key={entry.name} component={entry} density={density} headingLevel={headingLevel} term={term} />
         ))
       )}
 
