@@ -31,7 +31,9 @@ test('booking and game previews keep their controls inside narrow viewports', as
           if (!await root.isVisible()) continue;
           const bounds = await root.boundingBox();
           assert.ok(bounds.x >= -1 && bounds.x + bounds.width <= viewport.width + 1, `${story}: root escapes the viewport`);
-          if (marker === 'game-table') assert.ok(bounds.width >= Math.min(600, viewport.width - 32), `${story}: table collapses to its controls' intrinsic width`);
+          // CardFlights deliberately caps its docs board at 480 to keep the two-seat felt round.
+          const tableFloor = story.startsWith('games-cardflights-') ? 480 : 600;
+          if (marker === 'game-table') assert.ok(bounds.width >= Math.min(tableFloor, viewport.width - 32), `${story}: table collapses to its controls' intrinsic width`);
           for (const control of await root.locator('button, [role="slider"]').all()) {
             const box = await control.boundingBox();
             if (!box) continue;
