@@ -16,7 +16,11 @@ import { GameCardStack, getPlayedCardKey, getPileOffset, getStableJitter, getSta
   type GameCardStackPile, type GameCardStackProps } from './index';
 
 const StackStage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 360, marginInline: 'auto' });
-const TableStage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto' });
+const TableStage = styled.div({
+  inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto',
+  // A two-seat table becomes a thin vertical sliver in a 640-tall phone stage.
+  '@media (max-width: 30rem)': { blockSize: 360 },
+});
 // Contains PileFrame's block margins so an inspected fan stays inside the canvas.
 const PileStage = styled.div({ display: 'flow-root', inlineSize: 'fit-content', marginInline: 'auto' });
 // Stories pick a stage with `parameters.stage`; `none` is for stories that size themselves.
@@ -889,7 +893,10 @@ import { GameCardStack, type GameCardStackPile } from '@jfrader/ui/game-card-sta
 import { GameTable } from '@jfrader/ui/game-table';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
-const TableFrame = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto' });
+const TableFrame = styled.div({
+  inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto',
+  '@media (max-width: 30rem)': { blockSize: 360 },
+});
 
 const spanishPiles: readonly GameCardStackPile[] = [
   { playerKey: 'Ana', label: 'Cartas jugadas de Ana', cards: [{ id: 'ana-play-1', label: 'as de oros', value: { deck: 'spanish', suit: 'oros', rank: 1 } }] },
