@@ -14,7 +14,8 @@ export type GameCardRank = SpanishRank | FrenchRank;
  */
 export interface GameCardValue {
   deck?: string;
-  suit: string;
+  /** Omit for a deck of unique cards. */
+  suit?: string;
   rank: string | number;
 }
 

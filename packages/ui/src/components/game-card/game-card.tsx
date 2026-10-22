@@ -19,7 +19,7 @@ import { CARD_FACE, CARD_FRAME } from './card-frame';
 import type { GameCardValue } from './decks';
 import { CardRoot, type GameCardRootCustomization, type GameCardRootProps, type GameCardRootSlotProps } from './game-card-root';
 
-export type GameCardSize = 'sm' | 'md' | 'lg';
+export type GameCardSize = 'sm' | 'md' | 'lg' | 'xl';
 /**
  * Face to display. Defaults to `print` when `value` is present, or `back` when omitted.
  */
@@ -62,7 +62,7 @@ export interface GameCardProps
   face?: GameCardFace;
   /** Explicit back tile override. When omitted, the back is determined by the card's deck. */
   backPattern?: PatternVariant;
-  /** Card width: `sm` 32px, `md` 72px, `lg` 112px. */
+  /** Card width: `sm` 32px, `md` 72px, `lg` 112px, `xl` 160px. */
   size?: GameCardSize;
   /** Replaces the printed rank mark; the suit glyph stays. */
   rankLabel?: string;
@@ -168,6 +168,7 @@ export const gameCardSizeStyles: Record<GameCardSize, SerializedStyles> = {
   sm: css({ '--game-card-width': vars.size.gameCardSm }),
   md: css({ '--game-card-width': vars.size.gameCardMd }),
   lg: css({ '--game-card-width': vars.size.gameCardLg }),
+  xl: css({ '--game-card-width': vars.size.gameCardXl }),
 };
 
 export function GameCard(props: GameCardProps) {
@@ -378,16 +379,19 @@ function PrintedFace({ deck, value, rankLabel, slots, slotProps }: PrintedFacePr
     };
   }, [deck, value.suit, value.rank, rankLabel, slots?.face]);
   const Face = slots?.face ?? 'span';
-  const suitConfig = deck.suits[value.suit];
-  const rankConfig = deck.ranks[String(value.rank)];
+  const suitKey = value.suit === undefined || value.suit === '' ? undefined : value.suit;
+  const suitConfig = suitKey === undefined ? undefined : deck.suits?.[suitKey];
+  const rankConfig = deck.ranks?.[String(value.rank)];
 
   const hasGlyph =
     suitConfig?.glyph !== undefined && isRenderable(suitConfig.glyph) && suitConfig.glyph !== '';
-  const suitGlyph = hasGlyph
-    ? suitConfig.glyph
-    : suitConfig?.label && suitConfig.label.length > 0
-      ? suitConfig.label
-      : value.suit;
+  const suitGlyph = suitKey === undefined
+    ? undefined
+    : hasGlyph
+      ? suitConfig?.glyph
+      : suitConfig?.label && suitConfig.label.length > 0
+        ? suitConfig.label
+        : suitKey;
 
   const rawRank = String(value.rank);
   const mark =
@@ -411,7 +415,7 @@ function PrintedFace({ deck, value, rankLabel, slots, slotProps }: PrintedFacePr
       {hasGlyph && <span css={[watermarkStyle, watermarkTopStyle]}>{suitGlyph}</span>}
       <span ref={markRef} data-card-mark="" css={markStyle}>
         <span>{mark}</span>
-        <span>{suitGlyph}</span>
+        {suitGlyph !== undefined && <span>{suitGlyph}</span>}
       </span>
       {hasGlyph && <span css={[watermarkStyle, watermarkBottomStyle]}>{suitGlyph}</span>}
     </Face>

@@ -182,6 +182,7 @@ export const base = {
     gameCardSm: '32px',
     gameCardMd: '72px',
     gameCardLg: '112px',
+    gameCardXl: '160px',
     gameCardPerspective: '28rem',
     // Layer inline size at which DialogStack's auto variant switches from sheet to centered dialog.
     dialogStackBreakpoint: '640px',

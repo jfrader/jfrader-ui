@@ -15,16 +15,21 @@ export interface DeckRank {
 /**
  * A client-side deck definition containing suits, ranks, card art sets, and backs.
  *
+ * A deck does not need suits or printed ranks. Omit `suits` and give each card its own rank:
+ * art keys then default to the rank alone, and a card without a suit prints only its rank mark.
+ *
  * `Deck` may carry non-serializable `ReactNode` artwork. Because card props
  * stay serializable across server/client boundaries, `<GameCard>` takes only a string deck id
  * (`value.deck`), which resolves against `<DeckProvider>` or the built-in decks (`spanish`, `french`).
  */
 export interface Deck {
   id: string;
-  suits: Readonly<Record<string, DeckSuit>>;
-  ranks: Readonly<Record<string, DeckRank>>;
-  /** The art key for a card. Defaults to `${suit}-${rank}`. */
-  cardId?: (suit: string, rank: string) => string;
+  /** Suits by key. Omit them for a suitless deck. */
+  suits?: Readonly<Record<string, DeckSuit>>;
+  /** Ranks by key. Omit them when every card carries its own artwork and label. */
+  ranks?: Readonly<Record<string, DeckRank>>;
+  /** The art key for a card. Defaults to `${suit}-${rank}`, or the rank alone for a card without a suit. */
+  cardId?: (suit: string | undefined, rank: string) => string;
   /** Art for every card, before any named set. */
   art?: DeckArtSet;
   /** Named sets of card art. A set may cover only some cards. */
@@ -42,7 +47,8 @@ export type DeckArtSet = Readonly<Record<string, DeckArt>>;
 export type DeckBack = ReactNode | { pattern: PatternVariant; tone?: PatternTone };
 
 export interface CardArtRequest {
-  suit: string;
+  /** Omitted for a deck of unique cards. */
+  suit?: string;
   rank: string;
   /** The set the consumer asked this card to use. */
   artSet?: string;
@@ -53,8 +59,8 @@ export interface CardArtRequest {
 }
 
 /** The art key of a card, honouring the deck's `cardId`. */
-export function cardArtId(deck: Deck, suit: string, rank: string): string {
-  return deck.cardId?.(suit, rank) ?? `${suit}-${rank}`;
+export function cardArtId(deck: Deck, suit: string | undefined, rank: string): string {
+  return deck.cardId?.(suit, rank) ?? (suit === undefined || suit === '' ? rank : `${suit}-${rank}`);
 }
 
 /** The art for a card, or undefined when it should render its printed face. */

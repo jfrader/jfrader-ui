@@ -192,6 +192,7 @@ export const vars = {
     "gameCardSm": "var(--ui-size-game-card-sm)",
     "gameCardMd": "var(--ui-size-game-card-md)",
     "gameCardLg": "var(--ui-size-game-card-lg)",
+    "gameCardXl": "var(--ui-size-game-card-xl)",
     "gameCardPerspective": "var(--ui-size-game-card-perspective)",
     "dialogStackBreakpoint": "var(--ui-size-dialog-stack-breakpoint)",
     "dialogStackSheetPeek": "var(--ui-size-dialog-stack-sheet-peek)",

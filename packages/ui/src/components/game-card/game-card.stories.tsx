@@ -16,8 +16,8 @@ import { FlipGameCard } from '../flip-game-card';
 import { Scene } from '../scene';
 import { createFlightRegistry, FlightRegistryContext } from '../card-flights/flight-registry';
 
-const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly GameCardSize[];
-const SIZE_PX = { sm: 32, md: 72, lg: 112 } as const;
+const SIZES = ['sm', 'md', 'lg', 'xl'] as const satisfies readonly GameCardSize[];
+const SIZE_PX = { sm: 32, md: 72, lg: 112, xl: 160 } as const;
 const FRAME_RATIO = 1.48;
 
 const SPANISH_SUITS = ['oros', 'copas', 'espadas', 'bastos'] as const;
@@ -58,7 +58,10 @@ const SUIT_NAMES: Record<string, string> = {
   clubs: 'clubs',
   spades: 'spades',
 };
-const cardLabel = (value: GameCardValue) => `${SPANISH_RANK_NAMES[String(value.rank)] ?? value.rank} de ${SUIT_NAMES[value.suit]}`;
+const cardLabel = (value: GameCardValue) => {
+  const rank = SPANISH_RANK_NAMES[String(value.rank)] ?? String(value.rank);
+  return value.suit === undefined ? rank : `${rank} de ${SUIT_NAMES[value.suit]}`;
+};
 
 const ACE_OF_OROS: GameCardValue = { deck: 'spanish', suit: 'oros', rank: 1 };
 const QUEEN_OF_HEARTS: GameCardValue = { deck: 'french', suit: 'hearts', rank: 'Q' };
@@ -602,12 +605,12 @@ export function FaceDownExamples() {
   },
 };
 
-/** Small, medium, and large cards. */
+/** Cards from 32px to 160px wide. */
 export const Sizes: Story = {
   name: 'Sizes',
   parameters: {
     docs: {
-      description: { story: 'Compare the same printed card at small, medium and large sizes.' },
+      description: { story: 'Compare the same printed card at each size.' },
       source: {
         language: 'tsx',
         code: `import { GameCard } from '@jfrader/ui/game-card';
@@ -622,6 +625,7 @@ export function CardSizes() {
       <GameCard size="sm" label="sm card" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
       <GameCard size="md" label="md card" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
       <GameCard size="lg" label="lg card" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
+      <GameCard size="xl" label="xl card" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
     </Row>
   );
 }`,
