@@ -23,6 +23,7 @@ import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { LayoutLayer } from '../../utils/layout-layer';
 import { Button, type ButtonProps } from '../button';
 import { Card } from '../card';
 import { Progress } from '../progress';
@@ -592,7 +593,7 @@ function NowPlayingRoot({
   );
   const artwork = (mini: boolean) =>
     track && (
-      <motion.div
+      <LayoutLayer
         css={mini && miniArtworkStyle}
         layoutId={`${id}-artwork`}
         data-ui="now-playing-artwork"
@@ -623,7 +624,7 @@ function NowPlayingRoot({
         >
           <Artwork key={track.artwork} track={track} slot={slotProps?.artwork} component={slots?.artwork} />
         </motion.div>
-      </motion.div>
+      </LayoutLayer>
     );
   return (
     <MotionConfig reducedMotion="user">
