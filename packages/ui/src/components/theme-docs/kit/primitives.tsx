@@ -231,7 +231,7 @@ export function TokenFamily({ title, blurb, count, children }: TokenFamilyProps)
         {count === undefined ? null : <span css={familyCountStyle}>{count === 1 ? '1 token' : `${count} tokens`}</span>}
       </div>
       {blurb ? <p css={familyBlurbStyle}>{blurb}</p> : null}
-      <ul css={listStyle}>{children}</ul>
+      <ul role="list" css={listStyle}>{children}</ul>
     </section>
   );
 }
