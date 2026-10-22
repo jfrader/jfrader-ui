@@ -52,16 +52,18 @@ function withLinks(prop: ApiPropDoc): ApiPropDoc {
 export default function Api({ components }: ApiRendererProps) {
   if (!components) return null;
   return (
-    <ApiTable
-      components={components.map(({ props, ...component }, index) => ({
-        ...component,
-        // The page lede already introduces the root; only parts need a second description.
-        description: index === 0 ? undefined : component.description,
-        props: props.map(({ signature, ...prop }) => withLinks({
-          ...prop,
-          mode: signature === 0 ? 'shorthand' : signature === 1 ? 'composed' : undefined,
-        })),
-      }))}
-    />
+    <div style={{ marginBlock: '24px 32px' }}>
+      <ApiTable
+        components={components.map(({ props, ...component }, index) => ({
+          ...component,
+          // The page lede already introduces the root; only parts need a second description.
+          description: index === 0 ? undefined : component.description,
+          props: props.map(({ signature, ...prop }) => withLinks({
+            ...prop,
+            mode: signature === 0 ? 'shorthand' : signature === 1 ? 'composed' : undefined,
+          })),
+        }))}
+      />
+    </div>
   );
 }
