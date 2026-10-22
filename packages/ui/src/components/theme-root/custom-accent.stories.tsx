@@ -156,7 +156,7 @@ function IsolationExample() {
 IsolationExample.displayName = 'IsolationExample';
 
 const meta = {
-  title: 'Foundations/Custom accent',
+  title: 'Theme/Custom accent',
   component: ThemeRoot,
   tags: ['autodocs'],
   parameters: {

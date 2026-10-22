@@ -28,6 +28,7 @@ export default {
     rename: { Data: 'Data display', 'Data Display': 'Data display' },
     order: [
       'Foundations',
+      'Theme',
       'Actions',
       'Forms',
       'Inputs',
@@ -40,6 +41,15 @@ export default {
       'Components',
       'Showcase',
     ],
+  },
+  // The token reference is authored in jfrader-ui as the Theme pages (palette, typography,
+  // spacing and shape, elevation and motion). The engine's generated token listings duplicated
+  // them with raw var() strings and no values, so they stay off.
+  pages: {
+    color: false,
+    typography: false,
+    spacing: false,
+    effects: false,
   },
   theme: {
     attribute: 'data-theme',
