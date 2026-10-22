@@ -15,12 +15,13 @@ import { CardFlights, useBoardFlights, useCardFlightOrigin, useCardFlightStatus,
 import { measureCardBox } from './geometry';
 
 const STAGE_MAX_INLINE_SIZE = 640;
+const BOARD_MAX_INLINE_SIZE = 480;
 const BOARD_BLOCK_SIZE = 640;
 const CUSTOM_STAGE_MIN_BLOCK_SIZE = 320;
 const SLOT_INLINE_SIZE = 136;
 const SLOT_BLOCK_SIZE = 176;
 const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
-const Board = styled.div({ inlineSize: '100%', maxInlineSize: STAGE_MAX_INLINE_SIZE, blockSize: BOARD_BLOCK_SIZE, marginInline: 'auto' });
+const Board = styled.div({ inlineSize: '100%', maxInlineSize: BOARD_MAX_INLINE_SIZE, blockSize: BOARD_BLOCK_SIZE, marginInline: 'auto' });
 const CustomStage = styled.div({
   display: 'flex', justifyContent: 'center', alignItems: 'center', gap: vars.space[8],
   inlineSize: '100%', maxInlineSize: STAGE_MAX_INLINE_SIZE, minBlockSize: CUSTOM_STAGE_MIN_BLOCK_SIZE, marginInline: 'auto',
@@ -139,7 +140,7 @@ import { GameTable } from '@jfrader/ui/game-table';
 import { ThemeRoot } from '@jfrader/ui/theme-root';
 
 const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
-const Board = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto' });
+const Board = styled.div({ inlineSize: '100%', maxInlineSize: 480, blockSize: 640, marginInline: 'auto' });
 const StatusOutput = styled.output({ color: vars.color.text, background: vars.color.bg });
 const DemoTheme = styled.div({ background: vars.color.bg, color: vars.color.text });
 const ResponsiveHand = styled(GameHand)({
