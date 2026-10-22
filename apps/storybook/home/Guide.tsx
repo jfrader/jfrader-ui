@@ -11,9 +11,12 @@ const guidePaths: Record<string, string> = {
   './styling.md': 'foundations-styling',
 };
 
+/** A workbench link (`./?path=/docs/…`, `./?path=/story/…`) belongs to the manager, not the preview. */
+const MANAGER_HREF = /^\.\/\?path=\/(?:docs|story)\//;
+
 function GuideLink({ href, ...props }: ComponentPropsWithoutRef<'a'>) {
   const page = href && guidePaths[href];
-  const target = href?.startsWith('#') ? '_self' : page ? '_top' : props.target;
+  const target = href?.startsWith('#') ? '_self' : page || MANAGER_HREF.test(href ?? '') ? '_top' : props.target;
   return <a {...props} href={page ? `./?path=/docs/${page}--docs` : href} target={target} />;
 }
 

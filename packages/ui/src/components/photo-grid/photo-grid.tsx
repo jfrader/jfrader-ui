@@ -2,6 +2,8 @@ import { withoutSx } from '../../styling/sx';
 'use client';
 
 import {
+  memo,
+  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
@@ -31,6 +33,8 @@ import { PresentationSlot, type PresentationProps } from '../../utils/presentati
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { useLatestCallback } from '../../utils/use-latest-callback';
+import { LayoutLayer } from '../../utils/layout-layer';
 import { GalleryPresentation, isPhotoGridOptionSoldOut, PRODUCT_ASPECT_RATIO } from './gallery-presentation';
 import { PhotoImage, photoFallbackStyle } from './photo-image';
 export { isPhotoGridOptionSoldOut } from './gallery-presentation';
@@ -622,6 +626,109 @@ function PhotoButton({
   return <Component {...props} ref={mergedRef} />;
 }
 
+interface PhotoTileProps {
+  photo: PhotoGridPhoto;
+  index: number;
+  favorite: boolean;
+  /** Shares the image box with the viewer through `layoutId`. */
+  shared: boolean;
+  photoLabel: string;
+  favoriteLabel: string;
+  unavailable: string;
+  photoComponent?: PhotoGridSlots['photo'];
+  photoSlot?: ActionSlot;
+  favoriteComponent: 'button' | NonNullable<PhotoGridSlots['favorite']>;
+  favoriteSlot?: ActionSlot;
+  buttons: Map<string, HTMLButtonElement>;
+  onPhotoFocus: (button: HTMLButtonElement, photoId: string, index: number) => void;
+  onPhotoOpen: (photoId: string) => void;
+  onPhotoKeyDown: (event: KeyboardEvent<HTMLButtonElement>, index: number) => void;
+  onFavoriteFocus: (photoId: string, index: number) => void;
+  onFavoriteToggle: (photoId: string) => void;
+}
+
+/**
+ * One tile's photo and favorite buttons. Memoized with stable handlers, so a density change
+ * re-renders only the layout boxes Motion has to measure, not every tile's subtree.
+ */
+const PhotoTile = memo(function PhotoTile({
+  photo,
+  index,
+  favorite,
+  shared,
+  photoLabel,
+  favoriteLabel,
+  unavailable,
+  photoComponent,
+  photoSlot,
+  favoriteComponent: Favorite,
+  favoriteSlot,
+  buttons,
+  onPhotoFocus,
+  onPhotoOpen,
+  onPhotoKeyDown,
+  onFavoriteFocus,
+  onFavoriteToggle,
+}: PhotoTileProps) {
+  const register = useCallback(
+    (node: HTMLButtonElement | null) => {
+      if (node) buttons.set(photo.id, node);
+      return () => {
+        buttons.delete(photo.id);
+      };
+    },
+    [buttons, photo.id],
+  );
+  return (
+    <>
+      <PhotoButton
+        component={photoComponent}
+        {...withoutSx(photoSlot)}
+        ref={photoSlot?.ref}
+        register={register}
+        data-ui="photo-grid-photo"
+        type="button"
+        aria-label={photoSlot?.['aria-label'] ?? photoLabel}
+        css={[photoStyle, photoSlot?.sx]}
+        onFocus={(event) => {
+          photoSlot?.onFocus?.(event);
+          onPhotoFocus(event.currentTarget, photo.id, index);
+        }}
+        onClick={(event) => {
+          photoSlot?.onClick?.(event);
+          if (!event.defaultPrevented) onPhotoOpen(photo.id);
+        }}
+        onKeyDown={(event) => {
+          photoSlot?.onKeyDown?.(event);
+          if (!event.defaultPrevented) onPhotoKeyDown(event, index);
+        }}
+      >
+        <LayoutLayer layoutId={shared ? photo.id : undefined} transition={SPRING} css={imageBoxStyle}>
+          <PhotoImage key={`${photo.src}\u0000${photo.srcSet ?? ''}`} photo={photo} unavailable={unavailable} />
+        </LayoutLayer>
+      </PhotoButton>
+      <Favorite
+        {...withoutSx(favoriteSlot)}
+        type="button"
+        data-ui="photo-grid-favorite"
+        aria-pressed={favorite}
+        aria-label={favoriteSlot?.['aria-label'] ?? favoriteLabel}
+        css={[tileFavoriteStyle, favoriteSlot?.sx]}
+        onFocus={(event) => {
+          favoriteSlot?.onFocus?.(event);
+          onFavoriteFocus(photo.id, index);
+        }}
+        onClick={(event) => {
+          favoriteSlot?.onClick?.(event);
+          if (!event.defaultPrevented) onFavoriteToggle(photo.id);
+        }}
+      >
+        <StarGlyph filled={favorite} />
+      </Favorite>
+    </>
+  );
+});
+
 interface ViewerProps {
   product: boolean;
   maxZoom: number;
@@ -836,7 +943,8 @@ function PhotoViewer({
         handleKey(event);
       }}
     >
-      <div css={viewerContentStyle}>
+      {/* A closed viewer renders only its dialog shell, so grid updates skip its chrome and filmstrip. */}
+      {present && <div css={viewerContentStyle}>
         <header role="presentation" css={[barStyle, topBarStyle]}>
           <h2 id={`${id}-title`} css={viewerTitleStyle}>
             {photo?.title ?? labels.unavailable}
@@ -1064,8 +1172,71 @@ function PhotoViewer({
             </Filmstrip>
           )}
         </div>
-      </div>
+      </div>}
     </Viewer>
+  );
+}
+
+/**
+ * The grid's live region. It owns the announcement state, so announcing a density, selection,
+ * or favorite change re-renders only this element instead of the whole grid mid-animation.
+ */
+function PhotoGridStatus({
+  component: Status,
+  slot,
+  density,
+  selected,
+  favorites,
+  favoriteState,
+  open,
+  variant,
+  photos,
+  labels,
+  format,
+}: {
+  component: 'div' | NonNullable<PhotoGridSlots['status']>;
+  slot?: Slot<'div'>;
+  density: number;
+  selected: string | null | undefined;
+  favorites: ReadonlySet<string>;
+  favoriteState: readonly string[] | undefined;
+  open: boolean | undefined;
+  variant: NonNullable<PhotoGridProps['variant']>;
+  photos: readonly PhotoGridPhoto[];
+  labels: PhotoGridLabels;
+  format: Intl.NumberFormat;
+}) {
+  const [status, setStatus] = useState('');
+  const lastAccepted = useRef({ density, selected, favorites });
+  useEffect(() => {
+    const previous = lastAccepted.current;
+    if (previous.density !== density) setStatus(labels.columns(format.format(density), density));
+    else if (previous.selected !== selected && (open || variant !== 'grid')) {
+      const index = photos.findIndex((photo) => photo.id === selected);
+      setStatus(
+        index >= 0
+          ? labels.position(format.format(index + 1), format.format(photos.length), photos[index]!.title)
+          : labels.unavailable,
+      );
+    } else if (
+      previous.favorites.size !== favorites.size ||
+      [...favorites].some((id) => !previous.favorites.has(id))
+    ) {
+      const changed = photos.find((photo) => favorites.has(photo.id) !== previous.favorites.has(photo.id));
+      if (changed) setStatus(labels.favorite(changed.title, favorites.has(changed.id)));
+    }
+    lastAccepted.current = { density, selected, favorites };
+  }, [density, selected, favoriteState, open]);
+  return (
+    <Status
+      {...withoutSx(slot)}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      css={[statusStyle, slot?.sx]}
+    >
+      {status}
+    </Status>
   );
 }
 
@@ -1200,8 +1371,6 @@ export function PhotoGrid<P extends PhotoGridPhoto = PhotoGridPhoto>({
   const previewOriginY = useMotionValue('50%');
   const previewOrigin = useTransform([previewOriginX, previewOriginY], ([ox, oy]) => `${ox} ${oy}`);
   const densityIndex = steps.indexOf(density);
-  const [status, setStatus] = useState('');
-  const lastAccepted = useRef({ density, selected, favorites });
 
   if (process.env.NODE_ENV !== 'production') {
     const seen = new Set<string>();
@@ -1280,26 +1449,6 @@ export function PhotoGrid<P extends PhotoGridPhoto = PhotoGridPhoto>({
     if (next) buttons.current.get(next.id)?.focus();
     else rootRef.current?.focus();
   }, [photos, open]);
-
-  useEffect(() => {
-    const previous = lastAccepted.current;
-    if (previous.density !== density) setStatus(labels.columns(format.format(density), density));
-    else if (previous.selected !== selected && (open || variant !== 'grid')) {
-      const index = photos.findIndex((photo) => photo.id === selected);
-      setStatus(
-        index >= 0
-          ? labels.position(format.format(index + 1), format.format(photos.length), photos[index]!.title)
-          : labels.unavailable,
-      );
-    } else if (
-      previous.favorites.size !== favorites.size ||
-      [...favorites].some((id) => !previous.favorites.has(id))
-    ) {
-      const changed = photos.find((photo) => favorites.has(photo.id) !== previous.favorites.has(photo.id));
-      if (changed) setStatus(labels.favorite(changed.title, favorites.has(changed.id)));
-    }
-    lastAccepted.current = { density, selected, favorites };
-  }, [density, selected, favoriteState, open]);
 
   const toggleFavorite = (photoId: string) => {
     const next = new Set(favorites);
@@ -1382,6 +1531,22 @@ export function PhotoGrid<P extends PhotoGridPhoto = PhotoGridPhoto>({
       rootRef.current
     )?.focus({ preventScroll: true });
   };
+
+  // Stable tile handlers keep `PhotoTile` memoized across density and focus changes.
+  const onPhotoFocus = useLatestCallback((button: HTMLButtonElement, photoId: string, index: number) => {
+    buttons.current.set(photoId, button);
+    focused.current = { id: photoId, index, kind: 'photo' };
+  });
+  const onPhotoOpen = useLatestCallback((photoId: string) => {
+    invoker.current = photoId;
+    select(photoId);
+    lifecycle.setOpen(true);
+  });
+  const onPhotoKeyDown = useLatestCallback(handlePhotoKey);
+  const onFavoriteFocus = useLatestCallback((photoId: string, index: number) => {
+    focused.current = { id: photoId, index, kind: 'favorite' };
+  });
+  const onFavoriteToggle = useLatestCallback(toggleFavorite);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -1576,7 +1741,7 @@ export function PhotoGrid<P extends PhotoGridPhoto = PhotoGridPhoto>({
                         data-photo-id={photo.id}
                         css={[cellStyle, slotProps?.item?.sx]}
                       >
-                        <motion.div
+                        <LayoutLayer
                           layout={
                             !reduced &&
                             visible &&
@@ -1588,74 +1753,26 @@ export function PhotoGrid<P extends PhotoGridPhoto = PhotoGridPhoto>({
                           transition={SPRING}
                           css={itemStyle}
                         >
-                          <PhotoButton
-                            component={slots?.photo}
-                            {...withoutSx(slotProps?.photo)}
-                            ref={slotProps?.photo?.ref}
-                            register={(node) => {
-                              if (node) buttons.current.set(photo.id, node);
-                              return () => {
-                                buttons.current.delete(photo.id);
-                              };
-                            }}
-                            data-ui="photo-grid-photo"
-                            type="button"
-                            aria-label={
-                              slotProps?.photo?.['aria-label'] ??
-                              labels.openPhoto(photo.title, photo.alt, favorites.has(photo.id))
-                            }
-                            css={[photoStyle, slotProps?.photo?.sx]}
-                            onFocus={(event) => {
-                              slotProps?.photo?.onFocus?.(event);
-                              buttons.current.set(photo.id, event.currentTarget);
-                              focused.current = { id: photo.id, index, kind: 'photo' };
-                            }}
-                            onClick={(event) => {
-                              slotProps?.photo?.onClick?.(event);
-                              if (event.defaultPrevented) return;
-                              invoker.current = photo.id;
-                              select(photo.id);
-                              lifecycle.setOpen(true);
-                            }}
-                            onKeyDown={(event) => {
-                              slotProps?.photo?.onKeyDown?.(event);
-                              if (!event.defaultPrevented) handlePhotoKey(event, index);
-                            }}
-                          >
-                            <motion.div
-                              layoutId={!reduced && visible ? photo.id : undefined}
-                              transition={SPRING}
-                              css={imageBoxStyle}
-                            >
-                              <PhotoImage
-                                key={`${photo.src}\u0000${photo.srcSet ?? ''}`}
-                                photo={photo}
-                                unavailable={labels.imageUnavailable}
-                              />
-                            </motion.div>
-                          </PhotoButton>
-                          <Favorite
-                            {...withoutSx(slotProps?.favorite)}
-                            type="button"
-                            data-ui="photo-grid-favorite"
-                            aria-pressed={favorites.has(photo.id)}
-                            aria-label={
-                              slotProps?.favorite?.['aria-label'] ??
-                              labels.favorite(photo.title, favorites.has(photo.id))
-                            }
-                            css={[tileFavoriteStyle, slotProps?.favorite?.sx]}
-                            onFocus={(event) => {
-                              slotProps?.favorite?.onFocus?.(event);
-                              focused.current = { id: photo.id, index, kind: 'favorite' };
-                            }}
-                            onClick={(event) => {
-                              slotProps?.favorite?.onClick?.(event);
-                              if (!event.defaultPrevented) toggleFavorite(photo.id);
-                            }}
-                          >
-                            <StarGlyph filled={favorites.has(photo.id)} />
-                          </Favorite>
-                        </motion.div>
+                          <PhotoTile
+                            photo={photo}
+                            index={index}
+                            favorite={favorites.has(photo.id)}
+                            shared={!reduced && visible}
+                            photoLabel={labels.openPhoto(photo.title, photo.alt, favorites.has(photo.id))}
+                            favoriteLabel={labels.favorite(photo.title, favorites.has(photo.id))}
+                            unavailable={labels.imageUnavailable}
+                            photoComponent={slots?.photo}
+                            photoSlot={slotProps?.photo}
+                            favoriteComponent={Favorite}
+                            favoriteSlot={slotProps?.favorite}
+                            buttons={buttons.current}
+                            onPhotoFocus={onPhotoFocus}
+                            onPhotoOpen={onPhotoOpen}
+                            onPhotoKeyDown={onPhotoKeyDown}
+                            onFavoriteFocus={onFavoriteFocus}
+                            onFavoriteToggle={onFavoriteToggle}
+                          />
+                        </LayoutLayer>
                       </Item>
                     ))}
                   </List>
@@ -1663,15 +1780,19 @@ export function PhotoGrid<P extends PhotoGridPhoto = PhotoGridPhoto>({
               ) : (
                 <p css={detailStyle}>{labels.empty}</p>
               )}
-              <Status
-                {...withoutSx(slotProps?.status)}
-                role="status"
-                aria-live="polite"
-                aria-atomic="true"
-                css={[statusStyle, slotProps?.status?.sx]}
-              >
-                {status}
-              </Status>
+              <PhotoGridStatus
+                component={Status}
+                slot={slotProps?.status}
+                density={density}
+                selected={selected}
+                favorites={favorites}
+                favoriteState={favoriteState}
+                open={open}
+                variant={variant}
+                photos={photos}
+                labels={labels}
+                format={format}
+              />
               <PhotoViewer
                 product={variant === 'product'}
                 maxZoom={Number.isFinite(zoomFactor) && zoomFactor >= 1 ? zoomFactor : MAX_ZOOM}

@@ -9,6 +9,9 @@
 
 ### Changed
 
+- The theming documentation is one section on both surfaces: story-driven `Theme` pages for palette, typography, spacing and shape, and elevation and motion, each reading its values from `@jfrader/tokens` and showing both palettes; the rebuilt Theming guide replaces the generated token listings on the docs site.
+- `ApiTable` now groups slot contracts by owner, separates replacement types from accepted slot props, includes prop-only parts (MoneyInput/PhoneInput), and turns `slots`/`slotProps` prop rows into compact links to the authoritative Slots section.
+- Public type names in prop, signature and slot expressions link to their declarations through `react-storydocs@0.17.1` source references.
 - The Deck page is rebuilt around illustrated decks: a seeded `Scene` expedition deck, `PersonAvatar` crew and Spanish court cards, relic printings, and suitless prompt cards, each with authored code.
 - `ApiTable` resolves catalog references to docs links, searches nested member/signature fields, and expands local array record contracts (`ThreadComment[]`, `FilterToolbarDefinition[]`, `DialogStackPageRecord[]`).
 - `ApiTable` hides inherited HTML/React props (`className`/`sx` stay), renders complex types in a dedicated panel, and shows signature parameter fields inline.
@@ -22,6 +25,7 @@
 ### Fixed
 
 - `GameCard` paints paper on the printed face and card material on the back layer instead of the card root, so full-bleed artwork no longer shows a light sheet through the antialiased rounded border. The root stays transparent, and `children` art must paint its own base.
+- `PhotoGrid` thumbnail size changes stay smooth: each tile holds a compositor layer only while its layout spring runs, so thumbnails rasterize once per change instead of every frame. A size change also skips re-rendering each tile's contents and the closed viewer, and announcing it no longer re-renders the grid. `NowPlaying` artwork does the same while it moves between the mini and full player.
 - `GameCard` fits unknown suit names and long rank labels within its printed face. `GameSeat` truncates long hand-count labels within its plaque. Card and hand examples wrap on narrow screens and keep focus rings visible. Fixed-size table examples scroll within their documentation previews.
 - `GameRounds` contains long result labels and keeps its ribbon markers aligned. `GameScore` wraps long player names and stages. `GravityWell` scrolls fixed columns within narrow panels, keeps keyboard locations visible, and uses system colors in forced colors. GravityWell and Deck examples fit narrow documentation previews.
 - `GameActions` wraps long action labels, `GameResult` contains long result text and actions, and overlapping `GameMarks` stay within their track. Played-pile examples fit narrow screens and use the shared player seats.

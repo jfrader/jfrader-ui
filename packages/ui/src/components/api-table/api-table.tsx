@@ -20,6 +20,7 @@ export interface ApiTypeRef {
 export interface ApiParameterDoc {
   name: string;
   type: string;
+  typeRefs?: readonly ApiTypeRef[];
   description?: string;
   /** Fields of an object parameter type, e.g. `details: MoneyInputDetails`. */
   members?: readonly ApiPropDoc[];
@@ -29,6 +30,7 @@ export interface ApiParameterDoc {
 export interface ApiSignatureDoc {
   /** Full signature, e.g. `(value: string) => void`. */
   type: string;
+  typeRefs?: readonly ApiTypeRef[];
   parameters: readonly ApiParameterDoc[];
 }
 
@@ -46,6 +48,8 @@ export interface ApiPropDoc {
   name: string;
   /** Type as TypeScript prints it, e.g. `'sm' | 'md' | 'lg'` or `ReactNode`. */
   type: string;
+  /** Public named types inside `type`, already resolved to source links by the docs adapter. */
+  typeRefs?: readonly ApiTypeRef[];
   typeUnavailable?: boolean;
   required?: boolean;
   /** Printed initializer, e.g. `'md'` or `false`. */
@@ -73,6 +77,7 @@ export interface ApiPropDoc {
 
 export interface ApiElementDoc {
   type: string;
+  typeRefs?: readonly ApiTypeRef[];
   members: readonly ApiPropDoc[];
 }
 
@@ -95,6 +100,8 @@ export interface ApiComponentDoc {
 
 /** One replaceable part, collected from a component's `slots` and `slotProps` maps. */
 export interface ApiSlotDoc {
+  /** Component that owns this slot; slot names are only unique within an owner. */
+  owner: string;
   name: string;
   description?: string;
   /** `data-ui` token the default renders with. */
@@ -103,10 +110,16 @@ export interface ApiSlotDoc {
   component?: ApiTypeRef;
   /** Native element that renders the slot by default. */
   defaultElement?: string;
-  /** Props the replacement element accepts. */
-  type?: string;
-  /** Fields of the accepted props type, when the docs engine can expand it. */
+  /** `slots.<name>` contract: the replacement component type. */
+  replacementType?: string;
+  replacementTypeRefs?: readonly ApiTypeRef[];
+  /** `slotProps.<name>` contract: the props accepted by the rendered part. */
+  propsType?: string;
+  propsTypeRefs?: readonly ApiTypeRef[];
+  /** Fields of `propsType`, when the docs engine can expand it. */
   members?: readonly ApiPropDoc[];
+  /** Backwards-compatible alias for `propsType`. */
+  type?: string;
 }
 
 export type ApiTableDensity = 'comfortable' | 'compact';
@@ -180,7 +193,7 @@ const summaryStyle = css({ flex: '0 0 auto', fontSize: vars.textSize.xs, color: 
 
 const partStyle = css({
   paddingInline: vars.space[4],
-  paddingBlock: vars.space[2],
+  paddingBlock: vars.space[3],
   '& + &': { borderBlockStart: `1px solid ${vars.color.borderSubtle}` },
   [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
@@ -271,6 +284,7 @@ const typeCellStyle = css({
   '@media (min-width: 700px)': { borderInlineStart: `1px solid ${vars.color.borderSubtle}`, paddingInlineStart: vars.space[4] },
 });
 const typeStyle = css({ display: 'block', fontFamily: vars.font.mono, fontSize: vars.textSize.sm, lineHeight: 1.7, overflowWrap: 'anywhere', whiteSpace: 'normal' });
+const typeLinkStyle = css({ color: vars.color.accentText, textDecoration: 'underline', textUnderlineOffset: '0.15em', '&:focus-visible': focusRingInset });
 const complexTypeStyle = css({
   paddingBlock: vars.space[1],
   paddingInline: vars.space[2],
@@ -398,17 +412,22 @@ const statusStyle = css({
 });
 
 const elementLabelStyle = css({ marginBlock: `0 ${vars.space[1]}`, marginInline: 0, color: vars.color.textMuted, fontSize: vars.textSize.xs });
-const slotsSectionStyle = css({ paddingInline: vars.space[4], paddingBlock: vars.space[2], borderBlockStart: `1px solid ${vars.color.borderSubtle}` });
+const slotsSectionStyle = css({
+  paddingInline: vars.space[4],
+  paddingBlock: vars.space[5],
+  borderBlockStart: `1px solid ${vars.color.borderSubtle}`,
+  scrollMarginBlockStart: '8rem',
+});
 const slotGridStyle = css({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-  gap: vars.space[2],
+  gap: vars.space[3],
   margin: 0,
-  marginBlockStart: vars.space[2],
+  marginBlockStart: vars.space[3],
 });
 const slotCardStyle = css({
   minInlineSize: 0,
-  padding: vars.space[3],
+  padding: vars.space[4],
   border: `1px solid ${vars.color.borderSubtle}`,
   borderRadius: vars.radius.md,
   backgroundColor: vars.color.surfaceRaised,
@@ -416,6 +435,26 @@ const slotCardStyle = css({
   [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
 const slotCompactStyle = css({ padding: vars.space[2] });
+const slotOwnerStyle = css({
+  marginBlockStart: 0,
+  scrollMarginBlockStart: '8rem',
+  '& + &': { marginBlockStart: vars.space[5], paddingBlockStart: vars.space[4], borderBlockStart: `1px solid ${vars.color.borderSubtle}` },
+});
+const slotOwnerHeadingStyle = css({
+  margin: `0 0 ${vars.space[2]}`,
+  paddingBlockEnd: vars.space[1],
+  borderBlockEnd: `1px solid ${vars.color.borderSubtle}`,
+  color: vars.color.textMuted,
+  fontSize: vars.textSize.xs,
+  fontWeight: vars.fontWeight.semibold,
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+});
+
+const slotPropsOnlyStyle = css({ color: vars.color.textMuted, border: `1px solid ${vars.color.borderSubtle}` });
+const slotContractStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: vars.space[1], marginBlock: `${vars.space[2]} 0`, marginInline: 0, color: vars.color.textMuted, fontSize: vars.textSize.xs });
+const slotContractLabel = css({ color: vars.color.textMuted, fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.06em' });
+const slotLinkStyle = css({ display: 'inline-flex', marginBlockStart: vars.space[2], color: vars.color.accentText, fontSize: vars.textSize.xs, textDecoration: 'underline', textUnderlineOffset: '0.15em', '&:focus-visible': focusRingInset });
 const slotNameStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[1], fontFamily: vars.font.mono, fontSize: vars.textSize.sm, fontWeight: vars.fontWeight.semibold });
 const slotPartStyle = css({
   paddingInline: vars.space[1],
@@ -426,10 +465,10 @@ const slotPartStyle = css({
   fontSize: '0.625rem',
   fontWeight: vars.fontWeight.regular,
 });
-const slotMetaStyle = css({ marginBlockStart: vars.space[1], color: vars.color.textMuted, fontSize: vars.textSize.xs });
-const slotDescriptionStyle = css({ marginBlock: `${vars.space[1]} 0`, marginInline: 0, color: vars.color.textMuted, fontSize: vars.textSize.xs, lineHeight: vars.lineHeight.relaxed });
+const slotMetaStyle = css({ marginBlockStart: vars.space[2], color: vars.color.textMuted, fontSize: vars.textSize.xs });
+const slotDescriptionStyle = css({ marginBlock: `${vars.space[2]} 0`, marginInline: 0, color: vars.color.textMuted, fontSize: vars.textSize.xs, lineHeight: vars.lineHeight.relaxed });
 const slotTypeStyle = css({ marginBlockStart: vars.space[1], minInlineSize: 0 });
-const slotTypeDetailsStyle = css({ marginBlockStart: vars.space[1] });
+const slotTypeDetailsStyle = css({ marginBlockStart: vars.space[2] });
 const slotTypeSummaryStyle = css({ color: vars.color.textMuted, fontSize: vars.textSize.xs, cursor: 'pointer', '&:focus-visible': focusRingInset });
 
 type TypeTokenKind = 'literal' | 'keyword' | 'type' | 'punctuation' | 'operator';
@@ -503,8 +542,9 @@ function InlineText({ text }: { text: string }) {
   );
 }
 
-function TypeText({ type }: { type: string }) {
+function TypeText({ type, refs }: { type: string; refs?: readonly ApiTypeRef[] }) {
   const tokens = useMemo(() => [...type.matchAll(TYPE_TOKEN)].map((match) => match[0]), [type]);
+  const refMap = useMemo(() => new Map((refs ?? []).filter((ref) => ref.href).map((ref) => [ref.name, ref.href as string])), [refs]);
   return (
     <code css={typeStyle} data-ui="api-table-type">
       {tokens.map((token, index) => {
@@ -512,7 +552,12 @@ function TypeText({ type }: { type: string }) {
         const kind = typeTokenKind(token);
         if (kind === null) return token;
         const style = kind === 'literal' && /^\d/.test(token) ? typeNumberStyle : tokenStyles[kind];
-        return (
+        const href = kind === 'type' ? refMap.get(token) : undefined;
+        return href ? (
+          <a key={index} css={typeLinkStyle} href={href} target="_blank" rel="noreferrer" data-kind={kind}>
+            {token}
+          </a>
+        ) : (
           <span key={index} css={style} data-kind={kind}>
             {token}
           </span>
@@ -561,7 +606,7 @@ function MemberRows({ members, depth = 0 }: { members: readonly ApiPropDoc[]; de
             {member.required ? <span css={badgeStyle}>required</span> : null}
           </dt>
           <dd style={{ margin: 0, minInlineSize: 0 }}>
-            <TypeText type={member.type} />
+            <TypeText type={member.type} refs={member.typeRefs} />
             {member.defaultValue ? (
               <span css={defaultStyle}>
                 <span css={defaultLabelStyle}>=</span>
@@ -598,7 +643,7 @@ function Signatures({ signatures, propType }: { signatures: readonly ApiSignatur
       {signatures.map((signature) => (
         <div key={signature.type}>
           <code css={signatureTypeStyle}>
-            <TypeText type={signature.type} />
+            <TypeText type={signature.type} refs={signature.typeRefs} />
           </code>
           {signature.parameters.length > 0 ? (
             <dl css={memberListStyle} style={{ marginBlockStart: vars.space[1] }}>
@@ -606,7 +651,7 @@ function Signatures({ signatures, propType }: { signatures: readonly ApiSignatur
                 <div key={parameter.name} css={parameterRowStyle}>
                   <dt css={memberNameStyle}>{parameter.name}</dt>
                   <dd style={{ margin: 0, minInlineSize: 0 }}>
-                    <TypeText type={parameter.type} />
+                    <TypeText type={parameter.type} refs={parameter.typeRefs} />
                     {parameter.description ? <span css={memberNoteStyle}><InlineText text={parameter.description} /></span> : null}
                     {parameter.members?.length ? <MemberRows members={parameter.members} /> : null}
                   </dd>
@@ -635,27 +680,59 @@ function slotTypeLabel(type: string): string {
   return omitted?.[1] ?? current;
 }
 
+function slotAnchor(owner: string): string {
+  return `slots-${owner.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`;
+}
+
 function collectSlots(components: readonly ApiComponentDoc[]): ApiSlotDoc[] {
   const slots = new Map<string, ApiSlotDoc>();
-  // Only keys in `slots` are replaceable; `slotProps` alone is styling-only.
+  // A slot identity is the owner plus the name: every compound part may have its own `root`.
   for (const component of components) {
     for (const member of component.props.find((prop) => prop.name === 'slots')?.members ?? []) {
-      slots.set(member.name, { name: member.name, description: member.description, part: member.part, component: member.component, defaultElement: member.defaultElement, type: member.type, members: member.members });
+      const key = `${component.name}:${member.name}`;
+      slots.set(key, {
+        owner: component.name,
+        name: member.name,
+        description: member.description,
+        part: member.part,
+        component: member.component,
+        defaultElement: member.defaultElement,
+        replacementType: member.type,
+        replacementTypeRefs: member.typeRefs,
+      });
     }
   }
   for (const component of components) {
     for (const member of component.props.find((prop) => prop.name === 'slotProps')?.members ?? []) {
-      const slot = slots.get(member.name);
-      if (!slot) continue;
+      const key = `${component.name}:${member.name}`;
+      const slot = slots.get(key);
+      if (!slot) {
+        // slotProps-only parts are still configuration contracts; they are not replaceable slots.
+        slots.set(key, {
+          owner: component.name,
+          name: member.name,
+          description: member.description,
+          part: member.part,
+          component: member.component,
+          defaultElement: member.defaultElement,
+          propsType: member.type,
+          propsTypeRefs: member.typeRefs,
+          type: member.type,
+          members: member.members,
+        });
+        continue;
+      }
       slot.description ||= member.description;
       slot.part ??= member.part;
       slot.component ??= member.component;
       slot.defaultElement ??= member.defaultElement;
+      slot.propsType = member.type;
+      slot.propsTypeRefs = member.typeRefs;
       slot.type = member.type;
       slot.members = member.members ?? slot.members;
     }
   }
-  return [...slots.values()].sort((a, b) => Number(b.name === 'root') - Number(a.name === 'root') || a.name.localeCompare(b.name));
+  return [...slots.values()];
 }
 
 function ApiSlots({
@@ -668,66 +745,91 @@ function ApiSlots({
   headingLevel: 2 | 3 | 4;
 }) {
   const Heading = `h${headingLevel}` as 'h2' | 'h3' | 'h4';
+  const OwnerHeading = `h${Math.min(6, headingLevel + 1)}` as 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+  const groups = new Map<string, ApiSlotDoc[]>();
+  for (const slot of slots) {
+    const group = groups.get(slot.owner) ?? [];
+    group.push(slot);
+    groups.set(slot.owner, group);
+  }
   return (
-    <section css={slotsSectionStyle}>
+    <section css={slotsSectionStyle} id="slots">
       <div css={partHeaderStyle}>
         <Heading css={partNameStyle}>Slots</Heading>
-        <span css={partCountStyle}>{slots.length} replaceable</span>
+        <span css={partCountStyle}>{slots.length} contracts</span>
       </div>
       <p css={descriptionStyle}>
-        Replace a slot with <code>slots.&lt;name&gt;</code>; pass its props with <code>slotProps.&lt;name&gt;</code>.
+        Replace a part with <code>slots.&lt;name&gt;</code>; configure it with <code>slotProps.&lt;name&gt;</code>.
       </p>
-      <dl css={slotGridStyle}>
-        {slots.map((slot) => (
-          <div key={slot.name} css={[slotCardStyle, density === 'compact' ? slotCompactStyle : undefined]}>
-            <dt css={slotNameStyle}>
-              <code>{slot.name}</code>
-              {slot.part ? <span css={slotPartStyle}>{`data-ui="${slot.part}"`}</span> : null}
-            </dt>
-            <dd style={{ margin: 0, minInlineSize: 0 }}>
-              {slot.component || slot.defaultElement ? (
-                <span css={slotMetaStyle}>
-                  Default:{' '}
-                  {slot.component ? (
-                    slot.component.href ? (
-                      <a css={metaLinkStyle} href={slot.component.href}>
-                        {slot.component.name}
-                      </a>
-                    ) : (
-                      slot.component.name
-                    )
-                  ) : (
-                    <code>{`<${slot.defaultElement}>`}</code>
-                  )}
-                </span>
-              ) : null}
-              {slot.description ? <p css={slotDescriptionStyle}><InlineText text={slot.description} /></p> : null}
-              {slot.type ? (
-                <details css={slotTypeDetailsStyle}>
-                  <summary css={slotTypeSummaryStyle}>
-                    Props: <code>{slotTypeLabel(slot.type)}</code>
-                  </summary>
-                  <div css={slotTypeStyle}>
-                    <TypeText type={slot.type} />
-                  </div>
-                  {slot.members?.length ? <MemberRows members={slot.members} /> : null}
-                </details>
-              ) : null}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      {[...groups.entries()].map(([owner, ownerSlots]) => (
+        <div key={owner} css={slotOwnerStyle} id={slotAnchor(owner)}>
+          {groups.size > 1 ? <OwnerHeading css={slotOwnerHeadingStyle}>{owner}</OwnerHeading> : null}
+          <dl css={slotGridStyle}>
+            {ownerSlots.map((slot) => (
+              <div key={`${owner}:${slot.name}`} css={[slotCardStyle, density === 'compact' ? slotCompactStyle : undefined]} data-owner={owner} data-slot={slot.name}>
+                <dt css={slotNameStyle}>
+                  <code>{slot.name}</code>
+                  {slot.part ? <span css={slotPartStyle}>{`data-ui="${slot.part}"`}</span> : null}
+                  {!slot.replacementType ? <span css={[badgeStyle, slotPropsOnlyStyle]}>props only</span> : null}
+                </dt>
+                <dd style={{ margin: 0, minInlineSize: 0 }}>
+                  {slot.component || slot.defaultElement ? (
+                    <span css={slotMetaStyle}>
+                      Default:{' '}
+                      {slot.component ? (
+                        slot.component.href ? (
+                          <a css={metaLinkStyle} href={slot.component.href}>
+                            {slot.component.name}
+                          </a>
+                        ) : (
+                          slot.component.name
+                        )
+                      ) : (
+                        <code>{`<${slot.defaultElement}>`}</code>
+                      )}
+                    </span>
+                  ) : null}
+                  {slot.description ? <p css={slotDescriptionStyle}>{slot.description}</p> : null}
+                  {slot.replacementType ? (
+                    <p css={slotContractStyle}>
+                      <span css={slotContractLabel}>Replacement</span>
+                      <TypeText type={slot.replacementType} refs={slot.replacementTypeRefs} />
+                    </p>
+                  ) : null}
+                  {slot.propsType ? (
+                    <details css={slotTypeDetailsStyle}>
+                      <summary css={slotTypeSummaryStyle}>
+                        Props: <code>{slotTypeLabel(slot.propsType)}</code>
+                      </summary>
+                      <div css={slotTypeStyle}>
+                        <TypeText type={slot.propsType} refs={slot.propsTypeRefs} />
+                      </div>
+                      {slot.members?.length ? <MemberRows members={slot.members} /> : null}
+                    </details>
+                  ) : null}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      ))}
     </section>
   );
 }
 
-function PropRow({ prop, density }: { prop: ApiPropDoc; density: ApiTableDensity }) {
+function matchesSlot(slot: ApiSlotDoc, term: string): boolean {
+  return [slot.owner, slot.name, slot.description, slot.replacementType, slot.propsType, slot.part]
+    .some((value) => value?.toLowerCase().includes(term))
+    || Boolean(slot.members?.some((member) => matchesTerm(member, term)));
+}
+
+function PropRow({ prop, density, slotLink }: { prop: ApiPropDoc; density: ApiTableDensity; slotLink?: string }) {
   const [open, setOpen] = useState(false);
   const detailsId = useId();
   const deprecated = prop.tags?.find((tag) => tag.name === 'deprecated');
   const since = prop.tags?.find((tag) => tag.name === 'since');
   const example = prop.tags?.find((tag) => tag.name === 'example');
-  const expandable = Boolean(prop.members?.length || prop.element?.members.length || prop.signatures?.length || example || deprecated);
+  const expandable = !slotLink && Boolean(prop.members?.length || prop.element?.members.length || prop.signatures?.length || example || deprecated);
   const detailsLabel = prop.members?.length
     ? `${prop.members.length} ${prop.members.length === 1 ? 'member' : 'members'}`
     : prop.element?.members.length
@@ -757,7 +859,7 @@ function PropRow({ prop, density }: { prop: ApiPropDoc; density: ApiTableDensity
           <span css={[badgeStyle, unavailableStyle]}>type unavailable</span>
         ) : (
           <div css={prop.members?.length || prop.element?.members.length || prop.signatures?.length ? complexTypeStyle : undefined}>
-            <TypeText type={prop.type} />
+            <TypeText type={prop.type} refs={prop.typeRefs} />
           </div>
         )}
 
@@ -796,6 +898,10 @@ function PropRow({ prop, density }: { prop: ApiPropDoc; density: ApiTableDensity
           {since ? <span>Since {since.text}</span> : null}
         </div>
 
+        {slotLink ? (
+          <a css={slotLinkStyle} href={slotLink}>View slot contracts →</a>
+        ) : null}
+
         {expandable ? (
           <button
             type="button"
@@ -815,7 +921,7 @@ function PropRow({ prop, density }: { prop: ApiPropDoc; density: ApiTableDensity
           {prop.element?.members.length ? (
             <>
               <p css={elementLabelStyle}>
-                Each entry: <TypeText type={prop.element.type} />
+                Each entry: <TypeText type={prop.element.type} refs={prop.element.typeRefs} />
               </p>
               <MemberRows members={prop.element.members} />
             </>
@@ -835,11 +941,13 @@ function ApiPart({
   density,
   headingLevel,
   term,
+  slotsAvailable,
 }: {
   component: ApiComponentDoc;
   density: ApiTableDensity;
   headingLevel: 2 | 3 | 4;
   term: string;
+  slotsAvailable: boolean;
 }) {
   const [showInherited, setShowInherited] = useState(false);
   const own = component.props.filter((prop) => !prop.inheritedFrom && !isNativeInherited(prop));
@@ -876,7 +984,7 @@ function ApiPart({
       {ownMatches.length > 0 ? (
         <dl css={rowsStyle}>
           {ownMatches.map((prop) => (
-            <PropRow key={prop.name} prop={prop} density={density} />
+            <PropRow key={prop.name} prop={prop} density={density} slotLink={slotsAvailable && (prop.name === 'slots' || prop.name === 'slotProps') ? `#${slotAnchor(component.name)}` : undefined} />
           ))}
         </dl>
       ) : (
@@ -892,7 +1000,7 @@ function ApiPart({
       {inheritedVisible.length > 0 ? (
         <dl css={rowsStyle}>
           {inheritedVisible.map((prop) => (
-            <PropRow key={prop.name} prop={prop} density={density} />
+            <PropRow key={prop.name} prop={prop} density={density} slotLink={slotsAvailable && (prop.name === 'slots' || prop.name === 'slotProps') ? `#${slotAnchor(component.name)}` : undefined} />
           ))}
         </dl>
       ) : null}
@@ -923,6 +1031,9 @@ export function ApiTable({
   const [query, setQuery] = useState('');
   const term = query.trim().toLowerCase();
 
+  const slotDocs = useMemo(() => collectSlots(components), [components]);
+  const visibleSlots = useMemo(() => (term ? slotDocs.filter((slot) => matchesSlot(slot, term)) : slotDocs), [slotDocs, term]);
+  const slotOwners = useMemo(() => new Set(visibleSlots.map((slot) => slot.owner)), [visibleSlots]);
   const visible = useMemo(
     () =>
       components
@@ -931,12 +1042,11 @@ export function ApiTable({
           own: entry.props.filter((prop) => !prop.inheritedFrom && !isNativeInherited(prop) && matchesTerm(prop, term)),
           inherited: entry.props.filter((prop) => Boolean(prop.inheritedFrom) && !isNativeInherited(prop) && matchesTerm(prop, term)),
         }))
-        .filter(({ own, inherited }) => !term || own.length > 0 || inherited.length > 0),
-    [components, term],
+        .filter(({ entry, own, inherited }) => !term || own.length > 0 || inherited.length > 0 || slotOwners.has(entry.name)),
+    [components, term, slotOwners],
   );
 
   const total = visible.reduce((sum, { own, inherited }) => sum + (term ? own.length + inherited.length : own.length), 0);
-  const slotDocs = useMemo(() => collectSlots(components), [components]);
   const status = term ? `${total} ${total === 1 ? 'prop matches' : 'props match'} “${query.trim()}”` : `${total} documented props`;
 
   return (
@@ -979,12 +1089,12 @@ export function ApiTable({
         <p css={emptyStyle}>{emptyMessage}</p>
       ) : (
         visible.map(({ entry }) => (
-          <ApiPart key={entry.name} component={entry} density={density} headingLevel={headingLevel} term={term} />
+          <ApiPart key={entry.name} component={entry} density={density} headingLevel={headingLevel} term={term} slotsAvailable={slotOwners.has(entry.name)} />
         ))
       )}
 
-      {showSlots && !term && slotDocs.length > 0 ? (
-        <ApiSlots slots={slotDocs} density={density} headingLevel={headingLevel} />
+      {showSlots && visibleSlots.length > 0 ? (
+        <ApiSlots slots={visibleSlots} density={density} headingLevel={headingLevel} />
       ) : null}
     </PresentationSlot>
   );

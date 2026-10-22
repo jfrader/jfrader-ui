@@ -84,7 +84,9 @@ const preview: Preview = {
         order: [
           'Home',
           'Foundations',
-          ['Getting started', 'Theming', 'Styling', 'Theme', 'Custom accent', 'Next.js', '*'],
+          ['Getting started', 'Theming', 'Styling', 'Next.js', '*'],
+          'Theme',
+          ['Palette', 'Typography', 'Spacing & shape', 'Elevation & motion', 'ThemeRoot', 'Custom accent', '*'],
           'Inputs',
           'Data display',
           'Data',
