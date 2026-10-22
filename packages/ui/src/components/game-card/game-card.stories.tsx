@@ -587,7 +587,8 @@ export function FaceDownExamples() {
       await expect(back.textContent).toBe('');
       const paint = back.querySelector('[data-ui="game-card-back"]');
       if (paint === null) throw new Error('Missing back paint');
-      await expect(getComputedStyle(back).backgroundColor).toBe(getComputedStyle(paint).backgroundColor);
+      // The back owns its material; the card root stays transparent so artwork meets the border cleanly.
+      await expect(getComputedStyle(back).backgroundColor).toBe('rgba(0, 0, 0, 0)');
       await expect(getComputedStyle(paint).backgroundColor).toBe('rgb(200, 16, 46)');
       await expect(getComputedStyle(paint, '::after').content).toBe('none');
       const attributes = [back, ...back.querySelectorAll('*')]
@@ -959,12 +960,16 @@ const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center'
     </Row>
   ),
   play: async ({ canvasElement }) => {
-    // A card is its own material: the paper face reads the same in both themes.
+    // A card is its own material: the printed face paints paper in both themes, while the root stays
+    // transparent so artwork at the card's edge meets the border instead of a sheet behind it.
     const card = within(canvasElement).getByRole('img', { name: 'Q of hearts' });
-    await expect(getComputedStyle(card).backgroundColor).toBe('rgb(244, 244, 245)');
+    const face = card.querySelector('[data-ui="game-card-print"]');
+    if (face === null) throw new Error('Missing printed face');
+    await expect(getComputedStyle(card).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    await expect(getComputedStyle(face).backgroundColor).toBe('rgb(244, 244, 245)');
     const back = within(canvasElement).getByRole('img', { name: BACK_LABEL });
     const paint = back.querySelector('[data-ui="game-card-back"]');
     if (paint === null) throw new Error('Missing back paint');
-    await expect(getComputedStyle(back).backgroundColor).toBe(getComputedStyle(paint).backgroundColor);
+    await expect(getComputedStyle(paint).backgroundColor).toBe('rgb(200, 16, 46)');
   },
 };

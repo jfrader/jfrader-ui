@@ -68,7 +68,10 @@ export interface GameCardProps
   rankLabel?: string;
   /** Draws the card as worn: out of play, or waiting. */
   dimmed?: boolean;
-  /** Your own art — an image, an SVG, anything. Replaces the emoji print or back pattern. */
+  /**
+   * Your own art: an image, an SVG, anything. Replaces the emoji print or back pattern. The card
+   * paints no paper behind art, so art that reaches the edge must paint its own base.
+   */
   children?: ReactNode;
   /** Passes props and styles to the card root, face and back layers. */
   slotProps?: {
@@ -96,9 +99,10 @@ const rootStyle = css({
   verticalAlign: 'middle',
 });
 
-// The card is its own material: paper and ink do not follow the page theme.
+// The card is its own material: paper and ink do not follow the page theme. Paper lives on the
+// printed face, not on the root: artwork that reaches the card's edge must meet the border and the
+// page, not a lighter sheet showing through its antialiased edge.
 const paperStyle = css({
-  backgroundColor: vars.color.cardFace,
   color: vars.color.cardInk,
   border: `1px solid ${vars.color.cardInk}`,
 });
@@ -113,6 +117,7 @@ const layerStyle = css({
 });
 
 const printStyle = css({
+  backgroundColor: vars.color.cardFace,
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr)',
   placeItems: 'center',
@@ -218,7 +223,7 @@ export function ResolvedGameCard({
       rootSlot={slotProps?.root}
       className={className}
       structure={[rootStyle, gameCardSizeStyles[size], dimmed && dimmedStyle]}
-      material={[paperStyle, hidden && backMaterialStyle]}
+      material={[paperStyle]}
       attributes={{ role: 'img', 'aria-label': label, 'data-face': resolvedFace, 'data-deck': hidden ? undefined : deck.id }}
       sx={sx}
     >
