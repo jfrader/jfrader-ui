@@ -9,6 +9,7 @@
 
 ### Changed
 
+- The theming documentation is one section on both surfaces: story-driven `Theme` pages for palette, typography, spacing and shape, and elevation and motion, each reading its values from `@jfrader/tokens` and showing both palettes; the rebuilt Theming guide replaces the generated token listings on the docs site.
 - `ApiTable` now groups slot contracts by owner, separates replacement types from accepted slot props, includes prop-only parts (MoneyInput/PhoneInput), and turns `slots`/`slotProps` prop rows into compact links to the authoritative Slots section.
 - Public type names in prop, signature and slot expressions link to their declarations through `react-storydocs@0.17.1` source references.
 - The Deck page is rebuilt around illustrated decks: a seeded `Scene` expedition deck, `PersonAvatar` crew and Spanish court cards, relic printings, and suitless prompt cards, each with authored code.

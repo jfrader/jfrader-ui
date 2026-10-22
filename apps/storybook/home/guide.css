@@ -1,6 +1,13 @@
 .foundation-guide :not(pre) > code {
-  white-space: normal;
-  overflow-wrap: anywhere;
+  /* A token name broken across lines ("var(" / "-ui-color-accent)") cannot be read or copied. */
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .foundation-guide :not(pre) > code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
 }
 
 .foundation-guide table {
