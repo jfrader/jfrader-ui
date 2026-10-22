@@ -4,6 +4,7 @@ import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { Flex, Stack, styled } from '../../index';
+import { withLightTheme } from '../../testing/story-decorators';
 import { CARD_BACK_PATTERNS, GameCard } from '../game-card';
 import { GameHand } from '../game-hand';
 import { FlipGameCard } from '../flip-game-card';
@@ -24,13 +25,13 @@ const CardCaption = styled.span({ fontSize: vars.textSize.xs, color: vars.color.
 /** The face fills the card, so a card design is a positioning context, not a rectangle. */
 const FaceRoot = styled.div({
   position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
-  backgroundColor: vars.color.cardFace, color: vars.color.cardInk, fontFamily: vars.font.sans,
+  color: vars.color.cardInk, fontFamily: vars.font.sans,
 });
 
 const FaceArt = styled.div({ position: 'relative', flex: '1 1 auto', minBlockSize: 0, overflow: 'hidden' });
 
 const FacePlate = styled.div({
-  flex: '0 0 auto', display: 'grid', gap: '1.2cqw',
+  flex: '0 0 auto', display: 'grid', gap: '1.2cqw', backgroundColor: vars.color.cardFace,
   padding: '4cqw 5cqw 4.5cqw', borderBlockStart: '1px solid rgba(0, 0, 0, 0.16)',
 });
 
@@ -446,7 +447,7 @@ Declare a deck when several cards share suits, ranks, artwork, or a back. A deck
 
 Keep artwork in client modules and reference the deck by string id in card values. Definitions are not validated at runtime; register a deck before rendering its cards, because an unknown deck id throws. Card values stay serializable: \`deck\`, \`suit\`, and \`rank\`.
 
-Artwork replaces the whole face. Compose it as a fill-height design, for example artwork above a title plate. A card is an inline-size container, so size the art's type and spacing in \`cqw\` units, and keep the card's \`label\` as the accessible name.
+Artwork replaces the whole face, and the card paints no paper behind it. Compose a fill-height design whose base color reaches the card's edge, for example artwork above a title plate; a transparent edge picks up the page behind the border. A card is an inline-size container, so size the art's type and spacing in \`cqw\` units, and keep the card's \`label\` as the accessible name.
 
 Resolution order is the card's \`cardArtSets\` entry, the card's \`artSet\`, the deck's \`defaultArtSet\`, the deck's \`art\`, then the printed face. Backs resolve from the same set, then the deck's \`back\`.
 
@@ -1352,6 +1353,7 @@ const resolverDeck = defineDeck({
 
 export const ResolverContract: Story = {
   tags: ['!autodocs'],
+  decorators: [withLightTheme],
   render: () => (
     <DeckProvider decks={[resolverDeck]} default="resolver">
       <Flex wrap align="start" justify="center" gap="md">

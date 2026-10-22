@@ -280,7 +280,9 @@ export const ForcedColors: Story = {
       for (const card of cards) {
         await expect(getComputedStyle(card).borderTopStyle).toBe('solid');
         await expect(getComputedStyle(card).borderTopWidth).toBe('1px');
-        await expect(getComputedStyle(card).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+        const paint = card.querySelector('[data-ui="game-card-back"], [data-ui="game-card-art"]');
+        if (paint === null) throw new Error('Missing back paint');
+        await expect(getComputedStyle(paint).backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
       }
     } finally {
       for (const [rule, condition] of conditions) rule.media.mediaText = condition;
