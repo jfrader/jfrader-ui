@@ -185,6 +185,9 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - Do not add `memo`/`useCallback` ceremony by default: the repo does not assume React Compiler;
   optimize measured boundaries, not guessed ones.
 - `will-change` only for a demonstrated rendering problem, removed afterwards.
+- Layout or shared-layout animations (`layout`, `layoutId`) over images or artwork render through
+  `LayoutLayer` (`utils/layout-layer.tsx`), which holds `will-change: transform` only while the
+  spring runs, so the content rasterizes once instead of every frame.
 
 ### Shorthand mode
 
