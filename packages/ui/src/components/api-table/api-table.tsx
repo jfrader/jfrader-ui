@@ -193,7 +193,7 @@ const summaryStyle = css({ flex: '0 0 auto', fontSize: vars.textSize.xs, color: 
 
 const partStyle = css({
   paddingInline: vars.space[4],
-  paddingBlock: vars.space[2],
+  paddingBlock: vars.space[3],
   '& + &': { borderBlockStart: `1px solid ${vars.color.borderSubtle}` },
   [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
@@ -412,17 +412,22 @@ const statusStyle = css({
 });
 
 const elementLabelStyle = css({ marginBlock: `0 ${vars.space[1]}`, marginInline: 0, color: vars.color.textMuted, fontSize: vars.textSize.xs });
-const slotsSectionStyle = css({ paddingInline: vars.space[4], paddingBlock: vars.space[2], borderBlockStart: `1px solid ${vars.color.borderSubtle}` });
+const slotsSectionStyle = css({
+  paddingInline: vars.space[4],
+  paddingBlock: vars.space[5],
+  borderBlockStart: `1px solid ${vars.color.borderSubtle}`,
+  scrollMarginBlockStart: '8rem',
+});
 const slotGridStyle = css({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-  gap: vars.space[2],
+  gap: vars.space[3],
   margin: 0,
-  marginBlockStart: vars.space[2],
+  marginBlockStart: vars.space[3],
 });
 const slotCardStyle = css({
   minInlineSize: 0,
-  padding: vars.space[3],
+  padding: vars.space[4],
   border: `1px solid ${vars.color.borderSubtle}`,
   borderRadius: vars.radius.md,
   backgroundColor: vars.color.surfaceRaised,
@@ -430,12 +435,26 @@ const slotCardStyle = css({
   [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
 const slotCompactStyle = css({ padding: vars.space[2] });
-const slotOwnerStyle = css({ marginBlockStart: vars.space[3] });
-const slotOwnerHeadingStyle = css({ margin: `0 0 ${vars.space[1]}`, color: vars.color.text, fontSize: vars.textSize.sm, fontWeight: vars.fontWeight.semibold });
+const slotOwnerStyle = css({
+  marginBlockStart: 0,
+  scrollMarginBlockStart: '8rem',
+  '& + &': { marginBlockStart: vars.space[5], paddingBlockStart: vars.space[4], borderBlockStart: `1px solid ${vars.color.borderSubtle}` },
+});
+const slotOwnerHeadingStyle = css({
+  margin: `0 0 ${vars.space[2]}`,
+  paddingBlockEnd: vars.space[1],
+  borderBlockEnd: `1px solid ${vars.color.borderSubtle}`,
+  color: vars.color.textMuted,
+  fontSize: vars.textSize.xs,
+  fontWeight: vars.fontWeight.semibold,
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+});
+
 const slotPropsOnlyStyle = css({ color: vars.color.textMuted, border: `1px solid ${vars.color.borderSubtle}` });
-const slotContractStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: vars.space[1], marginBlock: `${vars.space[1]} 0`, marginInline: 0, color: vars.color.textMuted, fontSize: vars.textSize.xs });
+const slotContractStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: vars.space[1], marginBlock: `${vars.space[2]} 0`, marginInline: 0, color: vars.color.textMuted, fontSize: vars.textSize.xs });
 const slotContractLabel = css({ color: vars.color.textMuted, fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.06em' });
-const slotLinkStyle = css({ display: 'inline-flex', marginBlockStart: vars.space[1], color: vars.color.accentText, fontSize: vars.textSize.xs, textDecoration: 'underline', textUnderlineOffset: '0.15em', '&:focus-visible': focusRingInset });
+const slotLinkStyle = css({ display: 'inline-flex', marginBlockStart: vars.space[2], color: vars.color.accentText, fontSize: vars.textSize.xs, textDecoration: 'underline', textUnderlineOffset: '0.15em', '&:focus-visible': focusRingInset });
 const slotNameStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[1], fontFamily: vars.font.mono, fontSize: vars.textSize.sm, fontWeight: vars.fontWeight.semibold });
 const slotPartStyle = css({
   paddingInline: vars.space[1],
@@ -446,10 +465,10 @@ const slotPartStyle = css({
   fontSize: '0.625rem',
   fontWeight: vars.fontWeight.regular,
 });
-const slotMetaStyle = css({ marginBlockStart: vars.space[1], color: vars.color.textMuted, fontSize: vars.textSize.xs });
-const slotDescriptionStyle = css({ marginBlock: `${vars.space[1]} 0`, marginInline: 0, color: vars.color.textMuted, fontSize: vars.textSize.xs, lineHeight: vars.lineHeight.relaxed });
+const slotMetaStyle = css({ marginBlockStart: vars.space[2], color: vars.color.textMuted, fontSize: vars.textSize.xs });
+const slotDescriptionStyle = css({ marginBlock: `${vars.space[2]} 0`, marginInline: 0, color: vars.color.textMuted, fontSize: vars.textSize.xs, lineHeight: vars.lineHeight.relaxed });
 const slotTypeStyle = css({ marginBlockStart: vars.space[1], minInlineSize: 0 });
-const slotTypeDetailsStyle = css({ marginBlockStart: vars.space[1] });
+const slotTypeDetailsStyle = css({ marginBlockStart: vars.space[2] });
 const slotTypeSummaryStyle = css({ color: vars.color.textMuted, fontSize: vars.textSize.xs, cursor: 'pointer', '&:focus-visible': focusRingInset });
 
 type TypeTokenKind = 'literal' | 'keyword' | 'type' | 'punctuation' | 'operator';
@@ -1012,6 +1031,9 @@ export function ApiTable({
   const [query, setQuery] = useState('');
   const term = query.trim().toLowerCase();
 
+  const slotDocs = useMemo(() => collectSlots(components), [components]);
+  const visibleSlots = useMemo(() => (term ? slotDocs.filter((slot) => matchesSlot(slot, term)) : slotDocs), [slotDocs, term]);
+  const slotOwners = useMemo(() => new Set(visibleSlots.map((slot) => slot.owner)), [visibleSlots]);
   const visible = useMemo(
     () =>
       components
@@ -1020,14 +1042,11 @@ export function ApiTable({
           own: entry.props.filter((prop) => !prop.inheritedFrom && !isNativeInherited(prop) && matchesTerm(prop, term)),
           inherited: entry.props.filter((prop) => Boolean(prop.inheritedFrom) && !isNativeInherited(prop) && matchesTerm(prop, term)),
         }))
-        .filter(({ own, inherited }) => !term || own.length > 0 || inherited.length > 0),
-    [components, term],
+        .filter(({ entry, own, inherited }) => !term || own.length > 0 || inherited.length > 0 || slotOwners.has(entry.name)),
+    [components, term, slotOwners],
   );
 
   const total = visible.reduce((sum, { own, inherited }) => sum + (term ? own.length + inherited.length : own.length), 0);
-  const slotDocs = useMemo(() => collectSlots(components), [components]);
-  const visibleSlots = useMemo(() => (term ? slotDocs.filter((slot) => matchesSlot(slot, term)) : slotDocs), [slotDocs, term]);
-  const slotOwners = useMemo(() => new Set(visibleSlots.map((slot) => slot.owner)), [visibleSlots]);
   const status = term ? `${total} ${total === 1 ? 'prop matches' : 'props match'} “${query.trim()}”` : `${total} documented props`;
 
   return (
