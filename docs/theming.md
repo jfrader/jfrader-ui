@@ -148,14 +148,14 @@ Check the combinations you derive:
 Choose a lighter or darker accent, or override the affected token. Derivation does not verify every
 combination for you.
 
-See [Palette](./?path=/docs/theme-palette--docs) for every color token's role and values.
+See [Palette](https://ui.jfrader.com/#/components/palette) for every color token's role and values.
 
 ## Typography, spacing and shape, elevation and motion
 
-- [Typography](./?path=/docs/theme-typography--docs): font families, text sizes, weights, line heights,
+- [Typography](https://ui.jfrader.com/#/components/typography): font families, text sizes, weights, line heights,
   and editorial type tokens.
-- [Spacing & shape](./?path=/docs/theme-spacing-and-shape--docs): spacing steps and corner radii.
-- [Elevation & motion](./?path=/docs/theme-elevation-and-motion--docs): shadows, stacking, durations,
+- [Spacing & shape](https://ui.jfrader.com/#/components/spacing): spacing steps and corner radii.
+- [Elevation & motion](https://ui.jfrader.com/#/components/motion): shadows, stacking, durations,
   and easing curves.
 
 ## Override tokens

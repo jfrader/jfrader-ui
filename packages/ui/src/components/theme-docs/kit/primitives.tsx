@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { parse } from 'culori';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../../styling/css';
+import { css, type SerializedStyles } from '../../../styling/css';
 import { FORCED_COLORS } from '../../../styling/media';
 import type { Contrast } from './model';
 
@@ -200,6 +201,9 @@ const swatchStyle = css({
   [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
 
+/** Only a translucent fill needs the checkerboard underneath it. */
+const swatchOpaqueStyle = css({ backgroundImage: 'none' });
+
 const swatchFillStyle = css({ display: 'block', inlineSize: '100%', blockSize: '100%', borderRadius: 'calc(0.375rem - 1px)' });
 
 export interface TokenPanelProps {
@@ -292,13 +296,16 @@ export interface SwatchProps {
   /** The color role to paint, e.g. `accentSoft`. Painted through its custom property so the
    * swatch always shows the palette of the page it is on. */
   token: string;
+  /** The authored value, used only to tell whether the fill is translucent. */
+  value: string;
   label?: string;
 }
 
-export function Swatch({ token, label }: SwatchProps) {
+export function Swatch({ token, value, label }: SwatchProps) {
+  const translucent = (parse(value)?.alpha ?? 1) < 1;
   return (
     <span
-      css={swatchStyle}
+      css={[swatchStyle, translucent ? undefined : swatchOpaqueStyle]}
       role={label ? 'img' : undefined}
       aria-label={label}
       aria-hidden={label ? undefined : true}
@@ -306,6 +313,22 @@ export function Swatch({ token, label }: SwatchProps) {
       <span css={swatchFillStyle} data-swatch="" style={{ backgroundColor: `var(${token})` }} />
     </span>
   );
+}
+
+const tokenStyles = new Map<string, SerializedStyles>();
+
+/**
+ * One class per property/value pair, built once. A specimen sizes itself from the token it
+ * documents, so the value differs per row; caching keeps that out of the render path.
+ */
+export function tokenStyle(property: keyof CSSProperties, value: string): SerializedStyles {
+  const key = `${property}:${value}`;
+  let style = tokenStyles.get(key);
+  if (!style) {
+    style = css({ [property]: value });
+    tokenStyles.set(key, style);
+  }
+  return style;
 }
 
 /** A horizontal bar whose width is the token value: the space scale and fixed sizes. */
@@ -320,4 +343,5 @@ const barStyle = css({
   borderRadius: vars.radius.full,
   backgroundColor: vars.color.accent,
   minInlineSize: '2px',
+  [FORCED_COLORS]: { backgroundColor: 'Highlight' },
 });

@@ -29,8 +29,6 @@ export interface ColorRoleDoc {
   readonly role: ColorRole;
   readonly summary: string;
   readonly contrast?: ContrastRule;
-  /** Translucent fills are painted over a checkerboard so the alpha stays visible. */
-  readonly translucent?: boolean;
 }
 
 export interface ColorFamily {
@@ -43,10 +41,10 @@ export interface ColorFamily {
 const SURFACES: ColorRoleDoc[] = [
   { role: 'bg', summary: 'Page background, behind every surface.' },
   { role: 'bgSoft', summary: 'Page background for large flat areas that need a little separation.' },
-  { role: 'surface', summary: 'Default panel fill: cards, menus, fields.' },
-  { role: 'surfaceRaised', summary: 'Panels above the page: popovers, dialogs, sticky headers.' },
+  { role: 'surface', summary: 'Default panel fill: cards, menus, and fields.' },
+  { role: 'surfaceRaised', summary: 'Panels above the page: popovers, dialogs, and sticky headers.' },
   { role: 'surfaceHover', summary: 'Hovered rows, list options and menu items.' },
-  { role: 'surfaceInset', summary: 'Wells that read further back than the surface: inputs, code, tracks.' },
+  { role: 'surfaceInset', summary: 'Wells that read further back than the surface: inputs, code, and tracks.' },
 ];
 
 const TEXT: ColorRoleDoc[] = [
@@ -58,7 +56,7 @@ const TEXT: ColorRoleDoc[] = [
 const BORDERS: ColorRoleDoc[] = [
   { role: 'border', summary: 'Default card and panel outline.' },
   { role: 'borderSubtle', summary: 'Hairlines inside a panel: row separators and section rules.' },
-  { role: 'borderStrong', summary: 'Emphasised outline: selected items and stronger dividers.' },
+  { role: 'borderStrong', summary: 'Emphasized outline: selected items and stronger dividers.' },
   {
     role: 'borderControl',
     summary: 'Form control boundary. Holds 3:1 against the page and the control fill.',
@@ -67,16 +65,16 @@ const BORDERS: ColorRoleDoc[] = [
 ];
 
 const ACCENT: ColorRoleDoc[] = [
-  { role: 'accent', summary: 'Primary action fill: accent buttons, switches, selected indicators.' },
+  { role: 'accent', summary: 'Primary action fill: accent buttons, switches, and selected indicators.' },
   { role: 'accentHover', summary: 'The accent fill while hovered.' },
   {
     role: 'accentText',
     summary: 'Accent-colored text and links; darkens on the light palette to stay legible.',
     contrast: { against: 'surface', min: 4.5 },
   },
-  { role: 'accentSoft', summary: 'Tinted background behind accent content: chips, selected rows.', translucent: true },
-  { role: 'accentSoftHover', summary: 'That tint on hover.', translucent: true },
-  { role: 'accentBorder', summary: 'Outline around accent-tinted content.', translucent: true },
+  { role: 'accentSoft', summary: 'Tinted background behind accent content: chips and selected rows.' },
+  { role: 'accentSoftHover', summary: 'That tint on hover.' },
+  { role: 'accentBorder', summary: 'Outline around accent-tinted content.' },
   {
     role: 'accentContrast',
     summary: 'Text and icons on an accent fill. Derived so it contrasts with your accent.',
@@ -89,15 +87,21 @@ const FEEDBACK: ColorRoleDoc[] = [
   { role: 'dangerHover', summary: 'The destructive fill while hovered.' },
   { role: 'dangerText', summary: 'Error copy and destructive labels.', contrast: { against: 'surface', min: 4.5 } },
   { role: 'dangerContrast', summary: 'Text on a destructive fill.', contrast: { against: 'danger', min: 4.5 } },
-  { role: 'dangerSoft', summary: 'Error banner and field background.', translucent: true },
-  { role: 'dangerSoftHover', summary: 'That background on hover.', translucent: true },
-  { role: 'dangerBorder', summary: 'Outline for error surfaces and invalid fields.', translucent: true },
+  { role: 'dangerSoft', summary: 'Error banner and field background.' },
+  { role: 'dangerSoftHover', summary: 'That background on hover.' },
+  { role: 'dangerBorder', summary: 'Outline for error surfaces and invalid fields.' },
   { role: 'warning', summary: 'Warning icon and accent; a solid fill where one is needed.' },
-  { role: 'warningSoft', summary: 'Warning banner background.', translucent: true },
+  { role: 'warningSoft', summary: 'Warning banner background.' },
   { role: 'success', summary: 'Success icon and accent; a solid fill where one is needed.' },
-  { role: 'successSoft', summary: 'Success banner background.', translucent: true },
+  { role: 'successSoft', summary: 'Success banner background.' },
   { role: 'info', summary: 'Informational icon and accent; a solid fill where one is needed.' },
-  { role: 'infoSoft', summary: 'Informational banner background.', translucent: true },
+  { role: 'infoSoft', summary: 'Informational banner background.' },
+];
+
+const VOICE_ORB: ColorRoleDoc[] = [
+  { role: 'voiceOrbCloudListening', summary: 'Cloud tint while the orb listens.' },
+  { role: 'voiceOrbCloudThinking', summary: 'Cloud tint while the orb works out a reply.' },
+  { role: 'voiceOrbCloudSpeaking', summary: 'Cloud tint while the orb speaks.' },
 ];
 
 const FOCUS: ColorRoleDoc[] = [
@@ -135,12 +139,12 @@ const SIGNATURE_INK: ColorRoleDoc[] = [
 ];
 
 const MATERIALS: ColorRoleDoc[] = [
-  { role: 'surfaceGlass', summary: 'Translucent panel fill, used behind a backdrop blur.', translucent: true },
-  { role: 'surfaceHighlight', summary: 'Top-edge highlight on a glass panel.', translucent: true },
-  { role: 'surfaceSheen', summary: 'Faint accent sheen across a glass panel.', translucent: true },
-  { role: 'surfaceHoloCyan', summary: 'Holographic tint, cyan end.', translucent: true },
-  { role: 'surfaceHoloRose', summary: 'Holographic tint, rose end.', translucent: true },
-  { role: 'scrim', summary: 'Backdrop behind dialogs, drawers and sheets.', translucent: true },
+  { role: 'surfaceGlass', summary: 'Translucent panel fill, used behind a backdrop blur.' },
+  { role: 'surfaceHighlight', summary: 'Top-edge highlight on a glass panel.' },
+  { role: 'surfaceSheen', summary: 'Faint accent sheen across a glass panel.' },
+  { role: 'surfaceHoloCyan', summary: 'Holographic tint, cyan end.' },
+  { role: 'surfaceHoloRose', summary: 'Holographic tint, rose end.' },
+  { role: 'scrim', summary: 'Backdrop behind dialogs, drawers, and sheets.' },
 ];
 
 const COLOR_PICKER: ColorRoleDoc[] = [
@@ -155,7 +159,8 @@ export const COLOR_FAMILIES: readonly ColorFamily[] = [
   { id: 'text', title: 'Text', blurb: 'Three levels of emphasis. Each one holds AA against the surface.', roles: TEXT },
   { id: 'borders', title: 'Borders', blurb: 'Outlines and separators, plus the boundary every form control needs.', roles: BORDERS },
   { id: 'accent', title: 'Accent', blurb: 'The action family. Every value derives from one accent color.', roles: ACCENT },
-  { id: 'feedback', title: 'Feedback', blurb: 'Danger, warning, success and info: a fill, a soft background and text.', roles: FEEDBACK },
+  { id: 'feedback', title: 'Feedback', blurb: 'Danger, warning, success, and info: a fill, a soft background, and text.', roles: FEEDBACK },
+  { id: 'voice-orb', title: 'Voice orb', blurb: 'Cloud tints behind the orb, one per state.', roles: VOICE_ORB },
   { id: 'focus', title: 'Focus', blurb: 'The ring every interactive element shows on :focus-visible.', roles: FOCUS },
   { id: 'syntax', title: 'Code syntax', blurb: 'Code roles, measured against the code block well.', roles: SYNTAX },
   { id: 'card', title: 'Playing card', blurb: 'Card material. Identical on both palettes by design.', roles: PLAYING_CARD },

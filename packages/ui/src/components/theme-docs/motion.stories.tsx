@@ -6,7 +6,7 @@ import { css, keyframes } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { customProperty, tokenPath } from './kit/model';
 import { CARD_MATERIAL_TOKENS, DURATION_FAMILIES, EASING_TOKENS, LAYER_TOKENS, SHADOW_TOKENS } from './kit/motion-model';
-import { TokenFamily, TokenPanel, TokenRow } from './kit/primitives';
+import { TokenFamily, TokenPanel, TokenRow, tokenStyle } from './kit/primitives';
 
 const referenceStyle = css({
   '& li': {
@@ -42,7 +42,6 @@ const trackStyle = css({
   backgroundColor: vars.color.surfaceInset,
   outline: `1px solid ${vars.color.borderStrong}`,
   [FORCED_COLORS]: { outlineColor: 'CanvasText' },
-  '&:dir(rtl)': { scale: '-1 1' },
 });
 
 const squareStyle = css({
@@ -66,7 +65,14 @@ const squareStyle = css({
 function SlidePreview({ duration, easing }: { duration?: string; easing?: string }) {
   return (
     <span css={[trackStyle]} aria-hidden="true">
-      <span css={[squareStyle]} data-motion-square="" style={{ animationDuration: duration, animationTimingFunction: easing }} />
+      <span
+        css={[
+          squareStyle,
+          duration ? tokenStyle('animationDuration', duration) : undefined,
+          easing ? tokenStyle('animationTimingFunction', easing) : undefined,
+        ]}
+        data-motion-square=""
+      />
     </span>
   );
 }
@@ -108,7 +114,7 @@ export const Elevation: Story = {
           {SHADOW_TOKENS.map(({ role, values }) => (
             <TokenRow
               key={role}
-              preview={<span css={[elevationStyle]} aria-hidden="true" style={{ boxShadow: `var(${customProperty('shadow', role)})` }} />}
+              preview={<span css={[elevationStyle, tokenStyle('boxShadow', `var(${customProperty('shadow', role)})`)]} aria-hidden="true" />}
               name={tokenPath('shadow', role)}
               variable={customProperty('shadow', role)}
               values={values}

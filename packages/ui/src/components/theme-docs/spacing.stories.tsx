@@ -5,7 +5,7 @@ import { expect, within } from 'storybook/test';
 import { css } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
 import { customProperty, tokenPath } from './kit/model';
-import { ScaleBar, TokenFamily, TokenPanel, TokenRow } from './kit/primitives';
+import { ScaleBar, TokenFamily, TokenPanel, TokenRow, tokenStyle } from './kit/primitives';
 import { FIXED_SIZES, RADII, SPACE_STEPS } from './kit/space-model';
 
 const SPACE_PREVIEW_SIZE = '48px';
@@ -77,7 +77,7 @@ export const Spacing: Story = {
         {RADII.map((doc) => (
           <TokenRow
             key={doc.key}
-            preview={<span css={[shapeStyle, radiusStyle, doc.key === 'full' ? pillStyle : undefined]} style={{ borderRadius: `var(${doc.variable})` }} aria-hidden="true" />}
+            preview={<span css={[shapeStyle, radiusStyle, doc.key === 'full' ? pillStyle : undefined, tokenStyle('borderRadius', `var(${doc.variable})`)]} aria-hidden="true" />}
             name={doc.name}
             variable={doc.variable}
             values={[{ label: 'Value', value: doc.value }]}
@@ -90,8 +90,12 @@ export const Spacing: Story = {
             key={doc.key}
             preview={/^(?:\d*\.)?\d+(?:px|rem|em|ch|vw|vh)$/.test(doc.value) ? (
               <span
-                css={[shapeStyle, sizeStyle]}
-                style={{ inlineSize: `var(${doc.variable})`, blockSize: `var(${doc.variable})` }}
+                css={[
+                  shapeStyle,
+                  sizeStyle,
+                  tokenStyle('inlineSize', `var(${doc.variable})`),
+                  tokenStyle('blockSize', `var(${doc.variable})`),
+                ]}
                 aria-hidden="true"
               />
             ) : <span aria-hidden="true" />}

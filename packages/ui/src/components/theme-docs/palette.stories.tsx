@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { base } from '@jfrader/tokens';
 import { expect, within } from 'storybook/test';
 import { Swatch, TokenFamily, TokenPanel, TokenRow, type TokenValue } from './kit/primitives';
 import {
@@ -28,7 +29,13 @@ function ColorToken({ doc }: { doc: ColorRoleDoc }) {
 
   return (
     <TokenRow
-      preview={<Swatch token={customProperty('color', doc.role)} label={`${doc.role} swatch`} />}
+      preview={
+        <Swatch
+          token={customProperty('color', doc.role)}
+          value={colorValue('dark', doc.role)}
+          label={`${doc.role} swatch`}
+        />
+      }
       name={tokenPath('color', doc.role)}
       variable={customProperty('color', doc.role)}
       description={doc.summary}
@@ -90,6 +97,11 @@ export const Palette: Story = {
     // Eleven families, each row carrying one value per palette.
     await expect(canvasElement.querySelectorAll('h2')).toHaveLength(COLOR_FAMILIES.length);
     for (const row of rows) await expect(row.querySelectorAll('dd')).toHaveLength(2);
+
+    // Every role in the token source is documented: a new colour token fails here, not silently.
+    for (const role of Object.keys(base.color)) {
+      await expect(canvas.getByText(tokenPath('color', role)), `missing row for ${role}`).toBeVisible();
+    }
 
     const muted = canvas.getByText('theme.color.textMuted').closest('li') as HTMLElement;
     await expect(within(muted).getAllByText(/:1 · (AA|AAA|Pass)$/)).toHaveLength(2);
