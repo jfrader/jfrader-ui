@@ -24,8 +24,8 @@ importers:
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.3.0)(react@19.3.0)
       '@jfrader/react-storydocs':
-        specifier: ^0.17.1
-        version: 0.17.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
+        specifier: ^0.17.2
+        version: 0.17.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
       '@jfrader/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
@@ -731,8 +731,8 @@ packages:
   '@internationalized/number@3.6.9':
     resolution: {integrity: sha512-GgWy2caO/+hV9sT/oCTWGHvbjmJMPT9kkXzoKRLnkEq7adghhR7UprhvY9sXrKfrp3NcDfhF6QQHXR1KfQbB8g==}
 
-  '@jfrader/react-storydocs@0.17.1':
-    resolution: {integrity: sha512-YOCk+1Lrn3aK4afdKl4pBnk0lCBFse4RgeB7IZqsbYJ78Koap2g4P0tWUjxdw873Ky84iPl2eDXJ4kdRqKujdQ==}
+  '@jfrader/react-storydocs@0.17.2':
+    resolution: {integrity: sha512-JL4QMFHSDSSkyfcm/2a8sWLrdof2j1ghk+o6QGkn213UwL5gisXjj3ecZsznOlmxcyVpT98a6PtCwBkmsPAV1g==}
     engines: {node: '>=22.12.0'}
     peerDependencies:
       react: ^19.0.0
@@ -2996,7 +2996,7 @@ snapshots:
     dependencies:
       '@swc/helpers': 0.5.23
 
-  '@jfrader/react-storydocs@0.17.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))':
+  '@jfrader/react-storydocs@0.17.2(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))':
     dependencies:
       marked: 18.1.1
       react: 19.3.0
