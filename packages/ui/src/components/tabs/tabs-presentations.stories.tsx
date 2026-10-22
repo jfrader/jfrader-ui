@@ -42,7 +42,10 @@ type Story = StoryObj<typeof meta>;
 /** Keep tab targets large while labels remain available to assistive technology. */
 export const GlassKeyboard: Story = {
   play: async ({ canvas, userEvent, args }) => {
-    await expectTranslucentContrast(canvas.getByRole('tablist'));
+    const list = canvas.getByRole('tablist');
+    await expectTranslucentContrast(list);
+    list.scrollTop = 4;
+    await expect(list.scrollTop).toBe(0);
     const home = canvas.getByRole('tab', { name: 'Home' });
     await userEvent.tab();
     await expect(home).toHaveFocus();
