@@ -922,11 +922,13 @@ function ApiPart({
   density,
   headingLevel,
   term,
+  slotsAvailable,
 }: {
   component: ApiComponentDoc;
   density: ApiTableDensity;
   headingLevel: 2 | 3 | 4;
   term: string;
+  slotsAvailable: boolean;
 }) {
   const [showInherited, setShowInherited] = useState(false);
   const own = component.props.filter((prop) => !prop.inheritedFrom && !isNativeInherited(prop));
@@ -963,7 +965,7 @@ function ApiPart({
       {ownMatches.length > 0 ? (
         <dl css={rowsStyle}>
           {ownMatches.map((prop) => (
-            <PropRow key={prop.name} prop={prop} density={density} slotLink={prop.name === 'slots' || prop.name === 'slotProps' ? `#${slotAnchor(component.name)}` : undefined} />
+            <PropRow key={prop.name} prop={prop} density={density} slotLink={slotsAvailable && (prop.name === 'slots' || prop.name === 'slotProps') ? `#${slotAnchor(component.name)}` : undefined} />
           ))}
         </dl>
       ) : (
@@ -979,7 +981,7 @@ function ApiPart({
       {inheritedVisible.length > 0 ? (
         <dl css={rowsStyle}>
           {inheritedVisible.map((prop) => (
-            <PropRow key={prop.name} prop={prop} density={density} slotLink={prop.name === 'slots' || prop.name === 'slotProps' ? `#${slotAnchor(component.name)}` : undefined} />
+            <PropRow key={prop.name} prop={prop} density={density} slotLink={slotsAvailable && (prop.name === 'slots' || prop.name === 'slotProps') ? `#${slotAnchor(component.name)}` : undefined} />
           ))}
         </dl>
       ) : null}
@@ -1025,6 +1027,7 @@ export function ApiTable({
   const total = visible.reduce((sum, { own, inherited }) => sum + (term ? own.length + inherited.length : own.length), 0);
   const slotDocs = useMemo(() => collectSlots(components), [components]);
   const visibleSlots = useMemo(() => (term ? slotDocs.filter((slot) => matchesSlot(slot, term)) : slotDocs), [slotDocs, term]);
+  const slotOwners = useMemo(() => new Set(visibleSlots.map((slot) => slot.owner)), [visibleSlots]);
   const status = term ? `${total} ${total === 1 ? 'prop matches' : 'props match'} “${query.trim()}”` : `${total} documented props`;
 
   return (
@@ -1067,7 +1070,7 @@ export function ApiTable({
         <p css={emptyStyle}>{emptyMessage}</p>
       ) : (
         visible.map(({ entry }) => (
-          <ApiPart key={entry.name} component={entry} density={density} headingLevel={headingLevel} term={term} />
+          <ApiPart key={entry.name} component={entry} density={density} headingLevel={headingLevel} term={term} slotsAvailable={slotOwners.has(entry.name)} />
         ))
       )}
 
