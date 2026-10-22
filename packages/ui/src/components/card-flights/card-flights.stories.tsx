@@ -9,12 +9,28 @@ import { GameHand, type GameHandCard } from '../game-hand';
 import { GameCard } from '../game-card';
 import { GameCardStack } from '../game-card-stack';
 import { GameTable } from '../game-table';
+import { Surface } from '../surface';
 import { ThemeRoot } from '../theme-root';
 import { CardFlights, useBoardFlights, useCardFlightOrigin, useCardFlightStatus, type PlayingCard } from './index';
 import { measureCardBox } from './geometry';
 
-const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], padding: vars.space[3] });
-const Board = styled.div({ blockSize: '600px', maxInlineSize: '850px', inlineSize: '100%' });
+const STAGE_MAX_INLINE_SIZE = 640;
+const BOARD_MAX_INLINE_SIZE = 480;
+const BOARD_BLOCK_SIZE = 640;
+const CUSTOM_STAGE_MIN_BLOCK_SIZE = 320;
+const SLOT_INLINE_SIZE = 136;
+const SLOT_BLOCK_SIZE = 176;
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
+const Board = styled.div({ inlineSize: '100%', maxInlineSize: BOARD_MAX_INLINE_SIZE, blockSize: BOARD_BLOCK_SIZE, marginInline: 'auto' });
+const CustomStage = styled.div({
+  display: 'flex', justifyContent: 'center', alignItems: 'center', gap: vars.space[8],
+  inlineSize: '100%', maxInlineSize: STAGE_MAX_INLINE_SIZE, minBlockSize: CUSTOM_STAGE_MIN_BLOCK_SIZE, marginInline: 'auto',
+});
+const Slot = styled(Surface)({
+  display: 'grid', gridTemplateRows: 'auto 1fr', justifyItems: 'center', alignItems: 'center', gap: vars.space[2],
+  inlineSize: SLOT_INLINE_SIZE, blockSize: SLOT_BLOCK_SIZE, padding: vars.space[3],
+});
+const SlotLabel = styled.span({ color: vars.color.textMuted, fontSize: vars.textSize.sm });
 const CustomBoard = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[8], padding: vars.space[4] });
 const StatusOutput = styled.output({ color: vars.color.text, background: vars.color.bg });
 const DemoTheme = styled.div({ background: vars.color.bg, color: vars.color.text });
@@ -35,14 +51,18 @@ type Play = PlayingCard & { cardId: string; playerKey: string };
 
 function Status() { const { busy } = useCardFlightStatus(); return <StatusOutput aria-label="Flight status">{busy ? 'Flying' : 'Ready'}</StatusOutput>; }
 
-function MatchTree({ plays, onPlay, onBurst, onDeal, onResync, onClear }: {
-  plays: Play[]; onPlay: (card: GameHandCard) => void; onBurst: () => void; onDeal: () => void; onResync: () => void; onClear: () => void;
+/** `compact` shows the docs controls; `full` adds the resync and burst controls the regression stories drive. */
+type ControlMode = 'compact' | 'full';
+
+function MatchTree({ plays, controls, onPlay, onBurst, onDeal, onResync, onClear }: {
+  plays: Play[]; controls: ControlMode; onPlay: (card: GameHandCard) => void; onBurst: () => void; onDeal: () => void; onResync: () => void; onClear: () => void;
 }) {
   const own = plays.filter((play) => play.playerKey === 'own');
   const rival = plays.filter((play) => play.playerKey === 'rival');
   return <>
-    <Controls><Button onClick={onDeal}>Deal hand</Button><Button onClick={onResync}>Resync board</Button>
-      <Button onClick={onClear}>Clear plays</Button><Button onClick={onBurst}>Play all</Button><Status /></Controls>
+    <Controls><Button onClick={onDeal}>Deal hand</Button><Button onClick={onClear}>Clear plays</Button>
+      {controls === 'full' && <><Button onClick={onResync}>Resync board</Button><Button onClick={onBurst}>Play all</Button></>}
+      <Status /></Controls>
     <Board><GameTable places={2} seats={seats}>
       <GameTable.Seat slotKey="rival"><GameHand.Hidden count={cards.length - rival.length} label="Rival hand" /></GameTable.Seat>
       <GameTable.Dock><ResponsiveHand cards={cards.filter((card) => !own.some((play) => play.cardId === card.id))}
@@ -54,19 +74,19 @@ function MatchTree({ plays, onPlay, onBurst, onDeal, onResync, onClear }: {
   </>;
 }
 
-function Match({ theme = 'dark', below = false, rtl = false }: { theme?: 'dark' | 'light'; below?: boolean; rtl?: boolean }) {
+function Match({ theme = 'dark', below = false, rtl = false, controls = 'compact' }: {
+  theme?: 'dark' | 'light'; below?: boolean; rtl?: boolean; controls?: ControlMode;
+}) {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   const [deal, setDeal] = useState(0);
   const [revision, setRevision] = useState(0);
   const [plays, setPlays] = useState<Play[]>([]);
-  const [busy, setBusy] = useState(false);
   const accept = (card: GameHandCard) => setPlays((current) => [...current,
     { ...card, id: `play-${card.id}`, cardId: card.id, playerKey: 'own' },
     { ...card, id: `reply-${card.id}`, cardId: `rival-${card.id}`, playerKey: 'rival' }]);
   return <div ref={setHost} dir={rtl ? 'rtl' : undefined}><ThemeRoot theme={theme} portalContainer={host}><DemoTheme>
-    <StatusOutput aria-label="Reported status">{busy ? 'Flying' : 'Ready'}</StatusOutput>
-    <CardFlights deal={deal} revision={revision} forehand="rival" onBusyChange={setBusy}>
-      {below ? <BelowState /> : <MatchTree plays={plays} onPlay={accept}
+    <CardFlights deal={deal} revision={revision} forehand="rival">
+      {below ? <BelowState controls={controls} /> : <MatchTree plays={plays} controls={controls} onPlay={accept}
         onDeal={() => { setPlays([]); setDeal((key) => key + 1); }} onResync={() => {
           setRevision((key) => key + 1);
           const card = required(cards.at(-1));
@@ -77,22 +97,33 @@ function Match({ theme = 'dark', below = false, rtl = false }: { theme?: 'dark' 
   </DemoTheme></ThemeRoot></div>;
 }
 
-function BelowState() {
+function BelowState({ controls }: { controls: ControlMode }) {
   const [plays, setPlays] = useState<Play[]>([]);
-  return <MatchTree plays={plays} onPlay={(card) => setPlays((current) => [...current, { ...card, id: `play-${card.id}`, cardId: card.id, playerKey: 'own' }])}
+  return <MatchTree plays={plays} controls={controls} onPlay={(card) => setPlays((current) => [...current, { ...card, id: `play-${card.id}`, cardId: card.id, playerKey: 'own' }])}
     onBurst={() => setPlays(cards.map((card) => ({ ...card, id: `play-${card.id}`, cardId: card.id, playerKey: 'own' })))}
     onClear={() => setPlays([])} onDeal={() => setPlays([])} onResync={() => setPlays([])} />;
 }
 
-function CustomMatch() {
+function CustomPlay() {
+  const remember = useCardFlightOrigin();
+  const hand = useRef<HTMLDivElement>(null);
   const [played, setPlayed] = useState(false);
+  const toggle = () => {
+    if (!played && hand.current) remember?.('custom', hand.current);
+    setPlayed((value) => !value);
+  };
+  return <>
+    <Controls><Button onClick={toggle}>{played ? 'Return card' : 'Play card'}</Button><Status /></Controls>
+    <CustomStage>
+      <Slot><SlotLabel>Hand</SlotLabel>{!played && <CardFlights.Target ref={hand} kind="hand" cardId="custom"><GameCard {...required(cards[0])} /></CardFlights.Target>}</Slot>
+      <Slot><SlotLabel>Play</SlotLabel>{played && <CardFlights.Target kind="play" cardId="custom"><GameCard {...required(cards[0])} /></CardFlights.Target>}</Slot>
+    </CustomStage>
+  </>;
+}
+
+function CustomMatch() {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
-  return <div ref={setHost}><ThemeRoot theme="dark" portalContainer={host}><CardFlights>
-    <Controls><Button onClick={() => setPlayed((value) => !value)}>{played ? 'Return card' : 'Play card'}</Button><Status /></Controls>
-    <CustomBoard>{!played && <CardFlights.Target kind="hand" cardId="custom"><GameCard {...required(cards[0])} /></CardFlights.Target>}
-      {played && <CardFlights.Target kind="play" cardId="custom"><GameCard {...required(cards[0])} /></CardFlights.Target>}
-    </CustomBoard>
-  </CardFlights></ThemeRoot></div>;
+  return <div ref={setHost}><ThemeRoot theme="dark" portalContainer={host}><CardFlights><CustomPlay /></CardFlights></ThemeRoot></div>;
 }
 
 const meta = {
@@ -108,8 +139,8 @@ import { GameCardStack } from '@jfrader/ui/game-card-stack';
 import { GameTable } from '@jfrader/ui/game-table';
 import { ThemeRoot } from '@jfrader/ui/theme-root';
 
-const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], padding: vars.space[3] });
-const Board = styled.div({ blockSize: '600px', maxInlineSize: '850px', inlineSize: '100%' });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
+const Board = styled.div({ inlineSize: '100%', maxInlineSize: 480, blockSize: 640, marginInline: 'auto' });
 const StatusOutput = styled.output({ color: vars.color.text, background: vars.color.bg });
 const DemoTheme = styled.div({ background: vars.color.bg, color: vars.color.text });
 const ResponsiveHand = styled(GameHand)({
@@ -135,9 +166,7 @@ function FlightStatus() {
 export function Match() {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   const [deal, setDeal] = useState(0);
-  const [revision, setRevision] = useState(0);
   const [plays, setPlays] = useState<Play[]>([]);
-  const [busy, setBusy] = useState(false);
   const own = plays.filter(play => play.playerKey === 'own');
   const rival = plays.filter(play => play.playerKey === 'rival');
   const accept = (card: GameHandCard) => setPlays(current => [...current,
@@ -145,19 +174,10 @@ export function Match() {
     { ...card, id: 'reply-' + card.id, cardId: 'rival-' + card.id, playerKey: 'rival' },
   ]);
   return <div ref={setHost}><ThemeRoot theme="dark" portalContainer={host}><DemoTheme>
-    <StatusOutput aria-label="Reported status">{busy ? 'Flying' : 'Ready'}</StatusOutput>
-    <CardFlights deal={deal} revision={revision} forehand="rival" onBusyChange={setBusy}>
+    <CardFlights deal={deal} forehand="rival">
       <Controls>
         <Button onClick={() => { setPlays([]); setDeal(key => key + 1); }}>Deal hand</Button>
-        <Button onClick={() => {
-          setRevision(key => key + 1);
-          setPlays([{ id: 'server-four', cardId: 'four', playerKey: 'own', label: 'Four of spades',
-            value: { deck: 'french', suit: 'spades', rank: 4 } }]);
-        }}>Resync board</Button>
         <Button onClick={() => setPlays([])}>Clear plays</Button>
-        <Button onClick={() => setPlays(cards.map(card => ({
-          ...card, id: 'play-' + card.id, cardId: card.id, playerKey: 'own',
-        })))}>Play all</Button>
         <FlightStatus />
       </Controls>
       <Board><GameTable places={2} seats={seats}>
@@ -211,7 +231,7 @@ function required<T>(value: T | null | undefined): T { if (value == null) throw 
 /** Deal from the table centre, then confirm a local card and receive a rival reply. */
 export const ComposedBoard: Story = {
   name: 'Deal and play at a table',
-  parameters: { docs: { description: { story: 'Deal both hands, then confirm a local play and receive a rival reply.' } } },
+  parameters: { docs: { description: { story: 'Press Deal hand to deal both hands from the table center. Select a card, press Play selected, and watch the rival reply land in its pile.' } } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(flights(canvasElement)).toHaveLength(0);
     const hand = canvas.getByRole('button', { name: 'Ace of spades' });
@@ -247,7 +267,7 @@ export const ComposedBoard: Story = {
     await expect(rivalPose.e).toBeCloseTo(rivalOrigin.cx - parseFloat(rival.style.width) / 2, 2);
     await expect(rivalPose.f).toBeCloseTo(rivalOrigin.cy - parseFloat(rival.style.height) / 2, 2);
     await landed(canvasElement);
-    await expect(canvas.getByLabelText('Reported status')).toHaveTextContent('Ready');
+    await expect(canvas.getByLabelText('Flight status')).toHaveTextContent('Ready');
   },
 };
 
@@ -256,51 +276,86 @@ export const CustomTarget: Story = {
   name: 'Custom play destination',
   render: () => <CustomMatch />,
   parameters: { docs: {
-    description: { story: 'Move a card between registered hand and play destinations without a table.' },
-    source: { language: 'tsx', code: `import { useState } from 'react';
+    description: { story: 'Move one card between the Hand and Play slots. Press Play card, then Return card.' },
+    source: { language: 'tsx', code: `import { useRef, useState } from 'react';
 import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { Button } from '@jfrader/ui/button';
-import { CardFlights, useCardFlightStatus } from '@jfrader/ui/card-flights';
+import { CardFlights, useCardFlightOrigin, useCardFlightStatus } from '@jfrader/ui/card-flights';
 import { GameCard } from '@jfrader/ui/game-card';
+import { Surface } from '@jfrader/ui/surface';
 import { ThemeRoot } from '@jfrader/ui/theme-root';
 
-const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], padding: vars.space[3] });
-const Board = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[8], padding: vars.space[4] });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
+const Board = styled.div({
+  display: 'flex', justifyContent: 'center', alignItems: 'center', gap: vars.space[8],
+  inlineSize: '100%', maxInlineSize: 640, minBlockSize: 320, marginInline: 'auto',
+});
+const Slot = styled(Surface)({
+  display: 'grid', gridTemplateRows: 'auto 1fr', justifyItems: 'center', alignItems: 'center', gap: vars.space[2],
+  inlineSize: 136, blockSize: 176, padding: vars.space[3],
+});
+const SlotLabel = styled.span({ color: vars.color.textMuted, fontSize: vars.textSize.sm });
 const StatusOutput = styled.output({ color: vars.color.text, background: vars.color.bg });
+const ace = { label: 'Ace of spades', value: { deck: 'french', suit: 'spades', rank: 'A' } } as const;
 
 function FlightStatus() {
   const { busy } = useCardFlightStatus();
   return <StatusOutput aria-label="Flight status">{busy ? 'Flying' : 'Ready'}</StatusOutput>;
 }
 
-export function CustomBoard() {
+function CustomPlay() {
+  const remember = useCardFlightOrigin();
+  const hand = useRef<HTMLDivElement>(null);
   const [played, setPlayed] = useState(false);
+  const toggle = () => {
+    if (!played && hand.current) remember?.('custom', hand.current);
+    setPlayed(value => !value);
+  };
+  return <>
+    <Controls>
+      <Button onClick={toggle}>{played ? 'Return card' : 'Play card'}</Button>
+      <FlightStatus />
+    </Controls>
+    <Board>
+      <Slot>
+        <SlotLabel>Hand</SlotLabel>
+        {!played && <CardFlights.Target ref={hand} kind="hand" cardId="custom"><GameCard {...ace} /></CardFlights.Target>}
+      </Slot>
+      <Slot>
+        <SlotLabel>Play</SlotLabel>
+        {played && <CardFlights.Target kind="play" cardId="custom"><GameCard {...ace} /></CardFlights.Target>}
+      </Slot>
+    </Board>
+  </>;
+}
+
+export function CustomBoard() {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   return <div ref={setHost}>
     <ThemeRoot theme="dark" portalContainer={host}>
-      <CardFlights>
-        <Controls>
-          <Button onClick={() => setPlayed(value => !value)}>{played ? 'Return card' : 'Play card'}</Button>
-          <FlightStatus />
-        </Controls>
-        <Board>
-          {!played && <CardFlights.Target kind="hand" cardId="custom">
-            <GameCard label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
-          </CardFlights.Target>}
-          {played && <CardFlights.Target kind="play" cardId="custom">
-            <GameCard label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
-          </CardFlights.Target>}
-        </Board>
-      </CardFlights>
+      <CardFlights><CustomPlay /></CardFlights>
     </ThemeRoot>
   </div>;
 }` } } },
   play: async ({ canvas, canvasElement, userEvent }) => {
+    // Move the board after mount, as scrolling a docs page does, so a mount-time measurement goes stale.
+    canvasElement.style.paddingBlockStart = '120px';
+    const origin = measureCardBox(required(canvasElement.querySelector<HTMLElement>('[data-hand-card="custom"]')));
     await userEvent.click(canvas.getByRole('button', { name: 'Play card' }));
     await expect(flights(canvasElement)).toHaveLength(1);
-    await expect(required(flights(canvasElement)[0]).querySelector('[data-ui~="game-card"]')).not.toBeNull();
+    const flight = required(flights(canvasElement)[0]);
+    await expect(flight.querySelector('[data-ui~="game-card"]')).not.toBeNull();
+    // The flight starts from the hand box captured at click time, not one measured at mount.
+    const effect = required(flight.getAnimations()[0]?.effect);
+    if (!(effect instanceof KeyframeEffect)) throw new Error('Missing custom travel effect');
+    const pose = new DOMMatrixReadOnly(String(effect.getKeyframes()[0]?.transform));
+    await expect(pose.e).toBeCloseTo(origin.cx - parseFloat(flight.style.width) / 2, 2);
+    await expect(pose.f).toBeCloseTo(origin.cy - parseFloat(flight.style.height) / 2, 2);
     await landed(canvasElement);
+    // The hand and play slots sit side by side, so the flight travels at least one card width.
+    const destination = measureCardBox(required(canvasElement.querySelector<HTMLElement>('[data-played-key="custom"]')));
+    await expect(Math.abs(destination.cx - origin.cx)).toBeGreaterThan(origin.width);
   },
 };
 
@@ -319,6 +374,7 @@ export const ReducedMotionRegression: Story = {
 
 /** Apply a server snapshot while cards are moving. */
 export const ResyncInPlace: Story = {
+  render: () => <Match controls="full" />,
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Deal hand' }));
     flights(canvasElement).flatMap((node) => node.getAnimations({ subtree: true })).forEach((animation) => animation.pause());
@@ -356,7 +412,7 @@ export const BelowProviderState: Story = {
 };
 
 export const OverflowAndBurst: Story = {
-  tags: ['!autodocs'], beforeEach: () => { mockMotion(); },
+  tags: ['!autodocs'], render: () => <Match controls="full" />, beforeEach: () => { mockMotion(); },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Play all' }));
     await expect(flights(canvasElement)).toHaveLength(3);
@@ -490,6 +546,6 @@ export const ReducedMotionInterrupt: Story = {
     flights(canvasElement).flatMap((node) => node.getAnimations({ subtree: true })).forEach((animation) => animation.pause());
     reduceMotionNow();
     await waitFor(() => expect(flights(canvasElement)).toHaveLength(0));
-    await expect(canvas.getByLabelText('Reported status')).toHaveTextContent('Ready');
+    await expect(canvas.getByLabelText('Flight status')).toHaveTextContent('Ready');
   },
 };
