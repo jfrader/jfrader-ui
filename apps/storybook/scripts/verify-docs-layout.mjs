@@ -347,7 +347,7 @@ try {
   assert.equal(await frame.locator('html').evaluate(() => location.hash), hash, 'section link scrolls the preview');
   console.log('verify-docs-layout: section navigation keeps the sidebar OK');
 
-  await page.goto(new URL('?path=/docs/foundations-theme--docs', baseURL).href);
+  await page.goto(new URL('?path=/docs/theme-themeroot--docs', baseURL).href);
   await frame.locator('.component-usage summary').click();
   await frame.getByRole('link', { name: 'Theming guide', exact: true }).click();
   await page.waitForURL(new URL('?path=/docs/foundations-theming--docs', baseURL).href);
