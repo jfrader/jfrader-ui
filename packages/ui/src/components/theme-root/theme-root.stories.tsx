@@ -76,7 +76,7 @@ function LiveThemeExample() {
 LiveThemeExample.displayName = 'LiveThemeExample';
 
 const meta = {
-  title: 'Foundations/Theme',
+  title: 'Theme/ThemeRoot',
   component: ThemeRoot,
   parameters: {
     docs: {

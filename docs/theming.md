@@ -3,23 +3,28 @@
 Choose a light or dark palette, then change the colors, spacing, and typography your app needs. Start
 with the stylesheet setup in [Getting started](./getting-started.md).
 
-- [Set the document palette](#set-the-document-palette) and remember a user's choice.
-- [Theme part of a page](#theme-part-of-a-page).
-- [Add brand colors and token overrides](#custom-palettes).
-- [Keep themes inside overlays](#overlays-and-portal-containers).
+- [How the theme works](#how-the-theme-works)
+- [Set the document palette](#set-the-document-palette)
+- [Theme part of a page](#theme-part-of-a-page)
+- [Palettes](#palettes) and [other token groups](#typography-spacing-and-shape-elevation-and-motion)
+- [Override tokens](#override-tokens)
+- [Contrast surfaces](#contrast-surfaces) and [overlays](#overlays-and-portal-containers)
+- [Recipes](#recipes)
 
-## What each API changes
+## How the theme works
 
-A **token** is a named design value, such as a text color or a spacing step. Components read CSS
-custom properties such as `var(--ui-color-accent)` instead of fixed values.
+A **token** is a named design value, such as a text color or a spacing step. Tokens are CSS custom
+properties. Components read references such as `var(--ui-color-accent)` instead of fixed values.
+The theme has four layers:
 
-| API | Use it for |
-| --- | --- |
-| `data-theme` on `<html>` | The document's light or dark palette. |
-| `ThemeRoot` | A palette for a React subtree and the overlays opened inside it. |
-| `createTheme` | Deriving accent colors and collecting token overrides. |
-| `ThemeProvider` | Giving Emotion callbacks access to token references. It does not select a palette. |
-| `theme` / `vars` | Typed `var(--ui-*)` references for your styles. They are the same object. |
+| Layer | API | What it changes |
+| --- | --- | --- |
+| Document palette | `data-theme` on `<html>` | The document's light or dark palette. |
+| Theme scope | `ThemeRoot` | A palette for a React subtree and the overlays opened inside it. |
+| Token overrides | `createTheme` / `tokens` | Derived accent colors and overrides for individual token values. |
+| Typed references | `theme` / `vars` | Typed `var(--ui-*)` references for your styles. They are the same object. |
+
+`ThemeProvider` gives Emotion callbacks access to token references. It does not select a palette.
 
 Changing `data-theme` changes the CSS values. The `theme` object holds the same references in both
 modes; it is not a light/dark store. Keep the selected mode in your app's state if JavaScript needs it.
@@ -118,35 +123,11 @@ The Card paints its own surface. `ThemeRoot` sets text color and native `color-s
 background and adds no padding. Omitting its `theme` selects **dark**, even on a light page, so pass
 the mode explicitly when nesting roots.
 
-## Custom palettes
+## Palettes
 
 Call `createTheme` outside render and pass the result to `ThemeRoot tokens`. Define one palette per
-mode you offer:
-
-```tsx
-import { useState } from 'react';
-import { Button, Card, createTheme, ThemeRoot, ThemeSwitch, type ThemeName } from '@jfrader/ui';
-
-const brandThemes = {
-  dark: createTheme({ base: 'dark', accent: '#c4b5fd' }),
-  light: createTheme({ base: 'light', accent: '#6d28d9' }),
-};
-
-export function BrandedWidget() {
-  const [mode, setMode] = useState<ThemeName>('light');
-  return (
-    <ThemeRoot theme={mode} tokens={brandThemes[mode]}>
-      <Card>
-        <Card.Header><Card.Title>Project settings</Card.Title></Card.Header>
-        <Card.Content>
-          <ThemeSwitch label="Dark mode" value={mode} onValueChange={setMode} />
-        </Card.Content>
-        <Card.Footer><Button tone="accent">Save settings</Button></Card.Footer>
-      </Card>
-    </ThemeRoot>
-  );
-}
-```
+mode you offer, using `createTheme({ base, accent })`. See the
+[per-mode branded wrapper](#per-mode-branded-wrapper) recipe for a complete example.
 
 Match `createTheme`'s `base` to the root's `theme`. Changing the root's mode does not recalculate the
 overrides. `createTheme` returns the derived values and your overrides; the stylesheet supplies the
@@ -167,31 +148,20 @@ Check the combinations you derive:
 Choose a lighter or darker accent, or override the affected token. Derivation does not verify every
 combination for you.
 
-### Override other tokens
+See [Palette](./?path=/docs/theme-palette--docs) for every color token's role and values.
 
-The `tokens` option takes any token path, including spacing, radii, and fonts. Explicit values win over
-the derived accent family:
+## Typography, spacing and shape, elevation and motion
 
-```tsx
-import { Card, createTheme, ThemeRoot } from '@jfrader/ui';
+- [Typography](./?path=/docs/theme-typography--docs): font families, text sizes, weights, line heights,
+  and editorial type tokens.
+- [Spacing & shape](./?path=/docs/theme-spacing-and-shape--docs): spacing steps and corner radii.
+- [Elevation & motion](./?path=/docs/theme-elevation-and-motion--docs): shadows, stacking, durations,
+  and easing curves.
 
-const compactTheme = createTheme({
-  base: 'light',
-  accent: '#6d28d9',
-  tokens: {
-    radius: { md: '0.25rem' },
-    font: { sans: 'system-ui, sans-serif' },
-  },
-});
+## Override tokens
 
-export function CompactWidget() {
-  return (
-    <ThemeRoot theme="light" tokens={compactTheme}>
-      <Card><Card.Content>Workspace settings</Card.Content></Card>
-    </ThemeRoot>
-  );
-}
-```
+The `createTheme` `tokens` option takes any token path, including spacing, radii, and fonts. Explicit
+values win over the derived accent family. See the [compact theme](#compact-theme) recipe.
 
 Pass a sparse object to `ThemeRoot tokens` directly when you need no accent derivation. A nested root
 with the same theme and no `tokens` inherits the enclosing overrides; a different theme drops them. A
@@ -304,5 +274,67 @@ export function ShareWidget() {
 Inside a native modal, place the host **inside the open dialog's DOM**. A portal under `body` sits
 outside its top layer and can be inert or hidden. For a host inside a contrast panel, give its
 `ThemeRoot` the panel's enclosing theme so the appearance carries through.
+
+## Recipes
+
+### Per-mode branded wrapper
+
+Keep a token map for each mode and select it with the same state as `ThemeRoot theme`:
+
+```tsx
+import { useState } from 'react';
+import { Button, Card, createTheme, ThemeRoot, ThemeSwitch, type ThemeName } from '@jfrader/ui';
+
+const brandThemes = {
+  dark: createTheme({ base: 'dark', accent: '#c4b5fd' }),
+  light: createTheme({ base: 'light', accent: '#6d28d9' }),
+};
+
+export function BrandedWidget() {
+  const [mode, setMode] = useState<ThemeName>('light');
+  return (
+    <ThemeRoot theme={mode} tokens={brandThemes[mode]}>
+      <Card>
+        <Card.Header><Card.Title>Project settings</Card.Title></Card.Header>
+        <Card.Content>
+          <ThemeSwitch label="Dark mode" value={mode} onValueChange={setMode} />
+        </Card.Content>
+        <Card.Footer><Button tone="accent">Save settings</Button></Card.Footer>
+      </Card>
+    </ThemeRoot>
+  );
+}
+```
+
+### Compact theme
+
+Set the radius and font alongside the accent in one token map:
+
+```tsx
+import { Card, createTheme, ThemeRoot } from '@jfrader/ui';
+
+const compactTheme = createTheme({
+  base: 'light',
+  accent: '#6d28d9',
+  tokens: {
+    radius: { md: '0.25rem' },
+    font: { sans: 'system-ui, sans-serif' },
+  },
+});
+
+export function CompactWidget() {
+  return (
+    <ThemeRoot theme="light" tokens={compactTheme}>
+      <Card><Card.Content>Workspace settings</Card.Content></Card>
+    </ThemeRoot>
+  );
+}
+```
+
+### Check a custom accent
+
+Check `accentText` against the surfaces where you use it in each mode, `accentContrast` against the
+accent fill, and the focus ring against its surroundings. Use the [contrast caveats](#palettes) to
+identify combinations that need a lighter or darker accent or an explicit token override.
 
 Next: [Styling](./styling.md) for individual components, parts, and reusable styles.
