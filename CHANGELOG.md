@@ -9,6 +9,8 @@
 
 ### Changed
 
+- `ApiTable` now groups slot contracts by owner, separates replacement types from accepted slot props, includes prop-only parts (MoneyInput/PhoneInput), and turns `slots`/`slotProps` prop rows into compact links to the authoritative Slots section.
+- Public type names in prop, signature and slot expressions link to their declarations through `react-storydocs@0.17.1` source references.
 - The Deck page is rebuilt around illustrated decks: a seeded `Scene` expedition deck, `PersonAvatar` crew and Spanish court cards, relic printings, and suitless prompt cards, each with authored code.
 - `ApiTable` resolves catalog references to docs links, searches nested member/signature fields, and expands local array record contracts (`ThreadComment[]`, `FilterToolbarDefinition[]`, `DialogStackPageRecord[]`).
 - `ApiTable` hides inherited HTML/React props (`className`/`sx` stay), renders complex types in a dedicated panel, and shows signature parameter fields inline.
