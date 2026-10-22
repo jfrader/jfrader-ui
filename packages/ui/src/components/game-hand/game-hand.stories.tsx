@@ -10,6 +10,8 @@ import { ThemeRoot } from '../theme-root';
 import { expectInside, expectMirrored, expectMirroredDirection, expectNoOverlap } from '../../testing/geometry-assertions';
 import { buildOpponentHiddenHandLayout, DEFAULT_HIDDEN_HAND_RULES, getHandFanRotations, getOpponentSeatHandTransform } from './hand-layout';
 import { HIDDEN_PARITY, PLAYER_PARITY, SEAT_PARITY } from './parity-fixtures';
+import { DeckProvider } from '../deck';
+import { imageDeck, imageHandCards } from '../game-card/game-showcase';
 
 const Controls = styled.div({ display: 'grid', justifyItems: 'start', gap: vars.space[4] });
 const Row = styled.div({ display: 'flex', flexWrap: 'wrap', maxInlineSize: '100%', overflowX: 'auto',
@@ -43,7 +45,7 @@ const meta = {
   parameters: { docs: {
     description: { component: 'Choose a card from your hand and confirm to play it. Show opponents’ hands as card backs with GameHand.Hidden.' },
     sections: [
-      { title: 'Basic', stories: ['Default'] },
+      { title: 'Basic', stories: ['ImageHand', 'Default'] },
       { title: 'Hidden hand', stories: ['HiddenHands'] },
       { title: 'Layout', stories: ['Sizes'] },
       { title: 'Interactions', stories: ['Controlled', 'AcceptedPlay', 'StableIdentity', 'SelectOnly'] },
@@ -138,6 +140,54 @@ async function checkFan(element: HTMLElement, count: number) {
   await expectNoOverlap(fan, confirm);
   await expectMirroredDirection(fan, '[data-ui="game-hand-card"]');
 }
+
+
+/** Five image cards from one deck, selected and played like a real hand. */
+export const ImageHand: Story = {
+  name: 'Image hand',
+  render: (args) => (
+    <DeckProvider decks={[imageDeck]} default="northline-images">
+      <GameHand {...args} cards={imageHandCards} onPlayIntent={undefined}>
+        <GameHand.Confirm onPlay={args.onPlayIntent}>Play card</GameHand.Confirm>
+      </GameHand>
+    </DeckProvider>
+  ),
+  parameters: {
+    docs: {
+      description: { story: 'Select one of five image cards, then confirm to request a play.' },
+      source: {
+        language: 'tsx',
+        code: `import { DeckProvider } from '@jfrader/ui/deck';
+import { GameHand } from '@jfrader/ui/game-hand';
+
+const cards = [
+  { id: 'ridge-1', label: 'Sable Ridge', value: { deck: 'northline-images', suit: 'ridge', rank: 1 } },
+  { id: 'dunes-1', label: 'Ember Dunes', value: { deck: 'northline-images', suit: 'dunes', rank: 1 } },
+  { id: 'coast-2', label: 'Black Harbour', value: { deck: 'northline-images', suit: 'coast', rank: 2 } },
+];
+
+<DeckProvider decks={[northlineImages]} default="northline-images">
+  <GameHand cards={cards}>
+    <GameHand.Confirm onPlay={(card) => play(card)}>Play card</GameHand.Confirm>
+  </GameHand>
+</DeckProvider>`,
+      },
+    },
+  },
+  play: async ({ canvasElement, canvas, userEvent }) => {
+    await checkFan(canvasElement, imageHandCards.length);
+    const first = canvas.getByRole('button', { name: 'Sable Ridge' });
+    await userEvent.click(first);
+    await expect(first).toHaveAttribute('aria-pressed', 'true');
+    const confirm = canvas.getByRole('button', { name: 'Play card' });
+    await expect(confirm).toBeEnabled();
+    await userEvent.click(confirm);
+    await expect(confirm).toBeVisible();
+    const image = first.querySelector('img');
+    if (image === null) throw new Error('Missing image face in hand');
+    await expect(image.getAttribute('src')).toMatch(/^data:image\/svg\+xml/);
+  },
+};
 
 /** Three cards held in hand with an unselected play button. */
 export const Default: Story = {
