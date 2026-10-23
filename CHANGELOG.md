@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- `GameChip` and `GameChipStack` render beveled casino chips and extruded denomination towers with edge inserts, contact shadows, and distinct clay and metal finishes.
+
 ## 0.10.2 — 2026-10-23
 
 ### Added

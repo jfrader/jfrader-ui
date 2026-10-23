@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { loadCsf, metaObjectPath } from 'storybook/internal/csf-tools';
 
 const DESCRIPTION_PATH = ['parameters', 'docs', 'description', 'component'];
-const SNIPPET_COMPONENTS = new Set(['game-card', 'flip-game-card', 'game-hand', 'game-card-stack', 'deck', 'pattern', 'card-flights']);
+const SNIPPET_COMPONENTS = new Set(['game-card', 'flip-game-card', 'game-hand', 'game-card-stack', 'game-chip', 'game-chip-stack', 'deck', 'pattern', 'card-flights']);
 const GAME_COMPONENTS = new Set([...SNIPPET_COMPONENTS, 'game-table', 'game-seat']);
 const gameSymbols = new Set([...GAME_COMPONENTS].flatMap((component) => {
   const file = path.resolve(import.meta.dirname, '../../../packages/ui/src/components', component, 'index.ts');

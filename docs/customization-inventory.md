@@ -8,9 +8,9 @@ composed modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **167**; public callable parts: **188**.
-- Families exposing `slots.root`: **117**; remaining without a family-level root slot: **50** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **128**; remaining without family-level interior slots: **39** (includes components without generated anatomy).
+- Public callable families: **169**; public callable parts: **188**.
+- Families exposing `slots.root`: **119**; remaining without a family-level root slot: **50** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **130**; remaining without family-level interior slots: **39** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -205,6 +205,8 @@ panel material. The section has no background, border or radius to migrate.
 | [GameCard](../packages/ui/src/components/game-card/game-card.tsx) | yes | `back`, `face`, `root` | `back`, `face`, `root` | — | — | — |
 | [GameCardStack](../packages/ui/src/components/game-card-stack/game-card-stack.tsx) | yes | `card`, `pile`, `root`, `trigger` | `card`, `pile`, `root`, `trigger` | — | — | `Pile` |
 | [GameCardStack.Pile](../packages/ui/src/components/game-card-stack/game-card-stack.tsx) | — | `card`, `pile`, `trigger` | `card`, `pile`, `trigger` | — | — | — |
+| [GameChip](../packages/ui/src/components/game-chip/game-chip.tsx) | yes | `face`, `root` | `face`, `root` | — | — | — |
+| [GameChipStack](../packages/ui/src/components/game-chip-stack/game-chip-stack.tsx) | yes | `root`, `stack` | `root`, `stack` | — | — | — |
 | [GameHand](../packages/ui/src/components/game-hand/game-hand.tsx) | yes | `card`, `confirm`, `fan`, `root` | `card`, `confirm`, `fan`, `root` | — | — | `Confirm`, `Hidden` |
 | [GameHand.Confirm](../packages/ui/src/components/game-hand/game-hand.tsx) | — | — | — | — | — | — |
 | [GameHand.Hidden](../packages/ui/src/components/game-hand/game-hand.tsx) | — | `card` | `card` | — | — | — |
