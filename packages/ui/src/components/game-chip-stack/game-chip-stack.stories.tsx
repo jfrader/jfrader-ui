@@ -68,7 +68,13 @@ import type { GameChipSize } from '@jfrader/ui/game-chip';
 
 const size: GameChipSize = 'xl';
 <GameChipStack chips={[{ value: 5, count: 5 }]} flat size={size} locale="en-US" />` } } },
-  play: async ({ canvasElement }) => { await geometryCheck(canvasElement.querySelector('[data-ui="game-chip-stack"]')!); },
+  play: async ({ canvasElement }) => {
+    const root = canvasElement.querySelector('[data-ui="game-chip-stack"]')!;
+    await geometryCheck(root);
+    for (const position of root.querySelectorAll('[data-ui="game-chip-stack-position"]')) {
+      await expect(getComputedStyle(position).transform).toMatch(/^matrix\(/);
+    }
+  },
 };
 export const Sizes: Story = {
   render: (args) => <Flex gap="lg" align="end" justify="center" wrap><GameChipStack {...args} size="sm" /><GameChipStack {...args} size="md" /><GameChipStack {...args} size="lg" /><GameChipStack {...args} size="xl" /></Flex>,
@@ -153,5 +159,15 @@ const size: GameChipSize = 'xl';
     const root = canvasElement.querySelector('[data-ui="game-chip-stack"]')!;
     await expect(root).toHaveAttribute('aria-hidden', 'true');
     await geometryCheck(root);
+  },
+};
+export const EmptyLabel: Story = {
+  tags: ['!autodocs'], args: { label: '' },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.queryByRole('img')).toBeNull();
+    const root = canvasElement.querySelector('[data-ui="game-chip-stack"]')!;
+    await expect(root).toHaveAttribute('aria-hidden', 'true');
+    await expect(root).not.toHaveAttribute('aria-label');
+    await expect(root).not.toHaveAttribute('role');
   },
 };

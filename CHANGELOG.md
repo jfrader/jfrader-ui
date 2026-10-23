@@ -31,6 +31,7 @@
 
 ### Fixed
 
+- `GameChip` keeps enlarged printed values visible and uses the formatted value for empty labels. `GameChipStack` treats empty labels as decorative.
 - `Tabs` lists never show a vertical scrollbar: horizontal and material lists pin their cross axis to `clip`, so a fractional tab height no longer leaves a pixel of vertical scroll range, and a vertical list pins its inline axis the same way.
 - `GameCard` paints paper on the printed face and card material on the back layer instead of the card root, so full-bleed artwork no longer shows a light sheet through the antialiased rounded border. The root stays transparent, and `children` art must paint its own base.
 - `PhotoGrid` thumbnail size changes stay smooth: each tile holds a compositor layer only while its layout spring runs, so thumbnails rasterize once per change instead of every frame. A size change also skips re-rendering each tile's contents and the closed viewer, and announcing it no longer re-renders the grid. `NowPlaying` artwork does the same while it moves between the mini and full player.

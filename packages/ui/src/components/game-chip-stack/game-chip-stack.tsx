@@ -5,8 +5,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { WithSx, withoutSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS } from '../../styling/media';
-import { GameChip, type GameChipSize, type GameChipTone } from '../game-chip';
-import { GAME_CHIP_SIZES } from '../game-chip/game-chip';
+import { GameChip, GAME_CHIP_SIZES, type GameChipSize, type GameChipTone } from '../game-chip/game-chip';
 
 export interface GameChipStackChip {
   /** Sets the denomination in major units. */
@@ -38,7 +37,7 @@ export interface GameChipStackProps extends Omit<GameChipStackPartProps, 'childr
   flat?: boolean;
   /** Caps rendered chips per tower, not the real total. Positive safe integer. Defaults to 10. */
   maxVisible?: number;
-  /** Names the image. Without a label, the entire stack is decorative. Include the real total when chips are capped. */
+  /** Names the image. Omitted or empty labels make the entire stack decorative. Include the real total when chips are capped. */
   label?: string;
   /** Formats chip values. Use the same locale on server and client. */
   locale?: Intl.LocalesArgument;
@@ -95,6 +94,7 @@ export function GameChipStack({ chips, size = 'md', flat = false, maxVisible = 1
   const Root = slots?.root ?? component ?? 'span';
   const Stack = slots?.stack ?? 'span';
   const root = slotProps?.root;
+  const accessibleLabel = label || undefined;
   const diameter = GAME_CHIP_SIZES[size];
   const thickness = diameter * THICKNESS;
   const padding = diameter * SHADOW_PADDING;
@@ -105,8 +105,8 @@ export function GameChipStack({ chips, size = 'md', flat = false, maxVisible = 1
   const rootIdentity = [...new Set(`game-chip-stack ${root?.['data-ui'] ?? rest['data-ui'] ?? ''}`.split(/\s+/).filter(Boolean))].join(' ');
   const stackIdentity = [...new Set(`game-chip-stack-stack ${slotProps?.stack?.['data-ui'] ?? ''}`.split(/\s+/).filter(Boolean))].join(' ');
   return <WithSx styles={[rootStyle, root?.sx]} sx={sx} className={[className, root?.className].filter(Boolean).join(' ')}>{(classes) =>
-    <Root {...rest} {...withoutSx(root)} ref={ref ?? root?.ref} data-ui={rootIdentity} role={label !== undefined ? 'img' : undefined}
-      aria-label={label} aria-hidden={label === undefined ? true : undefined} data-dimmed={String(dimmed)} className={classes}
+    <Root {...rest} {...withoutSx(root)} ref={ref ?? root?.ref} data-ui={rootIdentity} role={accessibleLabel !== undefined ? 'img' : undefined}
+      aria-label={accessibleLabel} aria-hidden={accessibleLabel === undefined ? true : undefined} data-dimmed={String(dimmed)} className={classes}
       style={{ ...style, ...root?.style }}>
       {towers.map((chip, towerIndex) => {
         const visible = Math.min(chip.count, maxVisible);
