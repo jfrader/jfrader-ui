@@ -48,6 +48,9 @@ export const base = {
     // Playing-card paper and ink: a card is an object with its own material, so these read the same
     // in both themes (>= 14:1 between them).
     cardFace: '#f4f4f5',
+    cardInk: 'rgba(0, 0, 0, 0.87)',
+    // A card's red for the French deck's two-colour suits (5.35:1 on cardFace).
+    cardRed: '#c8102e',
     // Chip materials stay identical in both themes, like cardFace and cardInk.
     chipWhite: '#e7e0d0',
     chipRed: '#ad303b',
@@ -57,9 +60,6 @@ export const base = {
     chipGold: '#b88b36',
     chipSpot: '#fff0cc',
     chipInk: '#30271e',
-    cardInk: 'rgba(0, 0, 0, 0.87)',
-    // A card's red for the French deck's two-colour suits (5.35:1 on cardFace).
-    cardRed: '#c8102e',
     /** Translucent panel materials for the Surface root seam, separate from playing-card ink and paper. */
     surfaceGlass: 'rgb(20 21 22 / 0.92)',
     surfaceHighlight: 'rgb(255 255 255 / 0.12)',

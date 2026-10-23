@@ -94,7 +94,7 @@ export const Palette: Story = {
     const canvas = within(canvasElement);
     const rows = canvasElement.querySelectorAll('li');
     await expect(rows).toHaveLength(TOTAL_ROLES);
-    // Eleven families, each row carrying one value per palette.
+    // Twelve families, each row carrying one value per palette.
     await expect(canvasElement.querySelectorAll('h2')).toHaveLength(COLOR_FAMILIES.length);
     for (const row of rows) await expect(row.querySelectorAll('dd')).toHaveLength(2);
 
