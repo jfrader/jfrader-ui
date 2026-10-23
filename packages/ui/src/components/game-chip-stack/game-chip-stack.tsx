@@ -4,6 +4,7 @@ import type { ComponentPropsWithRef, ComponentType, CSSProperties } from 'react'
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { WithSx, withoutSx, type SxProps } from '../../styling/sx';
+import { FORCED_COLORS } from '../../styling/media';
 import { GameChip, type GameChipSize, type GameChipTone } from '../game-chip';
 import { GAME_CHIP_SIZES } from '../game-chip/game-chip';
 
@@ -52,19 +53,34 @@ export interface GameChipStackProps extends Omit<GameChipStackPartProps, 'childr
   /** Replaces the root span; slots.root takes precedence. */
   component?: ComponentType<GameChipStackPartProps>;
 }
-const geometry = Object.fromEntries(Object.entries(GAME_CHIP_SIZES).map(([size, diameter]) => [size, {
-  diameter, thickness: diameter * 0.12, padding: diameter * 0.2, width: diameter * 1.4,
-}])) as Record<GameChipSize, { diameter: number; thickness: number; padding: number; width: number }>;
-const jitter = [-0.012, 0.018, -0.02, 0.008, 0, 0.022, -0.008];
+const TILT = 48;
+const TILT_RADIANS = TILT * Math.PI / 180;
+const THICKNESS = 0.18;
+const PERSPECTIVE = 4;
+const SHADOW_PADDING = 0.08;
+const HORIZONTAL_PADDING = 0.12;
+const jitter = [
+  { x: -0.012, y: 0, angle: -3 }, { x: 0.015, y: 0.003, angle: 4 },
+  { x: -0.008, y: -0.002, angle: -2 }, { x: 0.006, y: 0.002, angle: 1 },
+  { x: 0, y: 0, angle: -4 }, { x: 0.01, y: -0.003, angle: 3 },
+] as const;
+const sideStyle = css({
+  boxShadow: Array.from({ length: 12 }, (_, index) =>
+    `0 calc(var(--chip-thickness) * ${(index + 1) / 12}) 0 color-mix(in srgb, var(--chip-tone) ${index === 11 ? 40 : 68}%, ${vars.color.chipInk})`).join(', '),
+  [FORCED_COLORS]: { boxShadow: 'none' },
+});
 const rootStyle = css({ label: 'game-chip-stack', display: 'inline-flex', alignItems: 'end', flexWrap: 'wrap',
   gap: vars.space[2], verticalAlign: 'middle', maxInlineSize: '100%', boxSizing: 'border-box' });
 const stackStyle = css({ position: 'relative', display: 'inline-block', flexShrink: 0,
-  inlineSize: 'var(--tower-width)', blockSize: 'var(--tower-height)', perspective: 'var(--tower-perspective)',
-  transformStyle: 'preserve-3d' });
-const positionStyle = css({ position: 'absolute', insetInlineStart: 'var(--tower-padding)', insetBlockEnd: 'var(--tower-padding)',
+  inlineSize: 'var(--tower-width)', blockSize: 'var(--tower-height)', isolation: 'isolate',
+  '&::before': { content: '""', position: 'absolute', insetInlineStart: '5%', insetBlockEnd: 0,
+    inlineSize: '90%', blockSize: 'var(--tower-shadow-height)', borderRadius: '50%',
+    background: vars.color.chipInk, opacity: 0.35, filter: 'blur(var(--tower-shadow-blur))', zIndex: -1 },
+});
+const positionStyle = css({ position: 'absolute', insetInlineStart: 'var(--tower-padding)', insetBlockStart: 'var(--chip-top)',
   display: 'inline-grid', transformStyle: 'preserve-3d',
-  transform: 'rotateX(56deg) translateZ(var(--chip-rise)) translateX(var(--chip-jitter)) rotate(var(--chip-tilt))',
-  '[data-flat="true"] > &': { transform: 'translateY(calc(-1 * var(--chip-rise))) translateX(var(--chip-jitter)) rotate(var(--chip-tilt))' },
+  transform: `translateX(var(--chip-jitter)) perspective(var(--tower-perspective)) rotateX(${TILT}deg) rotate(var(--chip-tilt))`,
+  '[data-flat="true"] > &': { transform: 'translateX(var(--chip-jitter)) rotate(var(--chip-tilt))' },
 });
 
 export function GameChipStack({ chips, size = 'md', flat = false, maxVisible = 10, label, locale, currency,
@@ -79,7 +95,13 @@ export function GameChipStack({ chips, size = 'md', flat = false, maxVisible = 1
   const Root = slots?.root ?? component ?? 'span';
   const Stack = slots?.stack ?? 'span';
   const root = slotProps?.root;
-  const frame = geometry[size];
+  const diameter = GAME_CHIP_SIZES[size];
+  const thickness = diameter * THICKNESS;
+  const padding = diameter * SHADOW_PADDING;
+  const cosine = flat ? 1 : Math.cos(TILT_RADIANS);
+  const sine = flat ? 0 : Math.sin(TILT_RADIANS);
+  const topExtent = diameter * 0.5 * cosine / (1 + 0.5 * sine / PERSPECTIVE);
+  const bottomExtent = diameter * (0.5 + (flat ? 0 : THICKNESS)) * cosine / (1 - (0.5 + THICKNESS) * sine / PERSPECTIVE);
   const rootIdentity = [...new Set(`game-chip-stack ${root?.['data-ui'] ?? rest['data-ui'] ?? ''}`.split(/\s+/).filter(Boolean))].join(' ');
   const stackIdentity = [...new Set(`game-chip-stack-stack ${slotProps?.stack?.['data-ui'] ?? ''}`.split(/\s+/).filter(Boolean))].join(' ');
   return <WithSx styles={[rootStyle, root?.sx]} sx={sx} className={[className, root?.className].filter(Boolean).join(' ')}>{(classes) =>
@@ -88,17 +110,21 @@ export function GameChipStack({ chips, size = 'md', flat = false, maxVisible = 1
       style={{ ...style, ...root?.style }}>
       {towers.map((chip, towerIndex) => {
         const visible = Math.min(chip.count, maxVisible);
-        const rise = (visible - 1) * frame.thickness;
+        const rise = (visible - 1) * thickness * cosine;
         return <WithSx key={towerIndex} styles={[stackStyle, slotProps?.stack?.sx]} className={slotProps?.stack?.className}>{(stackClasses) =>
           <Stack {...withoutSx(slotProps?.stack)} data-ui={stackIdentity} data-value={chip.value} data-count={chip.count}
             data-flat={String(flat)} aria-hidden="true" className={stackClasses}
-            style={{ '--tower-width': `${frame.width}px`, '--tower-height': `${frame.diameter + rise + frame.padding * 2}px`,
-              '--tower-padding': `${frame.padding}px`, '--tower-perspective': `${(frame.diameter + rise) * 20}px`,
+            style={{ '--tower-width': `${diameter * (1 + HORIZONTAL_PADDING * 2)}px`, '--tower-height': `${topExtent + bottomExtent + rise + padding * 2}px`,
+              '--tower-padding': `${diameter * HORIZONTAL_PADDING}px`, '--tower-perspective': `${diameter * PERSPECTIVE}px`,
+              '--tower-shadow-height': `${diameter * 0.14}px`, '--tower-shadow-blur': `${diameter * 0.035}px`,
+              '--chip-thickness': `${flat ? 0 : thickness}px`,
+              '--chip-edge-display': flat ? 'none' : 'block',
               ...slotProps?.stack?.style } as CSSProperties}>
             {Array.from({ length: visible }, (_, index) => <span key={index} css={positionStyle} data-ui="game-chip-stack-position"
-              style={{ '--chip-rise': `${index * frame.thickness}px`, '--chip-jitter': `${jitter[index % jitter.length]! * frame.diameter}px`,
-                '--chip-tilt': `${jitter[(index + 2) % jitter.length]! * 60}deg` } as CSSProperties}>
-              <GameChip value={chip.value} tone={chip.tone} size={size} locale={locale} currency={currency} dimmed={dimmed} aria-hidden="true" />
+              style={{ '--chip-top': `${padding + topExtent - diameter / 2 + rise - index * thickness * cosine + jitter[index % jitter.length]!.y * diameter}px`,
+                '--chip-jitter': `${jitter[index % jitter.length]!.x * diameter}px`,
+                '--chip-tilt': `${jitter[index % jitter.length]!.angle}deg` } as CSSProperties}>
+              <GameChip value={chip.value} tone={chip.tone} size={size} locale={locale} currency={currency} dimmed={dimmed} aria-hidden="true" sx={flat ? undefined : sideStyle} />
             </span>)}
           </Stack>}
         </WithSx>;

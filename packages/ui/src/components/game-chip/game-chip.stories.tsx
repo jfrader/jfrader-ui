@@ -4,28 +4,31 @@ import { expect } from 'storybook/test';
 import { GameChip } from './game-chip';
 import { Flex } from '../flex';
 import { withLightTheme } from '../../testing/story-decorators';
+import { withChipStage } from './chip-showcase';
 
 const meta = {
   title: 'Games/GameChip', component: GameChip, tags: ['autodocs'],
+  decorators: [withChipStage],
   args: { value: 1000, locale: 'en-US' },
   parameters: { docs: {
     description: { component: 'Show a casino chip with a printed denomination.' },
     usage: 'The chip is a noninteractive image. Supply a label for custom artwork, and use the same locale on server and client. Values are nonnegative major units.',
-    sections: [{ title: 'Denominations', stories: ['Default'] }, { title: 'Material and scale', stories: ['Sizes', 'Finishes', 'Dimmed', 'Monogram', 'Light'] }],
+    sections: [{ title: 'Denominations', stories: ['Default'] }, { title: 'Material and scale', stories: ['Sizes', 'Finishes', 'Monogram', 'Dimmed', 'Currency', 'Light'] }],
   } },
 } satisfies Meta<typeof GameChip>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  render: () => <Flex gap="md" wrap align="center">
+  name: 'Denominations',
+  render: () => <Flex gap="lg" wrap align="center" justify="center">
     <GameChip value={1} size="xl" /><GameChip value={5} size="xl" /><GameChip value={25} size="xl" />
     <GameChip value={100} size="xl" /><GameChip value={500} size="xl" /><GameChip value={1000} size="xl" locale="en-US" />
   </Flex>,
   parameters: { docs: { source: { code: `import { GameChip } from '@jfrader/ui/game-chip';
 import { Flex } from '@jfrader/ui/flex';
 
-<Flex gap="md" wrap align="center">
+<Flex gap="lg" wrap align="center" justify="center">
   <GameChip value={1} size="xl" />
   <GameChip value={5} size="xl" />
   <GameChip value={25} size="xl" />
@@ -72,10 +75,10 @@ import { Flex } from '@jfrader/ui/flex';
 </Flex>` } } },
 };
 export const Dimmed: Story = {
-  args: { dimmed: true, size: 'lg', label: 'Small blind' },
+  args: { dimmed: true, size: 'xl', label: 'Small blind' },
   parameters: { docs: { source: { code: `import { GameChip } from '@jfrader/ui/game-chip';
 
-<GameChip value={1000} size="lg" dimmed label="Small blind" locale="en-US" />` } } },
+<GameChip value={1000} size="xl" dimmed label="Small blind" locale="en-US" />` } } },
   play: async ({ canvas }) => { await expect(canvas.getByRole('img', { name: 'Small blind' })).toHaveAttribute('data-dimmed', 'true'); },
 };
 export const Monogram: Story = {
@@ -90,11 +93,11 @@ export const Monogram: Story = {
   },
 };
 export const Light: Story = {
-  ...Default, globals: { theme: 'light' }, decorators: [withLightTheme],
+  ...Default, name: 'Light', globals: { theme: 'light' }, decorators: [withLightTheme],
   parameters: { docs: { source: { code: `import { GameChip } from '@jfrader/ui/game-chip';
 import { Flex } from '@jfrader/ui/flex';
 
-<Flex gap="md" wrap align="center">
+<Flex gap="lg" wrap align="center" justify="center">
   <GameChip value={1} size="xl" />
   <GameChip value={5} size="xl" />
   <GameChip value={25} size="xl" />
@@ -120,10 +123,13 @@ export const ReplacementSlots: Story = {
   },
 };
 export const Currency: Story = {
-  tags: ['!autodocs'], args: { value: 1250, currency: 'EUR', locale: 'de-DE' },
+  args: { value: 1250, currency: 'USD', locale: 'en-US', size: 'xl' },
+  parameters: { docs: { source: { code: `import { GameChip } from '@jfrader/ui/game-chip';
+
+<GameChip value={1250} size="xl" locale="en-US" currency="USD" />` } } },
   play: async ({ canvas }) => {
-    const full = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(1250);
-    const compact = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR', notation: 'compact', maximumFractionDigits: 1 }).format(1250);
+    const full = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(1250);
+    const compact = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 }).format(1250);
     await expect(canvas.getByRole('img', { name: full }).textContent).toBe(compact);
   },
 };
