@@ -23,8 +23,18 @@ async function geometryCheck(root: Element) {
   for (const tower of root.querySelectorAll('[data-ui="game-chip-stack-stack"]')) {
     await expectInside(tower, root);
     for (const chip of tower.querySelectorAll('[data-ui="game-chip"]')) await expectInside(chip, tower);
-    for (const edge of tower.querySelectorAll('[data-ui="game-chip-edge"]')) {
-      if (getComputedStyle(edge).display !== 'none') await expectInside(edge, tower);
+    const bands = tower.querySelectorAll<HTMLElement>('[data-ui="game-chip-stack-band"]');
+    if (tower.getAttribute('data-flat') !== 'true') {
+      await expect(bands).toHaveLength(Number(tower.getAttribute('data-visible')));
+      await expect(tower.querySelectorAll('[data-ui="game-chip"]')).toHaveLength(1);
+      const chip = tower.querySelector<HTMLElement>('[data-ui="game-chip"]')!;
+      await expect(getComputedStyle(chip).overflow).toBe('visible');
+      await expect(getComputedStyle(chip.querySelector('[data-ui="game-chip-face"]')!).overflow).toBe('visible');
+      await expect(chip.getBoundingClientRect().height).toBeCloseTo(chip.getBoundingClientRect().width * 0.58, 0);
+    }
+    for (const band of bands) {
+      await expectInside(band.querySelector('svg')!, tower);
+      await expect(band.getBoundingClientRect().height).toBeCloseTo(Number.parseFloat(getComputedStyle(tower).getPropertyValue('--tower-diameter')) * 0.18, 1);
     }
   }
   await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
@@ -56,7 +66,8 @@ const size: GameChipSize = 'xl';
 <GameChipStack chips={[{ value: 100, count: 50 }]} maxVisible={6} label="Pot 5,000" size={size} locale="en-US" />` } } },
   play: async ({ canvas }) => {
     const root = canvas.getByRole('img', { name: 'Pot 5,000' });
-    await expect(root.querySelectorAll('[data-ui="game-chip"]')).toHaveLength(6);
+    await expect(root.querySelectorAll('[data-ui="game-chip"]')).toHaveLength(1);
+    await expect(root.querySelectorAll('[data-ui="game-chip-stack-band"]')).toHaveLength(6);
     await expect(root.firstElementChild).toHaveAttribute('data-count', '50');
     await geometryCheck(root);
   },
@@ -169,5 +180,15 @@ export const EmptyLabel: Story = {
     await expect(root).toHaveAttribute('aria-hidden', 'true');
     await expect(root).not.toHaveAttribute('aria-label');
     await expect(root).not.toHaveAttribute('role');
+  },
+};
+export const ThickStacks: Story = {
+  tags: ['!autodocs'],
+  render: () => <Flex gap="xl" align="end" wrap>
+    {(['md', 'xl'] as const).flatMap(size => [2, 10].map(count => <GameChipStack key={`${size}-${count}`}
+      chips={[{ value: 100, count }]} size={size} data-chip-demo={`${size}-${count}`} />))}
+  </Flex>,
+  play: async ({ canvasElement }) => {
+    for (const root of canvasElement.querySelectorAll('[data-ui="game-chip-stack"]')) await geometryCheck(root);
   },
 };
