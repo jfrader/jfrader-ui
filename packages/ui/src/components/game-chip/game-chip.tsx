@@ -58,9 +58,15 @@ function denominationTone(value: number): GameChipTone {
   const scaled = value > 1000 ? value / 1000 ** Math.floor(Math.log10(value / 5) / 3) : value;
   return ladder.findLast(([threshold]) => scaled >= threshold)?.[1] ?? 'white';
 }
+export function chipMaterialStyle(value: number, tone = denominationTone(value), dimmed = false): CSSProperties {
+  return {
+    '--chip-material': tones[tone],
+    '--chip-spot': tone === 'white' ? vars.color.chipRed : vars.color.chipSpot,
+    '--chip-tone': dimmed ? `color-mix(in srgb, var(--chip-material) 55%, ${vars.color.chipSpot})` : 'var(--chip-material)',
+  } as CSSProperties;
+}
 const bodyBackground = `radial-gradient(ellipse at 30% 12%, color-mix(in srgb, ${vars.color.chipSpot} 32%, transparent), transparent 65%), linear-gradient(145deg, transparent 30%, color-mix(in srgb, ${vars.color.chipGold} 12%, transparent)), radial-gradient(closest-side, var(--chip-tone) 72%, color-mix(in srgb, var(--chip-tone) 65%, ${vars.color.chipInk}) 96%, var(--chip-tone))`;
 const rootStyle = css({
-  '--chip-tone': 'var(--chip-material)',
   label: 'game-chip', display: 'inline-grid', placeItems: 'center', position: 'relative',
   inlineSize: 'var(--game-chip-size)', blockSize: 'var(--game-chip-size)', flexShrink: 0,
   boxSizing: 'border-box', borderRadius: '50%', isolation: 'isolate', verticalAlign: 'middle',
@@ -78,16 +84,8 @@ const rootStyle = css({
   '&[data-finish="metal"]::after': {
     background: `conic-gradient(from 35deg at 48% 48%, transparent 0deg 35deg, color-mix(in srgb, ${vars.color.chipSpot} 85%, transparent) 42deg 50deg, transparent 58deg 145deg, color-mix(in srgb, ${vars.color.chipInk} 40%, transparent) 158deg 175deg, color-mix(in srgb, ${vars.color.chipSpot} 95%, transparent) 184deg 197deg, transparent 210deg 285deg, color-mix(in srgb, ${vars.color.chipSpot} 70%, transparent) 295deg 303deg, transparent 315deg)`,
     boxShadow: `inset 0 0 0 1px color-mix(in srgb, var(--chip-tone) 55%, ${vars.color.chipInk}), inset 0 0 0 2px color-mix(in srgb, ${vars.color.chipSpot} 85%, transparent), inset 0 -2px 2px color-mix(in srgb, ${vars.color.chipInk} 50%, transparent)` },
-  '&[data-dimmed="true"]': { '--chip-tone': `color-mix(in srgb, var(--chip-material) 55%, ${vars.color.chipSpot})` },
   [FORCED_COLORS]: { background: 'Canvas', color: 'CanvasText', border: '1px solid CanvasText', boxShadow: 'none',
     '&::before, &::after': { display: 'none' } },
-});
-const edgeStyle = css({
-  display: 'var(--chip-edge-display, none)', position: 'absolute', inset: 0, borderRadius: '50%', zIndex: -1,
-  transform: 'translateY(var(--chip-thickness))',
-  background: `linear-gradient(110deg, color-mix(in srgb, ${vars.color.chipInk} 20%, transparent), transparent 35%, color-mix(in srgb, ${vars.color.chipInk} 45%, transparent)), repeating-conic-gradient(from -6.5deg, color-mix(in srgb, var(--chip-spot) 65%, var(--chip-tone)) 0deg 13deg, color-mix(in srgb, var(--chip-tone) 78%, ${vars.color.chipInk}) 13deg 45deg)`,
-  boxShadow: `inset 0 -1px 0 color-mix(in srgb, ${vars.color.chipSpot} 25%, var(--chip-tone)), 0 1px 1px color-mix(in srgb, ${vars.color.chipInk} 65%, transparent)`,
-  [FORCED_COLORS]: { display: 'none' },
 });
 const faceStyle = css({
   display: 'grid', placeItems: 'center', inlineSize: '62%', blockSize: '62%', boxSizing: 'border-box',
@@ -116,13 +114,11 @@ export function GameChip({ value, label, locale, currency, tone = denominationTo
   return <WithSx styles={[rootStyle, root?.sx]} sx={sx} className={[className, root?.className].filter(Boolean).join(' ')}>{(classes) =>
     <Root {...rest} {...withoutSx(root)} ref={ref ?? root?.ref} role="img" aria-label={label || full}
       data-ui={rootIdentity} data-tone={tone} data-size={size} data-finish={finish} data-dimmed={String(dimmed)} className={classes}
-      style={{ '--game-chip-size': `${GAME_CHIP_SIZES[size]}px`, '--chip-material': tones[tone],
-        '--chip-spot': tone === 'white' ? vars.color.chipRed : vars.color.chipSpot,
+      style={{ ...chipMaterialStyle(value, tone, dimmed), '--game-chip-size': `${GAME_CHIP_SIZES[size]}px`,
         '--chip-font-scale': Math.min(0.27, 0.86 / Math.max(1, printed.length)), ...style, ...root?.style } as CSSProperties}>
       <WithSx styles={[faceStyle, slotProps?.face?.sx]} className={slotProps?.face?.className}>{(faceClasses) =>
         <Face {...withoutSx(slotProps?.face)} data-ui={faceIdentity} aria-hidden="true" className={faceClasses}>{children !== undefined ? children : printed}</Face>}
       </WithSx>
-      <span data-ui="game-chip-edge" aria-hidden="true" css={edgeStyle} />
     </Root>}
   </WithSx>;
 }
