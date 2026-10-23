@@ -44,8 +44,8 @@ export type GameTableProps<T extends SeatLike = SeatLike> =
     teamCount?: number;
     /** Match geometry or waiting-room geometry. Defaults to `match`. */
     surface?: BoardSurface;
-    /** Content inside the felt, centred on its edge (default), or outside it. */
-    seatPlacement?: 'inside' | 'edge' | 'outside';
+    /** Content inside the felt, centred on its edge (default), outside it, or `auto` to use inside seats on narrow containers. */
+    seatPlacement?: 'inside' | 'edge' | 'outside' | 'auto';
     /** Preferred block-axis space. Yields to zero if control floors cannot fit.
      * `data-clearance="reduced"` declares this concession. Cards use preferred sizes and may scale below `sm`.
      * `data-layout-fit="scaled"` declares reduced content; `insufficient-space` declares a control-floor failure.
@@ -257,7 +257,7 @@ export function GameTable<T extends SeatLike>({
   seats, seatSlots: suppliedSlots, places, players, teamCount = 2, surface = 'match', turnDirection, clearance = 0,
   children, seatPlacement = 'edge', style, artSet, cardArtSets, ...rest
 }: GameTableProps<T>) {
-  const { surfaceRef, measurement } = useBoardMeasurements(rest.slots?.root ?? rest.component);
+  const { surfaceRef, measurement } = useBoardMeasurements(rest.slots?.root ?? rest.component, seatPlacement);
   const seatCount = resolveSeatCount(places ?? players ?? NaN);
   const slots = useMemo(() => suppliedSlots ?? buildAlternatingSlots(seats ?? [], seatCount, resolveTableTurnDirection(turnDirection), teamCount),
     [suppliedSlots, seats, seatCount, turnDirection, teamCount]);
@@ -284,6 +284,7 @@ export function GameTable<T extends SeatLike>({
   for (const region of regions) if (region.props.slotKey !== undefined && !slots.some((slot) => slot.key === region.props.slotKey)) {
     throw new Error(`GameTable has no slot named "${region.props.slotKey}".`);
   }
+  const resolvedSeatPlacement = measurement?.seatPlacement ?? (seatPlacement === 'auto' ? 'auto' : seatPlacement);
   const layout = buildBoardLayoutModel({
     surface, totalSeats: seatCount, measurement,
   });
@@ -299,11 +300,11 @@ export function GameTable<T extends SeatLike>({
   };
   return (
     <DeckArtProvider artSet={artSet} cardArtSets={cardArtSets}><TableRoot {...rest} marker="game-table" structure={rootStyle} style={style} attributes={{ style: variables,
-      'data-surface': surface, 'data-seat-placement': seatPlacement, 'data-layout-fit': layout.fit,
+      'data-surface': surface, 'data-seat-placement': resolvedSeatPlacement, 'data-layout-fit': layout.fit,
       'data-clearance': measurement?.clearance && (measurement.clearance.start < measurement.clearance.requestedStart || measurement.clearance.end < measurement.clearance.requestedEnd) ? 'reduced' : 'requested',
       'data-clearance-start': measurement?.clearance?.start, 'data-clearance-end': measurement?.clearance?.end,
     }}>
-      <div data-ui="game-table-frame-container" css={frameContainerStyle}><div data-ui="game-table-frame" data-surface={surface} data-seat-placement={seatPlacement} css={frameStyle}>
+      <div data-ui="game-table-frame-container" css={frameContainerStyle}><div data-ui="game-table-frame" data-surface={surface} data-seat-placement={resolvedSeatPlacement} css={frameStyle}>
       {one(GameTableHeader)}
       <div data-ui="game-table-shell" css={shellStyle}>
         {/* Stable measurement target for future card flights; owned by this library. */}

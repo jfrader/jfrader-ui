@@ -1,5 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import { fitBoardContent, GAME_TABLE_LIMITS, type BoardContentSize, type BoardMeasurements } from './fit-layout';
+import { AUTO_SEAT_PLACEMENT_MAX_INLINE_SIZE, fitBoardContent, GAME_TABLE_LIMITS, type BoardContentSize, type BoardMeasurements } from './fit-layout';
+
+export type RequestedSeatPlacement = NonNullable<BoardMeasurements['seatPlacement']> | 'auto';
 
 const SEAT_SELECTOR = '[data-ui~="game-table-seat"]';
 const CENTER_SELECTOR = '[data-ui~="game-table-center"]';
@@ -62,7 +64,7 @@ function placeChrome(surface: HTMLElement, seats: HTMLElement[]) {
   }
 }
 
-export function useBoardMeasurements(rootIdentity?: unknown) {
+export function useBoardMeasurements(rootIdentity?: unknown, requestedPlacement: RequestedSeatPlacement = 'edge') {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<(() => void) | null>(null);
   const [measurement, setMeasurement] = useState<BoardMeasurements>();
@@ -86,7 +88,9 @@ export function useBoardMeasurements(rootIdentity?: unknown) {
       const shell = surface.parentElement!;
       const root = shell.parentElement!;
       const plays = Array.from(surface.querySelectorAll<HTMLElement>('[data-ui~="game-table-play"]'));
-      const seatPlacement = root.dataset.seatPlacement as NonNullable<BoardMeasurements['seatPlacement']>;
+      const seatPlacement = requestedPlacement === 'auto'
+        ? root.clientWidth < AUTO_SEAT_PLACEMENT_MAX_INLINE_SIZE ? 'inside' : 'edge'
+        : requestedPlacement;
       const reserve = { inside: 0, edge: 0.5, outside: 1 }[seatPlacement];
       const seatSizes = seats.map(regionSize);
       shell.style.setProperty('--game-table-reserve-inline', `${Math.min(shell.clientWidth * MAX_OUTBOARD_RESERVE_RATIO, Math.max(0, ...seatSizes.map((seat) => seat.width)) * reserve)}px`);
@@ -177,7 +181,7 @@ export function useBoardMeasurements(rootIdentity?: unknown) {
       mutation.disconnect();
       for (const [card, previous] of markers) restoreMarker(card, previous);
     };
-  }, [rootIdentity]);
+  }, [rootIdentity, requestedPlacement]);
   useLayoutEffect(() => { measureRef.current?.(); });
   return { surfaceRef, measurement };
 }

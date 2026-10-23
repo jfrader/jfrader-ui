@@ -338,7 +338,7 @@ Give the parent container explicit inline and block sizes. GameTable measures it
 
 Keep seat and region content in normal document flow so ResizeObserver can measure footprints accurately; absolute elements must reserve their footprint in a parent wrapper. Interactive controls preserve a minimum footprint of 24px on both axes (32px on the primary axis).
 
-Use at least two places with unique player and slot keys. Team assignments must fit the available places. Keep player chrome concise: it does not reserve layout space. If control minimum sizes cannot fit, overflow or collisions may remain; give the parent more space or reduce the composition. Do not scale measured child sizes a second time.
+Use \`seatPlacement="auto"\` to keep seats inside the felt when the container is narrow, so the surface can use the width. Use at least two places with unique player and slot keys. Team assignments must fit the available places. Keep player chrome concise: it does not reserve layout space. If control minimum sizes cannot fit, overflow or collisions may remain; give the parent more space or reduce the composition. Do not scale measured child sizes a second time.
 
 \`places\` counts occupied and empty places. The deprecated \`players\` alias remains for one release; \`places\` wins when both are passed. Card sizes are preferences and may scale below \`sm\`; only interactive controls impose size floors. \`data-layout-fit\` is \`measuring\` before measurement, \`fitted\` at preferred sizes, \`scaled\` when content shrinks, or \`insufficient-space\` when floors cannot fit. Play rectangles stay inside the felt ellipse, including with outside seats.
 
@@ -448,9 +448,9 @@ function PokerPlayerSeat() {
 
 export const Default: Story = {
   name: 'Poker table',
-  args: { fit: 'fill', renderSeat: fn<GameTableProps<Player>['renderSeat']>(() => <PokerPlayerSeat />) },
+  args: { fit: 'fill', seatPlacement: 'auto', renderSeat: fn<GameTableProps<Player>['renderSeat']>(() => <PokerPlayerSeat />) },
   parameters: { docs: {
-    description: { story: 'Six players at a poker table with points, hidden cards, community cards, and a check action. The player whose turn it is shows a countdown.' },
+    description: { story: 'Six players at a poker table with points, hidden cards, community cards, and a check action. The player whose turn it is shows a countdown. Narrow containers keep the seats inside the felt so the table uses the available width.' },
     source: { language: 'tsx', code: `import { Button, PersonAvatar, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
@@ -501,7 +501,7 @@ function PokerPlayerSeat() {
 export default function Example() {
   return (
     <Frame>
-      <GameTable places={6} seats={players}>
+      <GameTable places={6} seats={players} seatPlacement="auto">
         <GameTable.Header>Poker · 10 / 20</GameTable.Header>
         <GameTable.Seat>
           <PokerPlayerSeat />
@@ -4604,6 +4604,38 @@ export default function Example() {
   },
 };
 
+/** Auto keeps seats inside the felt on narrow containers and on the edge when wide. */
+export const AutoSeatPlacement: Story = {
+  name: 'Auto seat placement',
+  tags: ['!autodocs'],
+  render: () => <MatrixRow data-auto-placement>
+    <ViewportFrame data-auto-width="348" viewport={{ width: 348, height: 640 }}>
+      <Table places={6} seats={SEATS} seatPlacement="auto">
+        <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
+        <Table.Center>Pot 240</Table.Center>
+      </Table>
+    </ViewportFrame>
+    <ViewportFrame data-auto-width="640" viewport={{ width: 640, height: 640 }}>
+      <Table places={6} seats={SEATS} seatPlacement="auto">
+        <Table.Seat><FixtureContent<Player> content={seatChrome} /></Table.Seat>
+        <Table.Center>Pot 240</Table.Center>
+      </Table>
+    </ViewportFrame>
+  </MatrixRow>,
+  play: async ({ canvasElement }) => {
+    const frames = canvasElement.querySelectorAll<HTMLElement>('[data-auto-width]');
+    await expect(frames).toHaveLength(2);
+    const narrow = required(required(frames[0]).querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
+    const wide = required(required(frames[1]).querySelector<HTMLElement>('[data-ui="game-table"]') ?? undefined);
+    await waitFor(() => expect(narrow.dataset.seatPlacement).toBe('inside'));
+    await waitFor(() => expect(wide.dataset.seatPlacement).toBe('edge'));
+    const narrowSurface = required(narrow.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
+    const wideSurface = required(wide.querySelector<HTMLElement>('[data-game-surface]') ?? undefined).getBoundingClientRect();
+    await expect(narrowSurface.width / 348).toBeGreaterThan(0.8);
+    await expect(wideSurface.width / 640).toBeGreaterThan(0.6);
+  },
+};
+
 /** Inside, edge and outside placement for two, four and six players. */
 export const SeatPlacementModesMatrix: Story = {
   name: 'Seat placement matrix',
@@ -5277,7 +5309,7 @@ function PokerTable() {
   const deckRef = useRef<HTMLDivElement>(null);
   const boardRefs = useRef(new Map<string, HTMLDivElement>());
   const { launch, landingTargets } = useCardFlights();
-  return <Table places={6} teamCount={1} seats={generalSeats(6, 1)}>
+  return <Table places={6} teamCount={1} seats={generalSeats(6, 1)} seatPlacement="auto">
     <Table.Header>Texas Hold'em · 10 / 20</Table.Header>
     <Table.Seat><PokerSeat /></Table.Seat>
     <Table.Center><BoardCenter>
@@ -5420,7 +5452,7 @@ function TexasHoldemTable() {
   };
 
   return (
-    <GameTable places={6} teamCount={1} seats={players}>
+    <GameTable places={6} teamCount={1} seats={players} seatPlacement="auto">
       <GameTable.Header>Texas Hold'em · 10 / 20</GameTable.Header>
       <GameTable.Seat>
         <PokerSeat />
