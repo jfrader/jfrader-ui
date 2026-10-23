@@ -3,6 +3,7 @@
 import type { ComponentPropsWithRef, ComponentType, ReactNode, Ref } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
+import Decimal from 'decimal.js';
 import { css } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
 import { WithSx, withoutSx, type SxProps } from '../../styling/sx';
@@ -12,6 +13,7 @@ import { CardFlights } from '../card-flights';
 import { DeckProvider } from '../deck';
 import { GameActions, type GameActionItem, type GameActionsProps } from '../game-actions';
 import { GameCard, type GameCardValue } from '../game-card';
+import { GameChipStack, type GameChipStackChip } from '../game-chip-stack';
 import { CARD_FRAME } from '../game-card/card-frame';
 import { GameSeat, type GameSeatProps } from '../game-seat';
 import { GameTable, useGameTableSeat, type GameTableProps } from '../game-table';
@@ -109,6 +111,8 @@ export interface PokerTableProps extends SxProps {
   board?: readonly PokerTableCard[];
   /** Chip total shown in the center. Omit to hide the pot. */
   pot?: number;
+  /** Sets the positive, finite chip values used to depict the pot, largest first. Must not be empty. Defaults to [1000, 500, 100, 25, 5, 1]. Unrepresented remainders remain in the formatted total. */
+  denominations?: readonly number[];
   /** Event line under the table. Announcements are polite live text. */
   announcement?: ReactNode;
   /** Action commands for the dock. Omit to hide the toolbar. */
@@ -164,6 +168,23 @@ const DEFAULT_LABELS: PokerTableLabels = {
 };
 
 const BOARD_SLOTS = 5;
+const DEFAULT_DENOMINATIONS = [1000, 500, 100, 25, 5, 1] as const;
+const POT_MAX_VISIBLE = 3;
+const Exact = Decimal.clone({ precision: 40 });
+
+function potChips(pot: number | undefined, denominations: readonly number[]): GameChipStackChip[] {
+  const values = [...new Set(denominations)];
+  if (!values.length || values.some(value => !Number.isFinite(value) || value <= 0)) {
+    throw new RangeError('PokerTable denominations must contain at least one positive, finite value.');
+  }
+  if (pot === undefined || !Number.isFinite(pot) || pot <= 0) return [];
+  let remaining = new Exact(pot);
+  return values.sort((a, b) => b - a).flatMap(value => {
+    const count = remaining.dividedToIntegerBy(value);
+    remaining = remaining.mod(value);
+    return count.isZero() ? [] : [{ value, count: Exact.min(count, Number.MAX_SAFE_INTEGER).toNumber() }];
+  });
+}
 
 const rootStyle = css({
   label: 'poker-table',
@@ -196,6 +217,11 @@ const centerStyle = css({
   display: 'grid',
   justifyItems: 'center',
   gap: vars.space[2],
+});
+
+const potStackStyle = css({
+  maxInlineSize: `calc(${vars.size.gameCardSm} * ${BOARD_SLOTS + 1} + ${vars.space[1]} * ${BOARD_SLOTS})`,
+  justifyContent: 'center',
 });
 
 const potStyle = css({
@@ -318,6 +344,7 @@ export function PokerTable({
   subtitle,
   board = [],
   pot,
+  denominations = DEFAULT_DENOMINATIONS,
   announcement,
   actions,
   actionsLabel,
@@ -349,6 +376,7 @@ export function PokerTable({
   const mergedRef = useMergeRefs([ref, rootSlot?.ref]);
   const rootClasses = [className, rootSlot?.className].filter(Boolean).join(' ') || undefined;
   const formatter = new Intl.NumberFormat(locale);
+  const chips = potChips(pot, denominations);
   const filled = board.slice(0, BOARD_SLOTS);
   const empty = Math.max(0, BOARD_SLOTS - filled.length);
   const hasDock = dock !== undefined && dock !== null && dock !== false && dock !== 0 && dock !== '';
@@ -383,6 +411,7 @@ export function PokerTable({
                 <GameTable.Center>
                   {center ?? (
                     <div css={centerStyle}>
+                      <GameChipStack chips={chips} size="lg" maxVisible={POT_MAX_VISIBLE} locale={locale} sx={potStackStyle} />
                       {pot !== undefined && (
                         <span css={potStyle} data-poker-pot>
                           <span css={potLabelStyle}>{labels.pot}</span>

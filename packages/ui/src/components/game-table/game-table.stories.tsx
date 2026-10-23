@@ -6,6 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../index';
 import { Avatar, type AvatarSize } from '../avatar';
 import { GameSeat } from '../game-seat';
+import { GameChipStack } from '../game-chip-stack';
 import { PersonAvatar } from '../person-avatar';
 import { Button } from '../button';
 import { CARD_BACK_PATTERNS, GameCard } from '../game-card';
@@ -70,6 +71,11 @@ const CaseColumn = styled.div({ display: 'flex', flexDirection: 'column', gap: v
 const ParityGrid = styled.div({ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: vars.space[4], blockSize: 900, inlineSize: 2880 });
 const FullHeight = styled.div({ blockSize: '100%' });
 const PokerSeatContent = styled.div({ display: 'grid', justifyItems: 'center' });
+const ChipPoints = styled.span({
+  display: 'inline-flex', alignItems: 'center', gap: vars.space[1],
+  maxInlineSize: '100%', whiteSpace: 'nowrap', fontSize: vars.textSize.xs,
+});
+const ChipAmount = styled.span({ display: 'grid', lineHeight: vars.lineHeight.tight });
 const ResizableFrame = styled.div<{ narrow: boolean; roomy: boolean }>(({ narrow, roomy }) => ({
   inlineSize: narrow ? 380 : 500, blockSize: roomy ? 800 : narrow ? 360 : 440,
 }));
@@ -440,7 +446,7 @@ function PokerPlayerSeat() {
   const { player, index } = useGameTableSeat<Player>();
   const name = player?.name ?? 'Open seat';
   return <GameSeat name={name} avatar={<PersonAvatar seed={name} size="full" />}
-    handCount={2} points={35}
+    handCount={2} points={<ChipPoints><GameChipStack chips={[{ value: 5, count: 7 }]} size="sm" maxVisible={2} locale="en-US" /><span>35</span></ChipPoints>}
     badges={player?.isMe ? 'Your turn · 45s' : index === 1 ? 'Dealer' : 'Playing'}
     turned={player?.isMe}
     turn={player?.isMe ? { remainingMs: 45000, durationMs: 60000 } : undefined} />;
@@ -454,6 +460,7 @@ export const Default: Story = {
     source: { language: 'tsx', code: `import { Button, PersonAvatar, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
+import { GameChipStack } from '@jfrader/ui/game-chip-stack';
 import { GameSeat } from '@jfrader/ui/game-seat';
 import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
 
@@ -475,6 +482,11 @@ const CommunityCards = styled.div({
   gap: vars.space[1],
 });
 
+const ChipPoints = styled.span({
+  display: 'inline-flex', alignItems: 'center', gap: vars.space[1],
+  maxInlineSize: '100%', whiteSpace: 'nowrap', fontSize: vars.textSize.xs,
+});
+
 interface Player extends SeatLike {
   name: string;
 }
@@ -492,7 +504,7 @@ function PokerPlayerSeat() {
   const { player, index } = useGameTableSeat<Player>();
   const name = player?.name ?? 'Open seat';
   return <GameSeat name={name} avatar={<PersonAvatar seed={name} size="full" />}
-    handCount={2} points={35}
+    handCount={2} points={<ChipPoints><GameChipStack chips={[{ value: 5, count: 7 }]} size="sm" maxVisible={2} locale="en-US" /><span>35</span></ChipPoints>}
     badges={player?.isMe ? 'Your turn · 45s' : index === 1 ? 'Dealer' : 'Playing'}
     turned={player?.isMe}
     turn={player?.isMe ? { remainingMs: 45000, durationMs: 60000 } : undefined} />;
@@ -538,6 +550,12 @@ export default function Example() {
     await expect(table.querySelectorAll('[data-ui~="game-seat"]')).toHaveLength(6);
     await expect(table.querySelectorAll('[data-ui="game-hand-hidden-card"]')).toHaveLength(12);
     await expect(table.querySelectorAll('[data-ui="game-seat-timer"]')).toHaveLength(1);
+    for (const points of table.querySelectorAll<HTMLElement>('[data-ui="game-seat-points"]')) {
+      const stack = required(points.querySelector('[data-ui="game-chip-stack"]') ?? undefined);
+      await expect(stack).toHaveAttribute('aria-hidden', 'true');
+      await expectInside(stack, points);
+      await expect(points.scrollWidth).toBeLessThanOrEqual(points.clientWidth + 1);
+    }
     for (const [index, slot] of slots.entries()) {
       await expect(seats[index]).toHaveAttribute('data-slot-key', slot.key);
       await expect(args.renderSeat).toHaveBeenCalledWith(slot, index, expect.objectContaining({ index, totalSeats: 6 }));
@@ -5305,7 +5323,7 @@ function PokerTable() {
 
 function PokerSeat() {
   const { player } = useGameTableSeat<Player>();
-  return <PokerSeatContent data-poker-seat><span>{player?.name}</span><span>1,200 chips</span></PokerSeatContent>;
+  return <PokerSeatContent data-poker-seat><span>{player?.name}</span><ChipPoints><GameChipStack chips={[{ value: 100, count: 12 }]} size="sm" maxVisible={2} locale="en-US" /><ChipAmount>1,200<span> chips</span></ChipAmount></ChipPoints></PokerSeatContent>;
 }
 
 function PokerFixture() {
@@ -5327,6 +5345,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { DeckProvider } from '@jfrader/ui/deck';
 import { CardFlightsProvider, measureCardBox, useCardFlights } from '@jfrader/ui/card-flights';
 import { GameCard } from '@jfrader/ui/game-card';
+import { GameChipStack } from '@jfrader/ui/game-chip-stack';
 import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
 
 const Frame = styled.div({
@@ -5358,6 +5377,12 @@ const SeatContent = styled.div({
   justifyItems: 'center',
 });
 
+const ChipPoints = styled.span({
+  display: 'inline-flex', alignItems: 'center', gap: vars.space[1],
+  maxInlineSize: '100%', whiteSpace: 'nowrap', fontSize: vars.textSize.xs,
+});
+const ChipAmount = styled.span({ display: 'grid', lineHeight: vars.lineHeight.tight });
+
 interface Player extends SeatLike {
   name: string;
 }
@@ -5384,7 +5409,10 @@ function PokerSeat() {
   return (
     <SeatContent>
       <span>{player?.name}</span>
-      <span>1,200 chips</span>
+      <ChipPoints>
+        <GameChipStack chips={[{ value: 100, count: 12 }]} size="sm" maxVisible={2} locale="en-US" />
+        <ChipAmount>1,200<span> chips</span></ChipAmount>
+      </ChipPoints>
     </SeatContent>
   );
 }
@@ -5487,6 +5515,10 @@ export default function Example() {
       await expect(chrome).toHaveLength(6);
       for (const [index, seat] of chrome.entries()) {
         await expectInside(seat, table);
+        await expect(seat).toHaveTextContent('1,200 chips');
+        const stack = required(seat.querySelector('[data-ui="game-chip-stack"]') ?? undefined);
+        await expect(stack).toHaveAttribute('aria-hidden', 'true');
+        await expectInside(stack, seat);
         for (const other of [...chrome.slice(index + 1), community,
           required(table.querySelector('[data-ui="game-table-header"]') ?? undefined),
           required(table.querySelector('[data-ui="game-table-dock"]') ?? undefined)]) await expectNoOverlap(seat, other);

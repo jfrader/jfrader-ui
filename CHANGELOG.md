@@ -13,6 +13,7 @@
 
 ### Changed
 
+- `PokerTable` shows pot chips above the total and adds a `denominations` prop. Poker seat examples show compact chip stacks beside their points.
 - The docs site uses `react-storydocs` 0.17.2: each example's code control sits in a footer under the example, and an open snippet repeats a Hide code control at its end.
 - The GameCard, FlipGameCard, and GameHand examples use one image deck: card faces and a back carried as image art with a printed title plate, so the pages show how a game ships artwork.
 - The theming documentation is one section on both surfaces: story-driven `Theme` pages for palette, typography, spacing and shape, and elevation and motion, each reading its values from `@jfrader/tokens` and showing both palettes; the rebuilt Theming guide replaces the generated token listings on the docs site.
