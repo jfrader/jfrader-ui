@@ -8,9 +8,9 @@ composed modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **165**; public callable parts: **188**.
-- Families exposing `slots.root`: **115**; remaining without a family-level root slot: **50** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **126**; remaining without family-level interior slots: **39** (includes components without generated anatomy).
+- Public callable families: **167**; public callable parts: **188**.
+- Families exposing `slots.root`: **117**; remaining without a family-level root slot: **50** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **128**; remaining without family-level interior slots: **39** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -290,6 +290,7 @@ panel material. The section has no background, border or radius to migrate.
 | [PhoneInput](../packages/ui/src/components/phone-input/phone-input.tsx) | — | — | `control`, `countryTrigger`, `description`, `error`, `label`, `list`, `number`, `option`, `panel`, `root`, `search`, `status` | `control`, `countryTrigger`, `description`, `error`, `label`, `list`, `number`, `option`, `panel`, `root`, `search`, `status` | — | — |
 | [PhotoGrid](../packages/ui/src/components/photo-grid/photo-grid.tsx) | yes | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `root`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `root`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | — | — | — |
 | [Pill](../packages/ui/src/components/pill/pill.tsx) | — | — | — | — | — | — |
+| [PokerTable](../packages/ui/src/components/poker-table/poker-table.tsx) | yes | `actions`, `root`, `seat` | `actions`, `root`, `seat` | — | `tableProps` | — |
 | [Popover](../packages/ui/src/components/popover/popover.tsx) | yes | `content`, `root`, `trigger` | `content`, `root`, `trigger` | — | — | `Content`, `Trigger` |
 | [Popover.Content](../packages/ui/src/components/popover/popover.tsx) | — | — | — | — | — | — |
 | [Popover.Trigger](../packages/ui/src/components/popover/popover.tsx) | — | — | — | — | — | — |
@@ -372,6 +373,7 @@ panel material. The section has no background, border or radius to migrate.
 | [Tooltip.Content](../packages/ui/src/components/tooltip/tooltip.tsx) | — | — | — | — | — | — |
 | [Tooltip.Trigger](../packages/ui/src/components/tooltip/tooltip.tsx) | — | — | — | — | — | — |
 | [TreeView](../packages/ui/src/components/tree-view/tree-view.tsx) | — | `disclosure`, `group`, `icon`, `label`, `row`, `status`, `tree` | `disclosure`, `group`, `icon`, `label`, `row`, `status`, `tree` | — | — | — |
+| [TrucoTable](../packages/ui/src/components/truco-table/truco-table.tsx) | yes | `actions`, `root`, `seat` | `actions`, `root`, `seat` | — | `tableProps` | — |
 | [TypewriterTerminal](../packages/ui/src/components/typewriter-terminal/typewriter-terminal.tsx) | yes | `caption`, `controls`, `copyButton`, `header`, `playButton`, `replayButton`, `root`, `screen`, `scrubber`, `status`, `transcript` | `caption`, `controls`, `copyButton`, `header`, `playButton`, `replayButton`, `root`, `screen`, `scrubber`, `status`, `transcript` | — | — | — |
 | [UsageMeter](../packages/ui/src/components/usage-meter/usage-meter.tsx) | — | `item`, `legend`, `limit`, `overage`, `root`, `segment`, `status`, `title`, `total`, `track` | `item`, `legend`, `limit`, `overage`, `root`, `segment`, `status`, `title`, `total`, `track` | — | — | — |
 | [UserMenu](../packages/ui/src/components/user-menu/user-menu.tsx) | yes | `content`, `identity`, `item`, `root`, `separator`, `signOut`, `statusGroup`, `themeGroup`, `trigger` | `content`, `identity`, `item`, `root`, `separator`, `signOut`, `statusGroup`, `themeGroup`, `trigger` | — | — | `Content`, `Identity`, `Item`, `Separator`, `SignOut`, `StatusGroup`, `ThemeGroup`, `Trigger` |

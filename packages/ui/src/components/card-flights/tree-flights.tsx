@@ -27,6 +27,15 @@ export interface CardFlightsProps {
 
 type SnapshotNode = TreeFlightNode & { box: CardBox };
 
+function deckOrigin(nodes: readonly SnapshotNode[], table?: { node: HTMLElement }) {
+  const deck = nodes.find((entry) => entry.role === 'deck');
+  if (deck) return deck.box;
+  if (!table) return undefined;
+  const box = measureCardBox(table.node);
+  const width = box.width * FLIGHT_GEOMETRY.deckWidthRatio;
+  return { ...box, width, height: width * CARD_FRAME.ratio, rotate: 0 };
+}
+
 function TreeEngine({ deal, revision, forehand }: Omit<CardFlightsProps, 'children'>) {
   const registry = useFlightRegistry()!;
   const actions = useFlightActions();
@@ -34,6 +43,7 @@ function TreeEngine({ deal, revision, forehand }: Omit<CardFlightsProps, 'childr
   latest.current = { deal, revision, forehand, actions };
   const previous = useRef<{ deal: typeof deal; revision: typeof revision; nodes: SnapshotNode[] } | null>(null);
   const measuredNodes = useRef<readonly HTMLElement[]>([]);
+  const identities = useRef(new Map<HTMLElement, string>());
   const pending = useRef(false);
   const mounted = useRef(false);
   const reconcile = () => {
@@ -46,7 +56,10 @@ function TreeEngine({ deal, revision, forehand }: Omit<CardFlightsProps, 'childr
       actions.prune();
       const live = [...registry.tree.values()].filter(({ node }) => node.isConnected);
       const previousNodes = measuredNodes.current;
-      const nodeSetChanged = live.length !== previousNodes.length ||
+      const identityOf = (entry: TreeFlightNode) => `${entry.role}|${entry.cardId}|${entry.seatKey ?? ''}|${entry.card.id}`;
+      const identityChanged = live.some((entry) => identities.current.get(entry.node) !== identityOf(entry));
+      identities.current = new Map(live.map((entry) => [entry.node, identityOf(entry)]));
+      const nodeSetChanged = identityChanged || live.length !== previousNodes.length ||
         live.some((entry, index) => entry.node !== previousNodes[index]);
       const triggerChanged = !previous.current || previous.current.deal !== deal || previous.current.revision !== revision;
       if (previous.current && !nodeSetChanged && !triggerChanged) return;
@@ -65,14 +78,7 @@ function TreeEngine({ deal, revision, forehand }: Omit<CardFlightsProps, 'childr
       const specs: CardFlightSpec[] = [];
       if (deal !== baseline.deal) {
         actions.reset();
-        const deck = nodes.find((entry) => entry.role === 'deck');
-        const surface = table?.node;
-        let from = deck?.box;
-        if (!from && surface) {
-          const box = measureCardBox(surface);
-          const width = box.width * FLIGHT_GEOMETRY.deckWidthRatio;
-          from = { ...box, width, height: width * CARD_FRAME.ratio, rotate: 0 };
-        }
+        const from = deckOrigin(nodes, table);
         if (from) {
           const destinations = nodes.filter((entry) => entry.role === 'hand' || entry.role === 'seat');
           const keys = [...new Set([...(table?.seats.map((seat) => seat.key) ?? []), ...destinations.map(seatKey)])];
@@ -99,6 +105,15 @@ function TreeEngine({ deal, revision, forehand }: Omit<CardFlightsProps, 'childr
             durationMs: hand || captured ? motionDurationMs.cardPlayOwn : motionDurationMs.cardPlay });
         });
       }
+      const boarded = new Set(baseline.nodes.filter((entry) => entry.role === 'board').map((entry) => entry.card.id));
+      const board = nodes.filter((entry) => entry.role === 'board' && !boarded.has(entry.card.id));
+      if (board.length) {
+        const from = deckOrigin(nodes, table);
+        if (!from) warnFlight('CardFlights board cards need a Deck or GameTable surface.');
+        else board.forEach((entry, index) => specs.push({ card: entry.card, front: entry.front, back: entry.back, destination: entry.node,
+          target: targetKey(entry), from, to: entry.box, face: entry.faceOverride ?? entry.face, durationMs: motionDurationMs.cardDeal,
+          delayMs: index * motionDurationMs.cardDealStagger }));
+      }
       actions.launch(specs);
     });
   };
@@ -113,14 +128,16 @@ function TreeEngine({ deal, revision, forehand }: Omit<CardFlightsProps, 'childr
 }
 
 function targetKey(entry: TreeFlightNode) {
-  return entry.role === 'play' ? `played:${entry.card.id}` : entry.role === 'hand' ? `hand:${entry.cardId}` : `seat:${entry.seatKey}:${entry.cardId}`;
+  if (entry.role === 'play') return `played:${entry.card.id}`;
+  if (entry.role === 'board') return `board:${entry.card.id}`;
+  return entry.role === 'hand' ? `hand:${entry.cardId}` : `seat:${entry.seatKey}:${entry.cardId}`;
 }
 
 type TargetIdentity = {
-  /** Match this card's hand and played destinations by stable identity. */
+  /** Match this card's hand, board and played destinations by stable identity. */
   cardId: string;
-  /** Register a hand destination or a played-card destination. */
-  kind: 'hand' | 'play';
+  /** Register a hand, board or played-card destination. */
+  kind: 'hand' | 'play' | 'board';
   /** Associate the card with a seat. Defaults to the surrounding GameTable seat when present. */
   seatKey?: string;
 } | {
@@ -148,7 +165,7 @@ export type CardFlightsTargetProps = Omit<ComponentPropsWithRef<'div'>, 'role'> 
 function FlightNode({ cardId, role, nativeRole, seatKey, face: requestedFace, front, back, ref, className, sx, component, slots, slotProps, ...rest }:
   Omit<ComponentPropsWithRef<'div'>, 'role'> & SxProps & FlightNodeCustomization & { cardId: string; role: TreeFlightNode['role']; nativeRole?: ComponentPropsWithRef<'div'>['role']; seatKey?: string; face?: TreeFlightNode['face']; front?: ReactNode; back?: ReactNode }) {
   const registry = useFlightRegistry();
-  const face = requestedFace ?? (role === 'seat' ? 'down' : 'up');
+  const face = requestedFace ?? (role === 'seat' ? 'down' : role === 'board' ? 'reveal' : 'up');
   const seat = useOptionalGameTableSeat();
   const nodeRef = useRef<HTMLDivElement>(null);
   const mergedRef = useMergeRefs([nodeRef, ref, slotProps?.root?.ref]);
@@ -162,11 +179,12 @@ function FlightNode({ cardId, role, nativeRole, seatKey, face: requestedFace, fr
   });
   return <CardRoot {...rest} component={component} slots={slots} rootSlot={slotProps?.root} attributes={{ ref: mergedRef, ...(nativeRole && { role: nativeRole }),
     'data-hand-card': role === 'hand' ? cardId : undefined, 'data-played-key': role === 'play' ? cardId : undefined,
+    'data-board-card': role === 'board' ? cardId : undefined,
     'data-seat-hidden-card': role === 'seat' ? seatKey : undefined, 'data-seat-hidden-card-index': role === 'seat' ? cardId : undefined,
   }} className={className} sx={sx} structure={[]} marker={role === 'deck' ? 'card-flights-deck' : 'card-flights-target'} />;
 }
 
-/** Register a custom hand, seat or play destination. The wrapper supplies its flight artwork. */
+/** Register a custom hand, seat, board or play destination. The wrapper supplies its flight artwork. */
 function CardFlightsTarget(props: CardFlightsTargetProps) {
   if (props.kind === 'seat') {
     const { kind: _kind, index, ...rest } = props;

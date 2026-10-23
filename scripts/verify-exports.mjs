@@ -53,7 +53,9 @@ const subpathOnlyComponents = new Set([
   'game-seat',
   'game-table',
   'next',
+  'poker-table',
   'scene',
+  'truco-table',
 ]);
 
 for (const dirent of readdirSync(componentsDir, { withFileTypes: true })) {

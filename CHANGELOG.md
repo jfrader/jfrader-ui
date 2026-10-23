@@ -4,6 +4,8 @@
 
 ### Added
 
+- `PokerTable` and `TrucoTable` are presentational preset tables: seats with avatars, stacks and turn state; hidden and revealed cards; a pot, a community board or per-seat play piles; a score line; events; and command bars. They own composition and card flights, never rules, turn order or scoring.
+- `CardFlights` accepts board destinations: a board card that appears after the first render flies from the deck or table centre and reveals its face.
 - `GameCard` adds an `xl` size (160px) for illustrated and collection cards, with the same frame ratio and corner radius as the smaller sizes.
 - `Deck` supports cards without suits: `GameCardValue.suit` is optional, a deck of unique cards names each card in `ranks`, and its artwork keys default to the rank.
 

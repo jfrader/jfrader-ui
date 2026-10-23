@@ -208,7 +208,7 @@ Apply server snapshots as resynchronizations so active flights are cancelled rat
 
 Give each play a unique id and preserve its source cardId when they differ. New play nodes fly from the previous matching hand card or the rival seat's last hidden card. GameHand.Confirm captures the hand position before accepting a play; custom drag controls capture it with useCardFlightOrigin(). Piles show all cards by default; visible limits destinations to the newest N cards.
 
-Use CardFlights.Target for custom hand, play or hidden-seat destinations. Hidden hands inherit their player key inside GameTable.Seat; pass an explicit playerKey outside it. Address hidden-seat targets by seatKey and card index. CardFlights.Deck supplies a custom deal origin.
+Use CardFlights.Target for custom hand, play, board or hidden-seat destinations. A board card that appears after the first render flies from the deck and reveals its face; pass \`face\` to override it. Hidden hands inherit their player key inside GameTable.Seat; pass an explicit playerKey outside it. Address hidden-seat targets by seatKey and card index. CardFlights.Deck supplies a custom deal origin.
 
 ### Keyboard and motion
 
@@ -547,5 +547,55 @@ export const ReducedMotionInterrupt: Story = {
     reduceMotionNow();
     await waitFor(() => expect(flights(canvasElement)).toHaveLength(0));
     await expect(canvas.getByLabelText('Flight status')).toHaveTextContent('Ready');
+  },
+};
+
+const boardCards = [
+  { id: 'board-queen', label: 'Queen of spades', value: { deck: 'french', suit: 'spades', rank: 'Q' } },
+  { id: 'board-jack', label: 'Jack of spades', value: { deck: 'french', suit: 'spades', rank: 'J' } },
+  { id: 'board-ten', label: 'Ten of spades', value: { deck: 'french', suit: 'spades', rank: 10 } },
+] satisfies GameHandCard[];
+
+function BoardRevealFixture() {
+  const [revealed, setRevealed] = useState(0);
+  const [deal, setDeal] = useState(0);
+  return <DemoTheme><CardFlights deal={deal}>
+    <Controls>
+      <Button onClick={() => setRevealed((count) => Math.min(boardCards.length, count + 1))}>Reveal card</Button>
+      <Button onClick={() => { setRevealed(0); setDeal((value) => value + 1); }}>Reset board</Button>
+      <Button onClick={() => { setRevealed((count) => Math.min(boardCards.length, count + 1)); setDeal((value) => value + 1); }}>Deal and reveal</Button>
+      <Status />
+    </Controls>
+    <CustomBoard>
+      <CardFlights.Deck><GameCard size="sm" label="Deck" /></CardFlights.Deck>
+      {boardCards.slice(0, revealed).map((card) => <CardFlights.Target key={card.id} kind="board" cardId={card.id}>
+        <GameCard size="sm" {...card} />
+      </CardFlights.Target>)}
+    </CustomBoard>
+  </CardFlights></DemoTheme>;
+}
+
+/** A board card that appears after the first render flies from the deck and reveals its face. */
+export const BoardReveal: Story = {
+  tags: ['!autodocs'], render: () => <BoardRevealFixture />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const document = canvasElement.ownerDocument;
+    const inFlight = (selector: string) => document.querySelectorAll(selector);
+    await userEvent.click(canvas.getByRole('button', { name: 'Reveal card' }));
+    await waitFor(() => expect(inFlight('[data-ui="card-flight"][data-flight-target^="board:"]')).toHaveLength(1));
+    await waitFor(() => expect(inFlight('[data-ui="card-flight"]')).toHaveLength(0));
+    await expect(canvasElement.querySelectorAll('[data-board-card]')).toHaveLength(1);
+    await userEvent.click(canvas.getByRole('button', { name: 'Reveal card' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Reveal card' }));
+    await waitFor(() => expect(inFlight('[data-ui="card-flight"][data-flight-target^="board:"]')).toHaveLength(2));
+    await waitFor(() => expect(inFlight('[data-ui="card-flight"]')).toHaveLength(0));
+    await expect(canvasElement.querySelectorAll('[data-board-card]')).toHaveLength(3);
+    await userEvent.click(canvas.getByRole('button', { name: 'Reset board' }));
+    await expect(canvasElement.querySelectorAll('[data-board-card]')).toHaveLength(0);
+    await expect(inFlight('[data-ui="card-flight"]')).toHaveLength(0);
+    await userEvent.click(canvas.getByRole('button', { name: 'Deal and reveal' }));
+    await waitFor(() => expect(inFlight('[data-ui="card-flight"][data-flight-target^="board:"]')).toHaveLength(1));
+    await waitFor(() => expect(inFlight('[data-ui="card-flight"]')).toHaveLength(0));
+    await expect(canvasElement.querySelectorAll('[data-board-card]')).toHaveLength(1);
   },
 };

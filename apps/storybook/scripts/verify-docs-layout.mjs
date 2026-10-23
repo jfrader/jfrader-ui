@@ -20,6 +20,14 @@ const cases = [
     viewports: [{ width: 390, height: 844 }, { width: 768, height: 900 }, { width: 1440, height: 900 }],
   },
   {
+    id: 'games-pokertable--docs', primary: '[data-ui="poker-table"]', containPreview: true,
+    viewports: [{ width: 390, height: 844 }, { width: 768, height: 900 }, { width: 1440, height: 900 }],
+  },
+  {
+    id: 'games-trucotable--docs', primary: '[data-ui="truco-table"]', containPreview: true,
+    viewports: [{ width: 390, height: 844 }, { width: 768, height: 900 }, { width: 1440, height: 900 }],
+  },
+  {
     id: 'data-filtertoolbar--docs', primary: '[data-ui~="filter-toolbar"]', containPreview: 'all',
     verifyPreviewOverflow: true,
     fontFamily: 'monospace',
@@ -78,6 +86,9 @@ let browser;
 try {
   const baseURL = process.env.STORYBOOK_URL ?? server.resolvedUrls.local[0];
   const index = await (await fetch(new URL('index.json', baseURL))).json();
+  for (const page of ['games-pokertable--docs', 'games-trucotable--docs']) {
+    assert.ok(index.entries[page]?.tags.includes('autodocs'), `${page} documentation remains enabled`);
+  }
   for (const story of ['default', 'prebuilt-slots-and-empty-places', 'seat-placement-modes', 'poker-community-board', 'lobby', 'with-avatars']) {
     assert.ok(index.entries[`games-gametable--${story}`]?.tags.includes('autodocs'),
       `GameTable preserves its curated ${story} example`);

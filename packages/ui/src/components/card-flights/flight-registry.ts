@@ -17,7 +17,7 @@ export function assertLegacyFlightEngine(treeOwned: boolean | undefined) {
 export interface PlayingCard { id: string; label: string; value?: GameCardValue }
 export interface TreeFlightNode {
   node: HTMLElement;
-  role: 'hand' | 'seat' | 'play' | 'deck';
+  role: 'hand' | 'seat' | 'play' | 'board' | 'deck';
   card: PlayingCard;
   cardId: string;
   seatKey?: string;
