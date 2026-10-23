@@ -6,6 +6,10 @@
 
 - `GameChip` and `GameChipStack` render beveled casino chips and extruded denomination towers with edge inserts, contact shadows, and distinct clay and metal finishes.
 
+### Changed
+
+- `PokerTable` shows pot chips above the total and adds a `denominations` prop. The GameTable poker examples show compact chip stacks beside the pot total.
+
 ## 0.10.2 — 2026-10-23
 
 ### Added
