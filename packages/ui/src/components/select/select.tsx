@@ -61,7 +61,8 @@ import {
   listboxScrollStyle,
   listboxSurfaceStyle,
 } from '../../styling/listbox-style';
-import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { COARSE_POINTER, FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { touchTargetStyle } from '../../styling/touch-target';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
@@ -341,12 +342,13 @@ const selectCaretStyle = css({
 });
 
 const triggerSizes = {
-  sm: css({ minBlockSize: vars.space[8] }),
-  md: css({ minBlockSize: vars.space[10] }),
+  sm: css({ minBlockSize: vars.space[8], [COARSE_POINTER]: { minBlockSize: vars.size.touch } }),
+  md: css({ minBlockSize: vars.space[10], [COARSE_POINTER]: { minBlockSize: vars.size.touch } }),
   lg: css({ minBlockSize: vars.space[12] }),
 };
 
 const valueStyle = css({
+  minInlineSize: 0,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
@@ -982,7 +984,7 @@ function SelectItem({
   };
 
   return (
-    <WithSx className={className} styles={[listboxItemStyle, listboxItemStateStyle, listboxOptionStyle]} sx={sx}>
+    <WithSx className={className} styles={[listboxItemStyle, listboxItemStateStyle, listboxOptionStyle, touchTargetStyle]} sx={sx}>
       {(className) => (
         <div
           {...getItemProps({ ...rest, id, onClick: handleClick })}

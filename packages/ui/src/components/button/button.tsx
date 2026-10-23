@@ -21,6 +21,7 @@ import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { loadingRing, loadingRingPulse } from '../../styling/loading-ring';
 import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { touchTargetStyle } from '../../styling/touch-target';
 
 export type ButtonVariant = 'solid' | 'soft' | 'outline' | 'ghost';
 export type ButtonTone = 'neutral' | 'accent' | 'danger';
@@ -61,7 +62,7 @@ export interface ButtonProps extends Omit<ComponentPropsWithRef<'button'>, 'colo
 
 const HOVER = '&:hover:not(:disabled):not([aria-disabled="true"])';
 
-const baseStyle = css({
+const baseStyle = css(touchTargetStyle, {
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',

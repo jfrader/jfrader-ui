@@ -94,7 +94,7 @@ const meta = {
           'Sort rows by column and select rows in a table.',
       },
       sections: [
-        { title: 'Basic', stories: ['Default', 'Sizes'] },
+        { title: 'Basic', stories: ['Default', 'Sizes', 'MinimumTableWidth'] },
         { title: 'Sorting', stories: ['Ascending', 'CustomComparator'] },
         { title: 'Row selection', stories: ['Selection', 'MixedSelection'] },
         { title: 'Formatting', stories: ['CustomCells', 'LocaleNumbersAndDates'] },
@@ -1937,6 +1937,44 @@ const columns = [
     await expect(args.onValueChange).not.toHaveBeenCalled();
     await expect(args.onSelectionChange).not.toHaveBeenCalled();
     await expect(canvas.getByRole('checkbox', { name: 'Select Cedar' })).not.toBeChecked();
+  },
+};
+
+export const MinimumTableWidth: Story = {
+  args: { minTableWidth: '68em' },
+  render: args => <NarrowFrame><Table {...args} /></NarrowFrame>,
+  parameters: {
+    docs: {
+      source: {
+        language: 'tsx',
+        code: `import { SortableDataTable } from '@jfrader/ui';
+
+const rows = [{ id: 'atlas', name: 'Atlas', budget: 40 }];
+const columns = [
+  { id: 'name', header: 'Name', accessor: (row: (typeof rows)[number]) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row: (typeof rows)[number]) => row.budget, numeric: true },
+];
+
+<SortableDataTable caption="Projects" rows={rows} columns={columns}
+  getRowId={row => row.id} minTableWidth="68em" />`,
+      },
+    },
+  },
+  play: async ({ canvas }) => {
+    const table = canvas.getByRole('table');
+    const scroller = canvas.getByRole('region');
+    await expect(table.getBoundingClientRect().width).toBeGreaterThanOrEqual(952);
+    await expect(scroller.scrollWidth).toBeGreaterThan(scroller.clientWidth);
+  },
+};
+
+export const MinimumTableWidthOverride: Story = {
+  tags: ['!autodocs'],
+  args: { minTableWidth: 960, slotProps: { table: { sx: { minInlineSize: 640 } } } },
+  render: args => <NarrowFrame><Table {...args} /></NarrowFrame>,
+  play: async ({ canvas }) => {
+    await expect(getComputedStyle(canvas.getByRole('table')).minInlineSize).toBe('640px');
+    await expect(canvas.getByRole('table').style.getPropertyValue('--ui-sortable-data-table-min-width')).toBe('960px');
   },
 };
 

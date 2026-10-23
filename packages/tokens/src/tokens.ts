@@ -172,6 +172,7 @@ export const base = {
   },
   // Component structural sizes; theme-independent, so light shares them.
   size: {
+    touch: '44px',
     personAvatarLg: '72px',
     // Emblem plate: the square side for circle, squircle and hexagon; the shield is 8:7 on top of it.
     emblemSm: '24px',
