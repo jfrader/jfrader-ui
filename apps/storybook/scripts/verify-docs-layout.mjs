@@ -36,6 +36,8 @@ const cases = [
   { id: 'games-gamehand--docs', primary: '[data-ui~="game-hand"]', verifyPreviewOverflow: true,
     viewports: [{ width: 390, height: 844 }, { width: 768, height: 900 }, { width: 1440, height: 900 }] },
   { id: 'games-gamecardstack--docs', primary: '[data-ui~="game-card-stack"]' },
+  { id: 'games-gamechip--docs', primary: '[data-ui="game-chip"]' },
+  { id: 'games-gamechipstack--docs', primary: '[data-ui="game-chip-stack"]' },
   { id: 'games-gameseat--docs', primary: '[data-ui~="game-seat"]' },
   { id: 'games-gameactions--docs', primary: '[data-ui~="game-actions"]' },
   { id: 'media-lightboxgallery--docs', primary: '[data-ui="lightbox-gallery"]', containPreview: true },
