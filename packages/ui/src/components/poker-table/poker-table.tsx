@@ -1,6 +1,6 @@
 'use client';
 
-import type { ComponentPropsWithRef, ComponentType, ReactNode, Ref } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentPropsWithRef, type ComponentType, type ReactNode, type Ref } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import Decimal from 'decimal.js';
@@ -9,11 +9,12 @@ import { FORCED_COLORS } from '../../styling/media';
 import { WithSx, withoutSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { useLatestCallback } from '../../utils/use-latest-callback';
 import { CardFlights } from '../card-flights';
 import { DeckProvider } from '../deck';
 import { GameActions, type GameActionItem, type GameActionsProps } from '../game-actions';
 import { GameCard, type GameCardValue } from '../game-card';
-import { GameChipStack, type GameChipStackChip } from '../game-chip-stack';
+import { GameChipStack, useChipFlight, type GameChipStackChip } from '../game-chip-stack';
 import { CARD_FRAME } from '../game-card/card-frame';
 import { GameSeat, type GameSeatProps } from '../game-seat';
 import { GameTable, useGameTableSeat, type GameTableProps } from '../game-table';
@@ -111,6 +112,8 @@ export interface PokerTableProps extends SxProps {
   board?: readonly PokerTableCard[];
   /** Chip total shown in the center. Omit to hide the pot. */
   pot?: number;
+  /** Names the rendered seat whose plaque sends chips when pot grows. Omit to update immediately. Missing endpoints and reduced motion skip the flight. */
+  potFrom?: string;
   /** Sets the positive, finite chip values used to depict the pot, largest first. Must not be empty. Defaults to [1000, 500, 100, 25, 5, 1]. Unrepresented remainders remain in the formatted total. */
   denominations?: readonly number[];
   /** Event line under the table. Announcements are polite live text. */
@@ -343,6 +346,7 @@ export function PokerTable({
   subtitle,
   board = [],
   pot,
+  potFrom,
   denominations = DEFAULT_DENOMINATIONS,
   announcement,
   actions,
@@ -372,10 +376,44 @@ export function PokerTable({
   const Seat = slots?.seat ?? GameSeat;
   const Actions = slots?.actions ?? GameActions;
   const rootSlot = withoutSx(slotProps?.root);
-  const mergedRef = useMergeRefs([ref, rootSlot?.ref]);
+  const tableRef = useRef<HTMLDivElement>(null);
+  const potRef = useRef<HTMLDivElement>(null);
+  const mergedRef = useMergeRefs([ref, rootSlot?.ref, tableRef]);
+  const [shownPot, setShownPot] = useState(pot);
+  const previousPot = useRef(pot);
+  const generation = useRef(0);
+  const activity = useRef<{ card: boolean; chip: boolean; last: boolean | undefined }>({ card: false, chip: false, last: undefined });
+  const notify = useLatestCallback(onBusyChange);
+  const report = useCallback((kind: 'card' | 'chip', value: boolean) => {
+    activity.current[kind] = value;
+    const busy = activity.current.card || activity.current.chip;
+    if (busy !== activity.current.last) { activity.current.last = busy; notify(busy); }
+  }, [notify]);
+  const cardActivity = useCallback((busy: boolean) => report('card', busy), [report]);
+  const chipActivity = useCallback((busy: boolean) => report('chip', busy), [report]);
+  const { fly, cancel, layer } = useChipFlight({ onBusyChange: chipActivity });
+  const updatePot = useLatestCallback((next: number | undefined, fromKey: string | undefined) => {
+    const previous = previousPot.current;
+    previousPot.current = next;
+    const revision = ++generation.current;
+    cancel();
+    const seat = Array.from(tableRef.current?.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]') ?? [])
+      .find(node => node.dataset.slotPlayer === fromKey);
+    const from = seat?.querySelector<HTMLElement>('[data-ui~="game-seat"]') ?? seat;
+    const to = potRef.current?.querySelector<HTMLElement>('[data-ui="game-chip-stack"]') ?? potRef.current;
+    if (next !== undefined && Number.isFinite(next) && next > (previous ?? 0) && fromKey && from && to) {
+      void fly({ from, to, chips: potChips(next - (previous ?? 0), denominations), size: 'md', locale })
+        .then(() => { if (generation.current === revision) setShownPot(next); });
+    } else setShownPot(next);
+  });
+  useEffect(() => {
+    updatePot(pot, potFrom);
+    return () => { generation.current++; cancel(); };
+  }, [pot, potFrom, updatePot, cancel]);
   const rootClasses = [className, rootSlot?.className].filter(Boolean).join(' ') || undefined;
   const formatter = new Intl.NumberFormat(locale);
-  const chips = potChips(pot, denominations);
+  const visiblePot = potFrom ? shownPot : pot;
+  const chips = potChips(visiblePot, denominations);
   const filled = board.slice(0, BOARD_SLOTS);
   const empty = Math.max(0, BOARD_SLOTS - filled.length);
   const hasDock = dock !== undefined && dock !== null && dock !== false && dock !== 0 && dock !== '';
@@ -393,7 +431,7 @@ export function PokerTable({
           style={{ ...style, ...rootSlot?.style }}
         >
           <DeckProvider default={deck}>
-            <CardFlights deal={deal} revision={revision} forehand={forehand} onBusyChange={onBusyChange}>
+            <CardFlights deal={deal} revision={revision} forehand={forehand} onBusyChange={cardActivity}>
               <GameTable
                 {...tableProps}
                 places={Math.max(players.length, 2)}
@@ -411,11 +449,11 @@ export function PokerTable({
                   {center ?? (
                     <div css={centerStyle}>
                       {pot !== undefined && (
-                        <div css={centerStyle} data-poker-pot-group>
+                        <div ref={potRef} css={centerStyle} data-poker-pot-group>
                           <GameChipStack chips={chips} size="lg" maxVisible={POT_MAX_VISIBLE} locale={locale} sx={potStackStyle} />
                           <span css={potStyle} data-poker-pot>
                             <span css={potLabelStyle}>{labels.pot}</span>
-                            <span css={potValueStyle}>{formatter.format(pot)}</span>
+                            <span css={potValueStyle}>{formatter.format(visiblePot ?? 0)}</span>
                           </span>
                         </div>
                       )}
@@ -457,6 +495,7 @@ export function PokerTable({
               </GameTable>
             </CardFlights>
           </DeckProvider>
+          {layer}
         </Root>
       )}
     </WithSx>

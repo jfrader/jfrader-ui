@@ -4,6 +4,7 @@
 
 ### Added
 
+- `useChipFlight` flies decorative chips between elements with cancellation and reduced-motion support. `PokerTable` accepts `potFrom` to animate contributions before showing the new total.
 - `GameChip` and `GameChipStack` render beveled casino chips and extruded denomination towers with edge inserts, contact shadows, and distinct clay and metal finishes.
 
 - `PokerTable` and `TrucoTable` are presentational preset tables: seats with avatars, stacks and turn state; hidden and revealed cards; a pot, a community board or per-seat play piles; a score line; events; and command bars. They own composition and card flights, never rules, turn order or scoring.

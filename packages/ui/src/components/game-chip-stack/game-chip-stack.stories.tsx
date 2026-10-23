@@ -1,11 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect } from 'storybook/test';
+import { useRef, useState } from 'react';
+import { expect, fn, waitFor } from 'storybook/test';
 import { renderToString } from 'react-dom/server';
 import { GameChipStack } from './game-chip-stack';
 import { Flex } from '../flex';
 import { expectInside } from '../../testing/geometry-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { withChipStage } from '../game-chip/chip-showcase';
+import { useChipFlight } from './chip-flight';
+import { Button } from '../button';
 
 const meta = {
   title: 'Games/GameChipStack', component: GameChipStack, tags: ['autodocs'],
@@ -190,5 +193,51 @@ export const ThickStacks: Story = {
   </Flex>,
   play: async ({ canvasElement }) => {
     for (const root of canvasElement.querySelectorAll('[data-ui="game-chip-stack"]')) await geometryCheck(root);
+  },
+};
+
+const flightResolved = fn();
+function FlightDemo() {
+  const from = useRef<HTMLSpanElement>(null);
+  const to = useRef<HTMLSpanElement>(null);
+  const { fly, cancel, busy, layer } = useChipFlight();
+  const chips = [{ value: 25, count: 4 }];
+  return <Flex direction="column" gap="lg" align="center">
+    <Flex gap="xl" align="end"><GameChipStack ref={from} chips={chips} size="xl" /><GameChipStack ref={to} chips={[{ value: 25, count: 1 }]} size="xl" /></Flex>
+    <Flex gap="md">
+      <Button disabled={busy} onClick={() => { if (from.current && to.current) void fly({ from: from.current, to: to.current, chips }).then(() => flightResolved()); }}>Fly chips</Button>
+      <Button disabled={!busy} onClick={cancel}>Cancel flight</Button>
+    </Flex>
+    <span role="status">{busy ? 'In flight' : 'Ready'}</span>
+    {layer}
+  </Flex>;
+}
+function FlightFixture() {
+  const [visible, setVisible] = useState(true);
+  return <Flex direction="column" gap="lg" align="center">
+    {visible && <FlightDemo />}
+    <Button onClick={() => setVisible(false)}>Unmount flight demo</Button>
+  </Flex>;
+}
+export const ChipFlight: Story = {
+  tags: ['!autodocs'], render: () => <FlightFixture />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const document = canvasElement.ownerDocument;
+    const initial = flightResolved.mock.calls.length;
+    await expect(renderToString(<FlightDemo />)).not.toContain('chip-flight-layer');
+    await userEvent.click(canvas.getByRole('button', { name: 'Fly chips' }));
+    await waitFor(() => expect(document.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
+    await waitFor(() => expect(document.querySelector('[data-ui="chip-flight-layer"]')).toBeNull(), { timeout: 4000 });
+    await waitFor(() => expect(flightResolved).toHaveBeenCalledTimes(initial + 1));
+    await userEvent.click(canvas.getByRole('button', { name: 'Fly chips' }));
+    await waitFor(() => expect(document.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
+    await userEvent.click(canvas.getByRole('button', { name: 'Cancel flight' }));
+    await waitFor(() => expect(flightResolved).toHaveBeenCalledTimes(initial + 2));
+    await expect(document.querySelector('[data-ui="chip-flight-layer"]')).toBeNull();
+    await userEvent.click(canvas.getByRole('button', { name: 'Fly chips' }));
+    await waitFor(() => expect(document.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
+    await userEvent.click(canvas.getByRole('button', { name: 'Unmount flight demo' }));
+    await waitFor(() => expect(flightResolved).toHaveBeenCalledTimes(initial + 3));
+    await expect(document.querySelector('[data-ui="chip-flight-layer"]')).toBeNull();
   },
 };
