@@ -8,7 +8,7 @@
 
 ### Changed
 
-- `PokerTable` shows pot chips above the total and adds a `denominations` prop. The GameTable poker examples show compact chip stacks beside the pot total.
+- `PokerTable` shows pot chips above the total and adds a `denominations` prop. The `GameTable` poker examples show compact chip stacks beside the pot total.
 
 ## 0.10.2 — 2026-10-23
 
