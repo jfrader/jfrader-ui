@@ -75,6 +75,7 @@ const storyMediaPreferences: Readonly<Record<string, string | undefined>> = {
   'Game Score Reduced Motion': 'prefers-reduced-motion',
   'Game Rounds Reduced Motion': 'prefers-reduced-motion',
   'Game Marks Reduced Motion': 'prefers-reduced-motion',
+  'Poker chips reduced motion': 'prefers-reduced-motion',
   'Game Score Forced Colors': 'forced-colors',
   'Game Rounds Forced Colors': 'forced-colors',
   'Game Marks Forced Colors': 'forced-colors',

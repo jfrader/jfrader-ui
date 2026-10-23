@@ -4,6 +4,7 @@
 
 ### Added
 
+- `useChipFlight` flies decorative chips between elements with cancellation and reduced-motion support. `PokerTable` accepts `potFrom` to animate contributions before showing the new total.
 - `GameChip` and `GameChipStack` render beveled casino chips and extruded denomination towers with edge inserts, contact shadows, and distinct clay and metal finishes.
 
 ### Changed
