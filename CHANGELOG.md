@@ -11,6 +11,11 @@
 
 - `PokerTable` shows pot chips above the total and adds a `denominations` prop. The `GameTable` poker examples show compact chip stacks beside the pot total.
 
+### Fixed
+
+- `GameChipStack` renders flush, curved side bands under one complete top face, with visible chip thickness.
+- `GameChip` keeps enlarged printed values visible and uses the formatted value for empty labels. `GameChipStack` treats empty labels as decorative.
+
 ## 0.10.2 — 2026-10-23
 
 ### Added
@@ -43,8 +48,6 @@
 
 ### Fixed
 
-- `GameChipStack` renders flush, curved side bands under one complete top face, with visible chip thickness.
-- `GameChip` keeps enlarged printed values visible and uses the formatted value for empty labels. `GameChipStack` treats empty labels as decorative.
 - `Tabs` lists never show a vertical scrollbar: horizontal and material lists pin their cross axis to `clip`, so a fractional tab height no longer leaves a pixel of vertical scroll range, and a vertical list pins its inline axis the same way.
 - `GameCard` paints paper on the printed face and card material on the back layer instead of the card root, so full-bleed artwork no longer shows a light sheet through the antialiased rounded border. The root stays transparent, and `children` art must paint its own base.
 - `PhotoGrid` thumbnail size changes stay smooth: each tile holds a compositor layer only while its layout spring runs, so thumbnails rasterize once per change instead of every frame. A size change also skips re-rendering each tile's contents and the closed viewer, and announcing it no longer re-renders the grid. `NowPlaying` artwork does the same while it moves between the mini and full player.
