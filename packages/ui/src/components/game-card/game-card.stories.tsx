@@ -14,6 +14,7 @@ import { GameHand } from '../game-hand';
 import { GameCardStack } from '../game-card-stack';
 import { FlipGameCard } from '../flip-game-card';
 import { Scene } from '../scene';
+import { heroSites, imageDeck, siteImage } from './game-showcase';
 import { createFlightRegistry, FlightRegistryContext } from '../card-flights/flight-registry';
 
 const SIZES = ['sm', 'md', 'lg', 'xl'] as const satisfies readonly GameCardSize[];
@@ -140,15 +141,15 @@ const meta = {
   parameters: {
     docs: {
       description: {
-        component: 'Show a French or Spanish playing card with a red-and-paper back or your own artwork.',
+        component: 'Show a playing card with a printed face, an image face from your deck, or your own artwork.',
       },
       sections: [
-        { title: 'Basic', stories: ['QueenOfHearts', 'Default'] },
-        { title: 'Faces and suits', stories: ['FrenchDeck', 'SpanishDeck', 'FaceDown'] },
+        { title: 'Image artwork', stories: ['ImageDeck'] },
+        { title: 'Printed cards', stories: ['QueenOfHearts', 'Default'] },
+        { title: 'Decks', stories: ['FrenchDeck', 'SpanishDeck', 'FaceDown'] },
         { title: 'Sizes', stories: ['Sizes'] },
         { title: 'States', stories: ['RankLabelAndDimmed'] },
-        { title: 'Custom art', stories: ['CustomArt', 'CustomBackArt'] },
-        { title: 'Composition', stories: ['SceneBack'] },
+        { title: 'Backs and art', stories: ['CustomBackArt', 'SceneBack'] },
       ],
       source: {
         language: 'tsx',
@@ -162,7 +163,11 @@ const meta = {
       usage: `### When to use
 Display a single playing card in a board, pile or hand. Use GameHand for selecting and confirming a card, rather than making an image behave like a button.
 
-### Hidden cards and artwork
+### Artwork
+
+Art replaces the whole face and paints its own base. A deck can carry images: map each card to an image that covers the frame, or pass one image as the card's children. The card's \`label\` carries the accessible name, so mark the image decorative. Preload the faces the next frame needs and decode the rest asynchronously.
+
+### Hidden cards
 
 Do not send secret card values to a client that should not know them. A face-down card hides its printed data, not information already held by your application. Custom artwork must not reveal a hidden value either.
 
@@ -251,6 +256,121 @@ async function expectDeckGrid(cards: NodeListOf<Element>) {
     await expect(rect.right).toBeLessThanOrEqual(bounds.right + 1);
   }
 }
+
+/** A deck whose faces and back are images. */
+export const ImageDeck: Story = {
+  name: 'Image deck',
+  parameters: {
+    docs: {
+      description: { story: 'Carry image faces and an image back in the deck; each card label names its face.' },
+      source: {
+        language: 'tsx',
+        code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const sites = [
+  { region: 'ridge', rank: '1', name: 'Sable Ridge', label: 'Ridge', variant: 'landscape', ink: '#33564a' },
+  { region: 'dunes', rank: '1', name: 'Ember Dunes', label: 'Dunes', variant: 'dunes', ink: '#8a5a1e' },
+  { region: 'coast', rank: '1', name: 'Long Shoal', label: 'Coast', variant: 'tide', ink: '#1f4b63' },
+] as const;
+
+const Face = styled.div({
+  position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', color: vars.color.cardInk,
+});
+const Art = styled.div({
+  position: 'relative', flex: '1 1 0', minBlockSize: 0, overflow: 'hidden',
+  '& > img': { display: 'block', inlineSize: '100%', blockSize: '100%', objectFit: 'cover' },
+});
+const Plate = styled.div({
+  display: 'grid', gap: '1.2cqw', padding: '4cqw 5cqw 4.5cqw',
+  backgroundColor: vars.color.cardFace, borderBlockStart: '1px solid rgba(0, 0, 0, 0.16)',
+});
+const Kicker = styled.span<{ $ink: string }>(({ $ink }) => ({
+  fontSize: '4.6cqw', fontWeight: 600, letterSpacing: '0.15em', textTransform: 'uppercase', lineHeight: 1, color: $ink,
+}));
+const Title = styled.span({ fontSize: '8cqw', fontWeight: 650, lineHeight: 1.08 });
+const Index = styled.span({
+  position: 'absolute', insetBlockStart: '4.5cqw', insetInlineStart: '4.5cqw',
+  display: 'grid', placeItems: 'center', inlineSize: '16cqw', blockSize: '16cqw', borderRadius: '4cqw',
+  backgroundColor: vars.color.cardFace, fontSize: '8.6cqw', fontWeight: 650, lineHeight: 1,
+});
+const Back = styled.div({
+  position: 'absolute', inset: 0, display: 'grid', gridTemplate: 'minmax(0, 1fr) / minmax(0, 1fr)',
+  '& > img': { gridArea: '1 / 1', display: 'block', inlineSize: '100%', blockSize: '100%', objectFit: 'cover' },
+});
+const Wordmark = styled.span({
+  gridArea: '1 / 1', alignSelf: 'end', justifySelf: 'center', marginBlockEnd: '8cqw',
+  padding: '1.6cqw 3.6cqw', borderRadius: '1.6cqw', backgroundColor: vars.color.cardFace,
+  fontSize: '5.4cqw', fontWeight: 650, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#7a1024',
+});
+
+function SiteFace({ region, rank, name, label, variant, ink }: (typeof sites)[number]) {
+  return (
+    <Face>
+      <Art>
+        <img
+          src={sceneSource('northline-' + region + '-' + rank, { variant })}
+          alt=""
+          draggable={false}
+          decoding="async"
+        />
+        <Index>{rank}</Index>
+      </Art>
+      <Plate><Kicker $ink={ink}>{label} · {rank} of 4</Kicker><Title>{name}</Title></Plate>
+    </Face>
+  );
+}
+
+const deck = defineDeck({
+  id: 'northline-images',
+  suits: { ridge: { label: 'Ridge' }, dunes: { label: 'Dunes' }, coast: { label: 'Coast' } },
+  ranks: { '1': { label: '1' } },
+  art: Object.fromEntries(sites.map((site) => [site.region + '-' + site.rank, <SiteFace key={site.name} {...site} />])),
+  back: (
+    <Back>
+      <img src={sceneSource('northline-back', { variant: 'dusk' })} alt="" draggable={false} decoding="async" />
+      <Wordmark>Northline</Wordmark>
+    </Back>
+  ),
+});
+
+<DeckProvider decks={[deck]} default="northline-images">
+  {sites.map((site) => (
+    <GameCard key={site.name} size="xl" label={site.name} value={{ suit: site.region, rank: site.rank }} />
+  ))}
+  <GameCard size="xl" label="Northline card back" face="back" />
+</DeckProvider>`,
+      },
+    },
+  },
+  render: () => (
+    <DeckProvider decks={[imageDeck]} default="northline-images">
+      <Row>
+        {heroSites.slice(0, 3).map((site) => (
+          <GameCard key={site.name} size="xl" label={site.name} value={{ suit: site.region, rank: site.rank }} />
+        ))}
+        <GameCard size="xl" label="Northline card back" face="back" />
+      </Row>
+    </DeckProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const site of heroSites.slice(0, 3)) {
+      const card = within(canvasElement).getByRole('img', { name: site.name });
+      const image = card.querySelector('img');
+      if (image === null) throw new Error(`Missing image face for ${site.name}`);
+      await expect(image.getAttribute('src')).toMatch(/^data:image\/svg\+xml/);
+      await expect(image).toHaveAttribute('alt', '');
+      await expect(getComputedStyle(image).objectFit).toBe('cover');
+      await expect(card.querySelector('[data-ui="game-card-print"]')).toBeNull();
+    }
+    const back = within(canvasElement).getByRole('img', { name: 'Northline card back' });
+    await expect(back.querySelector('img')).not.toBeNull();
+    await expect(back.querySelector('[data-ui="pattern"]')).toBeNull();
+  },
+};
 
 /** Spanish diagonal backs and poker checks beside their faces. */
 export const Default: Story = {
@@ -606,39 +726,51 @@ export function FaceDownExamples() {
   },
 };
 
-/** Cards from 32px to 160px wide. */
+/** An illustrated card from 32px to 160px wide. */
 export const Sizes: Story = {
   name: 'Sizes',
   parameters: {
     docs: {
-      description: { story: 'Compare the same printed card at each size.' },
+      description: { story: 'Compare the same image card at each size.' },
       source: {
         language: 'tsx',
-        code: `import { GameCard } from '@jfrader/ui/game-card';
+        code: `import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
-import { styled } from '@jfrader/ui';
+import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
+import { sceneSource } from '@jfrader/ui/scene';
 
 const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
 
-export function CardSizes() {
-  return (
-    <Row>
-      <GameCard size="sm" label="sm card" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
-      <GameCard size="md" label="md card" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
-      <GameCard size="lg" label="lg card" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
-      <GameCard size="xl" label="xl card" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }} />
-    </Row>
-  );
-}`,
+const deck = defineDeck({
+  id: 'northline-images',
+  suits: { ridge: { label: 'Ridge' } },
+  ranks: { '1': { label: '1' } },
+  art: {
+    'ridge-1': (
+      <img src={sceneSource('northline-ridge-1', { variant: 'landscape' })} alt="" draggable={false} decoding="async" />
+    ),
+  },
+});
+
+<DeckProvider decks={[deck]} default="northline-images">
+  <Row>
+    {(['sm', 'md', 'lg', 'xl'] as const).map((size) => (
+      <GameCard key={size} size={size} label={size + ' card'} value={{ suit: 'ridge', rank: 1 }} />
+    ))}
+  </Row>
+</DeckProvider>`,
       },
     },
   },
-  render: (args) => (
-    <Row>
-      {SIZES.map((size) => (
-        <GameCard {...args} key={size} size={size} label={`${size} card`} />
-      ))}
-    </Row>
+  render: () => (
+    <DeckProvider decks={[imageDeck]} default="northline-images">
+      <Row>
+        {SIZES.map((size) => (
+          <GameCard key={size} size={size} label={`${size} card`} value={{ suit: 'ridge', rank: 1 }} />
+        ))}
+      </Row>
+    </DeckProvider>
   ),
   play: async ({ canvasElement }) => {
     for (const size of SIZES) {
@@ -646,9 +778,9 @@ export function CardSizes() {
       const rect = card.getBoundingClientRect();
       await expect(Math.round(rect.width)).toBe(SIZE_PX[size]);
       await expect(Math.round(rect.height)).toBe(Math.round(SIZE_PX[size] * FRAME_RATIO));
-      const print = card.querySelector<HTMLElement>('[data-ui="game-card-print"]');
-      if (print === null) throw new Error('Missing printed face');
-      await expect(Number.parseFloat(getComputedStyle(print).fontSize)).toBeCloseTo((SIZE_PX[size] - 2) * 0.35, 2);
+      const image = card.querySelector('img');
+      if (image === null) throw new Error(`Missing image face at ${size}`);
+      await expect(getComputedStyle(image).objectFit).toBe('cover');
     }
   },
 };
@@ -721,77 +853,42 @@ export const OptionalArt: Story = {
   },
 };
 
-/** Custom SVG artwork replacing the printed rank and suit. */
-export const CustomArt: Story = {
-  name: 'Custom artwork',
-  args: {
-    label: 'Carta con arte propio',
-    value: QUEEN_OF_HEARTS,
-  },
-  parameters: {
-    docs: {
-      description: { story: 'Replace a printed face with decorative SVG artwork.' },
-      source: {
-        language: 'tsx',
-        code: `import { GameCard } from '@jfrader/ui/game-card';
-import { vars } from '@jfrader/tokens/vars';
-
-<GameCard label="Carta con arte propio" value={{ deck: 'french', suit: 'hearts', rank: 'Q' }}>
-  <svg viewBox="0 0 40 60" aria-hidden="true">
-    <rect width="40" height="60" fill={vars.color.surfaceInset} />
-    <circle cx="20" cy="30" r="12" fill={vars.color.accent} />
-  </svg>
-</GameCard>`,
-      },
-    },
-  },
-  render: (args) => (
-    <GameCard {...args}>
-      <svg viewBox="0 0 40 60" aria-hidden="true">
-        <rect width="40" height="60" fill={vars.color.surfaceInset} />
-        <circle cx="20" cy="30" r="12" fill={vars.color.accent} />
-      </svg>
-    </GameCard>
-  ),
-  play: async ({ canvasElement }) => {
-    const card = within(canvasElement).getByRole('img', { name: 'Carta con arte propio' });
-    await expect(card.querySelector('svg')).not.toBeNull();
-    await expect(card).not.toHaveTextContent(EXPECTED_SUITS.hearts);
-  },
-};
-
-/** Custom artwork replaces the pattern on a face-down card. */
+/** An image back replaces the pattern on a face-down card. */
 export const CustomBackArt: Story = {
-  name: 'Custom back artwork',
-  args: { label: BACK_LABEL, face: 'back', backPattern: CARD_BACK_PATTERNS.spanish },
+  name: 'Image back',
+  args: { label: BACK_LABEL, face: 'back', size: 'lg' },
   parameters: {
     docs: {
-      description: { story: 'Replace a hidden card pattern with decorative SVG artwork.' },
+      description: { story: 'Replace a hidden card pattern with the image back from its deck.' },
       source: {
         language: 'tsx',
-        code: `import { GameCard } from '@jfrader/ui/game-card';
-import { vars } from '@jfrader/tokens/vars';
+        code: `import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
+import { sceneSource } from '@jfrader/ui/scene';
 
-<GameCard label="Carta boca abajo" face="back">
-  <svg viewBox="0 0 40 60" aria-hidden="true">
-    <rect width="40" height="60" fill={vars.color.cardRed} />
-    <circle cx="20" cy="30" r="12" fill={vars.color.cardFace} />
-  </svg>
-</GameCard>`,
+const deck = defineDeck({
+  id: 'northline-images',
+  suits: { ridge: { label: 'Ridge' } },
+  ranks: { '1': { label: '1' } },
+  back: <img src={sceneSource('northline-back', { variant: 'dusk' })} alt="" draggable={false} decoding="async" />,
+});
+
+<DeckProvider decks={[deck]} default="northline-images">
+  <GameCard size="lg" label="Carta boca abajo" face="back" value={{ suit: 'ridge', rank: 1 }} />
+</DeckProvider>`,
       },
     },
   },
   render: (args) => (
-    <GameCard {...args}>
-      <svg viewBox="0 0 40 60" aria-hidden="true">
-        <rect width="40" height="60" fill={vars.color.cardRed} />
-        <circle cx="20" cy="30" r="12" fill={vars.color.cardFace} />
-      </svg>
-    </GameCard>
+    <DeckProvider decks={[imageDeck]} default="northline-images">
+      <GameCard {...args} value={{ suit: 'ridge', rank: 1 }} />
+    </DeckProvider>
   ),
   play: async ({ canvasElement }) => {
     const card = within(canvasElement).getByRole('img', { name: BACK_LABEL });
-    await expect(card.querySelector('[data-ui="game-card-art"] svg')).not.toBeNull();
+    const image = card.querySelector('[data-ui="game-card-back"] img');
+    if (image === null) throw new Error('Missing image back');
+    await expect(image.getAttribute('src')).toMatch(/^data:image\/svg\+xml/);
     await expect(card.querySelector('[data-ui="pattern"]')).toBeNull();
     await expect(card).not.toHaveAttribute('data-deck');
   },
@@ -815,13 +912,13 @@ const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center'
 export function SceneBackCards() {
   return (
     <Row>
-      <GameCard size="md" label="North dunes back">
+      <GameCard size="lg" label="North dunes back">
         <Scene seed="north" variant="dunes" alt="" />
       </GameCard>
-      <GameCard size="md" label="South dunes back">
+      <GameCard size="lg" label="South dunes back">
         <Scene seed="south" variant="dunes" alt="" />
       </GameCard>
-      <GameCard size="md" label="East dunes back">
+      <GameCard size="lg" label="East dunes back">
         <Scene seed="east" variant="dunes" alt="" />
       </GameCard>
     </Row>
@@ -833,7 +930,7 @@ export function SceneBackCards() {
   render: () => (
     <Row>
       {(['north', 'south', 'east'] as const).map((seed) => (
-        <GameCard key={seed} size="md" label={`${seed} dunes back`}>
+        <GameCard key={seed} size="lg" label={`${seed} dunes back`}>
           <Scene seed={seed} variant="dunes" alt="" />
         </GameCard>
       ))}
@@ -858,22 +955,27 @@ export function SceneBackCards() {
 /** Custom back artwork in light theme. */
 export const CustomBackArtLightTheme: Story = {
   ...CustomBackArt,
-  name: 'Custom back artwork · light',
+  name: 'Image back · light',
   parameters: {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { GameCard, CARD_BACK_PATTERNS } from '@jfrader/ui/game-card';
+        code: `import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+import { GameCard } from '@jfrader/ui/game-card';
 import { ThemeRoot } from '@jfrader/ui/theme-root';
-import { vars } from '@jfrader/tokens/vars';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const deck = defineDeck({
+  id: 'northline-images',
+  suits: { ridge: { label: 'Ridge' } },
+  ranks: { '1': { label: '1' } },
+  back: <img src={sceneSource('northline-back', { variant: 'dusk' })} alt="" draggable={false} decoding="async" />,
+});
 
 <ThemeRoot theme="light">
-  <GameCard label="Carta boca abajo" face="back" backPattern={CARD_BACK_PATTERNS.spanish}>
-    <svg viewBox="0 0 40 60" aria-hidden="true">
-      <rect width="40" height="60" fill={vars.color.cardRed} />
-      <circle cx="20" cy="30" r="12" fill={vars.color.cardFace} />
-    </svg>
-  </GameCard>
+  <DeckProvider decks={[deck]} default="northline-images">
+    <GameCard size="lg" label="Carta boca abajo" face="back" value={{ suit: 'ridge', rank: 1 }} />
+  </DeckProvider>
 </ThemeRoot>`,
       },
     },

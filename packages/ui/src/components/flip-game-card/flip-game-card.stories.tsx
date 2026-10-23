@@ -15,6 +15,8 @@ import { CARD_FRAME } from '../game-card/card-frame';
 import { DeckProvider, defineDeck } from '../deck';
 import type { GameCardRootProps } from '../game-card';
 import { FlipGameCard, MissingBackLabelError, type FlipGameCardProps } from './index';
+import { imageDeck } from '../game-card/game-showcase';
+import { sceneSource } from '../scene';
 
 const FRONT_LABEL = 'Ace of spades';
 const BACK_LABEL = 'Card back';
@@ -63,7 +65,7 @@ const meta = {
     docs: {
       description: { component: 'Turn a playing card over to show its other face.' },
       sections: [
-        { title: 'Flipping', stories: ['Default', 'FaceUp', 'FaceDown'] },
+        { title: 'Flipping', stories: ['ImageReveal', 'Default', 'FaceUp', 'FaceDown'] },
         { title: 'Artwork', stories: ['PatternFronts', 'PatternBacks', 'ProviderBackLabel', 'CustomArtwork'] },
         { title: 'Sizing', stories: ['Sizes'] },
       ],
@@ -498,6 +500,84 @@ function ControlledShorthand(args: FlipGameCardProps) {
   </Controls>;
 }
 
+
+function ImageRevealExample() {
+  const [flipped, setFlipped] = useState(false);
+  return (
+    <DeckProvider decks={[imageDeck]} default="northline-images">
+      <Controls>
+        <Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
+        <FlipGameCard
+          size="xl"
+          value={{ deck: 'northline-images', suit: 'ridge', rank: 1 }}
+          label="Sable Ridge"
+          backLabel="Northline card back"
+          flipped={flipped}
+        />
+      </Controls>
+    </DeckProvider>
+  );
+}
+
+/** An image front and an image back on one deck. */
+export const ImageReveal: Story = {
+  name: 'Image reveal',
+  render: () => <ImageRevealExample />,
+  parameters: {
+    docs: {
+      description: { story: 'Turn an image card over to reveal the image back from its deck.' },
+      source: {
+        language: 'tsx',
+        code: `import { useState } from 'react';
+import { Button, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { DeckProvider, defineDeck } from '@jfrader/ui/deck';
+import { FlipGameCard } from '@jfrader/ui/flip-game-card';
+import { sceneSource } from '@jfrader/ui/scene';
+
+const Controls = styled.div({ display: 'grid', gap: vars.space[4], justifyItems: 'start' });
+
+const deck = defineDeck({
+  id: 'northline-images',
+  suits: { ridge: { label: 'Ridge' } },
+  ranks: { '1': { label: '1' } },
+  art: {
+    'ridge-1': (
+      <img src={sceneSource('northline-ridge-1', { variant: 'landscape' })} alt="" draggable={false} decoding="async" />
+    ),
+  },
+  back: <img src={sceneSource('northline-back', { variant: 'dusk' })} alt="" draggable={false} decoding="async" />,
+});
+
+export function FlippableImageCard() {
+  const [flipped, setFlipped] = useState(false);
+  return (
+    <DeckProvider decks={[deck]} default="northline-images">
+      <Controls>
+        <Button onClick={() => setFlipped(!flipped)}>Flip card</Button>
+        <FlipGameCard size="xl" value={{ suit: 'ridge', rank: 1 }} label="Sable Ridge"
+          backLabel="Northline card back" flipped={flipped} />
+      </Controls>
+    </DeckProvider>
+  );
+}`,
+      },
+    },
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: 'Flip card' });
+    const front = canvasElement.querySelector('[data-ui="flip-game-card-front"] img');
+    if (front === null) throw new Error('Missing image front');
+    await expect(front.getAttribute('src')).toMatch(/^data:image\/svg\+xml/);
+    await userEvent.click(trigger);
+    const back = canvasElement.querySelector('[data-ui="flip-game-card-back"] img');
+    if (back === null) throw new Error('Missing image back');
+    await expect(back.getAttribute('src')).toMatch(/^data:image\/svg\+xml/);
+    await expect(canvas.queryByRole('img', { name: 'Sable Ridge' })).toBeNull();
+    await expect(canvas.getByRole('img', { name: 'Northline card back' })).toBeVisible();
+  },
+};
+
 export const Default: Story = {
   name: 'Controlled flip',
   render: (args) => <ControlledShorthand {...args} />,
@@ -597,37 +677,35 @@ export const MissingBackName: Story = {
 };
 
 const artworkDeck = defineDeck({ id: 'artwork', suits: {}, ranks: {},
-  back: <svg viewBox="0 0 40 60" aria-hidden="true"><circle cx="20" cy="30" r="12" fill={vars.color.cardFace} /></svg> });
+  back: <img src={sceneSource('artwork-back', { variant: 'dusk', grade: 'warm' })} alt="" draggable={false} decoding="async" /> });
 
 export const CustomArtwork: Story = {
-  name: 'Custom artwork',
+  name: 'Image back',
   render: () => <DeckProvider decks={[artworkDeck]} backLabel={BACK_LABEL}>
-    <FlipGameCard value={{ deck: 'artwork', suit: 'star', rank: 1 }} label="One star" flipped />
+    <FlipGameCard size="lg" value={{ deck: 'artwork', suit: 'star', rank: 1 }} label="One star" flipped />
   </DeckProvider>,
   parameters: {
     docs: {
-      description: { story: 'Register custom back artwork on the deck.' },
+      description: { story: 'Register an image back on the deck.' },
       source: {
         language: 'tsx',
         code: `import { defineDeck, DeckProvider } from '@jfrader/ui/deck';
 import { FlipGameCard } from '@jfrader/ui/flip-game-card';
-import { vars } from '@jfrader/tokens/vars';
+import { sceneSource } from '@jfrader/ui/scene';
 
 const artworkDeck = defineDeck({
   id: 'artwork',
   suits: {},
   ranks: {},
   back: (
-    <svg viewBox="0 0 40 60" aria-hidden="true">
-      <circle cx="20" cy="30" r="12" fill={vars.color.cardFace} />
-    </svg>
+    <img src={sceneSource('artwork-back', { variant: 'dusk', grade: 'warm' })} alt="" draggable={false} decoding="async" />
   ),
 });
 
 export function CustomArtworkBack() {
   return (
     <DeckProvider decks={[artworkDeck]} backLabel="Card back">
-      <FlipGameCard value={{ deck: 'artwork', suit: 'star', rank: 1 }} label="One star" flipped />
+      <FlipGameCard size="lg" value={{ deck: 'artwork', suit: 'star', rank: 1 }} label="One star" flipped />
     </DeckProvider>
   );
 }`,
@@ -635,7 +713,11 @@ export function CustomArtworkBack() {
     },
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('img', { name: BACK_LABEL }).querySelector('circle')).not.toBeNull();
+    const back = canvas.getByRole('img', { name: BACK_LABEL });
+    const image = back.querySelector('img');
+    if (image === null) throw new Error('Missing image back');
+    await expect(image.getAttribute('src')).toMatch(/^data:image\/svg\+xml/);
+    await expect(back.querySelector('[data-ui="pattern"]')).toBeNull();
   },
 };
 

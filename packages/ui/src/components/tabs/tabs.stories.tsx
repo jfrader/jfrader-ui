@@ -165,7 +165,10 @@ export const Default: ShorthandStory = {
 <Tabs label="Settings" items={sections} defaultValue="one" />` } } },
   render: (args) => <Tabs {...args} />,
   play: async ({ canvasElement, canvas, args, userEvent }) => {
-    await expect(canvas.getByRole('tablist', { name: 'Settings' })).toHaveClass('shorthand-tabs-list');
+    const list = canvas.getByRole('tablist', { name: 'Settings' });
+    await expect(list).toHaveClass('shorthand-tabs-list');
+    list.scrollTop = 4;
+    await expect(list.scrollTop).toBe(0);
     await expectSelected(canvasElement, 0);
     await expect(canvas.getByRole('tab', { name: 'Security' })).toBeDisabled();
     await userEvent.tab();
