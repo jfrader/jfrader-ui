@@ -5,14 +5,16 @@ import { GameChipStack } from './game-chip-stack';
 import { Flex } from '../flex';
 import { expectInside } from '../../testing/geometry-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
+import { withChipStage } from '../game-chip/chip-showcase';
 
 const meta = {
   title: 'Games/GameChipStack', component: GameChipStack, tags: ['autodocs'],
-  args: { chips: [{ value: 5, count: 5 }], locale: 'en-US' },
+  decorators: [withChipStage],
+  args: { chips: [{ value: 5, count: 5 }], locale: 'en-US', size: 'xl' },
   parameters: { docs: {
     description: { component: 'Show blinds, bets, and pots as towers of casino chips.' },
     usage: 'The stack is decorative unless you supply a label. Put the real total in the surrounding pot or seat text, or in the image label, even when the visible chips are capped. Counts are nonnegative safe integers. Empty stacks render nothing.',
-    sections: [{ title: 'Bets and pots', stories: ['Default', 'Pot', 'Capped'] }, { title: 'View and scale', stories: ['Flat', 'Sizes', 'Light'] }],
+    sections: [{ title: 'Bets and pots', stories: ['Pot', 'BetLine', 'StackHeights', 'Capped'] }, { title: 'View and scale', stories: ['Flat', 'Sizes', 'Light'] }],
   } },
 } satisfies Meta<typeof GameChipStack>;
 export default meta;
@@ -21,22 +23,12 @@ async function geometryCheck(root: Element) {
   for (const tower of root.querySelectorAll('[data-ui="game-chip-stack-stack"]')) {
     await expectInside(tower, root);
     for (const chip of tower.querySelectorAll('[data-ui="game-chip"]')) await expectInside(chip, tower);
+    for (const edge of tower.querySelectorAll('[data-ui="game-chip-edge"]')) {
+      if (getComputedStyle(edge).display !== 'none') await expectInside(edge, tower);
+    }
   }
   await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
 }
-export const Default: Story = {
-  parameters: { docs: { source: { code: `import { GameChipStack } from '@jfrader/ui/game-chip-stack';
-import type { GameChipSize } from '@jfrader/ui/game-chip';
-
-const size: GameChipSize = 'md';
-<GameChipStack chips={[{ value: 5, count: 5 }]} size={size} locale="en-US" />` } } },
-  play: async ({ canvas, canvasElement }) => {
-    await expect(canvas.queryByRole('img')).toBeNull();
-    const root = canvasElement.querySelector('[data-ui="game-chip-stack"]')!;
-    await expect(root).toHaveAttribute('aria-hidden', 'true');
-    await geometryCheck(root);
-  },
-};
 export const Pot: Story = {
   args: { chips: [{ value: 5, count: 3 }, { value: 100, count: 2 }, { value: 25, count: 4 }, { value: 500, count: 0 }], label: 'Pot 315' },
   parameters: { docs: { source: { code: `import { GameChipStack } from '@jfrader/ui/game-chip-stack';
@@ -45,7 +37,7 @@ import type { GameChipTone } from '@jfrader/ui/game-chip';
 
 const tone: GameChipTone = 'black';
 const chips: GameChipStackChip[] = [{ value: 100, count: 2, tone }, { value: 25, count: 4 }, { value: 5, count: 3 }];
-<GameChipStack chips={chips} label="Pot 315" locale="en-US" />` } } },
+<GameChipStack chips={chips} size="xl" label="Pot 315" locale="en-US" />` } } },
   play: async ({ canvas }) => {
     const root = canvas.getByRole('img', { name: 'Pot 315' });
     await expect(canvas.getAllByRole('img')).toHaveLength(1);
@@ -56,11 +48,11 @@ const chips: GameChipStackChip[] = [{ value: 100, count: 2, tone }, { value: 25,
   },
 };
 export const Capped: Story = {
-  args: { chips: [{ value: 100, count: 50 }], maxVisible: 6, label: 'Pot 5,000', size: 'lg' },
+  args: { chips: [{ value: 100, count: 50 }], maxVisible: 6, label: 'Pot 5,000', size: 'xl' },
   parameters: { docs: { source: { code: `import { GameChipStack } from '@jfrader/ui/game-chip-stack';
 import type { GameChipSize } from '@jfrader/ui/game-chip';
 
-const size: GameChipSize = 'lg';
+const size: GameChipSize = 'xl';
 <GameChipStack chips={[{ value: 100, count: 50 }]} maxVisible={6} label="Pot 5,000" size={size} locale="en-US" />` } } },
   play: async ({ canvas }) => {
     const root = canvas.getByRole('img', { name: 'Pot 5,000' });
@@ -74,18 +66,18 @@ export const Flat: Story = {
   parameters: { docs: { source: { code: `import { GameChipStack } from '@jfrader/ui/game-chip-stack';
 import type { GameChipSize } from '@jfrader/ui/game-chip';
 
-const size: GameChipSize = 'md';
+const size: GameChipSize = 'xl';
 <GameChipStack chips={[{ value: 5, count: 5 }]} flat size={size} locale="en-US" />` } } },
   play: async ({ canvasElement }) => { await geometryCheck(canvasElement.querySelector('[data-ui="game-chip-stack"]')!); },
 };
 export const Sizes: Story = {
-  render: (args) => <Flex gap="md" align="end" wrap><GameChipStack {...args} size="sm" /><GameChipStack {...args} size="md" /><GameChipStack {...args} size="lg" /></Flex>,
+  render: (args) => <Flex gap="lg" align="end" justify="center" wrap><GameChipStack {...args} size="sm" /><GameChipStack {...args} size="md" /><GameChipStack {...args} size="lg" /><GameChipStack {...args} size="xl" /></Flex>,
   parameters: { docs: { source: { code: `import { GameChipStack } from '@jfrader/ui/game-chip-stack';
 import type { GameChipSize } from '@jfrader/ui/game-chip';
 import { Flex } from '@jfrader/ui/flex';
 
-const sizes: GameChipSize[] = ['sm', 'md', 'lg'];
-<Flex gap="md" align="end" wrap>
+const sizes: GameChipSize[] = ['sm', 'md', 'lg', 'xl'];
+<Flex gap="lg" align="end" justify="center" wrap>
   {sizes.map(size => <GameChipStack key={size} chips={[{ value: 5, count: 5 }]} size={size} locale="en-US" />)}
 </Flex>` } } },
   play: async ({ canvasElement }) => {
@@ -98,7 +90,42 @@ export const Light: Story = {
 import type { GameChipTone } from '@jfrader/ui/game-chip';
 
 const tone: GameChipTone = 'black';
-<GameChipStack chips={[{ value: 100, count: 2, tone }, { value: 25, count: 4 }, { value: 5, count: 3 }]} label="Pot 315" locale="en-US" />` } } },
+<GameChipStack chips={[{ value: 100, count: 2, tone }, { value: 25, count: 4 }, { value: 5, count: 3 }]} size="xl" label="Pot 315" locale="en-US" />` } } },
+};
+export const BetLine: Story = {
+  render: () => <Flex gap="xl" align="end" justify="center" wrap>
+    <GameChipStack chips={[{ value: 5, count: 2 }]} size="xl" label="Small blind 10" locale="en-US" />
+    <GameChipStack chips={[{ value: 5, count: 4 }]} size="xl" label="Big blind 20" locale="en-US" />
+    <GameChipStack chips={[{ value: 5, count: 12 }]} maxVisible={12} size="xl" label="Call 60" locale="en-US" />
+  </Flex>,
+  parameters: { docs: { source: { code: `import { GameChipStack } from '@jfrader/ui/game-chip-stack';
+import { Flex } from '@jfrader/ui/flex';
+
+<Flex gap="xl" align="end" justify="center" wrap>
+  <GameChipStack chips={[{ value: 5, count: 2 }]} size="xl" label="Small blind 10" locale="en-US" />
+  <GameChipStack chips={[{ value: 5, count: 4 }]} size="xl" label="Big blind 20" locale="en-US" />
+  <GameChipStack chips={[{ value: 5, count: 12 }]} maxVisible={12} size="xl" label="Call 60" locale="en-US" />
+</Flex>` } } },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.getAllByRole('img')).toHaveLength(3);
+    for (const root of canvasElement.querySelectorAll('[data-ui="game-chip-stack"]')) await geometryCheck(root);
+  },
+};
+export const StackHeights: Story = {
+  render: () => <Flex gap="lg" align="end" justify="center" wrap>
+    {[1, 2, 5, 10, 25].map(count => <GameChipStack key={count} chips={[{ value: 25, count }]} size="xl" maxVisible={25} locale="en-US" />)}
+  </Flex>,
+  parameters: { docs: { source: { code: `import { GameChipStack } from '@jfrader/ui/game-chip-stack';
+import { Flex } from '@jfrader/ui/flex';
+
+<Flex gap="lg" align="end" justify="center" wrap>
+  {[1, 2, 5, 10, 25].map(count => (
+    <GameChipStack key={count} chips={[{ value: 25, count }]} size="xl" maxVisible={25} locale="en-US" />
+  ))}
+</Flex>` } } },
+  play: async ({ canvasElement }) => {
+    for (const root of canvasElement.querySelectorAll('[data-ui="game-chip-stack"]')) await geometryCheck(root);
+  },
 };
 export const Empty: Story = {
   tags: ['!autodocs'], args: { chips: [] },
@@ -112,5 +139,19 @@ export const Empty: Story = {
     for (const maxVisible of [0, -1, 1.5, Infinity]) {
       await expect(() => renderToString(<GameChipStack chips={[{ value: 5, count: 1 }]} maxVisible={maxVisible} />)).toThrow(RangeError);
     }
+  },
+};
+export const Default: Story = {
+  tags: ['!autodocs'],
+  parameters: { docs: { source: { code: `import { GameChipStack } from '@jfrader/ui/game-chip-stack';
+import type { GameChipSize } from '@jfrader/ui/game-chip';
+
+const size: GameChipSize = 'xl';
+<GameChipStack chips={[{ value: 5, count: 5 }]} size={size} locale="en-US" />` } } },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.queryByRole('img')).toBeNull();
+    const root = canvasElement.querySelector('[data-ui="game-chip-stack"]')!;
+    await expect(root).toHaveAttribute('aria-hidden', 'true');
+    await geometryCheck(root);
   },
 };

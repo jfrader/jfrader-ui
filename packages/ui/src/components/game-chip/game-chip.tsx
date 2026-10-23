@@ -58,6 +58,7 @@ function denominationTone(value: number): GameChipTone {
   const scaled = value > 1000 ? value / 1000 ** Math.floor(Math.log10(value / 5) / 3) : value;
   return ladder.findLast(([threshold]) => scaled >= threshold)?.[1] ?? 'white';
 }
+const bodyBackground = `radial-gradient(ellipse at 30% 12%, color-mix(in srgb, ${vars.color.chipSpot} 32%, transparent), transparent 65%), linear-gradient(145deg, transparent 30%, color-mix(in srgb, ${vars.color.chipGold} 12%, transparent)), radial-gradient(closest-side, var(--chip-tone) 72%, color-mix(in srgb, var(--chip-tone) 65%, ${vars.color.chipInk}) 96%, var(--chip-tone))`;
 const rootStyle = css({
   '--chip-tone': 'var(--chip-material)',
   label: 'game-chip', display: 'inline-grid', placeItems: 'center', position: 'relative',
@@ -65,24 +66,35 @@ const rootStyle = css({
   boxSizing: 'border-box', borderRadius: '50%', isolation: 'isolate', verticalAlign: 'middle',
   color: vars.color.chipInk, fontFamily: vars.font.sans, fontWeight: vars.fontWeight.bold,
   lineHeight: 1, userSelect: 'none',
-  background: `radial-gradient(circle at 35% 22%, color-mix(in srgb, ${vars.color.chipSpot} 24%, transparent), transparent 65%), radial-gradient(circle, var(--chip-tone) 60%, color-mix(in srgb, var(--chip-tone) 68%, ${vars.color.chipInk}) 100%)`,
-  boxShadow: `inset 0 0 0 1px ${vars.color.chipSpot}, inset 0 -2px 2px ${vars.color.chipInk}, 0 2px 3px color-mix(in srgb, ${vars.color.chipInk} 45%, transparent)`,
-  '&::before': { content: '""', position: 'absolute', inset: '5%', borderRadius: '50%',
-    background: 'repeating-conic-gradient(from -8deg, var(--chip-spot) 0deg 16deg, transparent 16deg 45deg)',
-    maskImage: `radial-gradient(circle, transparent 55%, ${vars.color.chipInk} 57%)` },
+  background: bodyBackground,
+  boxShadow: `0 2px 3px color-mix(in srgb, ${vars.color.chipInk} 45%, transparent)`,
+  '&::before': { content: '""', position: 'absolute', inset: 0, borderRadius: '50%',
+    background: `repeating-conic-gradient(from -6.5deg, var(--chip-spot) 0deg 13deg, transparent 13deg 45deg), ${bodyBackground}`,
+    maskImage: `radial-gradient(closest-side, transparent 58%, ${vars.color.chipInk} 59%)` },
   '&::after': { content: '""', position: 'absolute', inset: 0, borderRadius: '50%', pointerEvents: 'none',
-    background: `linear-gradient(155deg, color-mix(in srgb, ${vars.color.chipSpot} 18%, transparent), transparent 44%, color-mix(in srgb, ${vars.color.chipInk} 16%, transparent))`,
-    boxShadow: `inset 0 1px 0 ${vars.color.chipSpot}` },
-  '&[data-finish="metal"]::after': { background: `linear-gradient(125deg, transparent 15%, color-mix(in srgb, ${vars.color.chipSpot} 70%, transparent) 24%, transparent 32% 48%, color-mix(in srgb, ${vars.color.chipSpot} 42%, transparent) 53%, transparent 61%)` },
+    background: `radial-gradient(ellipse at 30% 12%, transparent 22%, color-mix(in srgb, ${vars.color.chipSpot} 55%, transparent) 23% 24%, transparent 25%), linear-gradient(140deg, transparent 48%, color-mix(in srgb, ${vars.color.chipInk} 32%, transparent)), repeating-radial-gradient(circle at 21% 37%, transparent 0 2px, color-mix(in srgb, ${vars.color.chipSpot} 1%, transparent) 2px 3px), repeating-radial-gradient(circle at 71% 63%, transparent 0 3px, color-mix(in srgb, ${vars.color.chipInk} 1%, transparent) 3px 4px)`,
+    boxShadow: `inset 0 0 0 1px color-mix(in srgb, var(--chip-tone) 55%, ${vars.color.chipInk}), inset 0 0 0 2px color-mix(in srgb, ${vars.color.chipSpot} 30%, transparent), inset 0 -2px 2px color-mix(in srgb, ${vars.color.chipInk} 40%, transparent)` },
+  '&[data-finish="metal"]::after': {
+    background: `conic-gradient(from 35deg at 48% 48%, transparent 0deg 35deg, color-mix(in srgb, ${vars.color.chipSpot} 85%, transparent) 42deg 50deg, transparent 58deg 145deg, color-mix(in srgb, ${vars.color.chipInk} 40%, transparent) 158deg 175deg, color-mix(in srgb, ${vars.color.chipSpot} 95%, transparent) 184deg 197deg, transparent 210deg 285deg, color-mix(in srgb, ${vars.color.chipSpot} 70%, transparent) 295deg 303deg, transparent 315deg)`,
+    boxShadow: `inset 0 0 0 1px color-mix(in srgb, var(--chip-tone) 55%, ${vars.color.chipInk}), inset 0 0 0 2px color-mix(in srgb, ${vars.color.chipSpot} 85%, transparent), inset 0 -2px 2px color-mix(in srgb, ${vars.color.chipInk} 50%, transparent)` },
   '&[data-dimmed="true"]': { '--chip-tone': `color-mix(in srgb, var(--chip-material) 55%, ${vars.color.chipSpot})` },
   [FORCED_COLORS]: { background: 'Canvas', color: 'CanvasText', border: '1px solid CanvasText', boxShadow: 'none',
     '&::before, &::after': { display: 'none' } },
 });
+const edgeStyle = css({
+  display: 'var(--chip-edge-display, none)', position: 'absolute', inset: 0, borderRadius: '50%', zIndex: -1,
+  transform: 'translateY(var(--chip-thickness))',
+  background: `linear-gradient(110deg, color-mix(in srgb, ${vars.color.chipInk} 20%, transparent), transparent 35%, color-mix(in srgb, ${vars.color.chipInk} 45%, transparent)), repeating-conic-gradient(from -6.5deg, color-mix(in srgb, var(--chip-spot) 65%, var(--chip-tone)) 0deg 13deg, color-mix(in srgb, var(--chip-tone) 78%, ${vars.color.chipInk}) 13deg 45deg)`,
+  boxShadow: `inset 0 -1px 0 color-mix(in srgb, ${vars.color.chipSpot} 25%, var(--chip-tone)), 0 1px 1px color-mix(in srgb, ${vars.color.chipInk} 65%, transparent)`,
+  [FORCED_COLORS]: { display: 'none' },
+});
 const faceStyle = css({
   display: 'grid', placeItems: 'center', inlineSize: '62%', blockSize: '62%', boxSizing: 'border-box',
+  position: 'relative', zIndex: 1, overflow: 'hidden',
   borderRadius: '50%', backgroundColor: vars.color.chipSpot, color: vars.color.chipInk,
   fontSize: 'calc(var(--game-chip-size) * var(--chip-font-scale))', fontVariantNumeric: 'tabular-nums',
-  boxShadow: `0 1px 1px ${vars.color.chipInk}, inset 0 1px 1px ${vars.color.chipWhite}, inset 0 0 0 1px color-mix(in srgb, ${vars.color.chipInk} 20%, transparent)`,
+  border: '1px solid var(--chip-tone)',
+  boxShadow: `0 2px 3px color-mix(in srgb, ${vars.color.chipInk} 45%, transparent), inset 0 1px 0 ${vars.color.chipWhite}`,
   [FORCED_COLORS]: { background: 'Canvas', color: 'CanvasText', border: '1px solid CanvasText', boxShadow: 'none' },
 });
 
@@ -106,6 +118,7 @@ export function GameChip({ value, label, locale, currency, tone = denominationTo
       <WithSx styles={[faceStyle, slotProps?.face?.sx]} className={slotProps?.face?.className}>{(faceClasses) =>
         <Face {...withoutSx(slotProps?.face)} data-ui={faceIdentity} aria-hidden="true" className={faceClasses}>{children !== undefined ? children : printed}</Face>}
       </WithSx>
+      <span data-ui="game-chip-edge" aria-hidden="true" css={edgeStyle} />
     </Root>}
   </WithSx>;
 }
