@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.10.2 — 2026-10-23
+
 ### Added
 
 - `SortableDataTable` accepts `minTableWidth` to preserve column widths inside its horizontal scroller.
