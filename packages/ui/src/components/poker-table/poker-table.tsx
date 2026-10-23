@@ -221,7 +221,6 @@ const centerStyle = css({
 
 const potStackStyle = css({
   maxInlineSize: `calc(${vars.size.gameCardSm} * ${BOARD_SLOTS + 1} + ${vars.space[1]} * ${BOARD_SLOTS})`,
-  justifyContent: 'center',
 });
 
 const potStyle = css({
@@ -412,12 +411,14 @@ export function PokerTable({
                 <GameTable.Center>
                   {center ?? (
                     <div css={centerStyle}>
-                      <GameChipStack chips={chips} size="lg" maxVisible={POT_MAX_VISIBLE} locale={locale} sx={potStackStyle} />
                       {pot !== undefined && (
-                        <span css={potStyle} data-poker-pot>
-                          <span css={potLabelStyle}>{labels.pot}</span>
-                          <span css={potValueStyle}>{formatter.format(pot)}</span>
-                        </span>
+                        <div css={centerStyle} data-poker-pot-group>
+                          <GameChipStack chips={chips} size="lg" maxVisible={POT_MAX_VISIBLE} locale={locale} sx={potStackStyle} />
+                          <span css={potStyle} data-poker-pot>
+                            <span css={potLabelStyle}>{labels.pot}</span>
+                            <span css={potValueStyle}>{formatter.format(pot)}</span>
+                          </span>
+                        </div>
                       )}
                       <div css={boardRowStyle} role="group" aria-label={labels.board}>
                         <CardFlights.Deck>

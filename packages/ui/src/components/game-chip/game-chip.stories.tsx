@@ -73,6 +73,11 @@ import { Flex } from '@jfrader/ui/flex';
   <GameChip value={1000} size="xl" finish="clay" locale="en-US" />
   <GameChip value={1000} size="xl" finish="metal" locale="en-US" />
 </Flex>` } } },
+  play: async ({ canvas }) => {
+    const chips = canvas.getAllByRole('img');
+    await expect(chips[0]).toHaveAttribute('data-finish', 'clay');
+    await expect(chips[1]).toHaveAttribute('data-finish', 'metal');
+  },
 };
 export const Dimmed: Story = {
   args: { dimmed: true, size: 'xl', label: 'Small blind' },
@@ -136,4 +141,38 @@ export const Currency: Story = {
 export const ZeroContent: Story = {
   tags: ['!autodocs'], args: { value: 25, children: 0 },
   play: async ({ canvas }) => { await expect(canvas.getByRole('img', { name: '25' })).toHaveTextContent(/^0$/); },
+};
+export const EmptyLabel: Story = {
+  tags: ['!autodocs'], args: { label: '' },
+  play: async ({ canvas }) => { await expect(canvas.getByRole('img', { name: '1,000' })).toBeVisible(); },
+};
+export const TextZoom: Story = {
+  tags: ['!autodocs'],
+  render: () => <Flex gap="lg" align="center" wrap>
+    <GameChip value={100} size="md" locale="en-US" />
+    <GameChip value={1250} size="xl" currency="USD" locale="en-US" />
+  </Flex>,
+  play: async ({ canvasElement }) => {
+    await canvasElement.ownerDocument.fonts.ready;
+    for (const chip of canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-chip"]')) {
+      const face = chip.querySelector<HTMLElement>('[data-ui="game-chip-face"]')!;
+      const range = chip.ownerDocument.createRange();
+      range.selectNodeContents(face);
+      const normalInk = range.getBoundingClientRect();
+      const faceBox = face.getBoundingClientRect();
+      await expect(normalInk.width).toBeLessThanOrEqual(faceBox.width);
+      await expect(normalInk.height).toBeLessThanOrEqual(faceBox.height);
+      const normalFont = Number.parseFloat(getComputedStyle(chip).fontSize);
+      chip.style.fontSize = `${normalFont * 2}px`;
+      await expect(Number.parseFloat(getComputedStyle(face).fontSize)).toBeCloseTo(normalFont * 2);
+      await expect(getComputedStyle(face).overflowX).toBe('visible');
+      await expect(getComputedStyle(face).overflowY).toBe('visible');
+      await expect(getComputedStyle(chip).overflowX).toBe('visible');
+      await expect(getComputedStyle(chip).overflowY).toBe('visible');
+      await expect(range.getBoundingClientRect().width).toBeGreaterThan(faceBox.width);
+      await expect(range.getBoundingClientRect().width).toBeCloseTo(normalInk.width * 2, 0);
+      const enlargedInk = range.getBoundingClientRect();
+      await expect((enlargedInk.left + enlargedInk.right) / 2).toBeCloseTo((faceBox.left + faceBox.right) / 2, 0);
+    }
+  },
 };

@@ -18,6 +18,7 @@ const DocsStage = styled.div({
   blockSize: 640,
   marginInline: 'auto',
 });
+const NarrowStage = styled(DocsStage)({ inlineSize: 390, blockSize: 844 });
 
 const pokerCard = (id: string, label: string, suit: string, rank: string | number): PokerTableCard => ({
   id,
@@ -182,7 +183,7 @@ const meta = {
       },
       sections: [{ title: 'The pot', stories: ['Pot'] }, { title: 'A hand', stories: ['PokerHand'] }],
       usage: `### When to use
-Use PokerTable for a Hold'em-style table with seats, stacks, hidden or revealed cards, a pot, a community board, and a command bar. The component is presentational: it renders the state you pass and reports commands through the action items' \`onSelect\`. Betting rules, turn order, pot arithmetic, hand ranking, and card values belong to your application.
+Use PokerTable for a Hold'em-style table with seats, stacks, hidden or revealed cards, a pot, a community board, and a command bar. The component is presentational: it renders the state you pass and reports commands through the action items' \`onSelect\`. It depicts the pot total you supply using \`denominations\` and never computes that total. Betting rules, turn order, hand ranking, and card values belong to your application.
 
 The seat you mark with \`isMe\` rotates to the front. Pass \`deal\` to deal the hole cards and grow \`board\` to reveal community cards; new cards fly from the deck. While cards are in flight, \`onBusyChange\` reports activity so you can disable commands. The table keeps seats on the felt edge on wide containers and moves them inside the felt on narrow ones so the surface uses the available width.
 
@@ -263,6 +264,23 @@ export const FractionalPot: Story = {
     await expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot0.35');
     await expect([...table.querySelectorAll('[data-ui="game-chip-stack-stack"]')].map(tower => [tower.getAttribute('data-value'), tower.getAttribute('data-count')]))
       .toEqual([['0.2', '1'], ['0.1', '1']]);
+  },
+};
+
+export const NarrowPot: Story = {
+  tags: ['!autodocs'], args: Pot.args,
+  render: args => <NarrowStage><PokerTable {...args} /></NarrowStage>,
+  play: async ({ canvasElement }) => {
+    const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
+    await expect(table.getBoundingClientRect().width).toBe(390);
+    await expect(table.getBoundingClientRect().height).toBe(844);
+    const surface = table.querySelector('[data-game-surface]')!;
+    const pot = table.querySelector('[data-poker-pot-group]')!;
+    const stack = pot.querySelector('[data-ui="game-chip-stack"]')!;
+    await expectInside(pot, surface);
+    await expectInside(stack, surface);
+    await expectInside(within(table).getByRole('group', { name: 'Community cards' }), surface);
+    for (const tower of stack.querySelectorAll('[data-ui="game-chip-stack-stack"]')) await expectInside(tower, pot);
   },
 };
 

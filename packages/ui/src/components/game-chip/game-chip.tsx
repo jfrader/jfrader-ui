@@ -24,13 +24,13 @@ export interface GameChipSlotProps {
 export interface GameChipProps extends Omit<GameChipPartProps, 'color'> {
   /** Sets the denomination in major units. Must be finite and nonnegative. */
   value: number;
-  /** Names the chip. Defaults to the full formatted value. */
+  /** Names the chip. Omitted or empty labels use the full formatted value. */
   label?: string;
   /** Formats the printed and accessible values. Use the same locale on server and client. */
   locale?: Intl.LocalesArgument;
   /** Formats major units as an ISO 4217 currency. */
   currency?: string;
-  /** Sets the material color. Defaults to the denomination ladder. */
+  /** Sets the material color. Defaults to white below 5, red from 5, green from 25, black from 100, purple from 500, and gold from 1,000 to below 5,000. At 5,000, the ladder repeats in thousands: red at 5,000, green at 25,000, black at 100,000, purple at 500,000, and gold at 1,000,000. It repeats at each subsequent 1,000-fold scale. */
   tone?: GameChipTone;
   /** Sets the diameter: sm 24px, md 32px, lg 48px, xl 64px. Defaults to md. */
   size?: GameChipSize;
@@ -65,6 +65,7 @@ const rootStyle = css({
   inlineSize: 'var(--game-chip-size)', blockSize: 'var(--game-chip-size)', flexShrink: 0,
   boxSizing: 'border-box', borderRadius: '50%', isolation: 'isolate', verticalAlign: 'middle',
   color: vars.color.chipInk, fontFamily: vars.font.sans, fontWeight: vars.fontWeight.bold,
+  fontSize: 'calc(var(--game-chip-size) * var(--chip-font-scale))',
   lineHeight: 1, userSelect: 'none',
   background: bodyBackground,
   boxShadow: `0 2px 3px color-mix(in srgb, ${vars.color.chipInk} 45%, transparent)`,
@@ -90,12 +91,15 @@ const edgeStyle = css({
 });
 const faceStyle = css({
   display: 'grid', placeItems: 'center', inlineSize: '62%', blockSize: '62%', boxSizing: 'border-box',
-  position: 'relative', zIndex: 1, overflow: 'hidden',
+  gridTemplateColumns: 'minmax(0, 1fr)', textAlign: 'center',
+  // Text-only zoom may carry the ink past the rim; never clip the printed value.
+  position: 'relative', zIndex: 1, overflow: 'visible',
   borderRadius: '50%', backgroundColor: vars.color.chipSpot, color: vars.color.chipInk,
-  fontSize: 'calc(var(--game-chip-size) * var(--chip-font-scale))', fontVariantNumeric: 'tabular-nums',
+  fontVariantNumeric: 'tabular-nums',
+  textShadow: `-1px 0 ${vars.color.chipSpot}, 1px 0 ${vars.color.chipSpot}, 0 -1px ${vars.color.chipSpot}, 0 1px ${vars.color.chipSpot}`,
   border: '1px solid var(--chip-tone)',
   boxShadow: `0 2px 3px color-mix(in srgb, ${vars.color.chipInk} 45%, transparent), inset 0 1px 0 ${vars.color.chipWhite}`,
-  [FORCED_COLORS]: { background: 'Canvas', color: 'CanvasText', border: '1px solid CanvasText', boxShadow: 'none' },
+  [FORCED_COLORS]: { background: 'Canvas', color: 'CanvasText', border: '1px solid CanvasText', boxShadow: 'none', textShadow: 'none' },
 });
 
 export function GameChip({ value, label, locale, currency, tone = denominationTone(value), size = 'md', finish = 'clay',
@@ -110,11 +114,11 @@ export function GameChip({ value, label, locale, currency, tone = denominationTo
   const rootIdentity = [...new Set(`game-chip ${root?.['data-ui'] ?? rest['data-ui'] ?? ''}`.split(/\s+/).filter(Boolean))].join(' ');
   const faceIdentity = [...new Set(`game-chip-face ${slotProps?.face?.['data-ui'] ?? ''}`.split(/\s+/).filter(Boolean))].join(' ');
   return <WithSx styles={[rootStyle, root?.sx]} sx={sx} className={[className, root?.className].filter(Boolean).join(' ')}>{(classes) =>
-    <Root {...rest} {...withoutSx(root)} ref={ref ?? root?.ref} role="img" aria-label={label ?? full}
+    <Root {...rest} {...withoutSx(root)} ref={ref ?? root?.ref} role="img" aria-label={label || full}
       data-ui={rootIdentity} data-tone={tone} data-size={size} data-finish={finish} data-dimmed={String(dimmed)} className={classes}
       style={{ '--game-chip-size': `${GAME_CHIP_SIZES[size]}px`, '--chip-material': tones[tone],
         '--chip-spot': tone === 'white' ? vars.color.chipRed : vars.color.chipSpot,
-        '--chip-font-scale': Math.min(0.28, 0.9 / Math.max(1, printed.length)), ...style, ...root?.style } as CSSProperties}>
+        '--chip-font-scale': Math.min(0.27, 0.86 / Math.max(1, printed.length)), ...style, ...root?.style } as CSSProperties}>
       <WithSx styles={[faceStyle, slotProps?.face?.sx]} className={slotProps?.face?.className}>{(faceClasses) =>
         <Face {...withoutSx(slotProps?.face)} data-ui={faceIdentity} aria-hidden="true" className={faceClasses}>{children !== undefined ? children : printed}</Face>}
       </WithSx>
