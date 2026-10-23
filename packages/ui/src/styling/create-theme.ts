@@ -12,10 +12,34 @@ import { base as darkPalette, light as lightPalette } from '@jfrader/tokens';
 import { theme, type JfraderTheme } from './theme';
 import type { ThemeName } from './theme-scope';
 
-type TokenOverrides<T> = { readonly [K in keyof T]?: T[K] extends string ? string : TokenOverrides<T[K]> };
+/** A group's overrides: every string-valued path inside it, at any depth. */
+type GroupOverrides<T> = { readonly [K in keyof T]?: T[K] extends string ? string : GroupOverrides<T[K]> };
 
-/** Sparse token overrides for a ThemeRoot scope, typed from the palette: any path, any depth. */
-export type ThemeTokens = TokenOverrides<JfraderTheme>;
+/**
+ * Sparse token overrides for a ThemeRoot scope, one member per token group. Every value is a CSS
+ * string and every path is optional: what a map leaves out keeps the base theme's value. The
+ * ThemeRoot docs list the paths and their current values under "Token overrides".
+ */
+export type ThemeTokens = {
+  readonly color?: GroupOverrides<JfraderTheme['color']>;
+  readonly shadow?: GroupOverrides<JfraderTheme['shadow']>;
+  readonly radius?: GroupOverrides<JfraderTheme['radius']>;
+  readonly space?: GroupOverrides<JfraderTheme['space']>;
+  readonly textSize?: GroupOverrides<JfraderTheme['textSize']>;
+  readonly lineHeight?: GroupOverrides<JfraderTheme['lineHeight']>;
+  readonly fontWeight?: GroupOverrides<JfraderTheme['fontWeight']>;
+  readonly font?: GroupOverrides<JfraderTheme['font']>;
+  readonly motion?: GroupOverrides<JfraderTheme['motion']>;
+  readonly editorial?: GroupOverrides<JfraderTheme['editorial']>;
+  readonly size?: GroupOverrides<JfraderTheme['size']>;
+  readonly zIndex?: GroupOverrides<JfraderTheme['zIndex']>;
+  readonly cardMaterial?: GroupOverrides<JfraderTheme['cardMaterial']>;
+};
+
+// A token group added to the palette has to be overridable here; `pnpm typecheck` fails otherwise.
+type MissingTokenGroups = Exclude<keyof JfraderTheme, keyof ThemeTokens>;
+type TokenGroupsAreComplete = MissingTokenGroups extends never ? true : ['missing group', MissingTokenGroups];
+const tokenGroupsAreComplete: TokenGroupsAreComplete = true;
 
 export interface CreateThemeOptions {
   /** The named theme the scope wears; picks the dark or light accent derivation. */

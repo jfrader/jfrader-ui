@@ -1,6 +1,4 @@
-// Frozen from mifulbo 0ab74263743d836fb39c1451b6463e75766a6481.
-// Source: packages/shared/appearance/index.ts and apps/web/components/PlayerAvatar.tsx.
-// Captured from unmodified upstream with /tmp/opencode/extract-person-fixtures.mjs; upstream SSR, sorted SVG attributes.
+// Frozen deterministic reference fixtures for PersonAvatar SSR parity (sorted SVG attributes).
 import type { PersonAppearance } from './appearance';
 import type { PersonAvatarKit, PersonAvatarAttire } from './person-avatar';
 

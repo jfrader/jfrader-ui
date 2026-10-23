@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 
 const root = path.resolve(import.meta.dirname, '..');
 const fixture = (t) => {
-  const dir = mkdtempSync('/tmp/opencode/release-tooling-');
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'release-tooling-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
 };
