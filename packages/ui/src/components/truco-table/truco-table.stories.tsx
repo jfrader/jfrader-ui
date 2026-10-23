@@ -152,7 +152,7 @@ const meta = {
       usage: `### When to use
 Use TrucoTable for a two-team trick game with hidden hands, a local hand, one play pile per seat, a score line, and calls. The component is presentational: it renders the state you pass and reports the selected card through \`onPlayIntent\`. Turn order, trick resolution, scoring, card values, and legality belong to your application.
 
-Pass \`deal\` to deal the hands and grow \`plays\` to land cards on the seats. New cards fly from the deck, the local hand, or the seat that played them. \`onBusyChange\` reports flight activity so you can disable calls.
+Pass \`deal\` to deal the hands and grow \`plays\` to land cards on the seats. New cards fly from the deck, the local hand, or the seat that played them. \`onBusyChange\` reports flight activity so you can disable calls. The table keeps seats on the felt edge on wide containers and moves them inside the felt on narrow ones so the surface uses the available width.
 
 ### Values and constraints
 

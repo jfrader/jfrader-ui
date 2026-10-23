@@ -3,6 +3,9 @@ export interface BoardContentSize { width: number; height: number; minimumScale?
 /** Clearance is expendable. Only interactive controls impose a scale floor. */
 export const GAME_TABLE_LIMITS = { minimumClearancePx: 0 } as const;
 
+/** Below this container width, `auto` seat placement keeps seats inside the felt so the surface can use the width. */
+export const AUTO_SEAT_PLACEMENT_MAX_INLINE_SIZE = 480;
+
 /** Local CSS pixels, before ancestor transforms and before the table's content scale. */
 export interface BoardMeasurements {
   width: number;

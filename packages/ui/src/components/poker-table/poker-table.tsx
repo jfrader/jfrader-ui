@@ -143,8 +143,8 @@ export interface PokerTableProps extends SxProps {
   slots?: PokerTableSlots;
   /** Passes props to the wrapper, seat plaques and action toolbar. */
   slotProps?: PokerTableSlotProps;
-  /** Table options forwarded to the GameTable root, without its seat and region inputs. */
-  tableProps?: Omit<GameTableProps, 'seats' | 'seatSlots' | 'places' | 'players' | 'teamCount' | 'surface' | 'seatPlacement' | 'children' | 'component' | 'slots' | 'slotProps' | 'sx' | 'className' | 'style'>;
+  /** Table options forwarded to the GameTable root, without its seats, places, and region inputs. */
+  tableProps?: Omit<GameTableProps, 'seats' | 'seatSlots' | 'places' | 'players' | 'teamCount' | 'surface' | 'children' | 'component' | 'slots' | 'slotProps' | 'sx' | 'className' | 'style'>;
   /** Reaches the outer wrapper element. */
   ref?: Ref<HTMLDivElement>;
   className?: string;
@@ -371,6 +371,7 @@ export function PokerTable({
                 {...tableProps}
                 places={Math.max(players.length, 2)}
                 seats={players}
+                seatPlacement={tableProps?.seatPlacement ?? 'auto'}
                 teamCount={1}
               >
                 <GameTable.Header>

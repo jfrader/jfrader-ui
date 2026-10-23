@@ -180,7 +180,7 @@ const meta = {
       usage: `### When to use
 Use PokerTable for a Hold'em-style table with seats, stacks, hidden or revealed cards, a pot, a community board, and a command bar. The component is presentational: it renders the state you pass and reports commands through the action items' \`onSelect\`. Betting rules, turn order, pot arithmetic, hand ranking, and card values belong to your application.
 
-The seat you mark with \`isMe\` rotates to the front. Pass \`deal\` to deal the hole cards and grow \`board\` to reveal community cards; new cards fly from the deck. While cards are in flight, \`onBusyChange\` reports activity so you can disable commands.
+The seat you mark with \`isMe\` rotates to the front. Pass \`deal\` to deal the hole cards and grow \`board\` to reveal community cards; new cards fly from the deck. While cards are in flight, \`onBusyChange\` reports activity so you can disable commands. The table keeps seats on the felt edge on wide containers and moves them inside the felt on narrow ones so the surface uses the available width.
 
 ### Values and constraints
 
