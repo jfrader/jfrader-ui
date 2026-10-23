@@ -13,15 +13,14 @@ Every rule here exists because something went wrong without it.
 - Fixing an accessibility, performance, or state defect in a component.
 
 Not for: application composition (consumers), token-only work, repo tooling. Those belong to
-`AGENTS.md` / `PLAN.md`.
+`AGENTS.md`.
 
 ## 1. Read before writing
 
 1. `AGENTS.md`: commands, repo conventions, dependency allowlist.
-2. `PLAN.md`: pointer to Linear planning and headline decisions; detailed history is in git. Keep it a pointer; record progress in Linear.
-3. The nearest sibling component: `button/`, `text-field/`, `checkbox/`, and `switch/` are the reference
+2. The nearest sibling component: `button/`, `text-field/`, `checkbox/`, and `switch/` are the reference
    implementations for patterns in this file.
-4. `packages/tokens/src/tokens.ts`: the token source. If a needed color/size role is missing, add a
+3. `packages/tokens/src/tokens.ts`: the token source. If a needed color/size role is missing, add a
    token (base + light) and regenerate; never inline a raw value.
 5. Verify with the repo commands: `pnpm generate`, `pnpm typecheck`, `pnpm test`, `pnpm build`,
    `pnpm verify:exports`, `pnpm verify:slots`, `pnpm verify:docs`. Never claim a check you did not run.
@@ -760,7 +759,7 @@ disclosure with the keyboard, and check the first example and prop table still a
   slot change, never hand-edit it.
 - **Composed part naming stays consistent** across components: callable roots (`Tabs`, `Dialog`) with
   the same part names: `Trigger`, `Content`, `Title`, `Description`, `Close`, `List`, `Tab`, `Panel`.
-- Keep `SKILL.md`, `AGENTS.md`, `PLAN.md`, `README.md`, `llms.txt`, and `docs/` in sync in the same
+- Keep `SKILL.md`, `AGENTS.md`, `README.md`, `llms.txt`, and `docs/` in sync in the same
   change that invalidates them.
 
 ## 10. References

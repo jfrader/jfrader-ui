@@ -85,11 +85,3 @@ Packing and publishing are in `docs/releasing.md`.
 `SKILL.md` owns the component contract, the test requirements, the visual pass, and the review
 checklist. A green test run is not completion; the checklist in `SKILL.md` §7 and §8 is.
 
-## Linear workflow
-
-Work in this repo is tracked in Linear: project **`jfrader-ui`** in the `Gurisitosgames` workspace (team `GURI`, key `GURI`). Follow the shared `linear-workflow` skill (one project per repo; states Backlog → Todo → In Progress → Done).
-
-- Epic: **GURI-1961 — Ship jfrader-ui v1: hardening refactors + remaining components**; children carry the migrated plan/backlog. `PLAN.md` is a pointer; do not grow it back into a plan document.
-- New work → a Backlog issue in this project first, then an issue worktree at `~/Workspace/Worktrees/jfrader-ui-GURI-N` on branch `jfrader/guri-N-…` from `origin/master`.
-- `gitBranchName` comes from the Linear issue. Commits/PRs reference the id (`Refs GURI-N`, `Fixes GURI-N`); after merge, reconcile the issue (closing comment, attachments to the issue, state `Done`).
-- Repo files stay the source of truth for code and conventions; Linear carries intent and progress.

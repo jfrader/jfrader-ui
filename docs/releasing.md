@@ -54,7 +54,7 @@ pnpm --filter @jfrader/ui exec npm pack --dry-run --json
 Write a tarball somewhere disposable, then inspect it:
 
 ```sh
-pnpm --filter @jfrader/tokens pack --pack-destination /tmp/opencode
+pnpm --filter @jfrader/tokens pack --pack-destination /tmp/jfrader-ui-release
 ```
 
 `@jfrader/ui` depends on the published `@jfrader/tokens` package and does not bundle it, so build

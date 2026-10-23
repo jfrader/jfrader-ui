@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
@@ -8,7 +9,7 @@ const gate = readFileSync(path.join(import.meta.dirname, 'verify-exports.mjs'), 
 const sourceEntry = (target) => ({ types: target, import: target });
 
 function runFixture(mutate = () => {}) {
-  const dir = mkdtempSync('/tmp/opencode/verify-exports-');
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'verify-exports-'));
   const manifest = {
     exports: {
       '.': sourceEntry('./src/index.ts'),

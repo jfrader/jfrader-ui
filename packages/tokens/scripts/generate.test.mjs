@@ -1,17 +1,18 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 
 const packageDir = path.resolve(import.meta.dirname, '..');
 const generate = (t, base, light) => {
-  const dir = mkdtempSync('/tmp/opencode/token-generator-');
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'token-generator-'));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   mkdirSync(path.join(dir, 'scripts'));
   mkdirSync(path.join(dir, 'src'));
   copyFileSync(path.join(import.meta.dirname, 'generate.ts'), path.join(dir, 'scripts/generate.ts'));
-  writeFileSync(path.join(dir, 'src/tokens.ts'), `export const base = ${JSON.stringify(base)};\nexport const light = ${JSON.stringify(light)};`);
+  writeFileSync(path.join(dir, 'src/tokens.ts'), `export const base = ${JSON.stringify(base)};\nexport const light = ${JSON.stringify(light)};\nexport const contrast = {};`);
   const run = () => spawnSync(path.join(packageDir, 'node_modules/.bin/tsx'), [path.join(dir, 'scripts/generate.ts')], { encoding: 'utf8' });
   return { dir, run };
 };
