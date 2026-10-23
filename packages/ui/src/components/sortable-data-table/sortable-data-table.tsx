@@ -22,6 +22,7 @@ import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { touchTargetStyle } from '../../styling/touch-target';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
@@ -122,6 +123,8 @@ export type SortableDataTableProps<T, Id extends string = string, Key extends st
     loading?: boolean;
     /** Sets cell padding density. Defaults to `md`. */
     size?: 'sm' | 'md';
+    /** Sets the table's CSS minimum inline size. Numbers are pixels. Defaults to `auto`. */
+    minTableWidth?: CSSProperties['minInlineSize'];
     /** Receives the table element rather than the outer container. */
     tableRef?: Ref<HTMLTableElement>;
     /** Passes props to table, scrolling and selection parts. */
@@ -173,6 +176,7 @@ const rootStyle = css({
   lineHeight: vars.lineHeight.base,
 });
 const scrollerStyle = css({
+  isolation: 'isolate',
   overflowX: 'auto',
   scrollPaddingBlockStart: 'var(--ui-sortable-data-table-header-size, 0px)',
   maxInlineSize: '100%',
@@ -180,7 +184,7 @@ const scrollerStyle = css({
   borderRadius: vars.radius.md,
   '&:focus-visible': focusRingInset,
 });
-const tableStyle = css({ inlineSize: '100%', borderCollapse: 'separate', borderSpacing: 0, tableLayout: 'auto' });
+const tableStyle = css({ minInlineSize: 'var(--ui-sortable-data-table-min-width, auto)', inlineSize: '100%', borderCollapse: 'separate', borderSpacing: 0, tableLayout: 'auto' });
 const captionStyle = css({ textAlign: 'start', padding: vars.space[4], fontWeight: vars.fontWeight.medium });
 const cellStyle = css({
   paddingInline: vars.space[3],
@@ -198,6 +202,7 @@ const cellStyle = css({
 });
 const densityStyles = { sm: css({ paddingBlock: vars.space[2] }), md: css({ paddingBlock: vars.space[3] }) };
 const headerStyle = css({
+  whiteSpace: 'nowrap',
   position: 'sticky',
   insetBlockStart: 0,
   zIndex: 1,
@@ -209,7 +214,7 @@ const sortStyle = css({
   alignItems: 'center',
   justifyContent: 'flex-start',
   gap: vars.space[2],
-  inlineSize: '100%',
+  inlineSize: 'max-content',
   minBlockSize: vars.space[8],
   minInlineSize: vars.space[8],
   paddingInline: 0,
@@ -228,7 +233,7 @@ const sortStyle = css({
   '&:focus-visible': focusRingInset,
   [REDUCED_MOTION]: { transitionDuration: '0s' },
   [FORCED_COLORS]: { color: 'ButtonText' },
-});
+}, touchTargetStyle);
 const sortIndicatorStyle = css({
   flexShrink: 0,
   inlineSize: vars.space[3],
@@ -299,6 +304,7 @@ export function SortableDataTable<T, const Id extends string = string, Key exten
   empty,
   loading = false,
   size = 'md',
+  minTableWidth,
   tableRef,
   slotProps,
   slots,
@@ -464,6 +470,10 @@ export function SortableDataTable<T, const Id extends string = string, Key exten
               aria-busy={loading || undefined}
               className={slotProps?.table?.className}
               css={[tableStyle, slotProps?.table?.sx]}
+              style={{
+                '--ui-sortable-data-table-min-width': typeof minTableWidth === 'number' ? `${minTableWidth}px` : minTableWidth ?? 'auto',
+                ...slotProps?.table?.style,
+              } as CSSProperties}
             >
               {isRenderable(caption) && (
               <Caption

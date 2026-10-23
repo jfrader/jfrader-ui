@@ -18,6 +18,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
+import { touchTargetStyle } from '../../styling/touch-target';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -362,7 +363,7 @@ const removeStyle = css({
   borderRadius: vars.radius.full,
   color: vars.color.text,
   [FORCED_COLORS]: { borderColor: 'ButtonText' },
-});
+}, touchTargetStyle);
 
 const clearStyle = css({
   alignSelf: 'flex-start',
@@ -374,7 +375,7 @@ const clearStyle = css({
   overflowWrap: 'anywhere',
   borderColor: vars.color.borderControl,
   [FORCED_COLORS]: { borderColor: 'ButtonText' },
-});
+}, touchTargetStyle);
 
 const statusStyle = css({
   margin: 0,

@@ -4,6 +4,8 @@
 
 ### Added
 
+- `SortableDataTable` accepts `minTableWidth` to preserve column widths inside its horizontal scroller.
+- `size.touch` sets the 44px minimum target for Button, Select triggers and options, and table sort buttons on coarse-pointer devices. Fine-pointer sizes are unchanged.
 - `PokerTable` and `TrucoTable` are presentational preset tables: seats with avatars, stacks and turn state; hidden and revealed cards; a pot, a community board or per-seat play piles; a score line; events; and command bars. They own composition and card flights, never rules, turn order or scoring.
 - `GameTable` adds `seatPlacement="auto"`: seats stay inside the felt on narrow containers and on the edge when the table is wide. The GameTable, PokerTable and TrucoTable examples use it.
 - `CardFlights` accepts board destinations: a board card that appears after the first render flies from the deck or table centre and reveals its face.
@@ -12,6 +14,7 @@
 
 ### Changed
 
+- `SortableDataTable` keeps headings on one line, fits sort buttons to their labels, and isolates its scroller so sticky headings stay below portaled overlays. `Select.Value` can shrink within a constrained trigger.
 - The docs site uses `react-storydocs` 0.17.2: each example's code control sits in a footer under the example, and an open snippet repeats a Hide code control at its end.
 - The GameCard, FlipGameCard, and GameHand examples use one image deck: card faces and a back carried as image art with a printed title plate, so the pages show how a game ships artwork.
 - The theming documentation is one section on both surfaces: story-driven `Theme` pages for palette, typography, spacing and shape, and elevation and motion, each reading its values from `@jfrader/tokens` and showing both palettes; the rebuilt Theming guide replaces the generated token listings on the docs site.

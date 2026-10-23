@@ -2,6 +2,7 @@ import { base, type Tokens } from '@jfrader/tokens';
 import { customProperty, tokenPath } from './model';
 
 const SIZE_DESCRIPTIONS = {
+  touch: 'Minimum control target size for coarse pointers.',
   personAvatarLg: 'Large PersonAvatar artwork size.',
   emblemSm: 'Small emblem plate side.',
   emblemMd: 'Medium emblem plate side.',
