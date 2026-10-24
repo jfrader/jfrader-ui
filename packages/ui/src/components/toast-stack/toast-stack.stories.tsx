@@ -6,11 +6,17 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { ThemeRoot } from '../theme-root';
 import { Toast, useToast, type ToastOptions } from '../toast';
+import { TOAST_VIEWPORT_INLINE_SIZE } from '../toast/toast-layout';
 import { ToastStack, type ToastStackProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
-const ActionRow = styled.div({ display: 'flex', gap: vars.space[2], flexWrap: 'wrap' });
+const ActionRow = styled.div({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: vars.space[2],
+});
 
 const FixtureInput = styled.input({ minBlockSize: vars.space[8] });
 
@@ -78,15 +84,15 @@ function Notifications() {
     ids.current = ${JSON.stringify(initial, null, 2)}.map((message) => toast(message));
   }, [toast]);
   return <>
-    <Button onClick={() => ids.current.push(toast({ title: 'New notification', duration: null }))}>Notify</Button>
+    <Button onClick={() => ids.current.push(toast({ title: 'New notification', duration: null }))}>Send notification</Button>
     <Button onClick={() => {
       const id = ids.current.at(-1);
       if (id) update(id, { title: 'Saved successfully', loading: false, duration: null, action: undefined });
-    }}>Complete</Button>
+    }}>Finish the update</Button>
     <Button onClick={() => {
       const id = ids.current.at(-1);
       if (id) dismiss(id);
-    }}>Dismiss newest</Button>
+    }}>Dismiss latest</Button>
   </>;
 }
 
@@ -132,7 +138,7 @@ function Controls({ initial, mode, fixtures = [] }: {
   return (
     <ActionRow>
       <Button onClick={() => ids.current.push(api.toast({ title: 'New notification', duration: null }))}>
-        Notify
+        Send notification
       </Button>
       <Button
         onClick={() =>
@@ -144,9 +150,9 @@ function Controls({ initial, mode, fixtures = [] }: {
           })
         }
       >
-        Complete
+        Finish the update
       </Button>
-      <Button onClick={() => api.dismiss(ids.current.at(-1)!)}>Dismiss newest</Button>
+      <Button onClick={() => api.dismiss(ids.current.at(-1)!)}>Dismiss latest</Button>
       {fixtures.includes('outside') && <Button>Outside</Button>}
       {fixtures.includes('unknown-id') && (
         <Button
@@ -164,15 +170,23 @@ function Controls({ initial, mode, fixtures = [] }: {
 // Every example renders the stack inside its own surface, so a stack lands in that surface's
 // corner. Without one, each example pins its toasts to the corner of the page and the whole docs
 // page piles them on top of each other. `ViewportAnchored` keeps the page-level behavior.
+// The documentation frame already draws the surface, so this is only the positioned host a contained
+// stack needs. Its own chrome would be a box inside a box.
 const SurfaceFrame = styled.div({
   boxSizing: 'border-box',
   position: 'relative',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.space[3],
   inlineSize: '100%',
-  border: `1px solid ${vars.color.borderControl}`,
+  // The story root shrink-wraps its content, so the host needs a floor or it collapses to the width
+  // of its buttons and squeezes the pile.
+  minInlineSize: TOAST_VIEWPORT_INLINE_SIZE,
   borderRadius: vars.radius.md,
+  overflow: 'hidden',
 });
 
-function Surface({ blockSize = '20rem', children }: { blockSize?: string; children: ReactNode }) {
+function Surface({ blockSize = '18rem', children }: { blockSize?: string; children: ReactNode }) {
   return <SurfaceFrame style={{ blockSize }}>{children}</SurfaceFrame>;
 }
 
@@ -182,7 +196,7 @@ function Harness({
   mode,
   fixtures,
   surface = true,
-  blockSize = '20rem',
+  blockSize = '18rem',
   ...args
 }: ToastStackProps & {
   initial?: ToastOptions[];
@@ -194,13 +208,16 @@ function Harness({
 }) {
   return (
     <Toast max={max}>
-      <Controls initial={initial} mode={mode} fixtures={fixtures} />
       {surface ? (
         <Surface blockSize={blockSize}>
+          <Controls initial={initial} mode={mode} fixtures={fixtures} />
           <ToastStack contained {...args} />
         </Surface>
       ) : (
-        <ToastStack {...args} />
+        <>
+          <Controls initial={initial} mode={mode} fixtures={fixtures} />
+          <ToastStack {...args} />
+        </>
       )}
     </Toast>
   );
@@ -283,9 +300,9 @@ export const Default: Story = {
   name: 'Notification stack',
   parameters: { docs: {
     description: { story: 'Fan the pile out to read earlier messages, or send another notification.' },
-    source: { language: 'tsx', code: stackSource(messages.slice(0, 3), '', 12, '20rem') },
+    source: { language: 'tsx', code: stackSource(messages.slice(0, 3), '', 12, '18rem') },
   } },
-  render: (args) => <Surface blockSize="20rem"><Toast max={12} viewport="stack" viewportProps={{ contained: true, ...args }}>
+  render: (args) => <Surface><Toast max={12} viewport="stack" viewportProps={{ contained: true, ...args }}>
     <Controls initial={messages.slice(0, 3)} />
   </Toast></Surface>,
   play: async ({ canvasElement, userEvent }) => {
@@ -436,7 +453,7 @@ export const OverflowPromotion: Story = {
     await userEvent.unhover(region);
     await settled(region);
     await expect(region.querySelectorAll('[data-stack-visible="true"]')).toHaveLength(2);
-    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Dismiss newest' }));
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Dismiss latest' }));
     await bodyOf(canvasElement).findByText('Upload complete');
     await expect(bodyOf(canvasElement).queryByText('Profile saved')).toBeNull();
     await settled(region);
@@ -611,7 +628,7 @@ export const LoadingUpdate: Story = {
     await settled(region);
     const item = region.querySelector('[data-ui="toast"]');
     await expect(within(region).getAllByRole('status')).toHaveLength(1);
-    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Complete' }));
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Finish the update' }));
     await expect(await within(region).findByText('Saved successfully')).toBeVisible();
     await expect(region.querySelector('[data-ui="toast"]')).toBe(item);
     await expect(region.querySelector('[data-ui="spinner"]')).toBeNull();
@@ -658,7 +675,8 @@ export const CollapsedMixedHeights: Story = {
     await settled(region);
     const cards = region.querySelectorAll<HTMLElement>('[data-ui~="toast"]');
     await expect(getComputedStyle(cards[1]!).overflow).toBe('hidden');
-    await expect(cards[1]!.getBoundingClientRect().height).toBe(cards[0]!.getBoundingClientRect().height);
+    // Layout height, not the rect: a tucked card is scaled to read as depth.
+    await expect(cards[1]!.offsetHeight).toBe(cards[0]!.offsetHeight);
     // The taller card waits behind the pile and peeks above the front one.
     await expect(cards[1]!.getBoundingClientRect().top).toBeLessThan(cards[0]!.getBoundingClientRect().top);
     await expect(cards[1]).toHaveAttribute('inert');
@@ -839,7 +857,7 @@ export const Contained: Story = {
   name: 'Contain notifications in a panel',
   parameters: { docs: {
     description: { story: 'Anchor the stack inside a positioned panel instead of the page viewport.' },
-    source: { language: 'tsx', code: stackSource(messages.slice(0, 3), '', 12, '20rem') },
+    source: { language: 'tsx', code: stackSource(messages.slice(0, 3), '', 12, '18rem') },
   } },
   args: { contained: true },
   render: (args) => <Harness {...args} />,

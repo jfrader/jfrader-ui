@@ -61,8 +61,12 @@ export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'chi
 const DRAG_SLOP_PX = 6;
 /** Share of a card's width a swipe covers to dismiss it on release. */
 const SWIPE_DISMISS_RATIO = 0.4;
-/** How far each tucked card peeks above the one in front. Clears the card's corner radius. */
-const TUCK_PEEK = vars.space[6];
+/** How far each tucked card peeks above the one in front. */
+const TUCK_PEEK = vars.space[4];
+/** Each step back narrows the card, so the pile reads as depth instead of nested rectangles. */
+const TUCK_SCALE_STEP = 0.05;
+/** The narrowest a tucked card goes, however deep the pile is. */
+const TUCK_SCALE_FLOOR = 0.9;
 /** Milliseconds of travel a release still carries the card. */
 const THROW_DECAY_MS = 99;
 /** Samples older than this do not count toward the release speed. */
@@ -117,7 +121,10 @@ const itemStyle = css({
   zIndex: 'var(--toast-stack-order)',
   // The browser keeps vertical panning; horizontal travel comes to the swipe below.
   touchAction: 'pan-y',
-  transform: 'translateX(var(--toast-swipe-x, 0px))',
+  // Scaling from the top edge keeps a tucked card's top where it is and narrows its sides, so a
+  // collapsed pile shows crescents behind the front card.
+  transformOrigin: '50% 0',
+  transform: 'translateX(var(--toast-swipe-x, 0px)) scale(var(--toast-stack-scale, 1))',
   opacity: 'var(--toast-swipe-fade, 1)',
   transitionProperty: 'opacity, inset-block-end, transform',
   transitionDuration: vars.motion.duration.base,
@@ -472,6 +479,10 @@ function ToastStackContent({
                       '--toast-stack-offset':
                         offsets.get(record.id) ?? previousOffsets.current.get(record.id) ?? '0px',
                       '--toast-stack-order': records.length - records.indexOf(record),
+                      '--toast-stack-scale':
+                        expanded || index <= 0
+                          ? '1'
+                          : `${Math.max(TUCK_SCALE_FLOOR, 1 - index * TUCK_SCALE_STEP)}`,
                     } as CSSProperties
                   }
                 >
