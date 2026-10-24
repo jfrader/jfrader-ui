@@ -35,6 +35,8 @@
 - `LinkPreview`'s site icon renders as an image instead of an uncoloured circle.
 - `Timeline`'s connector centre matches the marker centre and its group headings align with the event content column.
 - `RadialMenu`'s satellites use icons instead of text characters.
+- `BottomSheet`, `Dialog`, `Drawer`, `DialogStack` and `UserMenu` no longer shift the page while they are open. The scroll lock hid the scrollbar before measuring it, so the width came out as zero and no compensating padding was applied.
+- `BottomSheet`'s entrance no longer jumps straight to its resting position. The resize that follows the scroll lock is width-only, and it used to cancel the animation; the sheet now re-measures only when a value it reads changes.
 ## 0.14.0 — 2026-10-24
 
 ### Added
