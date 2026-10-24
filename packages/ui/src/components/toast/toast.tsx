@@ -4,7 +4,9 @@
 //   `role="alert"` for `tone: 'danger'` (assertive). Set aria-atomic="true" explicitly
 //   because some environments do not honor the role defaults. Controls are siblings.
 // - A live region inserted already populated is generally not announced, so each toast mounts
-//   empty and fills its content after ANNOUNCE_DELAY_MS (content change → announcement).
+//   empty and fills its content after ANNOUNCE_DELAY_MS (content change → announcement). The fill
+//   waits for the toast to be exposed: a tucked card is inert, so it is out of the accessibility
+//   tree until the pile fans out, and it announces then.
 // - Appearing toasts never move focus. Removing a focused toast continues focus to the first
 //   surviving toast's dismiss button; focus elsewhere is never moved.
 // - Deviation from the APG Alert advice against auto-disappearing alerts: toasts auto-dismiss
@@ -578,6 +580,7 @@ export function ToastItem({
   component: Root = 'div',
 }: {
   record: ToastRecord;
+  /** Keeps a toast out of the tab order and out of the accessibility tree until the pile fans out. */
   exposed?: boolean;
   paused?: boolean;
   style?: CSSProperties;
@@ -676,7 +679,6 @@ export function ToastItem({
       {...withoutSx(partProps)}
       ref={mergedRootRef}
       inert={state === 'closing' || !exposed}
-      aria-hidden={state === 'closing' || !exposed ? true : undefined}
       data-toast-id={id}
       style={{ ...partProps?.style, ...style }}
       className={[className, partProps?.className].filter(Boolean).join(' ')}
