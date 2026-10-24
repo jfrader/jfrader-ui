@@ -96,7 +96,12 @@ function Notifications() {
 </Toast>`;
 }
 
-function Controls({ initial, mode }: { initial: ToastOptions[]; mode?: 'update' | 'evict' }) {
+function Controls({ initial, mode, fixtures = [] }: {
+  initial: ToastOptions[];
+  mode?: 'update' | 'evict';
+  /** Controls that only the interaction tests need, so an example shows the component alone. */
+  fixtures?: ReadonlyArray<'outside' | 'unknown-id'>;
+}) {
   const api = useToast();
   const initialized = useRef(false);
   const ids = useRef<string[]>([]);
@@ -142,15 +147,17 @@ function Controls({ initial, mode }: { initial: ToastOptions[]; mode?: 'update' 
         Complete
       </Button>
       <Button onClick={() => api.dismiss(ids.current.at(-1)!)}>Dismiss newest</Button>
-      <Button
-        onClick={() => {
-          api.update('missing', { title: 'Unreachable' });
-          api.dismiss('missing');
-        }}
-      >
-        Unknown id
-      </Button>
-      <Button>Outside</Button>
+      {fixtures.includes('outside') && <Button>Outside</Button>}
+      {fixtures.includes('unknown-id') && (
+        <Button
+          onClick={() => {
+            api.update('missing', { title: 'Unreachable' });
+            api.dismiss('missing');
+          }}
+        >
+          Unknown id
+        </Button>
+      )}
     </ActionRow>
   );
 }
@@ -173,6 +180,7 @@ function Harness({
   initial = messages.slice(0, 3),
   max = 12,
   mode,
+  fixtures,
   surface = true,
   blockSize = '20rem',
   ...args
@@ -180,12 +188,13 @@ function Harness({
   initial?: ToastOptions[];
   max?: number;
   mode?: 'update' | 'evict';
+  fixtures?: ReadonlyArray<'outside' | 'unknown-id'>;
   surface?: boolean;
   blockSize?: string;
 }) {
   return (
     <Toast max={max}>
-      <Controls initial={initial} mode={mode} />
+      <Controls initial={initial} mode={mode} fixtures={fixtures} />
       {surface ? (
         <Surface blockSize={blockSize}>
           <ToastStack contained {...args} />
@@ -273,10 +282,10 @@ function dragCard(card: HTMLElement, dx: number, dy = 0, step = 16, pointerType 
 export const Default: Story = {
   name: 'Notification stack',
   parameters: { docs: {
-    description: { story: 'Expand the pile to read earlier messages or add another notification.' },
-    source: { language: 'tsx', code: stackSource(messages.slice(0, 3), '', 12, '30rem') },
+    description: { story: 'Fan the pile out to read earlier messages, or send another notification.' },
+    source: { language: 'tsx', code: stackSource(messages.slice(0, 3), '', 12, '20rem') },
   } },
-  render: (args) => <Surface blockSize="30rem"><Toast max={12} viewport="stack" viewportProps={{ contained: true, ...args }}>
+  render: (args) => <Surface blockSize="20rem"><Toast max={12} viewport="stack" viewportProps={{ contained: true, ...args }}>
     <Controls initial={messages.slice(0, 3)} />
   </Toast></Surface>,
   play: async ({ canvasElement, userEvent }) => {
@@ -436,7 +445,7 @@ export const OverflowPromotion: Story = {
 };
 export const Keyboard: Story = {
   args: { hotkey: true },
-  render: (args) => <Harness {...args} />,
+  render: (args) => <Harness {...args} fixtures={['outside']} />,
   play: async ({ canvasElement, userEvent }) => {
     const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
     await settled(region);
@@ -469,7 +478,7 @@ export const Keyboard: Story = {
   },
 };
 export const HoverAndTouchExpansion: Story = {
-  render: (args) => <Harness {...args} initial={messages} />,
+  render: (args) => <Harness {...args} initial={messages} fixtures={['outside']} />,
   play: async ({ canvasElement, userEvent }) => {
     const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
     await settled(region);
@@ -596,7 +605,7 @@ export const LoadingUpdate: Story = {
     description: { story: 'Select Complete to replace a loading message without adding another card.' },
     source: { language: 'tsx', code: stackSource([{ title: 'Saving project', loading: true }]) },
   } },
-  render: (args) => <Harness {...args} initial={[{ title: 'Saving project', loading: true }]} />,
+  render: (args) => <Harness {...args} initial={[{ title: 'Saving project', loading: true }]} fixtures={['unknown-id']} />,
   play: async ({ canvasElement, userEvent }) => {
     const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
     await settled(region);
@@ -795,7 +804,7 @@ export const FalsyContent: Story = {
 };
 export const QueueEvictionFocus: Story = {
   args: { variant: 'list' },
-  render: (args) => <Harness {...args} max={3} mode="evict" />,
+  render: (args) => <Harness {...args} max={3} mode="evict" fixtures={['unknown-id']} />,
   play: async ({ canvasElement, userEvent }) => {
     const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
     await settled(region);
@@ -829,11 +838,11 @@ export const Positions: Story = {
 export const Contained: Story = {
   name: 'Contain notifications in a panel',
   parameters: { docs: {
-    description: { story: 'Anchor the stack inside a taller positioned panel instead of the page viewport.' },
-    source: { language: 'tsx', code: stackSource(messages.slice(0, 3), '', 12, '30rem') },
+    description: { story: 'Anchor the stack inside a positioned panel instead of the page viewport.' },
+    source: { language: 'tsx', code: stackSource(messages.slice(0, 3), '', 12, '20rem') },
   } },
   args: { contained: true },
-  render: (args) => <Harness {...args} blockSize="30rem" />,
+  render: (args) => <Harness {...args} />,
 };
 export const RTL: Story = {
   args: { dir: 'rtl', position: 'bottom-start', variant: 'list' },

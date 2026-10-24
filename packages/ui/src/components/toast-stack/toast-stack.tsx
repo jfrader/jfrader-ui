@@ -61,6 +61,8 @@ export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'chi
 const DRAG_SLOP_PX = 6;
 /** Share of a card's width a swipe covers to dismiss it on release. */
 const SWIPE_DISMISS_RATIO = 0.4;
+/** How far each tucked card peeks above the one in front. Clears the card's corner radius. */
+const TUCK_PEEK = vars.space[6];
 /** Milliseconds of travel a release still carries the card. */
 const THROW_DECAY_MS = 99;
 /** Samples older than this do not count toward the release speed. */
@@ -121,7 +123,13 @@ const itemStyle = css({
   transitionDuration: vars.motion.duration.base,
   transitionTimingFunction: vars.motion.easeStandard,
   '&[data-stack-visible="false"]': { visibility: 'hidden' },
-  '&[data-stack-collapsed="true"] > [data-ui~="toast"]': { overflow: 'hidden' },
+  // A tucked card shows only its edge: the recessed surface and its border, with the message hidden
+  // so the peek never clips a line of text in half.
+  '&[data-stack-collapsed="true"] > [data-ui~="toast"]': {
+    overflow: 'hidden',
+    backgroundColor: vars.color.surfaceInset,
+    '& > *': { visibility: 'hidden' },
+  },
   // The card follows the finger frame by frame, so it never lags behind the pointer.
   '&[data-swiping="true"]': { transitionDuration: '0s' },
   [REDUCED_MOTION]: { transitionDuration: '0s' },
@@ -370,7 +378,7 @@ function ToastStackContent({
   open.forEach((record, index) => {
     offsets.set(
       record.id,
-      expanded ? `calc(${sum}px + ${index} * ${vars.space[2]})` : `calc(${index} * ${vars.space[3]})`,
+      expanded ? `calc(${sum}px + ${index} * ${vars.space[2]})` : `calc(${index} * ${TUCK_PEEK})`,
     );
     sum += heights[record.id] ?? 0;
   });
@@ -383,7 +391,7 @@ function ToastStackContent({
   if (open.length)
     height = expanded
       ? `calc(${sum}px + ${open.length - 1} * ${vars.space[2]})`
-      : `calc(${heights[open[0]!.id] ?? 0}px + ${Math.min(open.length, limit) - 1} * ${vars.space[3]})`;
+      : `calc(${heights[open[0]!.id] ?? 0}px + ${Math.min(open.length, limit) - 1} * ${TUCK_PEEK})`;
   const newestId = open[0]?.id;
   useEffect(() => {
     const root = rootRef.current;
