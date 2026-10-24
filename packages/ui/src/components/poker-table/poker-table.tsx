@@ -14,7 +14,7 @@ import { CardFlights } from '../card-flights';
 import { DeckProvider } from '../deck';
 import { GameActions, type GameActionItem, type GameActionsProps } from '../game-actions';
 import { GameCard, type GameCardValue } from '../game-card';
-import { GameChipStack, useChipFlight, type GameChipStackChip } from '../game-chip-stack';
+import { ChipFlights, GameChipStack, useChipFlights, type GameChipStackChip } from '../game-chip-stack';
 import { CARD_FRAME } from '../game-card/card-frame';
 import { GameSeat, type GameSeatProps } from '../game-seat';
 import { GameTable, useGameTableSeat, type GameTableProps } from '../game-table';
@@ -112,7 +112,11 @@ export interface PokerTableProps extends SxProps {
   board?: readonly PokerTableCard[];
   /** Chip total shown in the center. Omit to hide the pot. */
   pot?: number;
-  /** Names the rendered seat whose plaque sends chips when pot grows. Omit to update immediately. Missing endpoints and reduced motion skip the flight. */
+  /** Sends chips from a seat to the pot once per new id. The amount defaults to the pot increase. A new id cancels the active transfer. The pot remains authoritative. */
+  chipTransfer?: { id: string | number; fromPlayerKey: string; amount?: number };
+  /** Names the rendered seat whose plaque sends chips when pot grows.
+   * @deprecated Use `chipTransfer` with an explicit transfer id instead.
+   */
   potFrom?: string;
   /** Sets the positive, finite chip values used to depict the pot, largest first. Must not be empty. Defaults to [1000, 500, 100, 25, 5, 1]. Unrepresented remainders remain in the formatted total. */
   denominations?: readonly number[];
@@ -341,13 +345,14 @@ function PokerSeatContent({ seat: Seat, seatProps, labels, locale, renderSeat }:
   />;
 }
 
-export function PokerTable({
+function PokerTableContent({
   players,
   title,
   subtitle,
   board = [],
   pot,
   potFrom,
+  chipTransfer,
   denominations = DEFAULT_DENOMINATIONS,
   announcement,
   actions,
@@ -383,6 +388,8 @@ export function PokerTable({
   const [shownPot, setShownPot] = useState(pot);
   const previousPot = useRef(pot);
   const generation = useRef(0);
+  const seenTransfers = useRef(new Set<string | number>());
+  const warnedPotFrom = useRef(false);
   const activity = useRef<{ card: boolean; chip: boolean; last: boolean | undefined }>({ card: false, chip: false, last: undefined });
   const notify = useLatestCallback(onBusyChange);
   const report = useCallback((kind: 'card' | 'chip', value: boolean) => {
@@ -391,29 +398,46 @@ export function PokerTable({
     if (busy !== activity.current.last) { activity.current.last = busy; notify(busy); }
   }, [notify]);
   const cardActivity = useCallback((busy: boolean) => report('card', busy), [report]);
-  const chipActivity = useCallback((busy: boolean) => report('chip', busy), [report]);
-  const { fly, cancel, layer } = useChipFlight({ onBusyChange: chipActivity });
-  const updatePot = useLatestCallback((next: number | undefined, fromKey: string | undefined) => {
+  const { send, cancel, busy: chipBusy } = useChipFlights();
+  useEffect(() => { report('chip', chipBusy); }, [chipBusy, report]);
+  useEffect(() => () => { report('chip', false); }, [report]);
+  const updatePot = useLatestCallback((next: number | undefined) => {
     const previous = previousPot.current;
     previousPot.current = next;
+    const increase = (next ?? 0) - (previous ?? 0);
+    const explicit = chipTransfer !== undefined;
+    const fresh = explicit && !seenTransfers.current.has(chipTransfer.id);
+    if (explicit && !fresh && Object.is(next, previous)) return;
+    if (fresh) seenTransfers.current.add(chipTransfer.id);
     const revision = ++generation.current;
     cancel();
+    const fromKey = explicit ? (fresh ? chipTransfer.fromPlayerKey : undefined) : potFrom;
+    if (!explicit && potFrom && increase > 0 && !warnedPotFrom.current) {
+      warnedPotFrom.current = true;
+      if (process.env.NODE_ENV !== 'production') console.warn('PokerTable: potFrom is deprecated. Use chipTransfer instead.');
+    }
+    if (fromKey !== undefined && !players.some(player => player.key === fromKey)) {
+      if (process.env.NODE_ENV !== 'production') console.warn(`PokerTable: unknown fromPlayerKey "${fromKey}". Available keys: ${players.map(player => player.key).join(', ')}`);
+      setShownPot(next);
+      return;
+    }
     const seat = Array.from(tableRef.current?.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]') ?? [])
       .find(node => node.dataset.slotPlayer === fromKey);
-    const from = seat?.querySelector<HTMLElement>('[data-ui~="game-seat"]') ?? seat;
+    const from = seat?.querySelector<HTMLElement>('[data-ui~="game-seat"]');
     const to = potRef.current?.querySelector<HTMLElement>('[data-ui="game-chip-stack"]') ?? potRef.current;
-    if (next !== undefined && Number.isFinite(next) && next > (previous ?? 0) && fromKey && from && to) {
-      void fly({ from, to, chips: potChips(next - (previous ?? 0), denominations), size: 'md', locale })
+    const amount = explicit ? chipTransfer.amount ?? increase : increase;
+    if (next !== undefined && Number.isFinite(next) && increase > 0 && Number.isFinite(amount) && amount > 0 && fromKey !== undefined && from && to) {
+      void send({ from, to, chips: potChips(amount, denominations), size: 'md', locale })
         .then(() => { if (generation.current === revision) setShownPot(next); });
     } else setShownPot(next);
   });
   useEffect(() => {
-    updatePot(pot, potFrom);
-    return () => { generation.current++; cancel(); };
-  }, [pot, potFrom, updatePot, cancel]);
+    updatePot(pot);
+  }, [pot, potFrom, chipTransfer?.id, updatePot]);
+  useEffect(() => () => { generation.current++; cancel(); }, [cancel]);
   const rootClasses = [className, rootSlot?.className].filter(Boolean).join(' ') || undefined;
   const formatter = new Intl.NumberFormat(locale);
-  const visiblePot = potFrom ? shownPot : pot;
+  const visiblePot = shownPot;
   const chips = potChips(visiblePot, denominations);
   const filled = board.slice(0, BOARD_SLOTS);
   const empty = Math.max(0, BOARD_SLOTS - filled.length);
@@ -497,10 +521,12 @@ export function PokerTable({
               </GameTable>
             </CardFlights>
           </DeckProvider>
-          {layer}
         </Root>
       )}
     </WithSx>
   );
+}
+export function PokerTable(props: PokerTableProps) {
+  return <ChipFlights><PokerTableContent {...props} /></ChipFlights>;
 }
 PokerTable.displayName = 'PokerTable';

@@ -8,9 +8,9 @@ composed modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **169**; public callable parts: **188**.
-- Families exposing `slots.root`: **119**; remaining without a family-level root slot: **50** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **130**; remaining without family-level interior slots: **39** (includes components without generated anatomy).
+- Public callable families: **170**; public callable parts: **188**.
+- Families exposing `slots.root`: **119**; remaining without a family-level root slot: **51** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **130**; remaining without family-level interior slots: **40** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -113,6 +113,7 @@ panel material. The section has no background, border or radius to migrate.
 | [ChatThread](../packages/ui/src/components/chat-thread/chat-thread.tsx) | yes | `attachments`, `bubble`, `jumpButton`, `list`, `log`, `message`, `reaction`, `receipt`, `root`, `scroller`, `time`, `viewport` | `attachments`, `bubble`, `jumpButton`, `list`, `log`, `message`, `reaction`, `receipt`, `root`, `scroller`, `time`, `viewport` | — | `composerProps` | `Composer` |
 | [ChatThread.Composer](../packages/ui/src/components/chat-thread/chat-thread.tsx) | — | `attachButton`, `error`, `file`, `fileInput`, `form`, `removeButton`, `sendButton`, `textarea`, `tray` | `attachButton`, `error`, `file`, `fileInput`, `form`, `removeButton`, `sendButton`, `textarea`, `tray` | — | — | — |
 | [Checkbox](../packages/ui/src/components/checkbox/checkbox.tsx) | — | `control`, `description`, `label` | `control`, `description`, `label`, `root` | `root` | — | — |
+| [ChipFlights](../packages/ui/src/components/game-chip-stack/chip-flight.tsx) | — | — | — | — | — | — |
 | [ChipGroup](../packages/ui/src/components/chip-group/chip-group.tsx) | — | `check`, `chip`, `frame`, `label`, `overflow`, `row` | `check`, `chip`, `frame`, `label`, `overflow`, `row` | — | — | — |
 | [CodeBlock](../packages/ui/src/components/code-block/code-block.tsx) | yes | `code`, `gutter`, `header`, `label`, `language`, `pre`, `root`, `sourceFrame`, `toggle` | `code`, `gutter`, `header`, `label`, `language`, `pre`, `root`, `sourceFrame`, `toggle` | — | `copyButtonProps` | — |
 | [ColorPicker](../packages/ui/src/components/color-picker/color-picker.tsx) | yes | `content`, `contrast`, `description`, `error`, `field`, `pad`, `range`, `root`, `swatches`, `trigger` | `content`, `contrast`, `description`, `error`, `field`, `pad`, `range`, `root`, `swatches`, `trigger` | — | — | — |

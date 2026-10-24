@@ -2,13 +2,12 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useRef, useState } from 'react';
 import { expect, fn, waitFor } from 'storybook/test';
 import { renderToString } from 'react-dom/server';
-import { GameChipStack } from './game-chip-stack';
-import { Flex } from '../flex';
+import { GameChipStack, ChipFlights, useChipFlights, useChipFlight } from '@jfrader/ui/game-chip-stack';
+import { Flex } from '@jfrader/ui/flex';
 import { expectInside } from '../../testing/geometry-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { withChipStage } from '../game-chip/chip-showcase';
-import { useChipFlight } from './chip-flight';
-import { Button } from '../button';
+import { Button } from '@jfrader/ui/button';
 
 const meta = {
   title: 'Games/GameChipStack', component: GameChipStack, tags: ['autodocs'],
@@ -16,8 +15,8 @@ const meta = {
   args: { chips: [{ value: 5, count: 5 }], locale: 'en-US', size: 'xl' },
   parameters: { docs: {
     description: { component: 'Show blinds, bets, and pots as towers of casino chips.' },
-    usage: 'The stack is decorative unless you supply a label. Put the real total in the surrounding pot or seat text, or in the image label, even when the visible chips are capped. Counts are nonnegative safe integers. Empty stacks render nothing.',
-    sections: [{ title: 'Bets and pots', stories: ['Pot', 'BetLine', 'StackHeights', 'Capped'] }, { title: 'View and scale', stories: ['Flat', 'Sizes', 'Light'] }],
+    usage: 'The stack is decorative unless you supply a label. Put the real total in the surrounding pot or seat text, or in the image label, even when the visible chips are capped. Counts are nonnegative safe integers. Empty stacks render nothing.\n\nWrap your endpoints and controls in `ChipFlights`, then call `send` from `useChipFlights()` with the element refs. The provider owns the flight layer. The promise resolves with a landed, cancelled, or skipped status.',
+    sections: [{ title: 'Chips in motion', stories: ['SendChipsToThePot'] }, { title: 'Bets and pots', stories: ['Pot', 'BetLine', 'StackHeights', 'Capped'] }, { title: 'View and scale', stories: ['Flat', 'Sizes', 'Light'] }],
   } },
 } satisfies Meta<typeof GameChipStack>;
 export default meta;
@@ -197,47 +196,127 @@ export const ThickStacks: Story = {
 };
 
 const flightResolved = fn();
+const flightBusy = fn();
 function FlightDemo() {
   const from = useRef<HTMLSpanElement>(null);
   const to = useRef<HTMLSpanElement>(null);
-  const { fly, cancel, busy, layer } = useChipFlight();
+  const { send, cancel, busy } = useChipFlights();
+  const [status, setStatus] = useState('Ready');
   const chips = [{ value: 25, count: 4 }];
   return <Flex direction="column" gap="lg" align="center">
-    <Flex gap="xl" align="end"><GameChipStack ref={from} chips={chips} size="xl" /><GameChipStack ref={to} chips={[{ value: 25, count: 1 }]} size="xl" /></Flex>
+    <Flex gap="xl" align="end">
+      <Flex direction="column" gap="sm" align="center"><GameChipStack ref={from} chips={chips} size="xl" label="Source 100" /><span>Source</span></Flex>
+      <Flex direction="column" gap="sm" align="center"><GameChipStack ref={to} chips={[{ value: 25, count: 1 }]} size="xl" label="Pot 25" /><span>Pot</span></Flex>
+    </Flex>
     <Flex gap="md">
-      <Button disabled={busy} onClick={() => { if (from.current && to.current) void fly({ from: from.current, to: to.current, chips }).then(() => flightResolved()); }}>Fly chips</Button>
+      <Button disabled={busy} onClick={() => { if (from.current && to.current) void send({ from: from.current, to: to.current, chips, size: 'xl' }).then(result => { setStatus(result.status); flightResolved(result); }); }}>Send chips</Button>
       <Button disabled={!busy} onClick={cancel}>Cancel flight</Button>
     </Flex>
-    <span role="status">{busy ? 'In flight' : 'Ready'}</span>
-    {layer}
+    <span role="status">{busy ? 'In flight' : status}</span>
   </Flex>;
 }
 function FlightFixture() {
   const [visible, setVisible] = useState(true);
   return <Flex direction="column" gap="lg" align="center">
-    {visible && <FlightDemo />}
+    {visible && <ChipFlights onBusyChange={flightBusy}><FlightDemo /></ChipFlights>}
     <Button onClick={() => setVisible(false)}>Unmount flight demo</Button>
   </Flex>;
 }
-export const ChipFlight: Story = {
+export const SendChipsToThePot: Story = {
+  name: 'Send chips to the pot', render: () => <ChipFlights><FlightDemo /></ChipFlights>,
+  parameters: { docs: { source: { code: `import { useRef, useState } from 'react';
+import { ChipFlights, GameChipStack, useChipFlights } from '@jfrader/ui/game-chip-stack';
+import { Button } from '@jfrader/ui/button';
+import { Flex } from '@jfrader/ui/flex';
+
+function Transfer() {
+  const from = useRef<HTMLSpanElement>(null), to = useRef<HTMLSpanElement>(null);
+  const { send, cancel, busy } = useChipFlights();
+  const [status, setStatus] = useState('Ready');
+  const chips = [{ value: 25, count: 4 }];
+  return <Flex direction="column" gap="lg" align="center">
+    <Flex gap="xl" align="end">
+      <Flex direction="column" gap="sm" align="center"><GameChipStack ref={from} chips={chips} size="xl" label="Source 100" /><span>Source</span></Flex>
+      <Flex direction="column" gap="sm" align="center"><GameChipStack ref={to} chips={[{ value: 25, count: 1 }]} size="xl" label="Pot 25" /><span>Pot</span></Flex>
+    </Flex>
+    <Flex gap="md">
+      <Button disabled={busy} onClick={async () => {
+        if (from.current && to.current) setStatus((await send({ from: from.current, to: to.current, chips, size: 'xl' })).status);
+      }}>Send chips</Button>
+      <Button disabled={!busy} onClick={cancel}>Cancel flight</Button>
+    </Flex>
+    <span role="status">{busy ? 'In flight' : status}</span>
+  </Flex>;
+}
+<ChipFlights><Transfer /></ChipFlights>` } } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const document = canvasElement.ownerDocument;
+    await userEvent.click(canvas.getByRole('button', { name: 'Send chips' }));
+    await waitFor(() => expect(document.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('landed'), { timeout: 4000 });
+    await expect(flightResolved).toHaveBeenLastCalledWith({ status: 'landed' });
+    await userEvent.click(canvas.getByRole('button', { name: 'Send chips' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Cancel flight' }));
+    await expect(canvas.getByRole('status')).toHaveTextContent('cancelled');
+  },
+};
+export const ProviderUnmount: Story = {
   tags: ['!autodocs'], render: () => <FlightFixture />,
   play: async ({ canvas, canvasElement, userEvent }) => {
     const document = canvasElement.ownerDocument;
     const initial = flightResolved.mock.calls.length;
-    await expect(renderToString(<FlightDemo />)).not.toContain('chip-flight-layer');
-    await userEvent.click(canvas.getByRole('button', { name: 'Fly chips' }));
+    await expect(renderToString(<ChipFlights><FlightDemo /></ChipFlights>)).not.toContain('chip-flight-layer');
+    await userEvent.click(canvas.getByRole('button', { name: 'Send chips' }));
     await waitFor(() => expect(document.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
-    await waitFor(() => expect(document.querySelector('[data-ui="chip-flight-layer"]')).toBeNull(), { timeout: 4000 });
-    await waitFor(() => expect(flightResolved).toHaveBeenCalledTimes(initial + 1));
-    await userEvent.click(canvas.getByRole('button', { name: 'Fly chips' }));
-    await waitFor(() => expect(document.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
-    await userEvent.click(canvas.getByRole('button', { name: 'Cancel flight' }));
-    await waitFor(() => expect(flightResolved).toHaveBeenCalledTimes(initial + 2));
-    await expect(document.querySelector('[data-ui="chip-flight-layer"]')).toBeNull();
-    await userEvent.click(canvas.getByRole('button', { name: 'Fly chips' }));
-    await waitFor(() => expect(document.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
+    await expect(flightBusy).toHaveBeenLastCalledWith(true);
     await userEvent.click(canvas.getByRole('button', { name: 'Unmount flight demo' }));
-    await waitFor(() => expect(flightResolved).toHaveBeenCalledTimes(initial + 3));
+    await waitFor(() => expect(flightResolved).toHaveBeenCalledTimes(initial + 1));
     await expect(document.querySelector('[data-ui="chip-flight-layer"]')).toBeNull();
+    await expect(flightResolved).toHaveBeenLastCalledWith({ status: 'cancelled' });
+    await expect(flightBusy).toHaveBeenLastCalledWith(false);
+  },
+};
+
+function MissingGeometryDemo({ omitLayer = false }: { omitLayer?: boolean }) {
+  const from = useRef<HTMLSpanElement>(null);
+  const { send, busy } = useChipFlights();
+  const raw = useChipFlight();
+  const [status, setStatus] = useState('Ready');
+  return <Flex direction="column" gap="md">
+    <GameChipStack ref={from} chips={[{ value: 25, count: 4 }]} size="xl" />
+    <Button onClick={async () => {
+      if (!from.current) return;
+      const result = await (omitLayer ? raw.fly : send)({ from: from.current, to: omitLayer ? from.current : from.current.ownerDocument.createElement('span'), chips: [{ value: 25, count: 1 }] });
+      setStatus(`${result.status}: ${result.reason}`);
+    }}>Send chips</Button>
+    <span role="status">{busy || raw.busy ? 'In flight' : status}</span>
+  </Flex>;
+}
+export const MissingGeometry: Story = {
+  tags: ['!autodocs'], render: () => <ChipFlights><MissingGeometryDemo /></ChipFlights>,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Send chips' }));
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('skipped: missing-geometry'));
+  },
+};
+export const OmittedEscapeHatchLayer: Story = {
+  ...MissingGeometry, render: () => <ChipFlights><MissingGeometryDemo omitLayer /></ChipFlights>,
+};
+export const ProviderReducedMotion: Story = {
+  tags: ['!autodocs'], render: () => <ChipFlights><FlightDemo /></ChipFlights>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const view = canvasElement.ownerDocument.defaultView!;
+    const matchMedia = view.matchMedia;
+    view.matchMedia = query => {
+      const media = matchMedia.call(view, query);
+      if (query === '(prefers-reduced-motion: reduce)') Object.defineProperty(media, 'matches', { value: true });
+      return media;
+    };
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: 'Send chips' }));
+      await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('skipped'));
+      await expect(flightResolved).toHaveBeenLastCalledWith({ status: 'skipped', reason: 'reduced-motion' });
+      await expect(canvasElement.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).toBeNull();
+    } finally { view.matchMedia = matchMedia; }
   },
 };

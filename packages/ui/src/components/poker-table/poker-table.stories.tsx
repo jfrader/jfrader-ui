@@ -3,14 +3,15 @@ import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { styled } from '../../index';
+import { styled } from '@jfrader/ui';
+import { Button } from '@jfrader/ui/button';
 import { expectInside } from '../../testing/geometry-assertions';
 import {
   PokerTable,
   type PokerTableCard,
   type PokerTablePlayer,
   type PokerTableProps,
-} from './index';
+} from '@jfrader/ui/poker-table';
 
 const DocsStage = styled.div({
   inlineSize: '100%',
@@ -160,7 +161,7 @@ function PokerGame() {
         subtitle={`${STREET_LABELS[game.street]} · Hand 42`}
         board={BOARD.slice(0, game.board)}
         pot={game.pot || undefined}
-        potFrom={game.potFrom}
+        chipTransfer={game.potFrom ? { id: `${game.deal}-${game.pot}`, fromPlayerKey: game.potFrom } : undefined}
         denominations={DENOMINATIONS}
         locale="en-US"
         announcement={game.message}
@@ -184,11 +185,13 @@ const meta = {
       description: {
         component: 'Lay out a poker table with seats, stacks, hole cards, a community board, an event line, and commands.',
       },
-      sections: [{ title: 'The pot', stories: ['Pot'] }, { title: 'A hand', stories: ['PokerHand'] }],
+      sections: [{ title: 'Chip transfers', stories: ['ChipTransfer'] }, { title: 'The pot', stories: ['Pot'] }, { title: 'A hand', stories: ['PokerHand'] }],
       usage: `### When to use
 Use PokerTable for a Hold'em-style table with seats, stacks, hidden or revealed cards, a pot, a community board, and a command bar. The component is presentational: it renders the state you pass and reports commands through the action items' \`onSelect\`. It depicts the pot total you supply using \`denominations\` and never computes that total. Betting rules, turn order, hand ranking, and card values belong to your application.
 
 The seat you mark with \`isMe\` rotates to the front. Pass \`deal\` to deal the hole cards and grow \`board\` to reveal community cards; new cards fly from the deck. While cards are in flight, \`onBusyChange\` reports activity so you can disable commands. The table keeps seats on the felt edge on wide containers and moves them inside the felt on narrow ones so the surface uses the available width.
+
+Setting \`chipTransfer\` flies chips from a seat to the pot and holds the old total until they land.
 
 ### Values and constraints
 
@@ -206,6 +209,63 @@ type Story = StoryObj<typeof meta>;
 
 const flights = (document: Document) => document.querySelectorAll('[data-ui="card-flight"], [data-ui="chip-flight-layer"]');
 const landed = async (document: Document) => waitFor(() => expect(flights(document)).toHaveLength(0), { timeout: 4000 });
+
+const TransferStage = styled(DocsStage)({
+  '& [data-game-surface]': { background: `radial-gradient(ellipse at center, transparent, color-mix(in srgb, ${vars.color.chipInk} 70%, transparent)), repeating-linear-gradient(25deg, transparent 0 2px, color-mix(in srgb, ${vars.color.chipSpot} 3%, transparent) 2px 3px), color-mix(in srgb, ${vars.color.chipGreen} 35%, ${vars.color.chipInk})` },
+});
+const TRANSFER_PLAYERS: readonly PokerTablePlayer[] = [
+  { key: 'you', name: 'You', chips: 1500, isMe: true },
+  { key: 'blair', name: 'Blair', chips: 980 },
+];
+function TransferExample() {
+  const [state, setState] = useState({ pot: 30, id: 0 });
+  return <TransferStage><PokerTable players={TRANSFER_PLAYERS} title="Texas Hold'em" pot={state.pot}
+    chipTransfer={{ id: state.id, fromPlayerKey: 'you', amount: 60 }} locale="en-US"
+    dock={<Button onClick={() => setState(current => ({ pot: current.pot + 60, id: current.id + 1 }))}>Raise 60</Button>} />
+  </TransferStage>;
+}
+export const ChipTransfer: Story = {
+  name: 'Chip transfer', render: () => <TransferExample />,
+  parameters: { docs: { source: { code: `import { useState } from 'react';
+import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { PokerTable } from '@jfrader/ui/poker-table';
+import { Button } from '@jfrader/ui/button';
+
+const Stage = styled.div({
+  inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto',
+  '& [data-game-surface]': { background: \`radial-gradient(ellipse at center, transparent, color-mix(in srgb, \${vars.color.chipInk} 70%, transparent)), repeating-linear-gradient(25deg, transparent 0 2px, color-mix(in srgb, \${vars.color.chipSpot} 3%, transparent) 2px 3px), color-mix(in srgb, \${vars.color.chipGreen} 35%, \${vars.color.chipInk})\` },
+});
+const players = [
+  { key: 'you', name: 'You', chips: 1500, isMe: true },
+  { key: 'blair', name: 'Blair', chips: 980 },
+];
+export default function Example() {
+  const [state, setState] = useState({ pot: 30, id: 0 });
+  return <Stage>
+    <PokerTable players={players} title="Texas Hold'em" pot={state.pot}
+      chipTransfer={{ id: state.id, fromPlayerKey: 'you', amount: 60 }} locale="en-US"
+      dock={<Button onClick={() => setState(current => ({
+        pot: current.pot + 60, id: current.id + 1,
+      }))}>Raise 60</Button>} />
+  </Stage>;
+}` } } },
+  play: async ({ canvasElement, userEvent }) => {
+    const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
+    const raise = within(table).getByRole('button', { name: 'Raise 60' });
+    await userEvent.click(raise);
+    await waitFor(() => expect(table.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
+    await expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot30');
+    await landed(table.ownerDocument);
+    await waitFor(() => expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot90'));
+    await userEvent.click(raise);
+    const oldLayer = table.ownerDocument.querySelector('[data-ui="chip-flight"]');
+    await userEvent.click(raise);
+    await waitFor(() => expect(oldLayer?.isConnected).toBe(false));
+    await landed(table.ownerDocument);
+    await waitFor(() => expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot210'));
+  },
+};
 
 export const Pot: Story = {
   args: { pot: 1886, board: BOARD, locale: 'en-US', denominations: [1, 25, 1000, 5, 100, 500] },
@@ -450,7 +510,7 @@ export default function Example() {
         subtitle={STREET_LABELS[street] + ' · Hand 42'}
         board={board.slice(0, boardCount)}
         pot={pot || undefined}
-        potFrom={potFrom}
+        chipTransfer={potFrom ? { id: deal + '-' + pot, fromPlayerKey: potFrom } : undefined}
         denominations={denominations}
         locale="en-US"
         announcement={message}
@@ -578,7 +638,13 @@ export const PotFlight: Story = {
   play: async ({ canvasElement, args, userEvent }) => {
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
     const canvas = within(table);
-    await userEvent.click(canvas.getByRole('button', { name: 'Raise 60' }));
+    const warn = console.warn;
+    const warning = fn(warn);
+    console.warn = warning;
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: 'Raise 60' }));
+      await expect(warning).toHaveBeenCalledWith('PokerTable: potFrom is deprecated. Use chipTransfer instead.');
+    } finally { console.warn = warn; }
     await waitFor(() => expect(table.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
     await expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot30');
     await expect(args.onBusyChange).toHaveBeenCalledWith(true);
@@ -605,8 +671,54 @@ export const PotFlightMissingSeat: Story = {
   tags: ['!autodocs'], render: () => <PotFlightExample from="missing-seat" />,
   play: async ({ canvasElement, userEvent }) => {
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
-    await userEvent.click(within(table).getByRole('button', { name: 'Raise 60' }));
+    const warn = console.warn;
+    const warning = fn(warn);
+    console.warn = warning;
+    try {
+      await userEvent.click(within(table).getByRole('button', { name: 'Raise 60' }));
+      await expect(warning).toHaveBeenCalledWith('PokerTable: unknown fromPlayerKey "missing-seat". Available keys: alex, blair, you, drew, emery, frankie');
+    } finally { console.warn = warn; }
     await waitFor(() => expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot130'));
     await expect(table.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).toBeNull();
+  },
+};
+
+function TransferEdgeExample() {
+  const [state, setState] = useState({ pot: 30, id: 0, fromPlayerKey: 'you' });
+  return <DocsStage><PokerTable players={TRANSFER_PLAYERS} title="Poker" pot={state.pot} locale="en-US"
+    chipTransfer={state} dock={<>
+      <Button onClick={() => setState(current => ({ ...current, pot: current.pot + 60 }))}>Same id</Button>
+      <Button onClick={() => setState(current => ({ ...current, id: current.id + 1 }))}>No increase</Button>
+      <Button onClick={() => setState(current => ({ pot: current.pot + 60, id: current.id + 1, fromPlayerKey: 'unknown' }))}>Unknown seat</Button>
+      <Button onClick={() => setState(current => ({ pot: current.pot + 60, id: current.id + 1, fromPlayerKey: 'you' }))}>Transfer</Button>
+    </>} /></DocsStage>;
+}
+export const TransferEdges: Story = {
+  tags: ['!autodocs'], render: () => <TransferEdgeExample />,
+  play: async ({ canvasElement, userEvent }) => {
+    const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
+    const canvas = within(table);
+    const pot = table.querySelector('[data-poker-pot]');
+    const noFlight = async () => expect(table.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).toBeNull();
+    await userEvent.click(canvas.getByRole('button', { name: 'Same id' }));
+    await expect(pot).toHaveTextContent('Pot90');
+    await noFlight();
+    await userEvent.click(canvas.getByRole('button', { name: 'No increase' }));
+    await expect(pot).toHaveTextContent('Pot90');
+    await noFlight();
+    const warn = console.warn;
+    const warning = fn(warn);
+    console.warn = warning;
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: 'Unknown seat' }));
+      await expect(warning).toHaveBeenCalledWith('PokerTable: unknown fromPlayerKey "unknown". Available keys: you, blair');
+    } finally { console.warn = warn; }
+    await expect(pot).toHaveTextContent('Pot150');
+    await noFlight();
+    table.querySelector('[data-slot-player="you"] [data-ui~="game-seat"]')?.remove();
+    table.querySelector('[data-slot-player="you"]')?.remove();
+    await userEvent.click(canvas.getByRole('button', { name: 'Transfer' }));
+    await expect(pot).toHaveTextContent('Pot210');
+    await noFlight();
   },
 };
