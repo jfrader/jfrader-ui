@@ -408,7 +408,13 @@ function PokerTableContent({
     const explicit = chipTransfer !== undefined;
     const fresh = explicit && !seenTransfers.current.has(chipTransfer.id);
     if (explicit && !fresh && Object.is(next, previous)) return;
-    if (fresh) seenTransfers.current.add(chipTransfer.id);
+    if (fresh) {
+      seenTransfers.current.add(chipTransfer.id);
+      if (seenTransfers.current.size > 100) {
+        const oldest = seenTransfers.current.values().next().value;
+        if (oldest !== undefined) seenTransfers.current.delete(oldest);
+      }
+    }
     const revision = ++generation.current;
     cancel();
     const fromKey = explicit ? (fresh ? chipTransfer.fromPlayerKey : undefined) : potFrom;
@@ -427,7 +433,7 @@ function PokerTableContent({
     const to = potRef.current?.querySelector<HTMLElement>('[data-ui="game-chip-stack"]') ?? potRef.current;
     const amount = explicit ? chipTransfer.amount ?? increase : increase;
     if (next !== undefined && Number.isFinite(next) && increase > 0 && Number.isFinite(amount) && amount > 0 && fromKey !== undefined && from && to) {
-      void send({ from, to, chips: potChips(amount, denominations), size: 'md', locale })
+      void send({ from, to, chips: potChips(amount, denominations), size: 'sm', locale })
         .then(() => { if (generation.current === revision) setShownPot(next); });
     } else setShownPot(next);
   });
