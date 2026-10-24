@@ -3,9 +3,13 @@ export {
   type SortableDataTableProps,
   type SortableDataTableSlots,
   type DataColumn,
+  type DataColumnAlign,
+  type DataTableDensity,
   type DataTableMessages,
   type DataTablePartProps,
+  type DataTableSelectionMode,
   type DataTableSlotProps,
+  type DataTableSortButtonDetails,
   type SortDirection,
   type SortState,
 } from './sortable-data-table';
