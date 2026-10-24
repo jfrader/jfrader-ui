@@ -1,22 +1,21 @@
 'use client';
-import { numberFormatter } from '../../utils/intl';
 
 import {
   useEffect,
-  useId,
   useLayoutEffect,
   useRef,
   useState,
   type ComponentPropsWithRef,
   type ComponentType,
   type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { REDUCED_MOTION } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
-import { Button, type ButtonProps } from '../button';
 import { ToastItem, ToastPortal, useToastQueueContext, useToastRenderer, type ToastPartProps } from '../toast/toast';
 import { TOAST_VIEWPORT_INLINE_SIZE } from '../toast/toast-layout';
 
@@ -27,8 +26,6 @@ export interface ToastStackSlots {
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
   /** Container holding the stacked notifications. */
   list?: ComponentType<ToastPartProps>;
-  /** Button expanding or collapsing notifications. */
-  toggle?: ComponentType<ButtonProps>;
   /** Container wrapping one notification. */
   item?: ComponentType<ToastPartProps>;
 }
@@ -45,27 +42,31 @@ export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'chi
   label?: string;
   /** Enables Alt+T to expand the stack and focus the newest dismiss button outside editable fields. Defaults to `false`. */
   hotkey?: boolean;
-  /** Labels the expand button. Defaults to `"Expand notifications"`. */
-  expandLabel?: string;
-  /** Labels the collapse button. Defaults to `"Collapse notifications"`. */
-  collapseLabel?: string;
   /** Replaces the root `div`. `slots.root` takes precedence. */
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
-  /** Replaces the root, list, toggle, and toast item containers. */
+  /** Replaces the root, list, and toast item containers. */
   slots?: ToastStackSlots;
-  /** Passes props to the root, list, toggle, and toast item containers. */
+  /** Passes props to the root, list, and toast item containers. */
   slotProps?: {
     /** Outer toast stack container element. */
     root?: Omit<ComponentPropsWithRef<'div'>, 'children'> & ToastPartProps & SxProps;
     /** Container element holding the list of stacked toast items. */
     list?: ToastPartProps;
-    /** Button element expanding or collapsing the stacked toasts. */
-    toggle?: ButtonProps;
     /** Container element wrapping an individual toast notification. */
     item?: ToastPartProps;
   };
 }
 
+/** Pointer travel before a gesture counts as a drag rather than a tap. */
+const DRAG_SLOP_PX = 6;
+/** Share of a card's width a swipe covers to dismiss it on release. */
+const SWIPE_DISMISS_RATIO = 0.4;
+/** Milliseconds of travel a release still carries the card. */
+const THROW_DECAY_MS = 99;
+/** Samples older than this do not count toward the release speed. */
+const THROW_WINDOW_MS = 100;
+/** A finger that rested this long before lifting carries no throw. */
+const THROW_REST_MS = 60;
 const NARROW_VIEWPORT = '@media (max-width: 30rem)';
 const rootStyle = css({
   boxSizing: 'border-box',
@@ -112,28 +113,51 @@ const itemStyle = css({
   insetInline: 0,
   insetBlockEnd: 'var(--toast-stack-offset, 0px)',
   zIndex: 'var(--toast-stack-order)',
-  transitionProperty: 'opacity, inset-block-end',
+  // The browser keeps vertical panning; horizontal travel comes to the swipe below.
+  touchAction: 'pan-y',
+  transform: 'translateX(var(--toast-swipe-x, 0px))',
+  opacity: 'var(--toast-swipe-fade, 1)',
+  transitionProperty: 'opacity, inset-block-end, transform',
   transitionDuration: vars.motion.duration.base,
   transitionTimingFunction: vars.motion.easeStandard,
   '&[data-stack-visible="false"]': { visibility: 'hidden' },
   '&[data-stack-collapsed="true"] > [data-ui~="toast"]': { overflow: 'hidden' },
+  // The card follows the finger frame by frame, so it never lags behind the pointer.
+  '&[data-swiping="true"]': { transitionDuration: '0s' },
   [REDUCED_MOTION]: { transitionDuration: '0s' },
 });
-const toggleStyle = css({
-  pointerEvents: 'auto',
-  justifySelf: 'end',
-  minInlineSize: 0,
-  maxInlineSize: '100%',
-  blockSize: 'auto',
-  minBlockSize: vars.space[8],
-  paddingBlock: vars.space[2],
-  whiteSpace: 'normal',
-  overflowWrap: 'anywhere',
-});
+
+type SwipeGesture = {
+  id: string;
+  pointerId: number;
+  startX: number;
+  startY: number;
+  active: boolean;
+  samples: { time: number; x: number }[];
+};
+
+/** Release speed in pixels per second, from the last samples of the drag. */
+function throwSpeed(samples: SwipeGesture['samples']) {
+  const first = samples[0];
+  const last = samples[samples.length - 1];
+  if (!first || !last || last.time === first.time) return 0;
+  return ((last.x - first.x) / (last.time - first.time)) * 1000;
+}
+
+/** How far a release at this speed still carries the card. */
+function throwDistance(speed: number) {
+  return (speed / 1000) * THROW_DECAY_MS;
+}
+
+/** Travel against the dismiss direction resists, so only a right swipe throws a card away. */
+function rubberBand(distance: number, width: number) {
+  return (1 - 1 / ((distance * 0.55) / width + 1)) * width;
+}
 
 /** Replaces Toast.Viewport. Mount one queue renderer per Toast provider.
- * Tab visits controls from newest to oldest. Escape dismisses the focused card.
- * Alt+T must be enabled. Toast items announce messages; the stack region is not live.
+ * A hover, a keyboard focus, or a touch tap fans the pile out. Escape dismisses the focused card,
+ * a right swipe dismisses a card, and Alt+T must be enabled to reach the stack from the keyboard.
+ * Toast items announce messages; the stack region is not live.
  */
 function ToastStackContent({
   ref,
@@ -145,8 +169,6 @@ function ToastStackContent({
   maxVisible = 3,
   label = 'Notifications',
   hotkey = false,
-  expandLabel = 'Expand notifications',
-  collapseLabel = 'Collapse notifications',
   slotProps,
   component,
   slots,
@@ -157,10 +179,9 @@ function ToastStackContent({
   onKeyDown,
   ...props
 }: ToastStackProps) {
-  const { toasts, registerRenderer } = useToastQueueContext('Stack');
+  const { toasts, dismiss, registerRenderer } = useToastQueueContext('Stack');
   const Root = slots?.root ?? component ?? 'div';
   const List = slots?.list ?? 'div';
-  const Toggle = slots?.toggle ?? Button;
   const Item = slots?.item ?? 'div';
   const {
     className: rootClass, style: rootSlotStyle, sx: rootSx,
@@ -170,20 +191,25 @@ function ToastStackContent({
   const mergedRef = useMergeRefs([rootRef, rootProps.ref ?? ref]);
   const listRef = useRef<HTMLDivElement | null>(null);
   const mergedListRef = useMergeRefs([listRef, slotProps?.list?.ref]);
-  const listId = useId();
+  const swipe = useRef<SwipeGesture | null>(null);
+  // A drag that turned into a swipe must not also toggle the pile when its click arrives.
+  const swallowedClick = useRef(false);
+  // Touch and pen have no hover, so a tap on a card stands in for one.
+  const pointerType = useRef('mouse');
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
-  const [latched, setLatched] = useState(false);
+  const [tapped, setTapped] = useState(false);
+  const [swiping, setSwiping] = useState(false);
   const [heights, setHeights] = useState<Record<string, number>>({});
   const previousOffsets = useRef(new Map<string, string>());
   const records = [...toasts].reverse();
   const open = records.filter((record) => record.state === 'open');
   const limit = Math.max(1, Math.floor(Number.isFinite(maxVisible) ? maxVisible : 3));
-  const expanded = variant === 'list' || hovered || focused || latched;
-  const paused = hovered || focused || latched;
+  const expanded = variant === 'list' || hovered || focused || tapped;
+  const paused = hovered || focused || tapped || swiping;
   useEffect(registerRenderer, [registerRenderer]);
   useEffect(() => {
-    if (!open.length) setLatched(false);
+    if (!open.length) setTapped(false);
   }, [open.length]);
   useLayoutEffect(() => {
     const root = rootRef.current;
@@ -209,7 +235,7 @@ function ToastStackContent({
     if (!root) return;
     const document = root.ownerDocument;
     const outside = (event: PointerEvent) => {
-      if (!root.contains(event.target as Node)) setLatched(false);
+      if (!root.contains(event.target as Node)) setTapped(false);
     };
     const keyboard = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement;
@@ -226,7 +252,7 @@ function ToastStackContent({
       const button = root.querySelector<HTMLButtonElement>('[data-state="open"] [data-toast-dismiss]');
       if (!button) return;
       event.preventDefault();
-      setLatched(true);
+      // Focus fans the pile out on its own and collapses it again when focus leaves.
       button.focus();
     };
     document.addEventListener('pointerdown', outside);
@@ -236,6 +262,87 @@ function ToastStackContent({
       document.removeEventListener('keydown', keyboard);
     };
   }, [hotkey, toasts]);
+
+  function startSwipe(event: ReactPointerEvent<HTMLDivElement>, id: string) {
+    pointerType.current = event.pointerType;
+    swipe.current = null;
+    // The previous gesture is over, so its click, if any, has already arrived.
+    swallowedClick.current = false;
+    // A button or a link has its own job on press, and only the primary button drags.
+    if (event.button !== 0 || (event.target as Element).closest('button, a')) return;
+    const card = event.currentTarget;
+    card.style.removeProperty('--toast-swipe-x');
+    card.style.removeProperty('--toast-swipe-fade');
+    swipe.current = {
+      id,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      active: false,
+      samples: [],
+    };
+  }
+  function moveSwipe(event: ReactPointerEvent<HTMLDivElement>) {
+    const gesture = swipe.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    const card = event.currentTarget;
+    const width = card.offsetWidth || 1;
+    if (!gesture.active) {
+      const dx = event.clientX - gesture.startX;
+      const dy = event.clientY - gesture.startY;
+      if (Math.hypot(dx, dy) < DRAG_SLOP_PX) return;
+      // A vertical drag is the page scrolling, so the card lets go of it.
+      if (Math.abs(dy) > Math.abs(dx)) {
+        swipe.current = null;
+        return;
+      }
+      gesture.active = true;
+      gesture.startX = event.clientX;
+      swallowedClick.current = true;
+      card.setPointerCapture(event.pointerId);
+      card.dataset.swiping = 'true';
+      setSwiping(true);
+      card.ownerDocument.getSelection()?.removeAllRanges();
+    }
+    const travelled = event.clientX - gesture.startX;
+    const distance = travelled >= 0 ? travelled : -rubberBand(-travelled, width);
+    gesture.samples.push({ time: event.timeStamp, x: travelled });
+    while (gesture.samples.length > 2 && event.timeStamp - gesture.samples[0]!.time > THROW_WINDOW_MS)
+      gesture.samples.shift();
+    card.style.setProperty('--toast-swipe-x', `${distance}px`);
+    card.style.setProperty('--toast-swipe-fade', `${Math.max(0, 1 - distance / width)}`);
+  }
+  function endSwipe(event: ReactPointerEvent<HTMLDivElement>, cancelled: boolean) {
+    const gesture = swipe.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    swipe.current = null;
+    if (!gesture.active) return;
+    const card = event.currentTarget;
+    const width = card.offsetWidth || 1;
+    const last = gesture.samples[gesture.samples.length - 1];
+    const rested = event.timeStamp - (last?.time ?? event.timeStamp);
+    delete card.dataset.swiping;
+    setSwiping(false);
+    // A finger that stopped before it lifted carries no throw.
+    const speed = cancelled || rested > THROW_REST_MS ? 0 : throwSpeed(gesture.samples);
+    const landed = last?.x ?? 0;
+    if (!cancelled && landed > 0 && landed + throwDistance(speed) > width * SWIPE_DISMISS_RATIO) {
+      card.style.setProperty('--toast-swipe-x', `${width + 40}px`);
+      card.style.setProperty('--toast-swipe-fade', '0');
+      dismiss(gesture.id);
+      return;
+    }
+    // Released short: clearing the variables eases the card back into the pile.
+    card.style.removeProperty('--toast-swipe-x');
+    card.style.removeProperty('--toast-swipe-fade');
+  }
+  function handleCardClick(event: ReactMouseEvent<HTMLDivElement>) {
+    if (swallowedClick.current) return;
+    // Touch and pen have no hover, so a tap on a card fans the pile out or tucks it away again.
+    if (pointerType.current === 'mouse' || variant === 'list') return;
+    if ((event.target as Element).closest('button, a')) return;
+    setTapped((value) => !value);
+  }
 
   let height = '0px';
   const offsets = new Map<string, string>();
@@ -257,7 +364,6 @@ function ToastStackContent({
     height = expanded
       ? `calc(${sum}px + ${open.length - 1} * ${vars.space[2]})`
       : `calc(${heights[open[0]!.id] ?? 0}px + ${Math.min(open.length, limit) - 1} * ${vars.space[3]})`;
-  const overflow = Math.max(0, open.length - limit);
   const newestId = open[0]?.id;
   useEffect(() => {
     const root = rootRef.current;
@@ -310,27 +416,8 @@ function ToastStackContent({
             (slotKeyDown ?? onKeyDown)?.(event);
           }}
         >
-          {variant === 'stacked' && open.length > 1 && (
-            <Toggle
-              {...withoutSx(slotProps?.toggle)}
-              variant="outline"
-              size="sm"
-              data-ui="toast-stack-toggle"
-              aria-expanded={expanded}
-              aria-controls={listId}
-              aria-label={expanded ? collapseLabel : expandLabel}
-              className={slotProps?.toggle?.className}
-              css={[toggleStyle, slotProps?.toggle?.sx]}
-              style={slotProps?.toggle?.style}
-              onClick={() => setLatched((value) => !value)}
-            >
-              {expanded ? collapseLabel : expandLabel}
-              {overflow > 0 && ` (+${numberFormatter().format(overflow)})`}
-            </Toggle>
-          )}
           <List
             {...withoutSx(slotProps?.list)}
-            id={listId}
             ref={mergedListRef}
             data-ui="toast-stack-list"
             data-expanded={expanded}
@@ -347,6 +434,11 @@ function ToastStackContent({
                   data-stack-visible={visible}
                   data-stack-collapsed={!expanded && index > 0}
                   css={itemStyle}
+                  onPointerDown={(event) => startSwipe(event, record.id)}
+                  onPointerMove={moveSwipe}
+                  onPointerUp={(event) => endSwipe(event, false)}
+                  onPointerCancel={(event) => endSwipe(event, true)}
+                  onClick={handleCardClick}
                   style={
                     {
                       '--toast-stack-offset':
