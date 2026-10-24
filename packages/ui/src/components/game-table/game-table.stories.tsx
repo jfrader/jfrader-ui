@@ -6,6 +6,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../index';
 import { Avatar, type AvatarSize } from '../avatar';
 import { GameSeat } from '../game-seat';
+import { GameChipStack } from '../game-chip-stack';
 import { PersonAvatar } from '../person-avatar';
 import { Button } from '../button';
 import { CARD_BACK_PATTERNS, GameCard } from '../game-card';
@@ -446,14 +447,44 @@ function PokerPlayerSeat() {
     turn={player?.isMe ? { remainingMs: 45000, durationMs: 60000 } : undefined} />;
 }
 
+function PokerPot() {
+  return <PotRow data-poker-pot-group>
+    <GameChipStack chips={[{ value: 100, count: 2 }, { value: 25, count: 1 }, { value: 5, count: 3 }]} size="sm" maxVisible={3} locale="en-US" />
+    <span>Pot: 240</span>
+  </PotRow>;
+}
+
+const pokerCenter = <BoardCenter>
+  <PokerPot />
+  <CardsRow>
+    <GameCard size="sm" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
+    <GameCard size="sm" label="King of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'K' }} />
+    <GameCard size="sm" label="Queen of clubs" value={{ deck: 'french', suit: 'clubs', rank: 'Q' }} />
+  </CardsRow>
+</BoardCenter>;
+
+async function expectPokerPotInside(table: Element) {
+  const pot = required(table.querySelector('[data-poker-pot-group]') ?? undefined);
+  const stack = required(pot.querySelector('[data-ui="game-chip-stack"]') ?? undefined);
+  const surface = required(table.querySelector('[data-game-surface]') ?? undefined);
+  const center = required(table.querySelector('[data-ui="game-table-center"]') ?? undefined);
+  await expect(stack).toHaveAttribute('aria-hidden', 'true');
+  await expect(stack).not.toHaveAttribute('aria-label');
+  await expectInside(stack, pot);
+  await expectInside(pot, center);
+  await expectInside(center, surface);
+  for (const card of center.querySelectorAll('[data-ui~="game-card"]')) await expectInside(card, surface);
+}
+
 export const Default: Story = {
   name: 'Poker table',
-  args: { fit: 'fill', seatPlacement: 'auto', renderSeat: fn<GameTableProps<Player>['renderSeat']>(() => <PokerPlayerSeat />) },
+  args: { fit: 'fill', seatPlacement: 'auto', center: pokerCenter, renderSeat: fn<GameTableProps<Player>['renderSeat']>(() => <PokerPlayerSeat />) },
   parameters: { docs: {
     description: { story: 'Six players at a poker table with points, hidden cards, community cards, and a check action. The player whose turn it is shows a countdown. Narrow containers keep the seats inside the felt so the table uses the available width.' },
     source: { language: 'tsx', code: `import { Button, PersonAvatar, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { GameCard } from '@jfrader/ui/game-card';
+import { GameChipStack } from '@jfrader/ui/game-chip-stack';
 import { GameSeat } from '@jfrader/ui/game-seat';
 import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
 
@@ -474,6 +505,8 @@ const CommunityCards = styled.div({
   display: 'flex',
   gap: vars.space[1],
 });
+
+const PotRow = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[2] });
 
 interface Player extends SeatLike {
   name: string;
@@ -509,7 +542,10 @@ export default function Example() {
         <GameTable.Play />
         <GameTable.Center>
           <CenterContent>
-            <span>Pot: 240</span>
+            <PotRow data-poker-pot-group>
+              <GameChipStack chips={[{ value: 100, count: 2 }, { value: 25, count: 1 }, { value: 5, count: 3 }]} size="sm" maxVisible={3} locale="en-US" />
+              <span>Pot: 240</span>
+            </PotRow>
             <CommunityCards>
               <GameCard size="sm" label="Ace of spades" value={{ deck: 'french', suit: 'spades', rank: 'A' }} />
               <GameCard size="sm" label="King of hearts" value={{ deck: 'french', suit: 'hearts', rank: 'K' }} />
@@ -538,6 +574,10 @@ export default function Example() {
     await expect(table.querySelectorAll('[data-ui~="game-seat"]')).toHaveLength(6);
     await expect(table.querySelectorAll('[data-ui="game-hand-hidden-card"]')).toHaveLength(12);
     await expect(table.querySelectorAll('[data-ui="game-seat-timer"]')).toHaveLength(1);
+    await expectPokerPotInside(table);
+    for (const name of table.querySelectorAll<HTMLElement>('[data-ui="game-seat-name"]')) {
+      await expect(name.scrollWidth, `${name.textContent} fits its nameplate`).toBeLessThanOrEqual(name.clientWidth + 1);
+    }
     for (const [index, slot] of slots.entries()) {
       await expect(seats[index]).toHaveAttribute('data-slot-key', slot.key);
       await expect(args.renderSeat).toHaveBeenCalledWith(slot, index, expect.objectContaining({ index, totalSeats: 6 }));
@@ -5314,7 +5354,7 @@ function PokerTable() {
     <Table.Seat><PokerSeat /></Table.Seat>
     <Table.Center><BoardCenter>
       <PotRow>
-        <span>Pot: 240</span><div ref={deckRef} data-community-deck><GameCard size="sm" label="Deck" /></div>
+        <PokerPot /><div ref={deckRef} data-community-deck><GameCard size="sm" label="Deck" /></div>
       </PotRow>
       <CardsRow>
         {POKER_BOARD.map((card) => <div key={card.id} data-community-card={card.id} ref={(node) => {
@@ -5359,6 +5399,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { DeckProvider } from '@jfrader/ui/deck';
 import { CardFlightsProvider, measureCardBox, useCardFlights } from '@jfrader/ui/card-flights';
 import { GameCard } from '@jfrader/ui/game-card';
+import { GameChipStack } from '@jfrader/ui/game-chip-stack';
 import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
 
 const Frame = styled.div({
@@ -5389,6 +5430,13 @@ const SeatContent = styled.div({
   display: 'grid',
   justifyItems: 'center',
 });
+
+function PokerPot() {
+  return <PotRow data-poker-pot-group>
+    <GameChipStack chips={[{ value: 100, count: 2 }, { value: 25, count: 1 }, { value: 5, count: 3 }]} size="sm" maxVisible={3} locale="en-US" />
+    <span>Pot: 240</span>
+  </PotRow>;
+}
 
 interface Player extends SeatLike {
   name: string;
@@ -5460,7 +5508,7 @@ function TexasHoldemTable() {
       <GameTable.Center>
         <BoardCenter>
           <PotRow>
-            <span>Pot: 240</span>
+            <PokerPot />
             <div ref={deckRef}>
               <GameCard size="sm" label="Deck" />
             </div>
@@ -5512,6 +5560,7 @@ export default function Example() {
       const community = required(table.querySelector<HTMLElement>('[data-ui="game-table-center"]') ?? undefined);
       await expect(community.querySelectorAll('[data-community-card]')).toHaveLength(5);
       await expectInside(community, required(table.querySelector('[data-game-surface]') ?? undefined));
+      await expectPokerPotInside(table);
       for (const card of community.querySelectorAll('[data-community-card] [data-ui~="game-card"]')) {
         await expect(card).toHaveAttribute('data-deck', 'french');
       }

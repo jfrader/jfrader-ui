@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+### Added
+
+- `useChipFlight` flies decorative chips between elements with cancellation and reduced-motion support. `PokerTable` accepts `potFrom` to animate contributions before showing the new total.
+- `GameChip` and `GameChipStack` render beveled casino chips and extruded denomination towers with edge inserts, contact shadows, and distinct clay and metal finishes.
+
+### Changed
+
+- `PokerTable` shows pot chips above the total and adds a `denominations` prop. The `GameTable` poker examples show compact chip stacks beside the pot total.
+
+### Fixed
+
+- `GameChipStack` renders flush, curved side bands under one complete top face, with visible chip thickness.
+- `GameChip` keeps enlarged printed values visible and uses the formatted value for empty labels. `GameChipStack` treats empty labels as decorative.
+
 ## 0.10.2 — 2026-10-23
 
 ### Added

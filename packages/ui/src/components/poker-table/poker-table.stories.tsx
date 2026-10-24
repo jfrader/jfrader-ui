@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../index';
 import { expectInside } from '../../testing/geometry-assertions';
@@ -17,6 +18,7 @@ const DocsStage = styled.div({
   blockSize: 640,
   marginInline: 'auto',
 });
+const NarrowStage = styled(DocsStage)({ inlineSize: 390, blockSize: 844 });
 
 const pokerCard = (id: string, label: string, suit: string, rank: string | number): PokerTableCard => ({
   id,
@@ -58,6 +60,7 @@ const SEATS: readonly Seat[] = [
 ];
 
 const TURN = { remainingMs: 45000, durationMs: 60000 };
+const DENOMINATIONS = [25, 5, 1] as const;
 
 type Street = 'idle' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown' | 'folded';
 
@@ -67,6 +70,7 @@ interface GameState {
   board: number;
   deal: number;
   message: string;
+  potFrom?: string;
 }
 
 const START: GameState = {
@@ -130,7 +134,8 @@ function actionsFor(street: Street, play: (action: string) => void, busy: boolea
 function PokerGame() {
   const [game, setGame] = useState<GameState>(START);
   const [busy, setBusy] = useState(false);
-  const play = (action: string) => setGame((current) => act(current, action));
+  const play = (action: string) => setGame(current => ({ ...act(current, action),
+    potFrom: action === 'raise' || (action === 'call' && current.street === 'preflop') ? 'you' : undefined }));
 
   const players: PokerTablePlayer[] = SEATS.map((seat) => {
     const cards = playerCards(seat.key, game.street);
@@ -155,6 +160,9 @@ function PokerGame() {
         subtitle={`${STREET_LABELS[game.street]} · Hand 42`}
         board={BOARD.slice(0, game.board)}
         pot={game.pot || undefined}
+        potFrom={game.potFrom}
+        denominations={DENOMINATIONS}
+        locale="en-US"
         announcement={game.message}
         actions={actionsFor(game.street, play, busy)}
         deal={game.deal}
@@ -176,9 +184,9 @@ const meta = {
       description: {
         component: 'Lay out a poker table with seats, stacks, hole cards, a community board, an event line, and commands.',
       },
-      sections: [{ title: 'A hand', stories: ['PokerHand'] }],
+      sections: [{ title: 'The pot', stories: ['Pot'] }, { title: 'A hand', stories: ['PokerHand'] }],
       usage: `### When to use
-Use PokerTable for a Hold'em-style table with seats, stacks, hidden or revealed cards, a pot, a community board, and a command bar. The component is presentational: it renders the state you pass and reports commands through the action items' \`onSelect\`. Betting rules, turn order, pot arithmetic, hand ranking, and card values belong to your application.
+Use PokerTable for a Hold'em-style table with seats, stacks, hidden or revealed cards, a pot, a community board, and a command bar. The component is presentational: it renders the state you pass and reports commands through the action items' \`onSelect\`. It depicts the pot total you supply using \`denominations\` and never computes that total. Betting rules, turn order, hand ranking, and card values belong to your application.
 
 The seat you mark with \`isMe\` rotates to the front. Pass \`deal\` to deal the hole cards and grow \`board\` to reveal community cards; new cards fly from the deck. While cards are in flight, \`onBusyChange\` reports activity so you can disable commands. The table keeps seats on the felt edge on wide containers and moves them inside the felt on narrow ones so the surface uses the available width.
 
@@ -196,8 +204,88 @@ The table is a labelled group, the board is a labelled group, and the event line
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const flights = (document: Document) => document.querySelectorAll('[data-ui="card-flight"]');
+const flights = (document: Document) => document.querySelectorAll('[data-ui="card-flight"], [data-ui="chip-flight-layer"]');
 const landed = async (document: Document) => waitFor(() => expect(flights(document)).toHaveLength(0), { timeout: 4000 });
+
+export const Pot: Story = {
+  args: { pot: 1886, board: BOARD, locale: 'en-US', denominations: [1, 25, 1000, 5, 100, 500] },
+  render: args => <DocsStage><PokerTable {...args} /></DocsStage>,
+  parameters: { docs: { source: { code: `import { styled } from '@jfrader/ui';
+import { PokerTable, type PokerTableCard } from '@jfrader/ui/poker-table';
+
+const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto' });
+const players = [
+  { key: 'alex', name: 'Alex', chips: 1240 },
+  { key: 'blair', name: 'Blair', chips: 980, dealer: true },
+  { key: 'you', name: 'You', chips: 1500, isMe: true },
+  { key: 'drew', name: 'Drew', chips: 760 },
+  { key: 'emery', name: 'Emery', chips: 2100 },
+  { key: 'frankie', name: 'Frankie', chips: 640 },
+];
+const board: PokerTableCard[] = [
+  { id: 'queen-spades', label: 'Queen of spades', value: { suit: 'spades', rank: 'Q' } },
+  { id: 'jack-spades', label: 'Jack of spades', value: { suit: 'spades', rank: 'J' } },
+  { id: 'ten-spades', label: 'Ten of spades', value: { suit: 'spades', rank: 10 } },
+  { id: 'two-hearts', label: 'Two of hearts', value: { suit: 'hearts', rank: 2 } },
+  { id: 'three-diamonds', label: 'Three of diamonds', value: { suit: 'diamonds', rank: 3 } },
+];
+
+<Stage>
+  <PokerTable players={players} title="Texas Hold'em" board={board} pot={1886}
+    denominations={[1, 25, 1000, 5, 100, 500]} locale="en-US" />
+</Stage>` } } },
+  play: async ({ canvasElement }) => {
+    const table = canvasElement.querySelector('[data-ui="poker-table"]')!;
+    const stack = table.querySelector('[data-ui="game-chip-stack"]')!;
+    await expect(stack).toHaveAttribute('aria-hidden', 'true');
+    await expect(stack).not.toHaveAttribute('aria-label');
+    await expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot1,886');
+    const towers = [...stack.querySelectorAll('[data-ui="game-chip-stack-stack"]')];
+    await expect(towers.map(tower => [tower.getAttribute('data-value'), tower.getAttribute('data-count')]))
+      .toEqual([['1000', '1'], ['500', '1'], ['100', '3'], ['25', '3'], ['5', '2'], ['1', '1']]);
+    const surface = table.querySelector('[data-game-surface]')!;
+    await expectInside(table.querySelector('[data-ui="game-table-center"]')!, surface);
+    await expectInside(stack, surface);
+    await expectInside(within(table as HTMLElement).getByRole('group', { name: 'Community cards' }), surface);
+    for (const denominations of [[], [0], [-1], [NaN], [Infinity]]) {
+      await expect(() => renderToString(<PokerTable players={SEATS} title="Poker" denominations={denominations} />))
+        .toThrow(RangeError);
+      await expect(() => renderToString(<PokerTable players={SEATS} title="Poker" denominations={denominations} />))
+        .toThrow('PokerTable denominations must contain at least one positive, finite value.');
+    }
+    for (const pot of [undefined, 0]) {
+      await expect(renderToString(<PokerTable players={SEATS} title="Poker" pot={pot} />)).not.toContain('game-chip-stack');
+    }
+  },
+};
+
+export const FractionalPot: Story = {
+  tags: ['!autodocs'], args: { pot: 0.35, denominations: [0.1, 0.2, 0.1], locale: 'en-US' },
+  render: args => <DocsStage><PokerTable {...args} /></DocsStage>,
+  play: async ({ canvasElement }) => {
+    const table = canvasElement.querySelector('[data-ui="poker-table"]')!;
+    await expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot0.35');
+    await expect([...table.querySelectorAll('[data-ui="game-chip-stack-stack"]')].map(tower => [tower.getAttribute('data-value'), tower.getAttribute('data-count')]))
+      .toEqual([['0.2', '1'], ['0.1', '1']]);
+  },
+};
+
+export const NarrowPot: Story = {
+  tags: ['!autodocs'], args: Pot.args,
+  render: args => <NarrowStage><PokerTable {...args} /></NarrowStage>,
+  play: async ({ canvasElement }) => {
+    const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
+    await expect(table.getBoundingClientRect().width).toBe(390);
+    await expect(table.getBoundingClientRect().height).toBe(844);
+    const surface = table.querySelector('[data-game-surface]')!;
+    const pot = table.querySelector('[data-poker-pot-group]')!;
+    const stack = pot.querySelector('[data-ui="game-chip-stack"]')!;
+    await expectInside(pot, surface);
+    await expectInside(stack, surface);
+    await expectInside(within(table).getByRole('group', { name: 'Community cards' }), surface);
+    for (const tower of stack.querySelectorAll('[data-ui="game-chip-stack-stack"]')) await expectInside(tower, pot);
+  },
+};
 
 export const PokerHand: Story = {
   name: 'Poker hand',
@@ -268,16 +356,19 @@ const STREET_LABELS: Record<Street, string> = {
 };
 
 const turn = { remainingMs: 45000, durationMs: 60000 };
+const denominations = [25, 5, 1] as const;
 
 export default function Example() {
   const [street, setStreet] = useState<Street>('idle');
   const [pot, setPot] = useState(0);
+  const [potFrom, setPotFrom] = useState<string>();
   const [boardCount, setBoardCount] = useState(0);
   const [deal, setDeal] = useState(0);
   const [message, setMessage] = useState('Blinds 10 / 20 · Six seats');
   const [busy, setBusy] = useState(false);
 
   const play = (action: string) => {
+    setPotFrom(action === 'raise' || (action === 'call' && street === 'preflop') ? 'you' : undefined);
     if (action === 'deal') {
       setStreet('preflop');
       setPot(30);
@@ -359,6 +450,9 @@ export default function Example() {
         subtitle={STREET_LABELS[street] + ' · Hand 42'}
         board={board.slice(0, boardCount)}
         pot={pot || undefined}
+        potFrom={potFrom}
+        denominations={denominations}
+        locale="en-US"
         announcement={message}
         actions={actions}
         deal={deal}
@@ -466,5 +560,53 @@ export const EmptyTable: Story = {
     await expect(table).not.toBeNull();
     await expect(table!.querySelectorAll('[data-ui="game-table-seat"]')).toHaveLength(2);
     await expect(table!.querySelectorAll('[data-poker-seat]')).toHaveLength(0);
+  },
+};
+
+function PotFlightExample({ onBusyChange, from = 'you' }: { onBusyChange?: (busy: boolean) => void; from?: string }) {
+  const [pot, setPot] = useState(30);
+  const [busy, setBusy] = useState(false);
+  return <DocsStage><PokerTable players={SEATS} title="Texas Hold'em" subtitle="Preflop · Hand 42" pot={pot}
+    potFrom={from} denominations={DENOMINATIONS} locale="en-US"
+    onBusyChange={value => { setBusy(value); onBusyChange?.(value); }}
+    actions={[{ key: 'raise', label: 'Raise 60', tone: 'accent', disabled: busy, onSelect: () => setPot(value => value + 100) }]} />
+  </DocsStage>;
+}
+export const PotFlight: Story = {
+  tags: ['!autodocs'], args: { onBusyChange: fn() },
+  render: args => <PotFlightExample onBusyChange={args.onBusyChange} />,
+  play: async ({ canvasElement, args, userEvent }) => {
+    const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
+    const canvas = within(table);
+    await userEvent.click(canvas.getByRole('button', { name: 'Raise 60' }));
+    await waitFor(() => expect(table.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
+    await expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot30');
+    await expect(args.onBusyChange).toHaveBeenCalledWith(true);
+    await expect(canvas.getByRole('button', { name: 'Raise 60' })).toHaveAttribute('aria-disabled', 'true');
+    await landed(table.ownerDocument);
+    await waitFor(() => expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot130'));
+    await expect(args.onBusyChange).toHaveBeenLastCalledWith(false);
+    await expect(table.ownerDocument.querySelectorAll('[data-ui="chip-flight"]')).toHaveLength(0);
+  },
+};
+export const PotFlightReducedMotion: Story = {
+  name: 'Poker chips reduced motion', tags: ['!autodocs'], args: { onBusyChange: fn() },
+  render: args => <PotFlightExample onBusyChange={args.onBusyChange} />,
+  play: async ({ canvasElement, args, userEvent }) => {
+    const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
+    await expect(table.ownerDocument.defaultView!.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true);
+    await userEvent.click(within(table).getByRole('button', { name: 'Raise 60' }));
+    await waitFor(() => expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot130'));
+    await expect(table.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).toBeNull();
+    await expect(args.onBusyChange).not.toHaveBeenCalledWith(true);
+  },
+};
+export const PotFlightMissingSeat: Story = {
+  tags: ['!autodocs'], render: () => <PotFlightExample from="missing-seat" />,
+  play: async ({ canvasElement, userEvent }) => {
+    const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
+    await userEvent.click(within(table).getByRole('button', { name: 'Raise 60' }));
+    await waitFor(() => expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot130'));
+    await expect(table.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).toBeNull();
   },
 };

@@ -132,6 +132,17 @@ const PLAYING_CARD: ColorRoleDoc[] = [
   { role: 'cardRed', summary: 'Hearts and diamonds on a French deck.', contrast: { against: 'cardFace', min: 4.5 } },
 ];
 
+const CHIPS: ColorRoleDoc[] = [
+  { role: 'chipWhite', summary: 'The white chip body.' },
+  { role: 'chipRed', summary: 'The red chip body.' },
+  { role: 'chipGreen', summary: 'The green chip body.' },
+  { role: 'chipBlack', summary: 'The black chip body.' },
+  { role: 'chipPurple', summary: 'The purple chip body.' },
+  { role: 'chipGold', summary: 'The gold chip body.' },
+  { role: 'chipSpot', summary: 'Edge inserts and the printed face on every chip.' },
+  { role: 'chipInk', summary: 'Printed denomination ink.', contrast: { against: 'chipSpot', min: 4.5 } },
+];
+
 const SIGNATURE_INK: ColorRoleDoc[] = [
   { role: 'signatureInkBlack', summary: 'Signature pad, black pen.' },
   { role: 'signatureInkBlue', summary: 'Signature pad, blue pen.' },
@@ -164,6 +175,7 @@ export const COLOR_FAMILIES: readonly ColorFamily[] = [
   { id: 'focus', title: 'Focus', blurb: 'The ring every interactive element shows on :focus-visible.', roles: FOCUS },
   { id: 'syntax', title: 'Code syntax', blurb: 'Code roles, measured against the code block well.', roles: SYNTAX },
   { id: 'card', title: 'Playing card', blurb: 'Card material. Identical on both palettes by design.', roles: PLAYING_CARD },
+  { id: 'chips', title: 'Chips', blurb: 'Chip material. Identical on both palettes by design.', roles: CHIPS },
   { id: 'signature', title: 'Signature ink', blurb: 'Pen colors for the signature pad.', roles: SIGNATURE_INK },
   { id: 'materials', title: 'Materials', blurb: 'Translucent fills, highlights and the scrim behind overlays.', roles: MATERIALS },
   { id: 'picker', title: 'Color picker', blurb: 'Fixed swatches the picker needs on any palette.', roles: COLOR_PICKER },
