@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -20,7 +21,6 @@ import {
   motion,
   MotionConfig,
   useMotionValue,
-  useReducedMotion,
   useTransform,
   type MotionValue,
 } from 'motion/react';
@@ -34,6 +34,7 @@ const DATE_REEL_INLINE_CAP = '420px';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { useReducedMotion } from '../../utils/use-reduced-motion';
 import { defaultLocale, resolveTimeOptions } from '../../utils/intl';
 import {
   dateFromParts,
@@ -1533,7 +1534,7 @@ interface ReelRowProps {
   rowOffset: number;
   motionOffset: MotionValue<number>;
   isReduced: boolean;
-  onSelect: (value: number | string) => void;
+  onSelect: (index: number) => void;
 }
 
 function ReelRow({
@@ -1573,7 +1574,7 @@ function ReelRow({
       aria-disabled={item.disabled ? 'true' : undefined}
       onClick={() => {
         if (!item.disabled && !isSelected) {
-          onSelect(item.value);
+          onSelect(index);
         }
       }}
     >
@@ -1634,7 +1635,6 @@ function ReelColumn({
 
   const isDraggingRef = useRef(false);
   const dragStartYRef = useRef(0);
-  const dragStartTimeRef = useRef(0);
   const dragStartIndexRef = useRef(selectedIndex);
   const lastMoveYRef = useRef(0);
   const lastMoveTimeRef = useRef(0);
@@ -1669,14 +1669,39 @@ function ReelColumn({
   }, [motionOffset]);
 
   const prevSelectedIndexRef = useRef(selectedIndex);
-  useEffect(() => {
-    if (prevSelectedIndexRef.current !== selectedIndex) {
-      prevSelectedIndexRef.current = selectedIndex;
-      if (isDraggingRef.current) {
+  const suppressClickRef = useRef(false);
+
+  const animateToIndex = useCallback(
+    (targetIndex: number, requestSelection = true) => {
+      const item = items[targetIndex];
+      if (disabled || !item || item.disabled) return;
+      if (requestSelection) {
+        if (targetIndex === selectedIndex) return;
+        const currentOffset = motionOffset.get();
         cancelGesture();
+        motionOffset.set(currentOffset);
+        onSelect(partType, item.value);
       }
+      activeAnimationRef.current?.stop();
+      activeAnimationRef.current = null;
+      if (isReduced || paused) {
+        motionOffset.set(0);
+      } else {
+        activeAnimationRef.current = animate(motionOffset, 0, SPRING_CONFIG);
+      }
+    },
+    [items, disabled, selectedIndex, cancelGesture, onSelect, partType, isReduced, paused, motionOffset],
+  );
+
+  useLayoutEffect(() => {
+    const step = selectedIndex - prevSelectedIndexRef.current;
+    if (step !== 0) {
+      prevSelectedIndexRef.current = selectedIndex;
+      if (isDraggingRef.current) cancelGesture();
+      motionOffset.set(motionOffset.get() - step);
+      animateToIndex(selectedIndex, false);
     }
-  }, [selectedIndex, cancelGesture]);
+  }, [selectedIndex, cancelGesture, motionOffset, animateToIndex]);
 
   useEffect(() => {
     if (disabled) {
@@ -1804,10 +1829,7 @@ function ReelColumn({
         }
       }
 
-      const targetItem = items[targetIndex];
-      if (targetIndex !== selectedIndex && targetItem && !targetItem.disabled) {
-        onSelect(partType, targetItem.value);
-      }
+      animateToIndex(targetIndex);
     },
     [
       disabled,
@@ -1818,26 +1840,21 @@ function ReelColumn({
       partType,
       minuteStep,
       items,
-      onSelect,
+      animateToIndex,
     ],
   );
 
   const handlePointerDown = useCallback(
     (e: PointerEvent<HTMLDivElement>) => {
       if (disabled) return;
-      activeAnimationRef.current?.stop();
-      activeAnimationRef.current = null;
+      suppressClickRef.current = false;
       isDraggingRef.current = true;
       dragStartYRef.current = e.clientY;
-      dragStartTimeRef.current = performance.now();
       dragStartIndexRef.current = selectedIndex;
       lastMoveYRef.current = e.clientY;
       lastMoveTimeRef.current = performance.now();
       velocityRef.current = 0;
       activePointerIdRef.current = e.pointerId;
-      try {
-        e.currentTarget.setPointerCapture(e.pointerId);
-      } catch {}
     },
     [disabled, selectedIndex],
   );
@@ -1845,6 +1862,15 @@ function ReelColumn({
   const handlePointerMove = useCallback(
     (e: PointerEvent<HTMLDivElement>) => {
       if (!isDraggingRef.current) return;
+      if (Math.abs(e.clientY - dragStartYRef.current) < 5 && !suppressClickRef.current) return;
+      if (!suppressClickRef.current) {
+        suppressClickRef.current = true;
+        activeAnimationRef.current?.stop();
+        activeAnimationRef.current = null;
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {}
+      }
       const now = performance.now();
       const dt = now - lastMoveTimeRef.current;
       if (dt > 0) {
@@ -1870,16 +1896,9 @@ function ReelColumn({
         activePointerIdRef.current = null;
       }
 
-      const elapsed = performance.now() - dragStartTimeRef.current;
       const totalDeltaY = e.clientY - dragStartYRef.current;
 
-      if (Math.abs(totalDeltaY) < 5 && elapsed < 250) {
-        if (isReduced || paused) {
-          motionOffset.set(0);
-        } else {
-          activeAnimationRef.current?.stop();
-          activeAnimationRef.current = animate(motionOffset, 0, SPRING_CONFIG);
-        }
+      if (!suppressClickRef.current) {
         return;
       }
 
@@ -1891,21 +1910,9 @@ function ReelColumn({
 
       const step = targetIndex - selectedIndex;
       if (step !== 0 && items[targetIndex] && !items[targetIndex].disabled) {
-        onSelect(partType, items[targetIndex].value);
-        if (isReduced || paused) {
-          motionOffset.set(0);
-        } else {
-          motionOffset.set(motionOffset.get() - step);
-          activeAnimationRef.current?.stop();
-          activeAnimationRef.current = animate(motionOffset, 0, SPRING_CONFIG);
-        }
+        animateToIndex(targetIndex);
       } else {
-        if (isReduced || paused) {
-          motionOffset.set(0);
-        } else {
-          activeAnimationRef.current?.stop();
-          activeAnimationRef.current = animate(motionOffset, 0, SPRING_CONFIG);
-        }
+        animateToIndex(selectedIndex, false);
       }
     },
     [
@@ -1913,7 +1920,7 @@ function ReelColumn({
       isReduced,
       items,
       motionOffset,
-      onSelect,
+      animateToIndex,
       partType,
       paused,
       selectedIndex,
@@ -1926,7 +1933,7 @@ function ReelColumn({
   }, [cancelGesture]);
 
   const handleLostPointerCapture = useCallback(() => {
-    cancelGesture();
+    if (isDraggingRef.current) cancelGesture();
   }, [cancelGesture]);
 
   useEffect(() => {
@@ -1946,13 +1953,7 @@ function ReelColumn({
         const dir = wheelDeltaRef.current > 0 ? 1 : -1;
         wheelDeltaRef.current = 0;
         const targetIndex = clampIndex(selectedIndex + dir);
-        if (
-          targetIndex !== selectedIndex &&
-          items[targetIndex] &&
-          !items[targetIndex].disabled
-        ) {
-          onSelect(partType, items[targetIndex].value);
-        }
+        animateToIndex(targetIndex);
       }
     };
 
@@ -1962,7 +1963,7 @@ function ReelColumn({
     return () => {
       node.ownerDocument.removeEventListener('wheel', onNativeWheel);
     };
-  }, [disabled, clampIndex, selectedIndex, items, onSelect, partType]);
+  }, [disabled, clampIndex, selectedIndex, animateToIndex]);
 
   const visibleIndices = useMemo(() => {
     const start = Math.max(0, selectedIndex - HALF_VISIBLE);
@@ -2060,7 +2061,9 @@ function ReelColumn({
               rowOffset={i - selectedIndex}
               motionOffset={motionOffset}
               isReduced={isReduced}
-              onSelect={(val) => onSelect(partType, val)}
+              onSelect={(index) => {
+                if (!suppressClickRef.current) animateToIndex(index);
+              }}
             />
           );
         })}

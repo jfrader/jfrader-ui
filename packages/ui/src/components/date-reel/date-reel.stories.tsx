@@ -68,6 +68,113 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+async function expectCenteredRow(reel: HTMLElement, label: string) {
+  await waitFor(() => {
+    const selected = reel.querySelector<HTMLElement>('[data-selected="true"]')!;
+    expect(selected).toHaveTextContent(label);
+    const matrix = new DOMMatrix(getComputedStyle(selected).transform);
+    expect(matrix.m42).toBeCloseTo(0, 2);
+    expect(matrix.m43).toBeCloseTo(0, 2);
+    expect(matrix.m22).toBeCloseTo(1, 3);
+  }, { timeout: 3000 });
+  await expectInside(reel.querySelector('[data-selected="true"]')!, reel);
+}
+
+export const ClickRowRegression: Story = {
+  tags: ['!autodocs'],
+  args: {
+    mode: 'time', hourCycle: 'h23', defaultValue: '12:00',
+    min: '08:00', max: '18:00', intro: false, onValueChange: fn(),
+  },
+  play: async ({ canvas, args, userEvent }) => {
+    const reel = canvas.getByRole('spinbutton', { name: 'Hour' });
+    const target = within(reel).getByText('14');
+    await userEvent.click(target);
+    await expect(reel).toHaveAttribute('aria-valuenow', '14');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('14:00');
+    await expectCenteredRow(reel, '14');
+    const transform = target.getAttribute('style');
+    await userEvent.click(target);
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(target.getAttribute('style')).toBe(transform);
+    await expectCenteredRow(reel, '14');
+  },
+};
+
+export const ClickInterruptsWheel: Story = {
+  ...ClickRowRegression,
+  play: async ({ canvas, args, userEvent }) => {
+    const reel = canvas.getByRole('spinbutton', { name: 'Hour' });
+    reel.focus();
+    reel.dispatchEvent(new WheelEvent('wheel', {
+      bubbles: true, cancelable: true, deltaY: 50,
+    }));
+    await waitFor(() => expect(reel).toHaveAttribute('aria-valuenow', '13'));
+    await userEvent.click(within(reel).getByText('15'));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('15:00');
+    await expectCenteredRow(reel, '15');
+  },
+};
+
+export const ClickDisabledRow: Story = {
+  ...ClickRowRegression,
+  args: { ...ClickRowRegression.args, defaultValue: '08:00' },
+  play: async ({ canvas, args, userEvent }) => {
+    const reel = canvas.getByRole('spinbutton', { name: 'Hour' });
+    const target = within(reel).getByText('07');
+    await expect(target).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.click(target);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expectCenteredRow(reel, '08');
+  },
+};
+
+export const ClickReducedMotion: Story = {
+  ...ClickRowRegression,
+  beforeEach: () => {
+    const descriptor = Object.getOwnPropertyDescriptor(MediaQueryList.prototype, 'matches')!;
+    Object.defineProperty(MediaQueryList.prototype, 'matches', {
+      ...descriptor,
+      get() {
+        return this.media === '(prefers-reduced-motion: reduce)'
+          ? true : descriptor.get!.call(this);
+      },
+    });
+    return () => Object.defineProperty(MediaQueryList.prototype, 'matches', descriptor);
+  },
+  play: async ({ canvas, args, userEvent }) => {
+    const reel = canvas.getByRole('spinbutton', { name: 'Hour' });
+    await expect(matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true);
+    await userEvent.click(within(reel).getByText('14'));
+    await expect(reel).toHaveAttribute('aria-valuenow', '14');
+    const selected = reel.querySelector<HTMLElement>('[data-selected="true"]')!;
+    await expect(new DOMMatrix(getComputedStyle(selected).transform).isIdentity).toBe(true);
+    await expect(selected.style.transform).not.toContain('rotateX');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expectCenteredRow(reel, '14');
+  },
+};
+
+export const KeyboardRowAlignment: Story = {
+  ...ClickRowRegression,
+  play: async ({ canvas, canvasElement, args, userEvent }) => {
+    const reel = canvas.getByRole('spinbutton', { name: 'Hour' });
+    reel.focus();
+    for (const [key, value] of [
+      ['{ArrowDown}', '13'], ['{ArrowUp}', '12'], ['{PageDown}', '15'],
+      ['{PageUp}', '12'], ['{Home}', '08'], ['{End}', '18'],
+    ]) {
+      await userEvent.keyboard(key!);
+      await expectCenteredRow(reel, value!);
+      await expect(canvasElement.ownerDocument.activeElement).toBe(reel);
+    }
+    await expect(args.onValueChange).toHaveBeenCalledTimes(6);
+    await expect(getComputedStyle(reel).outlineStyle).not.toBe('none');
+  },
+};
+
 export const Default: Story = {
   name: 'Schedule an appointment',
   parameters: { docs: {
