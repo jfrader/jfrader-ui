@@ -36,7 +36,7 @@ const meta = {
         { title: 'Basic', stories: ['Default'] },
         { title: 'Queue and stacking', stories: ['List', 'OverflowPromotion'] },
         { title: 'Placement', stories: ['Positions', 'Contained'] },
-        { title: 'Dismissing', stories: ['SwipeToDismiss'] },
+        { title: 'Dismissing', stories: ['SwipeToDismiss', 'SwipeToDismissRtl'] },
         { title: 'Pause and limits', stories: ['PauseOnHover'] },
         { title: 'Actions', stories: ['UndoPrevented'] },
         { title: 'Controlled updates', stories: ['LoadingUpdate'] },
@@ -54,7 +54,7 @@ Hovering, focusing, or tapping the pile fans it out, and swiping a card right di
 
 Tab visits the notification controls from newest to oldest. Escape dismisses the focused toast, not a notification elsewhere on the page. Enter and Space activate buttons. The optional Alt+T shortcut focuses notifications but does not interrupt editing in a text field.
 
-Every message announces when it arrives, whether or not it is tucked behind the pile. A tucked card keeps its message in the accessibility tree but leaves the tab order until the pile fans out. Use persistent notifications for actions readers must complete.`,
+Every message announces when its card becomes readable. A tucked card is inert, so it stays out of the tab order and out of the accessibility tree until the pile fans out, and it announces then. Use persistent notifications for actions readers must complete.`,
     },
   },
 } satisfies Meta<typeof ToastStack>;
@@ -292,11 +292,11 @@ export const Default: Story = {
     await expect(getComputedStyle(region.querySelector('[data-ui="toast-stack-list"]')!).boxShadow).not.toBe('none');
     await expect(getComputedStyle(cards[0]!).boxShadow).toBe('none');
     await expect(cards[0]).toHaveTextContent('Message sent');
-    // A tucked card leaves the tab order but keeps its message in the accessibility tree, so the
-    // message that announced on arrival is still there to read.
+    // A tucked card is inert: out of the tab order and out of the accessibility tree, so its
+    // live region only fills, and announces, once the pile fans the card out.
     await expect(cards[1]).toHaveAttribute('inert');
     await expect(cards[1]).not.toHaveAttribute('aria-hidden');
-    await expect(cards[1]).toHaveTextContent('Export ready');
+    await expect(cards[1]!.querySelector('[role="status"]')).toBeEmptyDOMElement();
     await expect(region.querySelectorAll('[role="status"], [role="alert"]')).toHaveLength(3);
     await expect(cards[0]!.querySelector('[role="status"]')!.querySelector('button')).toBeNull();
     await userEvent.hover(region);
@@ -537,6 +537,29 @@ export const SwipeToDismiss: Story = {
     orphan.restore();
     // A flick under the dismissal share still throws the card away.
     dragCard(card, width * 0.3);
+    await waitFor(async () => {
+      await expect(region.querySelectorAll('[data-ui="toast"]')).toHaveLength(2);
+    });
+    await expect(within(region).queryByText('Message sent')).toBeNull();
+  },
+};
+export const SwipeToDismissRtl: Story = {
+  name: 'Swipe the other way in RTL',
+  parameters: { docs: {
+    description: { story: 'A right-to-left stack dismisses toward its start edge, so the swipe follows the writing direction.' },
+  } },
+  args: { sx: { direction: 'rtl' } },
+  render: (args) => <Harness {...args} initial={messages.slice(0, 3)} />,
+  play: async ({ canvasElement }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    const card = region.querySelector<HTMLElement>('[data-ui="toast"]')!;
+    const width = card.getBoundingClientRect().width;
+    // In RTL the dismiss edge is on the left, so a rightward drag only springs back.
+    dragCard(card, width * 0.6);
+    await settled(region);
+    await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(3);
+    dragCard(card, -width * 0.6);
     await waitFor(async () => {
       await expect(region.querySelectorAll('[data-ui="toast"]')).toHaveLength(2);
     });

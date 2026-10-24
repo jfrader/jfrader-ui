@@ -5,8 +5,8 @@
 //   because some environments do not honor the role defaults. Controls are siblings.
 // - A live region inserted already populated is generally not announced, so each toast mounts
 //   empty and fills its content after ANNOUNCE_DELAY_MS (content change → announcement). The fill
-//   no longer waits for the toast to be exposed, so a message that is tucked behind a collapsed
-//   pile still announces when it arrives.
+//   waits for the toast to be exposed: a tucked card is inert, so it is out of the accessibility
+//   tree until the pile fans out, and it announces then.
 // - Appearing toasts never move focus. Removing a focused toast continues focus to the first
 //   surviving toast's dismiss button; focus elsewhere is never moved.
 // - Deviation from the APG Alert advice against auto-disappearing alerts: toasts auto-dismiss
@@ -580,7 +580,7 @@ export function ToastItem({
   component: Root = 'div',
 }: {
   record: ToastRecord;
-  /** Keeps a toast out of the tab order and assistive-technology interaction until the pile fans out. */
+  /** Keeps a toast out of the tab order and out of the accessibility tree until the pile fans out. */
   exposed?: boolean;
   paused?: boolean;
   style?: CSSProperties;
@@ -623,12 +623,10 @@ export function ToastItem({
   }, [duration]);
 
   useEffect(() => {
-    if (populated) return;
-    // The frame mounts empty and the text arrives a beat later, so a message that is already tucked
-    // behind the pile still announces when it arrives instead of waiting for the fan out.
+    if (!exposed || populated) return;
     const timer = setTimeout(() => setPopulated(true), ANNOUNCE_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [populated]);
+  }, [exposed, populated]);
 
   // Auto-dismiss counts down only while visible, open and not paused. Pausing
   // runs the cleanup, which banks the elapsed time; resuming continues from what is left.

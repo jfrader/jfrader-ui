@@ -132,6 +132,8 @@ type SwipeGesture = {
   pointerId: number;
   startX: number;
   startY: number;
+  /** `1` for left-to-right, `-1` for right-to-left, so a swipe travels toward the dismiss edge. */
+  sign: number;
   active: boolean;
   samples: { time: number; x: number }[];
 };
@@ -257,7 +259,7 @@ function ToastStackContent({
         target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')
       )
         return;
-      const button = root.querySelector<HTMLButtonElement>('[data-state="open"] [data-toast-dismiss]');
+      const button = root.querySelector<HTMLButtonElement>('[data-state="open"]:not([inert]) [data-toast-dismiss]');
       if (!button) return;
       event.preventDefault();
       // Focus fans the pile out on its own and collapses it again when focus leaves.
@@ -285,11 +287,14 @@ function ToastStackContent({
     const card = event.currentTarget;
     card.style.removeProperty('--toast-swipe-x');
     card.style.removeProperty('--toast-swipe-fade');
+    // The swipe follows the writing direction, so a right-to-left stack is swiped the other way.
+    const rtl = card.ownerDocument.defaultView?.getComputedStyle(card).direction === 'rtl';
     swipe.current = {
       id,
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
+      sign: rtl ? -1 : 1,
       active: false,
       samples: [],
     };
@@ -316,12 +321,12 @@ function ToastStackContent({
       setDragging(gesture.id);
       card.ownerDocument.getSelection()?.removeAllRanges();
     }
-    const travelled = event.clientX - gesture.startX;
+    const travelled = (event.clientX - gesture.startX) * gesture.sign;
     const distance = travelled >= 0 ? travelled : -rubberBand(-travelled, width);
     gesture.samples.push({ time: event.timeStamp, x: travelled });
     while (gesture.samples.length > 2 && event.timeStamp - gesture.samples[0]!.time > THROW_WINDOW_MS)
       gesture.samples.shift();
-    card.style.setProperty('--toast-swipe-x', `${distance}px`);
+    card.style.setProperty('--toast-swipe-x', `${distance * gesture.sign}px`);
     card.style.setProperty('--toast-swipe-fade', `${Math.max(0, 1 - distance / width)}`);
   }
   function endSwipe(event: ReactPointerEvent<HTMLDivElement>, cancelled: boolean) {
@@ -339,7 +344,7 @@ function ToastStackContent({
     const speed = cancelled || rested > THROW_REST_MS ? 0 : throwSpeed(gesture.samples);
     const landed = last?.x ?? 0;
     if (!cancelled && landed > 0 && landed + throwDistance(speed) > width * SWIPE_DISMISS_RATIO) {
-      card.style.setProperty('--toast-swipe-x', `${width + 40}px`);
+      card.style.setProperty('--toast-swipe-x', `${(width + 40) * gesture.sign}px`);
       card.style.setProperty('--toast-swipe-fade', '0');
       dismiss(gesture.id);
       return;
@@ -349,7 +354,10 @@ function ToastStackContent({
     card.style.removeProperty('--toast-swipe-fade');
   }
   function handleCardClick(event: ReactMouseEvent<HTMLDivElement>) {
-    if (swallowedClick.current) return;
+    if (swallowedClick.current) {
+      swallowedClick.current = false;
+      return;
+    }
     // Touch and pen have no hover, so a tap on a card fans the pile out or tucks it away again.
     if (pointerType.current === 'mouse' || variant === 'list') return;
     if ((event.target as Element).closest('button, a')) return;
