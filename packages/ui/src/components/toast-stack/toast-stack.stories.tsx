@@ -4,6 +4,7 @@ import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
+import { Surface as PanelSurface } from '../surface';
 import { ThemeRoot } from '../theme-root';
 import { Toast, useToast, type ToastOptions } from '../toast';
 import { TOAST_VIEWPORT_INLINE_SIZE } from '../toast/toast-layout';
@@ -19,6 +20,12 @@ const ActionRow = styled.div({
 });
 
 const FixtureInput = styled.input({ minBlockSize: vars.space[8] });
+const DetailPanel = styled(PanelSurface)({
+  position: 'fixed',
+  inset: 0,
+  zIndex: vars.zIndex.popover,
+  padding: vars.space[4],
+});
 
 const messages: ToastOptions[] = [
   { title: 'Profile saved', description: 'Your changes are published.', duration: null },
@@ -223,6 +230,34 @@ function Harness({
   );
 }
 const bodyOf = (element: HTMLElement) => within(element.ownerDocument.body);
+export const AboveDetailPanel: Story = {
+  tags: ['!autodocs'],
+  render: () => <>
+    <Harness surface={false} initial={messages.slice(0, 1)} />
+    <DetailPanel data-testid="detail-panel">Contact details</DetailPanel>
+  </>,
+  play: async ({ canvasElement, userEvent }) => {
+    const body = bodyOf(canvasElement);
+    const title = await body.findByText('Profile saved');
+    const toast = title.closest<HTMLElement>('[data-ui="toast"]')!;
+    const dismiss = within(toast).getByRole('button', { name: 'Dismiss' });
+    const panel = body.getByTestId('detail-panel');
+    const rect = dismiss.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const x = rect.x + rect.width / 2;
+    const y = rect.y + rect.height / 2;
+    await expect(x).toBeGreaterThan(panelRect.left);
+    await expect(x).toBeLessThan(panelRect.right);
+    await expect(y).toBeGreaterThan(panelRect.top);
+    await expect(y).toBeLessThan(panelRect.bottom);
+    await waitFor(async () => {
+      await expect(dismiss.contains(canvasElement.ownerDocument.elementFromPoint(x, y))).toBe(true);
+    });
+    await userEvent.click(dismiss);
+    await waitFor(async () => { await expect(toast.isConnected).toBe(false); });
+    await expect(panel).toBeVisible();
+  },
+};
 /** Declarations authored for `element` inside `@media` rules whose condition includes `feature`. */
 function mediaDeclarations(element: Element, feature: string) {
   const sheets = Array.from(element.ownerDocument.styleSheets).flatMap((sheet) => {

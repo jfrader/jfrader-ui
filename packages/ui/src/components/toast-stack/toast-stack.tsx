@@ -75,6 +75,7 @@ const THROW_WINDOW_MS = 100;
 const THROW_REST_MS = 60;
 const NARROW_VIEWPORT = '@media (max-width: 30rem)';
 const rootStyle = css({
+  zIndex: vars.zIndex.toast,
   boxSizing: 'border-box',
   position: 'fixed',
   insetBlockEnd: vars.space[4],
