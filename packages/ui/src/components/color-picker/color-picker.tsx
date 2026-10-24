@@ -221,6 +221,7 @@ const panelColumnStyle = css({
 });
 const savedStyle = css({
   display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr)',
   gap: vars.space[2],
   justifyItems: 'start',
 });

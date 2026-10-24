@@ -27,23 +27,52 @@ const NoteLabel = styled.p({
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
 });
-const actions: readonly RadialMenuAction[] = [
-  { id: 'copy', label: 'Copy', icon: '＋' },
-  { id: 'archive', label: 'Archive', icon: '↓' },
-  { id: 'delete', label: 'Delete', icon: '×', tone: 'danger' },
+const icon = (d: string) => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d={d} />
+  </svg>
+);
+const iconPaths = {
+  copy: 'M7 7h9v9H7zM4 13V4h9',
+  edit: 'M4 16l1-4 8-8 3 3-8 8zM11 6l3 3',
+  share: 'M9 4H4v12h12v-5M12 4h4v4M16 4l-7 7',
+  star: 'M10 3l2.2 4.5 4.8.7-3.5 3.4.8 4.9L10 14.2l-4.3 2.3.8-4.9L3 8.2l4.8-.7z',
+  flag: 'M5 17V3M5 4h10l-2 3.5L15 11H5',
+  move: 'M4 10h12M11 5l5 5-5 5',
+  archive: 'M3 4h14v4H3zM4 8v8h12V8M8 11h4',
+  delete: 'M4 6h12M8 6V4h4v2M6 6l1 10h6l1-10',
+};
+type ActionSpec = Omit<RadialMenuAction, 'id' | 'icon'> & { id: keyof typeof iconPaths };
+const threeSpecs: readonly ActionSpec[] = [
+  { id: 'copy', label: 'Copy' },
+  { id: 'archive', label: 'Archive' },
+  { id: 'delete', label: 'Delete', tone: 'danger' },
 ];
-const eightActions: readonly RadialMenuAction[] = [
-  { id: 'copy', label: 'Copy', icon: '＋' },
-  { id: 'edit', label: 'Edit', icon: '✎' },
-  { id: 'share', label: 'Share', icon: '↗' },
-  { id: 'star', label: 'Star', icon: '★' },
-  { id: 'flag', label: 'Flag', icon: '⚑' },
-  { id: 'move', label: 'Move', icon: '→' },
-  { id: 'archive', label: 'Archive', icon: '↓' },
-  { id: 'delete', label: 'Delete', icon: '×', tone: 'danger' },
+const eightSpecs: readonly ActionSpec[] = [
+  { id: 'copy', label: 'Copy' },
+  { id: 'edit', label: 'Edit' },
+  { id: 'share', label: 'Share' },
+  { id: 'star', label: 'Star' },
+  { id: 'flag', label: 'Flag' },
+  { id: 'move', label: 'Move' },
+  { id: 'archive', label: 'Archive' },
+  { id: 'delete', label: 'Delete', tone: 'danger' },
 ];
-const snippet = (items: string, props = '') => `import { RadialMenu, Surface, styled, type RadialMenuAction, type RadialMenuProps } from '@jfrader/ui';
+const toAction = (spec: ActionSpec): RadialMenuAction => ({ ...spec, icon: icon(iconPaths[spec.id]) });
+const actions = threeSpecs.map(toAction);
+const eightActions = eightSpecs.map(toAction);
+const specLines = (specs: readonly ActionSpec[]) =>
+  specs
+    .map(({ id, label, tone }) => `  { id: '${id}', label: '${label}', icon: icon('${iconPaths[id]}')${tone ? `, tone: '${tone}'` : ''} },`)
+    .join('\n');
+const snippet = (specs: readonly ActionSpec[], props = '') => `import { RadialMenu, Surface, styled, type RadialMenuAction, type RadialMenuProps } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
+
+const icon = (d: string) => (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d={d} />
+  </svg>
+);
 
 const Frame = styled(Surface)({
   boxSizing: 'border-box',
@@ -61,7 +90,7 @@ const NoteLabel = styled.p({
   fontSize: vars.textSize.sm, color: vars.color.textMuted,
 });
 const actions: readonly RadialMenuAction[] = [
-${items}
+${specLines(specs)}
 ];
 
 export function NoteActions({ onAction }: Pick<RadialMenuProps, 'onAction'>) {
@@ -72,17 +101,6 @@ export function NoteActions({ onAction }: Pick<RadialMenuProps, 'onAction'>) {
     </Frame>
   );
 }`;
-const threeItems = `  { id: 'copy', label: 'Copy', icon: '＋' },
-  { id: 'archive', label: 'Archive', icon: '↓' },
-  { id: 'delete', label: 'Delete', icon: '×', tone: 'danger' },`;
-const eightItems = `  { id: 'copy', label: 'Copy', icon: '＋' },
-  { id: 'edit', label: 'Edit', icon: '✎' },
-  { id: 'share', label: 'Share', icon: '↗' },
-  { id: 'star', label: 'Star', icon: '★' },
-  { id: 'flag', label: 'Flag', icon: '⚑' },
-  { id: 'move', label: 'Move', icon: '→' },
-  { id: 'archive', label: 'Archive', icon: '↓' },
-  { id: 'delete', label: 'Delete', icon: '×', tone: 'danger' },`;
 
 const body = (canvasElement: HTMLElement) => within(canvasElement.ownerDocument.body);
 async function expectRing(menu: HTMLElement, trigger: HTMLElement) {
@@ -141,7 +159,7 @@ Click the hub, then an action. Hold the hub for 250ms and drag over an action to
 ### Values and constraints
 
 Use three to eight actions. The arc widens past \`spread\`, up to a full ring, when the actions need more room. More than eight actions, a radius that cannot clear the hub, or a viewport that cannot fit the ring use a vertical menu. Reduced motion removes the entrance animation.`,
-      source: { language: 'tsx', code: snippet(threeItems) },
+      source: { language: 'tsx', code: snippet(threeSpecs) },
     },
   },
 } satisfies Meta<typeof RadialMenu>;
@@ -156,7 +174,7 @@ export const EightActions: Story = {
   args: { actions: eightActions },
   parameters: { docs: {
     description: { story: 'Open eight actions; the arc closes into a full ring around the hub.' },
-    source: { language: 'tsx', code: snippet(eightItems) },
+    source: { language: 'tsx', code: snippet(eightSpecs) },
   } },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const trigger = canvas.getByRole('button', { name: 'Note actions' });

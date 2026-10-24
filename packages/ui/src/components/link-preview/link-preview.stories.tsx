@@ -11,9 +11,8 @@ import { LinkPreview, type LinkPreviewData } from './index';
 import { styled } from '../../index';
 
 const URL = 'https://example.com/journal/dune-crossing';
-const svg = (markup: string) => `data:image/svg+xml,${encodeURIComponent(markup)}`;
 const COVER = sceneSource('link-preview-dune-crossing', { variant: 'dunes', grade: 'warm' });
-const FAVICON = svg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7"/></svg>');
+const FAVICON = sceneSource('northwind-journal-mark', { variant: 'dusk' });
 const DATA: LinkPreviewData = {
   url: URL,
   site: 'Northwind Journal',
@@ -32,7 +31,6 @@ import { Button, LinkPreview, styled, type LinkPreviewData } from '@jfrader/ui';
 import { sceneSource } from '@jfrader/ui/scene';
 import { vars } from '@jfrader/tokens/vars';
 
-const favicon = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7"/></svg>');
 const data: LinkPreviewData = {
   url: 'https://example.com/journal/dune-crossing',
   site: 'Northwind Journal',
@@ -42,7 +40,7 @@ const data: LinkPreviewData = {
     src: sceneSource('link-preview-dune-crossing', { variant: 'dunes', grade: 'warm' }),
     alt: 'Wind-carved dunes under a warm evening sky',
   },
-  favicon,
+  favicon: sceneSource('northwind-journal-mark', { variant: 'dusk' }),
 };
 
 ${example}`;

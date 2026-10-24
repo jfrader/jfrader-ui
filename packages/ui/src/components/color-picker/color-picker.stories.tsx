@@ -618,6 +618,8 @@ export const PanelLayout: Story = {
     await expect(saved).toContainElement(page.getByRole('textbox', { name: messages.color }));
     await expect(saved).toContainElement(group);
     await expect(saved).toContainElement(done);
+    await expect(group.scrollWidth - group.clientWidth).toBeLessThanOrEqual(1);
+    await expect(group.getBoundingClientRect().right).toBeLessThanOrEqual(saved.getBoundingClientRect().right + 1);
     if (space.parentElement!.offsetWidth >= 416) {
       await expect(Math.abs(space.getBoundingClientRect().top - saved.getBoundingClientRect().top)).toBeLessThan(1);
       await expect(space.getBoundingClientRect().right).toBeLessThan(saved.getBoundingClientRect().left);
