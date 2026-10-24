@@ -5,11 +5,16 @@ import {
   type ComponentPropsWithRef, type ComponentType, type KeyboardEvent, type PointerEvent, type ReactNode,
 } from 'react';
 import { useInteractions, useMergeRefs } from '@floating-ui/react';
-import { AnimatePresence, MotionConfig, motion, useMotionValue, useReducedMotion, useSpring } from 'motion/react';
+import {
+  AnimatePresence, MotionConfig, motion, motionValue, useMotionValue, useReducedMotionConfig, useSpring, useTransform,
+  type MotionValue,
+} from 'motion/react';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { motionDurationMs } from '../../styling/motion-timings';
+import { translucentControlStyle } from '../../styling/surface';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
@@ -17,6 +22,7 @@ import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { useReducedMotion } from '../../utils/use-reduced-motion';
 import { Button, type ButtonProps } from '../button';
 import { Menu } from '../menu';
 import { joinIds } from '../menu/menu';
@@ -29,6 +35,8 @@ export interface DockTool {
   shortcut?: string;
   badge?: number;
   badgeLabel?: string;
+  /** Marks a tool whose task is still active with a dot beneath its icon. */
+  running?: boolean;
   disabled?: boolean;
 }
 
@@ -45,6 +53,8 @@ export interface DockMove { type: 'move'; id: string; index: number }
 export interface DockMessages {
   groupName: (group: string, child: string) => string;
   selected: string;
+  /** Joins the name of a `running` tool. Defaults to `Running`. */
+  running?: string;
   badge: (formatted: string, category: Intl.LDMLPluralRule, label?: string) => string;
   moved: (label: string, positionFormatted: string, totalFormatted: string) => string;
   trayLabel: (group: string) => string;
@@ -141,9 +151,17 @@ const SELECTION_SPRING = { type: 'spring', stiffness: 420, damping: 38 } as cons
 const REORDER_SPRING = { type: 'spring', stiffness: 450, damping: 40 } as const;
 const PRESS_SPRING = { type: 'spring', stiffness: 500, damping: 35 } as const;
 const FAST_FADE_SECONDS = parseFloat(base.motion.duration.fast) / 1000;
+// Magnification swells glyphs, never tiles: targets keep their grid under the pointer. Influence
+// falls off on a raised cosine over two and a half tile widths and settles on a critically damped
+// spring, so the lens follows the pointer without wobble.
+const MAGNIFY_SCALE = 1.4;
+const MAGNIFY_REACH = 2.5;
+const MAGNIFY_LIFT_PX = parseFloat(base.space[1]);
+const MAGNIFY_SPRING = { visualDuration: motionDurationMs.base / 1000, bounce: 0 } as const;
 const DEFAULT_MESSAGES: DockMessages = {
   groupName: (group, child) => `${group}: ${child}`,
   selected: 'Selected',
+  running: 'Running',
   badge: (formatted, category, label) => `${formatted} ${label ?? (category === 'one' ? 'item' : 'items')}`,
   moved: (label, position, total) => `${label} moved to position ${position} of ${total}`,
   trayLabel: (group) => `${group} tools`,
@@ -156,19 +174,18 @@ const rootStyle = css({
   position: 'relative', display: 'inline-flex', alignItems: 'center', gap: vars.space[2],
   maxInlineSize: '100%', minInlineSize: 0, color: vars.color.text, fontFamily: vars.font.sans,
 });
-const toolbarStyle = css({
+// The shelf wears the shared glass control material; its radius is the tile radius plus the padding.
+const toolbarStyle = css([{
   display: 'flex', gap: vars.space[1], padding: vars.space[2], overflowX: 'auto',
   minInlineSize: 0, maxInlineSize: '100%', boxSizing: 'border-box',
-  border: `1px solid ${vars.color.borderControl}`, borderRadius: vars.radius.lg,
-  backgroundColor: vars.color.surfaceRaised, boxShadow: vars.shadow.overlay,
-  [FORCED_COLORS]: { backgroundColor: 'Canvas', color: 'CanvasText', borderColor: 'CanvasText' },
-});
+  border: '1px solid', borderRadius: vars.radius.lg,
+}, translucentControlStyle]);
 const cellStyle = css({ position: 'relative', flexShrink: 0, display: 'grid' });
 const controlStyle = css({
   gridArea: '1 / 1', justifySelf: 'center',
   position: 'relative', boxSizing: 'border-box', flexShrink: 0,
   inlineSize: vars.space[10], minInlineSize: vars.space[10], blockSize: vars.space[10],
-  padding: vars.space[1], borderColor: vars.color.borderControl, color: vars.color.text,
+  padding: vars.space[1], borderColor: 'transparent', color: vars.color.text,
   touchAction: 'pan-y',
   '&[aria-pressed="true"]': { color: vars.color.accentText },
   [FORCED_COLORS]: {
@@ -184,14 +201,26 @@ const uniqueIds = (...ids: Array<string | undefined>) => {
   return out.size ? [...out].join(' ') : undefined;
 };
 const iconStyle = css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: vars.textSize.md });
+// One indicator vocabulary: a running tool shows a dot; the selected tool's plate stretches that dot
+// into a bar, so the two states differ in shape as well as color.
+const indicatorStyle = {
+  content: '""', position: 'absolute', insetBlockEnd: vars.space[1],
+  blockSize: vars.space[1], borderRadius: vars.radius.full, pointerEvents: 'none',
+} as const;
+const runningStyle = css({
+  ...indicatorStyle,
+  insetInlineStart: `calc(50% - ${vars.space[1]} / 2)`, inlineSize: vars.space[1],
+  backgroundColor: 'currentColor',
+  [FORCED_COLORS]: { backgroundColor: 'CanvasText', forcedColorAdjust: 'none' },
+});
 const selectionStyle = css({
   position: 'absolute', inset: 0, backgroundColor: vars.color.accentSoft, pointerEvents: 'none',
   '&::after': {
-    content: '""', position: 'absolute', insetBlockEnd: vars.space[1], insetInlineStart: `calc(50% - ${vars.space[1]} / 2)`,
-    inlineSize: vars.space[1], blockSize: vars.space[1], borderRadius: vars.radius.full,
+    ...indicatorStyle,
+    insetInlineStart: `calc(50% - ${vars.space[4]} / 2)`, inlineSize: vars.space[4],
     backgroundColor: vars.color.accentText,
   },
-  [FORCED_COLORS]: { backgroundColor: 'Canvas', '&::after': { backgroundColor: 'Highlight' } },
+  [FORCED_COLORS]: { backgroundColor: 'Canvas', '&::after': { backgroundColor: 'Highlight', forcedColorAdjust: 'none' } },
 });
 const glyphStyle = css({ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: vars.space[2] });
 const badgeStyle = css({
@@ -199,25 +228,24 @@ const badgeStyle = css({
   insetBlockStart: `calc(-1 * ${vars.space[1]})`, insetInlineEnd: `calc(-1 * ${vars.space[1]})`,
   pointerEvents: 'none', zIndex: 1, whiteSpace: 'nowrap',
   minInlineSize: vars.space[4], paddingInline: vars.space[1], boxSizing: 'border-box',
-  border: `1px solid ${vars.color.borderControl}`, borderRadius: vars.radius.full,
-  color: vars.color.text, backgroundColor: vars.color.surfaceRaised, fontSize: vars.textSize.xs,
-  fontWeight: vars.fontWeight.semibold, lineHeight: vars.lineHeight.base,
-  [FORCED_COLORS]: { backgroundColor: 'Canvas', color: 'CanvasText', borderColor: 'CanvasText' },
+  borderRadius: vars.radius.full, boxShadow: `0 0 0 2px ${vars.color.surfaceRaised}`,
+  color: vars.color.accentContrast, backgroundColor: vars.color.accent, fontSize: vars.textSize.xs,
+  fontWeight: vars.fontWeight.semibold, lineHeight: vars.lineHeight.base, fontVariantNumeric: 'tabular-nums',
+  [FORCED_COLORS]: { backgroundColor: 'Canvas', color: 'CanvasText', outline: '1px solid CanvasText', boxShadow: 'none' },
 });
-const trayStyle = css({
+const trayStyle = css([{
   display: 'flex', gap: vars.space[2], padding: vars.space[2], boxSizing: 'border-box',
   maxInlineSize: `calc(100vw - 2 * ${vars.space[2]})`, overflowX: 'auto',
-  border: `1px solid ${vars.color.borderControl}`, borderRadius: vars.radius.lg,
-  backgroundColor: vars.color.surfaceRaised, boxShadow: vars.shadow.overlay,
+  border: '1px solid', borderRadius: vars.radius.lg,
   '&[hidden]': { display: 'none' },
-  [FORCED_COLORS]: { backgroundColor: 'Canvas', color: 'CanvasText', borderColor: 'CanvasText' },
-});
+}, translucentControlStyle]);
 const trayContentStyle = css({ display: 'flex', gap: vars.space[1] });
 const labelStyle = css({
   '&[data-glide="true"]': {
     transitionProperty: 'left, top', transitionDuration: vars.motion.duration.fast,
     transitionTimingFunction: vars.motion.easeStandard,
   },
+  '&[data-reduced-motion]': { transitionDuration: '0s' },
   [REDUCED_MOTION]: { '&[data-glide="true"]': { transitionDuration: '0s' } },
   [FORCED_COLORS]: { backgroundColor: 'Canvas', color: 'CanvasText', borderColor: 'CanvasText' },
 });
@@ -274,6 +302,8 @@ interface ControlProps {
   count: string | null;
   namespace: string;
   layoutOrder?: string;
+  /** Pointer proximity from 0 (out of reach) to 1 (under the pointer). */
+  lens: MotionValue<number>;
   slot?: ButtonSlot;
   badgeSlot?: DockSlotProps['badge'];
   component?: DockSlots['item'];
@@ -290,16 +320,20 @@ interface ControlProps {
 }
 
 function DockControl({
-  item, tool, selected, tabIndex, expanded, controls, labels, name, count, namespace, layoutOrder, slot = {}, badgeSlot,
+  item, tool, selected, tabIndex, expanded, controls, labels, name, count, namespace, layoutOrder, lens, slot = {}, badgeSlot,
   component: Control = Button, badgeComponent,
   register, activate, keyDown, focused, hovered, leave, startDrag, updateDrag, finishDrag,
 }: ControlProps) {
   const Badge = badgeComponent ?? 'span';
   const id = useId();
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionConfig();
   const x = useMotionValue(0);
   const press = useMotionValue(1);
-  const scale = useSpring(press, PRESS_SPRING);
+  const pressed = useSpring(press, PRESS_SPRING);
+  const level = useSpring(lens, MAGNIFY_SPRING);
+  const scale = useTransform([level, pressed], ([proximity, squeeze]: number[]) =>
+    (1 + proximity! * (MAGNIFY_SCALE - 1)) * squeeze!);
+  const lift = useTransform(level, (proximity) => -proximity * MAGNIFY_LIFT_PX);
   const suppressClick = useRef(false);
   const ref = useMergeRefs([register, slot.ref]);
   const { sx: slotCss, onClick, onKeyDown, onFocus, onBlur, onPointerEnter, onPointerLeave,
@@ -354,8 +388,10 @@ function DockControl({
           aria-hidden css={selectionStyle} data-ui="dock-selection" layoutId={`${namespace}-selection`}
           transition={reduced ? { duration: 0 } : SELECTION_SPRING} style={{ borderRadius: vars.radius.md }}
         />}
+        {tool?.running && <span aria-hidden css={runningStyle} data-ui="dock-running" />}
         <span id={`${id}-name`} css={visuallyHiddenStyle}>{native['aria-label'] ?? name}</span>
-        <motion.span css={glyphStyle} aria-hidden style={{ scale: reduced ? 1 : scale }}>
+        <motion.span css={glyphStyle} aria-hidden data-ui="dock-glyph"
+          style={reduced ? { scale: 1, y: 0 } : { scale, y: lift }}>
           <AnimatePresence mode="wait" initial={false}>
             {isRenderable(icon) && <motion.span key={tool?.id ?? item.id} css={iconStyle}
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -384,7 +420,8 @@ function DockWidget({
 }: DockProps & { nodeId: string | undefined }) {
   const namespace = useId();
   const trayId = useId();
-  const reduced = useReducedMotion();
+  const reduced = useReducedMotionConfig();
+  const lenses = useRef(new Map<string, MotionValue<number>>());
   const rootRef = useRef<HTMLDivElement>(null);
   const mergedRootRef = useMergeRefs([rootRef, ref]);
   const [direction, setDirection] = useState(dir ?? 'ltr');
@@ -504,6 +541,7 @@ function DockWidget({
       isGroup(item) ? messages.groupName(item.label, tool?.label ?? messages.empty) : item.label,
       tool?.shortcut,
       count !== null ? messages.badge(formatter.format(count), plural.select(count), tool?.badgeLabel) : null,
+      tool?.running ? messages.running ?? DEFAULT_MESSAGES.running : null,
       selected(item) ? messages.selected : null,
     ].filter((part) => part !== null && part !== undefined && part !== '').join(', ');
   }
@@ -518,6 +556,23 @@ function DockWidget({
     cancel(hoverTimer.current); cancel(warmTimer.current); cancel(leaveTimer.current);
     leaveTimer.current = later(() => setFloatingLabel(null), LABEL_LEAVE_MS);
     warmTimer.current = later(() => { warm.current = false; }, LABEL_COOLDOWN_MS);
+  }
+  function lens(id: string) {
+    let value = lenses.current.get(id);
+    if (!value) lenses.current.set(id, value = motionValue(0));
+    return value;
+  }
+  function magnify(event: PointerEvent<HTMLElement>, nodes: Map<string, HTMLButtonElement>) {
+    if (reduced || labels === 'always' || event.pointerType === 'touch') return;
+    for (const [id, node] of nodes) {
+      const box = node.getBoundingClientRect();
+      const reach = box.width * MAGNIFY_REACH;
+      const distance = Math.abs(event.clientX - (box.left + box.width / 2));
+      lens(id).set(distance < reach ? (1 + Math.cos((Math.PI * distance) / reach)) / 2 : 0);
+    }
+  }
+  function settle(nodes: Map<string, HTMLButtonElement>) {
+    for (const id of nodes.keys()) lens(id).set(0);
   }
   function move(id: string, index: number, snapshot = orderedIds) {
     const from = snapshot.indexOf(id);
@@ -616,6 +671,8 @@ function DockWidget({
         }}
         data-state={shown ? 'open' : 'closed'} data-selected={ordered.some(selected) ? 'true' : 'false'}>
         <Toolbar {...withoutSx(toolbarSlot)} ref={toolbarRef} css={[toolbarStyle, toolbarSlot?.sx]} role="toolbar"
+          onPointerMove={(event) => { toolbarSlot?.onPointerMove?.(event); magnify(event, controls.current); }}
+          onPointerLeave={(event) => { toolbarSlot?.onPointerLeave?.(event); settle(controls.current); }}
           aria-hidden={undefined}
           aria-label={toolbarSlot?.['aria-label'] ?? native['aria-label'] ?? label}
           aria-labelledby={uniqueIds(native['aria-labelledby'], toolbarSlot?.['aria-labelledby'])}>
@@ -623,7 +680,7 @@ function DockWidget({
             const tool = shownTool(item);
             const count = tool ? badgeCount(tool) : null;
             return <DockControl key={item.id} item={item} tool={tool} name={name(item)} selected={selected(item)}
-              namespace={namespace} tabIndex={focusItem?.id === item.id ? 0 : -1} labels={labels}
+              namespace={namespace} lens={lens(item.id)} tabIndex={focusItem?.id === item.id ? 0 : -1} labels={labels}
               layoutOrder={reorderable ? JSON.stringify(orderedIds) : undefined}
               expanded={isGroup(item) ? shown && tray === item.id : undefined}
               controls={isGroup(item) && renderedGroup?.id === item.id ? trayId : undefined}
@@ -654,7 +711,11 @@ function DockWidget({
           </Menu.Content>
         </Menu>}
         {renderedGroup && <>
-            <Tray {...getFloatingProps(withoutSx(traySlot) ?? {})} ref={trayRef} css={[trayStyle, traySlot?.sx]}
+            <Tray {...getFloatingProps({
+                ...withoutSx(traySlot),
+                onPointerMove: (event: PointerEvent<HTMLDivElement>) => { traySlot?.onPointerMove?.(event); magnify(event, children.current); },
+                onPointerLeave: (event: PointerEvent<HTMLDivElement>) => { traySlot?.onPointerLeave?.(event); settle(children.current); },
+              })} ref={trayRef} css={[trayStyle, traySlot?.sx]}
               id={trayId} role="group" dir={direction} hidden={!shown} inert={!shown} aria-hidden={shown ? undefined : true}
               aria-label={traySlot?.['aria-label'] ?? messages.trayLabel(renderedGroup.label)}
               aria-labelledby={joinIds(traySlot?.['aria-labelledby'], trigger?.id)}
@@ -663,7 +724,7 @@ function DockWidget({
               <motion.div css={trayContentStyle} layout={reduced ? false : 'size'} layoutDependency={renderedGroup.id}
                 transition={reduced ? { duration: 0 } : SELECTION_SPRING}>
                 {renderedGroup.items.map((tool) => <DockControl key={tool.id} item={tool} tool={tool} name={name(tool)}
-                  selected={enabled(renderedGroup) && tool.id === value && !tool.disabled} namespace={`${namespace}-tray`}
+                  selected={enabled(renderedGroup) && tool.id === value && !tool.disabled} namespace={`${namespace}-tray`} lens={lens(tool.id)}
                   labels={labels} count={badgeCount(tool) !== null ? formatter.format(badgeCount(tool)!) : null}
                   tabIndex={shown && childStop?.id === tool.id ? 0 : -1} slot={slotProps?.trayItem?.(tool)} badgeSlot={slotProps?.badge}
                   component={slots?.trayItem} badgeComponent={slots?.badge}
@@ -682,6 +743,7 @@ function DockWidget({
         {floatingLabel !== null && labels === 'focus' && <OverlayPortal>
           <FloatingLabel {...withoutSx(labelSlot)} ref={labelRef} css={[tooltipContentStyle, labelStyle, labelSlot?.sx]}
             aria-hidden dir={direction} data-ui="dock-floating-label" data-glide={labelReady ? 'true' : 'false'}
+            data-reduced-motion={reduced || undefined}
             style={{ ...labelSlot?.style, ...labelFloating.floatingStyles,
               visibility: labelFloating.isPositioned ? labelSlot?.style?.visibility : 'hidden' }}
             onPointerEnter={(event) => { labelSlot?.onPointerEnter?.(event); cancel(leaveTimer.current); cancel(warmTimer.current); }}
@@ -697,7 +759,11 @@ function DockWidget({
 }
 
 export function Dock(props: DockProps) {
-  return <MotionConfig reducedMotion="user"><OverlayLayer>{(nodeId) => <DockWidget {...props} nodeId={nodeId} />}</OverlayLayer></MotionConfig>;
+  const device = useReducedMotion();
+  const forced = useReducedMotionConfig();
+  return <MotionConfig reducedMotion={device || forced ? 'always' : 'user'}>
+    <OverlayLayer>{(nodeId) => <DockWidget {...props} nodeId={nodeId} />}</OverlayLayer>
+  </MotionConfig>;
 }
 
 Dock.displayName = 'Dock';

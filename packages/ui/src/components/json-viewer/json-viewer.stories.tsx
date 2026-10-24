@@ -797,6 +797,104 @@ export const LightTheme: Story = {
   globals: { theme: 'light' },
   args: { defaultExpandDepth: 3 },
 };
+const rowOf = (treeitem: HTMLElement) => treeitem.querySelector<HTMLElement>(':scope > [data-ui="json-viewer-row"]')!;
+/** Style rules in `element`'s document, optionally only inside `@media` rules whose condition
+ * includes `media`. */
+function authoredRules(element: Element, media?: string) {
+  const rules = Array.from(element.ownerDocument.styleSheets).flatMap((sheet) => {
+    try {
+      return Array.from(sheet.cssRules);
+    } catch {
+      return [];
+    }
+  });
+  const scoped = media
+    ? rules
+        .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule && rule.conditionText.includes(media))
+        .flatMap((rule) => Array.from(rule.cssRules))
+    : rules;
+  return scoped.filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule);
+}
+type Rgba = readonly [number, number, number, number];
+function paint(anchor: Element, color: string): Rgba {
+  const context = anchor.ownerDocument.createElement('canvas').getContext('2d')!;
+  context.fillStyle = color;
+  context.fillRect(0, 0, 1, 1);
+  const [r = 0, g = 0, b = 0, alpha = 0] = context.getImageData(0, 0, 1, 1).data;
+  return [r, g, b, alpha / 255];
+}
+const over = ([r, g, b, a]: Rgba, under: Rgba): Rgba => [
+  r * a + under[0] * (1 - a),
+  g * a + under[1] * (1 - a),
+  b * a + under[2] * (1 - a),
+  1,
+];
+const luminance = (color: Rgba) => {
+  const [r, g, b] = color.slice(0, 3).map((channel) => {
+    const value = channel / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+};
+/** WCAG contrast of `element`'s text over its painted backdrop (translucent fills composited). */
+function textContrast(element: HTMLElement) {
+  const layers: Rgba[] = [];
+  for (let node: Element | null = element; node; node = node.parentElement) {
+    layers.push(paint(element, getComputedStyle(node).backgroundColor));
+    if (layers.at(-1)![3] === 1) break;
+  }
+  const backdrop = layers.reduceRight((under, layer) => over(layer, under), paint(element, 'white'));
+  const [a, b] = [luminance(over(paint(element, getComputedStyle(element).color), backdrop)), luminance(backdrop)];
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+const selectedRowPlay: Story['play'] = async ({ canvas, canvasElement, userEvent }) => {
+  const item = canvas.getByRole('treeitem', { name: /^text:/ });
+  await expect(item).toHaveAttribute('aria-selected', 'true');
+  const selected = rowOf(item);
+  const plain = rowOf(canvas.getByRole('treeitem', { name: /^total:/ }));
+  // A rounded row never carries a one-sided edge.
+  for (const element of [selected, ...selected.querySelectorAll('*')])
+    await expect(getComputedStyle(element).borderInlineStartWidth).toBe('0px');
+  const [mark, rest] = [getComputedStyle(selected), getComputedStyle(plain)];
+  await expect(mark.boxShadow).not.toBe('none');
+  await expect(rest.boxShadow).toBe('none');
+  await expect(mark.backgroundColor).not.toBe(rest.backgroundColor);
+  // Weight carries the selection without color.
+  await expect(Number(mark.fontWeight)).toBeGreaterThan(Number(rest.fontWeight));
+  // Hover only tints the row: a different fill, no hairline, no weight.
+  const hover = authoredRules(plain)
+    .filter((rule) => rule.selectorText.includes(':hover') && plain.matches(rule.selectorText.replaceAll(':hover', '')))
+    .map((rule) => rule.style);
+  await expect(hover.length).toBeGreaterThan(0);
+  for (const declaration of hover) {
+    const probe = canvasElement.ownerDocument.createElement('span');
+    probe.style.backgroundColor = declaration.backgroundColor;
+    plain.append(probe);
+    await expect(getComputedStyle(probe).backgroundColor).not.toBe(mark.backgroundColor);
+    probe.remove();
+    await expect(declaration.boxShadow).toBe('');
+    await expect(declaration.fontWeight).toBe('');
+  }
+  for (const text of selected.querySelectorAll<HTMLElement>('[data-ui="json-viewer-label"] span'))
+    await expect(textContrast(text), text.textContent ?? '').toBeGreaterThanOrEqual(4.5);
+  // Keyboard focus adds the 2px ring and keeps the selection fill.
+  canvas.getByRole('textbox').focus();
+  await userEvent.keyboard('{ArrowDown}');
+  await expectFocus(canvasElement, item);
+  await expect(getComputedStyle(selected).outlineStyle).toBe('solid');
+  await expect(Math.abs(Number.parseFloat(getComputedStyle(selected).outlineWidth) - 2)).toBeLessThan(1.1);
+  await expect(getComputedStyle(selected).boxShadow).toBe(mark.boxShadow);
+};
+export const SelectedRow: Story = {
+  tags: ['!autodocs'],
+  args: { data: typedPayload, defaultExpandDepth: 1, defaultValue: 'root.text' },
+  play: selectedRowPlay,
+};
+export const SelectedRowLight: Story = {
+  ...SelectedRow,
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+};
 export const RTL: Story = {
   args: { dir: 'rtl', data: { branch: { leaf: false } } },
   play: async ({ canvas, canvasElement, userEvent }) => {
@@ -826,10 +924,17 @@ export const ForcedColors: Story = {
       await expect(style.borderInlineStartColor).not.toBe('rgba(0, 0, 0, 0)');
     };
     await expectTriangle();
-    if (view.matchMedia('(forced-colors: active)').matches) {
-      const row = canvasElement.querySelector<HTMLElement>('[aria-selected="false"] > [data-ui="json-viewer-row"]')!;
-      await expect(view.getComputedStyle(row).borderInlineStartColor).toBe(tokenColor(row, 'Canvas'));
-    }
+    // Forced colors drop the shadow, so the selected row keeps a real outline as its boundary.
+    const forcedRules = (row: HTMLElement) =>
+      authoredRules(row, 'forced-colors').filter((rule) => row.matches(rule.selectorText)).map((rule) => rule.style);
+    const selected = rowOf(root);
+    const plain = canvasElement.querySelector<HTMLElement>('[aria-selected="false"] > [data-ui="json-viewer-row"]')!;
+    await expect(forcedRules(selected)).toContainEqual(
+      expect.objectContaining({ outlineStyle: 'solid', outlineWidth: '1px', outlineColor: 'highlight' }),
+    );
+    await expect(forcedRules(plain).filter((style) => style.outlineColor === 'highlight')).toHaveLength(0);
+    if (view.matchMedia('(forced-colors: active)').matches)
+      await expect(view.getComputedStyle(selected).outlineColor).toBe(tokenColor(selected, 'Highlight'));
     root.focus();
     await userEvent.keyboard('{ArrowLeft}');
     await expect(root).toHaveAttribute('aria-expanded', 'false');

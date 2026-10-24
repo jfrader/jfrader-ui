@@ -13,9 +13,11 @@ import { Flex } from '../flex';
 import { Button } from '../button';
 import { sceneSource } from '../scene';
 import { styled } from '../../styling/styled';
+import { expectPulseCycle, expectPulseFromDot, expectPulseHiddenForMedia, mediaRules } from '../status-dot/status-dot-assertions';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly AvatarSize[];
 const SIZE_PX = { sm: 24, md: 32, lg: 40 } as const;
+const DOT_PX = { sm: 8, md: 8, lg: 12 } as const;
 const STATUSES = ['online', 'away', 'busy', 'offline'] as const satisfies readonly AvatarStatus[];
 const NAME = 'Ada Lovelace';
 
@@ -32,7 +34,7 @@ const meta = {
         { title: 'Basic', stories: ['Default'] },
         { title: 'Images and fallbacks', stories: ['SceneImage', 'PhotoWithArtworkFallback', 'Initials'] },
         { title: 'Sizes', stories: ['Sizes'] },
-        { title: 'Status', stories: ['Status', 'OnlinePulse'] },
+        { title: 'Status', stories: ['Status', 'OnlinePulse', 'ServiceStatus'] },
         { title: 'Group composition', stories: ['Team'] },
       ],
       usage: `### When to use
@@ -44,7 +46,7 @@ Keep fallback artwork noninteractive and decorative so the identity is announced
 
 An external accessible label takes precedence over the generated name and status. Localize presence labels with the surrounding interface. Presence is not a live announcement; use a separate status message for changes that need attention.
 
-Reduced motion and forced colors hide the pulsing ring. The image examples use generated Scene artwork; a photo URL uses the same image path.`,
+The presence indicator is a decorative StatusDot: the avatar's name carries the status word, and the dot draws a different glyph for each status. \`pulse\` repeats a ring from the dot's edge; reduced motion and forced colors hide the ring. The image examples use generated Scene artwork; a photo URL uses the same image path.`,
     },
   },
   args: { name: NAME, size: 'md' },
@@ -216,7 +218,7 @@ export const ContentLifecycle: Story = {
         slots={{ fallback: SlotFallback }} slotProps={{
           image: { ref, onLoad: loaded, onError: failed, title: 'Photo', src: BROKEN_SRC, alt: 'Ignored' },
           fallback: { ref: fallbackRef, title: 'Artwork', children: 'Ignored', 'aria-hidden': false },
-          status: { title: 'Presence', children: 'Ignored' },
+          status: { title: 'Presence' },
         }}><PersonAvatar seed="member-ada" size="full" alt="" /></Avatar></StrictMode>,
     ));
     try {
@@ -362,14 +364,39 @@ import { sceneSource } from '@jfrader/ui/scene';
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    // Only the avatars are images: each dot is out of the accessibility tree.
+    await expect(canvas.getAllByRole('img')).toHaveLength(STATUSES.length + 1);
+    const glyphs = new Set<string>();
     for (const status of STATUSES) {
       const avatar = canvas.getByRole('img', { name: `${NAME}, ${status}` });
-      const dot = avatar.querySelector(`[data-status="${status}"]`) as HTMLElement;
+      const dot = avatar.querySelector<HTMLElement>(`[data-ui~="status-dot"][data-status="${status}"]`)!;
+      await expect(dot).toHaveAttribute('data-ui', 'status-dot avatar-status');
       await expect(dot).toHaveAttribute('aria-hidden', 'true');
-      await expect(Math.round(dot.getBoundingClientRect().width)).toBe(SIZE_PX.md / 4);
+      await expect(dot).not.toHaveAttribute('role');
+      await expect(dot).not.toHaveAttribute('aria-label');
+      await expect(dot.getBoundingClientRect().width).toBe(DOT_PX.md);
       await expect(getComputedStyle(dot, '::after').animationName).toBe('none');
+      glyphs.add(getComputedStyle(dot).backgroundImage);
     }
+    await expect(glyphs.size).toBe(STATUSES.length);
     await expect(canvas.getByRole('img', { name: `${NAME}, en línea` })).toBeInTheDocument();
+  },
+};
+
+export const ServiceStatus: Story = {
+  name: 'Square presence',
+  parameters: { docs: {
+    description: { story: 'Pass a StatusDot `variant` through `slotProps.status`, for example for a bot.' },
+    source: { language: 'tsx', code: `import { Avatar } from '@jfrader/ui';
+
+<Avatar name="Deploy bot" status="busy" statusLabel="running" slotProps={{ status: { variant: 'square' } }} />` },
+  } },
+  args: { name: 'Deploy bot', status: 'busy', statusLabel: 'running', slotProps: { status: { variant: 'square' } } },
+  play: async ({ canvasElement }) => {
+    const avatar = within(canvasElement).getByRole('img', { name: 'Deploy bot, running' });
+    const dot = avatar.querySelector<HTMLElement>('[data-ui~="avatar-status"]')!;
+    await expect(dot).toHaveAttribute('data-variant', 'square');
+    await expect(dot).toHaveAttribute('aria-hidden', 'true');
   },
 };
 
@@ -425,26 +452,17 @@ export const ForcedColorsRule: Story = {
   play: async ({ canvasElement }) => {
     const avatars = canvasElement.querySelectorAll<HTMLElement>('[data-ui="avatar"]');
     await expect(avatars).toHaveLength(5);
-    const rules = Array.from(canvasElement.ownerDocument.styleSheets)
-      .flatMap((sheet) => Array.from(sheet.cssRules))
-      .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule && rule.conditionText.includes('forced-colors: active'))
-      .flatMap((rule) => Array.from(rule.cssRules))
-      .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule);
+    const rules = mediaRules(canvasElement.ownerDocument, 'forced-colors: active');
     for (const avatar of avatars) {
       const selectors = Array.from(avatar.classList, (name) => `.${name}`);
       await expect(rules.some((rule) => selectors.includes(rule.selectorText) && rule.style.outlineColor.toLowerCase() === 'canvastext')).toBe(true);
-      const status = avatar.querySelector<HTMLElement>('[data-status]')!;
-      const statusSelectors = Array.from(status.classList, (name) => `.${name}::before`);
+      // The dot keeps its glyph in system colors: CanvasText ink, Canvas outline and cut-outs.
+      const status = avatar.querySelector<HTMLElement>('[data-ui~="avatar-status"]')!;
+      const statusSelectors = Array.from(status.classList, (name) => `.${name}`);
       const statusRule = rules.find((rule) => statusSelectors.includes(rule.selectorText) && rule.style.forcedColorAdjust === 'none');
-      await expect(statusRule?.style.backgroundColor).toBe('canvastext');
-      await expect(statusRule?.style.outlineColor.toLowerCase()).toBe('canvas');
-      await expect(statusRule?.style.outlineWidth).toBe('2px');
-      if (status.dataset.status === 'away') {
-        const awaySelectors = Array.from(status.classList, (name) => `.${name}[data-status="away"]::before`);
-        const awayRule = rules.find((rule) => awaySelectors.includes(rule.selectorText));
-        await expect(awayRule?.style.backgroundColor).toBe('canvas');
-        await expect(awayRule?.style.borderColor).toBe('canvastext');
-      }
+      await expect(statusRule?.style.getPropertyValue('--status-dot-ink').trim()).toBe('CanvasText');
+      await expect(statusRule?.style.getPropertyValue('--status-dot-cut').trim()).toBe('Canvas');
+      await expect(getComputedStyle(status).outlineWidth).toBe('2px');
     }
   },
 };
@@ -457,33 +475,13 @@ export const RTL: Story = {
     const status = avatar.querySelector<HTMLElement>('[data-status]')!;
     await expect(getComputedStyle(status).left).toBe('0px');
     await expect(getComputedStyle(status).right).not.toBe('0px');
+    const dot = status.getBoundingClientRect();
+    const box = avatar.getBoundingClientRect();
+    await expect(dot.left).toBeCloseTo(box.left, 3);
+    await expect(dot.bottom).toBeCloseTo(box.bottom, 3);
+    await expectPulseFromDot(status);
   },
 };
-
-async function expectPresenceCycle(badge: HTMLElement) {
-  const view = badge.ownerDocument.defaultView!;
-  const animation = badge.getAnimations({ subtree: true }).find((animation) =>
-    animation.effect instanceof KeyframeEffect && animation.effect.pseudoElement === '::after',
-  );
-  await expect(animation).toBeDefined();
-  if (!animation) throw new Error('Missing presence ring animation');
-  const previousTime = animation.currentTime;
-  animation.pause();
-  await animation.ready;
-  try {
-    const frames = [[0, 0.8, 1], [600, 1.6, 0.5], [1199, 2.4, 0], [1200, 0.8, 1], [1800, 1.6, 0.5]] as const;
-    for (const [time, scale, opacity] of frames) {
-      animation.currentTime = time;
-      await new Promise<void>((resolve) => view.requestAnimationFrame(() => resolve()));
-      const ring = view.getComputedStyle(badge, '::after');
-      await expect(new DOMMatrixReadOnly(ring.transform).a).toBeCloseTo(scale, 2);
-      await expect(Number(ring.opacity)).toBeCloseTo(opacity, 2);
-    }
-  } finally {
-    animation.currentTime = previousTime;
-    animation.play();
-  }
-}
 
 export const OnlinePulse: Story = {
   name: 'Pulsing online presence',
@@ -521,34 +519,31 @@ import { sceneSource } from '@jfrader/ui/scene';
       await expect(avatar.tabIndex).toBe(-1);
       await expect(avatar.querySelector('[aria-live]')).toBeNull();
       await expect(getComputedStyle(avatar).overflow).not.toBe('hidden');
-      await expect(badge.getBoundingClientRect().width).toBe(avatar.getBoundingClientRect().width / 4);
-      await expect(badge.getBoundingClientRect().height).toBe(avatar.getBoundingClientRect().height / 4);
-      await expect(Number.parseFloat(ring.width)).toBe(badge.getBoundingClientRect().width);
-      await expect(Number.parseFloat(ring.height)).toBe(badge.getBoundingClientRect().height);
-      const borderBoxWidth = Number.parseFloat(ring.width) + (ring.boxSizing === 'border-box' ? 0 :
-        Number.parseFloat(ring.borderLeftWidth) + Number.parseFloat(ring.borderRightWidth));
-      const borderBoxHeight = Number.parseFloat(ring.height) + (ring.boxSizing === 'border-box' ? 0 :
-        Number.parseFloat(ring.borderTopWidth) + Number.parseFloat(ring.borderBottomWidth));
-      await expect(borderBoxWidth).toBe(badge.getBoundingClientRect().width);
-      await expect(borderBoxHeight).toBe(badge.getBoundingClientRect().height);
+      // The ring is the dot's own token-sized box in the avatar's corner, never the avatar box.
+      const size = SIZES[Math.floor(index / 2)]!;
+      const dot = badge.getBoundingClientRect();
+      const box = avatar.getBoundingClientRect();
+      await expect(dot.width).toBe(DOT_PX[size]);
+      await expect(dot.height).toBe(DOT_PX[size]);
+      await expect(dot.right).toBeCloseTo(box.right, 3);
+      await expect(dot.bottom).toBeCloseTo(box.bottom, 3);
+      await expect(Number.parseFloat(ring.width)).toBeLessThan(box.width / 2);
+      await expectPulseFromDot(badge);
       if (index % 2 === 0) {
         const photo = avatar.querySelector('img')!;
         await waitFor(() => expect(photo.naturalWidth).toBeGreaterThan(0));
       } else {
         await expect(avatar).toHaveTextContent(`I${SIZES[Math.floor(index / 2)]!.charAt(0).toUpperCase()}`);
       }
-      await expect(ring.animationDuration).toBe('1.2s');
-      await expect(ring.animationName).not.toBe('none');
       await expect(ring.animationTimingFunction).toBe('ease-in-out');
-      await expect(ring.animationIterationCount).toBe('infinite');
       await expect(ring.borderTopWidth).toBe('1px');
-      await expect(ring.borderTopColor).toBe(ring.color);
-      await expect(getComputedStyle(badge, '::before').animationName).toBe('none');
-      await expect(getComputedStyle(badge, '::before').transform).toBe('none');
-      await expect(getComputedStyle(badge, '::before').opacity).toBe('1');
-      await expect(getComputedStyle(badge, '::before').boxShadow).toContain('0px 0px 0px 2px');
+      await expect(ring.borderTopColor).toBe(getComputedStyle(badge).backgroundColor);
+      // The dot itself stays still while its ring animates.
+      await expect(getComputedStyle(badge).transform).toBe('none');
+      await expect(getComputedStyle(badge).opacity).toBe('1');
+      await expect(getComputedStyle(badge).outlineWidth).toBe('2px');
     }
-    for (const badge of badges) await expectPresenceCycle(badge);
+    for (const badge of badges) await expectPulseCycle(badge);
   },
 };
 
@@ -595,49 +590,38 @@ export const StaticPresence: Story = {
     await expect(avatars).toHaveLength(6);
     await expect(canvasElement.querySelectorAll('[data-status]')).toHaveLength(5);
     await expect(avatars[5]!.querySelector('[data-status]')).toBeNull();
-    for (const avatar of avatars) {
+    await expect(avatars[5]).toHaveAccessibleName(NAME);
+    for (const [index, avatar] of [...avatars].entries()) {
       await expect(avatar).not.toHaveAttribute('pulse');
       const badge = avatar.querySelector<HTMLElement>('[data-status]');
-      if (badge) {
+      if (!badge) continue;
+      if (index < 2) {
         await expect(badge).not.toHaveAttribute('data-pulse');
-        await expect(getComputedStyle(badge, '::after').animationName).toBe('none');
         await expect(getComputedStyle(badge, '::after').content).toBe('none');
+        await expect(badge.getAnimations({ subtree: true })).toHaveLength(0);
       } else {
-        await expect(avatar).toHaveAccessibleName(NAME);
+        // `pulse` applies to every status, not only online.
+        await expect(badge).toHaveAttribute('data-pulse');
+        await expectPulseFromDot(badge);
       }
     }
   },
 };
 
-async function expectHiddenRingForMedia(canvasElement: HTMLElement, condition: string) {
-  const badge = canvasElement.querySelector<HTMLElement>('[data-status]')!;
-  const rules = Array.from(canvasElement.ownerDocument.styleSheets)
-    .flatMap((sheet) => Array.from(sheet.cssRules))
-    .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule && rule.conditionText === `(${condition})`)
-    .flatMap((rule) => Array.from(rule.cssRules))
-    .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule);
-  const selectors = Array.from(badge.classList, (name) => `.${name}[data-status="online"][data-pulse]::after`);
-  const ringRule = rules.find((rule) => selectors.includes(rule.selectorText));
-  await expect(ringRule).toBeDefined();
-  await expect(ringRule?.style.content).toBe('none');
-  await expect(ringRule?.style.display).toBe('none');
-  await expect(ringRule?.style.animationName).toBe('none');
-  const disabledAnimation = canvasElement.ownerDocument.createElement('span').style;
-  disabledAnimation.animation = 'none';
-  await expect(ringRule?.style.animation).toBe(disabledAnimation.animation);
-}
-
 export const ReducedMotionRule: Story = {
   args: { status: 'online', pulse: true },
   play: async ({ canvasElement }) => {
-    await expectHiddenRingForMedia(canvasElement, 'prefers-reduced-motion: reduce');
+    const dot = canvasElement.querySelector<HTMLElement>('[data-ui~="avatar-status"]')!;
+    await expectPulseHiddenForMedia(dot, 'prefers-reduced-motion: reduce');
+    await expect(dot.getBoundingClientRect().width).toBe(DOT_PX.md);
   },
 };
 
 export const PulseForcedColorsRule: Story = {
   args: { status: 'online', pulse: true },
   play: async ({ canvasElement }) => {
-    await expectHiddenRingForMedia(canvasElement, 'forced-colors: active');
+    const dot = canvasElement.querySelector<HTMLElement>('[data-ui~="avatar-status"]')!;
+    await expectPulseHiddenForMedia(dot, 'forced-colors: active');
   },
 };
 

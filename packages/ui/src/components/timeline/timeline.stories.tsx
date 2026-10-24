@@ -68,6 +68,8 @@ const MIN_TRIGGER = 32;
 const relative = new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto' });
 const fullDay = (at: number | string, timeZone = 'UTC', locale = LOCALE) =>
   new Intl.DateTimeFormat(locale, { timeZone, dateStyle: 'full' }).format(new Date(at));
+/** A day heading starts with a capital in the formatting locale. */
+const headingCase = (day: string, locale = LOCALE) => day.charAt(0).toLocaleUpperCase(locale) + day.slice(1);
 
 const Frame = styled.div({ inlineSize: '34rem', maxInlineSize: '100%', marginInline: 'auto' });
 const Narrow = styled.div({ inlineSize: '16rem' });
@@ -316,8 +318,8 @@ export const Default: Story = {
     await expect(EVENTS.map((event) => event.id)).toEqual(['keys', 'deploy', 'project', 'build', 'review']);
     await expect(canvas.getAllByRole('heading', { level: 3 })).toHaveLength(3);
     await expect(dayLabels(canvasElement)).toEqual([
-      relative.format(0, 'day'),
-      relative.format(-1, 'day'),
+      headingCase(relative.format(0, 'day')),
+      headingCase(relative.format(-1, 'day')),
       fullDay('2026-10-08T09:00:00Z'),
     ]);
     const lists = canvas.getAllByRole('list');
@@ -326,14 +328,14 @@ export const Default: Story = {
     // Each day group is named by its heading; days are groups, not extra landmarks.
     const days = canvas.getAllByRole('group');
     await expect(days).toEqual(parts(canvasElement, 'group'));
-    await expect(days[1]).toHaveAccessibleName(`${relative.format(-1, 'day')} 2 events`);
+    await expect(days[1]).toHaveAccessibleName(`${headingCase(relative.format(-1, 'day'))} 2 events`);
     await expect(days[1]!.getAttribute('aria-labelledby')).toBe(parts(canvasElement, 'heading')[1]!.id);
     await expect(canvas.getAllByRole('region')).toEqual([region]);
     const time = part(item(canvasElement, 'deploy'), 'time');
     await expect(time).toHaveAttribute('datetime', '2026-10-11T11:55:00.000Z');
     await expect(time.firstChild!.textContent).toBe(relative.format(-5, 'minute'));
     await expect(time.firstChild!.textContent).toBe('5 minutes ago');
-    await expect(dayLabels(canvasElement)).toEqual(['today', 'yesterday', 'Thursday, October 8, 2026']);
+    await expect(dayLabels(canvasElement)).toEqual(['Today', 'Yesterday', 'Thursday, October 8, 2026']);
     const deploy = triggerOf(canvasElement, 'deploy');
     await expect(deploy).toHaveAccessibleName('Deployed web 4.2 to production');
     await expect(deploy).toHaveAttribute('aria-expanded', 'false');
@@ -920,7 +922,7 @@ export const InvalidDates: Story = {
   },
   play: async ({ canvasElement }) => {
     await expect(itemIds(canvasElement)).toEqual(['valid', 'nan', 'text', 'overflow', 'zoneless', 'date', 'infinite']);
-    await expect(dayLabels(canvasElement)).toEqual([relative.format(0, 'day'), 'Unknown time']);
+    await expect(dayLabels(canvasElement)).toEqual([headingCase(relative.format(0, 'day')), 'Unknown time']);
     const invalidGroup = parts(canvasElement, 'group')[1]!;
     await expect(invalidGroup.querySelector('time')).toBeNull();
     // toISOString only ever runs on valid instants, so no call threw.
@@ -970,8 +972,8 @@ export const FutureEvents: Story = {
     await expect(itemIds(canvasElement)).toEqual(['later', 'tomorrow', 'soon', 'past']);
     await expect(dayLabels(canvasElement)).toEqual([
       fullDay('2026-10-20T09:00:00Z'),
-      relative.format(1, 'day'),
-      relative.format(0, 'day'),
+      headingCase(relative.format(1, 'day')),
+      headingCase(relative.format(0, 'day')),
     ]);
     const text = (id: string) => part(item(canvasElement, id), 'time').firstChild!.textContent;
     await expect(text('soon')).toBe(relative.format(30, 'minute'));
@@ -1011,13 +1013,13 @@ export const DSTBoundary: Story = {
   play: async ({ canvas }) => {
     const root = (name: string) => canvas.getByRole('region', { name });
     const time = (name: string) => part(root(name), 'time').firstChild!.textContent;
-    await expect(dayLabels(root('Autumn change'))).toEqual([relative.format(-1, 'day')]);
+    await expect(dayLabels(root('Autumn change'))).toEqual([headingCase(relative.format(-1, 'day'))]);
     await expect(time('Autumn change')).toBe(relative.format(-1, 'day'));
     await expect(dayLabels(root('Spring change'))).toEqual([fullDay('2026-03-28T23:50:00+01:00', 'Europe/Madrid')]);
     await expect(time('Spring change')).toBe(relative.format(-23, 'hour'));
     // 23:30 UTC is already the next day in Madrid.
-    await expect(dayLabels(root('Madrid midnight'))).toEqual([relative.format(1, 'day')]);
-    await expect(dayLabels(root('UTC midnight'))).toEqual([relative.format(0, 'day')]);
+    await expect(dayLabels(root('Madrid midnight'))).toEqual([headingCase(relative.format(1, 'day'))]);
+    await expect(dayLabels(root('UTC midnight'))).toEqual([headingCase(relative.format(0, 'day'))]);
     await expect(part(root('Madrid midnight'), 'group')).toHaveAttribute('data-day', '2026-10-12');
   },
 };
@@ -1449,7 +1451,12 @@ const events: TimelineEvent[] = [
   },
   play: async ({ canvasElement }) => {
     const spanish = new Intl.RelativeTimeFormat('es-ES', { numeric: 'auto' });
-    await expect(dayLabels(canvasElement).slice(0, 2)).toEqual([spanish.format(0, 'day'), spanish.format(-1, 'day')]);
+    await expect(dayLabels(canvasElement)).toEqual([
+      headingCase(spanish.format(0, 'day'), 'es-ES'),
+      headingCase(spanish.format(-1, 'day'), 'es-ES'),
+      headingCase(fullDay('2026-10-08T09:00:00Z', 'UTC', 'es-ES'), 'es-ES'),
+    ]);
+    await expect(dayLabels(canvasElement)[0]).toBe('Hoy');
     await expect(part(item(canvasElement, 'deploy'), 'time').firstChild!.textContent).toBe(
       spanish.format(-5, 'minute'),
     );
@@ -1836,5 +1843,96 @@ export const MobileLayout: Story = {
     await expectFocusRing(deploy);
     for (const trigger of parts(root, 'trigger'))
       await expect(trigger.getBoundingClientRect().height).toBeGreaterThanOrEqual(MIN_TRIGGER - 0.5);
+  },
+};
+
+const centreX = (rect: DOMRect) => (rect.left + rect.right) / 2;
+const centreY = (rect: DOMRect) => (rect.top + rect.bottom) / 2;
+const expectNear = (actual: number, expected: number, label: string) =>
+  expect(Math.abs(actual - expected), `${label}: ${actual} vs ${expected}`).toBeLessThan(GEOMETRY_TOLERANCE);
+/** Rail box of an item, read from its positioned `::before`. */
+function railRect(row: HTMLElement) {
+  const style = getComputedStyle(row, '::before');
+  const box = row.getBoundingClientRect();
+  const left = box.left + Number.parseFloat(style.left);
+  const width = Number.parseFloat(style.borderInlineStartWidth);
+  return new DOMRect(left, box.top + Number.parseFloat(style.top), width, box.height - Number.parseFloat(style.top) - Number.parseFloat(style.bottom));
+}
+/** Inline-start edge of a box, for either direction. */
+const inlineStart = (rect: DOMRect, rtl: boolean) => (rtl ? rect.right : rect.left);
+/** Where a disclosure's text starts: past its border and padding. */
+function triggerTextStart(trigger: HTMLElement, rtl: boolean) {
+  const style = getComputedStyle(trigger);
+  const inset = Number.parseFloat(style.borderInlineStartWidth) + Number.parseFloat(style.paddingInlineStart);
+  return inlineStart(trigger.getBoundingClientRect(), rtl) + (rtl ? -inset : inset);
+}
+
+/** Markers, rail and titles share one centre line; headings sit on the content column; heading,
+ * event and day gaps grow in that order at both sizes, for days with one and two events; the gap
+ * after an actor is the same before a disclosure and a plain title. */
+export const DayRhythm: Story = {
+  tags: ['!autodocs'],
+  render: (args) => (
+    <StackFrame>
+      <Timeline {...args} size="md" aria-label="Regular history" />
+      <Timeline {...args} size="sm" aria-label="Compact history" />
+      <Timeline {...args} size="md" dir="rtl" aria-label="RTL history" />
+    </StackFrame>
+  ),
+  play: async ({ canvas }) => {
+    for (const name of ['Regular history', 'Compact history', 'RTL history']) {
+      const root = canvas.getByRole('region', { name });
+      const rtl = name === 'RTL history';
+      const headingGaps: number[] = [];
+      const rowGaps: number[] = [];
+      const dayGaps: number[] = [];
+      const actorGaps: number[] = [];
+      const groups = parts(root, 'group');
+      for (const [groupIndex, group] of groups.entries()) {
+        const headingText = part(group, 'heading').firstElementChild!.getBoundingClientRect();
+        const rows = parts(group, 'item');
+        const content = (row: HTMLElement) => part(row, 'marker').nextElementSibling!.getBoundingClientRect();
+        await expectNear(inlineStart(headingText, rtl), inlineStart(content(rows[0]!), rtl), `${name} heading on content column`);
+        headingGaps.push(rows[0]!.getBoundingClientRect().top - headingText.bottom);
+        for (const [index, row] of rows.entries()) {
+          const marker = part(row, 'marker').getBoundingClientRect();
+          const titleLine = part(row, 'marker').nextElementSibling!.firstElementChild!.firstElementChild!;
+          await expectNear(centreY(marker), centreY(titleLine.getBoundingClientRect()), `${name} ${row.dataset.eventId} marker on title line`);
+          const trigger = part(titleLine as HTMLElement, 'trigger');
+          const actor = part(titleLine as HTMLElement, 'actor');
+          if (trigger && !actor)
+            await expectNear(triggerTextStart(trigger, rtl), inlineStart(content(row), rtl), `${name} ${row.dataset.eventId} leading disclosure text`);
+          if (actor) {
+            const titleStart = trigger
+              ? triggerTextStart(trigger, rtl)
+              : inlineStart(part(titleLine as HTMLElement, 'title').getBoundingClientRect(), rtl);
+            const actorBox = actor.getBoundingClientRect();
+            actorGaps.push(Math.abs(titleStart - (rtl ? actorBox.left : actorBox.right)));
+          }
+          const next = rows[index + 1];
+          if (!next) {
+            await expect(getComputedStyle(row, '::before').content).toBe('none');
+            const nextGroup = groups[groupIndex + 1];
+            if (nextGroup)
+              dayGaps.push(part(nextGroup, 'heading').firstElementChild!.getBoundingClientRect().top - content(row).bottom);
+            continue;
+          }
+          const rail = railRect(row);
+          const nextMarker = part(next, 'marker').getBoundingClientRect();
+          await expectNear(centreX(rail), centreX(marker), `${name} ${row.dataset.eventId} rail x`);
+          await expectNear(rail.top, centreY(marker), `${name} ${row.dataset.eventId} rail start`);
+          await expectNear(rail.bottom, centreY(nextMarker), `${name} ${row.dataset.eventId} rail end`);
+          rowGaps.push(next.getBoundingClientRect().top - content(row).bottom);
+        }
+      }
+      // Default data: two days with two events, then one day with a single event.
+      await expect(groups.map((group) => parts(group, 'item').length)).toEqual([2, 2, 1]);
+      await expect(dayGaps).toHaveLength(2);
+      // Default data: actors before both disclosures and plain titles.
+      await expect(actorGaps).toHaveLength(4);
+      for (const gaps of [headingGaps, rowGaps, dayGaps, actorGaps]) await expectNear(Math.max(...gaps), Math.min(...gaps), `${name} uniform gaps`);
+      await expect(headingGaps[0]!, `${name} heading gap below row gap`).toBeLessThan(rowGaps[0]!);
+      await expect(rowGaps[0]!, `${name} row gap below day gap`).toBeLessThan(dayGaps[0]!);
+    }
   },
 };

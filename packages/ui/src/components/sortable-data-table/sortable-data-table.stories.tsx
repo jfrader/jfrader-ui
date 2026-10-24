@@ -4,11 +4,14 @@ import { expect, fn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
+import { EmptyState } from '../empty-state';
+import { SearchField } from '../search-field';
 import { SortableDataTable, type DataColumn, type SortableDataTableProps, type SortState } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
 const SizeGrid = styled.div({ display: 'grid', gap: vars.space[4] });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
 
 const NarrowFrame = styled.div({ inlineSize: 'min(100%, 280px)' });
 
@@ -28,6 +31,11 @@ const columns: readonly DataColumn<Project>[] = [
   { id: 'name', header: 'Name', accessor: (row) => row.name },
   { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
 ];
+const manyRows: readonly Project[] = Array.from({ length: 40 }, (_, index) => ({
+  ...rows[index % rows.length]!,
+  id: `project-${index}`,
+  name: `Project ${index + 1}`,
+}));
 const getRowId = (row: Project) => row.id;
 const getRowLabel = (row: Project) => row.name;
 function checkConsumerTypes() {
@@ -39,6 +47,7 @@ function checkConsumerTypes() {
   ] as const satisfies readonly DataColumn<Person, 'name' | 'age'>[];
   const base = { rows: people, columns: personColumns, getRowId: (person: Person) => person.id, caption: 'People' };
   const acceptSort = (_sort: SortState<'name' | 'age'> | null) => {};
+  const acceptSortOrder = (_sort: readonly SortState<'name' | 'age'>[]) => {};
   const acceptKeys = (_keys: readonly Person['id'][]) => {};
 
   <SortableDataTable {...base} defaultValue={{ columnId: 'age', direction: 'asc' }}
@@ -64,6 +73,21 @@ function checkConsumerTypes() {
   <SortableDataTable {...base} selectable />;
   <SortableDataTable {...base} sortMode="manual" value={null} selectable getRowLabel={person => person.name} />;
 
+  <SortableDataTable {...base} multiSort defaultSort={[{ columnId: 'age', direction: 'desc' }, { columnId: 'name', direction: 'asc' }]}
+    onSortChange={sort => acceptSortOrder(sort)} />;
+  <SortableDataTable {...base} sortMode="manual" sort={[]} selectionMode="single" getRowLabel={person => person.name} />;
+  <SortableDataTable {...base} density="comfortable" toolbar={<Button size="sm">Export</Button>} maxTableHeight={320} />;
+  // @ts-expect-error Sort entries cannot widen ids inferred from columns.
+  <SortableDataTable {...base} sort={[{ columnId: 'unknown', direction: 'asc' }]} />;
+  // @ts-expect-error Default sort entries cannot widen ids inferred from columns.
+  <SortableDataTable {...base} defaultSort={[{ columnId: 'unknown', direction: 'asc' }]} />;
+  // @ts-expect-error Selection modes still require row labels.
+  <SortableDataTable {...base} selectionMode="multiple" />;
+  // @ts-expect-error Density is a closed set.
+  <SortableDataTable {...base} density="dense" />;
+  // @ts-expect-error Column alignment is a closed set.
+  <SortableDataTable {...base} columns={[{ id: 'name', header: 'Name', align: 'left' }]} />;
+
   const computedColumns = [
     { id: 'nameLength', header: 'Name length', accessor: (person: Person) => person.name.length },
     { id: 'adult', header: 'Adult', cell: (person: Person) => String(person.age >= 18),
@@ -78,65 +102,14 @@ function checkConsumerTypes() {
   <SortableDataTable<Person> {...base} value={{ columnId: dynamicId, direction: 'asc' }} selectedKeys={['off-page']} />;
   const legacyProps: SortableDataTableProps<Person> = { ...base, value: { columnId: dynamicId, direction: 'asc' } };
   <SortableDataTable {...legacyProps} />;
+  const wrapperProps: SortableDataTableProps<Person> = { ...base, sort: [{ columnId: dynamicId, direction: 'asc' }] };
+  <SortableDataTable {...wrapperProps} value={null} selectable getRowLabel={person => person.name} />;
 }
 void checkConsumerTypes;
 const Table = (props: SortableDataTableProps<Project>) => <SortableDataTable {...props} />;
 Table.displayName = 'SortableDataTable';
-const meta = {
-  title: 'Data/SortableDataTable',
-  component: Table,
-  tags: ['autodocs'],
-  args: { rows, columns, getRowId, caption: 'Projects', locale: 'en-US', timeZone: 'UTC' },
-  parameters: {
-    docs: {
-      description: {
-        component:
-          'Sort rows by column and select rows in a table.',
-      },
-      sections: [
-        { title: 'Basic', stories: ['Default', 'Sizes', 'MinimumTableWidth'] },
-        { title: 'Sorting', stories: ['Ascending', 'CustomComparator'] },
-        { title: 'Row selection', stories: ['Selection', 'MixedSelection'] },
-        { title: 'Formatting', stories: ['CustomCells', 'LocaleNumbersAndDates'] },
-        { title: 'States', stories: ['Loading', 'Empty'] },
-      ],
-      usage: `### Sorting and data
-- Sorting alternates between ascending and descending on activation. Reset controlled sorting to null to clear it.
-- Manual sorting delegates row ordering to the caller and requires controlled state.
-- Columns with non-text headings require an accessible sort label. Columns returning mixed accessor types require an explicit comparator.
-- Multi-row selection supports individual rows, range selection with Shift, and a header select-all toggle with indeterminate state.
-- Specify an explicit locale and time zone for deterministic date and number formatting across SSR and hydration.
-- Use bounded collections and add Pagination outside the table. Grid navigation, editing, and virtualization are not supported.
 
-### Keyboard and accessibility
-
-- Tab traverses the scroller container, sortable column headers, and selection checkboxes.
-- Press Enter or Space on a column header to toggle sort direction.
-- Press Space on a row checkbox to toggle selection, or on the header checkbox to select or clear all rows.`,
-    },
-  },
-} satisfies Meta<typeof Table>;
-export default meta;
-type Story = StoryObj<typeof meta>;
-const names = (element: HTMLElement) =>
-  Array.from(
-    element.querySelectorAll('tbody tr'),
-    (row) => row.querySelectorAll('td')[row.querySelector('input') ? 1 : 0]?.textContent,
-  );
-const sortedHeader = (element: HTMLElement) => element.querySelector('th[aria-sort]');
-
-export const Default: Story = {
-  name: 'Projects table',
-  parameters: {
-    docs: {
-      description: {
-        story: 'Display tabular data with column sorting and a table caption.',
-      },
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
-
-interface Project {
+const projectSetup = `interface Project {
   id: string;
   name: string;
   budget: number | null;
@@ -152,7 +125,78 @@ const projects: Project[] = [
 const columns: DataColumn<Project>[] = [
   { id: 'name', header: 'Name', accessor: (row) => row.name },
   { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
-];
+];`;
+// Docs parameters for a story: the authored snippet and, for listed examples, a description.
+const docs = (code: string, story?: string) => ({
+  docs: { ...(story ? { description: { story } } : {}), source: { language: 'tsx', code } },
+});
+// A standalone projects example around one SortableDataTable element.
+const projectExample = (props: string, imports = '') => `${imports}import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+
+${projectSetup}
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={projects}
+  columns={columns}
+  getRowId={(row) => row.id}${props}
+/>`;
+
+const meta = {
+  title: 'Data/SortableDataTable',
+  component: Table,
+  tags: ['autodocs'],
+  args: { rows, columns, getRowId, caption: 'Projects', locale: 'en-US', timeZone: 'UTC' },
+  parameters: {
+    docs: {
+      description: {
+        component: 'Sort, select, and scan records in a table.',
+      },
+      sections: [
+        { title: 'Basic', stories: ['Default', 'Density', 'MinimumTableWidth'] },
+        { title: 'Sorting', stories: ['Ascending', 'MultiColumnSort', 'CustomComparator'] },
+        { title: 'Row selection', stories: ['Selection', 'SingleSelection', 'MixedSelection'] },
+        { title: 'Columns and layout', stories: ['ColumnLayout', 'Toolbar', 'StickyHeader'] },
+        { title: 'Formatting', stories: ['CustomCells', 'LocaleNumbersAndDates'] },
+        { title: 'States', stories: ['Loading', 'Empty', 'EmptyWithAction'] },
+      ],
+      usage: `### Sorting and data
+- Activating a sort button alternates its column between ascending and descending. Set a controlled \`sort\` to \`[]\` to return to input order.
+- With \`multiSort\`, each activation cycles a column through ascending, descending, and removed. A newly sorted column joins at the lowest priority, and a number beside each sorted heading shows its priority.
+- Manual sorting leaves row ordering to you and requires a controlled \`sort\`.
+- Columns with non-text headings need a \`sortLabel\`. Columns returning mixed accessor types need a \`compare\` function.
+- Selection, focus, and rendering follow \`getRowId\`, so a selected row stays selected when rows reorder or reload.
+- Set an explicit locale and time zone for deterministic date and number formatting across SSR and hydration.
+- Use bounded collections and add Pagination outside the table. Grid navigation, editing, and virtualization are not supported.
+
+### Row selection
+- \`selectionMode="single"\` keeps at most one row selected. Checking another row replaces it.
+- \`selectionMode="multiple"\` adds Shift range selection and a header checkbox that selects or clears every visible row.
+
+### Keyboard and accessibility
+- Tab moves through the toolbar controls, the scroller, the sort buttons, and the row checkboxes.
+- Press Enter or Space on a sort button to change its column's sort. The primary sorted heading carries \`aria-sort\`; the other sort buttons name their direction and priority.
+- Press Space on a row checkbox to toggle the row. Selectable rows expose \`aria-selected\`.
+- Sort, selection, loading, and empty results are announced in a polite live region. Focus stays where it is.`,
+    },
+  },
+} satisfies Meta<typeof Table>;
+export default meta;
+type Story = StoryObj<typeof meta>;
+// The last tbody holds the records; a loading row renders in its own tbody before it.
+const bodyRows = (element: HTMLElement) => Array.from(element.querySelectorAll('tbody:last-of-type tr'));
+const names = (element: HTMLElement) =>
+  bodyRows(element).map((row) => row.querySelectorAll('td')[row.querySelector('input') ? 1 : 0]?.textContent);
+const sortedHeader = (element: HTMLElement) => element.querySelector('th[aria-sort]');
+const statusRegion = (element: HTMLElement) => element.querySelector<HTMLElement>('[role="status"]')!;
+
+export const Default: Story = {
+  name: 'Projects table',
+  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+
+${projectSetup}
 
 export function ProjectsTable() {
   return (
@@ -165,10 +209,7 @@ export function ProjectsTable() {
       getRowId={(row) => row.id}
     />
   );
-}`,
-      },
-    },
-  },
+}`, 'Display tabular data with column sorting and a table caption.'),
   play: async ({ canvasElement, canvas }) => {
     await expect(canvas.getByRole('table', { name: 'Projects' }).tagName).toBe('TABLE');
     await expect(canvasElement.querySelector('thead')?.tagName).toBe('THEAD');
@@ -176,7 +217,9 @@ export function ProjectsTable() {
     for (const header of canvas.getAllByRole('columnheader')) await expect(header).toHaveAttribute('scope', 'col');
     await expect(sortedHeader(canvasElement)).toBeNull();
     await expect(names(canvasElement)).toEqual(['Cedar', 'Atlas', 'Birch', 'Delta']);
+    for (const row of bodyRows(canvasElement)) await expect(row).not.toHaveAttribute('aria-selected');
     await expect(canvas.getByRole('status')).toBeEmptyDOMElement();
+    await expect(canvasElement.querySelector('[data-ui="sortable-data-table-toolbar"]')).toBeNull();
     for (const button of canvas.getAllByRole('button')) {
       const style = getComputedStyle(button);
       await expect(style.borderStyle).toBe('none');
@@ -191,72 +234,15 @@ export function ProjectsTable() {
   },
 };
 export const Unsorted: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
-
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const rows: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
-];
-
-<SortableDataTable
-  caption="Projects"
-  locale="en-US"
-  timeZone="UTC"
-  rows={rows}
-  columns={columns}
-  getRowId={(row) => row.id}
-  value={null}
-/>`,
-      },
-    },
-  },
-  args: { value: null },
+  parameters: docs(projectExample(`
+  sort={[]}`)),
+  args: { sort: [] },
 };
 export const Ascending: Story = {
   name: 'Initial sort order',
-  parameters: {
-    docs: {
-      description: {
-        story: 'Set an initial sort column and direction with defaultValue.',
-      },
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const projects: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns: DataColumn<Project>[] = [
-  { id: 'name', header: 'Name', accessor: (row) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
-];
+${projectSetup}
 
 export function InitialSortTable() {
   return (
@@ -267,123 +253,143 @@ export function InitialSortTable() {
       rows={projects}
       columns={columns}
       getRowId={(row) => row.id}
-      defaultValue={{ columnId: 'name', direction: 'asc' }}
+      defaultSort={[{ columnId: 'name', direction: 'asc' }]}
     />
   );
-}`,
-      },
-    },
+}`, 'Set an initial sort column and direction with defaultSort.'),
+  args: { defaultSort: [{ columnId: 'name', direction: 'asc' }] },
+  play: async ({ canvasElement }) => {
+    await expect(names(canvasElement)).toEqual(['Atlas', 'Birch', 'Cedar', 'Delta']);
+    await expect(sortedHeader(canvasElement)).toHaveAttribute('aria-sort', 'ascending');
   },
-  args: { defaultValue: { columnId: 'name', direction: 'asc' } },
 };
 export const Descending: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
-
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const rows: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
-];
-
-<SortableDataTable
-  caption="Projects"
-  locale="en-US"
-  timeZone="UTC"
-  rows={rows}
-  columns={columns}
-  getRowId={(row) => row.id}
-  defaultValue={{ columnId: 'name', direction: 'desc' }}
-/>`,
-      },
-    },
-  },
-  args: { defaultValue: { columnId: 'name', direction: 'desc' } },
+  parameters: docs(projectExample(`
+  defaultSort={[{ columnId: 'name', direction: 'desc' }]}`)),
+  args: { defaultSort: [{ columnId: 'name', direction: 'desc' }] },
 };
-export const Sizes: Story = {
-  name: 'Table sizes',
-  parameters: {
-    docs: {
-      description: {
-        story: 'Render tables in compact (sm) and regular (md) row padding densities.',
-      },
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable, type DataColumn, styled } from '@jfrader/ui';
+export const MultiColumnSort: Story = {
+  name: 'Multi-column sort',
+  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+
+${projectSetup}
+
+export function MultiSortTable() {
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="en-US"
+      timeZone="UTC"
+      rows={projects}
+      columns={columns}
+      getRowId={(row) => row.id}
+      multiSort
+      defaultSort={[
+        { columnId: 'budget', direction: 'desc' },
+        { columnId: 'name', direction: 'asc' },
+      ]}
+    />
+  );
+}`, 'Sort by budget, then by name. Activate a heading to cycle it through ascending, descending, and removed.'),
+  args: {
+    multiSort: true,
+    defaultSort: [{ columnId: 'budget', direction: 'desc' }, { columnId: 'name', direction: 'asc' }],
+    onSortChange: fn(),
+  },
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    const [nameHeader, budgetHeader] = Array.from(canvasElement.querySelectorAll('th'));
+    const priorities = () => Array.from(canvasElement.querySelectorAll('[data-ui="sortable-data-table-sort-priority"]'));
+    await expect(names(canvasElement)).toEqual(['Birch', 'Cedar', 'Atlas', 'Delta']);
+    // ARIA allows aria-sort on one header: the primary column.
+    await expect(budgetHeader).toHaveAttribute('aria-sort', 'descending');
+    await expect(nameHeader).not.toHaveAttribute('aria-sort');
+    await expect(priorities().map((marker) => marker.textContent)).toEqual(['2', '1']);
+    for (const marker of priorities()) {
+      await expect(marker).toBeVisible();
+      await expect(marker).toHaveAttribute('aria-hidden', 'true');
+    }
+    await expect(canvas.getByRole('button', { name: 'Budget, descending, priority 1: remove sort' })).toBeVisible();
+    for (const marker of priorities()) await expect(marker.closest('button')).toBeNull();
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Name, ascending, priority 2: sort descending' }));
+    await expect(args.onSortChange).toHaveBeenLastCalledWith([
+      { columnId: 'budget', direction: 'desc' },
+      { columnId: 'name', direction: 'desc' },
+    ]);
+    await expect(names(canvasElement)).toEqual(['Cedar', 'Birch', 'Atlas', 'Delta']);
+    await expect(statusRegion(canvasElement)).toHaveTextContent('Budget, descending and Name, descending');
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Name, descending, priority 2: remove sort' }));
+    await expect(args.onSortChange).toHaveBeenLastCalledWith([{ columnId: 'budget', direction: 'desc' }]);
+    await expect(names(canvasElement)).toEqual(['Cedar', 'Birch', 'Atlas', 'Delta']);
+    await expect(priorities()).toHaveLength(0);
+    await expect(statusRegion(canvasElement)).toHaveTextContent('Budget, descending');
+
+    // Focus stays on the activated button; leave for the scroller and Tab back in from the keyboard.
+    const nameSort = canvas.getByRole('button', { name: 'Name: sort ascending' });
+    await expect(nameSort.ownerDocument.activeElement).toBe(nameSort);
+    await userEvent.tab({ shift: true });
+    await expect(nameSort.ownerDocument.activeElement).toBe(canvas.getByRole('region'));
+    await userEvent.tab();
+    await expect(nameSort.ownerDocument.activeElement).toBe(nameSort);
+    await expect(getComputedStyle(nameSort).outlineStyle).not.toBe('none');
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onSortChange).toHaveBeenLastCalledWith([
+      { columnId: 'budget', direction: 'desc' },
+      { columnId: 'name', direction: 'asc' },
+    ]);
+    await expect(names(canvasElement)).toEqual(['Birch', 'Cedar', 'Atlas', 'Delta']);
+    await expect(nameSort.ownerDocument.activeElement).toBe(nameSort);
+    await expect(statusRegion(canvasElement)).toHaveTextContent('Budget, descending and Name, ascending');
+    await expect(args.onSortChange).toHaveBeenCalledTimes(3);
+  },
+};
+export const Density: Story = {
+  name: 'Row density',
+  parameters: docs(`import { SortableDataTable, type DataColumn, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const projects: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns: DataColumn<Project>[] = [
-  { id: 'name', header: 'Name', accessor: (row) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
-];
+${projectSetup}
 
 const Stack = styled.div({
   display: 'grid',
   gap: vars.space[4],
 });
 
-export function TableSizes() {
+export function TableDensities() {
   return (
     <Stack>
-      <SortableDataTable
-        size="sm"
-        caption="Compact projects"
-        locale="en-US"
-        timeZone="UTC"
-        rows={projects}
-        columns={columns}
-        getRowId={(row) => row.id}
-      />
-      <SortableDataTable
-        size="md"
-        caption="Projects"
-        locale="en-US"
-        timeZone="UTC"
-        rows={projects}
-        columns={columns}
-        getRowId={(row) => row.id}
-      />
+      {(['compact', 'standard', 'comfortable'] as const).map((density) => (
+        <SortableDataTable
+          key={density}
+          density={density}
+          caption={\`\${density} projects\`}
+          locale="en-US"
+          timeZone="UTC"
+          rows={projects}
+          columns={columns}
+          getRowId={(row) => row.id}
+          getRowLabel={(row) => row.name}
+          selectionMode="multiple"
+        />
+      ))}
     </Stack>
   );
-}`,
-      },
-    },
-  },
+}`, 'Set row height with density: compact, standard, or comfortable.'),
+  args: { selectionMode: 'multiple', getRowLabel },
   render: (args) => (
     <SizeGrid>
-      <Table {...args} size="sm" caption="Compact projects" messages={{ scrollLabel: 'Compact projects scroller' }} />
-      <Table {...args} size="md" />
+      <Table {...args} density="compact" caption="Compact projects" messages={{ scrollLabel: 'Compact projects scroller' }} />
+      <Table {...args} density="standard" caption="Standard projects" messages={{ scrollLabel: 'Standard projects scroller' }} />
+      <Table {...args} density="comfortable" caption="Comfortable projects" messages={{ scrollLabel: 'Comfortable projects scroller' }} />
     </SizeGrid>
   ),
   play: async ({ canvas }) => {
+    // Content height from the space scale plus the 1px row divider.
+    for (const [caption, content] of [['Compact projects', 32], ['Standard projects', 40], ['Comfortable projects', 48]] as const) {
+      const table = canvas.getByRole('table', { name: caption });
+      for (const row of table.querySelectorAll('tr')) await expect(row.getBoundingClientRect().height).toBe(content + 1);
+    }
     for (const button of canvas.getAllByRole('button')) {
       await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(31.5);
       await expect(button.getBoundingClientRect().width).toBeGreaterThanOrEqual(31.5);
@@ -391,43 +397,9 @@ export function TableSizes() {
   },
 };
 export const StableNumericSorting: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
-
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const rows: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
-];
-
-<SortableDataTable
-  caption="Projects"
-  locale="en-US"
-  timeZone="UTC"
-  rows={rows}
-  columns={columns}
-  getRowId={(row) => row.id}
-  onValueChange={(sort) => console.log('Sort changed:', sort)}
-/>`,
-      },
-    },
-  },
-  args: { onValueChange: fn() },
+  parameters: docs(projectExample(`
+  onSortChange={(sort) => console.log('Sort changed:', sort)}`)),
+  args: { onSortChange: fn() },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Budget: sort ascending' }));
     await expect(names(canvasElement)).toEqual(['Atlas', 'Cedar', 'Birch', 'Delta']);
@@ -436,26 +408,27 @@ const columns = [
     await expect(names(canvasElement)).toEqual(['Cedar', 'Birch', 'Atlas', 'Delta']);
     await userEvent.click(canvas.getByRole('button', { name: 'Budget: sort ascending' }));
     await expect(names(canvasElement)).toEqual(['Atlas', 'Cedar', 'Birch', 'Delta']);
-    await expect(args.onValueChange).toHaveBeenCalledTimes(3);
-    await expect(args.onValueChange).toHaveBeenNthCalledWith(1, { columnId: 'budget', direction: 'asc' });
-    await expect(args.onValueChange).toHaveBeenNthCalledWith(2, { columnId: 'budget', direction: 'desc' });
-    await expect(args.onValueChange).toHaveBeenNthCalledWith(3, { columnId: 'budget', direction: 'asc' });
+    await expect(args.onSortChange).toHaveBeenCalledTimes(3);
+    await expect(args.onSortChange).toHaveBeenNthCalledWith(1, [{ columnId: 'budget', direction: 'asc' }]);
+    await expect(args.onSortChange).toHaveBeenNthCalledWith(2, [{ columnId: 'budget', direction: 'desc' }]);
+    await expect(args.onSortChange).toHaveBeenNthCalledWith(3, [{ columnId: 'budget', direction: 'asc' }]);
     await expect(rows.map((row) => row.id)).toEqual(['c', 'a', 'b', 'd']);
     await expect(canvasElement.querySelectorAll('th[aria-sort]')).toHaveLength(1);
+    await expect(canvasElement.querySelector('[data-ui="sortable-data-table-sort-priority"]')).toBeNull();
     // Numeric headers align with their end-aligned cells: the inline-flex sort control is pushed to the end.
     const numericHeader = canvasElement.querySelector<HTMLElement>('th[data-numeric]')!;
     await expect(getComputedStyle(numericHeader.querySelector('button')!).justifyContent).toBe('flex-end');
   },
 };
-function Controlled({ onValueChange, onSelectionChange, ...args }: SortableDataTableProps<Project>) {
-  const [value, setValue] = useState<SortState | null>(null);
+function Controlled({ onSortChange, onSelectionChange, ...args }: SortableDataTableProps<Project>) {
+  const [sort, setSort] = useState<readonly SortState[]>([]);
   const [selectedKeys, setKeys] = useState<readonly string[]>([]);
   return (
     <div>
       <Button
         size="sm"
         onClick={() => {
-          setValue(null);
+          setSort([]);
           setKeys([]);
         }}
       >
@@ -463,11 +436,11 @@ function Controlled({ onValueChange, onSelectionChange, ...args }: SortableDataT
       </Button>
       <Table
         {...args}
-        value={value}
+        sort={sort}
         selectedKeys={selectedKeys}
-        onValueChange={(next) => {
-          onValueChange?.(next);
-          setValue(next);
+        onSortChange={(next) => {
+          onSortChange?.(next);
+          setSort(next);
         }}
         onSelectionChange={(next) => {
           onSelectionChange?.(next);
@@ -478,7 +451,7 @@ function Controlled({ onValueChange, onSelectionChange, ...args }: SortableDataT
   );
 }
 export const ControlledSort: Story = {
-  args: { onValueChange: fn() },
+  args: { onSortChange: fn() },
   render: (args) => <Controlled {...args} />,
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Name: sort ascending' }));
@@ -486,106 +459,57 @@ export const ControlledSort: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Reset' }));
     await expect(sortedHeader(canvasElement)).toBeNull();
     await expect(names(canvasElement)).toEqual(['Cedar', 'Atlas', 'Birch', 'Delta']);
-    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(statusRegion(canvasElement)).toHaveTextContent('Original order');
+    await expect(args.onSortChange).toHaveBeenCalledTimes(1);
   },
 };
 export const RejectedSort: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { useState } from 'react';
-import { SortableDataTable, type SortState } from '@jfrader/ui';
+  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
+${projectSetup}
 
-const rows: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
-];
-
-function Example() {
-  const [value] = useState<SortState | null>(null);
-
+export function LockedSortTable() {
   return (
     <SortableDataTable
       caption="Projects"
       locale="en-US"
       timeZone="UTC"
-      rows={rows}
+      rows={projects}
       columns={columns}
       getRowId={(row) => row.id}
-      value={value}
-      onValueChange={(next) => {
-        // Disallow sorting changes
-      }}
+      sort={[]}
+      onSortChange={(next) => console.log('Requested sort:', next)}
     />
   );
-}`,
-      },
-    },
-  },
-  args: { value: null, onValueChange: fn() },
+}`),
+  args: { sort: [], multiSort: true, onSortChange: fn() },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Name: sort ascending' }));
-    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenCalledWith({ columnId: 'name', direction: 'asc' });
+    await expect(args.onSortChange).toHaveBeenCalledTimes(1);
+    await expect(args.onSortChange).toHaveBeenCalledWith([{ columnId: 'name', direction: 'asc' }]);
     await expect(names(canvasElement)).toEqual(['Cedar', 'Atlas', 'Birch', 'Delta']);
     await expect(sortedHeader(canvasElement)).toBeNull();
+    await expect(canvas.getByRole('button', { name: 'Name: sort ascending' })).toBeVisible();
     await expect(canvas.getByRole('status')).toBeEmptyDOMElement();
   },
 };
 export const ManualServerSort: Story = {
-  args: { sortMode: 'manual', value: null, onValueChange: fn() },
+  args: { sortMode: 'manual', sort: [], onSortChange: fn() },
   render: (args) => <Controlled {...args} />,
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Name: sort ascending' }));
-    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenCalledWith({ columnId: 'name', direction: 'asc' });
+    await expect(args.onSortChange).toHaveBeenCalledTimes(1);
+    await expect(args.onSortChange).toHaveBeenCalledWith([{ columnId: 'name', direction: 'asc' }]);
     await expect(names(canvasElement)).toEqual(['Cedar', 'Atlas', 'Birch', 'Delta']);
     await expect(sortedHeader(canvasElement)).toHaveAttribute('aria-sort', 'ascending');
   },
 };
 export const Selection: Story = {
   name: 'Row selection',
-  parameters: {
-    docs: {
-      description: {
-        story: 'Enable row checkboxes and a select-all header control for batch actions.',
-      },
-      source: {
-        language: 'tsx',
-        code: `import { useState } from 'react';
+  parameters: docs(`import { useState } from 'react';
 import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const projects: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns: DataColumn<Project>[] = [
-  { id: 'name', header: 'Name', accessor: (row) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
-];
+${projectSetup}
 
 export function SelectableTable() {
   const [selectedKeys, setSelectedKeys] = useState<readonly string[]>([]);
@@ -599,18 +523,18 @@ export function SelectableTable() {
       columns={columns}
       getRowId={(row) => row.id}
       getRowLabel={(row) => row.name}
-      selectable
+      selectionMode="multiple"
       selectedKeys={selectedKeys}
       onSelectionChange={setSelectedKeys}
     />
   );
-}`,
-      },
-    },
-  },
-  args: { selectable: true, getRowLabel, onSelectionChange: fn() },
+}`, 'Enable row checkboxes and a select-all header control for batch actions.'),
+  args: { selectionMode: 'multiple', getRowLabel, onSelectionChange: fn() },
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('checkbox', { name: 'Select Cedar' }));
+    const cedar = canvas.getByRole('checkbox', { name: 'Select Cedar' });
+    await userEvent.click(cedar);
+    await expect(cedar.closest('tr')).toHaveAttribute('aria-selected', 'true');
+    await expect(canvas.getByRole('checkbox', { name: 'Select Atlas' }).closest('tr')).toHaveAttribute('aria-selected', 'false');
     const all = canvas.getByRole('checkbox', { name: 'Select all visible rows' });
     await expect(all).toHaveAttribute('aria-checked', 'mixed');
     await expect((all as HTMLInputElement).indeterminate).toBe(true);
@@ -620,6 +544,8 @@ export function SelectableTable() {
     await expect(args.onSelectionChange).toHaveBeenCalledTimes(2);
     await expect(args.onSelectionChange).toHaveBeenLastCalledWith(['c', 'a', 'b', 'd']);
     await expect(all).toBeChecked();
+    await expect(all).not.toHaveAttribute('aria-checked');
+    await expect((all as HTMLInputElement).indeterminate).toBe(false);
     await userEvent.click(canvas.getByRole('button', { name: 'Clear selection' }));
     await expect(args.onSelectionChange).toHaveBeenCalledTimes(3);
     await expect(args.onSelectionChange).toHaveBeenLastCalledWith([]);
@@ -627,36 +553,16 @@ export function SelectableTable() {
     await expect(all).not.toBeChecked();
   },
 };
-export const MixedSelection: Story = {
-  name: 'Pre-selected rows',
-  parameters: {
-    docs: {
-      description: {
-        story: 'Initialize row selections with an indeterminate state on the select-all checkbox.',
-      },
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+export const SingleSelection: Story = {
+  name: 'Single row selection',
+  parameters: docs(`import { useState } from 'react';
+import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
+${projectSetup}
 
-const projects: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
+export function SingleSelectTable() {
+  const [selectedKeys, setSelectedKeys] = useState<readonly string[]>([]);
 
-const columns: DataColumn<Project>[] = [
-  { id: 'name', header: 'Name', accessor: (row) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
-];
-
-export function PreselectedTable() {
   return (
     <SortableDataTable
       caption="Projects"
@@ -666,66 +572,51 @@ export function PreselectedTable() {
       columns={columns}
       getRowId={(row) => row.id}
       getRowLabel={(row) => row.name}
-      selectable
-      defaultSelectedKeys={['a']}
+      selectionMode="single"
+      selectedKeys={selectedKeys}
+      onSelectionChange={setSelectedKeys}
     />
   );
-}`,
-      },
-    },
+}`, 'Select one row at a time. Checking another row replaces the selection.'),
+  args: { selectionMode: 'single', getRowLabel, onSelectionChange: fn() },
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await expect(canvas.queryByRole('checkbox', { name: 'Select all visible rows' })).toBeNull();
+    await expect(canvas.getAllByRole('columnheader')[0]).toHaveTextContent('Select');
+    const cedar = canvas.getByRole('checkbox', { name: 'Select Cedar' });
+    const atlas = canvas.getByRole('checkbox', { name: 'Select Atlas' });
+    await userEvent.click(cedar);
+    await expect(args.onSelectionChange).toHaveBeenLastCalledWith(['c']);
+    await expect(cedar.closest('tr')).toHaveAttribute('aria-selected', 'true');
+    await userEvent.tab();
+    await expect(atlas.ownerDocument.activeElement).toBe(atlas);
+    await expect(getComputedStyle(atlas.nextElementSibling!).outlineStyle).not.toBe('none');
+    await userEvent.keyboard(' ');
+    await expect(args.onSelectionChange).toHaveBeenLastCalledWith(['a']);
+    await expect(cedar).not.toBeChecked();
+    await expect(cedar.closest('tr')).toHaveAttribute('aria-selected', 'false');
+    await expect(atlas.closest('tr')).toHaveAttribute('aria-selected', 'true');
+    await expect(canvasElement.querySelectorAll('tbody tr[aria-selected="true"]')).toHaveLength(1);
+    await userEvent.keyboard(' ');
+    await expect(args.onSelectionChange).toHaveBeenLastCalledWith([]);
+    await expect(args.onSelectionChange).toHaveBeenCalledTimes(3);
+    await expect(canvasElement.querySelectorAll('tbody tr[aria-selected="true"]')).toHaveLength(0);
   },
-  args: { selectable: true, getRowLabel, defaultSelectedKeys: ['a'] },
+};
+export const MixedSelection: Story = {
+  name: 'Pre-selected rows',
+  parameters: docs(projectExample(`
+  getRowLabel={(row) => row.name}
+  selectionMode="multiple"
+  defaultSelectedKeys={['a']}`), 'Initialize row selections with an indeterminate state on the select-all checkbox.'),
+  args: { selectionMode: 'multiple', getRowLabel, defaultSelectedKeys: ['a'] },
 };
 export const RejectedSelection: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { useState } from 'react';
-import { SortableDataTable } from '@jfrader/ui';
-
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const rows: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
-];
-
-function Example() {
-  const [selectedKeys] = useState<readonly string[]>(['a']);
-
-  return (
-    <SortableDataTable
-      caption="Projects"
-      locale="en-US"
-      timeZone="UTC"
-      rows={rows}
-      columns={columns}
-      getRowId={(row) => row.id}
-      getRowLabel={(row) => row.name}
-      selectable
-      selectedKeys={selectedKeys}
-      onSelectionChange={(next) => {
-        // Disallow selection changes
-      }}
-    />
-  );
-}`,
-      },
-    },
-  },
-  args: { selectable: true, getRowLabel, selectedKeys: ['a'], onSelectionChange: fn() },
+  parameters: docs(projectExample(`
+  getRowLabel={(row) => row.name}
+  selectionMode="multiple"
+  selectedKeys={['a']}
+  onSelectionChange={(next) => console.log('Requested selection:', next)}`)),
+  args: { selectionMode: 'multiple', getRowLabel, selectedKeys: ['a'], onSelectionChange: fn() },
   play: async ({ args, canvas, userEvent }) => {
     const all = canvas.getByRole('checkbox', { name: 'Select all visible rows' });
     await userEvent.click(all);
@@ -743,58 +634,15 @@ function Example() {
   },
 };
 export const RangeSelection: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { useState } from 'react';
-import { SortableDataTable } from '@jfrader/ui';
-
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const rows: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
-];
-
-function Example() {
-  const [selectedKeys, setSelectedKeys] = useState<readonly string[]>([]);
-
-  return (
-    <SortableDataTable
-      caption="Projects"
-      locale="en-US"
-      timeZone="UTC"
-      rows={rows}
-      columns={columns}
-      getRowId={(row) => row.id}
-      getRowLabel={(row) => row.name}
-      selectable
-      selectedKeys={selectedKeys}
-      onSelectionChange={setSelectedKeys}
-      defaultValue={{ columnId: 'name', direction: 'asc' }}
-    />
-  );
-}`,
-      },
-    },
-  },
+  parameters: docs(projectExample(`
+  getRowLabel={(row) => row.name}
+  selectionMode="multiple"
+  defaultSort={[{ columnId: 'name', direction: 'asc' }]}`)),
   args: {
-    selectable: true,
+    selectionMode: 'multiple',
     getRowLabel,
     onSelectionChange: fn(),
-    defaultValue: { columnId: 'name', direction: 'asc' },
+    defaultSort: [{ columnId: 'name', direction: 'asc' }],
   },
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole('checkbox', { name: 'Select Atlas' }));
@@ -807,53 +655,11 @@ function Example() {
   },
 };
 export const CrossPageSelection: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { useState } from 'react';
-import { SortableDataTable } from '@jfrader/ui';
-
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const rows: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
-];
-
-function Example() {
-  const [selectedKeys, setSelectedKeys] = useState<readonly string[]>(['off-page']);
-
-  return (
-    <SortableDataTable
-      caption="Projects"
-      locale="en-US"
-      timeZone="UTC"
-      rows={rows}
-      columns={columns}
-      getRowId={(row) => row.id}
-      getRowLabel={(row) => row.name}
-      selectable
-      selectedKeys={selectedKeys}
-      onSelectionChange={setSelectedKeys}
-    />
-  );
-}`,
-      },
-    },
-  },
-  args: { selectable: true, getRowLabel, defaultSelectedKeys: ['off-page', 'off-page'], onSelectionChange: fn() },
+  parameters: docs(projectExample(`
+  getRowLabel={(row) => row.name}
+  selectionMode="multiple"
+  defaultSelectedKeys={['off-page']}`)),
+  args: { selectionMode: 'multiple', getRowLabel, defaultSelectedKeys: ['off-page', 'off-page'], onSelectionChange: fn() },
   play: async ({ args, canvas, userEvent }) => {
     const all = canvas.getByRole('checkbox', { name: 'Select all visible rows' });
     await userEvent.click(all);
@@ -864,111 +670,144 @@ function Example() {
     await expect(canvas.getAllByText('0 of 4 visible selected; 1 selected in total')[0]!).toBeVisible();
   },
 };
+function Reloading(args: SortableDataTableProps<Project>) {
+  const [currentRows, setRows] = useState(rows);
+  return (
+    <SizeGrid>
+      <Controls>
+        <Button size="sm" onClick={() => setRows(rows.slice(1).reverse().map((row) => ({ ...row })))}>
+          Reload projects
+        </Button>
+      </Controls>
+      <Table {...args} rows={currentRows} />
+    </SizeGrid>
+  );
+}
+export const SelectionFollowsRowId: Story = {
+  args: { selectionMode: 'multiple', getRowLabel, defaultSelectedKeys: ['a'], onSelectionChange: fn() },
+  render: (args) => <Reloading {...args} />,
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await userEvent.click(canvas.getByRole('checkbox', { name: 'Select Birch' }));
+    await expect(args.onSelectionChange).toHaveBeenLastCalledWith(['a', 'b']);
+    // Fresh objects in a new order, with the first record gone: selection stays on the same ids.
+    await userEvent.click(canvas.getByRole('button', { name: 'Reload projects' }));
+    await expect(names(canvasElement)).toEqual(['Delta', 'Birch', 'Atlas']);
+    for (const name of ['Atlas', 'Birch']) {
+      const checkbox = canvas.getByRole('checkbox', { name: `Select ${name}` });
+      await expect(checkbox).toBeChecked();
+      await expect(checkbox.closest('tr')).toHaveAttribute('aria-selected', 'true');
+    }
+    await expect(canvas.getByRole('checkbox', { name: 'Select Delta' })).not.toBeChecked();
+    await expect(args.onSelectionChange).toHaveBeenCalledTimes(1);
+    const all = canvas.getByRole('checkbox', { name: 'Select all visible rows' });
+    await expect(all).toHaveAttribute('aria-checked', 'mixed');
+    await userEvent.click(all);
+    await expect(args.onSelectionChange).toHaveBeenLastCalledWith(['a', 'b', 'd']);
+    await expect(all).toBeChecked();
+  },
+};
 export const Empty: Story = {
   name: 'Empty records',
-  parameters: {
-    docs: {
-      description: {
-        story: 'Show an empty state message across all table columns when rows is empty.',
-      },
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
+${projectSetup}
 
-const columns: DataColumn<Project>[] = [
-  { id: 'name', header: 'Name', accessor: (row) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
-];
-
-export function EmptyTable() {
-  return (
-    <SortableDataTable
-      caption="Projects"
-      locale="en-US"
-      timeZone="UTC"
-      rows={[]}
-      columns={columns}
-      getRowId={(row: Project) => row.id}
-      getRowLabel={(row: Project) => row.name}
-      selectable
-    />
-  );
-}`,
-      },
-    },
-  },
-  args: { rows: [], selectable: true, getRowLabel },
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={[]}
+  columns={columns}
+  getRowId={(row: Project) => row.id}
+  getRowLabel={(row: Project) => row.name}
+  selectionMode="multiple"
+/>`, 'Show an empty state message across all table columns when rows is empty.'),
+  args: { rows: [], selectionMode: 'multiple', getRowLabel },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('cell', { name: 'No records' })).toHaveAttribute('colspan', '3');
     await expect(canvas.getByRole('checkbox')).toBeDisabled();
+    await expect(canvas.getByRole('status')).toBeEmptyDOMElement();
+  },
+};
+export const EmptyWithAction: Story = {
+  name: 'Custom empty state',
+  parameters: docs(`import { Button, EmptyState, SortableDataTable, type DataColumn } from '@jfrader/ui';
+
+${projectSetup}
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={[]}
+  columns={columns}
+  getRowId={(row: Project) => row.id}
+  empty={<EmptyState variant="inline" title="No projects" action={<Button size="sm">New project</Button>} />}
+/>`, 'Render your own empty content, such as an EmptyState with an action.'),
+  args: {
+    rows: [],
+    empty: <EmptyState variant="inline" title="No projects" action={<Button size="sm">New project</Button>} />,
+  },
+  play: async ({ canvas }) => {
+    const cell = canvas.getByRole('heading', { name: 'No projects' }).closest('td')!;
+    await expect(cell).toHaveAttribute('colspan', '2');
+    await expect(canvas.getByRole('button', { name: 'New project' })).toBeVisible();
   },
 };
 export const Loading: Story = {
   name: 'Loading state',
-  parameters: {
-    docs: {
-      description: {
-        story: 'Indicate data fetching with an accessible busy state on the table.',
-      },
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
-
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const projects: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns: DataColumn<Project>[] = [
-  { id: 'name', header: 'Name', accessor: (row) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
-];
-
-export function LoadingTable() {
-  return (
-    <SortableDataTable
-      caption="Projects"
-      locale="en-US"
-      timeZone="UTC"
-      rows={projects}
-      columns={columns}
-      getRowId={(row) => row.id}
-      loading
-    />
-  );
-}`,
-      },
-    },
-  },
+  parameters: docs(projectExample(`
+  loading`), 'Show a loading row, mark the table busy, and announce the load while rows stay in place.'),
   args: { loading: true },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('table')).toHaveAttribute('aria-busy', 'true');
+    const loadingRow = canvasElement.querySelector('[data-ui="sortable-data-table-loading"]')!;
+    await expect(loadingRow).toHaveTextContent('Loading records');
+    await expect(loadingRow.querySelector('td')).toHaveAttribute('colspan', '2');
+    await expect(names(canvasElement)).toEqual(['Cedar', 'Atlas', 'Birch', 'Delta']);
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Loading records'));
+  },
+};
+function LoadingCycle(args: SortableDataTableProps<Project>) {
+  const [state, setState] = useState<{ loading: boolean; rows: readonly Project[] }>({ loading: false, rows });
+  return (
+    <SizeGrid>
+      <Controls>
+        <Button size="sm" onClick={() => setState((current) => ({ ...current, loading: true }))}>Refresh</Button>
+        <Button size="sm" onClick={() => setState({ loading: false, rows })}>Finish</Button>
+        <Button size="sm" onClick={() => setState({ loading: false, rows: [] })}>Finish empty</Button>
+      </Controls>
+      <Table {...args} rows={state.rows} loading={state.loading} />
+    </SizeGrid>
+  );
+}
+export const LoadingAnnouncements: Story = {
+  render: (args) => <LoadingCycle {...args} />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const table = canvas.getByRole('table');
+    const status = statusRegion(canvasElement);
+    const refresh = canvas.getByRole('button', { name: 'Refresh' });
+    await expect(status).toBeEmptyDOMElement();
+    await userEvent.click(refresh);
+    await expect(status).toHaveTextContent('Loading records');
+    await expect(table).toHaveAttribute('aria-busy', 'true');
+    await expect(refresh.ownerDocument.activeElement).toBe(refresh);
+    await expect(names(canvasElement)).toEqual(['Cedar', 'Atlas', 'Birch', 'Delta']);
+    await userEvent.click(canvas.getByRole('button', { name: 'Finish' }));
+    await expect(status).toHaveTextContent('Records loaded');
+    await expect(table).not.toHaveAttribute('aria-busy');
+    await expect(canvasElement.querySelector('[data-ui="sortable-data-table-loading"]')).toBeNull();
+    await userEvent.click(refresh);
+    const finishEmpty = canvas.getByRole('button', { name: 'Finish empty' });
+    await userEvent.click(finishEmpty);
+    await expect(status).toHaveTextContent('No records');
+    await expect(canvas.getByRole('cell', { name: 'No records' })).toBeVisible();
+    await expect(finishEmpty.ownerDocument.activeElement).toBe(finishEmpty);
   },
 };
 export const CustomCells: Story = {
   name: 'Custom cell content',
-  parameters: {
-    docs: {
-      description: {
-        story: 'Format cell values with custom components, formatted typography, and currency symbols.',
-      },
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -1011,10 +850,7 @@ export function CustomCellTable() {
       getRowId={(row) => row.id}
     />
   );
-}`,
-      },
-    },
-  },
+}`, 'Format cell values with custom components, formatted typography, and currency symbols.'),
   args: {
     columns: [
       { id: 'name', header: 'Name', accessor: (row) => row.name, cell: (row) => <strong>{row.name}</strong> },
@@ -1030,14 +866,7 @@ export function CustomCellTable() {
 };
 export const CustomComparator: Story = {
   name: 'Custom comparator',
-  parameters: {
-    docs: {
-      description: {
-        story: 'Sort rows using a custom comparison function for complex or computed criteria.',
-      },
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -1071,13 +900,10 @@ export function CustomComparatorTable() {
       rows={projects}
       columns={columns}
       getRowId={(row) => row.id}
-      defaultValue={{ columnId: 'name', direction: 'asc' }}
+      defaultSort={[{ columnId: 'name', direction: 'asc' }]}
     />
   );
-}`,
-      },
-    },
-  },
+}`, 'Sort rows using a custom comparison function for complex or computed criteria.'),
   args: {
     rows: rows.map((row) => (row.id === 'c' ? { ...row, name: 'Cedar gardens' } : row)),
     columns: [
@@ -1089,7 +915,7 @@ export function CustomComparatorTable() {
         cell: (row) => row.name,
       },
     ],
-    defaultValue: { columnId: 'name', direction: 'asc' },
+    defaultSort: [{ columnId: 'name', direction: 'asc' }],
   },
   play: async ({ canvasElement }) => {
     await expect(names(canvasElement)).toEqual(['Atlas', 'Birch', 'Delta', 'Cedar gardens']);
@@ -1097,14 +923,7 @@ export function CustomComparatorTable() {
 };
 export const LocaleNumbersAndDates: Story = {
   name: 'Locale date and number formatting',
-  parameters: {
-    docs: {
-      description: {
-        story: 'Format dates and numbers automatically according to the specified locale.',
-      },
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -1135,23 +954,214 @@ export function LocalizedTable() {
       rows={projects}
       columns={columns}
       getRowId={(row) => row.id}
-      defaultValue={{ columnId: 'date', direction: 'asc' }}
+      defaultSort={[{ columnId: 'date', direction: 'asc' }]}
     />
   );
-}`,
-      },
-    },
-  },
+}`, 'Format dates and numbers automatically according to the specified locale.'),
   args: {
     locale: 'de-DE',
     columns: [...columns, { id: 'date', header: 'Date', accessor: (row) => row.date }],
-    defaultValue: { columnId: 'date', direction: 'asc' },
+    defaultSort: [{ columnId: 'date', direction: 'asc' }],
   },
   play: async ({ canvas, canvasElement }) => {
     await expect(names(canvasElement)).toEqual(['Atlas', 'Birch', 'Cedar', 'Delta']);
     await expect(
       canvas.getByRole('cell', { name: new Intl.DateTimeFormat('de-DE', { timeZone: 'UTC' }).format(rows[1]!.date) }),
     ).toBeVisible();
+  },
+};
+export const ColumnLayout: Story = {
+  name: 'Column alignment and widths',
+  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number | null;
+  date: Date;
+}
+
+const projects: Project[] = [
+  { id: 'c', name: 'Cedar', budget: 40, date: new Date('2026-03-03T12:00:00Z') },
+  { id: 'a', name: 'Atlas', budget: 0, date: new Date('2026-01-01T12:00:00Z') },
+  { id: 'b', name: 'Birch', budget: 40, date: new Date('2026-02-02T12:00:00Z') },
+  { id: 'd', name: 'Delta', budget: null, date: new Date('2026-04-04T12:00:00Z') },
+];
+
+const columns: DataColumn<Project>[] = [
+  { id: 'name', header: 'Name', accessor: (row) => row.name, width: '40%' },
+  { id: 'date', header: 'Started', accessor: (row) => row.date, align: 'center', minWidth: 160 },
+  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={projects}
+  columns={columns}
+  getRowId={(row) => row.id}
+/>`, 'Align each column and give it a width or a minimum width. Numeric columns align to the end.'),
+  args: {
+    columns: [
+      { id: 'name', header: 'Name', accessor: (row) => row.name, width: '40%' },
+      { id: 'date', header: 'Started', accessor: (row) => row.date, align: 'center', minWidth: 160 },
+      { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const [name, date, budget] = Array.from(canvasElement.querySelectorAll('th'));
+    const firstRow = bodyRows(canvasElement)[0]!.querySelectorAll('td');
+    await expect(getComputedStyle(name!).textAlign).toBe('start');
+    await expect(getComputedStyle(date!).textAlign).toBe('center');
+    await expect(getComputedStyle(date!.querySelector('button')!).justifyContent).toBe('center');
+    await expect(getComputedStyle(firstRow[1]!).textAlign).toBe('center');
+    await expect(getComputedStyle(date!).minInlineSize).toBe('160px');
+    await expect(date!.getBoundingClientRect().width).toBeGreaterThanOrEqual(160);
+    await expect(getComputedStyle(budget!).textAlign).toBe('end');
+    await expect(getComputedStyle(firstRow[2]!).textAlign).toBe('end');
+    await expect(getComputedStyle(firstRow[2]!).fontVariantNumeric).toBe('tabular-nums');
+    await expect(canvasElement.querySelector('col')!.style.width).toBe('40%');
+  },
+};
+function ToolbarExample(args: SortableDataTableProps<Project>) {
+  const [projects, setProjects] = useState(rows);
+  const [query, setQuery] = useState('');
+  const [selectedKeys, setSelectedKeys] = useState<readonly string[]>([]);
+  const visible = projects.filter((project) => project.name.toLocaleLowerCase('en-US').includes(query.toLocaleLowerCase('en-US')));
+  return (
+    <Table
+      {...args}
+      rows={visible}
+      selectionMode="multiple"
+      getRowLabel={getRowLabel}
+      selectedKeys={selectedKeys}
+      onSelectionChange={setSelectedKeys}
+      toolbar={
+        <>
+          <SearchField label="Filter projects" labelPlacement="hidden" size="sm" value={query} onValueChange={setQuery} />
+          <Button
+            size="sm"
+            disabled={selectedKeys.length === 0}
+            onClick={() => {
+              setProjects((current) => current.filter((project) => !selectedKeys.includes(project.id)));
+              setSelectedKeys([]);
+            }}
+          >
+            Archive selected
+          </Button>
+        </>
+      }
+    />
+  );
+}
+export const Toolbar: Story = {
+  name: 'Toolbar',
+  parameters: docs(`import { useState } from 'react';
+import { Button, SearchField, SortableDataTable, type DataColumn } from '@jfrader/ui';
+
+${projectSetup}
+
+export function ProjectsWithToolbar() {
+  const [query, setQuery] = useState('');
+  const [selectedKeys, setSelectedKeys] = useState<readonly string[]>([]);
+  const visible = projects.filter((project) =>
+    project.name.toLocaleLowerCase('en-US').includes(query.toLocaleLowerCase('en-US')),
+  );
+
+  return (
+    <SortableDataTable
+      caption="Projects"
+      locale="en-US"
+      timeZone="UTC"
+      rows={visible}
+      columns={columns}
+      getRowId={(row) => row.id}
+      getRowLabel={(row) => row.name}
+      selectionMode="multiple"
+      selectedKeys={selectedKeys}
+      onSelectionChange={setSelectedKeys}
+      toolbar={
+        <>
+          <SearchField label="Filter projects" labelPlacement="hidden" size="sm" value={query} onValueChange={setQuery} />
+          <Button size="sm" disabled={selectedKeys.length === 0}>
+            Archive selected
+          </Button>
+        </>
+      }
+    />
+  );
+}`, 'Put filters and bulk actions above the table with toolbar.'),
+  render: (args) => <ToolbarExample {...args} />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const toolbar = canvasElement.querySelector<HTMLElement>('[data-ui="sortable-data-table-toolbar"]')!;
+    const scroller = canvas.getByRole('region');
+    await expect(toolbar.getBoundingClientRect().bottom).toBeLessThanOrEqual(scroller.getBoundingClientRect().top);
+    const search = canvas.getByRole('searchbox', { name: 'Filter projects' });
+    await expect(toolbar).toContainElement(search);
+    const archive = canvas.getByRole('button', { name: 'Archive selected' });
+    await expect(archive).toBeDisabled();
+    await userEvent.type(search, 'zz');
+    await expect(canvas.getByRole('cell', { name: 'No records' })).toBeVisible();
+    await expect(statusRegion(canvasElement)).toHaveTextContent('No records');
+    await expect(search.ownerDocument.activeElement).toBe(search);
+    await userEvent.clear(search);
+    await expect(names(canvasElement)).toEqual(['Cedar', 'Atlas', 'Birch', 'Delta']);
+    await userEvent.click(canvas.getByRole('checkbox', { name: 'Select Atlas' }));
+    await userEvent.click(canvas.getByRole('checkbox', { name: 'Select Birch' }));
+    await userEvent.click(archive);
+    await expect(names(canvasElement)).toEqual(['Cedar', 'Delta']);
+    await expect(archive).toBeDisabled();
+  },
+};
+export const StickyHeader: Story = {
+  name: 'Sticky header',
+  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+
+interface Project {
+  id: string;
+  name: string;
+  budget: number;
+}
+
+const projects: Project[] = Array.from({ length: 40 }, (_, index) => ({
+  id: \`project-\${index}\`,
+  name: \`Project \${index + 1}\`,
+  budget: (index % 5) * 10,
+}));
+
+const columns: DataColumn<Project>[] = [
+  { id: 'name', header: 'Name', accessor: (row) => row.name },
+  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
+];
+
+<SortableDataTable
+  caption="Projects"
+  locale="en-US"
+  timeZone="UTC"
+  rows={projects}
+  columns={columns}
+  getRowId={(row) => row.id}
+  maxTableHeight={280}
+/>`, 'Limit the height with maxTableHeight. Rows scroll under the header, which gains a divider and shadow once content is under it.'),
+  args: { rows: manyRows, maxTableHeight: 280 },
+  play: async ({ canvas, canvasElement }) => {
+    const scroller = canvas.getByRole('region');
+    const headers = Array.from(canvasElement.querySelectorAll('th'));
+    await expect(getComputedStyle(scroller).maxBlockSize).toBe('280px');
+    await expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight);
+    for (const header of headers) await expect(header).not.toHaveAttribute('data-scrolled');
+    const restingBorder = getComputedStyle(headers[0]!).borderBlockEndColor;
+    await expect(getComputedStyle(headers[0]!).boxShadow).toBe('none');
+    scroller.scrollTop = 200;
+    await waitFor(() => expect(headers[0]).toHaveAttribute('data-scrolled'));
+    for (const header of headers) await expect(header).toHaveAttribute('data-scrolled');
+    await waitFor(() => expect(getComputedStyle(headers[0]!).borderBlockEndColor).not.toBe(restingBorder));
+    await expect(getComputedStyle(headers[0]!).boxShadow).not.toBe('none');
+    await expect(headers[0]!.getBoundingClientRect().top)
+      .toBeCloseTo(scroller.getBoundingClientRect().top + scroller.clientTop, 0);
+    scroller.scrollTop = 0;
+    await waitFor(() => expect(headers[0]).not.toHaveAttribute('data-scrolled'));
   },
 };
 export const LongCells: Story = {
@@ -1193,15 +1203,17 @@ export const LongHeaders: Story = {
   play: async ({ canvas }) => {
     const scroller = canvas.getByRole('region');
     const headerRow = canvas.getByRole('table').querySelector('thead')!;
+    // Scroll padding clears the header plus space[2] for a focused control's ring.
+    const ringClearance = 8;
     await waitFor(async () => {
       await expect(parseFloat(getComputedStyle(scroller).scrollPaddingBlockStart))
-        .toBeCloseTo(headerRow.getBoundingClientRect().height, 0);
+        .toBeCloseTo(headerRow.getBoundingClientRect().height + ringClearance, 0);
     });
     const frame = scroller.parentElement!.parentElement!;
     frame.style.inlineSize = '180px';
     await waitFor(async () => {
       await expect(parseFloat(getComputedStyle(scroller).scrollPaddingBlockStart))
-        .toBeCloseTo(headerRow.getBoundingClientRect().height, 0);
+        .toBeCloseTo(headerRow.getBoundingClientRect().height + ringClearance, 0);
     });
     frame.style.removeProperty('inline-size');
     for (const header of canvas.getAllByRole('columnheader')) {
@@ -1215,12 +1227,8 @@ export const LongHeaders: Story = {
 };
 export const ScrollableRows: Story = {
   args: {
-    rows: Array.from({ length: 40 }, (_, index) => ({
-      ...rows[index % rows.length]!,
-      id: `project-${index}`,
-      name: `Project ${index + 1}`,
-    })),
-    selectable: true,
+    rows: manyRows,
+    selectionMode: 'multiple',
     getRowLabel,
     slotProps: { scroller: { sx: { maxBlockSize: 280 } }, table: { sx: { minInlineSize: 560 } } },
   },
@@ -1279,11 +1287,7 @@ export const Error: Story = {
   },
 };
 export const LinksAndButtons: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { Button, SortableDataTable } from '@jfrader/ui';
+  parameters: docs(`import { Button, SortableDataTable } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -1328,15 +1332,12 @@ export function ProjectTable() {
       columns={columns}
       getRowId={(row) => row.id}
       getRowLabel={(row) => row.name}
-      selectable
+      selectionMode="multiple"
     />
   );
-}`,
-      },
-    },
-  },
+}`),
   args: {
-    selectable: true,
+    selectionMode: 'multiple',
     getRowLabel,
     onSelectionChange: fn(),
     columns: [
@@ -1444,108 +1445,56 @@ export const ZeroCells: Story = {
 const StyledTable = styled(Table)({ borderRadius: vars.radius.sm });
 export const ConsumerStylePrecedence: Story = {
   args: {
-    slotProps: { cell: { sx: { paddingInlineStart: vars.space[6] } }, sortButton: { sx: { borderRadius: vars.radius.sm } } },
+    toolbar: <Button size="sm">Export</Button>,
+    slotProps: {
+      cell: { sx: { paddingInlineStart: vars.space[6] } },
+      sortButton: { sx: { borderRadius: vars.radius.sm } },
+      toolbar: { sx: { justifyContent: 'flex-end' }, 'aria-label': 'Project actions' },
+    },
     sx: { borderRadius: vars.radius.lg },
   },
   render: (args) => <StyledTable {...args} />,
   play: async ({ canvas, canvasElement }) => {
     await expect(parseFloat(getComputedStyle(canvas.getAllByRole('cell')[0]!).paddingInlineStart)).toBeCloseTo(24, 0);
-    await expect(getComputedStyle(canvas.getAllByRole('button')[0]!).borderRadius).toBe('8px');
+    await expect(getComputedStyle(canvas.getByRole('button', { name: 'Name: sort ascending' })).borderRadius).toBe('8px');
     await expect(getComputedStyle(canvasElement.querySelector('[data-ui="sortable-data-table"]')!).borderRadius).toBe(
       '18px',
     );
+    const toolbar = canvasElement.querySelector('[data-ui="sortable-data-table-toolbar"]')!;
+    await expect(getComputedStyle(toolbar).justifyContent).toBe('flex-end');
+    await expect(toolbar).toHaveAttribute('aria-label', 'Project actions');
   },
 };
 export const LightTheme: Story = {
   decorators: [withLightTheme],
   globals: { theme: 'light' },
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
-
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const rows: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
-];
-
-<SortableDataTable
-  caption="Projects"
-  locale="en-US"
-  timeZone="UTC"
-  rows={rows}
-  columns={columns}
-  getRowId={(row) => row.id}
+  parameters: docs(projectExample(`
   getRowLabel={(row) => row.name}
-  selectable
-  defaultSelectedKeys={['a']}
-/>`,
-      },
-    },
+  selectionMode="multiple"
+  multiSort
+  defaultSort={[{ columnId: 'budget', direction: 'desc' }, { columnId: 'name', direction: 'asc' }]}
+  defaultSelectedKeys={['a']}`)),
+  args: {
+    selectionMode: 'multiple',
+    getRowLabel,
+    defaultSelectedKeys: ['a'],
+    multiSort: true,
+    defaultSort: [{ columnId: 'budget', direction: 'desc' }, { columnId: 'name', direction: 'asc' }],
   },
-  args: { selectable: true, getRowLabel, defaultSelectedKeys: ['a'] },
 };
 export const RTL: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
-
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const rows: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
-];
-
-<SortableDataTable
-  caption="Projects"
+  parameters: docs(projectExample(`
   dir="rtl"
-  locale="en-US"
-  timeZone="UTC"
-  rows={rows}
-  columns={columns}
-  getRowId={(row) => row.id}
   getRowLabel={(row) => row.name}
-  selectable
-/>`,
-      },
-    },
-  },
-  args: { dir: 'rtl', selectable: true, getRowLabel },
+  selectionMode="multiple"`)),
+  args: { dir: 'rtl', selectionMode: 'multiple', getRowLabel },
   play: async ({ canvas }) => {
     await expect(getComputedStyle(canvas.getByRole('table')).direction).toBe('rtl');
     await expect(getComputedStyle(canvas.getAllByRole('cell')[2]!).textAlign).toBe('end');
   },
 };
 export const ForcedColors: Story = {
-  args: { selectable: true, getRowLabel, defaultSelectedKeys: ['a'] },
+  args: { selectionMode: 'multiple', getRowLabel, defaultSelectedKeys: ['a'] },
   parameters: {
     docs: {
       description: {
@@ -1553,37 +1502,10 @@ export const ForcedColors: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
-
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const rows: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
-];
-
-<SortableDataTable
-  caption="Projects"
-  locale="en-US"
-  timeZone="UTC"
-  rows={rows}
-  columns={columns}
-  getRowId={(row) => row.id}
+        code: projectExample(`
   getRowLabel={(row) => row.name}
-  selectable
-  defaultSelectedKeys={['a']}
-/>`,
+  selectionMode="multiple"
+  defaultSelectedKeys={['a']}`),
       },
     },
   },
@@ -1596,7 +1518,7 @@ const columns = [
   },
 };
 export const ReducedMotion: Story = {
-  args: { defaultValue: { columnId: 'name', direction: 'asc' } },
+  args: { defaultSort: [{ columnId: 'name', direction: 'asc' }] },
   parameters: {
     docs: {
       description: {
@@ -1605,80 +1527,19 @@ export const ReducedMotion: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
-
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const rows: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
-];
-
-<SortableDataTable
-  caption="Projects"
-  locale="en-US"
-  timeZone="UTC"
-  rows={rows}
-  columns={columns}
-  getRowId={(row) => row.id}
-  defaultValue={{ columnId: 'name', direction: 'asc' }}
-/>`,
+        code: projectExample(`
+  defaultSort={[{ columnId: 'name', direction: 'asc' }]}`),
       },
     },
   },
 };
 export const KeyboardSortingAndSelection: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
-
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const rows: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
-];
-
-<SortableDataTable
-  caption="Projects"
-  locale="en-US"
-  timeZone="UTC"
-  rows={rows}
-  columns={columns}
-  getRowId={(row) => row.id}
+  parameters: docs(projectExample(`
   getRowLabel={(row) => row.name}
-  selectable
-  onValueChange={(sort) => console.log('Sort:', sort)}
-  onSelectionChange={(keys) => console.log('Selected:', keys)}
-/>`,
-      },
-    },
-  },
-  args: { selectable: true, getRowLabel, onValueChange: fn(), onSelectionChange: fn() },
+  selectionMode="multiple"
+  onSortChange={(sort) => console.log('Sort:', sort)}
+  onSelectionChange={(keys) => console.log('Selected:', keys)}`)),
+  args: { selectionMode: 'multiple', getRowLabel, onSortChange: fn(), onSelectionChange: fn() },
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.tab();
     const region = canvas.getByRole('region');
@@ -1687,24 +1548,28 @@ const columns = [
     await userEvent.tab();
     const all = canvas.getByRole('checkbox', { name: 'Select all visible rows' });
     await expect(all.ownerDocument.activeElement).toBe(all);
+    await expect(getComputedStyle(all.nextElementSibling!).outlineStyle).not.toBe('none');
     await userEvent.tab();
     const sort = canvas.getByRole('button', { name: 'Name: sort ascending' });
     await expect(sort.ownerDocument.activeElement).toBe(sort);
     await expect(getComputedStyle(sort).outlineStyle).not.toBe('none');
     await userEvent.keyboard('{Enter}');
-    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenNthCalledWith(1, { columnId: 'name', direction: 'asc' });
+    await expect(args.onSortChange).toHaveBeenCalledTimes(1);
+    await expect(args.onSortChange).toHaveBeenNthCalledWith(1, [{ columnId: 'name', direction: 'asc' }]);
+    await expect(sort.closest('th')).toHaveAttribute('aria-sort', 'ascending');
     const indicator = sort.querySelector('svg')!;
     await expect(indicator).toHaveAttribute('data-direction', 'asc');
     await expect(getComputedStyle(indicator.querySelector('[data-chevron="up"]')!).visibility).toBe('visible');
     await expect(getComputedStyle(indicator.querySelector('[data-chevron="down"]')!).visibility).toBe('hidden');
     await userEvent.keyboard(' ');
-    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
-    await expect(args.onValueChange).toHaveBeenNthCalledWith(2, { columnId: 'name', direction: 'desc' });
+    await expect(args.onSortChange).toHaveBeenCalledTimes(2);
+    await expect(args.onSortChange).toHaveBeenNthCalledWith(2, [{ columnId: 'name', direction: 'desc' }]);
+    await expect(sort.closest('th')).toHaveAttribute('aria-sort', 'descending');
     await expect(indicator).toHaveAttribute('data-direction', 'desc');
     await expect(getComputedStyle(indicator.querySelector('[data-chevron="up"]')!).visibility).toBe('hidden');
     await expect(getComputedStyle(indicator.querySelector('[data-chevron="down"]')!).visibility).toBe('visible');
     await expect(sort.ownerDocument.activeElement).toBe(sort);
+    await expect(canvas.getByRole('status')).toHaveTextContent('Name, descending');
     await userEvent.tab({ shift: true });
     await expect(all.ownerDocument.activeElement).toBe(all);
     await userEvent.keyboard(' ');
@@ -1717,11 +1582,7 @@ const columns = [
 };
 
 export const CollationAndMissingValues: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
+  parameters: docs(`import { SortableDataTable } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -1750,11 +1611,8 @@ const columns = [
   rows={rows}
   columns={columns}
   getRowId={(row) => row.id}
-  onValueChange={(sort) => console.log('Sort:', sort)}
-/>`,
-      },
-    },
-  },
+  onSortChange={(sort) => console.log('Sort:', sort)}
+/>`),
   args: {
     rows: [
       { id: '10', name: 'Project 10', budget: Number.NaN, date: new Date('invalid') },
@@ -1763,7 +1621,7 @@ const columns = [
       { id: '1', name: 'project 1', budget: 1, date: new Date('2026-01-01T00:00:00Z') },
     ],
     columns: [...columns, { id: 'date', header: 'Date', accessor: (row) => row.date }],
-    onValueChange: fn(),
+    onSortChange: fn(),
   },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Name: sort ascending' }));
@@ -1778,63 +1636,40 @@ const columns = [
     await expect(names(canvasElement)).toEqual(['project 1', 'Project 2', 'Project 10', '—']);
     await userEvent.click(canvas.getByRole('button', { name: 'Date: sort descending' }));
     await expect(names(canvasElement)).toEqual(['Project 2', 'project 1', 'Project 10', '—']);
-    await expect(args.onValueChange).toHaveBeenCalledTimes(6);
+    await expect(args.onSortChange).toHaveBeenCalledTimes(6);
   },
 };
 
 export const InvalidAndDisabledSort: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
+  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const rows: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name, sortable: false },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
-];
+${projectSetup}
 
 <SortableDataTable
   caption="Projects"
   locale="en-US"
   timeZone="UTC"
-  rows={rows}
-  columns={columns}
+  rows={projects}
+  columns={[{ ...columns[0], sortable: false }, columns[1]]}
   getRowId={(row) => row.id}
-  value={{ columnId: 'absent', direction: 'asc' }}
-/>`,
-      },
-    },
-  },
+  sort={[{ columnId: 'absent', direction: 'asc' }]}
+/>`),
   args: {
-    value: { columnId: 'absent', direction: 'asc' },
+    sort: [{ columnId: 'absent', direction: 'asc' }],
     columns: [{ ...columns[0]!, sortable: false }, columns[1]!],
-    onValueChange: fn(),
+    onSortChange: fn(),
   },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await expect(sortedHeader(canvasElement)).toBeNull();
     await expect(canvas.queryByRole('button', { name: /Name/ })).toBeNull();
     await userEvent.click(canvas.getByRole('columnheader', { name: 'Name' }));
-    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onSortChange).not.toHaveBeenCalled();
     await expect(names(canvasElement)).toEqual(['Cedar', 'Atlas', 'Birch', 'Delta']);
   },
 };
 
 export const ControlledSelection: Story = {
-  args: { selectable: true, getRowLabel, onSelectionChange: fn() },
+  args: { selectionMode: 'multiple', getRowLabel, onSelectionChange: fn() },
   render: (args) => <Controlled {...args} />,
   play: async ({ args, canvas, userEvent }) => {
     const cedar = canvas.getByRole('checkbox', { name: 'Select Cedar' });
@@ -1862,7 +1697,7 @@ function PageChanges(args: SortableDataTableProps<Project>) {
   );
 }
 export const RangeAfterSortAndRemoval: Story = {
-  args: { selectable: true, getRowLabel, onSelectionChange: fn() },
+  args: { selectionMode: 'multiple', getRowLabel, onSelectionChange: fn() },
   render: (args) => <PageChanges {...args} />,
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole('checkbox', { name: 'Select Atlas' }));
@@ -1883,71 +1718,67 @@ export const RangeAfterSortAndRemoval: Story = {
 };
 
 export const NativeHandlerVeto: Story = {
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
-
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const rows: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns = [
-  { id: 'name', header: 'Name', accessor: (row: Project) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row: Project) => row.budget, numeric: true },
-];
-
-<SortableDataTable
-  caption="Projects"
-  locale="en-US"
-  timeZone="UTC"
-  rows={rows}
-  columns={columns}
-  getRowId={(row) => row.id}
+  parameters: docs(projectExample(`
   getRowLabel={(row) => row.name}
-  selectable
+  selectionMode="multiple"
   onClickCapture={(event) => {
     // Intercept clicks before table handlers run
     event.preventDefault();
-  }}
-/>`,
-      },
-    },
-  },
+  }}`)),
   args: {
-    selectable: true,
+    selectionMode: 'multiple',
     getRowLabel,
-    onValueChange: fn(),
+    onSortChange: fn(),
     onSelectionChange: fn(),
     onClickCapture: (event) => event.preventDefault(),
   },
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Name: sort ascending' }));
     await userEvent.click(canvas.getByRole('checkbox', { name: 'Select Cedar' }));
-    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onSortChange).not.toHaveBeenCalled();
     await expect(args.onSelectionChange).not.toHaveBeenCalled();
     await expect(canvas.getByRole('checkbox', { name: 'Select Cedar' })).not.toBeChecked();
+  },
+};
+
+// Deprecated aliases keep working until the rename removes them.
+export const LegacyProps: Story = {
+  tags: ['!autodocs'],
+  args: {
+    defaultValue: { columnId: 'name', direction: 'asc' },
+    onValueChange: fn(),
+    selectable: true,
+    getRowLabel,
+    size: 'sm',
+  },
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await expect(names(canvasElement)).toEqual(['Atlas', 'Birch', 'Cedar', 'Delta']);
+    await userEvent.click(canvas.getByRole('button', { name: 'Name: sort descending' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith({ columnId: 'name', direction: 'desc' });
+    await expect(names(canvasElement)).toEqual(['Delta', 'Cedar', 'Birch', 'Atlas']);
+    await expect(canvas.getByRole('checkbox', { name: 'Select all visible rows' })).toBeInTheDocument();
+    for (const row of canvas.getByRole('table').querySelectorAll('tr')) await expect(row.getBoundingClientRect().height).toBe(33);
+    await expect(canvasElement.querySelector('[data-ui="sortable-data-table"]')).toHaveAttribute('data-density', 'compact');
+  },
+};
+export const LegacyControlledValue: Story = {
+  tags: ['!autodocs'],
+  args: { value: { columnId: 'budget', direction: 'desc' }, onValueChange: fn() },
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    await expect(names(canvasElement)).toEqual(['Cedar', 'Birch', 'Atlas', 'Delta']);
+    await userEvent.click(canvas.getByRole('button', { name: 'Budget: sort ascending' }));
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith({ columnId: 'budget', direction: 'asc' });
+    await expect(names(canvasElement)).toEqual(['Cedar', 'Birch', 'Atlas', 'Delta']);
+    await expect(sortedHeader(canvasElement)).toHaveAttribute('aria-sort', 'descending');
   },
 };
 
 export const MinimumTableWidth: Story = {
   args: { minTableWidth: '68em' },
   render: args => <NarrowFrame><Table {...args} /></NarrowFrame>,
-  parameters: {
-    docs: {
-      source: {
-        language: 'tsx',
-        code: `import { SortableDataTable } from '@jfrader/ui';
+  parameters: docs(`import { SortableDataTable } from '@jfrader/ui';
 
 const rows = [{ id: 'atlas', name: 'Atlas', budget: 40 }];
 const columns = [
@@ -1956,10 +1787,7 @@ const columns = [
 ];
 
 <SortableDataTable caption="Projects" rows={rows} columns={columns}
-  getRowId={row => row.id} minTableWidth="68em" />`,
-      },
-    },
-  },
+  getRowId={row => row.id} minTableWidth="68em" />`),
   play: async ({ canvas }) => {
     const table = canvas.getByRole('table');
     const scroller = canvas.getByRole('region');
@@ -1980,33 +1808,10 @@ export const MinimumTableWidthOverride: Story = {
 
 export const RefsAndHiddenCaption: Story = {
   name: 'DOM refs and hidden caption',
-  parameters: {
-    docs: {
-      description: {
-        story: 'Forward refs to the container and table elements while visually hiding the caption.',
-      },
-      source: {
-        language: 'tsx',
-        code: `import { useRef } from 'react';
+  parameters: docs(`import { useRef } from 'react';
 import { SortableDataTable, type DataColumn } from '@jfrader/ui';
 
-interface Project {
-  id: string;
-  name: string;
-  budget: number | null;
-}
-
-const projects: Project[] = [
-  { id: 'c', name: 'Cedar', budget: 40 },
-  { id: 'a', name: 'Atlas', budget: 0 },
-  { id: 'b', name: 'Birch', budget: 40 },
-  { id: 'd', name: 'Delta', budget: null },
-];
-
-const columns: DataColumn<Project>[] = [
-  { id: 'name', header: 'Name', accessor: (row) => row.name },
-  { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
-];
+${projectSetup}
 
 export function TableRefsExample() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -2023,10 +1828,7 @@ export function TableRefsExample() {
       getRowId={(row) => row.id}
     />
   );
-}`,
-      },
-    },
-  },
+}`, 'Forward refs to the container and table elements while visually hiding the caption.'),
   args: { ref: fn(), tableRef: fn(), captionHidden: true },
   play: async ({ args, canvas, canvasElement }) => {
     const root = canvasElement.querySelector('[data-ui="sortable-data-table"]');

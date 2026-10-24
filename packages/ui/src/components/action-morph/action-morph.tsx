@@ -23,14 +23,18 @@ import {
   useMergeRefs,
   useRole,
   useTypeahead,
+  type Placement,
 } from '@floating-ui/react';
 import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { LayerContent, MenuLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
+import { useExitPresence } from '../../overlay/exit-motion';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
+import { REDUCED_MOTION } from '../../styling/media';
+import { enterTransition, exitTransition } from '../../styling/overlay-motion';
 import { listboxItemStateStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
@@ -158,6 +162,7 @@ const TRIGGER_DIMENSION = 56;
 const MENU_INLINE_SIZE = '16rem';
 const COMPOSER_INLINE_SIZE = '20rem';
 const SHAPE_SPRING = { type: 'spring', stiffness: 380, damping: 36 } as const;
+const COLLAPSED_SCALE = '0.2';
 const rootStyle = css({ display: 'inline-flex', position: 'relative' });
 const triggerStyle = css({
   inlineSize: TRIGGER_DIMENSION,
@@ -166,6 +171,19 @@ const triggerStyle = css({
   padding: vars.space[3],
 });
 const surfaceStyle = css({
+  transitionProperty: 'opacity, scale',
+  ...enterTransition,
+  '@starting-style': { opacity: 0, scale: COLLAPSED_SCALE },
+  '&[data-state="closing"]': {
+    opacity: 0,
+    scale: COLLAPSED_SCALE,
+    pointerEvents: 'none',
+    ...exitTransition,
+  },
+  [REDUCED_MOTION]: {
+    '&, &[data-state="closing"]': { transitionDuration: '0s', scale: 'none' },
+    '@starting-style': { scale: 'none' },
+  },
   maxInlineSize: `calc(100vw - 2 * ${vars.space[4]})`,
   inlineSize: MENU_INLINE_SIZE,
   '&[data-face="composer"]': { inlineSize: COMPOSER_INLINE_SIZE },
@@ -210,6 +228,18 @@ const iconStyle = css({
   '& svg': { inlineSize: '1em', blockSize: '1em' },
 });
 type Draft = { text: string; choice?: string };
+
+function surfaceOrigin(placement: Placement, direction: 'ltr' | 'rtl') {
+  const [side, alignment] = placement.split('-');
+  const aligned = alignment === 'start' ? 0 : alignment === 'end' ? 1 : 0.5;
+  const inline = direction === 'rtl' ? 1 - aligned : aligned;
+  return {
+    top: { originX: inline, originY: 1 },
+    bottom: { originX: inline, originY: 0 },
+    left: { originX: 1, originY: aligned },
+    right: { originX: 0, originY: aligned },
+  }[side as 'top' | 'bottom' | 'left' | 'right'];
+}
 
 function ComposerField({ multiline, ref, ...props }: ActionMorphFieldProps) {
   const mergedRef = useMergeRefs<HTMLInputElement | HTMLTextAreaElement>([ref]);
@@ -284,7 +314,8 @@ function ActionMorphControl({
   names.current = actions.map((item) => (item.disabled ? null : item.label));
   const id = useId();
   const reduce = useReducedMotion();
-  const { refs, context, floatingStyles } = useOverlayFloating({
+  const presence = useExitPresence<HTMLDivElement>(open);
+  const { refs, context, floatingStyles, placement } = useOverlayFloating({
     open,
     nodeId,
     transform: false,
@@ -349,7 +380,7 @@ function ActionMorphControl({
   } = slotProps?.trigger ?? {};
   const mergedTriggerRef = useMergeRefs([refs.setReference, triggerRef]);
   const { ref: surfaceRef, sx: surfaceCss, ...surfaceProps } = slotProps?.surface ?? {};
-  const mergedSurfaceRef = useMergeRefs([refs.setFloating, surfaceRef]);
+  const mergedSurfaceRef = useMergeRefs([refs.setFloating, surfaceRef, presence.ref]);
   const mergedBackRef = useMergeRefs([confirmationRef, slotProps?.backButton?.ref]);
   const { sx: titleCss, ...titleProps } = slotProps?.title ?? {};
   const { sx: listCss, ...listProps } = slotProps?.menuList ?? {};
@@ -430,6 +461,13 @@ function ActionMorphControl({
   useEffect(() => {
     if (!open && previousOpen.current) {
       operation.current = null;
+      if (returnFocus.current) restoreTriggerFocus(refs.domReference.current);
+      returnFocus.current = false;
+    }
+    previousOpen.current = open;
+  }, [open, refs]);
+  useEffect(() => {
+    if (!presence.present) {
       setPending(false);
       setError('');
       setActionId(undefined);
@@ -442,11 +480,8 @@ function ActionMorphControl({
         });
         succeeded.current = null;
       }
-      if (returnFocus.current) restoreTriggerFocus(refs.domReference.current);
-      returnFocus.current = false;
     }
-    previousOpen.current = open;
-  }, [open, refs]);
+  }, [presence.present]);
   useEffect(
     () => () => {
       operation.current = null;
@@ -506,10 +541,11 @@ function ActionMorphControl({
           >
             {success ? '✓' : '+'}
           </Trigger>
-          {open && (
+          {presence.present && (
             <OverlayPortal>
               <FloatingFocusManager
                 context={context}
+                disabled={!open}
                 modal={false}
                 initialFocus={-1}
                 returnFocus={false}
@@ -520,12 +556,16 @@ function ActionMorphControl({
                   initial={false}
                   transition={reduce ? { duration: 0 } : SHAPE_SPRING}
                   data-face={action ? 'composer' : 'menu'}
+                  data-state={presence.closing ? 'closing' : 'open'}
+                  data-placement={placement}
                   dir={direction}
                   {...getFloatingProps(surfaceProps)}
                   ref={mergedSurfaceRef}
-                  style={{ ...surfaceProps.style, ...floatingStyles }}
+                  style={{ ...surfaceProps.style, ...floatingStyles, ...surfaceOrigin(placement, direction) }}
                   css={[listboxSurfaceStyle, surfaceStyle, surfaceCss]}
                   data-ui="action-morph-surface"
+                  inert={presence.closing || undefined}
+                  aria-hidden={presence.closing || undefined}
                   aria-labelledby={
                     surfaceProps['aria-label']
                       ? undefined

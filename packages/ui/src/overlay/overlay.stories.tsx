@@ -261,9 +261,13 @@ export const ScrollbarSpaceCompensation: Story = {
     const root = doc.documentElement;
     const innerWidth = Object.getOwnPropertyDescriptor(view, 'innerWidth');
     const clientWidth = Object.getOwnPropertyDescriptor(root, 'clientWidth');
-    // Simulate a classic 15px scrollbar: the viewport is wider than the client area.
+    // Simulate a classic 15px scrollbar: the viewport is wider than the client area until the
+    // lock hides overflow, which removes the scrollbar.
     Object.defineProperty(view, 'innerWidth', { configurable: true, get: () => 1280 });
-    Object.defineProperty(root, 'clientWidth', { configurable: true, get: () => 1265 });
+    Object.defineProperty(root, 'clientWidth', {
+      configurable: true,
+      get: () => (root.style.overflow === 'hidden' ? 1280 : 1265),
+    });
     try {
       await userEvent.click(canvas.getByRole('button', { name: 'Lock' }));
       // The reserved inline-end padding keeps the content width identical once the scrollbar hides.

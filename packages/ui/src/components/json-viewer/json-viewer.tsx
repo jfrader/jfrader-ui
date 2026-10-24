@@ -17,6 +17,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { selectableRowStyle } from '../../styling/selectable-row';
 import type { SurfaceAppearance } from '../../styling/surface';
 import type { SxProps } from '../../styling/sx';
 import type { PresentationProps } from '../../utils/presentation-slot';
@@ -258,7 +259,6 @@ function inspect(data: JsonValue, rootName: string): Map<string, DataNode> | nul
   }
 }
 
-const SELECTION_BAR = '2px';
 const MIN_LABEL_SIZE = '12ch';
 const thinScrollbar = {
   scrollbarWidth: 'thin',
@@ -345,26 +345,12 @@ const rowStyle = css({
   minBlockSize: 'var(--json-row-height)',
   paddingInlineEnd: vars.space[3],
   paddingInlineStart: `calc(var(--json-depth) * var(--json-indent) + ${vars.space[1]})`,
-  borderInlineStart: `${SELECTION_BAR} solid transparent`,
   borderRadius: vars.radius.sm,
   cursor: 'pointer',
   whiteSpace: 'pre-wrap',
   minInlineSize: `calc(var(--json-depth) * var(--json-indent) + var(--json-caret) + ${vars.space[5]} + ${MIN_LABEL_SIZE})`,
-  transitionProperty: 'background-color',
-  transitionDuration: vars.motion.duration.fast,
-  transitionTimingFunction: vars.motion.easeStandard,
-  '&:hover': { background: vars.color.surfaceHover },
-  '[aria-selected="true"] > &': {
-    borderInlineStartColor: vars.color.accent,
-    background: vars.color.accentSoft,
-  },
-  [REDUCED_MOTION]: { transitionDuration: '0s' },
-  [FORCED_COLORS]: {
-    color: 'CanvasText',
-    borderInlineStartColor: 'Canvas',
-    '[aria-selected="true"] > &': { borderInlineStartColor: 'Highlight' },
-  },
-});
+  [FORCED_COLORS]: { color: 'CanvasText' },
+}, selectableRowStyle('[aria-selected="true"] > &'));
 // Indent guide: a hairline under the owning row's caret, spanning the group's rows.
 const groupStyle = css({
   position: 'relative',
@@ -372,7 +358,7 @@ const groupStyle = css({
     content: '""',
     position: 'absolute',
     insetBlock: 0,
-    insetInlineStart: `calc(var(--json-depth) * var(--json-indent) + ${vars.space[1]} + ${SELECTION_BAR} + var(--json-caret) / 2)`,
+    insetInlineStart: `calc(var(--json-depth) * var(--json-indent) + ${vars.space[1]} + var(--json-caret) / 2)`,
     inlineSize: '1px',
     background: vars.color.border,
     pointerEvents: 'none',
@@ -399,7 +385,7 @@ const ownDirection = { unicodeBidi: 'plaintext' } as const;
 const labelStyle = css({
   minInlineSize: 0,
   overflowWrap: 'anywhere',
-  scrollMarginInlineStart: `calc(var(--json-caret) + ${vars.space[1]} + ${SELECTION_BAR})`,
+  scrollMarginInlineStart: `calc(var(--json-caret) + ${vars.space[1]})`,
   scrollMarginInlineEnd: vars.space[3],
 });
 const keyStyle = css({ ...ownDirection, color: vars.color.text });

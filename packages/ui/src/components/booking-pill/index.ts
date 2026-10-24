@@ -4,8 +4,10 @@ export type {
   BookingDraft,
   BookingPillLabels,
   BookingPillProps,
+  BookingPillSize,
   BookingPillSlotProps,
   BookingPillSlots,
   BookingPillStatus,
   BookingPillStep,
+  BookingPrice,
 } from './booking-pill';

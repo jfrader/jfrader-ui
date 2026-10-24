@@ -1,32 +1,43 @@
 'use client';
 
 // Semantics: one `role="img"` root per avatar whose accessible name is the person's name, plus
-// the status word when a status is set ("Ada Lovelace, online"). The photo, initials and status
-// badge are presentational children of that root. Status uses shape and color for sighted users
-// and text for AT; the name stays unchanged when a broken photo falls back to initials. Not interactive.
+// the status word when a status is set ("Ada Lovelace, online"). The photo, initials and the
+// decorative StatusDot are presentational children of that root. Status uses the dot's glyph and
+// color for sighted users and text for AT; the name stays unchanged when a broken photo falls back
+// to initials. Not interactive.
 import { useState, type ComponentPropsWithRef, type ComponentType } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, keyframes, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
-import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { FORCED_COLORS } from '../../styling/media';
 import { getInitials } from '../../utils/initials';
 import { isRenderable } from '../../utils/renderable';
+import {
+  StatusDot,
+  type StatusDotBaseProps,
+  type StatusDotProps,
+  type StatusDotSize,
+  type StatusDotStatus,
+} from '../status-dot';
 
 export type AvatarSize = 'sm' | 'md' | 'lg';
-export type AvatarStatus = 'online' | 'away' | 'busy' | 'offline';
+export type AvatarStatus = Exclude<StatusDotStatus, 'neutral'>;
 
 export interface AvatarPartProps {
   className?: string;
   sx?: Interpolation<Theme>;
 }
 
+/** Props passed to the presence StatusDot. Avatar owns its status, size, pulse and naming. */
+export type AvatarStatusSlotProps = AvatarPartProps & Omit<StatusDotBaseProps, 'status' | 'size' | 'pulse' | 'sx'>;
+
 export interface AvatarSlots {
   /** Image element displaying the avatar photo. */
   image?: ComponentType<ComponentPropsWithRef<'img'>>;
   /** Span element displaying fallback content when no image loads. */
   fallback?: ComponentType<ComponentPropsWithRef<'span'>>;
-  /** Presence indicator dot reflecting online or busy status. */
-  status?: ComponentType<ComponentPropsWithRef<'span'>>;
+  /** Presence StatusDot; a replacement receives the StatusDot props and ref. */
+  status?: ComponentType<StatusDotProps>;
 }
 
 export interface AvatarProps
@@ -40,22 +51,22 @@ export interface AvatarProps
   src?: string;
   /** Sets the avatar diameter. Defaults to `'md'`. */
   size?: AvatarSize;
-  /** Shows a presence badge and adds the status to the accessible name. Omit to hide the badge. */
+  /** Shows a presence StatusDot and adds the status to the accessible name. Omit to hide the dot. */
   status?: AvatarStatus;
-  /** Pulse the presence ring only when `status="online"`. Defaults to `false`. */
+  /** Pulses the presence dot from its own edge. Needs `status`. Defaults to `false`. */
   pulse?: boolean;
   /** Spoken status word; defaults to the `status` value. Pass a translated word for other locales. */
   statusLabel?: string;
-  /** Replaces the photo, fallback and presence badge elements. */
+  /** Replaces the photo, fallback and presence dot elements. */
   slots?: AvatarSlots;
-  /** Passes props and styles to the photo, fallback and presence badge. */
+  /** Passes props and styles to the photo, fallback and presence dot. */
   slotProps?: {
     /** Image element displaying the avatar photo. */
     image?: AvatarPartProps & ComponentPropsWithRef<'img'>;
     /** Span element displaying fallback content when no image loads. */
     fallback?: AvatarPartProps & ComponentPropsWithRef<'span'>;
-    /** Presence indicator dot reflecting online or busy status. */
-    status?: AvatarPartProps & ComponentPropsWithRef<'span'>;
+    /** Presence StatusDot; accepts its `variant` and `color` plus span attributes. */
+    status?: AvatarStatusSlotProps;
   };
 }
 
@@ -106,87 +117,17 @@ const fallbackStyle = css({
   overflow: 'hidden',
 });
 
-// The page-colored outline separates each shape from the photo; it is not the state cue.
-const statusStyle = css({
+// The dot is its own box in the inline-end bottom corner. On the circle its center lands on the
+// rim, and its pulse grows from that box, not from the avatar.
+const statusPlacementStyle = css({
   position: 'absolute',
   insetBlockEnd: 0,
   insetInlineEnd: 0,
-  inlineSize: '25%',
-  blockSize: '25%',
-  // Let clicks and hover pass through the decorative dot and expanding ring.
+  // Let clicks and hover pass through the decorative dot and its ring.
   pointerEvents: 'none',
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    insetBlockStart: 0,
-    insetInlineStart: 0,
-    inlineSize: '100%',
-    blockSize: '100%',
-    boxSizing: 'border-box',
-    borderRadius: vars.radius.full,
-    boxShadow: `0 0 0 2px ${vars.color.bg}`,
-  },
 });
 
-const statusToneStyles: Record<AvatarStatus, SerializedStyles> = {
-  online: css({ '&::before': { backgroundColor: vars.color.success } }),
-  away: css({ '&::before': { border: `2px solid ${vars.color.warning}`, backgroundColor: 'transparent' } }),
-  busy: css({ '&::before': { backgroundColor: vars.color.danger, blockSize: '30%', insetBlockStart: '35%' } }),
-  offline: css({
-    '&::before': {
-      backgroundColor: vars.color.textSubtle,
-      inlineSize: '60%',
-      blockSize: '60%',
-      insetBlockStart: '20%',
-      insetInlineStart: '20%',
-    },
-  }),
-};
-
-const statusForcedColorsStyle = css({
-  [FORCED_COLORS]: {
-    '&::before': {
-      forcedColorAdjust: 'none',
-      backgroundColor: 'CanvasText',
-      outline: '2px solid Canvas',
-    },
-    '&[data-status="away"]::before': {
-      borderColor: 'CanvasText',
-      backgroundColor: 'Canvas',
-    },
-  },
-});
-
-const presenceRipple = keyframes({
-  from: { transform: 'scale(.8)', opacity: 1 },
-  to: { transform: 'scale(2.4)', opacity: 0 },
-});
-
-const hiddenPresenceRing = {
-  '&[data-status="online"][data-pulse]::after': {
-    content: 'none',
-    display: 'none',
-    animation: 'none',
-  },
-} as const;
-
-const statusPulseStyle = css({
-  '&[data-status="online"][data-pulse]::after': {
-    content: '""',
-    position: 'absolute',
-    boxSizing: 'border-box',
-    insetBlockStart: 0,
-    insetInlineStart: 0,
-    inlineSize: '100%',
-    blockSize: '100%',
-    borderRadius: vars.radius.full,
-    color: vars.color.success,
-    border: '1px solid currentColor',
-    animation: `${presenceRipple} ${vars.motion.duration.presence} infinite ${vars.motion.easePresence}`,
-  },
-  [REDUCED_MOTION]: hiddenPresenceRing,
-  [FORCED_COLORS]: hiddenPresenceRing,
-});
+const statusDotSizes: Record<AvatarSize, StatusDotSize> = { sm: 'sm', md: 'sm', lg: 'md' };
 
 export function Avatar({
   ref,
@@ -210,7 +151,7 @@ export function Avatar({
   const label = status === undefined ? name : `${name}, ${statusLabel ?? status}`;
   const Image = slots?.image ?? 'img';
   const Fallback = slots?.fallback ?? 'span';
-  const Status = slots?.status ?? 'span';
+  const Status = slots?.status ?? StatusDot;
 
   return (
     <WithSx className={className} styles={[rootStyle, sizeStyles[size]]} sx={sx}>
@@ -245,17 +186,13 @@ export function Avatar({
           {status !== undefined && (
             <Status
               {...withoutSx(slotProps?.status)}
-              role={undefined}
-              aria-label={undefined}
-              aria-labelledby={undefined}
-              children={undefined}
-              dangerouslySetInnerHTML={undefined}
-              aria-hidden="true"
+              decorative
+              status={status}
+              size={statusDotSizes[size]}
+              pulse={pulse}
               data-ui="avatar-status"
-              data-status={status}
-              data-pulse={pulse && status === 'online' ? '' : undefined}
               className={slotProps?.status?.className}
-              css={[statusStyle, statusToneStyles[status], statusForcedColorsStyle, statusPulseStyle, slotProps?.status?.sx]}
+              sx={[statusPlacementStyle, slotProps?.status?.sx]}
             />
           )}
         </span>

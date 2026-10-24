@@ -20,6 +20,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { selectableRowStyle } from '../../styling/selectable-row';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -162,36 +163,18 @@ const rowStyle = css({
   minBlockSize: vars.space[8],
   paddingInline: vars.space[2],
   paddingInlineStart: `calc(var(--tree-level) * ${vars.space[4]} + ${vars.space[2]})`,
-  borderInlineStart: '2px solid transparent',
   borderRadius: vars.radius.sm,
   cursor: 'pointer',
-  transitionProperty: 'background-color, color',
-  transitionDuration: vars.motion.duration.fast,
-  transitionTimingFunction: vars.motion.easeStandard,
-  '&:hover': { background: vars.color.surfaceHover },
-  '&:has(> [aria-selected="true"])': {
-    borderInlineStartColor: vars.color.accentText,
-    background: vars.color.surfaceHover,
-  },
   '&:has(> [aria-disabled="true"])': {
     color: vars.color.textMuted,
     cursor: 'default',
   },
   '&:has(> [role="treeitem"]:focus-visible)': focusRingInset,
-  [REDUCED_MOTION]: { transitionDuration: '0s' },
   [FORCED_COLORS]: {
     color: 'CanvasText',
-    borderInlineStartColor: 'Canvas',
-    '&:has(> [aria-selected="true"])': {
-      borderInlineStartColor: 'Highlight',
-      background: 'Highlight',
-      color: 'HighlightText',
-      outlineColor: 'HighlightText',
-      forcedColorAdjust: 'none',
-    },
     '&:has(> [aria-disabled="true"])': { color: 'GrayText' },
   },
-});
+}, selectableRowStyle('&:has(> [aria-selected="true"])'));
 const labelStyle = css({ minInlineSize: 0, overflowWrap: 'anywhere' });
 const iconStyle = css({
   display: 'inline-flex',

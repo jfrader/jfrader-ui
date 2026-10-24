@@ -757,6 +757,28 @@ export const EntranceAndExit: Story = {
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
   },
 };
+export const EntranceSurvivesInlineResize: Story = {
+  render,
+  play: async ({ canvas, canvasElement }) => {
+    const trigger = canvas.getByRole('button', { name: TRIGGER });
+    const win = canvasElement.ownerDocument.defaultView!;
+    const viewportBottom = (win.visualViewport?.offsetTop ?? 0) + (win.visualViewport?.height ?? win.innerHeight);
+    const detentTop = viewportBottom - (win.visualViewport?.height ?? win.innerHeight) * 0.45;
+
+    // Hiding the page scrollbar resizes the viewport inline only; the panel keeps rising.
+    const entrance = await sampleFrames(
+      canvasElement,
+      () => {
+        trigger.click();
+        win.requestAnimationFrame(() => win.dispatchEvent(new Event('resize')));
+      },
+      (frame) => Math.abs(frame.top - detentTop) < 1,
+    );
+    await expect(new Set(entrance.map((frame) => frame.top)).size).toBeGreaterThan(2);
+    await expect(isMonotonic(entrance.map((frame) => frame.top), -1)).toBe(true);
+    await settled(canvasElement, 0.45);
+  },
+};
 export const ReopenDuringExit: Story = {
   render,
   play: async ({ canvas, canvasElement, userEvent, args }) => {

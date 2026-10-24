@@ -4,7 +4,7 @@ import { expect, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
-import { ToggleSubscription, type ToggleSubscriptionComposedProps as ToggleSubscriptionProps, type ToggleSubscriptionShorthandProps } from './index';
+import { PlanSelector, type PlanSelectorComposedProps as PlanSelectorProps, type PlanSelectorOption, type PlanSelectorShorthandProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
@@ -14,120 +14,113 @@ const ExampleGrid = styled.div({ display: 'grid', gap: vars.space[4] });
 
 const NarrowFrame = styled.div({ width: 180 });
 
-const FixedSubscription = styled(ToggleSubscription)({ width: 280 });
+const FixedSelector = styled(PlanSelector)({ width: 280 });
+
+const DeliveryNote = styled.p({ margin: 0, fontSize: vars.textSize.sm, color: vars.color.textMuted });
 
 const saving = `Save ${new Intl.NumberFormat('en', { style: 'percent' }).format(0.2)}`;
-const usage = `import { ToggleSubscription } from '@jfrader/ui';
+const usage = `import { PlanSelector } from '@jfrader/ui';
 
 const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
 
-<ToggleSubscription defaultValue="monthly" locale="en-US">
-  <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
-  <ToggleSubscription.List>
-    <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
-    <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
-  </ToggleSubscription.List>
-  <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
-</ToggleSubscription>`;
+<PlanSelector defaultValue="monthly" locale="en-US">
+  <PlanSelector.Label>Billing period</PlanSelector.Label>
+  <PlanSelector.List>
+    <PlanSelector.Item value="monthly">Monthly</PlanSelector.Item>
+    <PlanSelector.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</PlanSelector.Item>
+  </PlanSelector.List>
+  <PlanSelector.Price amount={24} currency="USD" unit="/ month" />
+</PlanSelector>`;
 const FixtureButton = styled.button({ minHeight: vars.space[8], minWidth: vars.space[8] });
 function Example({
   third = false,
   badge = saving,
   activeBadge = 'Annual saving applied',
   ...args
-}: ToggleSubscriptionProps & {
+}: PlanSelectorProps & {
   third?: boolean;
   badge?: ReactNode;
   activeBadge?: ReactNode;
 }) {
   return (
-    <ToggleSubscription {...args}>
-      <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
-      <ToggleSubscription.List>
-        <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
-        <ToggleSubscription.Item value="annual" badge={badge} activeBadge={activeBadge}>
+    <PlanSelector {...args}>
+      <PlanSelector.Label>Billing period</PlanSelector.Label>
+      <PlanSelector.List>
+        <PlanSelector.Item value="monthly">Monthly</PlanSelector.Item>
+        <PlanSelector.Item value="annual" badge={badge} activeBadge={activeBadge}>
           Annual
-        </ToggleSubscription.Item>
-        {third && <ToggleSubscription.Item value="lifetime">Lifetime</ToggleSubscription.Item>}
-      </ToggleSubscription.List>
-      <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
-    </ToggleSubscription>
+        </PlanSelector.Item>
+        {third && <PlanSelector.Item value="lifetime">Lifetime</PlanSelector.Item>}
+      </PlanSelector.List>
+      <PlanSelector.Price amount={24} currency="USD" unit="/ month" />
+    </PlanSelector>
   );
 }
 const meta = {
-  title: 'Inputs/ToggleSubscription',
-  component: ToggleSubscription,
+  title: 'Inputs/PlanSelector',
+  component: PlanSelector,
   tags: ['autodocs'],
   args: { defaultValue: 'monthly', locale: 'en-US', onValueChange: fn() },
   render: (args) => <Example {...args} />,
   parameters: {
     docs: {
       sections: [
-        { title: 'Choose a billing period', stories: ['Shorthand', 'MonthlyYearly'] },
+        { title: 'Choose an option', stories: ['Shorthand', 'DeliverySpeed', 'MonthlyYearly'] },
         { title: 'Price displays', stories: ['SeveralPrices', 'IntlCurrencies'] },
       ],
       description: {
         component:
-          'Choose a billing period and show its price, savings, or a previous price.',
+          'Choose one of a few labeled options and show what the selected option includes.',
       },
-      usage: `### Prices and forms
-- Supply the billing amounts and savings; the component does not calculate them or create a form field.
-- With mapped prices, no selection displays no price; a selected period without a mapped price throws.
-- In a composed layout, keep displayed prices in sync with the selected period yourself.
+      usage: `### Details and prices
+- Give an option a \`detail\` to show it after the options while that option is selected. With no selection, no detail shows.
+- \`PlanSelector.Price\` formats an amount you supply in a currency; the component does not calculate prices or create a form field.
+- In a composed layout, keep displayed details in sync with the selected option yourself.
 - Use finite amounts and ISO currencies. Give a previous price an accessible label and set an explicit locale for server rendering.
 - Keep badges free of interactive controls.
 
 ### Keyboard and accessibility
 
-- Arrow keys select and wrap, skipping disabled periods. Horizontal arrows reverse in RTL.
-- Home/End select the first/last enabled period. Enter/Space activate once.
+- Arrow keys select and wrap, skipping disabled options. Horizontal arrows reverse in RTL.
+- Home/End select the first/last enabled option. Enter/Space activate once.
 - Tab enters the focused enabled item, then leaves the group.`,
     },
   },
-} satisfies Meta<ToggleSubscriptionProps>;
+} satisfies Meta<PlanSelectorProps>;
 export default meta;
-type Story = StoryObj<Omit<ToggleSubscriptionProps, 'component'>>;
-type ShorthandStory = StoryObj<Omit<ToggleSubscriptionShorthandProps, 'component'>>;
-const periods = [
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'quarterly', label: 'Quarterly', disabled: true },
-  { value: 'annual', label: 'Annual', badge: saving },
-] as const;
-const prices = {
-  monthly: { amount: 24, currency: 'USD', period: '/ month' },
-  quarterly: { amount: 60, currency: 'USD', period: '/ quarter' },
-  annual: { amount: 230, currency: 'USD', period: '/ year' },
-} as const;
+type Story = StoryObj<Omit<PlanSelectorProps, 'component'>>;
+type ShorthandStory = StoryObj<Omit<PlanSelectorShorthandProps, 'component'>>;
+type Period = 'monthly' | 'quarterly' | 'annual';
+const periods: readonly PlanSelectorOption<Period>[] = [
+  { value: 'monthly', label: 'Monthly', detail: <PlanSelector.Price amount={24} currency="USD" unit="/ month" /> },
+  { value: 'quarterly', label: 'Quarterly', disabled: true, detail: <PlanSelector.Price amount={60} currency="USD" unit="/ quarter" /> },
+  { value: 'annual', label: 'Annual', badge: saving, detail: <PlanSelector.Price amount={230} currency="USD" unit="/ year" /> },
+];
 async function expectSettledPrice(root: HTMLElement, formatted: string) {
   await waitFor(async () => {
-    const visual = root.querySelector('[data-ui="toggle-subscription-amount"] [aria-hidden="true"]');
+    const visual = root.querySelector('[data-ui="plan-selector-amount"] [aria-hidden="true"]');
     await expect(visual?.children).toHaveLength(1);
     await expect(visual?.firstElementChild?.textContent).toBe(formatted);
     await expect(getComputedStyle(visual!.firstElementChild!).opacity).toBe('1');
   });
 }
 export const Shorthand: ShorthandStory = {
-  name: 'Mapped billing prices',
+  name: 'Options with prices',
   parameters: { docs: {
     description: { story: 'Choose Monthly or Annual to update the price; Quarterly is unavailable.' },
-    source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
+    source: { language: 'tsx', code: `import { PlanSelector, type PlanSelectorOption } from '@jfrader/ui';
 
 const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
-const periods = [
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'quarterly', label: 'Quarterly', disabled: true },
-  { value: 'annual', label: 'Annual', badge: saving },
-] as const;
-const prices = {
-  monthly: { amount: 24, currency: 'USD', period: '/ month' },
-  quarterly: { amount: 60, currency: 'USD', period: '/ quarter' },
-  annual: { amount: 230, currency: 'USD', period: '/ year' },
-} as const;
+const periods: readonly PlanSelectorOption<'monthly' | 'quarterly' | 'annual'>[] = [
+  { value: 'monthly', label: 'Monthly', detail: <PlanSelector.Price amount={24} currency="USD" unit="/ month" /> },
+  { value: 'quarterly', label: 'Quarterly', disabled: true, detail: <PlanSelector.Price amount={60} currency="USD" unit="/ quarter" /> },
+  { value: 'annual', label: 'Annual', badge: saving, detail: <PlanSelector.Price amount={230} currency="USD" unit="/ year" /> },
+];
 
-<ToggleSubscription label="Billing period" options={periods} prices={prices} defaultValue="monthly" locale="en-US" />` },
+<PlanSelector label="Billing period" options={periods} defaultValue="monthly" locale="en-US" />` },
   } },
-  args: { label: 'Billing period', options: periods, prices, defaultValue: 'monthly', locale: 'en-US', onValueChange: fn() },
-  render: (args) => <ToggleSubscription {...args} />,
+  args: { label: 'Billing period', options: periods, defaultValue: 'monthly', locale: 'en-US', onValueChange: fn() },
+  render: (args) => <PlanSelector {...args} />,
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await expect(canvas.getByRole('radiogroup', { name: 'Billing period' })).toBeInTheDocument();
     await expect(canvas.getAllByText('$24.00').length).toBeGreaterThan(0);
@@ -142,10 +135,56 @@ const prices = {
     await expectSettledPrice(canvasElement, '$230.00');
   },
 };
-function ShorthandControlledExample(args: ToggleSubscriptionShorthandProps) {
+type Speed = 'standard' | 'express';
+const speeds: readonly PlanSelectorOption<Speed>[] = [
+  { value: 'standard', label: 'Standard', detail: <DeliveryNote>Arrives in 3 to 5 days.</DeliveryNote> },
+  { value: 'express', label: 'Express', badge: 'Fastest', detail: <DeliveryNote>Arrives tomorrow.</DeliveryNote> },
+];
+export const DeliverySpeed: ShorthandStory = {
+  name: 'Options without prices',
+  parameters: { docs: {
+    description: { story: 'Choose a delivery speed to read what it includes.' },
+    source: { language: 'tsx', code: `import { PlanSelector, styled, type PlanSelectorOption } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const DeliveryNote = styled.p({ margin: 0, fontSize: vars.textSize.sm, color: vars.color.textMuted });
+const speeds: readonly PlanSelectorOption<'standard' | 'express'>[] = [
+  { value: 'standard', label: 'Standard', detail: <DeliveryNote>Arrives in 3 to 5 days.</DeliveryNote> },
+  { value: 'express', label: 'Express', badge: 'Fastest', detail: <DeliveryNote>Arrives tomorrow.</DeliveryNote> },
+];
+
+<PlanSelector label="Delivery" options={speeds} defaultValue="standard" tone="accent" />` },
+  } },
+  args: { label: 'Delivery', options: speeds, defaultValue: 'standard', tone: 'accent', onValueChange: fn() },
+  render: (args) => <PlanSelector {...args} />,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    await expect(canvas.getByRole('radiogroup', { name: 'Delivery' })).toBeInTheDocument();
+    await expect(canvas.getByText('Arrives in 3 to 5 days.')).toBeInTheDocument();
+    await expect(canvasElement.querySelector('[data-ui="plan-selector-price"]')).toBeNull();
+    await userEvent.click(canvas.getByRole('radio', { name: 'Express' }));
+    await expect(canvas.getByRole('radio', { name: 'Express' })).toHaveAttribute('aria-checked', 'true');
+    await expect(canvas.getByText('Arrives tomorrow.')).toBeInTheDocument();
+    await expect(canvas.queryByText('Arrives in 3 to 5 days.')).not.toBeInTheDocument();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('express');
+  },
+};
+export const OptionsWithoutDetail: ShorthandStory = {
+  tags: ['!autodocs'],
+  args: { label: 'Size', options: [{ value: 'small', label: 'Small' }, { value: 'large', label: 'Large' }], defaultValue: 'small' },
+  render: (args) => <PlanSelector {...args} />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const root = canvasElement.querySelector('[data-ui="plan-selector"]')!;
+    await expect(root.children).toHaveLength(2);
+    await userEvent.click(canvas.getByRole('radio', { name: 'Large' }));
+    await expect(canvas.getByRole('radio', { name: 'Large' })).toHaveAttribute('aria-checked', 'true');
+    await expect(root.children).toHaveLength(2);
+  },
+};
+function ShorthandControlledExample(args: PlanSelectorShorthandProps) {
   const [value, setValue] = useState('monthly');
   return (
-    <ToggleSubscription {...args} value={value} onValueChange={(next) => {
+    <PlanSelector {...args} value={value} onValueChange={(next) => {
       setValue(next);
       args.onValueChange?.(next);
     }} />
@@ -157,7 +196,7 @@ export const ShorthandNoSelection: ShorthandStory = {
   args: { ...Shorthand.args, defaultValue: undefined },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await expect(canvas.queryByText('/ month')).not.toBeInTheDocument();
-    await expect(canvasElement.querySelector('[data-ui="toggle-subscription-price"]')).not.toBeInTheDocument();
+    await expect(canvasElement.querySelector('[data-ui="plan-selector-price"]')).not.toBeInTheDocument();
     for (const radio of canvas.getAllByRole('radio')) {
       await expect(radio).toHaveAttribute('aria-checked', 'false');
     }
@@ -207,12 +246,12 @@ export const ShorthandRTL: ShorthandStory = {
   },
 };
 function ShorthandRoot(props: ComponentPropsWithRef<'div'>) {
-  return <div {...props} data-replacement="toggle-subscription" />;
+  return <div {...props} data-replacement="plan-selector" />;
 }
 // This story tests the documented css/slot API and native style merging.
 export const ShorthandCustomization: ShorthandStory = {
   ...Shorthand,
-  parameters: { docs: { source: { code: `<ToggleSubscription label="Billing period" options={periods} prices={prices} defaultValue="monthly" locale="en-US"
+  parameters: { docs: { source: { code: `<PlanSelector label="Billing period" options={periods} defaultValue="monthly" locale="en-US"
   slotProps={{ label: { title: 'Billing label' }, item: { slotProps: { badge: { style: { borderRadius: 0 } } } } }}
 />` } } },
   args: {
@@ -222,24 +261,34 @@ export const ShorthandCustomization: ShorthandStory = {
       root: { title: 'Billing selector' },
       label: { title: 'Billing label' },
       item: { slotProps: { badge: { style: { borderRadius: 0 } } } },
-      price: { slotProps: { amount: { style: { fontSize: vars.textSize.xl } } } },
     },
   },
-  render: (args) => <ToggleSubscription {...args} component={ShorthandRoot} />,
+  render: (args) => <PlanSelector {...args} component={ShorthandRoot} />,
   play: async (context) => {
     await Shorthand.play?.(context);
-    await expect(context.canvas.getByTitle('Billing selector')).toHaveAttribute('data-replacement', 'toggle-subscription');
+    await expect(context.canvas.getByTitle('Billing selector')).toHaveAttribute('data-replacement', 'plan-selector');
     await expect(context.args.ref).toHaveBeenCalledWith(context.canvas.getByTitle('Billing selector'));
     await expect(context.canvas.getByTitle('Billing label')).toHaveTextContent('Billing period');
   },
 };
-type AssertToggleSubscriptionProps<T extends import('./index').ToggleSubscriptionProps> = T;
-export type ToggleSubscriptionShorthandTypeRegression = {
+type AssertPlanSelectorProps<T extends import('./index').PlanSelectorProps> = T;
+export type PlanSelectorShorthandTypeRegression = {
   // @ts-expect-error Options and children are mutually exclusive.
-  mixed: AssertToggleSubscriptionProps<{ options: typeof periods; prices: typeof prices; children: string }>;
-  // @ts-expect-error Shorthand mode requires an explicit price mapping.
-  missingPrices: AssertToggleSubscriptionProps<{ options: typeof periods }>;
+  mixed: AssertPlanSelectorProps<{ options: typeof periods; children: string }>;
 };
+/** Compile-time consumer checks; never rendered. */
+function PlanSelectorGenericChecks() {
+  const save = (period: Period) => period;
+  return (
+    <>
+      <PlanSelector options={periods} value="annual" onValueChange={save} />
+      {/* @ts-expect-error value must be one of the options */}
+      <PlanSelector options={periods} value="weekly" />
+      {/* @ts-expect-error prices go in an option's detail */}
+      <PlanSelector options={periods} prices={{}} />
+    </>
+  );
+}
 function contrastRatio(document: Document, foreground: string, ...layers: string[]) {
   const context = document.createElement('canvas').getContext('2d')!;
   const luminance = (...colors: string[]) => {
@@ -269,7 +318,7 @@ async function assertFocus(item: HTMLElement) {
   await expect(Math.abs(parseFloat(getComputedStyle(item).outlineWidth) - 2)).toBeLessThan(1.1);
 }
 export const MonthlyYearly: Story = {
-  name: 'Compose the billing selector',
+  name: 'Compose the selector',
   parameters: { docs: {
     description: { story: 'Choose Annual to swap the savings badge; this composition keeps its monthly price unchanged.' },
     source: { language: 'tsx', code: usage },
@@ -280,7 +329,7 @@ export const MonthlyYearly: Story = {
     await expect(canvas.getByRole('radiogroup', { name: 'Billing period' })).toBeInTheDocument();
     for (const item of [monthly, annual]) {
       const wrapper = item.parentElement!;
-      await expect(wrapper).toHaveAttribute('data-ui', 'toggle-subscription-item');
+      await expect(wrapper).toHaveAttribute('data-ui', 'plan-selector-item');
       await expect(getComputedStyle(wrapper).display).toBe('contents');
       await expect(item).toHaveAttribute('data-ui', 'segmented-control-item');
     }
@@ -302,7 +351,7 @@ export const ThreePeriods: Story = {
   render: (args) => <Example {...args} third />,
   play: async ({ canvas, userEvent }) => {
     const group = canvas.getByRole('radiogroup');
-    const frame = group.closest('[data-ui="toggle-subscription"]')!;
+    const frame = group.closest('[data-ui="plan-selector"]')!;
     await expect(group.getBoundingClientRect().right).toBeLessThanOrEqual(frame.getBoundingClientRect().right + 1);
     await expect(frame.ownerDocument.documentElement.scrollWidth).toBeLessThanOrEqual(frame.ownerDocument.documentElement.clientWidth + 1);
     await userEvent.tab();
@@ -351,7 +400,7 @@ export const Tones: Story = {
     for (const group of canvas.getAllByRole('radiogroup')) {
       const selected = group.querySelector<HTMLElement>('[aria-checked="true"]')!;
       const pill = selected.querySelector('[data-ui="segmented-control-selection"]')!;
-      const badge = group.querySelector('[data-ui="toggle-subscription-badge"]')!;
+      const badge = group.querySelector('[data-ui="plan-selector-badge"]')!;
       const document = group.ownerDocument;
       const track = getComputedStyle(group).backgroundColor;
       await expect(
@@ -381,28 +430,36 @@ export const BadgeActiveSwap: Story = {
   play: async ({ canvas, userEvent }) => {
     const annual = canvas.getByRole('radio', { name: 'Annual' });
     const width = annual.getBoundingClientRect().width;
+    const badge = () => annual.querySelector<HTMLElement>('[data-ui="plan-selector-badge"]')!;
+    const widths = () => [badge(), badge().parentElement!].map((element) => element.getBoundingClientRect().width);
+    // The shorter badge hugs its text inside the space reserved for the longer one.
+    const [shortBadge, reserved] = widths();
+    await expect(shortBadge).toBeLessThan(reserved! - 1);
     await userEvent.click(annual);
     await expect(annual).toHaveAccessibleName('Annual');
     await expect(annual).toHaveAccessibleDescription('Annual saving applied');
     await expect(Math.abs(annual.getBoundingClientRect().width - width)).toBeLessThan(1);
+    const [longBadge, sameReserved] = widths();
+    await expect(Math.abs(longBadge! - sameReserved!)).toBeLessThan(1);
+    await expect(Math.abs(sameReserved! - reserved!)).toBeLessThan(1);
   },
 };
 export const Keyboard: Story = {
   render: (args) => (
     <>
       <FixtureButton>Before</FixtureButton>
-      <ToggleSubscription {...args}>
-        <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
-        <ToggleSubscription.List>
-          <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
-          <ToggleSubscription.Item value="paused" disabled>
+      <PlanSelector {...args}>
+        <PlanSelector.Label>Billing period</PlanSelector.Label>
+        <PlanSelector.List>
+          <PlanSelector.Item value="monthly">Monthly</PlanSelector.Item>
+          <PlanSelector.Item value="paused" disabled>
             Paused
-          </ToggleSubscription.Item>
-          <ToggleSubscription.Item value="annual">Annual</ToggleSubscription.Item>
-          <ToggleSubscription.Item value="lifetime">Lifetime</ToggleSubscription.Item>
-        </ToggleSubscription.List>
-        <ToggleSubscription.Price amount={0} currency="USD" />
-      </ToggleSubscription>
+          </PlanSelector.Item>
+          <PlanSelector.Item value="annual">Annual</PlanSelector.Item>
+          <PlanSelector.Item value="lifetime">Lifetime</PlanSelector.Item>
+        </PlanSelector.List>
+        <PlanSelector.Price amount={0} currency="USD" />
+      </PlanSelector>
       <FixtureButton>After</FixtureButton>
     </>
   ),
@@ -439,18 +496,18 @@ export const Keyboard: Story = {
   },
 };
 export const Uncontrolled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
+  parameters: { docs: { source: { language: 'tsx', code: `import { PlanSelector } from '@jfrader/ui';
 
 const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
 
-<ToggleSubscription locale="en-US">
-  <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
-  <ToggleSubscription.List>
-    <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
-    <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
-  </ToggleSubscription.List>
-  <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
-</ToggleSubscription>` } } },
+<PlanSelector locale="en-US">
+  <PlanSelector.Label>Billing period</PlanSelector.Label>
+  <PlanSelector.List>
+    <PlanSelector.Item value="monthly">Monthly</PlanSelector.Item>
+    <PlanSelector.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</PlanSelector.Item>
+  </PlanSelector.List>
+  <PlanSelector.Price amount={24} currency="USD" unit="/ month" />
+</PlanSelector>` } } },
   args: { defaultValue: undefined },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
@@ -468,18 +525,6 @@ const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).forma
 };
 export const NativeActivation: Story = {
   ...Uncontrolled,
-  parameters: { docs: { source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
-
-const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
-
-<ToggleSubscription locale="en-US">
-  <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
-  <ToggleSubscription.List>
-    <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
-    <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
-  </ToggleSubscription.List>
-  <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
-</ToggleSubscription>` } } },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
     await userEvent.keyboard(' ');
@@ -492,12 +537,12 @@ const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).forma
     await expect(args.onValueChange).toHaveBeenCalledTimes(2);
   },
 };
-function PricesExample({ reject = false, ...args }: ToggleSubscriptionProps & { reject?: boolean }) {
+function PricesExample({ reject = false, ...args }: PlanSelectorProps & { reject?: boolean }) {
   const [period, setPeriod] = useState('monthly');
   const annual = period === 'annual';
   return (
     <>
-      <ToggleSubscription
+      <PlanSelector
         {...args}
         value={period}
         onValueChange={(next) => {
@@ -505,24 +550,24 @@ function PricesExample({ reject = false, ...args }: ToggleSubscriptionProps & { 
           if (!reject) setPeriod(next);
         }}
       >
-        <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
-        <ToggleSubscription.List>
-          <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
-          <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">
+        <PlanSelector.Label>Billing period</PlanSelector.Label>
+        <PlanSelector.List>
+          <PlanSelector.Item value="monthly">Monthly</PlanSelector.Item>
+          <PlanSelector.Item value="annual" badge={saving} activeBadge="Annual saving applied">
             Annual
-          </ToggleSubscription.Item>
-        </ToggleSubscription.List>
-        <ToggleSubscription.Price
+          </PlanSelector.Item>
+        </PlanSelector.List>
+        <PlanSelector.Price
           amount={annual ? 240 : 24}
           currency="USD"
-          period={annual ? '/ year' : '/ month'}
+          unit={annual ? '/ year' : '/ month'}
         />
-        <ToggleSubscription.Price
+        <PlanSelector.Price
           amount={annual ? 480 : 48}
           currency="USD"
-          period={annual ? '/ year' : '/ month'}
+          unit={annual ? '/ year' : '/ month'}
         />
-      </ToggleSubscription>
+      </PlanSelector>
       <FixtureButton onClick={() => setPeriod('annual')}>
         Set annual externally
       </FixtureButton>
@@ -534,7 +579,7 @@ export const SeveralPrices: Story = {
   parameters: { docs: {
     description: { story: 'Choose a period to update two prices, or apply Annual from the external button.' },
     source: { language: 'tsx', code: `import { useState } from 'react';
-import { ToggleSubscription, styled } from '@jfrader/ui';
+import { PlanSelector, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
 const ApplyButton = styled.button({ minHeight: vars.space[8], minWidth: vars.space[8] });
@@ -545,15 +590,15 @@ export function PlanPrices() {
   const annual = period === 'annual';
   return (
     <>
-      <ToggleSubscription value={period} onValueChange={setPeriod} locale="en-US">
-        <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
-        <ToggleSubscription.List>
-          <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
-          <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
-        </ToggleSubscription.List>
-        <ToggleSubscription.Price amount={annual ? 240 : 24} currency="USD" period={annual ? '/ year' : '/ month'} />
-        <ToggleSubscription.Price amount={annual ? 480 : 48} currency="USD" period={annual ? '/ year' : '/ month'} />
-      </ToggleSubscription>
+      <PlanSelector value={period} onValueChange={setPeriod} locale="en-US">
+        <PlanSelector.Label>Billing period</PlanSelector.Label>
+        <PlanSelector.List>
+          <PlanSelector.Item value="monthly">Monthly</PlanSelector.Item>
+          <PlanSelector.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</PlanSelector.Item>
+        </PlanSelector.List>
+        <PlanSelector.Price amount={annual ? 240 : 24} currency="USD" unit={annual ? '/ year' : '/ month'} />
+        <PlanSelector.Price amount={annual ? 480 : 48} currency="USD" unit={annual ? '/ year' : '/ month'} />
+      </PlanSelector>
       <ApplyButton onClick={() => setPeriod('annual')}>Set annual externally</ApplyButton>
     </>
   );
@@ -611,18 +656,18 @@ export const ControlledRejects: Story = {
   },
 };
 export const Disabled: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
+  parameters: { docs: { source: { language: 'tsx', code: `import { PlanSelector } from '@jfrader/ui';
 
 const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
 
-<ToggleSubscription defaultValue="monthly" locale="en-US" disabled>
-  <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
-  <ToggleSubscription.List>
-    <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
-    <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
-  </ToggleSubscription.List>
-  <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
-</ToggleSubscription>` } } },
+<PlanSelector defaultValue="monthly" locale="en-US" disabled>
+  <PlanSelector.Label>Billing period</PlanSelector.Label>
+  <PlanSelector.List>
+    <PlanSelector.Item value="monthly">Monthly</PlanSelector.Item>
+    <PlanSelector.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</PlanSelector.Item>
+  </PlanSelector.List>
+  <PlanSelector.Price amount={24} currency="USD" unit="/ month" />
+</PlanSelector>` } } },
   args: { disabled: true },
   play: async ({ canvas, userEvent, args }) => {
     for (const item of canvas.getAllByRole('radio')) {
@@ -633,19 +678,16 @@ const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).forma
     await expect(args.onValueChange).not.toHaveBeenCalled();
   },
 };
-export const UnknownPeriod: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
+export const UnknownValue: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { PlanSelector } from '@jfrader/ui';
 
-const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
-
-<ToggleSubscription value="unknown" locale="en-US" onValueChange={() => {}}>
-  <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
-  <ToggleSubscription.List>
-    <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
-    <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
-  </ToggleSubscription.List>
-  <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
-</ToggleSubscription>` } } },
+<PlanSelector value="unknown" locale="en-US" onValueChange={() => {}}>
+  <PlanSelector.Label>Billing period</PlanSelector.Label>
+  <PlanSelector.List>
+    <PlanSelector.Item value="monthly">Monthly</PlanSelector.Item>
+    <PlanSelector.Item value="annual">Annual</PlanSelector.Item>
+  </PlanSelector.List>
+</PlanSelector>` } } },
   args: { value: 'unknown' },
   play: async ({ canvas, userEvent, args }) => {
     await expect(canvas.getAllByRole('radio', { checked: false })).toHaveLength(2);
@@ -656,29 +698,29 @@ const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).forma
 };
 export const EmptyList: Story = {
   render: (args) => (
-    <ToggleSubscription {...args}>
-      <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
-      <ToggleSubscription.List />
-    </ToggleSubscription>
+    <PlanSelector {...args}>
+      <PlanSelector.Label>Billing period</PlanSelector.Label>
+      <PlanSelector.List />
+    </PlanSelector>
   ),
 };
 export const PreviousPrice: Story = {
   render: (args) => (
-    <ToggleSubscription {...args}>
-      <ToggleSubscription.Price
+    <PlanSelector {...args}>
+      <PlanSelector.Price
         amount={19.5}
         was={24}
         currency="USD"
         previousLabel="Previous price"
-        period="/ month"
+        unit="/ month"
       />
-      <ToggleSubscription.Price amount={24} was={24} currency="USD" />
-      <ToggleSubscription.Price amount={24} was={Number.NaN} currency="USD" />
-    </ToggleSubscription>
+      <PlanSelector.Price amount={24} was={24} currency="USD" />
+      <PlanSelector.Price amount={24} was={Number.NaN} currency="USD" />
+    </PlanSelector>
   ),
   play: async ({ canvasElement }) => {
     const previous = canvasElement.querySelector('del')!;
-    const price = previous.closest('[data-ui="toggle-subscription-price"]')!;
+    const price = previous.closest('[data-ui="plan-selector-price"]')!;
     await expect(canvasElement.querySelectorAll('del')).toHaveLength(1);
     await expect(previous).not.toHaveAttribute('aria-describedby');
     await expect(previous.textContent).toBe('Previous price$24.00');
@@ -687,16 +729,16 @@ export const PreviousPrice: Story = {
 };
 export const ZeroAmount: Story = {
   render: (args) => (
-    <ToggleSubscription {...args}>
-      <ToggleSubscription.Price amount={0} currency="JPY" period={0} />
-    </ToggleSubscription>
+    <PlanSelector {...args}>
+      <PlanSelector.Price amount={0} currency="JPY" unit={0} />
+    </PlanSelector>
   ),
   play: async ({ canvasElement }) => {
     await expect(
-      canvasElement.querySelector('[data-ui="toggle-subscription-amount"]')!.textContent,
+      canvasElement.querySelector('[data-ui="plan-selector-amount"]')!.textContent,
     ).toContain('¥0');
     await expect(
-      canvasElement.querySelector('[data-ui="toggle-subscription-period"]'),
+      canvasElement.querySelector('[data-ui="plan-selector-unit"]'),
     ).toHaveTextContent('0');
   },
 };
@@ -711,26 +753,26 @@ export const IntlCurrencies: Story = {
   name: 'Localized currencies',
   parameters: { docs: {
     description: { story: 'Compare currency formatting for US, German, Japanese, Egyptian and Swiss locales.' },
-    source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
+    source: { language: 'tsx', code: `import { PlanSelector } from '@jfrader/ui';
 
-<ToggleSubscription defaultValue="monthly" locale="en-US">
-  <ToggleSubscription.Price amount={1234.56} currency="USD" locale="en-US" />
-  <ToggleSubscription.Price amount={1234.56} currency="EUR" locale="de-DE" />
-  <ToggleSubscription.Price amount={1234.56} currency="JPY" locale="ja-JP" />
-  <ToggleSubscription.Price amount={1234.56} currency="USD" locale="ar-EG" />
-  <ToggleSubscription.Price amount={1234.56} currency="CHF" locale={new Intl.Locale('fr-CH')} />
-</ToggleSubscription>` },
+<PlanSelector defaultValue="monthly" locale="en-US">
+  <PlanSelector.Price amount={1234.56} currency="USD" locale="en-US" />
+  <PlanSelector.Price amount={1234.56} currency="EUR" locale="de-DE" />
+  <PlanSelector.Price amount={1234.56} currency="JPY" locale="ja-JP" />
+  <PlanSelector.Price amount={1234.56} currency="USD" locale="ar-EG" />
+  <PlanSelector.Price amount={1234.56} currency="CHF" locale={new Intl.Locale('fr-CH')} />
+</PlanSelector>` },
   } },
   render: (args) => (
-    <ToggleSubscription {...args}>
+    <PlanSelector {...args}>
       {currencies.map((props) => (
-        <ToggleSubscription.Price key={String(props.locale)} {...props} />
+        <PlanSelector.Price key={String(props.locale)} {...props} />
       ))}
-    </ToggleSubscription>
+    </PlanSelector>
   ),
   play: async ({ canvasElement }) => {
     for (const [index, node] of canvasElement
-      .querySelectorAll('[data-ui="toggle-subscription-amount"]')
+      .querySelectorAll('[data-ui="plan-selector-amount"]')
       .entries()) {
       const props = currencies[index]!;
       const formatted = new Intl.NumberFormat(props.locale, {
@@ -745,33 +787,33 @@ export const IntlCurrencies: Story = {
 export const NarrowPrices: Story = {
   render: (args) => (
     <NarrowFrame>
-      <ToggleSubscription {...args}>
-        <ToggleSubscription.Price
+      <PlanSelector {...args}>
+        <PlanSelector.Price
           amount={123456789.12}
           currency="EUR"
           locale="de-DE"
-          period="por cada período de facturación anual"
+          unit="por cada período de facturación anual"
         />
-      </ToggleSubscription>
+      </PlanSelector>
     </NarrowFrame>
   ),
   play: async ({ canvasElement }) => {
-    const price = canvasElement.querySelector<HTMLElement>('[data-ui="toggle-subscription-price"]')!;
+    const price = canvasElement.querySelector<HTMLElement>('[data-ui="plan-selector-price"]')!;
     await expect(price.scrollWidth).toBeLessThanOrEqual(price.clientWidth + 1);
     await expect(getComputedStyle(price).overflowWrap).toBe('anywhere');
   },
 };
 export const LongTranslatedLabels: Story = {
   render: (args) => (
-    <FixedSubscription {...args}>
-      <ToggleSubscription.Label>Período de facturación</ToggleSubscription.Label>
-      <ToggleSubscription.List>
-        <ToggleSubscription.Item value="monthly">Facturación mensual flexible</ToggleSubscription.Item>
-        <ToggleSubscription.Item value="annual" badge="Ahorro durante todo el año">
+    <FixedSelector {...args}>
+      <PlanSelector.Label>Período de facturación</PlanSelector.Label>
+      <PlanSelector.List>
+        <PlanSelector.Item value="monthly">Facturación mensual flexible</PlanSelector.Item>
+        <PlanSelector.Item value="annual" badge="Ahorro durante todo el año">
           Facturación anual anticipada
-        </ToggleSubscription.Item>
-      </ToggleSubscription.List>
-    </FixedSubscription>
+        </PlanSelector.Item>
+      </PlanSelector.List>
+    </FixedSelector>
   ),
   play: async ({ canvas, userEvent }) => {
     await userEvent.tab();
@@ -789,21 +831,21 @@ export const LongTranslatedLabels: Story = {
     });
   },
 };
-function AriaExample(args: ToggleSubscriptionProps) {
+function AriaExample(args: PlanSelectorProps) {
   const id = useId();
   return (
     <>
       <span id={`${id}-name`}>Plan</span>
       <span id={`${id}-description`}>Prices before tax</span>
-      <ToggleSubscription {...args}>
-        <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
-        <ToggleSubscription.List
+      <PlanSelector {...args}>
+        <PlanSelector.Label>Billing period</PlanSelector.Label>
+        <PlanSelector.List
           aria-label="Fallback"
           aria-labelledby={`${id}-name missing-reference`}
           aria-describedby={`${id}-description`}
           aria-invalid="true"
         >
-          <ToggleSubscription.Item
+          <PlanSelector.Item
             value="monthly"
             aria-label="Fallback item"
             aria-labelledby={`${id}-name`}
@@ -811,10 +853,10 @@ function AriaExample(args: ToggleSubscriptionProps) {
             badge={0}
           >
             Monthly
-          </ToggleSubscription.Item>
-          <ToggleSubscription.Item value="annual">Annual</ToggleSubscription.Item>
-        </ToggleSubscription.List>
-      </ToggleSubscription>
+          </PlanSelector.Item>
+          <PlanSelector.Item value="annual">Annual</PlanSelector.Item>
+        </PlanSelector.List>
+      </PlanSelector>
     </>
   );
 }
@@ -837,15 +879,15 @@ export const FalsyBadge: Story = {
   render: (args) => (
     <div>
       {[false, null, 0, ''].map((content, index) => (
-        <ToggleSubscription {...args} key={index} defaultValue="annual">
-          <ToggleSubscription.Label>{`Period ${index}`}</ToggleSubscription.Label>
-          <ToggleSubscription.List>
-            <ToggleSubscription.Item value="annual" badge={content} activeBadge={content}>
+        <PlanSelector {...args} key={index} defaultValue="annual">
+          <PlanSelector.Label>{`Period ${index}`}</PlanSelector.Label>
+          <PlanSelector.List>
+            <PlanSelector.Item value="annual" badge={content} activeBadge={content}>
               Annual
-            </ToggleSubscription.Item>
-          </ToggleSubscription.List>
-          <ToggleSubscription.Price amount={0} currency="USD" period={content} />
-        </ToggleSubscription>
+            </PlanSelector.Item>
+          </PlanSelector.List>
+          <PlanSelector.Price amount={0} currency="USD" unit={content} />
+        </PlanSelector>
       ))}
     </div>
   ),
@@ -853,29 +895,29 @@ export const FalsyBadge: Story = {
     const items = canvas.getAllByRole('radio');
     for (const [index, item] of items.entries()) {
       await expect(item.hasAttribute('aria-describedby')).toBe(index === 2);
-      await expect(item.querySelectorAll('[data-ui="toggle-subscription-badge"]')).toHaveLength(
+      await expect(item.querySelectorAll('[data-ui="plan-selector-badge"]')).toHaveLength(
         index === 2 ? 1 : 0,
       );
     }
-    await expect(canvasElement.querySelectorAll('[data-ui="toggle-subscription-period"]')).toHaveLength(
+    await expect(canvasElement.querySelectorAll('[data-ui="plan-selector-unit"]')).toHaveLength(
       1,
     );
     await expect(items[2]).toHaveAccessibleDescription('0');
   },
 };
 export const RTL: Story = {
-  parameters: { docs: { source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
+  parameters: { docs: { source: { language: 'tsx', code: `import { PlanSelector } from '@jfrader/ui';
 
 const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
 
-<ToggleSubscription defaultValue="monthly" locale="en-US" dir="rtl">
-  <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
-  <ToggleSubscription.List>
-    <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
-    <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
-  </ToggleSubscription.List>
-  <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
-</ToggleSubscription>` } } },
+<PlanSelector defaultValue="monthly" locale="en-US" dir="rtl">
+  <PlanSelector.Label>Billing period</PlanSelector.Label>
+  <PlanSelector.List>
+    <PlanSelector.Item value="monthly">Monthly</PlanSelector.Item>
+    <PlanSelector.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</PlanSelector.Item>
+  </PlanSelector.List>
+  <PlanSelector.Price amount={24} currency="USD" unit="/ month" />
+</PlanSelector>` } } },
   args: { dir: 'rtl' },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.tab();
@@ -902,18 +944,18 @@ export const ForcedColors: Story = {
   args: { defaultValue: 'annual' },
   parameters: {
     docs: {
-      source: { language: 'tsx', code: `import { ToggleSubscription } from '@jfrader/ui';
+      source: { language: 'tsx', code: `import { PlanSelector } from '@jfrader/ui';
 
 const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
 
-<ToggleSubscription defaultValue="annual" locale="en-US">
-  <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
-  <ToggleSubscription.List>
-    <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
-    <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
-  </ToggleSubscription.List>
-  <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
-</ToggleSubscription>` },
+<PlanSelector defaultValue="annual" locale="en-US">
+  <PlanSelector.Label>Billing period</PlanSelector.Label>
+  <PlanSelector.List>
+    <PlanSelector.Item value="monthly">Monthly</PlanSelector.Item>
+    <PlanSelector.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</PlanSelector.Item>
+  </PlanSelector.List>
+  <PlanSelector.Price amount={24} currency="USD" unit="/ month" />
+</PlanSelector>` },
       description: {
         story:
           'Enable forced colors in the browser to check selection borders, savings borders, and the focus outline. This story does not set the preference.',
@@ -929,14 +971,14 @@ export const ConsumerVeto: Story = {
         throw new Error('Unexpected submit');
       }}
     >
-      <ToggleSubscription {...args}>
-        <ToggleSubscription.List aria-label="Billing period">
-          <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
-          <ToggleSubscription.Item value="annual" onClick={(event) => event.preventDefault()}>
+      <PlanSelector {...args}>
+        <PlanSelector.List aria-label="Billing period">
+          <PlanSelector.Item value="monthly">Monthly</PlanSelector.Item>
+          <PlanSelector.Item value="annual" onClick={(event) => event.preventDefault()}>
             Annual
-          </ToggleSubscription.Item>
-        </ToggleSubscription.List>
-      </ToggleSubscription>
+          </PlanSelector.Item>
+        </PlanSelector.List>
+      </PlanSelector>
     </form>
   ),
   play: async ({ canvas, userEvent, args }) => {
@@ -949,57 +991,57 @@ export const ConsumerVeto: Story = {
 // This story tests the documented css/slot API and native style merging.
 export const SlotsAndStyling: Story = {
   render: (args) => (
-    <ToggleSubscription {...args} sx={{ gap: vars.space[4] }}>
-      <ToggleSubscription.Label sx={{ fontWeight: vars.fontWeight.semibold }}>
+    <PlanSelector {...args} sx={{ gap: vars.space[4] }}>
+      <PlanSelector.Label sx={{ fontWeight: vars.fontWeight.semibold }}>
         Billing period
-      </ToggleSubscription.Label>
-      <ToggleSubscription.List sx={{ padding: vars.space[2] }}>
-        <ToggleSubscription.Item
+      </PlanSelector.Label>
+      <PlanSelector.List sx={{ padding: vars.space[2] }}>
+        <PlanSelector.Item
           value="monthly"
           sx={{ paddingInline: vars.space[4] }}
           slotProps={{
             label: { sx: { fontStyle: 'italic' } },
             badge: { sx: { borderRadius: vars.radius.sm } },
             selection: {
-              className: 'billing-selection',
-              title: 'Selected period',
+              className: 'plan-selection',
+              title: 'Selected option',
               sx: { borderRadius: vars.radius.full },
             },
           }}
           badge={0}
         >
           Monthly
-        </ToggleSubscription.Item>
-      </ToggleSubscription.List>
-      <ToggleSubscription.Price
+        </PlanSelector.Item>
+      </PlanSelector.List>
+      <PlanSelector.Price
         amount={24}
         was={30}
         currency="USD"
         previousLabel="Previous price"
-        period="/ month"
+        unit="/ month"
         sx={{ gap: vars.space[4] }}
         slotProps={{
           amount: { sx: { fontSize: vars.textSize.xl } },
           previous: { sx: { fontStyle: 'italic' } },
-          period: { sx: { fontWeight: vars.fontWeight.semibold } },
+          unit: { sx: { fontWeight: vars.fontWeight.semibold } },
         }}
       />
-    </ToggleSubscription>
+    </PlanSelector>
   ),
   play: async ({ canvasElement, canvas }) => {
     const item = canvas.getByRole('radio');
     await expect(
-      getComputedStyle(item.querySelector('[data-ui="toggle-subscription-item-label"]')!).fontStyle,
+      getComputedStyle(item.querySelector('[data-ui="plan-selector-item-label"]')!).fontStyle,
     ).toBe('italic');
     await expectPx(
-      getComputedStyle(item.querySelector('[data-ui="toggle-subscription-badge"]')!).borderRadius,
+      getComputedStyle(item.querySelector('[data-ui="plan-selector-badge"]')!).borderRadius,
       8,
     );
     await expect(getComputedStyle(canvasElement.querySelector('del')!).fontStyle).toBe('italic');
     await expect(
       Math.abs(
         parseFloat(
-          getComputedStyle(canvasElement.querySelector('[data-ui="toggle-subscription-period"]')!)
+          getComputedStyle(canvasElement.querySelector('[data-ui="plan-selector-unit"]')!)
             .fontWeight,
         ) - 600,
       ),
@@ -1010,45 +1052,43 @@ export const SlotsAndStyling: Story = {
     );
     await expect(item.querySelector('[data-ui="segmented-control-selection"]')).toHaveAttribute(
       'title',
-      'Selected period',
+      'Selected option',
     );
   },
 };
 
 export const RootRef: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import { useRef } from 'react';
-import { ToggleSubscription } from '@jfrader/ui';
-
-const saving = 'Save ' + new Intl.NumberFormat('en', { style: 'percent' }).format(0.2);
+import { PlanSelector } from '@jfrader/ui';
 
 export function BillingPeriod() {
   const rootRef = useRef<HTMLDivElement>(null);
   return (
-    <ToggleSubscription ref={rootRef} defaultValue="monthly" locale="en-US">
-      <ToggleSubscription.Label>Billing period</ToggleSubscription.Label>
-      <ToggleSubscription.List>
-        <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
-        <ToggleSubscription.Item value="annual" badge={saving} activeBadge="Annual saving applied">Annual</ToggleSubscription.Item>
-      </ToggleSubscription.List>
-      <ToggleSubscription.Price amount={24} currency="USD" period="/ month" />
-    </ToggleSubscription>
+    <PlanSelector ref={rootRef} defaultValue="monthly" locale="en-US">
+      <PlanSelector.Label>Billing period</PlanSelector.Label>
+      <PlanSelector.List>
+        <PlanSelector.Item value="monthly">Monthly</PlanSelector.Item>
+        <PlanSelector.Item value="annual">Annual</PlanSelector.Item>
+      </PlanSelector.List>
+      <PlanSelector.Price amount={24} currency="USD" unit="/ month" />
+    </PlanSelector>
   );
 }` } } },
   args: { ref: fn() },
   play: async ({ canvasElement, args }) => {
     await expect(args.ref).toHaveBeenCalledWith(
-      canvasElement.querySelector('[data-ui="toggle-subscription"]'),
+      canvasElement.querySelector('[data-ui="plan-selector"]'),
     );
   },
 };
 export const ListRef: Story = {
   args: { ref: fn() },
   render: ({ ref, ...args }) => (
-    <ToggleSubscription {...args}>
-      <ToggleSubscription.List ref={ref} aria-label="Billing period">
-        <ToggleSubscription.Item value="monthly">Monthly</ToggleSubscription.Item>
-      </ToggleSubscription.List>
-    </ToggleSubscription>
+    <PlanSelector {...args}>
+      <PlanSelector.List ref={ref} aria-label="Billing period">
+        <PlanSelector.Item value="monthly">Monthly</PlanSelector.Item>
+      </PlanSelector.List>
+    </PlanSelector>
   ),
   play: async ({ canvas, args }) => {
     await expect(args.ref).toHaveBeenCalledWith(canvas.getByRole('radiogroup'));
@@ -1058,23 +1098,23 @@ export const FalsyLabels: Story = {
   render: (args) => (
     <div>
       {[false, null, 0, ''].map((content, index) => (
-        <ToggleSubscription {...args} key={index}>
-          <ToggleSubscription.Label>{content}</ToggleSubscription.Label>
-          <ToggleSubscription.List aria-label={`Billing period ${index}`}>
-            <ToggleSubscription.Item value="monthly" aria-label={`Monthly ${index}`}>
+        <PlanSelector {...args} key={index}>
+          <PlanSelector.Label>{content}</PlanSelector.Label>
+          <PlanSelector.List aria-label={`Billing period ${index}`}>
+            <PlanSelector.Item value="monthly" aria-label={`Monthly ${index}`}>
               {content}
-            </ToggleSubscription.Item>
-          </ToggleSubscription.List>
-        </ToggleSubscription>
+            </PlanSelector.Item>
+          </PlanSelector.List>
+        </PlanSelector>
       ))}
     </div>
   ),
   play: async ({ canvasElement, canvas }) => {
-    await expect(canvasElement.querySelectorAll('[data-ui="toggle-subscription-label"]')).toHaveLength(
+    await expect(canvasElement.querySelectorAll('[data-ui="plan-selector-label"]')).toHaveLength(
       1,
     );
     await expect(
-      canvasElement.querySelectorAll('[data-ui="toggle-subscription-item-label"]'),
+      canvasElement.querySelectorAll('[data-ui="plan-selector-item-label"]'),
     ).toHaveLength(1);
     for (const [index, item] of canvas.getAllByRole('radio').entries()) {
       await expect(item.hasAttribute('aria-labelledby')).toBe(index === 2);
