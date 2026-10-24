@@ -167,6 +167,34 @@ export function checkIntroduction(source, fileName) {
   return [];
 }
 
+export function checkDuplicateDocsTitles(componentsDir) {
+  const filesByTitle = new Map();
+  const errors = [];
+  for (const dir of readdirSync(componentsDir, { withFileTypes: true })) {
+    if (!dir.isDirectory()) continue;
+    const folder = path.join(componentsDir, dir.name);
+    for (const story of readdirSync(folder).filter((file) => /\.stories\.tsx?$/.test(file))) {
+      const fileName = path.join(folder, story);
+      try {
+        const csf = loadCsf(readFileSync(fileName, 'utf8'), { fileName, makeTitle: (title) => title ?? fileName }).parse();
+        if (!csf.meta.title || csf.meta.tags?.includes('!autodocs')) continue;
+        if (!Object.values(csf._stories).some((entry) => !entry.tags?.includes('!autodocs'))) continue;
+        const files = filesByTitle.get(csf.meta.title) ?? [];
+        files.push(`${dir.name}/${story}`);
+        filesByTitle.set(csf.meta.title, files);
+      } catch (error) {
+        errors.push(`${dir.name}/${story}: cannot check docs title: ${error.message}`);
+      }
+    }
+  }
+  for (const [title, files] of filesByTitle) {
+    if (files.length > 1) {
+      errors.push(`Duplicate docs title "${title}" creates ${files.length} pages with the same name. Give each published file its own title:\n${files.map((file) => `      ${file}`).join('\n')}`);
+    }
+  }
+  return errors;
+}
+
 export function checkComponentDocs(componentsDir) {
   const errors = [];
   let checked = 0;
@@ -193,6 +221,7 @@ export function checkComponentDocs(componentsDir) {
     }
   }
   if (checked === 0) errors.push('No component stories found.');
+  errors.push(...checkDuplicateDocsTitles(componentsDir));
   return { errors, checked };
 }
 

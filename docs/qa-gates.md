@@ -51,13 +51,13 @@ adding a row when a run is recorded:
 accordion, activity-rings, alert, announcement-bar, avatar, avatar-group, badge, billing-toggle,
 bottom-sheet, breadcrumbs, button, button-group, calendar, card, carousel, chat-thread, checkbox,
 chip-group, code-block, combobox, command-palette, comment-thread, container, context-menu,
-copy-button, countdown, date-picker, date-range-picker, dialog, divider, dock, drawer, elastic-slider,
-empty-state, expandable-card, expanding-search, field, file-dropzone, filter-toolbar, flex,
-hold-to-confirm, hover-card, image-compare, inline-edit, json-viewer, kbd, keycap-keyboard,
+copy-button, countdown, data-table, date-picker, date-range-picker, dialog, divider, dock, drawer,
+elastic-slider, empty-state, expandable-card, expanding-search, field, file-dropzone, filter-toolbar,
+flex, hold-to-confirm, hover-card, image-compare, inline-edit, json-viewer, kbd, keycap-keyboard,
 lightbox-gallery, mention-input, menu, metric-card, multi-select, navigation, now-playing, pagination,
 password-field, photo-grid, pill, popover, progress, radio-cards, radio-group, resizable-panels,
 scroll-area, search-field, segmented-control, select, shortcut-recorder, signature-pad, skeleton,
-slider, sortable-data-table, spinner, split-button, stack, stepper, stretch-refresh, swipe-actions,
+slider, spinner, split-button, stack, stepper, stretch-refresh, swipe-actions,
 switch, tabs, tag-input, text-field, textarea, theme-root, theme-switch, time-picker, timeline, toast,
 toast-stack, toggle-group, tooltip, tree-view, usage-meter, user-menu
 

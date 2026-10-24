@@ -155,3 +155,32 @@ test('Article and ArticleSection each publish one documentation page', () => {
     assert.deepEqual(published, [`${family}.stories.tsx`], `${family}: auxiliary story files would create duplicate docs navigation`);
   }
 });
+
+const titled = (title, tags = "['autodocs']") => `
+  const meta = {
+    title: ${JSON.stringify(title)},
+    tags: ${tags},
+    component: Button,
+    parameters: { docs: { description: { component: 'Does a thing.' } } },
+  };
+  export default meta;
+  export const Default = { render: () => null };
+`;
+
+test('reports two published story files that share a docs title', (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), 'jfrader-docs-titles-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  mkdirSync(path.join(root, 'thing'));
+  writeFileSync(path.join(root, 'thing/index.ts'), '');
+  writeFileSync(path.join(root, 'thing/thing.stories.tsx'), titled('Data/Thing'));
+  writeFileSync(path.join(root, 'thing/thing.extra.stories.tsx'), titled('Data/Thing'));
+  const error = checkComponentDocs(root).errors.find((entry) => /Duplicate docs title/.test(entry));
+  assert.match(error, /"Data\/Thing" creates 2 pages/);
+  assert.match(error, /thing\/thing\.extra\.stories\.tsx/);
+
+  writeFileSync(path.join(root, 'thing/thing.extra.stories.tsx'), titled('Data/Thing extra'));
+  assert.deepEqual(checkComponentDocs(root).errors, []);
+
+  writeFileSync(path.join(root, 'thing/thing.extra.stories.tsx'), titled('Data/Thing', "['autodocs', '!autodocs']"));
+  assert.deepEqual(checkComponentDocs(root).errors, []);
+});

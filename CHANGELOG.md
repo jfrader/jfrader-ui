@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Two published story files can no longer share a docs title. The docs front renders one page per file, so a shared title produced two sidebar entries with the same name; the Dialog interior-slot examples are their own page now.
+- **Breaking pre-1.0:** `SortableDataTable` is `DataTable`. The folder, component, props types, subpath export, story titles, `data-ui` hooks and table custom properties are renamed with no alias.
+
 ## 0.15.0 — 2026-10-24
 
 ### Added
