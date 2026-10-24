@@ -32,7 +32,7 @@ export interface GameChipProps extends Omit<GameChipPartProps, 'color'> {
   currency?: string;
   /** Sets the material color. Defaults to white below 5, red from 5, green from 25, black from 100, purple from 500, and gold from 1,000 to below 5,000. At 5,000, the ladder repeats in thousands: red at 5,000, green at 25,000, black at 100,000, purple at 500,000, and gold at 1,000,000. It repeats at each subsequent 1,000-fold scale. */
   tone?: GameChipTone;
-  /** Sets the diameter: sm 24px, md 32px, lg 48px, xl 64px. Defaults to md. */
+  /** Sets the diameter: sm 20px, md 32px, lg 48px, xl 64px. Defaults to md. */
   size?: GameChipSize;
   /** Adds specular bands for metal. Defaults to clay. */
   finish?: 'clay' | 'metal';
@@ -48,7 +48,7 @@ export interface GameChipProps extends Omit<GameChipPartProps, 'color'> {
   component?: ComponentType<GameChipPartProps>;
 }
 
-export const GAME_CHIP_SIZES: Readonly<Record<GameChipSize, number>> = { sm: 24, md: 32, lg: 48, xl: 64 };
+export const GAME_CHIP_SIZES: Readonly<Record<GameChipSize, number>> = { sm: 20, md: 32, lg: 48, xl: 64 };
 const tones: Record<GameChipTone, string> = {
   white: vars.color.chipWhite, red: vars.color.chipRed, green: vars.color.chipGreen,
   black: vars.color.chipBlack, purple: vars.color.chipPurple, gold: vars.color.chipGold,

@@ -57,7 +57,7 @@ import { Flex } from '@jfrader/ui/flex';
   <GameChip value={1000} size="xl" locale="en-US" />
 </Flex>` } } },
   play: async ({ canvas }) => {
-    for (const [index, diameter] of [24, 32, 48, 64].entries()) {
+    for (const [index, diameter] of [20, 32, 48, 64].entries()) {
       const box = canvas.getAllByRole('img')[index]!.getBoundingClientRect();
       await expect(box.width).toBe(diameter);
       await expect(box.height).toBe(diameter);

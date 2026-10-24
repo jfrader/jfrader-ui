@@ -224,6 +224,7 @@ const centerStyle = css({
 
 const potStackStyle = css({
   maxInlineSize: `calc(${vars.size.gameCardSm} * ${BOARD_SLOTS + 1} + ${vars.space[1]} * ${BOARD_SLOTS})`,
+  gap: vars.space[1],
 });
 
 const potStyle = css({
@@ -451,7 +452,7 @@ export function PokerTable({
                     <div css={centerStyle}>
                       {pot !== undefined && (
                         <div ref={potRef} css={centerStyle} data-poker-pot-group>
-                          <GameChipStack chips={chips} size="lg" maxVisible={POT_MAX_VISIBLE} locale={locale} sx={potStackStyle} />
+                          <GameChipStack chips={chips} size="sm" maxVisible={POT_MAX_VISIBLE} locale={locale} sx={potStackStyle} />
                           <span css={potStyle} data-poker-pot>
                             <span css={potLabelStyle}>{labels.pot}</span>
                             <span css={potValueStyle}>{formatter.format(visiblePot ?? 0)}</span>
