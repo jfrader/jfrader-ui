@@ -556,6 +556,90 @@ export const OpenGeometry: Story = {
     await expect(Math.abs(checkerBox.width - swatchBox.width)).toBeLessThan(1);
   },
 };
+export const SavingKeepsHeight: Story = {
+  args: { defaultOpen: true, background: '#08090A' },
+  tags: ['!autodocs'],
+  play: async ({ canvasElement, userEvent }) => {
+    const page = within(canvasElement.ownerDocument.body);
+    const dialog = await page.findByRole('dialog');
+    const content = dialog.querySelector<HTMLElement>('[data-ui~="color-picker-content"]')!;
+    const listbox = page.getByRole('listbox', { name: messages.savedColors });
+    // offsetHeight is layout height, so the dialog's entrance scale does not skew it.
+    const heights = () => [dialog.offsetHeight, content.offsetHeight, listbox.offsetHeight];
+    const before = heights();
+    await expect(page.queryAllByRole('option')).toHaveLength(0);
+    const save = page.getByRole('button', { name: messages.save });
+    for (let saved = 1; saved <= 8; saved++) {
+      await userEvent.click(save);
+      await expect(page.getAllByRole('option')).toHaveLength(Math.min(saved, 7));
+      await expect(heights()).toEqual(before);
+    }
+    await userEvent.click(page.getAllByRole('option')[0]!);
+    await expect(heights()).toEqual(before);
+    const input = page.getByRole('textbox', { name: messages.color });
+    await userEvent.clear(input);
+    await userEvent.type(input, 'oklch(70% 0.4 30){Enter}');
+    await expect(page.getByText(messages.gamutWarning)).toBeVisible();
+    await expect(heights()).toEqual(before);
+    await expect(listbox.scrollWidth - listbox.clientWidth).toBeLessThanOrEqual(0);
+    if ((canvasElement.ownerDocument.defaultView?.innerWidth ?? 0) >= 900)
+      await expect(dialog.scrollHeight - dialog.clientHeight).toBeLessThanOrEqual(1);
+  },
+};
+export const PanelLayout: Story = {
+  args: { defaultValue: '#FF0000', defaultOpen: true, defaultSwatches: palette },
+  tags: ['!autodocs'],
+  render: (args) => <DropperFixture {...args} mode="available" />,
+  play: async ({ canvasElement, userEvent }) => {
+    const doc = canvasElement.ownerDocument;
+    const page = within(doc.body);
+    const dialog = await page.findByRole('dialog');
+    const groups = dialog.querySelectorAll<HTMLElement>('[data-ui~="button-group"]');
+    await expect(groups).toHaveLength(1);
+    const group = groups[0]!;
+    await expect(group).toHaveAttribute('role', 'group');
+    await expect(group).toHaveAccessibleName(messages.savedColors);
+    const actions = [messages.save, messages.movePrevious, messages.moveNext, messages.remove].map((name) =>
+      within(group).getByRole('button', { name }),
+    );
+    await expect(within(group).getAllByRole('button')).toEqual(actions);
+    const sample = page.getByRole('button', { name: messages.eyeDropper });
+    const done = page.getByRole('button', { name: messages.done });
+    for (const button of [...actions, sample, done]) await expect(button.offsetHeight).toBe(32);
+    await expect(group).not.toContainElement(sample);
+    await expect(group).not.toContainElement(done);
+
+    const pad = dialog.querySelector<HTMLElement>('[data-ui="color-picker-pad"]')!;
+    const listbox = page.getByRole('listbox', { name: messages.savedColors });
+    const space = pad.closest<HTMLElement>('[data-ui~="color-picker-space"]')!;
+    const saved = listbox.closest<HTMLElement>('[data-ui~="color-picker-values"]')!;
+    await expect(space).toContainElement(sample);
+    await expect(space).toContainElement(page.getByRole('slider', { name: messages.hue }));
+    await expect(saved).toContainElement(page.getByRole('textbox', { name: messages.color }));
+    await expect(saved).toContainElement(group);
+    await expect(saved).toContainElement(done);
+    if (space.parentElement!.offsetWidth >= 416) {
+      await expect(Math.abs(space.getBoundingClientRect().top - saved.getBoundingClientRect().top)).toBeLessThan(1);
+      await expect(space.getBoundingClientRect().right).toBeLessThan(saved.getBoundingClientRect().left);
+    }
+
+    page.getByRole('slider', { name: messages.opacity }).focus();
+    await userEvent.tab();
+    await expect(doc.activeElement).toBe(sample);
+    await userEvent.tab();
+    await expect(doc.activeElement).toBe(page.getByRole('combobox', { name: messages.format }));
+    await userEvent.tab();
+    await expect(doc.activeElement).toBe(page.getByRole('textbox', { name: messages.color }));
+    await userEvent.tab();
+    await expect(doc.activeElement).toBe(page.getByRole('option', { name: 'Violet #A78BFF' }));
+    await userEvent.tab();
+    await expect(doc.activeElement).toBe(actions[0]);
+    await expect(getComputedStyle(actions[0]!).outlineStyle).not.toBe('none');
+    done.focus();
+    await userEvent.tab({ shift: true });
+    await expect(doc.activeElement).toBe(actions[3]);
+  },
+};
 export const LongLabels: Story = {
   tags: ['!autodocs'],
   args: {

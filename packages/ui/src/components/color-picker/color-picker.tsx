@@ -1,4 +1,3 @@
-import { withoutSx } from '../../styling/sx';
 'use client';
 
 import {
@@ -21,9 +20,9 @@ import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { inputControlStyle } from '../../styling/input-control';
 import { useThemeScope } from '../../styling/theme-scope';
-import type { SxProps } from '../../styling/sx';
+import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { withoutSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
-import { isRenderable } from '../../utils/renderable';
 import {
   FieldDescription,
   FieldError,
@@ -40,6 +39,7 @@ import { Dialog } from '../dialog';
 import { TextField } from '../text-field';
 import { Select } from '../select';
 import { Button } from '../button';
+import { ButtonGroup } from '../button-group';
 import { ThemeRoot } from '../theme-root';
 import {
   clamp,
@@ -167,7 +167,7 @@ export type ColorPickerProps = Omit<
     size?: 'sm' | 'md' | 'lg';
     /** Name the hidden input that submits the selected color. */
     name?: string;
-    /** Replace the saved-color, sampling, and completion action icons. */
+    /** Replace the saved-color and sampling glyphs, or add a Done icon. `null` removes a glyph. */
     icons?: Partial<
       Record<
         'save' | 'movePrevious' | 'moveNext' | 'remove' | 'eyeDropper' | 'done',
@@ -183,21 +183,11 @@ export type ColorPickerProps = Omit<
   };
 
 const panelStyle = css({
-  display: 'grid',
-  gap: vars.space[2],
-  inlineSize: 'min(30rem, calc(100vi - 2rem))',
+  inlineSize: 'min(32rem, calc(100vi - 2rem))',
   maxInlineSize: '100%',
   minInlineSize: 0,
   containerType: 'inline-size',
   color: vars.color.text,
-  '@media (min-width: 30rem)': { gap: vars.space[3] },
-  '& button, & input, & [role="combobox"]': { minBlockSize: vars.space[8] },
-  '& [data-ui~="button"]': {
-    minInlineSize: 0,
-    maxInlineSize: '100%',
-    whiteSpace: 'normal',
-    overflowWrap: 'anywhere',
-  },
 });
 const portalScopeStyle = css({ display: 'contents' });
 
@@ -215,28 +205,35 @@ function ColorPickerPortalScope({ children }: { children: ReactNode }) {
   );
 }
 
+// Two columns once the panel fits them: the color space and its sliders, then the committed value
+// and the saved colors. Each column ends with the action that belongs to its work.
 const panelGridStyle = css({
   display: 'grid',
   gap: vars.space[4],
   gridTemplateColumns: 'minmax(0, 1fr)',
-  alignItems: 'start',
-  '@container (min-width: 26rem)': {
-    gridTemplateColumns: 'minmax(0, 1.15fr) minmax(0, 1fr)',
-  },
+  '@container (min-width: 26rem)': { gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' },
 });
 const panelColumnStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.space[3],
+  minInlineSize: 0,
+});
+const savedStyle = css({
   display: 'grid',
   gap: vars.space[2],
-  alignContent: 'start',
+  justifyItems: 'start',
+});
+const actionStyle = css({
   minInlineSize: 0,
-  '@container (min-width: 26rem)': { gap: vars.space[3] },
+  maxInlineSize: '100%',
+  blockSize: 'auto',
+  minBlockSize: vars.space[8],
+  whiteSpace: 'normal',
+  overflowWrap: 'anywhere',
 });
-const rowStyle = css({
-  display: 'flex',
-  gap: vars.space[2],
-  flexWrap: 'wrap',
-  alignItems: 'center',
-});
+const sampleStyle = css({ alignSelf: 'flex-start' });
+const doneStyle = css({ alignSelf: 'flex-end', marginBlockStart: 'auto' });
 const channelStyle = css({
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 2fr)',
@@ -310,51 +307,105 @@ const thumbStyle = css({
   transform: 'translate(-50%, -50%)',
   pointerEvents: 'none',
 });
+const checkerBackground = {
+  backgroundImage: `repeating-conic-gradient(${vars.color.colorPickerCheckerA} 0% 25%, ${vars.color.colorPickerCheckerB} 0% 50%)`,
+  backgroundSize: `${vars.space[4]} ${vars.space[4]}`,
+};
+// Saved colors and the empty slots left under `maxSwatches` share one fixed tile, so the grid is
+// as tall before the first save as at capacity.
 const paletteStyle = css({
-  display: 'flex',
-  gap: vars.space[2],
-  overflowX: 'auto',
-  padding: vars.space[2],
+  display: 'grid',
+  gridTemplateColumns: `repeat(auto-fill, ${vars.space[8]})`,
+  gridAutoRows: vars.space[8],
+  gap: vars.space[1],
+  justifySelf: 'stretch',
+});
+const tileStyle = css({
+  boxSizing: 'border-box',
+  inlineSize: vars.space[8],
+  blockSize: vars.space[8],
+  borderRadius: vars.radius.md,
 });
 const optionStyle = css({
+  position: 'relative',
   display: 'grid',
-  justifyItems: 'center',
-  gap: vars.space[1],
-  minInlineSize: vars.space[8],
-  minBlockSize: vars.space[8],
-  padding: vars.space[1],
-  fontSize: vars.textSize.xs,
-  lineHeight: vars.lineHeight.tight,
-  textAlign: 'center',
-  color: vars.color.text,
-  backgroundColor: vars.color.surfaceInset,
+  placeItems: 'center',
+  padding: 0,
+  overflow: 'hidden',
+  cursor: 'pointer',
   border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.md,
-  overflowWrap: 'anywhere',
-  '@container (min-width: 26rem)': { padding: vars.space[2], fontSize: vars.textSize.sm },
-  '&[aria-selected="true"]': { borderWidth: '2px' },
+  ...checkerBackground,
+  '&[aria-selected="true"]': { borderWidth: '2px', borderColor: vars.color.text },
+  '&:disabled': { cursor: 'not-allowed' },
   '&:focus-visible': focusRingOutset,
 });
+const optionFillStyle = css({
+  position: 'absolute',
+  inset: 0,
+  backgroundColor: 'var(--picker-color)',
+  forcedColorAdjust: 'none',
+});
+const slotStyle = css({ border: `1px dashed ${vars.color.borderControl}` });
+const markStyle = css({
+  position: 'relative',
+  inlineSize: vars.space[4],
+  blockSize: vars.space[4],
+  forcedColorAdjust: 'none',
+});
+const markHaloStyle = css({ stroke: vars.color.colorPickerBlack });
+const markStrokeStyle = css({ stroke: vars.color.colorPickerWhite });
+const mirroredGlyphStyle = css({ '&:dir(rtl)': { transform: 'scaleX(-1)' } });
 const headingStyle = css({
   margin: 0,
   fontSize: vars.textSize.sm,
-  fontWeight: vars.fontWeight.semibold,
+  fontWeight: vars.fontWeight.medium,
 });
 const noteStyle = css({
   fontSize: vars.textSize.xs,
   color: vars.color.textMuted,
   overflowWrap: 'anywhere',
 });
+// Notes that come and go with the color keep their line, so committing never resizes the panel.
+const reservedNoteStyle = css({
+  minBlockSize: '1lh',
+  '&[data-hidden]': { visibility: 'hidden' },
+});
 const checkerStyle = css({
   display: 'inline-flex',
   flexShrink: 0,
   lineHeight: 0,
   overflow: 'hidden',
-  backgroundImage: `repeating-conic-gradient(${vars.color.colorPickerCheckerA} 0% 25%, ${vars.color.colorPickerCheckerB} 0% 50%)`,
-  backgroundSize: `${vars.space[4]} ${vars.space[4]}`,
+  ...checkerBackground,
   forcedColorAdjust: 'none',
   borderRadius: vars.radius.md,
 });
+const glyph = (path: string, mirrored = false) => (
+  <svg
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    css={mirrored && mirroredGlyphStyle}
+  >
+    <path d={path} />
+  </svg>
+);
+const defaultIcons: Partial<Record<keyof NonNullable<ColorPickerProps['icons']>, ReactNode>> = {
+  save: glyph('M8 3.5v9M3.5 8h9'),
+  movePrevious: glyph('M10 3.5 5.5 8l4.5 4.5', true),
+  moveNext: glyph('M6 3.5 10.5 8 6 12.5', true),
+  remove: glyph('m4.5 4.5 7 7m0-7-7 7'),
+  eyeDropper: glyph('M9.5 3.5 12.5 6.5M11 2l3 3-2 2-3-3 2-2ZM9 5 3.5 10.5V12.5h2L11 7'),
+};
+const MARK_PATH = 'm4.5 8.5 2.5 2.5 4.5-5';
+const selectedMark = (
+  <svg viewBox="0 0 16 16" fill="none" strokeLinecap="round" strokeLinejoin="round" css={markStyle} aria-hidden>
+    <path d={MARK_PATH} strokeWidth="4" css={markHaloStyle} />
+    <path d={MARK_PATH} strokeWidth="2" css={markStrokeStyle} />
+  </svg>
+);
 const formats: ColorFormat[] = ['hex', 'rgb', 'hsl', 'oklch'];
 const colorStyle = (color?: string) =>
   ({ '--picker-color': color ?? 'transparent' }) as CSSProperties;
@@ -715,20 +766,10 @@ export function ColorPicker({
         setDropperError(true);
     }
   }
-  const action = (
-    name: keyof NonNullable<ColorPickerProps['icons']>,
-    onClick: () => void,
-    unavailable = false,
-  ) => (
-    <Button
-      type="button"
-      disabled={disabled || readOnly || unavailable}
-      onClick={onClick}
-    >
-      {isRenderable(icons?.[name]) && <span aria-hidden>{icons?.[name]}</span>}
-      {messages[name]}
-    </Button>
-  );
+  const iconFor = (name: keyof NonNullable<ColorPickerProps['icons']>) =>
+    icons?.[name] === undefined ? defaultIcons[name] : icons?.[name];
+  const selected = swatches.find((item) => item.id === selectedId);
+  const freeSlots = Math.max(0, maxSwatches - swatches.length);
   const channels = color
     ? [
         {
@@ -774,7 +815,7 @@ export function ColorPicker({
   const panel = (
     <>
       <div css={panelGridStyle}>
-        <div css={panelColumnStyle}>
+        <div css={panelColumnStyle} data-ui="color-picker-space">
       <FieldSlot
         element="div"
         component={slots?.pad}
@@ -845,9 +886,26 @@ export function ColorPicker({
           />
         </label>
       ))}
+      {eyeDropper && Dropper && (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          startIcon={iconFor('eyeDropper')}
+          disabled={disabled || readOnly || !color}
+          onClick={() => {
+            void pickFromScreen();
+          }}
+          sx={[actionStyle, sampleStyle]}
+        >
+          {messages.eyeDropper}
+        </Button>
+      )}
+      {dropperError && <span role="alert" css={noteStyle}>{messages.eyeDropperError}</span>}
         </div>
-        <div css={panelColumnStyle}>
+        <div css={panelColumnStyle} data-ui="color-picker-values">
       <Select
+        size="sm"
         label={messages.format}
         value={format}
         onValueChange={(next) => {
@@ -861,6 +919,7 @@ export function ColorPicker({
         }))}
       />
       <TextField
+        size="sm"
         label={messages.color}
         dir="ltr"
         value={text}
@@ -887,7 +946,9 @@ export function ColorPicker({
           }
         }}
       />
-      {color?.mapped && <span css={noteStyle}>{messages.gamutWarning}</span>}
+      <span css={[noteStyle, reservedNoteStyle]} data-hidden={!color?.mapped || undefined}>
+        {messages.gamutWarning}
+      </span>
       {contrast && (
         <FieldSlot
           element="div"
@@ -903,112 +964,117 @@ export function ColorPicker({
           </output>
         </FieldSlot>
       )}
-      <Button
-        ref={saveRef}
-        type="button"
-        disabled={readOnly || !color}
-        onClick={() => {
-          if (!color) return;
-          const savedId = globalThis.crypto.randomUUID();
-          requestSwatches(
-            [...swatches, { id: savedId, color: color.hex }].slice(
-              -maxSwatches,
-            ),
-          );
-        }}
-      >
-        {isRenderable(icons?.save) && <span aria-hidden>{icons?.save}</span>}
-        {messages.save}
-      </Button>
-        </div>
-      </div>
-      <FieldSlot
-        element="div"
-        component={slots?.swatches}
-        slotProps={slotProps?.swatches}
-        role="listbox"
-        aria-label={messages.savedColors}
-        aria-orientation="horizontal"
-        aria-readonly={readOnly || undefined}
-        styles={paletteStyle}
-      >
-        {swatches.map((item) => {
-          const saved = parseColor(item.color);
-          return (
-            <button
-              key={item.id}
-              ref={(node) => {
-                if (node) options.current.set(item.id, node);
-                else options.current.delete(item.id);
-              }}
-              type="button"
-              role="option"
+      <div css={savedStyle}>
+        <span id={`${id}-saved`} css={headingStyle}>
+          {messages.savedColors}
+        </span>
+        <FieldSlot
+          element="div"
+          component={slots?.swatches}
+          slotProps={slotProps?.swatches}
+          role="listbox"
+          aria-labelledby={`${id}-saved`}
+          aria-orientation="horizontal"
+          aria-readonly={readOnly || undefined}
+          data-ui="color-picker-swatches"
+          styles={paletteStyle}
+        >
+          {swatches.map((item) => {
+            const saved = parseColor(item.color);
+            return (
+              <button
+                key={item.id}
+                ref={(node) => {
+                  if (node) options.current.set(item.id, node);
+                  else options.current.delete(item.id);
+                }}
+                type="button"
+                role="option"
+                aria-label={messages.swatch(saved?.hex ?? item.color, item.label)}
                 aria-selected={item.id === selectedId}
-              aria-disabled={!saved || readOnly || undefined}
-              disabled={!saved}
-              tabIndex={item.id === activeId ? 0 : -1}
-              css={optionStyle}
-              onFocus={() => setFocused(item.id)}
-              onClick={() => {
-                if (saved) commit(saved);
-              }}
-              onKeyDown={(event) => swatchKey(event, item.id)}
-            >
-              <span
-                css={swatchStyle}
-                style={colorStyle(saved?.hex)}
-                aria-hidden
-              />
-              {messages.swatch(saved?.hex ?? item.color, item.label)}
-                {item.id === selectedId && <span aria-hidden> ✓</span>}
-            </button>
-          );
-        })}
-      </FieldSlot>
-      <div css={rowStyle}>
-        {action(
-          'movePrevious',
-          () => {
-            if (activeId) moveSwatch(activeId, -1);
-          },
-          !activeId || activeId === swatches[0]?.id,
-        )}
-        {action(
-          'moveNext',
-          () => {
-            if (activeId) moveSwatch(activeId, 1);
-          },
-          !activeId || activeId === swatches.at(-1)?.id,
-        )}
-        {action(
-          'remove',
-          () => {
-            if (activeId) removeSwatch(activeId);
-          },
-          !activeId,
-        )}
-        {eyeDropper &&
-          Dropper &&
-          action(
-            'eyeDropper',
-            () => {
-              void pickFromScreen();
-            },
-            !color,
-          )}
+                aria-disabled={!saved || readOnly || undefined}
+                disabled={!saved}
+                tabIndex={item.id === activeId ? 0 : -1}
+                css={[tileStyle, optionStyle]}
+                onFocus={() => setFocused(item.id)}
+                onClick={() => {
+                  if (saved) commit(saved);
+                }}
+                onKeyDown={(event) => swatchKey(event, item.id)}
+              >
+                <span css={optionFillStyle} style={colorStyle(saved?.hex)} aria-hidden />
+                {item.id === selectedId && selectedMark}
+              </button>
+            );
+          })}
+          {Array.from({ length: freeSlots }, (_, index) => (
+            <span key={index} css={[tileStyle, slotStyle]} data-swatch-slot aria-hidden />
+          ))}
+        </FieldSlot>
+        <span css={[noteStyle, reservedNoteStyle]} aria-hidden>
+          {selected && messages.swatch(color!.hex, selected.label)}
+        </span>
+        <ButtonGroup size="sm" aria-label={messages.savedColors} disabled={readOnly}>
+          <ButtonGroup.Item
+            ref={saveRef}
+            startIcon={iconFor('save')}
+            disabled={!color}
+            onClick={() => {
+              if (!color) return;
+              const savedId = globalThis.crypto.randomUUID();
+              requestSwatches(
+                [...swatches, { id: savedId, color: color.hex }].slice(
+                  -maxSwatches,
+                ),
+              );
+            }}
+          >
+            {messages.save}
+          </ButtonGroup.Item>
+          <ButtonGroup.Item
+            startIcon={iconFor('movePrevious')}
+            disabled={!activeId || activeId === swatches[0]?.id}
+            onClick={() => {
+              if (activeId) moveSwatch(activeId, -1);
+            }}
+          >
+            {messages.movePrevious}
+          </ButtonGroup.Item>
+          <ButtonGroup.Item
+            startIcon={iconFor('moveNext')}
+            disabled={!activeId || activeId === swatches.at(-1)?.id}
+            onClick={() => {
+              if (activeId) moveSwatch(activeId, 1);
+            }}
+          >
+            {messages.moveNext}
+          </ButtonGroup.Item>
+          <ButtonGroup.Item
+            startIcon={iconFor('remove')}
+            disabled={!activeId}
+            onClick={() => {
+              if (activeId) removeSwatch(activeId);
+            }}
+          >
+            {messages.remove}
+          </ButtonGroup.Item>
+        </ButtonGroup>
       </div>
-      {dropperError && <span role="alert">{messages.eyeDropperError}</span>}
       <Button
         type="button"
+        size="sm"
+        startIcon={iconFor('done')}
         onClick={() => {
           if (submitDraft()) requestOpen(false);
           else inputRef.current?.focus();
         }}
+        sx={[actionStyle, doneStyle]}
       >
-        {isRenderable(icons?.done) && <span aria-hidden>{icons?.done}</span>}
         {messages.done}
       </Button>
-      <span role="status" aria-live="polite" css={noteStyle}>
+        </div>
+      </div>
+      <span role="status" aria-live="polite" css={visuallyHiddenStyle}>
         {live}
       </span>
     </>
@@ -1094,7 +1160,11 @@ export function ColorPicker({
         <Dialog.Panel>
           <Dialog.Title>{messages.dialog}</Dialog.Title>
           <ColorPickerPortalScope>
-            <Content {...withoutSx(slotProps?.content)} css={[panelStyle, slotProps?.content?.sx]}>
+            <Content
+              {...withoutSx(slotProps?.content)}
+              data-ui={['color-picker-content', slotProps?.content?.['data-ui']].filter(Boolean).join(' ')}
+              css={[panelStyle, slotProps?.content?.sx]}
+            >
               {panel}
             </Content>
           </ColorPickerPortalScope>
