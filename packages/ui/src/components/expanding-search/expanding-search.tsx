@@ -127,6 +127,8 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const rootStyle = css({
   position: 'relative',
   inlineSize: '100%',
+  maxInlineSize: '100%',
+  boxSizing: 'border-box',
   minInlineSize: 0,
   minBlockSize: 'var(--expanding-search-size)',
   pointerEvents: 'none',
@@ -143,7 +145,7 @@ const shellStyle = css({
   inlineSize: 'var(--expanding-search-size)',
   '--expanding-search-radius': vars.radius.full,
   minInlineSize: 0,
-  maxInlineSize: '100%',
+  maxInlineSize: 'min(100%, var(--expanding-search-available-width, 100%))',
   pointerEvents: 'auto',
   overflow: 'clip',
   overflowClipMargin: vars.space[1],
@@ -153,8 +155,9 @@ const shellStyle = css({
 const triggerWrapStyle = css({ position: 'absolute', insetBlockStart: 0, insetInline: 0 });
 const measureStyle = css({
   position: 'absolute',
+  insetInlineStart: 0,
   inlineSize: 'var(--expanding-search-width)',
-  maxInlineSize: '100%',
+  maxInlineSize: 'min(100%, var(--expanding-search-available-width, 100%))',
   blockSize: 'var(--expanding-search-size)',
   borderStartStartRadius: vars.radius.sm,
   visibility: 'hidden',
@@ -169,6 +172,7 @@ const triggerStyle = css({
   [FORCED_COLORS]: { borderColor: 'ButtonText', color: 'ButtonText' },
 });
 const fieldShellStyle = css({ borderRadius: 'var(--expanding-search-radius)', overflow: 'clip' });
+const fieldRootStyle = css({ maxInlineSize: '100%', boxSizing: 'border-box' });
 const iconStyle = css({
   display: 'flex',
   inlineSize: vars.space[4],
@@ -240,8 +244,19 @@ export function ExpandingSearch({
   useLayoutEffect(() => {
     const root = rootRef.current;
     const measure = measureRef.current;
-    if (!root || !measure) return;
+    const shell = shellRef.current;
+    if (!root || !measure || !shell) return;
     const update = () => {
+      const rootStyle = getComputedStyle(root);
+      const shellStyle = getComputedStyle(shell);
+      const anchorOffset = Number.parseFloat(anchor === 'start' ? shellStyle.marginInlineStart : shellStyle.marginInlineEnd) || 0;
+      const available = Math.max(0, root.getBoundingClientRect().width
+        - Number.parseFloat(rootStyle.borderInlineStartWidth)
+        - Number.parseFloat(rootStyle.borderInlineEndWidth)
+        - Number.parseFloat(rootStyle.paddingInlineStart)
+        - Number.parseFloat(rootStyle.paddingInlineEnd)
+        - anchorOffset);
+      root.style.setProperty('--expanding-search-available-width', `${available}px`);
       const rect = measure.getBoundingClientRect();
       const next = {
         expanded: rect.width,
@@ -257,7 +272,7 @@ export function ExpandingSearch({
     observer.observe(root);
     observer.observe(measure);
     return () => observer.disconnect();
-  }, [expandedWidth]);
+  }, [expandedWidth, anchor, dir]);
 
   // Open/close springs; first paint, lane resizes and reduced motion snap.
   useLayoutEffect(() => {
@@ -308,6 +323,10 @@ export function ExpandingSearch({
     }
   }, [open]);
 
+  const fieldRootProps = slotProps?.field?.slotProps?.root ?? {
+    className: slotProps?.root?.className,
+    sx: slotProps?.root?.sx,
+  };
   const ariaLabel = inputProps?.['aria-label'] ?? (!isRenderable(label) || label === '' ? triggerLabel : undefined);
 
   return (
@@ -448,10 +467,7 @@ export function ExpandingSearch({
             slotProps={{
               ...slotProps,
               ...slotProps?.field?.slotProps,
-              root: slotProps?.field?.slotProps?.root ?? {
-                className: slotProps?.root?.className,
-                sx: slotProps?.root?.sx,
-              },
+              root: { ...fieldRootProps, sx: [fieldRootStyle, fieldRootProps.sx] },
               shell: {
                 ...slotProps?.shell,
                 ...slotProps?.field?.slotProps?.shell,

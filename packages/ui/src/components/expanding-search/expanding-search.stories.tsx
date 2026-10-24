@@ -11,6 +11,7 @@ import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { findConditionalStyle } from '../../testing/conditional-style';
+import { expectInside } from '../../testing/geometry-assertions';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { ExpandingSearch, type ExpandingSearchProps } from './index';
@@ -19,6 +20,10 @@ const FixtureButton = styled.button({ minInlineSize: vars.space[6], minBlockSize
 const Frame = styled.div({ inlineSize: 420, maxInlineSize: '100%' });
 const Stack = styled.div({ display: 'grid', gap: vars.space[4] });
 const NarrowLaneFrame = styled.div({ inlineSize: 180 });
+const ReflowFrame = styled.div({
+  display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', inlineSize: 320, maxInlineSize: '100%', fontSize: '2rem',
+  '&[data-normal]': { inlineSize: 420, fontSize: '1rem' },
+});
 const meta = {
   title: 'Inputs/ExpandingSearch', component: ExpandingSearch, tags: ['autodocs'],
   args: { triggerLabel: 'Search members', inputProps: { placeholder: 'Name or email' } },
@@ -135,6 +140,17 @@ export const Anchors: Story = {
 </Stack>` },
   } },
   render: (args) => <Stack><ExpandingSearch {...args} anchor="start" triggerLabel="Search from start" /><ExpandingSearch {...args} anchor="end" triggerLabel="Search from end" /></Stack>,
+  play: async ({ canvas, userEvent }) => {
+    for (const anchor of ['start', 'end'] as const) {
+      const trigger = canvas.getByRole('button', { name: `Search from ${anchor}` });
+      const before = trigger.getBoundingClientRect();
+      const root = trigger.closest<HTMLElement>('[data-ui="expanding-search"]')!;
+      await userEvent.click(trigger);
+      await waitFor(async () => { await expect(near(root.children[1]!.getBoundingClientRect().width, root.children[0]!.getBoundingClientRect().width)).toBe(true); });
+      const after = root.children[1]!.getBoundingClientRect();
+      await expect(anchor === 'start' ? after.left : after.right).toBeCloseTo(anchor === 'start' ? before.left : before.right, 0);
+    }
+  },
 };
 export const Uncontrolled: Story = {
   args: { defaultValue: 'Ada', onOpenChange: fn(), onValueChange: fn() },
@@ -357,6 +373,47 @@ export const NarrowLane: Story = {
     await expect(near(neighbor.getBoundingClientRect().left, before.left)).toBe(true);
   },
 };
+export const TextReflow: Story = {
+  tags: ['!autodocs'],
+  parameters: { layout: 'fullscreen' },
+  args: { defaultOpen: true, defaultValue: 'Ada Lovelace', expandedWidth: '100%' },
+  render: (args) => <ReflowFrame data-normal={args.expandedWidth === '240px' || undefined}>
+    {(['ltr', 'rtl'] as const).flatMap((dir) => (['start', 'end'] as const).flatMap((anchor) => [false, true].map((offset) => (
+      <ExpandingSearch {...args} key={`${dir}-${anchor}-${offset}`} dir={dir} anchor={anchor}
+        sx={{ paddingInline: offset ? vars.space[4] : 0 }}
+        slotProps={{
+          field: { slotProps: { root: { sx: { paddingInline: offset ? vars.space[2] : 0 } } } },
+          shell: { sx: { fontSize: 'inherit' } },
+          container: { sx: { '&[data-anchor]': { [anchor === 'start' ? 'marginInlineStart' : 'marginInlineEnd']: offset ? vars.space[6] : 0 } } },
+        }} />
+    ))))}
+  </ReflowFrame>,
+  play: async ({ canvas, args }) => {
+    for (const input of canvas.getAllByRole('searchbox')) {
+      const root = input.closest<HTMLElement>('[data-ui="expanding-search"]')!;
+      const measure = root.children[0]!;
+      const shell = root.children[1] as HTMLElement;
+      const rootStyle = getComputedStyle(root);
+      const shellStyle = getComputedStyle(shell);
+      await expect(root.getBoundingClientRect().width).toBeCloseTo(args.expandedWidth === '240px' ? 420 : 320, 0);
+      await expect(parseFloat(getComputedStyle(input).fontSize)).toBe(args.expandedWidth === '240px' ? 16 : 32);
+      const offset = parseFloat(shell.dataset.anchor === 'start' ? shellStyle.marginInlineStart : shellStyle.marginInlineEnd);
+      const available = root.getBoundingClientRect().width - parseFloat(rootStyle.paddingInlineStart) - parseFloat(rootStyle.paddingInlineEnd) - offset;
+      const target = args.expandedWidth === '240px' ? Math.min(240, available) : available;
+      await waitFor(async () => { await expect(shell.getBoundingClientRect().width).toBeCloseTo(target, 0); });
+      await expect(measure.getBoundingClientRect().width).toBeCloseTo(target, 0);
+      await expect(input.closest('[data-ui="search-field"]')!.getBoundingClientRect().width).toBeCloseTo(target, 0);
+      await expectInside(shell, root);
+      const clear = root.querySelector<HTMLButtonElement>('button[aria-label="Clear search"]')!;
+      clear.scrollIntoView({ block: 'nearest' });
+      const rect = clear.getBoundingClientRect();
+      await expectInside(clear, root);
+      await expect(clear.contains(root.ownerDocument.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2))).toBe(true);
+    }
+  },
+};
+export const NormalWidth: Story = { ...TextReflow, args: { ...TextReflow.args, expandedWidth: '240px' } };
+export const OversizedWidth: Story = { ...TextReflow, args: { ...TextReflow.args, expandedWidth: '1000px' } };
 // This story tests native inline styles and the documented sx/slot css API.
 export const RefAndStyles: Story = {
   tags: ['!autodocs'],
