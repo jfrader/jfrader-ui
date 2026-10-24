@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Added
+
+- `ChipFlights` owns the chip flight layer; `useChipFlights` sends chips and reports landed, cancelled, or skipped results.
+
+### Changed
+
+- `PokerTable` accepts explicit `chipTransfer` events and holds the old pot total until landing. Published examples show chips beside cards, sending chips to a pot, and seat-to-pot transfers.
+- Metal chips have sharper specular bands and a cooler rim. Chip examples use a textured felt stage.
+
+### Deprecated
+
+- `PokerTable.potFrom` is replaced by `chipTransfer`. `useChipFlight` is replaced by `ChipFlights` and `useChipFlights`.
+
 ## 0.11.1 — 2026-10-24
 
 ### Fixed

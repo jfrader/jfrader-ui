@@ -1,8 +1,12 @@
 import type { ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect } from 'storybook/test';
-import { GameChip } from './game-chip';
-import { Flex } from '../flex';
+import { GameChip } from '@jfrader/ui/game-chip';
+import { GameChipStack } from '@jfrader/ui/game-chip-stack';
+import { GameCard } from '@jfrader/ui/game-card';
+import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { Flex } from '@jfrader/ui/flex';
 import { withLightTheme } from '../../testing/story-decorators';
 import { withChipStage } from './chip-showcase';
 
@@ -13,11 +17,37 @@ const meta = {
   parameters: { docs: {
     description: { component: 'Show a casino chip with a printed denomination.' },
     usage: 'The chip is a noninteractive image. Supply a label for custom artwork, and use the same locale on server and client. Values are nonnegative major units.',
-    sections: [{ title: 'Denominations', stories: ['Default'] }, { title: 'Material and scale', stories: ['Sizes', 'Finishes', 'Monogram', 'Dimmed', 'Currency', 'Light'] }],
+    sections: [{ title: 'Chips and cards', stories: ['ChipStackCard'] }, { title: 'Denominations', stories: ['Default'] }, { title: 'Material and scale', stories: ['Sizes', 'Finishes', 'Monogram', 'Dimmed', 'Currency', 'Light'] }],
   } },
 } satisfies Meta<typeof GameChip>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+const ScaleRows = styled.div({ display: 'grid', justifyItems: 'center', gap: vars.space[8], color: vars.color.chipWhite });
+const ScaleRow = styled.div({ display: 'flex', gap: vars.space[2], alignItems: 'center', '&[data-closeup]': { transform: 'scale(3)', transformOrigin: 'center', marginBlock: vars.space[12] }, '@media (max-width: 360px)': { gap: 0 } });
+export const ChipStackCard: Story = {
+  name: 'Chip, stack, card',
+  render: () => <ScaleRows>
+    <span>Table scale</span>
+    <ScaleRow><GameChip value={25} size="sm" /><GameChipStack chips={[{ value: 25, count: 4 }]} size="sm" /><GameCard size="sm" value={{ suit: 'spades', rank: 'A' }} label="Ace of spades" /></ScaleRow>
+    <span>3x</span>
+    <ScaleRow data-closeup><GameChip value={25} size="sm" /><GameChipStack chips={[{ value: 25, count: 4 }]} size="sm" /><GameCard size="sm" value={{ suit: 'spades', rank: 'A' }} label="Ace of spades" /></ScaleRow>
+  </ScaleRows>,
+  parameters: { docs: { source: { code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { GameChip } from '@jfrader/ui/game-chip';
+import { GameChipStack } from '@jfrader/ui/game-chip-stack';
+import { GameCard } from '@jfrader/ui/game-card';
+
+const Rows = styled.div({ display: 'grid', justifyItems: 'center', gap: vars.space[8], color: vars.color.chipWhite });
+const Row = styled.div({ display: 'flex', gap: vars.space[2], alignItems: 'center', '&[data-closeup]': { transform: 'scale(3)', transformOrigin: 'center', marginBlock: vars.space[12] }, '@media (max-width: 360px)': { gap: 0 } });
+<Rows>
+  <span>Table scale</span>
+  <Row><GameChip value={25} size="sm" /><GameChipStack chips={[{ value: 25, count: 4 }]} size="sm" /><GameCard size="sm" value={{ suit: 'spades', rank: 'A' }} label="Ace of spades" /></Row>
+  <span>3x</span>
+  <Row data-closeup><GameChip value={25} size="sm" /><GameChipStack chips={[{ value: 25, count: 4 }]} size="sm" /><GameCard size="sm" value={{ suit: 'spades', rank: 'A' }} label="Ace of spades" /></Row>
+</Rows>` } } },
+};
 
 export const Default: Story = {
   name: 'Denominations',
@@ -77,6 +107,7 @@ import { Flex } from '@jfrader/ui/flex';
     const chips = canvas.getAllByRole('img');
     await expect(chips[0]).toHaveAttribute('data-finish', 'clay');
     await expect(chips[1]).toHaveAttribute('data-finish', 'metal');
+    await expect(getComputedStyle(chips[0]!, '::after').backgroundImage).not.toBe(getComputedStyle(chips[1]!, '::after').backgroundImage);
   },
 };
 export const Dimmed: Story = {

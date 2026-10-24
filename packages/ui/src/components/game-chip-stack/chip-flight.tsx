@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { animate, motion, useMotionValue, useTransform } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
@@ -30,9 +30,27 @@ export interface UseChipFlightOptions {
   /** Reports activity edges, including cancellation and unmount. */
   onBusyChange?: (busy: boolean) => void;
 }
+export interface ChipFlightResult {
+  /** Reports landing, explicit cancellation or unmount, or a skipped flight. */
+  status: 'landed' | 'cancelled' | 'skipped';
+  /** Explains why motion was skipped. */
+  reason?: 'reduced-motion' | 'missing-geometry';
+}
+export interface ChipFlightsProps extends UseChipFlightOptions {
+  /** Contains the departure and landing elements and controls. */
+  children: ReactNode;
+}
+export interface ChipFlightsController {
+  /** Sends decorative chips, cancelling the previous flight. Always resolves on completion or cancellation. */
+  send: (options: ChipFlightOptions) => Promise<ChipFlightResult>;
+  /** Cancels the active flight. */
+  cancel: () => void;
+  /** Reports whether chips are in flight. */
+  busy: boolean;
+}
 export interface ChipFlightController {
   /** Starts a flight, cancelling its predecessor. Resolves after landing or cancellation. Missing geometry and reduced motion resolve immediately. */
-  fly: (options: ChipFlightOptions) => Promise<void>;
+  fly: (options: ChipFlightOptions) => Promise<ChipFlightResult>;
   /** Stops the current flight, removes its layer, and resolves its promise. */
   cancel: () => void;
   /** Reports whether a flight is active. */
@@ -41,12 +59,14 @@ export interface ChipFlightController {
   layer: ReactNode;
 }
 interface Flight extends ChipFlightOptions {
+  id: number;
   items: GameChipStackChip[];
   fromX: number; fromY: number; toX: number; toY: number;
   done: boolean;
+  rendered: boolean;
   landed: Set<number>;
   stops: Set<() => void>;
-  resolve: () => void;
+  resolve: (result: ChipFlightResult) => void;
 }
 const MAX_CHIPS = 6;
 const MAX_ARC_LIFT = 160;
@@ -92,21 +112,24 @@ function FlightSprite({ flight, chip, index, complete, origin }: {
   </motion.span>;
 }
 
-function FlightLayer({ flight, complete }: { flight: Flight; complete: (flight: Flight, index: number) => void }) {
+function FlightLayer({ flight, complete, finish }: { flight: Flight; complete: (flight: Flight, index: number) => void; finish: (flight: Flight, result: ChipFlightResult) => void }) {
   const [origin, setOrigin] = useState<{ x: number; y: number; scaleX: number; scaleY: number } | null>(null);
   const measure = useCallback((node: HTMLDivElement | null) => {
     if (!node) return;
+    flight.rendered = true;
     const box = node.getBoundingClientRect();
-    if (!box.width || !box.height) { flight.items.forEach((_, index) => complete(flight, index)); return; }
+    if (!box.width || !box.height) { finish(flight, { status: 'skipped', reason: 'missing-geometry' }); return; }
     setOrigin({ x: box.x, y: box.y, scaleX: box.width / (node.clientWidth || box.width), scaleY: box.height / (node.clientHeight || box.height) });
-  }, [flight, complete]);
+  }, [flight, finish]);
   return <div ref={measure} css={layerStyle} data-ui="chip-flight-layer" aria-hidden="true" dir="ltr">
     {origin && flight.items.map((chip, index) => <FlightSprite key={index} flight={flight} chip={chip} index={index}
       origin={origin} complete={complete} />)}
   </div>;
 }
 
-/** Animates decorative chips between measured elements without owning a balance or game state. */
+/** Animates decorative chips between measured elements without owning a balance or game state.
+ * @deprecated Use `ChipFlights` and `useChipFlights` to mount the flight layer automatically.
+ */
 export function useChipFlight({ onBusyChange }: UseChipFlightOptions = {}): ChipFlightController {
   const reduced = useReducedMotion();
   const scope = useThemeScope();
@@ -114,8 +137,9 @@ export function useChipFlight({ onBusyChange }: UseChipFlightOptions = {}): Chip
   const notify = useLatestCallback(onBusyChange);
   const mounted = useRef(false);
   const active = useRef<Flight | null>(null);
+  const sequence = useRef(0);
   const [flight, setFlight] = useState<Flight | null>(null);
-  const finish = useCallback((job: Flight) => {
+  const finish = useCallback((job: Flight, result: ChipFlightResult) => {
     if (active.current !== job || job.done) return;
     job.done = true;
     for (const stop of job.stops) stop();
@@ -123,39 +147,63 @@ export function useChipFlight({ onBusyChange }: UseChipFlightOptions = {}): Chip
     active.current = null;
     if (mounted.current) setFlight(null);
     notify(false);
-    job.resolve();
+    job.resolve(result);
   }, [notify]);
-  const cancel = useCallback(() => { if (active.current) finish(active.current); }, [finish]);
+  const cancel = useCallback(() => { if (active.current) finish(active.current, { status: 'cancelled' }); }, [finish]);
   const complete = useCallback((job: Flight, index: number) => {
     job.landed.add(index);
-    if (job.landed.size === job.items.length) finish(job);
+    if (job.landed.size === job.items.length) finish(job, { status: 'landed' });
   }, [finish]);
   useEffect(() => { portalReady.current = scope?.portalContainer !== null; cancel(); }, [scope?.portalContainer, cancel]);
   useEffect(() => {
     mounted.current = true;
     return () => { mounted.current = false; cancel(); };
   }, [cancel]);
-  useEffect(() => { if (reduced) cancel(); }, [reduced, cancel]);
-  const fly = useCallback((options: ChipFlightOptions): Promise<void> => {
+  useEffect(() => {
+    if (!flight) return;
+    const frame = requestAnimationFrame(() => {
+      if (!flight.rendered) finish(flight, { status: 'skipped', reason: 'missing-geometry' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [flight, finish]);
+  useEffect(() => { if (reduced && active.current) finish(active.current, { status: 'skipped', reason: 'reduced-motion' }); }, [reduced, finish]);
+  const fly = useCallback((options: ChipFlightOptions): Promise<ChipFlightResult> => {
     cancel();
-    if (!mounted.current || !portalReady.current || typeof window === 'undefined' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return Promise.resolve();
-    if (!options.from.isConnected || !options.to.isConnected || options.from.ownerDocument !== options.to.ownerDocument) return Promise.resolve();
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return Promise.resolve({ status: 'skipped', reason: 'reduced-motion' });
+    if (!mounted.current || !portalReady.current || !options.from.isConnected || !options.to.isConnected || options.from.ownerDocument !== options.to.ownerDocument) return Promise.resolve({ status: 'skipped', reason: 'missing-geometry' });
     const from = options.from.getBoundingClientRect(), to = options.to.getBoundingClientRect();
-    if (!from.width || !from.height || !to.width || !to.height) return Promise.resolve();
+    if (!from.width || !from.height || !to.width || !to.height) return Promise.resolve({ status: 'skipped', reason: 'missing-geometry' });
     const items: GameChipStackChip[] = [];
     for (const chip of options.chips) {
       if (!Number.isSafeInteger(chip.count) || chip.count < 0 || !Number.isFinite(chip.value) || chip.value < 0) throw new RangeError('Chip flight values and counts must be valid chip entries.');
       for (let count = 0; count < chip.count && items.length < MAX_CHIPS; count++) items.push({ ...chip, count: 1 });
     }
-    if (!items.length) return Promise.resolve();
+    if (!items.length) return Promise.resolve({ status: 'skipped', reason: 'missing-geometry' });
     return new Promise(resolve => {
-      const job: Flight = { ...options, items, fromX: from.x + from.width / 2, fromY: from.y + from.height / 2,
-        toX: to.x + to.width / 2, toY: to.y + to.height / 2, done: false, landed: new Set(), stops: new Set(), resolve };
+      const job: Flight = { ...options, id: ++sequence.current, items, fromX: from.x + from.width / 2, fromY: from.y + from.height / 2,
+        toX: to.x + to.width / 2, toY: to.y + to.height / 2, done: false, rendered: false, landed: new Set(), stops: new Set(), resolve };
       active.current = job;
       setFlight(job);
       notify(true);
     });
   }, [cancel, notify]);
   return { fly, cancel, busy: flight !== null && !flight.done,
-    layer: flight && !flight.done ? <OverlayPortal><FlightLayer flight={flight} complete={complete} /></OverlayPortal> : null };
+    layer: flight && !flight.done ? <OverlayPortal><FlightLayer key={flight.id} flight={flight} complete={complete} finish={finish} /></OverlayPortal> : null };
+}
+
+const ChipFlightsContext = createContext<ChipFlightsController | null>(null);
+
+/** Owns chip motion and its decorative portal layer. */
+export function ChipFlights({ children, onBusyChange }: ChipFlightsProps) {
+  const { fly: send, cancel, busy, layer } = useChipFlight({ onBusyChange });
+  const value = useMemo(() => ({ send, cancel, busy }), [send, cancel, busy]);
+  return <ChipFlightsContext value={value}>{children}{layer}</ChipFlightsContext>;
+}
+ChipFlights.displayName = 'ChipFlights';
+
+/** Sends chips from inside a `ChipFlights` provider. */
+export function useChipFlights(): ChipFlightsController {
+  const context = useContext(ChipFlightsContext);
+  if (!context) throw new Error('useChipFlights must be used inside ChipFlights.');
+  return context;
 }
