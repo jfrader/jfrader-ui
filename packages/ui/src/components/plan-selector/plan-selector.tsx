@@ -19,6 +19,7 @@ import {
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'motion/react';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
+import { motionDurationMs } from '../../styling/motion-timings';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
@@ -283,7 +284,7 @@ const visualStyle = css({
 const priceCellStyle = css({ gridArea: '1 / 1', minInlineSize: 0 });
 const previousStyle = css({ color: vars.color.textMuted, minInlineSize: 0 });
 const unitStyle = css({ color: vars.color.textMuted, minInlineSize: 0 });
-const PRICE_SPRING_VISUAL_DURATION = Number.parseFloat(base.motion.duration.slow) / 1000; // '240ms' -> 0.24s
+const PRICE_SPRING_VISUAL_DURATION = motionDurationMs.slow / 1000;
 const PRICE_SPRING = {
   type: 'spring',
   bounce: 0,

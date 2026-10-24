@@ -4,7 +4,7 @@
 
 ### Added
 
-- `StatusDot` renders presence and avatar status on its own: `status` (online, away, busy, offline, neutral), a `dot` or `square` variant, the size scale, token-backed colour with a token name as the escape hatch, and an optional `pulse` that grows from the dot's own bounds. Each status carries a distinct glyph, so state does not depend on colour alone, and the naming contract is a discriminated type: labelled or explicitly decorative. `Avatar` and `AvatarGroup` use it and the previous badge treatment is gone.
+- `StatusDot` renders presence and avatar status on its own: `status` (online, away, busy, offline, neutral), a `dot` or `square` variant, the size scale, token-backed colour with a token name as the escape hatch, and an optional `pulse` that grows from the dot's own bounds. Each of the four presence statuses carries a distinct glyph, so presence does not depend on colour alone, and the naming contract is a discriminated type: labelled or explicitly decorative. `Avatar` and `AvatarGroup` use it and the previous badge treatment is gone.
 - `SortableDataTable` supports multi-column sorting, row selection with `getRowId`, `density`, a sticky header with a `maxTableHeight` scroller, a `toolbar` slot, and first-class `loading` and `empty` states.
 - `KeycapKeyboard` takes `mode="interactive"`, where keys are named buttons that type into the bound field, replace a selection, and delete by grapheme. The default `visualizer` mode is unchanged.
 - `BookingPill` accepts a typed `price` in minor units and an optional `onCancel`.
