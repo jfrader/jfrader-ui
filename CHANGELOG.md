@@ -2,6 +2,40 @@
 
 ## Unreleased
 
+### Added
+
+- `StatusDot` renders presence and avatar status on its own: `status` (online, away, busy, offline, neutral), a `dot` or `square` variant, the size scale, token-backed colour with a token name as the escape hatch, and an optional `pulse` that grows from the dot's own bounds. Each status carries a distinct glyph, so state does not depend on colour alone, and the naming contract is a discriminated type: labelled or explicitly decorative. `Avatar` and `AvatarGroup` use it and the previous badge treatment is gone.
+- `SortableDataTable` supports multi-column sorting, row selection with `getRowId`, `density`, a sticky header with a `maxTableHeight` scroller, a `toolbar` slot, and first-class `loading` and `empty` states.
+- `KeycapKeyboard` takes `mode="interactive"`, where keys are named buttons that type into the bound field, replace a selection, and delete by grapheme. The default `visualizer` mode is unchanged.
+- `BookingPill` accepts a typed `price` in minor units and an optional `onCancel`.
+- `EditableDetails` rows can name their own editor with `renderEditor`, for values that are not text.
+- `InputGroup` takes `label`, `labelPlacement`, `description`, `error`, `required` and owns its control id.
+
+### Changed
+
+- **Breaking pre-1.0:** `ToggleSubscription` is `PlanSelector`. The folder, component, props, subpath and stories are renamed with no alias, the billing vocabulary is gone, and price presentation is an optional part the consumer fills.
+- **Breaking pre-1.0:** `InputGroup` composes `FieldRoot` and `useFieldAnatomy` like `TextField`, so `sx` and root styling land on the wrapper and the frame moved to `slotProps.frame`.
+- **Breaking pre-1.0:** `EditableDetails` drops `renderEditor` on item rows and the per-item editing session. A row declares `edit` for text through `InlineEdit` or `renderEditor` for any value, and `onSave` is not called for `renderEditor` rows.
+- **Breaking pre-1.0:** `RadialMenu`'s trigger is an icon-only hub; `label` is its accessible name and no longer visible text.
+- `Dock` is a shared translucent shelf with bare glyphs; magnification grows the glyph rather than the tile, and running and selected share one indicator that changes shape.
+- `BookingPill` is one pill on one baseline with the panel growing from the trigger, and its stepper and actions use `ButtonGroup`.
+- `TreeView` and `JsonViewer` share one selected-row treatment: a tonal fill inside an inset hairline that follows the radius, weight as a second cue, and a real outline in forced colors.
+- `ColorPicker` lays its values and saved colours out in two container-driven columns, with the saved-colour actions grouped as icon buttons inside the panel.
+- `InlineEdit` derives every height from the button size contract, so the value, editor, Save and Cancel share one scale, and a rejected save reports through the error part.
+- `FilterToolbar` picks its layout from its own width, collapses generated filters into an even column grid, and hides the rest behind a More filters toggle below 30rem.
+- `Timeline` day spacing comes from one scale, so a day with one event and a day with two both align.
+
+### Fixed
+
+- `ActionButton` no longer wraps its label while the face is springing to its new width; a label that cannot fit truncates.
+- `DateReel` moves to the clicked row, and its wheel and keyboard input settle the reel as well. Pointer capture no longer retargets a row click to the column.
+- `Avatar`'s pulse grows from the status dot instead of the avatar box.
+- `AnnouncementBar`'s accent is a top rule with no side borders, which removes the notch that appeared when the bar was inverted.
+- `ColorPicker` keeps its saved-colour actions inside the panel instead of overflowing it.
+- `LinkPreview`'s site icon renders as an image instead of an uncoloured circle.
+- `Timeline`'s connector centre matches the marker centre and its group headings align with the event content column.
+- `RadialMenu`'s satellites use icons instead of text characters.
+
 ## 0.12.0 — 2026-10-24
 
 ### Added
