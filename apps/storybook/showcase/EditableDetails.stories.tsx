@@ -1,800 +1,361 @@
-import { useActionState, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { css } from '@emotion/react';
+import { useState, type KeyboardEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, waitFor, within } from 'storybook/test';
-import { useForm } from 'react-hook-form';
+import { expect, waitFor, within } from 'storybook/test';
+import { Controller, useForm } from 'react-hook-form';
 import { vars } from '@jfrader/tokens/vars';
-import { Button, Card, Checkbox, EditableDetails, type EditableDetailsEditorProps, InlineEdit, Pill, TextField } from '@jfrader/ui';
+import {
+  Button,
+  Card,
+  Checkbox,
+  EditableDetails,
+  Flex,
+  NumberField,
+  Popover,
+  Stack,
+  TextField,
+  styled,
+  type EditableDetailsEditorProps,
+} from '@jfrader/ui';
 import './showcase.css';
 
-interface DeploymentConfig { serviceName: string; region: string; replicas: number; autoScaling: boolean }
-interface DeploymentDraft extends Omit<DeploymentConfig, 'replicas'> { replicas: string }
-interface ContactData { contactEmail: string; maxConcurrency: number }
-type EditorProps<T> = EditableDetailsEditorProps & { value: T; onSave: (value: T) => void };
-const INITIAL_DEPLOYMENT: DeploymentConfig = { serviceName: 'api-gateway', region: 'us-east-1', replicas: 3, autoScaling: true };
-const INITIAL_CONTACT: ContactData = { contactEmail: 'ops@example.com', maxConcurrency: 16 };
-const RETENTION_LIMIT = 365;
-const NOTICE_LIMIT = 180;
-const VALUE_LIMIT = 10_000_000;
-const CONTRACT_VALUE = 48000;
-const CONCURRENCY_LIMIT = 64;
-const TERMS_RULE = 'Use Net plus a whole number of days, for example Net 30.';
-const DELIVERY_RULE = 'Use Email, Post, or both.';
-/** Local persistence for these fixtures; the delay makes the field's saving phase observable. */
-const persistDelay = (ms: number) => new Promise<void>((resolve) => { setTimeout(resolve, ms); });
-const DEMO_LOCALE = 'en';
-const days = new Intl.NumberFormat(DEMO_LOCALE, { style: 'unit', unit: 'day', unitDisplay: 'long' });
-const numbers = new Intl.NumberFormat(DEMO_LOCALE);
-const euros = new Intl.NumberFormat(DEMO_LOCALE, { style: 'currency', currency: 'EUR' });
-const dates = new Intl.DateTimeFormat(DEMO_LOCALE, { dateStyle: 'medium', timeZone: 'UTC' });
-const percent = new Intl.NumberFormat(DEMO_LOCALE, { style: 'percent', minimumFractionDigits: 1 });
-const editorStyle = css({ display: 'grid', gap: vars.space[3], minInlineSize: 0 });
-const linesStyle = css({ display: 'grid', gap: vars.space[1] });
-const actionsStyle = css({ display: 'flex', flexWrap: 'wrap', justifyContent: 'end', gap: vars.space[2] });
-const responseStyle = css({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], paddingBlock: vars.space[3] });
-const confirmationStyle = css({ display: 'grid', gap: vars.space[3], padding: vars.space[3], border: `1px solid ${vars.color.borderControl}`, borderRadius: vars.radius.sm });
-const mobileStyle = css({ inlineSize: 'min(100%, 320px)', marginInline: 'auto' });
+const LOCALE = 'en-US';
+const SAVE_DELAY_MS = 300;
+const INSTANCES = { min: 1, max: 64 } as const;
+const REGIONS = ['eu-west-1', 'eu-central-1', 'us-east-1', 'ap-south-1'] as const;
+const RESERVED_SERVICE = 'billing';
+const COLLAPSE_SHORTCUT = 'Alt+Shift+C';
+const summaryList = new Intl.ListFormat(LOCALE, { style: 'narrow', type: 'unit' });
 
-function Scene({ children, title = 'Project settings' }: { children: ReactNode; title?: string }) {
-  return <main className="showcase-page">
-    <h1 className="showcase-title">{title}</h1>
-    <Card><Card.Content><EditableDetails>{children}</EditableDetails></Card.Content></Card>
-  </main>;
+type Region = (typeof REGIONS)[number];
+interface Deployment {
+  serviceName: string;
+  instances: number;
+  autoScaling: boolean;
 }
+interface Project {
+  name: string;
+  owner: string;
+  region: Region;
+  deployment: Deployment;
+}
+const PROJECT: Project = {
+  name: 'Northwind',
+  owner: 'Platform team',
+  region: 'eu-west-1',
+  deployment: { serviceName: 'api-gateway', instances: 3, autoScaling: true },
+};
 
-function EditorActions({ cancel, submit, pending = false }: { cancel: () => void; submit: string; pending?: boolean }) {
-  return <div css={actionsStyle}>
-    <Button variant="outline" type="button" onClick={cancel} disabled={pending}>Cancel</Button>
-    <Button tone="accent" type="submit" disabled={pending}>{submit}</Button>
-  </div>;
+const summarize = ({ serviceName, instances, autoScaling }: Deployment) =>
+  summaryList.format([serviceName, `Instances: ${instances}`, `Auto-scaling: ${autoScaling ? 'On' : 'Off'}`]);
+
+// The application's API: saves take a moment, and the server rejects a reserved service name.
+const persist = <T,>(next: T) => new Promise<T>((resolve) => { setTimeout(() => resolve(next), SAVE_DELAY_MS); });
+async function persistDeployment(next: Deployment) {
+  await persist(next);
+  if (next.serviceName === RESERVED_SERVICE) throw new Error(`The name ${RESERVED_SERVICE} is reserved. Choose another.`);
+  return next;
 }
 
-interface NumberFieldEditorProps extends EditorProps<number> {
-  label: string;
-  min: number;
-  max: number;
-  submit: string;
-}
-function NumberFieldEditor({ initialFocusRef, complete, cancel, value, onSave, label, min, max, submit }: NumberFieldEditorProps) {
-  const [draft, setDraft] = useState(String(value));
-  const [error, setError] = useState<string>();
-  return <form noValidate css={editorStyle} onSubmit={(event) => {
-    event.preventDefault();
-    const next = Number(draft);
-    if (!Number.isInteger(next) || next < min || next > max) {
-      setError(`Enter a whole number from ${numbers.format(min)} to ${numbers.format(max)}.`);
-      return;
-    }
-    onSave(next);
-    complete();
-  }}>
-    <TextField ref={initialFocusRef} name="numberField" label={label} type="number" min={min} max={max} step={1}
-      value={draft} error={error} onValueChange={(next) => { setDraft(next); setError(undefined); }} />
-    <EditorActions cancel={cancel} submit={submit} />
-  </form>;
+const isCollapseShortcut = (event: KeyboardEvent) => event.altKey && event.shiftKey && event.code === 'KeyC';
+
+const MobileFrame = styled.div({ inlineSize: 'min(100%, 320px)', marginInline: 'auto' });
+const RegionList = styled.div({ display: 'grid', gap: vars.space[1], padding: vars.space[2] });
+
+function EditorActions({ pending, cancel, onSave }: Pick<EditableDetailsEditorProps, 'pending' | 'cancel'> & { onSave?: () => void }) {
+  return (
+    <Flex gap="sm" justify="end" wrap>
+      <Button variant="ghost" aria-disabled={pending || undefined} onClick={cancel}>Cancel</Button>
+      <Button type={onSave ? 'button' : 'submit'} tone="accent" loading={pending} onClick={onSave}>Save</Button>
+    </Flex>
+  );
 }
 
-interface TextFieldEditorProps extends EditorProps<string> {
-  label: string;
-  submit: string;
-  /** Application rule: returns a message to block the save. */
-  rule?: (value: string) => string | undefined;
-  /** Application persistence: the editor reports saving until it resolves. */
-  save?: (value: string) => Promise<void>;
+interface ValueEditorProps<T> extends EditableDetailsEditorProps {
+  value: T;
+  onSave: (next: T) => Promise<unknown>;
 }
-function TextFieldEditor({ initialFocusRef, complete, cancel, value, onSave, label, submit, rule, save }: TextFieldEditorProps) {
+
+// An object value through React Hook Form: the form validates, and the row owns the save session.
+function DeploymentEditor({ initialFocusRef, submit, cancel, pending, errorId, value, onSave }: ValueEditorProps<Deployment>) {
+  const { register, control, handleSubmit, formState: { errors } } = useForm<Deployment>({ defaultValues: value });
+  const { ref: serviceRef, ...service } = register('serviceName', { required: 'Enter a service name.' });
+  return (
+    <form noValidate onSubmit={handleSubmit((next) => submit(() => onSave(next)))}>
+      <Stack gap="sm">
+        <TextField
+          {...service}
+          ref={(node) => {
+            serviceRef(node);
+            initialFocusRef(node);
+          }}
+          label="Service name"
+          error={errors.serviceName?.message}
+          readOnly={pending}
+          aria-describedby={errorId}
+        />
+        <Controller
+          control={control}
+          name="instances"
+          rules={{ validate: (next) => Number.isInteger(next) || `Enter ${INSTANCES.min} to ${INSTANCES.max} instances.` }}
+          render={({ field, fieldState }) => (
+            <NumberField
+              label="Instances"
+              min={INSTANCES.min}
+              max={INSTANCES.max}
+              value={field.value}
+              onValueChange={field.onChange}
+              onBlur={field.onBlur}
+              error={fieldState.error?.message}
+              readOnly={pending}
+            />
+          )}
+        />
+        <Controller
+          control={control}
+          name="autoScaling"
+          render={({ field }) => (
+            <Checkbox label="Auto-scaling" checked={field.value} onCheckedChange={field.onChange} disabled={pending} />
+          )}
+        />
+        <EditorActions pending={pending} cancel={cancel} />
+      </Stack>
+    </form>
+  );
+}
+
+// A portaled picker: the popover closes while its section is collapsed and reopens with the draft.
+function RegionEditor({ initialFocusRef, submit, cancel, pending, errorId, visible, value, onSave }: ValueEditorProps<Region>) {
   const [draft, setDraft] = useState(value);
-  const [error, setError] = useState<string>();
-  const [pending, setPending] = useState(false);
-  return <form noValidate css={editorStyle} onSubmit={(event) => {
-    event.preventDefault();
-    if (pending) return;
-    const message = rule?.(draft);
-    if (message) {
-      setError(message);
-      return;
-    }
-    setError(undefined);
-    if (!save) {
-      onSave(draft);
-      complete();
-      return;
-    }
-    setPending(true);
-    void save(draft).then(() => { onSave(draft); complete(); }, (failure: unknown) => {
-      setError(failure instanceof Error ? failure.message : 'Could not save. Try again.');
-      setPending(false);
-    });
-  }}>
-    <TextField ref={initialFocusRef} name="textField" label={label} value={draft} error={error}
-      onValueChange={(next) => { setDraft(next); setError(undefined); }} />
-    <EditorActions cancel={cancel} submit={submit} pending={pending} />
-  </form>;
+  const [pickerOpen, setPickerOpen] = useState(false);
+  return (
+    <Stack gap="sm">
+      <Popover open={visible && pickerOpen} onOpenChange={setPickerOpen}>
+        <Popover.Trigger ref={initialFocusRef} aria-describedby={errorId}>{draft}</Popover.Trigger>
+        <Popover.Content aria-label="Regions">
+          <RegionList>
+            {REGIONS.map((region) => (
+              <Button
+                key={region}
+                variant={region === draft ? 'soft' : 'ghost'}
+                aria-pressed={region === draft}
+                onClick={() => {
+                  setDraft(region);
+                  setPickerOpen(false);
+                }}
+              >
+                {region}
+              </Button>
+            ))}
+          </RegionList>
+        </Popover.Content>
+      </Popover>
+      <EditorActions pending={pending} cancel={cancel} onSave={() => submit(() => onSave(draft))} />
+    </Stack>
+  );
 }
 
-function DeploymentEditor({ initialFocusRef, complete, cancel, value, onSave }: EditorProps<DeploymentConfig>) {
-  const [draft, setDraft] = useState<DeploymentDraft>({ ...value, replicas: String(value.replicas) });
-  const [errors, setErrors] = useState<Partial<Record<'serviceName' | 'region' | 'replicas', string>>>({});
-  return <form noValidate css={editorStyle} onSubmit={(event) => {
-    event.preventDefault();
-    const replicas = Number(draft.replicas);
-    const nextErrors = {
-      serviceName: draft.serviceName.trim() ? undefined : 'Enter a service name.',
-      region: draft.region.trim() ? undefined : 'Enter a region.',
-      replicas: Number.isInteger(replicas) && replicas >= 1 && replicas <= CONCURRENCY_LIMIT
-        ? undefined : `Enter a whole instance count from 1 to ${CONCURRENCY_LIMIT}.`,
-    };
-    setErrors(nextErrors);
-    if (Object.values(nextErrors).some(Boolean)) return;
-    onSave({ ...draft, serviceName: draft.serviceName.trim(), region: draft.region.trim(), replicas });
-    complete();
-  }}>
-    <TextField ref={initialFocusRef} name="serviceName" label="Service name" value={draft.serviceName} error={errors.serviceName}
-      onValueChange={(serviceName) => setDraft((current) => ({ ...current, serviceName }))} />
-    <TextField name="region" label="Region" value={draft.region} error={errors.region}
-      onValueChange={(region) => setDraft((current) => ({ ...current, region }))} />
-    <TextField name="replicas" label="Instance count" type="number" min={1} max={CONCURRENCY_LIMIT} step={1} value={draft.replicas} error={errors.replicas}
-      onValueChange={(replicas) => setDraft((current) => ({ ...current, replicas }))} />
-    <Checkbox label="Enable auto-scaling" checked={draft.autoScaling}
-      onCheckedChange={(autoScaling) => setDraft((current) => ({ ...current, autoScaling }))} />
-    <EditorActions cancel={cancel} submit="Save configuration" />
-  </form>;
-}
-
-function RoutingEditor({ initialFocusRef, complete, cancel, value, onSave }: EditableDetailsEditorProps & {
-  value: string;
-  onSave: (value: string, signal: AbortSignal) => Promise<void>;
-}) {
-  const [draft, setDraft] = useState(value);
-  const [phase, setPhase] = useState<'editing' | 'confirming' | 'saving'>('editing');
-  const [error, setError] = useState<string>();
-  const [confirmed, setConfirmed] = useState(false);
-  const input = useRef<HTMLInputElement | null>(null);
-  const inputRef = useCallback((node: HTMLInputElement | null) => {
-    input.current = node;
-    const cleanup = initialFocusRef(node);
-    return () => {
-      input.current = null;
-      if (typeof cleanup === 'function') cleanup();
-      else initialFocusRef(null);
-    };
-  }, [initialFocusRef]);
-  const request = useRef<AbortController | null>(null);
-  useEffect(() => () => request.current?.abort(), []);
-  const persist = async () => {
-    const controller = new AbortController();
-    request.current = controller;
-    setError(undefined);
-    setPhase('saving');
+function ProjectSettings() {
+  const [project, setProject] = useState(PROJECT);
+  const [expanded, setExpanded] = useState<readonly string[]>(['general', 'deployment']);
+  const [deploymentError, setDeploymentError] = useState<string | null>(null);
+  const saveDeployment = async (next: Deployment) => {
+    setDeploymentError(null);
     try {
-      await onSave(draft, controller.signal);
-      if (!controller.signal.aborted) complete();
+      const deployment = await persistDeployment(next);
+      setProject((current) => ({ ...current, deployment }));
     } catch (failure) {
-      if (controller.signal.aborted) return;
-      setError(failure instanceof Error ? failure.message : 'Could not save the routing slug. Try again.');
-      setPhase('confirming');
+      if (failure instanceof Error) setDeploymentError(failure.message);
+      throw failure;
     }
   };
-  return <form noValidate css={editorStyle} onSubmit={(event) => {
-    event.preventDefault();
-    if (phase !== 'editing') return;
-    if (draft.length < 3 || !/^[a-z0-9-]+$/.test(draft)) {
-      setError('Use at least 3 lowercase letters, digits or hyphens.');
-      return;
-    }
-    setError(undefined);
-    setConfirmed(false);
-    setPhase('confirming');
-  }}>
-    <TextField ref={inputRef} name="slug" label="Routing slug" value={draft} error={error} readOnly={phase !== 'editing'}
-      onValueChange={(next) => { setDraft(next); setError(undefined); }} />
-    {phase === 'editing' && <EditorActions cancel={cancel} submit="Apply slug" />}
-    {phase !== 'editing' && <div css={confirmationStyle}>
-      <p>Change the routing slug to &quot;{draft}&quot;?</p>
-      <Checkbox autoFocus label="Update existing links" checked={confirmed} onCheckedChange={setConfirmed} disabled={phase === 'saving'} />
-      {phase === 'saving' && <span role="status">Saving routing slug…</span>}
-      <div css={actionsStyle}>
-        <Button variant="outline" type="button" disabled={phase === 'saving'} onClick={() => { input.current?.focus(); setPhase('editing'); setError(undefined); }}>Back to edit</Button>
-        <Button tone="accent" type="button" disabled={!confirmed} loading={phase === 'saving'} onClick={() => void persist()}>{error ? 'Retry save' : 'Confirm and apply'}</Button>
-      </div>
-    </div>}
-  </form>;
+  const collapseAll = () => setExpanded([]);
+  return (
+    <main className="showcase-page" onKeyDown={(event) => { if (isCollapseShortcut(event)) collapseAll(); }}>
+      <h1 className="showcase-title">Project settings</h1>
+      <Stack>
+        <Flex justify="end">
+          <Button variant="outline" aria-keyshortcuts={COLLAPSE_SHORTCUT} onClick={collapseAll}>Collapse all</Button>
+        </Flex>
+        <Card>
+          <Card.Content>
+            <EditableDetails
+              headingLevel={2}
+              expanded={expanded}
+              onExpandedChange={setExpanded}
+              onSave={async (name) => {
+                await persist(name);
+                setProject((current) => ({ ...current, name }));
+              }}
+              rows={[
+                {
+                  id: 'general',
+                  label: 'General',
+                  children: [
+                    { id: 'name', label: 'Project name', value: project.name, edit: true },
+                    { id: 'owner', label: 'Owner', value: project.owner },
+                  ],
+                },
+                {
+                  id: 'deployment',
+                  label: 'Deployment',
+                  children: [
+                    {
+                      id: 'region',
+                      label: 'Primary region',
+                      value: project.region,
+                      renderEditor: (editor) => (
+                        <RegionEditor {...editor} value={project.region} onSave={async (region) => {
+                          await persist(region);
+                          setProject((current) => ({ ...current, region }));
+                        }} />
+                      ),
+                    },
+                    {
+                      id: 'configuration',
+                      label: 'Configuration',
+                      value: summarize(project.deployment),
+                      error: deploymentError,
+                      renderEditor: (editor) => (
+                        <DeploymentEditor {...editor} value={project.deployment} onSave={saveDeployment} />
+                      ),
+                    },
+                  ],
+                },
+              ]}
+            />
+          </Card.Content>
+        </Card>
+      </Stack>
+    </main>
+  );
 }
 
-function ContactEditor({ initialFocusRef, complete, cancel, value, onSave }: EditableDetailsEditorProps & {
-  value: ContactData;
-  onSave: (value: ContactData) => Promise<void>;
-}) {
-  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<ContactData>({ defaultValues: value });
-  const { ref: emailRef, ...emailProps } = useMemo(() => register('contactEmail', {
-    required: 'Enter a contact email.',
-    pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email address.' },
-  }), [register]);
-  const mergedEmailRef = useCallback((node: HTMLInputElement | null) => {
-    emailRef(node);
-    const cleanup = initialFocusRef(node);
-    return () => {
-      if (typeof cleanup === 'function') cleanup();
-      else initialFocusRef(null);
-      emailRef(null);
-    };
-  }, [emailRef, initialFocusRef]);
-  return <form noValidate css={editorStyle} onSubmit={handleSubmit(async (data) => {
-    try {
-      await onSave(data);
-      complete();
-    } catch (failure) {
-      setError('contactEmail', { type: 'server', message: failure instanceof Error ? failure.message : 'Could not save contact details.' }, { shouldFocus: true });
-    }
-  })}>
-    <TextField {...emailProps} ref={mergedEmailRef} label="Contact email" type="email" error={errors.contactEmail?.message} />
-    <TextField {...register('maxConcurrency', {
-      valueAsNumber: true,
-      validate: (next) => Number.isInteger(next) && next >= 1 && next <= CONCURRENCY_LIMIT || `Enter a whole concurrency limit from 1 to ${CONCURRENCY_LIMIT}.`,
-    })} label="Max concurrency" type="number" error={errors.maxConcurrency?.message} />
-    <EditorActions cancel={cancel} submit="Save contact" pending={isSubmitting} />
-  </form>;
-}
-
-interface ActionResult { error: string | null; saved: boolean }
-function ClusterEditor({ initialFocusRef, complete, cancel, value, onSave }: EditableDetailsEditorProps & {
-  value: string;
-  onSave: (value: string) => Promise<void>;
-}) {
-  const [draft, setDraft] = useState(value);
-  const [result, action, pending] = useActionState(async (_previous: ActionResult, data: FormData): Promise<ActionResult> => {
-    const raw = data.get('clusterName');
-    const next = typeof raw === 'string' ? raw.trim() : '';
-    if (!next) return { error: 'Enter a cluster name.', saved: false };
-    if (next === 'reserved-cluster') return { error: 'That cluster name is reserved.', saved: false };
-    await onSave(next);
-    complete();
-    return { error: null, saved: true };
-  }, { error: null, saved: false });
-  return <form action={action} css={editorStyle}>
-    <TextField ref={initialFocusRef} name="clusterName" label="Cluster name" value={draft} onValueChange={setDraft} error={result.error} />
-    {result.saved && <span role="status">Saved</span>}
-    <EditorActions cancel={cancel} submit="Save cluster" pending={pending} />
-  </form>;
-}
-
-function RetentionRow({ defaultOpen = false }: { defaultOpen?: boolean }) {
-  const [value, setValue] = useState(30);
-  return <EditableDetails.Item label="Retention period" defaultOpen={defaultOpen} renderEditor={(props) => <NumberFieldEditor {...props} label="Retention period (days)" min={1} max={RETENTION_LIMIT} submit="Save retention" value={value} onSave={setValue} />}>
-    {days.format(value)}
-  </EditableDetails.Item>;
-}
-function DeploymentRow() {
-  const [value, setValue] = useState(INITIAL_DEPLOYMENT);
-  return <EditableDetails.Item label="Deployment configuration" renderEditor={(props) => <DeploymentEditor {...props} value={value} onSave={setValue} />}>
-    {value.serviceName} · {value.region} · Instances: {numbers.format(value.replicas)} · {value.autoScaling ? 'Auto-scaling' : 'Static'}
-  </EditableDetails.Item>;
-}
-function ContactRow() {
-  const [value, setValue] = useState(INITIAL_CONTACT);
-  const save = async (next: ContactData) => {
-    if (next.contactEmail === 'restricted@example.com') throw new Error('This contact is restricted. Use another email address.');
-    setValue(next);
-  };
-  return <EditableDetails.Item label="Team contact" renderEditor={(props) => <ContactEditor {...props} value={value} onSave={save} />}>
-    {value.contactEmail}
-  </EditableDetails.Item>;
-}
-interface TextFieldRowProps {
-  label: string;
-  initial: string;
-  /** Application rule: returns a message to block the save. */
-  rule?: TextFieldEditorProps['rule'];
-  /** Application persistence for this value. */
-  save?: TextFieldEditorProps['save'];
-}
-function TextFieldRow({ label, initial, rule, save }: TextFieldRowProps) {
-  const [value, setValue] = useState(initial);
-  return <EditableDetails.Item label={label} renderEditor={(props) => <TextFieldEditor {...props} label={label} submit={`Save ${label.toLowerCase()}`} rule={rule} save={save} value={value} onSave={setValue} />}>
-    {value}
-  </EditableDetails.Item>;
-}
-/** The comparison story keeps `InlineEdit`: it contrasts the single-string field with the editor flow above. */
-function InlineEditRow({ label, initial }: { label: string; initial: string }) {
-  const [value, setValue] = useState(initial);
-  return <EditableDetails.Item label={label}><InlineEdit label={label} variant="body" size="sm" value={value} onValueChange={setValue} onSave={() => {}} /></EditableDetails.Item>;
-}
-function NoticePeriodRow() {
-  const [value, setValue] = useState(60);
-  return <EditableDetails.Item label="Notice period" renderEditor={(props) => <NumberFieldEditor {...props} label="Notice period (days)" min={1} max={NOTICE_LIMIT} submit="Save notice period" value={value} onSave={setValue} />}>
-    {days.format(value)}
-  </EditableDetails.Item>;
-}
-function AnnualValueRow() {
-  const [value, setValue] = useState(CONTRACT_VALUE);
-  return <EditableDetails.Item label="Annual value" renderEditor={(props) => <NumberFieldEditor {...props} label="Annual value (EUR)" min={1} max={VALUE_LIMIT} submit="Save annual value" value={value} onSave={setValue} />}>
-    {euros.format(value)}
-  </EditableDetails.Item>;
-}
-
-function AddressValue({ lines }: { lines: readonly string[] }) {
-  return <span css={linesStyle}>{lines.map((line) => <span key={line}>{line}</span>)}</span>;
-}
-
-function ContractScene() {
-  return <Scene title="Service agreement">
-    <EditableDetails.Section title="Service agreement" headingLevel={2} defaultOpen>
-      <EditableDetails.List>
-        <EditableDetails.Item label="Reference">CT-2026-0417</EditableDetails.Item>
-        <EditableDetails.Item label="Status"><Pill tone="success">Active</Pill></EditableDetails.Item>
-        <AnnualValueRow />
-        <EditableDetails.Item label="Renewal">Automatic, every 12 months</EditableDetails.Item>
-      </EditableDetails.List>
-      <EditableDetails.Section title="Parties" defaultOpen>
-        <EditableDetails.Section title="Provider" defaultOpen>
-          <EditableDetails.List>
-            <EditableDetails.Item label="Legal name">Halcyon Systems S.L.</EditableDetails.Item>
-            <EditableDetails.Item label="Tax ID">ES-B12345678</EditableDetails.Item>
-            <EditableDetails.Item label="Registered address">
-              <AddressValue lines={['Calle Mayor 14', '28013 Madrid, ES']} />
-            </EditableDetails.Item>
-            <EditableDetails.Item label="Support contact">support@halcyon.example</EditableDetails.Item>
-          </EditableDetails.List>
-        </EditableDetails.Section>
-        <EditableDetails.Section title="Client" defaultOpen>
-          <EditableDetails.List>
-            <EditableDetails.Item label="Legal name">Northwind Retail Group</EditableDetails.Item>
-            <EditableDetails.Item label="Tax ID">ES-B98765432</EditableDetails.Item>
-            <EditableDetails.Item label="Billing address">
-              <AddressValue lines={['45 Harbour Road', 'BS1 4DJ Bristol, GB']} />
-            </EditableDetails.Item>
-            <TextFieldRow label="Billing reference" initial="NW-PO-8841" />
-          </EditableDetails.List>
-          <EditableDetails.Section title="Notice contacts" defaultOpen>
-            <EditableDetails.List>
-              <EditableDetails.Item label="Primary notice contact">Elena Vidal, Facilities</EditableDetails.Item>
-              <TextFieldRow label="Delivery method" initial="Email and registered post"
-                rule={(next) => (/Email|Post/.test(next) ? undefined : DELIVERY_RULE)}
-                save={() => persistDelay(200)} />
-            </EditableDetails.List>
-          </EditableDetails.Section>
-        </EditableDetails.Section>
-      </EditableDetails.Section>
-      <EditableDetails.Section title="Commercial terms" defaultOpen>
-        <EditableDetails.List>
-          <NoticePeriodRow />
-          <TextFieldRow label="Payment terms" initial="Net 30"
-            rule={(next) => (/^Net \d+$/.test(next.trim()) ? undefined : TERMS_RULE)} />
-          <EditableDetails.Item label="Currency">EUR</EditableDetails.Item>
-        </EditableDetails.List>
-        <EditableDetails.Section title="Adjustments" defaultOpen>
-          <EditableDetails.List>
-            <EditableDetails.Item label="Annual uplift">{percent.format(0.025)}</EditableDetails.Item>
-            <TextFieldRow label="Uplift cap" initial="CPI + 1%" />
-            <EditableDetails.Item label="First review">{dates.format(Date.UTC(2026, 3, 17))}</EditableDetails.Item>
-          </EditableDetails.List>
-        </EditableDetails.Section>
-      </EditableDetails.Section>
-      <EditableDetails.Section title="Service levels" defaultOpen>
-        <EditableDetails.List>
-          <TextFieldRow label="Support window" initial="24×5, Monday to Friday" />
-          <EditableDetails.Item label="Response target">30 minutes for critical incidents</EditableDetails.Item>
-          <EditableDetails.Item label="Maintenance window">Sundays 02:00–04:00 UTC</EditableDetails.Item>
-        </EditableDetails.List>
-        <EditableDetails.Section title="Service tiers" defaultOpen>
-          <EditableDetails.List>
-            <EditableDetails.Item label="Availability target">{percent.format(0.999)} monthly</EditableDetails.Item>
-            <EditableDetails.Item label="Error budget">43 minutes per month</EditableDetails.Item>
-            <EditableDetails.Item label="Escalation">Duty engineer, then service manager</EditableDetails.Item>
-          </EditableDetails.List>
-        </EditableDetails.Section>
-      </EditableDetails.Section>
-      <EditableDetails.Section title="Documents" />
-      <EditableDetails.Section title="History" defaultOpen>
-        <EditableDetails.Section title="Versions" defaultOpen>
-          <EditableDetails.List>
-            <EditableDetails.Item label="v3">{dates.format(Date.UTC(2025, 3, 17))}</EditableDetails.Item>
-            <EditableDetails.Item label="v2">{dates.format(Date.UTC(2024, 3, 10))}</EditableDetails.Item>
-            <EditableDetails.Item label="v1">{dates.format(Date.UTC(2023, 3, 12))}</EditableDetails.Item>
-          </EditableDetails.List>
-        </EditableDetails.Section>
-        <EditableDetails.Section title="Superseded clauses">
-          <EditableDetails.List>
-            <EditableDetails.Item label="Clause 7.2">Replaced by Commercial terms → Adjustments</EditableDetails.Item>
-            <EditableDetails.Item label="Appendix B">Replaced by Service levels → Service tiers</EditableDetails.Item>
-          </EditableDetails.List>
-        </EditableDetails.Section>
-      </EditableDetails.Section>
-    </EditableDetails.Section>
-  </Scene>;
-}
-
-interface PendingResponse { resolve: () => void; reject: () => void }
-function RoutingDetails() {
-  const [value, setValue] = useState('northwind-core');
-  const [saving, setSaving] = useState(false);
-  const pending = useRef<PendingResponse | null>(null);
-  const save = (next: string, signal: AbortSignal) => new Promise<void>((resolve, reject) => {
-    setSaving(true);
-    const settle = (failure?: Error) => {
-      signal.removeEventListener('abort', abort);
-      pending.current = null;
-      setSaving(false);
-      if (failure) reject(failure);
-      else { setValue(next); resolve(); }
-    };
-    const abort = () => settle(new Error('Request cancelled.'));
-    signal.addEventListener('abort', abort, { once: true });
-    pending.current = {
-      resolve: () => settle(),
-      reject: () => settle(new Error('That routing slug is unavailable. Try again.')),
-    };
-  });
-  return <>
-    <EditableDetails.Section title="Routing" defaultOpen headingLevel={2}>
-      <EditableDetails.List><EditableDetails.Item label="Routing slug" renderEditor={(props) => <RoutingEditor {...props} value={value} onSave={save} />}>{value}</EditableDetails.Item></EditableDetails.List>
-    </EditableDetails.Section>
-    <div css={responseStyle}>
-      <Button type="button" variant="outline" disabled={!saving} onClick={() => pending.current?.reject()}>Reject response</Button>
-      <Button type="button" variant="outline" disabled={!saving} onClick={() => pending.current?.resolve()}>Resolve response</Button>
-    </div>
-  </>;
-}
-
-interface ActionFixtureProps { onActionOpenChange?: (open: boolean) => void }
-function ClusterDetails({ onActionOpenChange }: ActionFixtureProps) {
-  const [value, setValue] = useState('prod-cluster-alpha');
-  const [open, setOpen] = useState(false);
-  return <>
-    <EditableDetails.Section title="Cluster" defaultOpen headingLevel={2}>
-      <EditableDetails.List><EditableDetails.Item label="Cluster name" open={open} onOpenChange={(next) => {
-        onActionOpenChange?.(next);
-        if (next) setOpen(true);
-      }} renderEditor={(props) => <ClusterEditor {...props} value={value} onSave={async (next) => setValue(next)} />}>{value}</EditableDetails.Item></EditableDetails.List>
-    </EditableDetails.Section>
-    {open && <Button type="button" variant="outline" onClick={() => setOpen(false)}>Accept close</Button>}
-  </>;
-}
-
-function ProjectSettingsScene(props: ActionFixtureProps) {
-  return <Scene>
-    <EditableDetails.Section title="General & limits" defaultOpen headingLevel={2}>
-      <EditableDetails.List>
-        <EditableDetails.Item label="Project">Northwind</EditableDetails.Item>
-        <EditableDetails.Item label="Active incidents">{0}</EditableDetails.Item>
-        <EditableDetails.Item label="Maintenance mode">Off</EditableDetails.Item>
-        <EditableDetails.Item label="Custom vanity domain">Not set</EditableDetails.Item>
-        <RetentionRow /><TextFieldRow label="Display title" initial="Northwind Core" />
-      </EditableDetails.List>
-      <EditableDetails.Section title="Notifications" defaultOpen>
-        <EditableDetails.List>
-          <EditableDetails.Item label="Email digest">Weekly, Monday</EditableDetails.Item>
-          <EditableDetails.Item label="Incident alerts">Critical and high</EditableDetails.Item>
-          <EditableDetails.Item label="Pager rotation">Platform on-call</EditableDetails.Item>
-        </EditableDetails.List>
-      </EditableDetails.Section>
-    </EditableDetails.Section>
-    <EditableDetails.Section title="Deployment" defaultOpen headingLevel={2}>
-      <EditableDetails.List><DeploymentRow /><ContactRow /></EditableDetails.List>
-    </EditableDetails.Section>
-    <RoutingDetails /><ClusterDetails {...props} />
-  </Scene>;
-}
-function ScalarScene({ defaultOpen = false }: { defaultOpen?: boolean }) {
-  return <Scene title="Storage"><EditableDetails.List><RetentionRow defaultOpen={defaultOpen} /></EditableDetails.List></Scene>;
-}
-function GroupedScene() {
-  return <Scene title="Deployment"><EditableDetails.List><DeploymentRow /></EditableDetails.List></Scene>;
-}
-function RoutingScene() { return <Scene title="Routing settings"><RoutingDetails /></Scene>; }
-function ContactScene() { return <Scene title="Team contact"><EditableDetails.List><ContactRow /></EditableDetails.List></Scene>; }
-function ActionScene(props: ActionFixtureProps) { return <Scene title="Cluster settings"><ClusterDetails {...props} /></Scene>; }
-function ComparisonScene() { return <Scene title="Project title"><EditableDetails.List><InlineEditRow label="Display title" initial="Northwind Core" /></EditableDetails.List></Scene>; }
+const itemOf = (canvasElement: HTMLElement, label: string) =>
+  within(
+    Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="editable-details-item"]')).find(
+      (item) => item.querySelector('dt')?.textContent === label,
+    )!,
+  );
 
 const meta = {
   title: 'Showcase/EditableDetails',
+  component: ProjectSettings,
   tags: ['!autodocs', 'dev'],
-  args: { onActionOpenChange: fn() },
   parameters: {
-    layout: 'fullscreen', controls: { disable: true },
+    layout: 'fullscreen',
+    controls: { disable: true },
     docs: {
-      description: { component: 'Edit project settings with native forms, grouped fields, React Hook Form and React Actions.' },
-      usage: `- Routing saves wait until you press Resolve response or Reject response.
-- Cluster editing stays open until you press Accept close.
-- Do not nest native form editors inside another form. Use form-associated controls there.
-- The React Action example uses controlled fields to preserve drafts across React form resets.`,
+      description: { component: 'Edit project settings with a React Hook Form editor and a region picker.' },
+      usage: `- Press ${COLLAPSE_SHORTCUT} or Collapse all to collapse every section.
+- The server rejects the service name "${RESERVED_SERVICE}".`,
     },
   },
-} satisfies Meta<ActionFixtureProps>;
+} satisfies Meta<typeof ProjectSettings>;
 export default meta;
-type Story = StoryObj<ActionFixtureProps>;
+type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  render: () => <ProjectSettingsScene />,
+export const ObjectValueForm: Story = {
+  name: 'Object value through React Hook Form',
   play: async ({ canvasElement, userEvent }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByRole('button', { name: 'General & limits' })).toHaveAttribute('aria-expanded', 'true');
-    await expect(canvas.getByText('0')).toBeVisible();
-    await expect(canvas.getByText('Maintenance mode')).toBeVisible();
-    await expect(canvas.getByText('Custom vanity domain')).toBeVisible();
-    await userEvent.click(canvas.getByRole('button', { name: 'Edit Retention period' }));
-    const input = canvas.getByRole('spinbutton', { name: 'Retention period (days)' });
-    await expect(input).toHaveFocus();
-    await userEvent.clear(input); await userEvent.type(input, '60');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save retention' }));
-    await expect(canvas.getByText('60 days')).toBeVisible();
+    const configuration = itemOf(canvasElement, 'Configuration');
+    await userEvent.click(configuration.getByRole('button', { name: 'Edit Configuration' }));
+    const service = configuration.getByRole('textbox', { name: 'Service name' });
+    await expect(service).toHaveFocus();
+
+    // The form's own validation blocks the save before the row starts one.
+    await userEvent.clear(service);
+    await userEvent.click(configuration.getByRole('button', { name: 'Save' }));
+    await expect(await configuration.findByText('Enter a service name.')).toBeVisible();
+    await expect(configuration.getByRole('group', { name: 'Configuration' })).not.toHaveAttribute('aria-busy');
+
+    await userEvent.type(service, 'edge-proxy');
+    const instances = configuration.getByRole('spinbutton', { name: 'Instances' });
+    await userEvent.clear(instances);
+    await userEvent.type(instances, '5');
+    await userEvent.click(configuration.getByRole('checkbox', { name: 'Auto-scaling' }));
+    await userEvent.click(configuration.getByRole('button', { name: 'Save' }));
+    await expect(configuration.getByRole('group', { name: 'Configuration' })).toHaveAttribute('aria-busy', 'true');
+
+    const saved = summarize({ serviceName: 'edge-proxy', instances: 5, autoScaling: false });
+    await expect(await configuration.findByText(saved)).toBeVisible();
+    await expect(configuration.getByRole('button', { name: 'Edit Configuration' })).toHaveFocus();
   },
 };
 
-export const NativeScalarForm: Story = {
-  render: () => <ScalarScene />,
-  play: async ({ canvasElement, userEvent }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: 'Edit Retention period' }));
-    const input = canvas.getByRole('spinbutton', { name: 'Retention period (days)' });
-    await expect(input).toHaveFocus();
-    for (const invalid of ['500', '1.5', '0']) {
-      await userEvent.clear(input); await userEvent.type(input, invalid);
-      await userEvent.click(canvas.getByRole('button', { name: 'Save retention' }));
-      await expect(input).toHaveValue(Number(invalid));
-      await expect(canvas.getByText(`Enter a whole number from 1 to ${RETENTION_LIMIT}.`)).toBeVisible();
-    }
-    await userEvent.clear(input); await userEvent.type(input, '90');
+export const PortaledPicker: Story = {
+  name: 'Portaled picker',
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const page = within(canvasElement.ownerDocument.body);
+    const region = itemOf(canvasElement, 'Primary region');
+    await userEvent.click(region.getByRole('button', { name: 'Edit Primary region' }));
+    const trigger = region.getByRole('button', { name: 'eu-west-1' });
+    await expect(trigger).toHaveFocus();
+
+    // The picker renders outside the details and still belongs to the row's editor.
+    await userEvent.click(trigger);
+    const picker = await page.findByRole('dialog', { name: 'Regions' });
+    await expect(canvasElement.contains(picker)).toBe(false);
+    await userEvent.click(within(picker).getByRole('button', { name: 'us-east-1' }));
+    await waitFor(() => expect(page.queryByRole('dialog', { name: 'Regions' })).toBeNull());
+    await expect(region.getByRole('button', { name: 'us-east-1' })).toBeVisible();
+
+    // Collapsing while focus is in the portaled picker closes it and moves focus to the section title.
+    await userEvent.click(region.getByRole('button', { name: 'us-east-1' }));
+    const reopened = await page.findByRole('dialog', { name: 'Regions' });
+    within(reopened).getByRole('button', { name: 'ap-south-1' }).focus();
+    await userEvent.keyboard('{Alt>}{Shift>}C{/Shift}{/Alt}');
+    const section = canvas.getByRole('button', { name: 'Deployment' });
+    await expect(section).toHaveAttribute('aria-expanded', 'false');
+    await waitFor(() => expect(page.queryByRole('dialog', { name: 'Regions' })).toBeNull());
+    await expect(section).toHaveFocus();
+
+    // Expanding again shows the editor with its draft; saving persists the picked region.
     await userEvent.keyboard('{Enter}');
-    await expect(canvas.getByText('90 days')).toBeVisible();
-    await expect(canvas.queryByRole('spinbutton')).not.toBeInTheDocument();
+    await userEvent.click(region.getByRole('button', { name: 'Save' }));
+    await expect(await region.findByRole('button', { name: 'Edit Primary region' })).toHaveFocus();
+    await expect(region.getByText('us-east-1')).toBeVisible();
   },
 };
 
-export const GroupedFields: Story = {
-  render: () => <GroupedScene />,
+export const ServerRejection: Story = {
+  name: 'Server rejection keeps the editor open',
   play: async ({ canvasElement, userEvent }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: 'Edit Deployment configuration' }));
-    const name = canvas.getByRole('textbox', { name: 'Service name' });
-    const region = canvas.getByRole('textbox', { name: 'Region' });
-    const replicas = canvas.getByRole('spinbutton', { name: 'Instance count' });
-    await expect(name).toHaveFocus();
-    await userEvent.clear(name); await userEvent.clear(region); await userEvent.clear(replicas); await userEvent.type(replicas, '2.5');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save configuration' }));
-    for (const message of ['Enter a service name.', 'Enter a region.', `Enter a whole instance count from 1 to ${CONCURRENCY_LIMIT}.`]) await expect(canvas.getByText(message)).toBeVisible();
-    await expect(replicas).toHaveValue(2.5);
-    await userEvent.type(name, 'edge-proxy'); await userEvent.type(region, 'eu-west-1');
-    await userEvent.clear(replicas); await userEvent.type(replicas, '5');
-    await userEvent.click(canvas.getByRole('checkbox', { name: 'Enable auto-scaling' }));
-    await userEvent.click(canvas.getByRole('button', { name: 'Save configuration' }));
-    await expect(canvas.getByText('edge-proxy · eu-west-1 · Instances: 5 · Static')).toBeVisible();
-    await userEvent.click(canvas.getByRole('button', { name: 'Edit Deployment configuration' }));
-    await expect(canvas.getByRole('textbox', { name: 'Service name' })).toHaveValue('edge-proxy');
+    const configuration = itemOf(canvasElement, 'Configuration');
+    await userEvent.click(configuration.getByRole('button', { name: 'Edit Configuration' }));
+    const service = configuration.getByRole('textbox', { name: 'Service name' });
+    await userEvent.clear(service);
+    await userEvent.type(service, `${RESERVED_SERVICE}{Enter}`);
+
+    // The server's message is the row's error; the editor keeps the draft and the focus.
+    const alert = await configuration.findByRole('alert');
+    await expect(alert).toHaveTextContent(`The name ${RESERVED_SERVICE} is reserved. Choose another.`);
+    await expect(configuration.getByRole('group', { name: 'Configuration' })).toHaveAttribute('aria-describedby', alert.id);
+    await expect(service.getAttribute('aria-describedby')!.split(' ')).toContain(alert.id);
+    await expect(service).toHaveValue(RESERVED_SERVICE);
+    await expect(service).toHaveFocus();
+    await expect(configuration.queryByText(summarize(PROJECT.deployment))).toBeNull();
   },
 };
 
-export const AsyncValidationAndConfirmation: Story = {
-  render: () => <RoutingScene />,
-  play: async ({ canvasElement, userEvent }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: 'Edit Routing slug' }));
-    const input = canvas.getByRole('textbox', { name: 'Routing slug' });
-    await expect(input).toHaveFocus();
-    await userEvent.clear(input); await userEvent.type(input, 'XX');
-    await userEvent.click(canvas.getByRole('button', { name: 'Apply slug' }));
-    await expect(canvas.getByText('Use at least 3 lowercase letters, digits or hyphens.')).toBeVisible();
-    await userEvent.clear(input); await userEvent.type(input, 'northwind-v2');
-    await userEvent.tab();
-    await userEvent.tab();
-    await expect(canvas.getByRole('button', { name: 'Apply slug' })).toHaveFocus();
-    await userEvent.keyboard('{Enter}');
-    let agreement = canvas.getByRole('checkbox', { name: 'Update existing links' });
-    await expect(agreement).toHaveFocus();
-    await userEvent.tab();
-    await expect(canvas.getByRole('button', { name: 'Back to edit' })).toHaveFocus();
-    await userEvent.keyboard('{Enter}');
-    await expect(input).toHaveFocus();
-    await expect(input).toHaveValue('northwind-v2');
-    await userEvent.keyboard('{Enter}');
-    agreement = canvas.getByRole('checkbox', { name: 'Update existing links' });
-    await expect(agreement).toHaveFocus();
-    const confirm = canvas.getByRole('button', { name: 'Confirm and apply' });
-    await expect(confirm).toBeDisabled();
-    await expect(canvas.getByRole('button', { name: 'Resolve response' })).toBeDisabled();
-    await userEvent.keyboard(' ');
-    await userEvent.tab();
-    await userEvent.tab();
-    await expect(confirm).toHaveFocus();
-    await userEvent.keyboard('{Enter}');
-    await expect(canvas.getByRole('status')).toHaveTextContent('Saving routing slug…');
-    await expect(input).toHaveValue('northwind-v2');
-    await expect(confirm).toHaveAttribute('aria-disabled', 'true');
-    await expect(confirm).toHaveFocus();
-    await expect(canvas.getByRole('button', { name: 'Resolve response' })).toBeEnabled();
-    const section = canvas.getByRole('button', { name: 'Routing' });
-    await userEvent.click(section);
-    await expect(input).not.toBeVisible();
-    await expect(canvas.getByRole('button', { name: 'Resolve response' })).toBeEnabled();
-    await userEvent.click(canvas.getByRole('button', { name: 'Reject response' }));
-    await userEvent.click(section);
-    await expect(canvas.getByRole('textbox', { name: 'Routing slug' })).toBe(input);
-    await expect(input).toHaveValue('northwind-v2');
-    await expect(canvas.getByText('That routing slug is unavailable. Try again.')).toBeVisible();
-    await userEvent.click(canvas.getByRole('button', { name: 'Retry save' }));
-    await expect(canvas.getByRole('status')).toHaveTextContent('Saving routing slug…');
-    await userEvent.click(canvas.getByRole('button', { name: 'Resolve response' }));
-    await waitFor(() => expect(canvas.queryByRole('textbox')).not.toBeInTheDocument());
-    await expect(canvas.getByText('northwind-v2')).toBeVisible();
-  },
-};
-
-export const ReactHookForm: Story = {
-  render: () => <ContactScene />,
-  play: async ({ canvasElement, userEvent }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: 'Edit Team contact' }));
-    const input = canvas.getByRole('textbox', { name: 'Contact email' });
-    await expect(input).toHaveFocus();
-    await userEvent.clear(input);
-    await userEvent.click(canvas.getByRole('button', { name: 'Save contact' }));
-    await expect(canvas.getByText('Enter a contact email.')).toBeVisible();
-    await expect(input).toHaveFocus();
-    await userEvent.type(input, 'restricted@example.com');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save contact' }));
-    await expect(canvas.getByText('This contact is restricted. Use another email address.')).toBeVisible();
-    await expect(input).toHaveValue('restricted@example.com');
-    await userEvent.clear(input); await userEvent.type(input, 'sre@example.com');
-    const concurrency = canvas.getByRole('spinbutton', { name: 'Max concurrency' });
-    await userEvent.clear(concurrency); await userEvent.type(concurrency, '1.5');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save contact' }));
-    await expect(canvas.getByText(`Enter a whole concurrency limit from 1 to ${CONCURRENCY_LIMIT}.`)).toBeVisible();
-    await expect(concurrency).toHaveFocus();
-    await userEvent.clear(concurrency); await userEvent.type(concurrency, '8');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save contact' }));
-    await waitFor(() => expect(canvas.getByText('sre@example.com')).toBeVisible());
-    await expect(canvas.queryByRole('textbox')).not.toBeInTheDocument();
-  },
-};
-
-export const ActionStateForm: Story = {
-  render: (args) => <ActionScene {...args} />,
-  play: async ({ canvasElement, userEvent, args }) => {
-    const actionRequests = args.onActionOpenChange;
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: 'Edit Cluster name' }));
-    const input = canvas.getByRole('textbox', { name: 'Cluster name' });
-    await userEvent.clear(input);
-    await userEvent.click(canvas.getByRole('button', { name: 'Save cluster' }));
-    await waitFor(() => expect(canvas.getByText('Enter a cluster name.')).toBeVisible());
-    await expect(input).toHaveValue('');
-    await userEvent.type(input, 'reserved-cluster');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save cluster' }));
-    await waitFor(() => expect(canvas.getByText('That cluster name is reserved.')).toBeVisible());
-    await expect(input).toHaveValue('reserved-cluster');
-    await expect(actionRequests).toHaveBeenCalledTimes(1);
-    for (const [index, next] of ['prod-cluster-beta', 'prod-cluster-gamma'].entries()) {
-      await userEvent.clear(input); await userEvent.type(input, next);
-      await userEvent.click(canvas.getByRole('button', { name: 'Save cluster' }));
-      await waitFor(() => expect(actionRequests).toHaveBeenCalledTimes(index + 2));
-      await expect(actionRequests).toHaveBeenLastCalledWith(false);
-      await expect(input).toHaveValue(next);
-      await expect(input).toBeVisible();
-    }
-    await userEvent.type(input, '-draft');
-    await expect(actionRequests).toHaveBeenCalledTimes(3);
-    await userEvent.click(canvas.getByRole('button', { name: 'Accept close' }));
-    await expect(canvas.getByText('prod-cluster-gamma')).toBeVisible();
-    await userEvent.click(canvas.getByRole('button', { name: 'Edit Cluster name' }));
-    await expect(canvas.getByRole('textbox', { name: 'Cluster name' })).toHaveValue('prod-cluster-gamma');
-  },
-};
-
-export const InlineEditComparison: Story = {
-  render: () => <ComparisonScene />,
-  play: async ({ canvasElement, userEvent }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: /Edit Display title/ }));
-    const input = canvas.getByRole('textbox', { name: 'Display title' });
-    await expect(input).toHaveFocus();
-    await expect(canvas.queryByRole('group')).not.toBeInTheDocument();
-    await userEvent.clear(input); await userEvent.type(input, 'Northwind Next');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save' }));
-    await expect(canvas.getByText('Northwind Next')).toBeVisible();
-  },
-};
-
-export const PersistentOpenAndError: Story = {
-  render: () => <ScalarScene defaultOpen />,
-  play: async ({ canvasElement, userEvent }) => {
-    const canvas = within(canvasElement);
-    const input = canvas.getByRole('spinbutton', { name: 'Retention period (days)' });
-    await userEvent.clear(input); await userEvent.type(input, '0');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save retention' }));
-    await expect(input).toHaveAttribute('aria-invalid', 'true');
-    await expect(canvas.getByRole('alert')).toHaveTextContent(`Enter a whole number from 1 to ${RETENTION_LIMIT}.`);
-  },
-};
-export const NestedContract: Story = {
-  render: () => <ContractScene />,
-  play: async ({ canvasElement, userEvent }) => {
-    const canvas = within(canvasElement);
-    const levels = ['Service agreement', 'Parties', 'Provider', 'Notice contacts']
-      .map((name) => canvas.getByRole('button', { name }));
-    for (const level of levels) await expect(level).toHaveAttribute('aria-expanded', 'true');
-    for (const [index, level] of levels.entries()) {
-      const parent = levels[index - 1];
-      if (parent) await expect(level.getBoundingClientRect().left).toBeGreaterThan(parent.getBoundingClientRect().left);
-    }
-    const page = canvasElement.querySelector<HTMLElement>('main')!;
-    await expect(page.scrollWidth).toBeLessThanOrEqual(page.clientWidth);
-    await userEvent.click(canvas.getByRole('button', { name: 'Parties' }));
-    await expect(canvas.queryByRole('button', { name: 'Provider' })).not.toBeInTheDocument();
-    await userEvent.click(canvas.getByRole('button', { name: 'Parties' }));
-
-    // A value at the top level edits through an app-owned form.
-    await userEvent.click(canvas.getByRole('button', { name: 'Edit Annual value' }));
-    const amount = canvas.getByRole('spinbutton', { name: 'Annual value (EUR)' });
-    await expect(amount).toHaveFocus();
-    await userEvent.clear(amount); await userEvent.type(amount, '0');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save annual value' }));
-    await expect(canvas.getByText(`Enter a whole number from 1 to ${numbers.format(VALUE_LIMIT)}.`)).toBeVisible();
-    await userEvent.clear(amount); await userEvent.type(amount, '60000');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save annual value' }));
-    await expect(canvas.getByText(euros.format(60000))).toBeVisible();
-
-    // A nested row edits through its own form editor.
-    await userEvent.click(canvas.getByRole('button', { name: 'Edit Notice period' }));
-    const notice = canvas.getByRole('spinbutton', { name: 'Notice period (days)' });
-    await expect(notice).toHaveFocus();
-    await userEvent.clear(notice); await userEvent.type(notice, '90');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save notice period' }));
-    await expect(canvas.getByText('90 days')).toBeVisible();
-
-    // A nested value with an application rule: its message blocks the save.
-    await userEvent.click(canvas.getByRole('button', { name: 'Edit Payment terms' }));
-    const terms = canvas.getByRole('textbox', { name: 'Payment terms' });
-    await expect(terms).toHaveFocus();
-    await userEvent.clear(terms); await userEvent.type(terms, 'thirty days');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save payment terms' }));
-    await expect(canvas.getByText(TERMS_RULE)).toBeVisible();
-    await userEvent.clear(terms); await userEvent.type(terms, 'Net 45');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save payment terms' }));
-    await expect(canvas.getByText('Net 45')).toBeVisible();
-
-    // The deepest value saves through the application, which takes a moment.
-    await userEvent.click(canvas.getByRole('button', { name: 'Edit Delivery method' }));
-    const delivery = canvas.getByRole('textbox', { name: 'Delivery method' });
-    await userEvent.clear(delivery); await userEvent.type(delivery, 'Courier');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save delivery method' }));
-    await expect(canvas.getByText(DELIVERY_RULE)).toBeVisible();
-    await userEvent.clear(delivery); await userEvent.type(delivery, 'Email and Post');
-    await userEvent.click(canvas.getByRole('button', { name: 'Save delivery method' }));
-    await waitFor(() => expect(canvas.queryByRole('textbox', { name: 'Delivery method' })).not.toBeInTheDocument());
-    await expect(canvas.getByText('Email and Post')).toBeVisible();
-
-    await expect(canvas.getByText('BS1 4DJ Bristol, GB')).toBeVisible();
-  },
-};
-export const Light: Story = {
-  globals: { theme: 'light' },
-  render: () => <ProjectSettingsScene />,
-  play: async ({ canvasElement }) => {
-    await expect(canvasElement.ownerDocument.documentElement).toHaveAttribute('data-theme', 'light');
-  },
-};
 export const Mobile: Story = {
-  render: () => <div css={mobileStyle}><ProjectSettingsScene /></div>,
+  name: 'Narrow layout',
+  render: () => <MobileFrame><ProjectSettings /></MobileFrame>,
   play: async ({ canvasElement, userEvent }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: 'Edit Deployment configuration' }));
-    await userEvent.clear(canvas.getByRole('textbox', { name: 'Service name' }));
-    await userEvent.click(canvas.getByRole('button', { name: 'Save configuration' }));
+    const configuration = itemOf(canvasElement, 'Configuration');
+    await userEvent.click(configuration.getByRole('button', { name: 'Edit Configuration' }));
+    await userEvent.clear(configuration.getByRole('textbox', { name: 'Service name' }));
+    await userEvent.click(configuration.getByRole('button', { name: 'Save' }));
+    await expect(await configuration.findByText('Enter a service name.')).toBeVisible();
+
+    // The open editor, its error, and its actions fit the column without scrolling sideways.
     const page = canvasElement.querySelector<HTMLElement>('main')!;
     await expect(page.getBoundingClientRect().width).toBeLessThanOrEqual(320);
     await expect(page.scrollWidth).toBeLessThanOrEqual(page.clientWidth);
-    await expect(canvas.getByText('Enter a service name.')).toBeVisible();
-  },
-};
-export const Rtl: Story = {
-  render: () => <div dir="rtl" css={mobileStyle}><ProjectSettingsScene /></div>,
-  play: async ({ canvasElement, userEvent }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: 'Edit Retention period' }));
-    const input = canvas.getByRole('spinbutton', { name: 'Retention period (days)' });
-    await expect(input).toHaveFocus();
-    await expect(getComputedStyle(input).direction).toBe('rtl');
-    const page = canvasElement.querySelector<HTMLElement>('main')!;
-    await expect(page.scrollWidth).toBeLessThanOrEqual(page.clientWidth);
+    const value = configuration.getByRole('definition').getBoundingClientRect();
+    for (const element of [configuration.getByRole('group'), configuration.getByRole('button', { name: 'Save' })]) {
+      const box = element.getBoundingClientRect();
+      await expect(box.left).toBeGreaterThanOrEqual(value.left);
+      await expect(box.right).toBeLessThanOrEqual(value.right);
+    }
   },
 };

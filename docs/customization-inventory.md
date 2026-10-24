@@ -10,7 +10,7 @@ composed modes still apply. A Panel root seam is listed on the Panel, not credit
 
 - Public callable families: **170**; public callable parts: **188**.
 - Families exposing `slots.root`: **119**; remaining without a family-level root slot: **51** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **130**; remaining without family-level interior slots: **40** (includes components without generated anatomy).
+- Families exposing any non-root replacement slot: **131**; remaining without family-level interior slots: **39** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -181,8 +181,8 @@ panel material. The section has no background, border or radius to migrate.
 | [Drawer.Panel](../packages/ui/src/components/drawer/drawer.tsx) | yes | `root` | `root` | — | — | — |
 | [Drawer.Title](../packages/ui/src/components/drawer/drawer.tsx) | — | — | — | — | — | — |
 | [Drawer.Trigger](../packages/ui/src/components/drawer/drawer.tsx) | — | — | — | — | — | — |
-| [EditableDetails](../packages/ui/src/components/editable-details/editable-details.tsx) | yes | `item`, `list`, `root`, `section` | `item`, `list`, `root`, `section` | — | — | `Item`, `List`, `Section` |
-| [EditableDetails.Item](../packages/ui/src/components/editable-details/editable-details.tsx) | — | `description`, `edit`, `editor`, `label`, `summary` | `description`, `edit`, `editor`, `label`, `summary` | — | — | — |
+| [EditableDetails](../packages/ui/src/components/editable-details/editable-details.tsx) | yes | `edit`, `item`, `list`, `root`, `section` | `edit`, `item`, `list`, `root`, `section` | — | — | `Item`, `List`, `Section` |
+| [EditableDetails.Item](../packages/ui/src/components/editable-details/editable-details.tsx) | — | `description`, `label` | `description`, `label` | — | — | — |
 | [EditableDetails.List](../packages/ui/src/components/editable-details/editable-details.tsx) | — | — | — | — | — | — |
 | [EditableDetails.Section](../packages/ui/src/components/editable-details/editable-details.tsx) | — | `heading`, `panel`, `trigger` | `heading`, `panel`, `trigger` | — | — | — |
 | [Emblem](../packages/ui/src/components/emblem/emblem.tsx) | — | `image`, `monogram` | `image`, `monogram` | — | — | — |
@@ -244,7 +244,7 @@ panel material. The section has no background, border or radius to migrate.
 | [HoverCard.Trigger](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | — | — | — | — |
 | [ImageCompare](../packages/ui/src/components/image-compare/image-compare.tsx) | — | `after`, `afterLabel`, `before`, `beforeLabel`, `divider`, `frame`, `handle`, `resetButton` | `after`, `afterLabel`, `before`, `beforeLabel`, `divider`, `frame`, `handle`, `resetButton` | — | — | — |
 | [InlineEdit](../packages/ui/src/components/inline-edit/inline-edit.tsx) | yes | `actions`, `cancel`, `control`, `description`, `editor`, `error`, `instructions`, `label`, `retry`, `root`, `save`, `status`, `trigger` | `actions`, `cancel`, `control`, `description`, `editor`, `error`, `instructions`, `label`, `retry`, `root`, `save`, `status`, `trigger` | — | `controlProps` | — |
-| [InputGroup](../packages/ui/src/components/input-group/input-group.tsx) | yes | `root` | `root` | — | — | `Addon`, `Input`, `Textarea` |
+| [InputGroup](../packages/ui/src/components/input-group/input-group.tsx) | yes | `description`, `error`, `frame`, `label`, `root` | `description`, `error`, `frame`, `label`, `root` | — | — | `Addon`, `Input`, `Textarea` |
 | [InputGroup.Addon](../packages/ui/src/components/input-group/input-group.tsx) | — | — | — | — | — | — |
 | [InputGroup.Input](../packages/ui/src/components/input-group/input-group.tsx) | — | — | — | — | — | — |
 | [InputGroup.Textarea](../packages/ui/src/components/input-group/input-group.tsx) | — | — | — | — | — | — |
