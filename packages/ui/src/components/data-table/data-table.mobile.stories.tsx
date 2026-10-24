@@ -6,7 +6,7 @@ import { Button } from '../button';
 import { FilterToolbar } from '../filter-toolbar';
 import { Popover } from '../popover';
 import { Select } from '../select';
-import { SortableDataTable, type DataColumn } from './index';
+import { DataTable, type DataColumn } from './index';
 
 const Frame = styled.div({ display: 'grid', gap: vars.space[4], minInlineSize: 0 });
 const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2] });
@@ -27,7 +27,7 @@ const columns: readonly DataColumn<RecordRow>[] = [
 ];
 
 const meta = {
-  title: 'Data/SortableDataTable',
+  title: 'Data/DataTable',
   parameters: { layout: 'fullscreen', docs: { description: { component: 'Sort rows by column and select rows in a table.' } } },
   tags: ['!autodocs'],
   render: () => (
@@ -43,7 +43,7 @@ const meta = {
       <FilterToolbar label="Filters" defaultValue={[{ id: 'status', label: 'Status', value: 'Active' }]}>
         <FilterToolbar.ActiveFilters /><FilterToolbar.Clear />
       </FilterToolbar>
-      <SortableDataTable caption="Projects" captionHidden rows={records} columns={columns}
+      <DataTable caption="Projects" captionHidden rows={records} columns={columns}
         getRowId={row => row.id} minTableWidth="68em"
         slotProps={{ scroller: { sx: { maxBlockSize: '18rem' } } }} />
     </Frame>

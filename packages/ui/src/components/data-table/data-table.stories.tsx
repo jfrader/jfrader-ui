@@ -6,7 +6,7 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { EmptyState } from '../empty-state';
 import { SearchField } from '../search-field';
-import { SortableDataTable, type DataColumn, type SortableDataTableProps, type SortState } from './index';
+import { DataTable, type DataColumn, type DataTableProps, type SortState } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
@@ -50,64 +50,64 @@ function checkConsumerTypes() {
   const acceptSortOrder = (_sort: readonly SortState<'name' | 'age'>[]) => {};
   const acceptKeys = (_keys: readonly Person['id'][]) => {};
 
-  <SortableDataTable {...base} defaultValue={{ columnId: 'age', direction: 'asc' }}
+  <DataTable {...base} defaultValue={{ columnId: 'age', direction: 'asc' }}
     onValueChange={sort => acceptSort(sort)} onSelectionChange={keys => acceptKeys(keys)} />;
-  <SortableDataTable {...base} columns={[
+  <DataTable {...base} columns={[
     { id: 'name', header: 'Name', accessor: person => person.name },
     { id: 'age', header: 'Age', accessor: person => person.age },
   ]} onValueChange={sort => acceptSort(sort)} />;
-  <SortableDataTable<Person, 'name' | 'age', string> {...base} value={{ columnId: 'name', direction: 'asc' }} />;
+  <DataTable<Person, 'name' | 'age', string> {...base} value={{ columnId: 'name', direction: 'asc' }} />;
   // @ts-expect-error Explicit column ids reject unknown sort columns.
-  <SortableDataTable<Person, 'name' | 'age', string> {...base} value={{ columnId: 'unknown', direction: 'asc' }} />;
+  <DataTable<Person, 'name' | 'age', string> {...base} value={{ columnId: 'unknown', direction: 'asc' }} />;
   // @ts-expect-error Controlled values cannot widen ids inferred from columns.
-  <SortableDataTable {...base} value={{ columnId: 'unknown', direction: 'asc' }} />;
+  <DataTable {...base} value={{ columnId: 'unknown', direction: 'asc' }} />;
   // @ts-expect-error Default values cannot widen ids inferred from columns.
-  <SortableDataTable {...base} defaultValue={{ columnId: 'unknown', direction: 'asc' }} />;
+  <DataTable {...base} defaultValue={{ columnId: 'unknown', direction: 'asc' }} />;
   // @ts-expect-error Selected keys must come from the getRowId return type.
-  <SortableDataTable {...base} selectedKeys={['unknown']} />;
+  <DataTable {...base} selectedKeys={['unknown']} />;
   // @ts-expect-error Initial keys cannot widen the getRowId return type.
-  <SortableDataTable {...base} defaultSelectedKeys={['unknown']} />;
+  <DataTable {...base} defaultSelectedKeys={['unknown']} />;
   // @ts-expect-error Manual sorting still requires a controlled value.
-  <SortableDataTable {...base} sortMode="manual" />;
+  <DataTable {...base} sortMode="manual" />;
   // @ts-expect-error Selection still requires row labels.
-  <SortableDataTable {...base} selectable />;
-  <SortableDataTable {...base} sortMode="manual" value={null} selectable getRowLabel={person => person.name} />;
+  <DataTable {...base} selectable />;
+  <DataTable {...base} sortMode="manual" value={null} selectable getRowLabel={person => person.name} />;
 
-  <SortableDataTable {...base} multiSort defaultSort={[{ columnId: 'age', direction: 'desc' }, { columnId: 'name', direction: 'asc' }]}
+  <DataTable {...base} multiSort defaultSort={[{ columnId: 'age', direction: 'desc' }, { columnId: 'name', direction: 'asc' }]}
     onSortChange={sort => acceptSortOrder(sort)} />;
-  <SortableDataTable {...base} sortMode="manual" sort={[]} selectionMode="single" getRowLabel={person => person.name} />;
-  <SortableDataTable {...base} density="comfortable" toolbar={<Button size="sm">Export</Button>} maxTableHeight={320} />;
+  <DataTable {...base} sortMode="manual" sort={[]} selectionMode="single" getRowLabel={person => person.name} />;
+  <DataTable {...base} density="comfortable" toolbar={<Button size="sm">Export</Button>} maxTableHeight={320} />;
   // @ts-expect-error Sort entries cannot widen ids inferred from columns.
-  <SortableDataTable {...base} sort={[{ columnId: 'unknown', direction: 'asc' }]} />;
+  <DataTable {...base} sort={[{ columnId: 'unknown', direction: 'asc' }]} />;
   // @ts-expect-error Default sort entries cannot widen ids inferred from columns.
-  <SortableDataTable {...base} defaultSort={[{ columnId: 'unknown', direction: 'asc' }]} />;
+  <DataTable {...base} defaultSort={[{ columnId: 'unknown', direction: 'asc' }]} />;
   // @ts-expect-error Selection modes still require row labels.
-  <SortableDataTable {...base} selectionMode="multiple" />;
+  <DataTable {...base} selectionMode="multiple" />;
   // @ts-expect-error Density is a closed set.
-  <SortableDataTable {...base} density="dense" />;
+  <DataTable {...base} density="dense" />;
   // @ts-expect-error Column alignment is a closed set.
-  <SortableDataTable {...base} columns={[{ id: 'name', header: 'Name', align: 'left' }]} />;
+  <DataTable {...base} columns={[{ id: 'name', header: 'Name', align: 'left' }]} />;
 
   const computedColumns = [
     { id: 'nameLength', header: 'Name length', accessor: (person: Person) => person.name.length },
     { id: 'adult', header: 'Adult', cell: (person: Person) => String(person.age >= 18),
       compare: (a: Person, b: Person) => a.age - b.age },
   ] as const satisfies readonly DataColumn<Person>[];
-  <SortableDataTable {...base} columns={computedColumns} defaultValue={{ columnId: 'nameLength', direction: 'asc' }} />;
+  <DataTable {...base} columns={computedColumns} defaultValue={{ columnId: 'nameLength', direction: 'asc' }} />;
 
   const dynamicId: string = 'remote-column';
   const dynamicColumns: readonly DataColumn<Person>[] = [{ id: dynamicId, header: 'Remote' }];
-  <SortableDataTable {...base} columns={dynamicColumns} value={{ columnId: dynamicId, direction: 'desc' }}
+  <DataTable {...base} columns={dynamicColumns} value={{ columnId: dynamicId, direction: 'desc' }}
     onValueChange={sort => { const broad: SortState | null = sort; void broad; }} />;
-  <SortableDataTable<Person> {...base} value={{ columnId: dynamicId, direction: 'asc' }} selectedKeys={['off-page']} />;
-  const legacyProps: SortableDataTableProps<Person> = { ...base, value: { columnId: dynamicId, direction: 'asc' } };
-  <SortableDataTable {...legacyProps} />;
-  const wrapperProps: SortableDataTableProps<Person> = { ...base, sort: [{ columnId: dynamicId, direction: 'asc' }] };
-  <SortableDataTable {...wrapperProps} value={null} selectable getRowLabel={person => person.name} />;
+  <DataTable<Person> {...base} value={{ columnId: dynamicId, direction: 'asc' }} selectedKeys={['off-page']} />;
+  const legacyProps: DataTableProps<Person> = { ...base, value: { columnId: dynamicId, direction: 'asc' } };
+  <DataTable {...legacyProps} />;
+  const wrapperProps: DataTableProps<Person> = { ...base, sort: [{ columnId: dynamicId, direction: 'asc' }] };
+  <DataTable {...wrapperProps} value={null} selectable getRowLabel={person => person.name} />;
 }
 void checkConsumerTypes;
-const Table = (props: SortableDataTableProps<Project>) => <SortableDataTable {...props} />;
-Table.displayName = 'SortableDataTable';
+const Table = (props: DataTableProps<Project>) => <DataTable {...props} />;
+Table.displayName = 'DataTable';
 
 const projectSetup = `interface Project {
   id: string;
@@ -130,12 +130,12 @@ const columns: DataColumn<Project>[] = [
 const docs = (code: string, story?: string) => ({
   docs: { ...(story ? { description: { story } } : {}), source: { language: 'tsx', code } },
 });
-// A standalone projects example around one SortableDataTable element.
-const projectExample = (props: string, imports = '') => `${imports}import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+// A standalone projects example around one DataTable element.
+const projectExample = (props: string, imports = '') => `${imports}import { DataTable, type DataColumn } from '@jfrader/ui';
 
 ${projectSetup}
 
-<SortableDataTable
+<DataTable
   caption="Projects"
   locale="en-US"
   timeZone="UTC"
@@ -145,7 +145,7 @@ ${projectSetup}
 />`;
 
 const meta = {
-  title: 'Data/SortableDataTable',
+  title: 'Data/DataTable',
   component: Table,
   tags: ['autodocs'],
   args: { rows, columns, getRowId, caption: 'Projects', locale: 'en-US', timeZone: 'UTC' },
@@ -194,13 +194,13 @@ const statusRegion = (element: HTMLElement) => element.querySelector<HTMLElement
 
 export const Default: Story = {
   name: 'Projects table',
-  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { DataTable, type DataColumn } from '@jfrader/ui';
 
 ${projectSetup}
 
 export function ProjectsTable() {
   return (
-    <SortableDataTable
+    <DataTable
       caption="Projects"
       locale="en-US"
       timeZone="UTC"
@@ -219,7 +219,7 @@ export function ProjectsTable() {
     await expect(names(canvasElement)).toEqual(['Cedar', 'Atlas', 'Birch', 'Delta']);
     for (const row of bodyRows(canvasElement)) await expect(row).not.toHaveAttribute('aria-selected');
     await expect(canvas.getByRole('status')).toBeEmptyDOMElement();
-    await expect(canvasElement.querySelector('[data-ui="sortable-data-table-toolbar"]')).toBeNull();
+    await expect(canvasElement.querySelector('[data-ui="data-table-toolbar"]')).toBeNull();
     for (const button of canvas.getAllByRole('button')) {
       const style = getComputedStyle(button);
       await expect(style.borderStyle).toBe('none');
@@ -240,13 +240,13 @@ export const Unsorted: Story = {
 };
 export const Ascending: Story = {
   name: 'Initial sort order',
-  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { DataTable, type DataColumn } from '@jfrader/ui';
 
 ${projectSetup}
 
 export function InitialSortTable() {
   return (
-    <SortableDataTable
+    <DataTable
       caption="Projects"
       locale="en-US"
       timeZone="UTC"
@@ -270,13 +270,13 @@ export const Descending: Story = {
 };
 export const MultiColumnSort: Story = {
   name: 'Multi-column sort',
-  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { DataTable, type DataColumn } from '@jfrader/ui';
 
 ${projectSetup}
 
 export function MultiSortTable() {
   return (
-    <SortableDataTable
+    <DataTable
       caption="Projects"
       locale="en-US"
       timeZone="UTC"
@@ -298,7 +298,7 @@ export function MultiSortTable() {
   },
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     const [nameHeader, budgetHeader] = Array.from(canvasElement.querySelectorAll('th'));
-    const priorities = () => Array.from(canvasElement.querySelectorAll('[data-ui="sortable-data-table-sort-priority"]'));
+    const priorities = () => Array.from(canvasElement.querySelectorAll('[data-ui="data-table-sort-priority"]'));
     await expect(names(canvasElement)).toEqual(['Birch', 'Cedar', 'Atlas', 'Delta']);
     // ARIA allows aria-sort on one header: the primary column.
     await expect(budgetHeader).toHaveAttribute('aria-sort', 'descending');
@@ -346,7 +346,7 @@ export function MultiSortTable() {
 };
 export const Density: Story = {
   name: 'Row density',
-  parameters: docs(`import { SortableDataTable, type DataColumn, styled } from '@jfrader/ui';
+  parameters: docs(`import { DataTable, type DataColumn, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
 ${projectSetup}
@@ -360,7 +360,7 @@ export function TableDensities() {
   return (
     <Stack>
       {(['compact', 'standard', 'comfortable'] as const).map((density) => (
-        <SortableDataTable
+        <DataTable
           key={density}
           density={density}
           caption={\`\${density} projects\`}
@@ -414,13 +414,13 @@ export const StableNumericSorting: Story = {
     await expect(args.onSortChange).toHaveBeenNthCalledWith(3, [{ columnId: 'budget', direction: 'asc' }]);
     await expect(rows.map((row) => row.id)).toEqual(['c', 'a', 'b', 'd']);
     await expect(canvasElement.querySelectorAll('th[aria-sort]')).toHaveLength(1);
-    await expect(canvasElement.querySelector('[data-ui="sortable-data-table-sort-priority"]')).toBeNull();
+    await expect(canvasElement.querySelector('[data-ui="data-table-sort-priority"]')).toBeNull();
     // Numeric headers align with their end-aligned cells: the inline-flex sort control is pushed to the end.
     const numericHeader = canvasElement.querySelector<HTMLElement>('th[data-numeric]')!;
     await expect(getComputedStyle(numericHeader.querySelector('button')!).justifyContent).toBe('flex-end');
   },
 };
-function Controlled({ onSortChange, onSelectionChange, ...args }: SortableDataTableProps<Project>) {
+function Controlled({ onSortChange, onSelectionChange, ...args }: DataTableProps<Project>) {
   const [sort, setSort] = useState<readonly SortState[]>([]);
   const [selectedKeys, setKeys] = useState<readonly string[]>([]);
   return (
@@ -464,13 +464,13 @@ export const ControlledSort: Story = {
   },
 };
 export const RejectedSort: Story = {
-  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { DataTable, type DataColumn } from '@jfrader/ui';
 
 ${projectSetup}
 
 export function LockedSortTable() {
   return (
-    <SortableDataTable
+    <DataTable
       caption="Projects"
       locale="en-US"
       timeZone="UTC"
@@ -507,7 +507,7 @@ export const ManualServerSort: Story = {
 export const Selection: Story = {
   name: 'Row selection',
   parameters: docs(`import { useState } from 'react';
-import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+import { DataTable, type DataColumn } from '@jfrader/ui';
 
 ${projectSetup}
 
@@ -515,7 +515,7 @@ export function SelectableTable() {
   const [selectedKeys, setSelectedKeys] = useState<readonly string[]>([]);
 
   return (
-    <SortableDataTable
+    <DataTable
       caption="Projects"
       locale="en-US"
       timeZone="UTC"
@@ -556,7 +556,7 @@ export function SelectableTable() {
 export const SingleSelection: Story = {
   name: 'Single row selection',
   parameters: docs(`import { useState } from 'react';
-import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+import { DataTable, type DataColumn } from '@jfrader/ui';
 
 ${projectSetup}
 
@@ -564,7 +564,7 @@ export function SingleSelectTable() {
   const [selectedKeys, setSelectedKeys] = useState<readonly string[]>([]);
 
   return (
-    <SortableDataTable
+    <DataTable
       caption="Projects"
       locale="en-US"
       timeZone="UTC"
@@ -670,7 +670,7 @@ export const CrossPageSelection: Story = {
     await expect(canvas.getAllByText('0 of 4 visible selected; 1 selected in total')[0]!).toBeVisible();
   },
 };
-function Reloading(args: SortableDataTableProps<Project>) {
+function Reloading(args: DataTableProps<Project>) {
   const [currentRows, setRows] = useState(rows);
   return (
     <SizeGrid>
@@ -708,11 +708,11 @@ export const SelectionFollowsRowId: Story = {
 };
 export const Empty: Story = {
   name: 'Empty records',
-  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { DataTable, type DataColumn } from '@jfrader/ui';
 
 ${projectSetup}
 
-<SortableDataTable
+<DataTable
   caption="Projects"
   locale="en-US"
   timeZone="UTC"
@@ -731,11 +731,11 @@ ${projectSetup}
 };
 export const EmptyWithAction: Story = {
   name: 'Custom empty state',
-  parameters: docs(`import { Button, EmptyState, SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { Button, EmptyState, DataTable, type DataColumn } from '@jfrader/ui';
 
 ${projectSetup}
 
-<SortableDataTable
+<DataTable
   caption="Projects"
   locale="en-US"
   timeZone="UTC"
@@ -761,14 +761,14 @@ export const Loading: Story = {
   args: { loading: true },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('table')).toHaveAttribute('aria-busy', 'true');
-    const loadingRow = canvasElement.querySelector('[data-ui="sortable-data-table-loading"]')!;
+    const loadingRow = canvasElement.querySelector('[data-ui="data-table-loading"]')!;
     await expect(loadingRow).toHaveTextContent('Loading records');
     await expect(loadingRow.querySelector('td')).toHaveAttribute('colspan', '2');
     await expect(names(canvasElement)).toEqual(['Cedar', 'Atlas', 'Birch', 'Delta']);
     await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Loading records'));
   },
 };
-function LoadingCycle(args: SortableDataTableProps<Project>) {
+function LoadingCycle(args: DataTableProps<Project>) {
   const [state, setState] = useState<{ loading: boolean; rows: readonly Project[] }>({ loading: false, rows });
   return (
     <SizeGrid>
@@ -796,7 +796,7 @@ export const LoadingAnnouncements: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Finish' }));
     await expect(status).toHaveTextContent('Records loaded');
     await expect(table).not.toHaveAttribute('aria-busy');
-    await expect(canvasElement.querySelector('[data-ui="sortable-data-table-loading"]')).toBeNull();
+    await expect(canvasElement.querySelector('[data-ui="data-table-loading"]')).toBeNull();
     await userEvent.click(refresh);
     const finishEmpty = canvas.getByRole('button', { name: 'Finish empty' });
     await userEvent.click(finishEmpty);
@@ -807,7 +807,7 @@ export const LoadingAnnouncements: Story = {
 };
 export const CustomCells: Story = {
   name: 'Custom cell content',
-  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { DataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -841,7 +841,7 @@ const columns: DataColumn<Project>[] = [
 
 export function CustomCellTable() {
   return (
-    <SortableDataTable
+    <DataTable
       caption="Projects"
       locale="en-US"
       timeZone="UTC"
@@ -866,7 +866,7 @@ export function CustomCellTable() {
 };
 export const CustomComparator: Story = {
   name: 'Custom comparator',
-  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { DataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -893,7 +893,7 @@ const columns: DataColumn<Project>[] = [
 
 export function CustomComparatorTable() {
   return (
-    <SortableDataTable
+    <DataTable
       caption="Projects"
       locale="en-US"
       timeZone="UTC"
@@ -923,7 +923,7 @@ export function CustomComparatorTable() {
 };
 export const LocaleNumbersAndDates: Story = {
   name: 'Locale date and number formatting',
-  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { DataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -947,7 +947,7 @@ const columns: DataColumn<Project>[] = [
 
 export function LocalizedTable() {
   return (
-    <SortableDataTable
+    <DataTable
       caption="Projects"
       locale="de-DE"
       timeZone="UTC"
@@ -972,7 +972,7 @@ export function LocalizedTable() {
 };
 export const ColumnLayout: Story = {
   name: 'Column alignment and widths',
-  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { DataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -994,7 +994,7 @@ const columns: DataColumn<Project>[] = [
   { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
 ];
 
-<SortableDataTable
+<DataTable
   caption="Projects"
   locale="en-US"
   timeZone="UTC"
@@ -1024,7 +1024,7 @@ const columns: DataColumn<Project>[] = [
     await expect(canvasElement.querySelector('col')!.style.width).toBe('40%');
   },
 };
-function ToolbarExample(args: SortableDataTableProps<Project>) {
+function ToolbarExample(args: DataTableProps<Project>) {
   const [projects, setProjects] = useState(rows);
   const [query, setQuery] = useState('');
   const [selectedKeys, setSelectedKeys] = useState<readonly string[]>([]);
@@ -1058,7 +1058,7 @@ function ToolbarExample(args: SortableDataTableProps<Project>) {
 export const Toolbar: Story = {
   name: 'Toolbar',
   parameters: docs(`import { useState } from 'react';
-import { Button, SearchField, SortableDataTable, type DataColumn } from '@jfrader/ui';
+import { Button, SearchField, DataTable, type DataColumn } from '@jfrader/ui';
 
 ${projectSetup}
 
@@ -1070,7 +1070,7 @@ export function ProjectsWithToolbar() {
   );
 
   return (
-    <SortableDataTable
+    <DataTable
       caption="Projects"
       locale="en-US"
       timeZone="UTC"
@@ -1094,7 +1094,7 @@ export function ProjectsWithToolbar() {
 }`, 'Put filters and bulk actions above the table with toolbar.'),
   render: (args) => <ToolbarExample {...args} />,
   play: async ({ canvas, canvasElement, userEvent }) => {
-    const toolbar = canvasElement.querySelector<HTMLElement>('[data-ui="sortable-data-table-toolbar"]')!;
+    const toolbar = canvasElement.querySelector<HTMLElement>('[data-ui="data-table-toolbar"]')!;
     const scroller = canvas.getByRole('region');
     await expect(toolbar.getBoundingClientRect().bottom).toBeLessThanOrEqual(scroller.getBoundingClientRect().top);
     const search = canvas.getByRole('searchbox', { name: 'Filter projects' });
@@ -1116,7 +1116,7 @@ export function ProjectsWithToolbar() {
 };
 export const StickyHeader: Story = {
   name: 'Sticky header',
-  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { DataTable, type DataColumn } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -1135,7 +1135,7 @@ const columns: DataColumn<Project>[] = [
   { id: 'budget', header: 'Budget', accessor: (row) => row.budget, numeric: true },
 ];
 
-<SortableDataTable
+<DataTable
   caption="Projects"
   locale="en-US"
   timeZone="UTC"
@@ -1181,7 +1181,7 @@ export const LongCells: Story = {
   ),
   play: async ({ canvas, canvasElement }) => {
     const scroller = canvas.getByRole('region');
-    const root = canvasElement.querySelector('[data-ui="sortable-data-table"]')!;
+    const root = canvasElement.querySelector('[data-ui="data-table"]')!;
     await expect(scroller.getBoundingClientRect().width).toBeLessThanOrEqual(root.getBoundingClientRect().width + 1);
     await expect(getComputedStyle(canvas.getAllByRole('cell')[0]!).overflowWrap).toBe('anywhere');
     await expect(getComputedStyle(canvas.getAllByRole('cell')[1]!).textAlign).toBe('end');
@@ -1287,7 +1287,7 @@ export const Error: Story = {
   },
 };
 export const LinksAndButtons: Story = {
-  parameters: docs(`import { Button, SortableDataTable } from '@jfrader/ui';
+  parameters: docs(`import { Button, DataTable } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -1324,7 +1324,7 @@ export function ProjectTable() {
   ];
 
   return (
-    <SortableDataTable
+    <DataTable
       caption="Projects"
       locale="en-US"
       timeZone="UTC"
@@ -1359,7 +1359,7 @@ export function ProjectTable() {
     await expect(args.onSelectionChange).not.toHaveBeenCalled();
   },
 };
-function Removal(args: SortableDataTableProps<Project>) {
+function Removal(args: DataTableProps<Project>) {
   const [currentRows, setRows] = useState(rows);
   return (
     <Table
@@ -1401,7 +1401,7 @@ export const ExternalAria: Story = {
     </div>
   ),
   play: async ({ canvasElement, canvas }) => {
-    const root = canvasElement.querySelector('[data-ui="sortable-data-table"]')!;
+    const root = canvasElement.querySelector('[data-ui="data-table"]')!;
     await expect(root).toHaveAttribute('aria-label', 'Project records');
     await expect(root).toHaveAttribute('aria-labelledby', 'external-label unresolved-label');
     await expect(root).toHaveAttribute('aria-describedby', 'external-description unresolved-description');
@@ -1457,10 +1457,10 @@ export const ConsumerStylePrecedence: Story = {
   play: async ({ canvas, canvasElement }) => {
     await expect(parseFloat(getComputedStyle(canvas.getAllByRole('cell')[0]!).paddingInlineStart)).toBeCloseTo(24, 0);
     await expect(getComputedStyle(canvas.getByRole('button', { name: 'Name: sort ascending' })).borderRadius).toBe('8px');
-    await expect(getComputedStyle(canvasElement.querySelector('[data-ui="sortable-data-table"]')!).borderRadius).toBe(
+    await expect(getComputedStyle(canvasElement.querySelector('[data-ui="data-table"]')!).borderRadius).toBe(
       '18px',
     );
-    const toolbar = canvasElement.querySelector('[data-ui="sortable-data-table-toolbar"]')!;
+    const toolbar = canvasElement.querySelector('[data-ui="data-table-toolbar"]')!;
     await expect(getComputedStyle(toolbar).justifyContent).toBe('flex-end');
     await expect(toolbar).toHaveAttribute('aria-label', 'Project actions');
   },
@@ -1582,7 +1582,7 @@ export const KeyboardSortingAndSelection: Story = {
 };
 
 export const CollationAndMissingValues: Story = {
-  parameters: docs(`import { SortableDataTable } from '@jfrader/ui';
+  parameters: docs(`import { DataTable } from '@jfrader/ui';
 
 interface Project {
   id: string;
@@ -1604,7 +1604,7 @@ const columns = [
   { id: 'date', header: 'Date', accessor: (row: Project) => row.date },
 ];
 
-<SortableDataTable
+<DataTable
   caption="Projects"
   locale="en-US"
   timeZone="UTC"
@@ -1641,11 +1641,11 @@ const columns = [
 };
 
 export const InvalidAndDisabledSort: Story = {
-  parameters: docs(`import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+  parameters: docs(`import { DataTable, type DataColumn } from '@jfrader/ui';
 
 ${projectSetup}
 
-<SortableDataTable
+<DataTable
   caption="Projects"
   locale="en-US"
   timeZone="UTC"
@@ -1685,7 +1685,7 @@ export const ControlledSelection: Story = {
   },
 };
 
-function PageChanges(args: SortableDataTableProps<Project>) {
+function PageChanges(args: DataTableProps<Project>) {
   const [pageRows, setRows] = useState(rows);
   return (
     <div>
@@ -1759,7 +1759,7 @@ export const LegacyProps: Story = {
     await expect(names(canvasElement)).toEqual(['Delta', 'Cedar', 'Birch', 'Atlas']);
     await expect(canvas.getByRole('checkbox', { name: 'Select all visible rows' })).toBeInTheDocument();
     for (const row of canvas.getByRole('table').querySelectorAll('tr')) await expect(row.getBoundingClientRect().height).toBe(33);
-    await expect(canvasElement.querySelector('[data-ui="sortable-data-table"]')).toHaveAttribute('data-density', 'compact');
+    await expect(canvasElement.querySelector('[data-ui="data-table"]')).toHaveAttribute('data-density', 'compact');
   },
 };
 export const LegacyControlledValue: Story = {
@@ -1778,7 +1778,7 @@ export const LegacyControlledValue: Story = {
 export const MinimumTableWidth: Story = {
   args: { minTableWidth: '68em' },
   render: args => <NarrowFrame><Table {...args} /></NarrowFrame>,
-  parameters: docs(`import { SortableDataTable } from '@jfrader/ui';
+  parameters: docs(`import { DataTable } from '@jfrader/ui';
 
 const rows = [{ id: 'atlas', name: 'Atlas', budget: 40 }];
 const columns = [
@@ -1786,7 +1786,7 @@ const columns = [
   { id: 'budget', header: 'Budget', accessor: (row: (typeof rows)[number]) => row.budget, numeric: true },
 ];
 
-<SortableDataTable caption="Projects" rows={rows} columns={columns}
+<DataTable caption="Projects" rows={rows} columns={columns}
   getRowId={row => row.id} minTableWidth="68em" />`),
   play: async ({ canvas }) => {
     const table = canvas.getByRole('table');
@@ -1802,14 +1802,14 @@ export const MinimumTableWidthOverride: Story = {
   render: args => <NarrowFrame><Table {...args} /></NarrowFrame>,
   play: async ({ canvas }) => {
     await expect(getComputedStyle(canvas.getByRole('table')).minInlineSize).toBe('640px');
-    await expect(canvas.getByRole('table').style.getPropertyValue('--ui-sortable-data-table-min-width')).toBe('960px');
+    await expect(canvas.getByRole('table').style.getPropertyValue('--ui-data-table-min-width')).toBe('960px');
   },
 };
 
 export const RefsAndHiddenCaption: Story = {
   name: 'DOM refs and hidden caption',
   parameters: docs(`import { useRef } from 'react';
-import { SortableDataTable, type DataColumn } from '@jfrader/ui';
+import { DataTable, type DataColumn } from '@jfrader/ui';
 
 ${projectSetup}
 
@@ -1818,7 +1818,7 @@ export function TableRefsExample() {
   const tableRef = useRef<HTMLTableElement>(null);
 
   return (
-    <SortableDataTable
+    <DataTable
       ref={containerRef}
       tableRef={tableRef}
       caption="Projects"
@@ -1831,7 +1831,7 @@ export function TableRefsExample() {
 }`, 'Forward refs to the container and table elements while visually hiding the caption.'),
   args: { ref: fn(), tableRef: fn(), captionHidden: true },
   play: async ({ args, canvas, canvasElement }) => {
-    const root = canvasElement.querySelector('[data-ui="sortable-data-table"]');
+    const root = canvasElement.querySelector('[data-ui="data-table"]');
     await expect(args.ref).toHaveBeenCalledWith(root);
     await expect(args.tableRef).toHaveBeenCalledWith(canvas.getByRole('table', { name: 'Projects' }));
     await expect(canvas.getByRole('table')).toHaveAccessibleName('Projects');
