@@ -8,9 +8,9 @@ composed modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **170**; public callable parts: **188**.
-- Families exposing `slots.root`: **119**; remaining without a family-level root slot: **51** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **130**; remaining without family-level interior slots: **40** (includes components without generated anatomy).
+- Public callable families: **171**; public callable parts: **188**.
+- Families exposing `slots.root`: **119**; remaining without a family-level root slot: **52** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **130**; remaining without family-level interior slots: **41** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -201,6 +201,7 @@ panel material. The section has no background, border or radius to migrate.
 | [FilterToolbar.Controls](../packages/ui/src/components/filter-toolbar/filter-toolbar.tsx) | — | — | — | — | — | — |
 | [FilterToolbar.ResultCount](../packages/ui/src/components/filter-toolbar/filter-toolbar.tsx) | — | — | — | — | — | — |
 | [Flex](../packages/ui/src/components/flex/flex.tsx) | — | — | — | — | — | — |
+| [FlightProvider](../packages/ui/src/components/flights/flight-provider.tsx) | — | — | — | — | — | — |
 | [FlipGameCard](../packages/ui/src/components/flip-game-card/flip-game-card.tsx) | yes | `back`, `front`, `root`, `rotator` | `back`, `front`, `root`, `rotator` | — | — | — |
 | [GameActions](../packages/ui/src/components/game-actions/game-actions.tsx) | yes | `action`, `root` | `action`, `root` | — | — | — |
 | [GameCard](../packages/ui/src/components/game-card/game-card.tsx) | yes | `back`, `face`, `root` | `back`, `face`, `root` | — | — | — |

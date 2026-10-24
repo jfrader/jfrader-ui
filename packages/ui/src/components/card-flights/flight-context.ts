@@ -3,7 +3,7 @@
 import { createContext, useContext, type RefObject } from 'react';
 import type { CardFlightSpec } from './card-flights';
 import type { CardBox } from './geometry';
-import type { FlightId, FlightOutcome } from '../flights';
+import type { FlightId, FlightOutcome } from '../flights/types';
 
 export interface CardFlightsContextValue {
   scopeRef: RefObject<HTMLElement | null>;

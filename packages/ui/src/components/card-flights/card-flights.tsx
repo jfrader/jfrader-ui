@@ -11,7 +11,7 @@ import { FLIGHT_GEOMETRY, measureCardBox, type CardBox } from './geometry';
 import type { FlightCard } from './use-card-flights';
 import { assertLegacyFlightEngine, createFlightRegistry, FlightRegistryContext } from './flight-registry';
 import { BusyContext, FlightContext as Context, OriginContext, TreeOwnedContext, useFlightActions } from './flight-context';
-import type { FlightId, FlightOutcome } from '../flights';
+import type { FlightId, FlightOutcome } from '../flights/types';
 
 /** @deprecated Render CardFlights.Target instead. Removed in the next major release. */
 export type CardFlightSpec = {
@@ -88,7 +88,7 @@ function useFlightReducedMotion() {
   return useSyncExternalStore(store.subscribe, store.snapshot, () => false);
 }
 
-/** @deprecated Use CardFlights and useFlightQueue for snapshot resyncs. Removed in the next major release. */
+/** @deprecated Use CardFlights and useFlights for snapshot resyncs. Removed in the next major release. */
 export function CardFlightsProvider({ children, scopeRef: externalScopeRef, headless = false, component, slots, slotProps, className, style, sx, ...rest }: CardFlightsProviderProps) {
   const internalScopeRef = useRef<HTMLDivElement>(null);
   const scopeRef = externalScopeRef ?? internalScopeRef;

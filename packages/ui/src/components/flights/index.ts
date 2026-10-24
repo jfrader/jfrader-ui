@@ -1,2 +1,3 @@
-export { useFlightQueue } from './use-flight-queue';
-export type { PlayerKey, FlightId, FlightOutcome, FlightEvent, CardFlightEvent, TableFlightEvent, FlightEventInput, FlightHandle, FlightQueue } from './types';
+export { FlightProvider, useFlights } from './flight-provider';
+export type { FlightProviderProps } from './flight-provider';
+export type { Flights, FlightHandle, FlightOutcome, PlayerKey } from './types';

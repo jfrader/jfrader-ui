@@ -19,7 +19,8 @@ import { CARD_FRAME } from '../game-card/card-frame';
 import { GameSeat, type GameSeatProps } from '../game-seat';
 import { GameTable, useGameTableSeat, type GameTableProps } from '../game-table';
 import { PersonAvatar } from '../person-avatar';
-import type { CardFlightEvent, FlightId, FlightOutcome, TableFlightEvent } from '../flights';
+import type { FlightOutcome, TableFlightEvent } from '../flights/types';
+import { useFlightSurface } from '../flights/flight-provider';
 
 declare const process: { env: { NODE_ENV?: string } };
 
@@ -116,10 +117,10 @@ export interface PokerTableProps extends SxProps {
   /** Chip total shown in the center. Omit to hide the pot. */
   pot?: number;
   /** Sends chips from a seat when the pot increases.
-   * @deprecated Push a transfer with useFlightQueue instead. Retained for one minor release. */
+   * @deprecated Call useFlights().sendChips() inside FlightProvider instead. Retained for one minor release. */
   chipTransfer?: { id: string | number; fromPlayerKey: string; amount?: number };
   /** Names the rendered seat whose plaque sends chips when pot grows.
-   * @deprecated Push a transfer with useFlightQueue instead. Retained for one minor release.
+   * @deprecated Call useFlights().sendChips() inside FlightProvider instead. Retained for one minor release.
    */
   potFrom?: string;
   /** Sets the positive, finite chip values used to depict the pot, largest first. Must not be empty. Defaults to [1000, 500, 100, 25, 5, 1]. Unrepresented remainders remain in the formatted total. */
@@ -133,15 +134,11 @@ export interface PokerTableProps extends SxProps {
   /** Overrides the default copy. */
   labels?: Partial<PokerTableLabels>;
   /** Change to deal the hole cards. The first render appears in place.
-   * @deprecated Push a deal with useFlightQueue instead. Retained for one minor release. */
+   * @deprecated Call useFlights().deal() inside FlightProvider instead. Retained for one minor release. */
   deal?: string | number;
   /** Change to replace the card snapshot without animation.
-   * @deprecated Push a resync with useFlightQueue instead. Retained for one minor release. */
+   * @deprecated Call useFlights().resync() inside FlightProvider instead. Retained for one minor release. */
   revision?: string | number;
-  /** Queued card deals, serial chip transfers, and snapshot resyncs. */
-  flights?: readonly TableFlightEvent[];
-  /** Reports one outcome for each queued event. */
-  onFlightSettled?: (id: FlightId, outcome: FlightOutcome) => void;
   /** Seat receiving the first dealt card. */
   forehand?: string;
   /** Formats stacks and the pot. Defaults to the runtime locale. */
@@ -376,8 +373,6 @@ function PokerTableContent({
   labels: labelOverrides,
   deal,
   revision,
-  flights = [],
-  onFlightSettled,
   forehand,
   locale,
   deck = 'french',
@@ -395,6 +390,8 @@ function PokerTableContent({
   style,
   sx,
 }: PokerTableProps) {
+  const surface = useFlightSurface('chips');
+  const flights = surface.events;
   const labels = { ...DEFAULT_LABELS, ...labelOverrides };
   const Root = slots?.root ?? component ?? 'div';
   const Seat = slots?.seat ?? GameSeat;
@@ -422,7 +419,7 @@ function PokerTableContent({
   }, [notify]);
   const cardActivity = useCallback((busy: boolean) => report('card', busy), [report]);
   const { send, cancel } = useChipFlights();
-  const settle = useLatestCallback(onFlightSettled);
+  const settle = surface.settle;
   const clearLane = useCallback(() => {
     const state = lane.current;
     state.generation++;
@@ -461,13 +458,13 @@ function PokerTableContent({
     for (const [name, value] of [['chipTransfer', chipTransfer], ['potFrom', potFrom]] as const) {
       if (value !== undefined && !warned.current.has(name)) {
         warned.current.add(name);
-        if (process.env.NODE_ENV !== 'production') console.warn(`PokerTable: ${name} is deprecated. Use useFlightQueue().push instead.`);
+        if (process.env.NODE_ENV !== 'production') console.warn(`PokerTable: ${name} is deprecated. Use useFlights() inside FlightProvider instead.`);
       }
     }
     const increase = (pot ?? 0) - (previousPot.current ?? 0);
-    if (chipTransfer && chipTransfer.id === legacyTransfer.current && increase !== 0 && process.env.NODE_ENV !== 'production') console.warn(`PokerTable: stale chipTransfer id "${chipTransfer.id}". Push a new event with useFlightQueue instead.`);
+    if (chipTransfer && chipTransfer.id === legacyTransfer.current && increase !== 0 && process.env.NODE_ENV !== 'production') console.warn(`PokerTable: stale chipTransfer id "${chipTransfer.id}". Trigger a new request with useFlights() instead.`);
     flights.forEach(event => {
-      if (event.kind === 'transfer' && seenTransfers.current.has(event.id) && !presentTransfers.current.has(event.id) && process.env.NODE_ENV !== 'production') console.warn(`PokerTable: stale flight id "${event.id}". Push a new event with useFlightQueue instead.`);
+      if (event.kind === 'transfer' && seenTransfers.current.has(event.id) && !presentTransfers.current.has(event.id) && process.env.NODE_ENV !== 'production') console.warn(`PokerTable: stale flight id "${event.id}". Trigger a new request with useFlights() instead.`);
     });
     presentTransfers.current = new Set(flights.map(event => event.id));
     const incoming = flights.filter(event => event.kind !== 'deal' && !seenTransfers.current.has(event.id));
@@ -490,7 +487,7 @@ function PokerTableContent({
     state.pending = state.pending.filter(event => legacyTransfers.current.has(event) || flights.some(input => input.id === event.id));
     const wasBusy = Boolean(state.active || state.pending.length);
     for (const event of incoming) {
-      if (event.kind === 'resync') clearLane();
+      if (event.kind === 'resync') { clearLane(); settle(event.id, { status: 'skipped', reason: 'resync' }); }
       else if (event.kind === 'transfer') state.pending.push(event);
     }
     if (resynced) setShownPot(pot);
@@ -521,7 +518,7 @@ function PokerTableContent({
           style={{ ...style, ...rootSlot?.style }}
         >
           <DeckProvider default={deck}>
-            <CardFlights deal={deal} revision={revision} forehand={forehand} flights={flights.filter((event): event is CardFlightEvent => event.kind !== 'transfer')} onFlightSettled={onFlightSettled} onBusyChange={cardActivity}>
+            <CardFlights deal={deal} revision={revision} forehand={forehand} onBusyChange={cardActivity}>
               <GameTable
                 {...tableProps}
                 places={Math.max(players.length, 2)}

@@ -5,8 +5,9 @@ import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '@jfrader/ui';
 import { Button } from '@jfrader/ui/button';
-import { useFlightQueue } from '@jfrader/ui/flights';
+import { FlightProvider, useFlights } from '@jfrader/ui/flights';
 import { expectInside } from '../../testing/geometry-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
 import {
   PokerTable,
   type PokerTableCard,
@@ -186,11 +187,11 @@ const meta = {
       description: {
         component: 'Lay out a poker table with seats, stacks, hole cards, a community board, an event line, and commands.',
       },
-      sections: [{ title: 'Hooks', stories: ['FlightQueue'] }, { title: 'Chip transfers', stories: ['ChipTransfer'] }, { title: 'The pot', stories: ['Pot'] }, { title: 'A hand', stories: ['PokerHand'] }],
+      sections: [{ title: 'Hooks', stories: ['FlightControls'] }, { title: 'Chip transfers', stories: ['ChipTransfer'] }, { title: 'The pot', stories: ['Pot'] }, { title: 'A hand', stories: ['PokerHand'] }],
       usage: `### When to use
 Use PokerTable for a Hold'em-style table with seats, stacks, hidden or revealed cards, a pot, a community board, and a command bar. The component is presentational: it renders the state you pass and reports commands through the action items' \`onSelect\`. It depicts the pot total you supply using \`denominations\` and never computes that total. Betting rules, turn order, hand ranking, and card values belong to your application.
 
-The seat you mark with \`isMe\` rotates to the front. Push a deal through \`useFlightQueue\` to deal the hole cards and grow \`board\` to reveal community cards; new cards fly from the deck. While cards are in flight, \`onBusyChange\` reports activity so you can disable commands. The table keeps seats on the felt edge on wide containers and moves them inside the felt on narrow ones so the surface uses the available width.
+The seat you mark with \`isMe\` rotates to the front. Wrap the table and controls in \`FlightProvider\` and call \`useFlights().deal()\` to deal the hole cards. Grow \`board\` to reveal community cards; new cards fly from the deck. While cards are in flight, \`onBusyChange\` reports activity so you can disable commands. The table keeps seats on the felt edge on wide containers and moves them inside the felt on narrow ones so the surface uses the available width.
 
 Use the [Flights guide](https://ui.jfrader.com/#/components/flights) for queue outcomes, serial transfers, the pot hold, and snapshot resynchronization.
 
@@ -209,7 +210,10 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const flights = (document: Document) => document.querySelectorAll('[data-ui="card-flight"], [data-ui="chip-flight-layer"]');
-const landed = async (document: Document) => waitFor(() => expect(flights(document)).toHaveLength(0), { timeout: 4000 });
+const landed = async (document: Document) => {
+  await Promise.all([...flights(document)].map(settleMotion));
+  await waitFor(() => expect(flights(document)).toHaveLength(0), { timeout: 4000 });
+};
 
 const TransferStage = styled(DocsStage)({
   '& [data-game-surface]': { background: `radial-gradient(ellipse at center, transparent, color-mix(in srgb, ${vars.color.chipInk} 70%, transparent)), repeating-linear-gradient(25deg, transparent 0 2px, color-mix(in srgb, ${vars.color.chipSpot} 3%, transparent) 2px 3px), color-mix(in srgb, ${vars.color.chipGreen} 35%, ${vars.color.chipInk})` },
@@ -218,19 +222,19 @@ const TRANSFER_PLAYERS: readonly PokerTablePlayer[] = [
   { key: 'you', name: 'You', chips: 1500, isMe: true },
   { key: 'blair', name: 'Blair', chips: 980 },
 ];
-function FlightQueueExample() {
-  const queue = useFlightQueue();
+function FlightControlsExample() {
+  const flights = useFlights();
   const [pot, setPot] = useState(30);
-  return <DocsStage><PokerTable {...queue.props} players={TRANSFER_PLAYERS} title="Texas Hold'em" pot={pot}
-    dock={<Button onClick={() => { setPot(current => current + 60); queue.push({ kind: 'transfer', from: 'you', amount: 60 }); }}>Raise 60</Button>} />
-  </DocsStage>;
+  return <><Button onClick={() => { setPot(current => current + 60); flights.sendChips({ from: 'you', amount: 60 }); }}>Raise 60</Button>
+    <DocsStage><PokerTable players={TRANSFER_PLAYERS} title="Texas Hold'em" pot={pot} /></DocsStage>
+  </>;
 }
-export const FlightQueue: Story = {
-  name: 'Flight queue', render: () => <FlightQueueExample />,
+export const FlightControls: Story = {
+  name: 'Flight controls', render: () => <FlightProvider><FlightControlsExample /></FlightProvider>,
   parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
 import { styled } from '@jfrader/ui';
 import { Button } from '@jfrader/ui/button';
-import { useFlightQueue } from '@jfrader/ui/flights';
+import { FlightProvider, useFlights } from '@jfrader/ui/flights';
 import { PokerTable } from '@jfrader/ui/poker-table';
 
 const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto' });
@@ -238,31 +242,36 @@ const players = [
   { key: 'you', name: 'You', chips: 1500, isMe: true },
   { key: 'blair', name: 'Blair', chips: 980 },
 ];
-export function Poker() {
-  const queue = useFlightQueue();
+function PokerSurface() {
+  const flights = useFlights();
   const [pot, setPot] = useState(30);
-  return <Stage><PokerTable {...queue.props} players={players} title="Texas Hold'em" pot={pot}
-    dock={<Button onClick={() => {
+  return <><Button onClick={() => {
       setPot(current => current + 60);
-      queue.push({ kind: 'transfer', from: 'you', amount: 60 });
-    }}>Raise 60</Button>} /></Stage>;
+      flights.sendChips({ from: 'you', amount: 60 });
+    }}>Raise 60</Button>
+    <Stage><PokerTable players={players} title="Texas Hold'em" pot={pot} /></Stage></>;
+}
+export function Poker() {
+  return <FlightProvider><PokerSurface /></FlightProvider>;
 }` } } },
 };
 function TransferExample() {
-  const queue = useFlightQueue();
+  const flights = useFlights();
   const [pot, setPot] = useState(30);
-  return <TransferStage><PokerTable {...queue.props} players={TRANSFER_PLAYERS} title="Texas Hold'em" pot={pot} locale="en-US"
-    dock={<Button onClick={() => { setPot(current => current + 60); queue.push({ kind: 'transfer', from: 'you', amount: 60 }); }}>Raise 60</Button>} />
-  </TransferStage>;
+  return <><Button onClick={() => { setPot(current => current + 60); flights.sendChips({ from: 'you', amount: 60 }); }}>Raise 60</Button>
+    <TransferStage><PokerTable players={TRANSFER_PLAYERS} title="Texas Hold'em" pot={pot} locale="en-US" /></TransferStage>
+  </>;
 }
+const transferActivity = fn((_busy: boolean) => {});
 export const ChipTransfer: Story = {
-  name: 'Chip transfer', render: () => <TransferExample />,
+  name: 'Chip transfer', args: { onBusyChange: transferActivity },
+  render: args => <FlightProvider onBusyChange={args.onBusyChange}><TransferExample /></FlightProvider>,
   parameters: { docs: { source: { code: `import { useState } from 'react';
 import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { PokerTable } from '@jfrader/ui/poker-table';
 import { Button } from '@jfrader/ui/button';
-import { useFlightQueue } from '@jfrader/ui/flights';
+import { FlightProvider, useFlights } from '@jfrader/ui/flights';
 
 const Stage = styled.div({
   inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto',
@@ -272,30 +281,37 @@ const players = [
   { key: 'you', name: 'You', chips: 1500, isMe: true },
   { key: 'blair', name: 'Blair', chips: 980 },
 ];
-export default function Example() {
-  const queue = useFlightQueue();
+function PokerSurface() {
+  const flights = useFlights();
   const [pot, setPot] = useState(30);
-  return <Stage>
-    <PokerTable {...queue.props} players={players} title="Texas Hold'em" pot={pot} locale="en-US"
-      dock={<Button onClick={() => {
+  return <><Button onClick={() => {
         setPot(current => current + 60);
-        queue.push({ kind: 'transfer', from: 'you', amount: 60 });
-      }}>Raise 60</Button>} />
-  </Stage>;
+        flights.sendChips({ from: 'you', amount: 60 });
+      }}>Raise 60</Button>
+    <Stage><PokerTable players={players} title="Texas Hold'em" pot={pot} locale="en-US" /></Stage>
+  </>;
+}
+export default function Example() {
+  return <FlightProvider><PokerSurface /></FlightProvider>;
 }` } } },
   play: async ({ canvasElement, userEvent }) => {
+    const idle = () => new Promise<void>(resolve => { transferActivity.mockImplementation((busy: boolean) => { if (!busy) resolve(); }); });
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
-    const raise = within(table).getByRole('button', { name: 'Raise 60' });
+    const raise = within(canvasElement).getByRole('button', { name: 'Raise 60' });
+    const firstLanding = idle();
     await userEvent.click(raise);
     await waitFor(() => expect(table.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
     await expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot30');
+    await firstLanding;
     await landed(table.ownerDocument);
     await waitFor(() => expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot90'));
+    const batchLanding = idle();
     await userEvent.click(raise);
     const oldLayer = table.ownerDocument.querySelector('[data-ui="chip-flight"]');
     await userEvent.click(raise);
     await expect(oldLayer?.isConnected).toBe(true);
-    await waitFor(() => expect(oldLayer?.isConnected).toBe(false), { timeout: 4000 });
+    await batchLanding;
+    await expect(oldLayer?.isConnected).toBe(false);
     await landed(table.ownerDocument);
     await waitFor(() => expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot210'));
   },

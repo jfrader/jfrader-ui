@@ -4,11 +4,11 @@
 
 ### Added
 
-- `useFlightQueue` in `@jfrader/ui/flights` owns deal, transfer, and resync events with completion handles. The Flights guide covers queue outcomes, card groups, serial chip transfers, and custom surfaces.
+- `FlightProvider` and `useFlights` in `@jfrader/ui/flights` own deals, chip transfers, and resyncs with completion handles. The Flights guide covers outcomes, card groups, serial chip transfers, and custom surfaces.
 
 ### Deprecated
 
-- `deal` and `revision` on `CardFlights`, `PokerTable`, and `TrucoTable`, plus `PokerTable.chipTransfer` and `PokerTable.potFrom`, are replaced by `useFlightQueue` events. They remain supported for one minor release and warn in development.
+- `deal` and `revision` on `CardFlights`, `PokerTable`, and `TrucoTable`, plus `PokerTable.chipTransfer` and `PokerTable.potFrom`, are replaced by `useFlights` calls inside `FlightProvider`. They remain supported for one minor release and warn in development.
 
 ## 0.12.0 — 2026-10-24
 

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { styled } from '../../index';
 import { Button } from '../button';
-import { useFlightQueue } from '../flights';
+import { FlightProvider, useFlights } from '../flights';
 import { expectInside } from '../../testing/geometry-assertions';
 import {
   TrucoTable,
@@ -150,11 +150,11 @@ const meta = {
       description: {
         component: 'Lay out a truco table with teams, hidden hands, the local hand, play piles, a score line, events, and calls.',
       },
-      sections: [{ title: 'A trick', stories: ['TrucoTrick'] }, { title: 'Hooks', stories: ['FlightQueue'] }],
+      sections: [{ title: 'A trick', stories: ['TrucoTrick'] }, { title: 'Hooks', stories: ['FlightControls'] }],
       usage: `### When to use
 Use TrucoTable for a two-team trick game with hidden hands, a local hand, one play pile per seat, a score line, and calls. The component is presentational: it renders the state you pass and reports the selected card through \`onPlayIntent\`. Turn order, trick resolution, scoring, card values, and legality belong to your application.
 
-Push a deal with \`useFlightQueue\` and grow \`plays\` to land cards on the seats. New cards fly from the deck, the local hand, or the seat that played them. \`onBusyChange\` reports flight activity so you can disable calls. The table keeps seats on the felt edge on wide containers and moves them inside the felt on narrow ones so the surface uses the available width.
+Wrap the table and controls in \`FlightProvider\` and call \`useFlights().deal()\`. Grow \`plays\` to land cards on the seats. New cards fly from the deck, the local hand, or the seat that played them. \`onBusyChange\` reports flight activity so you can disable calls. The table keeps seats on the felt edge on wide containers and moves them inside the felt on narrow ones so the surface uses the available width.
 
 See the [Flights guide](https://ui.jfrader.com/#/components/flights) for deal completion, reactive plays, and resync requests.
 
@@ -175,18 +175,18 @@ type Story = StoryObj<typeof meta>;
 const flights = (document: Document) => document.querySelectorAll('[data-ui="card-flight"]');
 const landed = async (document: Document) => waitFor(() => expect(flights(document)).toHaveLength(0), { timeout: 4000 });
 
-function FlightQueueExample() {
-  const queue = useFlightQueue();
-  return <><Button onClick={() => queue.push({ kind: 'deal' })}>Deal hand</Button>
+function FlightControlsExample() {
+  const flights = useFlights();
+  return <><Button onClick={() => flights.deal()}>Deal hand</Button>
     <DocsStage><TrucoTable players={SEATS.map(player => ({ ...player, hiddenCards: player.isMe ? 0 : 3 }))} title="Truco" hand={HAND}
-      flights={queue.events.filter(event => event.kind !== 'transfer')} onFlightSettled={queue.props.onFlightSettled} /></DocsStage>
+      /></DocsStage>
   </>;
 }
-export const FlightQueue: Story = {
-  name: 'Flight queue', render: () => <FlightQueueExample />,
+export const FlightControls: Story = {
+  name: 'Flight controls', render: () => <FlightProvider><FlightControlsExample /></FlightProvider>,
   parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
 import { Button } from '@jfrader/ui/button';
-import { useFlightQueue } from '@jfrader/ui/flights';
+import { FlightProvider, useFlights } from '@jfrader/ui/flights';
 import { TrucoTable, type TrucoTableCard } from '@jfrader/ui/truco-table';
 
 const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 720, marginInline: 'auto' });
@@ -201,13 +201,14 @@ const hand: TrucoTableCard[] = [
   { id: 'ace-golds', label: 'Ace of golds', value: { suit: 'oros', rank: 1 } },
   { id: 'three-cups', label: 'Three of cups', value: { suit: 'copas', rank: 3 } },
 ];
-export function Truco() {
-  const queue = useFlightQueue();
-  return <><Button onClick={() => queue.push({ kind: 'deal' })}>Deal hand</Button>
-    <Stage><TrucoTable players={players} title="Truco" hand={hand}
-      flights={queue.events.filter(event => event.kind !== 'transfer')}
-      onFlightSettled={queue.props.onFlightSettled} /></Stage>
+function TrucoSurface() {
+  const flights = useFlights();
+  return <><Button onClick={() => flights.deal()}>Deal hand</Button>
+    <Stage><TrucoTable players={players} title="Truco" hand={hand} /></Stage>
   </>;
+}
+export function Truco() {
+  return <FlightProvider><TrucoSurface /></FlightProvider>;
 }` } } },
 };
 
