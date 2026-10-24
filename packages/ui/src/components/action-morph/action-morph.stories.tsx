@@ -4,6 +4,7 @@ import { expect, fn, mocked, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { expectNativeScrollbar } from '../../testing/theme-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
 import { ActionMorph, type ActionMorphAction } from './index';
 import { Button } from '../button';
 
@@ -14,6 +15,21 @@ const Stage = styled.div({
   justifyContent: 'end',
   gap: vars.space[4],
 });
+const TopLane = styled.div({
+  position: 'fixed',
+  insetBlockStart: vars.space[4],
+  insetInlineEnd: vars.space[4],
+});
+
+async function expectOrigin(surface: HTMLElement, side: 'top' | 'bottom', edge: 'left' | 'right') {
+  await waitFor(() => expect(surface.getAttribute('data-placement')).toMatch(new RegExp(`^${side}`)));
+  await settleMotion(surface);
+  await waitFor(() => {
+    const [x, y] = getComputedStyle(surface).transformOrigin.split(' ').map(Number.parseFloat);
+    expect(x).toBeCloseTo(edge === 'left' ? 0 : surface.offsetWidth, 0);
+    expect(y).toBeCloseTo(side === 'top' ? surface.offsetHeight : 0, 0);
+  });
+}
 const actions: readonly ActionMorphAction[] = [
   {
     id: 'note',
@@ -102,7 +118,7 @@ const meta = {
     },
     docs: {
       description: {
-        component: 'Choose a create action, write a short draft and submit it without leaving the page.',
+        component: 'Open a create menu from a button, then turn the menu into a short form for the selected action. Use it to add a note or send a message without leaving the page; the form shows the result of your submission.',
       },
       sections: [
         { title: 'Create and compose', stories: ['Default'] },
@@ -154,6 +170,26 @@ export const PersistentMenu: Story = {
   play: async ({ canvasElement }) => {
     const menu = await within(canvasElement.ownerDocument.body).findByRole('menu');
     await expectNativeScrollbar(menu);
+    await expectOrigin(menu, 'top', 'right');
+  },
+};
+
+export const FlippedBelow: Story = {
+  name: 'Grow below a trigger near the top edge',
+  render: (args) => <TopLane><ActionMorph {...args} /></TopLane>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const document = within(canvasElement.ownerDocument.body);
+    await userEvent.click(canvas.getByRole('button', { name: 'Create' }));
+    const menu = await document.findByRole('menu');
+    await expectOrigin(menu, 'bottom', 'right');
+    await userEvent.click(document.getByRole('menuitem', { name: 'Note' }));
+    const composer = await document.findByRole('dialog');
+    await expectOrigin(composer, 'bottom', 'right');
+    await userEvent.keyboard('{Escape}{Escape}');
+    await expect(composer).toHaveAttribute('inert');
+    await expect(composer).toHaveAttribute('aria-hidden', 'true');
+    await expectOrigin(composer, 'bottom', 'right');
+    await waitFor(() => expect(composer.isConnected).toBe(false));
   },
 };
 
@@ -435,6 +471,7 @@ export function Example() {
     );
     await expect(args.slotProps?.item?.onFocus).toHaveBeenCalled();
     await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(canvasElement.ownerDocument.querySelector('[data-ui="action-morph-surface"]')).toBeNull());
     if (typeof itemRef === 'function') {
       for (const result of mocked(itemRef).mock.results) {
         if (result.type === 'return' && typeof result.value === 'function')
@@ -445,7 +482,7 @@ export function Example() {
 };
 export const ReducedMotion: Story = {
   name: 'Action Reduced Motion',
-  args: { corner: 'start' },
+  args: { corner: 'end' },
   parameters: {
     docs: {
       description: {
@@ -453,8 +490,30 @@ export const ReducedMotion: Story = {
       },
     },
   },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const document = within(canvasElement.ownerDocument.body);
+    await userEvent.click(canvas.getByRole('button', { name: 'Create' }));
+    const menu = await document.findByRole('menu');
+    await expectOrigin(menu, 'top', 'right');
+    await expect(getComputedStyle(menu).scale).toBe('none');
+    await expect(getComputedStyle(menu).transitionDuration).toBe('0s');
+    await userEvent.click(document.getByRole('menuitem', { name: 'Note' }));
+    const composer = await document.findByRole('dialog');
+    await expect(getComputedStyle(composer).scale).toBe('none');
+    await expect(getComputedStyle(composer).transitionDuration).toBe('0s');
+    await userEvent.keyboard('{Escape}{Escape}');
+    await waitFor(() => expect(composer.isConnected).toBe(false));
+  },
 };
-export const RTL: Story = { args: { dir: 'rtl', corner: 'start' } };
+export const RTL: Story = {
+  args: { dir: 'rtl', corner: 'start' },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Create' }));
+    const menu = await within(canvasElement.ownerDocument.body).findByRole('menu');
+    await expect(getComputedStyle(menu).direction).toBe('rtl');
+    await expectOrigin(menu, 'top', 'right');
+  },
+};
 export const RemovedDuringSubmit: Story = {
   render: function Removed(args) {
     const [visible, setVisible] = useState(true);

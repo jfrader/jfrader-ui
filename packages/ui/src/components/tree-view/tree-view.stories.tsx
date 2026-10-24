@@ -125,6 +125,71 @@ const focus = async (element: HTMLElement) => {
 };
 const disclosure = (element: HTMLElement) =>
   element.parentElement!.querySelector<HTMLElement>(':scope > [data-ui="tree-view-disclosure"]')!;
+const rowOf = (item: HTMLElement) => item.parentElement!;
+
+/** Style rules in `element`'s document, optionally only inside `@media` rules whose condition
+ * includes `media`. */
+function authoredRules(element: Element, media?: string) {
+  const rules = Array.from(element.ownerDocument.styleSheets).flatMap((sheet) => {
+    try {
+      return Array.from(sheet.cssRules);
+    } catch {
+      return [];
+    }
+  });
+  const scoped = media
+    ? rules
+        .filter((rule): rule is CSSMediaRule => rule instanceof CSSMediaRule && rule.conditionText.includes(media))
+        .flatMap((rule) => Array.from(rule.cssRules))
+    : rules;
+  return scoped.filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule);
+}
+/** Declarations that apply to `element` only while it is hovered. */
+const hoverDeclarations = (element: Element) =>
+  authoredRules(element)
+    .filter((rule) => rule.selectorText.includes(':hover') && element.matches(rule.selectorText.replaceAll(':hover', '')))
+    .map((rule) => rule.style);
+/** Resolve a declared color (a token `var()` or a system color) in `anchor`'s scope. */
+function resolvedColor(anchor: HTMLElement, color: string) {
+  const probe = anchor.ownerDocument.createElement('span');
+  probe.style.backgroundColor = color;
+  anchor.append(probe);
+  const value = getComputedStyle(probe).backgroundColor;
+  probe.remove();
+  return value;
+}
+type Rgba = readonly [number, number, number, number];
+function paint(anchor: Element, color: string): Rgba {
+  const context = anchor.ownerDocument.createElement('canvas').getContext('2d')!;
+  context.fillStyle = color;
+  context.fillRect(0, 0, 1, 1);
+  const [r = 0, g = 0, b = 0, alpha = 0] = context.getImageData(0, 0, 1, 1).data;
+  return [r, g, b, alpha / 255];
+}
+const over = ([r, g, b, a]: Rgba, under: Rgba): Rgba => [
+  r * a + under[0] * (1 - a),
+  g * a + under[1] * (1 - a),
+  b * a + under[2] * (1 - a),
+  1,
+];
+const luminance = (color: Rgba) => {
+  const [r, g, b] = color.slice(0, 3).map((channel) => {
+    const value = channel / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+};
+/** WCAG contrast of `element`'s text over its painted backdrop (translucent fills composited). */
+function textContrast(element: HTMLElement) {
+  const layers: Rgba[] = [];
+  for (let node: Element | null = element; node; node = node.parentElement) {
+    layers.push(paint(element, getComputedStyle(node).backgroundColor));
+    if (layers.at(-1)![3] === 1) break;
+  }
+  const backdrop = layers.reduceRight((under, layer) => over(layer, under), paint(element, 'white'));
+  const [a, b] = [luminance(over(paint(element, getComputedStyle(element).color), backdrop)), luminance(backdrop)];
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
 
 const projectFiles: readonly TreeNode[] = [
   {
@@ -782,34 +847,73 @@ export const RTL: Story = {
     );
   },
 };
+const selectedRowPlay: Story['play'] = async ({ canvas, userEvent }) => {
+  const item = canvas.getByRole('treeitem', { name: 'Alpha' });
+  await expect(item).toHaveAttribute('aria-selected', 'true');
+  const selected = rowOf(item);
+  const plain = rowOf(canvas.getByRole('treeitem', { name: 'Beta' }));
+  // A rounded row never carries a one-sided edge.
+  for (const element of [selected, ...selected.querySelectorAll('*')])
+    await expect(getComputedStyle(element).borderInlineStartWidth).toBe('0px');
+  const [mark, rest] = [getComputedStyle(selected), getComputedStyle(plain)];
+  await expect(mark.boxShadow).not.toBe('none');
+  await expect(rest.boxShadow).toBe('none');
+  await expect(mark.backgroundColor).not.toBe(rest.backgroundColor);
+  // Weight carries the selection without color.
+  await expect(Number(mark.fontWeight)).toBeGreaterThan(Number(rest.fontWeight));
+  // Hover only tints the row: a different fill, no hairline, no weight.
+  const hover = hoverDeclarations(plain);
+  await expect(hover.length).toBeGreaterThan(0);
+  for (const declaration of hover) {
+    await expect(resolvedColor(plain, declaration.backgroundColor)).not.toBe(mark.backgroundColor);
+    await expect(declaration.boxShadow).toBe('');
+    await expect(declaration.fontWeight).toBe('');
+  }
+  await expect(textContrast(selected.querySelector('[data-ui="tree-view-label"]')!)).toBeGreaterThanOrEqual(4.5);
+  // Keyboard focus adds the 2px ring and keeps the selection fill.
+  await userEvent.tab();
+  await focus(item);
+  await expect(getComputedStyle(selected).outlineStyle).toBe('solid');
+  await expect(Math.abs(Number.parseFloat(getComputedStyle(selected).outlineWidth) - 2)).toBeLessThan(1.1);
+  await expect(getComputedStyle(selected).boxShadow).toBe(mark.boxShadow);
+};
+export const SelectedRow: Story = {
+  tags: ['!autodocs'],
+  args: { defaultOpen: ['app'], defaultValue: 'alpha' },
+  play: selectedRowPlay,
+};
+export const SelectedRowLight: Story = {
+  ...SelectedRow,
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+};
 export const ForcedColors: Story = {
   args: { defaultOpen: ['app'], defaultValue: 'alpha' },
-  play: async ({ canvas, canvasElement }) => {
+  parameters: {
+    docs: {
+      description: {
+        story: 'Enable forced colors in the browser to check the selected row outline. This story checks CSS rules only.',
+      },
+    },
+  },
+  play: async ({ canvas }) => {
     const parent = canvas.getByRole('treeitem', { name: 'Application' });
     const caret = getComputedStyle(disclosure(parent), '::after');
-    const forced = canvasElement.ownerDocument.defaultView!.matchMedia(
-      '(forced-colors: active)',
-    ).matches;
     await expect(caret.borderTopColor).toBe('rgba(0, 0, 0, 0)');
     await expect(caret.borderBottomColor).toBe('rgba(0, 0, 0, 0)');
-    if (forced) await expect(caret.forcedColorAdjust).toBe('none');
-    const selected = canvas.getByRole('treeitem', { name: 'Alpha' });
-    if (forced) {
-      await expect(getComputedStyle(selected.parentElement!).forcedColorAdjust).toBe('none');
-      const sample = canvasElement.ownerDocument.createElement('span');
-      sample.style.backgroundColor = 'Highlight';
-      sample.style.color = 'HighlightText';
-      selected.append(sample);
-      await expect(getComputedStyle(selected.parentElement!).backgroundColor).toBe(
-        getComputedStyle(sample).backgroundColor,
-      );
-      await expect(getComputedStyle(selected).color).toBe(getComputedStyle(sample).color);
-      sample.remove();
-    }
-    await expect(selected).toHaveAttribute(
-      'aria-selected',
-      'true',
+    const selected = rowOf(canvas.getByRole('treeitem', { name: 'Alpha' }));
+    const plain = rowOf(canvas.getByRole('treeitem', { name: 'Beta' }));
+    // Forced colors drop the shadow, so the selected row keeps a real outline as its boundary.
+    const forcedRules = (row: HTMLElement) =>
+      authoredRules(row, 'forced-colors').filter((rule) => row.matches(rule.selectorText)).map((rule) => rule.style);
+    await expect(forcedRules(selected)).toContainEqual(
+      expect.objectContaining({ outlineStyle: 'solid', outlineWidth: '1px', outlineColor: 'highlight' }),
     );
+    await expect(forcedRules(plain).filter((style) => style.outlineColor === 'highlight')).toHaveLength(0);
+    if (window.matchMedia('(forced-colors: active)').matches) {
+      await expect(caret.forcedColorAdjust).toBe('none');
+      await expect(getComputedStyle(selected).outlineColor).toBe(resolvedColor(selected, 'Highlight'));
+    }
   },
 };
 export const ReducedMotion: Story = {

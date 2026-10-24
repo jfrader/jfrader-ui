@@ -87,19 +87,28 @@ const WIDTH_SPRING = {
   mass: 1,
 } as const;
 const rootStyle = css({
+  minInlineSize: 0,
   maxInlineSize: '100%',
-  whiteSpace: 'normal',
+  whiteSpace: 'nowrap',
   blockSize: 'auto',
   paddingBlock: vars.space[2],
 });
 const contentStyle = css({
   display: 'inline-flex',
+  inlineSize: 'max-content',
+  flexShrink: 0,
   minInlineSize: 0,
   maxInlineSize: '100%',
   alignItems: 'center',
   gap: vars.space[2],
 });
-const labelStyle = css({ overflowWrap: 'anywhere', minInlineSize: 0 });
+const frameStyle = css({ display: 'inline-flex', minInlineSize: 0, maxInlineSize: '100%' });
+const labelStyle = css({
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  minInlineSize: 0,
+});
 const iconStyle = css({
   display: 'inline-flex',
   flexShrink: 0,
@@ -121,12 +130,10 @@ function ActionButtonFace({ children, value }: { children: ReactNode; value: Act
     if (!node) return;
     let animation: ReturnType<typeof animate> | undefined;
     const measure = (spring: boolean) => {
-      const frame = node.parentElement;
-      if (!frame) return;
-      const renderedWidth = frame.style.width;
-      frame.style.width = 'auto';
+      const maxInlineSize = node.style.maxInlineSize;
+      node.style.maxInlineSize = 'none';
       const next = node.getBoundingClientRect().width;
-      frame.style.width = renderedWidth;
+      node.style.maxInlineSize = maxInlineSize;
       if (next === previous.current) return;
       animation?.stop();
       if (previous.current !== undefined && spring && !reduce)
@@ -144,7 +151,7 @@ function ActionButtonFace({ children, value }: { children: ReactNode; value: Act
     };
   }, [value, reduce, width]);
   return (
-    <motion.span style={{ width, maxWidth: '100%', display: 'inline-flex' }}>
+    <motion.span style={{ width }} css={frameStyle}>
       <motion.span
         ref={element}
         data-action-face

@@ -22,6 +22,8 @@ export interface AvatarGroupMember {
   src?: string;
   status?: AvatarStatus;
   statusLabel?: string;
+  /** Pulses this member's presence dot. Needs `status`. */
+  pulse?: boolean;
   avatarProps?: Pick<AvatarProps, 'children' | 'slots' | 'slotProps' | 'sx' | 'className'>;
 }
 
@@ -99,6 +101,7 @@ function MemberAvatar({ member, shared, size }: {
       src={member.src}
       status={member.status}
       statusLabel={member.statusLabel}
+      pulse={member.pulse}
       slots={{ ...shared?.slots, ...own?.slots }}
       slotProps={{
         image: { ...mergeAvatarPart(shared?.slotProps?.image, own?.slotProps?.image), ref: imageRef },

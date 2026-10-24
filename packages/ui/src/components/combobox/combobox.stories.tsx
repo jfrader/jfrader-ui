@@ -1405,3 +1405,226 @@ function FruitPicker() {
   } },
   render: () => <ShorthandControlledCombobox label="Fruit" options={FRUITS} />,
 };
+
+export const ControlledOpenRejected: Story = {
+  tags: ['!autodocs'],
+  args: { open: false, onOpenChange: fn(), onValueChange: fn() },
+  render: (args) => <ComboboxExample {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const input = await focusInput(canvasElement);
+    await userEvent.keyboard('ap');
+    await expect(args.onOpenChange).toHaveBeenCalledWith(true);
+    await expect(input).toHaveValue('ap');
+    await expectClosed(canvasElement);
+    await expect(input).not.toHaveAttribute('aria-controls');
+    await userEvent.keyboard('{ArrowDown}{Enter}');
+    await expectClosed(canvasElement);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onOpenChange).not.toHaveBeenCalledWith(false);
+  },
+};
+
+export const DisabledMatchAtListEdge: Story = {
+  tags: ['!autodocs'],
+  render: (args) => <ComboboxExample {...args} />,
+  play: async ({ canvasElement }) => {
+    await focusInput(canvasElement);
+    // "a" matches Apple, Apricot and the disabled Banana, which ends the filtered list.
+    await userEvent.keyboard('a');
+    const listbox = await bodyOf(canvasElement).findByRole('listbox');
+    await expect(within(listbox).getAllByRole('option').map((option) => option.textContent)).toEqual(['Apple', 'Apricot', 'Banana']);
+    await expectActive(canvasElement, 'Apple');
+    await userEvent.keyboard('{End}');
+    await expectActive(canvasElement, 'Apricot');
+    await userEvent.keyboard('{ArrowDown}');
+    await expectActive(canvasElement, 'Apple');
+    await userEvent.keyboard('{ArrowUp}');
+    await expectActive(canvasElement, 'Apricot');
+    await userEvent.keyboard('{Home}');
+    await expectActive(canvasElement, 'Apple');
+    await expect(getOption(canvasElement, 'Banana')).not.toHaveAttribute('data-active');
+  },
+};
+
+const startsWith = (label: string, query: string) => label.toLocaleLowerCase().startsWith(query.toLocaleLowerCase());
+
+export const CustomFilter: ShorthandStory = {
+  tags: ['!autodocs'],
+  args: { label: LABEL, options: FRUITS, filter: startsWith },
+  render: (args) => <div style={stackStyle}><Combobox {...args} /></div>,
+  play: async ({ canvasElement }) => {
+    const input = await focusInput(canvasElement);
+    // The default substring filter would match Apple and Apricot.
+    await userEvent.keyboard('p');
+    await expectClosed(canvasElement);
+    await userEvent.clear(input);
+    await userEvent.keyboard('ch');
+    const listbox = await bodyOf(canvasElement).findByRole('listbox');
+    await expect(within(listbox).getAllByRole('option').map((option) => option.textContent)).toEqual(['Cherry']);
+    await expectActive(canvasElement, 'Cherry');
+  },
+};
+
+export const ActiveDescendantRelationships: Story = {
+  tags: ['!autodocs'],
+  render: (args) => (
+    <>
+      <ComboboxExample {...args} />
+      <ComboboxExample {...args} inputProps={{ label: 'Second fruit' }} />
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const doc = canvasElement.ownerDocument;
+    const first = getInput(canvasElement);
+    const second = within(canvasElement).getByRole('combobox', { name: 'Second fruit' });
+    await userEvent.click(second);
+    await userEvent.keyboard('{ArrowDown}');
+    const secondList = await bodyOf(canvasElement).findByRole('listbox', { name: 'Second fruit' });
+    const secondActive = second.getAttribute('aria-activedescendant')!;
+    await userEvent.click(first);
+    await userEvent.keyboard('{ArrowDown}');
+    const firstList = await bodyOf(canvasElement).findByRole('listbox', { name: LABEL });
+    await expect(first).toHaveAttribute('aria-controls', firstList.id);
+    await expect(firstList.id).not.toBe(secondList.id);
+    for (const name of ['Apple', 'Apricot', 'Cherry']) {
+      const activeId = first.getAttribute('aria-activedescendant')!;
+      const active = doc.getElementById(activeId)!;
+      await expect(active).toHaveAccessibleName(name);
+      await expect(active).toHaveAttribute('role', 'option');
+      await expect(doc.getElementById(first.getAttribute('aria-controls')!)!.contains(active)).toBe(true);
+      await expect(activeId).not.toBe(secondActive);
+      await expect(doc.querySelectorAll(`[id="${CSS.escape(activeId)}"]`)).toHaveLength(1);
+      await userEvent.keyboard('{ArrowDown}');
+    }
+  },
+};
+
+export const EscapeKeepsCommittedValue: Story = {
+  tags: ['!autodocs'],
+  args: { defaultValue: 'apple', onValueChange: fn(), onInputChange: fn() },
+  render: (args) => <ComboboxExample {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const input = getInput(canvasElement);
+    await waitFor(() => expect(input).toHaveValue('Apple'));
+    await focusInput(canvasElement);
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+    await expectActive(canvasElement, 'Apricot');
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expect(input).toHaveValue('Apple');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onInputChange).not.toHaveBeenCalled();
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(getOption(canvasElement, 'Apple')).toHaveAttribute('aria-selected', 'true');
+    await expect(getOption(canvasElement, 'Apricot')).toHaveAttribute('aria-selected', 'false');
+  },
+};
+
+export const EscapeWithoutSelection: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn(), onInputChange: fn() },
+  render: (args) => <ComboboxExample {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const input = await focusInput(canvasElement);
+    await userEvent.keyboard('ap');
+    await expectActive(canvasElement, 'Apple');
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expect(input).toHaveValue('ap');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onInputChange).toHaveBeenCalledTimes(2);
+    await expect(args.onInputChange).toHaveBeenLastCalledWith('ap');
+  },
+};
+
+function ExternalValueCombobox(props: ComboboxComposedProps) {
+  const [value, setValue] = useState<string | null>('apple');
+  return (
+    <>
+      <ComboboxExample {...props} value={value} onValueChange={setValue} />
+      <Button onClick={() => setValue('cherry')}>Choose cherry</Button>
+      <Button onClick={() => setValue('apple')}>Choose apple</Button>
+    </>
+  );
+}
+
+export const ExternalValueUpdate: Story = {
+  tags: ['!autodocs'],
+  render: (args) => <ExternalValueCombobox {...args} />,
+  play: async ({ canvasElement }) => {
+    const input = getInput(canvasElement);
+    const choose = within(canvasElement).getByRole('button', { name: 'Choose cherry' });
+    await waitFor(() => expect(input).toHaveValue('Apple'));
+    await userEvent.click(choose);
+    await expect(input).toHaveValue('Cherry');
+    await userEvent.click(input);
+    await userEvent.keyboard('{End}{Backspace}');
+    await expect(input).toHaveValue('Cherr');
+    // Edited text is the user's query: a parent value change does not overwrite it.
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Choose apple' }));
+    await expect(input).toHaveValue('Cherr');
+    await userEvent.click(input);
+    await userEvent.keyboard('{Escape}');
+    await expect(input).toHaveValue('Apple');
+  },
+};
+
+export const EnterInForm: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn() },
+  render: (args) => <SubmitCountForm {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await focusInput(canvasElement);
+    await userEvent.keyboard('ch');
+    await expectActive(canvasElement, 'Cherry');
+    await userEvent.keyboard('{Enter}');
+    await expectClosed(canvasElement);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('cherry');
+    await expect(canvas.getByText('Submitted 0 times')).toBeInTheDocument();
+    // With the list closed, Enter keeps its native meaning.
+    await userEvent.keyboard('{Enter}');
+    await expect(canvas.getByText('Submitted 1 times')).toBeInTheDocument();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+function SubmitCountForm(props: ComboboxComposedProps) {
+  const [count, setCount] = useState(0);
+  return (
+    <form aria-label="Order" onSubmit={(event) => { event.preventDefault(); setCount((value) => value + 1); }}>
+      <ComboboxExample {...props} />
+      <p>Submitted {count} times</p>
+    </form>
+  );
+}
+
+export const NoResultsEnter: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn() },
+  render: (args) => <ComboboxExample {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const input = await focusInput(canvasElement);
+    await userEvent.keyboard('a');
+    const listbox = await bodyOf(canvasElement).findByRole('listbox');
+    await userEvent.keyboard('zz{ArrowDown}{ArrowUp}{Home}{End}');
+    await expect(within(listbox).getByRole('option', { name: EMPTY_LABEL })).toBeVisible();
+    await expect(input).not.toHaveAttribute('aria-activedescendant');
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(input).toHaveValue('azz');
+  },
+};
+
+export const ArrowUpOpens: Story = {
+  tags: ['!autodocs'],
+  args: { onOpenChange: fn() },
+  render: (args) => <ComboboxExample {...args} />,
+  play: async ({ args, canvasElement }) => {
+    await focusInput(canvasElement);
+    await userEvent.keyboard('{ArrowUp}');
+    await bodyOf(canvasElement).findByRole('listbox');
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
+    await expectActive(canvasElement, 'Cherry');
+  },
+};
