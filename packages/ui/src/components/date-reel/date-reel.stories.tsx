@@ -5,6 +5,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { DateReel, type DateReelProps, type DateReelValue } from './index';
 import { styled } from '../../styling/styled';
 import { expectAligned, expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
 
 const Frame = styled.div({
   inlineSize: `min(420px, calc(100vw - ${vars.space[4]} * 2))`,
@@ -94,9 +95,11 @@ export const ClickRowRegression: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
     await expect(args.onValueChange).toHaveBeenLastCalledWith('14:00');
     await expectCenteredRow(reel, '14');
+    await settleMotion(reel);
     const transform = target.getAttribute('style');
     await userEvent.click(target);
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await settleMotion(reel);
     await expect(target.getAttribute('style')).toBe(transform);
     await expectCenteredRow(reel, '14');
   },
