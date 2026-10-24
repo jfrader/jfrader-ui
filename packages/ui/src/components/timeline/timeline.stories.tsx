@@ -1838,3 +1838,82 @@ export const MobileLayout: Story = {
       await expect(trigger.getBoundingClientRect().height).toBeGreaterThanOrEqual(MIN_TRIGGER - 0.5);
   },
 };
+
+const centreX = (rect: DOMRect) => (rect.left + rect.right) / 2;
+const centreY = (rect: DOMRect) => (rect.top + rect.bottom) / 2;
+const expectNear = (actual: number, expected: number, label: string) =>
+  expect(Math.abs(actual - expected), `${label}: ${actual} vs ${expected}`).toBeLessThan(GEOMETRY_TOLERANCE);
+/** Rail box of an item, read from its positioned `::before`. */
+function railRect(row: HTMLElement) {
+  const style = getComputedStyle(row, '::before');
+  const box = row.getBoundingClientRect();
+  const left = box.left + Number.parseFloat(style.left);
+  const width = Number.parseFloat(style.borderInlineStartWidth);
+  return new DOMRect(left, box.top + Number.parseFloat(style.top), width, box.height - Number.parseFloat(style.top) - Number.parseFloat(style.bottom));
+}
+/** Inline-start edge of a box, for either direction. */
+const inlineStart = (rect: DOMRect, rtl: boolean) => (rtl ? rect.right : rect.left);
+/** Where a disclosure's text starts: past its border and padding. */
+function triggerTextStart(trigger: HTMLElement, rtl: boolean) {
+  const style = getComputedStyle(trigger);
+  const inset = Number.parseFloat(style.borderInlineStartWidth) + Number.parseFloat(style.paddingInlineStart);
+  return inlineStart(trigger.getBoundingClientRect(), rtl) + (rtl ? -inset : inset);
+}
+
+/** Markers, rail and titles share one centre line; headings sit on the content column; heading,
+ * event and day gaps grow in that order at both sizes, for days with one and two events. */
+export const DayRhythm: Story = {
+  tags: ['!autodocs'],
+  render: (args) => (
+    <StackFrame>
+      <Timeline {...args} size="md" aria-label="Regular history" />
+      <Timeline {...args} size="sm" aria-label="Compact history" />
+      <Timeline {...args} size="md" dir="rtl" aria-label="RTL history" />
+    </StackFrame>
+  ),
+  play: async ({ canvas }) => {
+    for (const name of ['Regular history', 'Compact history', 'RTL history']) {
+      const root = canvas.getByRole('region', { name });
+      const rtl = name === 'RTL history';
+      const headingGaps: number[] = [];
+      const rowGaps: number[] = [];
+      const dayGaps: number[] = [];
+      const groups = parts(root, 'group');
+      for (const [groupIndex, group] of groups.entries()) {
+        const headingText = part(group, 'heading').firstElementChild!.getBoundingClientRect();
+        const rows = parts(group, 'item');
+        const content = (row: HTMLElement) => part(row, 'marker').nextElementSibling!.getBoundingClientRect();
+        await expectNear(inlineStart(headingText, rtl), inlineStart(content(rows[0]!), rtl), `${name} heading on content column`);
+        headingGaps.push(rows[0]!.getBoundingClientRect().top - headingText.bottom);
+        for (const [index, row] of rows.entries()) {
+          const marker = part(row, 'marker').getBoundingClientRect();
+          const titleLine = part(row, 'marker').nextElementSibling!.firstElementChild!.firstElementChild!;
+          await expectNear(centreY(marker), centreY(titleLine.getBoundingClientRect()), `${name} ${row.dataset.eventId} marker on title line`);
+          const trigger = part(titleLine as HTMLElement, 'trigger');
+          if (trigger && !part(titleLine as HTMLElement, 'actor'))
+            await expectNear(triggerTextStart(trigger, rtl), inlineStart(content(row), rtl), `${name} ${row.dataset.eventId} leading disclosure text`);
+          const next = rows[index + 1];
+          if (!next) {
+            await expect(getComputedStyle(row, '::before').content).toBe('none');
+            const nextGroup = groups[groupIndex + 1];
+            if (nextGroup)
+              dayGaps.push(part(nextGroup, 'heading').firstElementChild!.getBoundingClientRect().top - content(row).bottom);
+            continue;
+          }
+          const rail = railRect(row);
+          const nextMarker = part(next, 'marker').getBoundingClientRect();
+          await expectNear(centreX(rail), centreX(marker), `${name} ${row.dataset.eventId} rail x`);
+          await expectNear(rail.top, centreY(marker), `${name} ${row.dataset.eventId} rail start`);
+          await expectNear(rail.bottom, centreY(nextMarker), `${name} ${row.dataset.eventId} rail end`);
+          rowGaps.push(next.getBoundingClientRect().top - content(row).bottom);
+        }
+      }
+      // Default data: two days with two events, then one day with a single event.
+      await expect(groups.map((group) => parts(group, 'item').length)).toEqual([2, 2, 1]);
+      await expect(dayGaps).toHaveLength(2);
+      for (const gaps of [headingGaps, rowGaps, dayGaps]) await expectNear(Math.max(...gaps), Math.min(...gaps), `${name} uniform gaps`);
+      await expect(headingGaps[0]!, `${name} heading gap below row gap`).toBeLessThan(rowGaps[0]!);
+      await expect(rowGaps[0]!, `${name} row gap below day gap`).toBeLessThan(dayGaps[0]!);
+    }
+  },
+};

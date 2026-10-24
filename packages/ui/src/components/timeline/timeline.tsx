@@ -329,19 +329,29 @@ const rootStyle = css({
   color: vars.color.text,
 });
 
-// Per-size spacing as custom properties read by the parts.
+// Per-size spacing as custom properties read by the parts. A heading sits closer to its own events
+// than the events sit to each other, and days sit further apart than both.
 const sizeStyles: Record<TimelineSize, SerializedStyles> = {
   sm: css({
     '--timeline-row-gap': vars.space[2],
+    '--timeline-day-gap': vars.space[3],
     '--timeline-heading-pad': vars.space[1],
     '--timeline-trigger-pad': vars.space[1],
   }),
   md: css({
     '--timeline-row-gap': vars.space[4],
+    '--timeline-day-gap': vars.space[6],
     '--timeline-heading-pad': vars.space[2],
     '--timeline-trigger-pad': vars.space[2],
   }),
 };
+
+// Every row's first line is one disclosure tall, so the marker, the rail and the title share one
+// centre line whether or not the row has a disclosure.
+const MARKER_SIZE = vars.space[6];
+const MARKER_GAP = vars.space[3];
+const ROW_HEAD = vars.space[8];
+const RAIL_WIDTH = '2px';
 
 const scrollerStyle = css({
   '&[data-bounded]': {
@@ -356,7 +366,7 @@ const scrollerStyle = css({
 });
 
 const groupStyle = css({
-  '& + &': { marginBlockStart: 'var(--timeline-row-gap)' },
+  '& + &': { marginBlockStart: 'var(--timeline-day-gap)' },
 });
 
 const headingStyle = css({
@@ -368,8 +378,8 @@ const headingStyle = css({
   alignItems: 'baseline',
   columnGap: vars.space[2],
   margin: 0,
-  marginBlockEnd: vars.space[2],
   paddingBlock: 'var(--timeline-heading-pad)',
+  paddingInlineStart: `calc(${MARKER_SIZE} + ${MARKER_GAP})`,
   backgroundColor: vars.color.surface,
   fontSize: vars.textSize.sm,
   fontWeight: vars.fontWeight.semibold,
@@ -391,17 +401,19 @@ const listStyle = css({
 const itemStyle = css({
   position: 'relative',
   display: 'grid',
-  gridTemplateColumns: `${vars.space[6]} minmax(0, 1fr)`,
-  columnGap: vars.space[3],
+  gridTemplateColumns: `${MARKER_SIZE} minmax(0, 1fr)`,
+  columnGap: MARKER_GAP,
   paddingBlockEnd: 'var(--timeline-row-gap)',
-  // Rail joining this marker to the next one; drawn with a border so forced colors keep it.
+  '&:last-child': { paddingBlockEnd: 0 },
+  // Rail from this marker's centre to the next one's, painted under both markers; drawn with a
+  // border so forced colors keep it.
   '&::before': {
     content: '""',
     position: 'absolute',
-    insetBlockStart: vars.space[6],
-    insetBlockEnd: 0,
-    insetInlineStart: `calc(${vars.space[6]} / 2 - 1px)`,
-    borderInlineStart: `2px solid ${vars.color.border}`,
+    insetBlockStart: `calc(${ROW_HEAD} / 2)`,
+    insetBlockEnd: `calc(${ROW_HEAD} / -2)`,
+    insetInlineStart: `calc((${MARKER_SIZE} - ${RAIL_WIDTH}) / 2)`,
+    borderInlineStart: `${RAIL_WIDTH} solid ${vars.color.border}`,
   },
   '&:last-child::before': { content: 'none' },
   '&[data-new]': {
@@ -414,12 +426,14 @@ const itemStyle = css({
 });
 
 const markerStyle = css({
+  position: 'relative',
   boxSizing: 'border-box',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  inlineSize: vars.space[6],
-  blockSize: vars.space[6],
+  inlineSize: MARKER_SIZE,
+  blockSize: MARKER_SIZE,
+  marginBlock: `calc((${ROW_HEAD} - ${MARKER_SIZE}) / 2)`,
   borderRadius: vars.radius.full,
   border: `1px solid ${vars.color.borderStrong}`,
   backgroundColor: vars.color.surface,
@@ -467,9 +481,9 @@ const contentStyle = css({
 const titleLineStyle = css({
   display: 'flex',
   flexWrap: 'wrap',
-  alignItems: 'baseline',
+  alignItems: 'center',
   columnGap: vars.space[1],
-  minBlockSize: vars.space[6],
+  minBlockSize: ROW_HEAD,
 });
 
 const actorStyle = css({ fontWeight: vars.fontWeight.semibold });
@@ -504,6 +518,10 @@ const triggerStyle = css({
   '&[aria-expanded="true"]::after': { transform: 'rotate(90deg)' },
   // The caret points toward inline-end, so under RTL it turns the other way to point down.
   '&[aria-expanded="true"]:dir(rtl)::after': { transform: 'rotate(-90deg)' },
+  // A leading disclosure moves its padding into the marker gap so its text starts on the content
+  // column, like a plain title and the meta line below it.
+  marginInlineStart: 'calc(-1 * var(--timeline-trigger-pad))',
+  '[data-ui="timeline-actor"] ~ &': { marginInlineStart: 0 },
   '&:hover': { backgroundColor: vars.color.surfaceHover },
   '&:focus-visible': { ...focusRingInset },
   [REDUCED_MOTION]: { transitionDuration: '0s', '&::after': { transitionDuration: '0s' } },

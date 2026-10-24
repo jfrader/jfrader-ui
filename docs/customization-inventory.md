@@ -330,7 +330,7 @@ panel material. The section has no background, border or radius to migrate.
 | [Skeleton.Block](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | — |
 | [Skeleton.Morph](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | — |
 | [Slider](../packages/ui/src/components/slider/slider.tsx) | yes | `bubble`, `control`, `description`, `end`, `error`, `fill`, `label`, `mark`, `readout`, `root`, `start`, `thumb`, `track` | `bubble`, `control`, `description`, `end`, `error`, `fill`, `label`, `mark`, `readout`, `root`, `start`, `thumb`, `track` | — | — | — |
-| [SortableDataTable](../packages/ui/src/components/sortable-data-table/sortable-data-table.tsx) | — | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table` | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table` | — | — | — |
+| [SortableDataTable](../packages/ui/src/components/sortable-data-table/sortable-data-table.tsx) | — | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table`, `toolbar` | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table`, `toolbar` | — | — | — |
 | [Spinner](../packages/ui/src/components/spinner/spinner.tsx) | yes | `indicator`, `root`, `status` | `indicator`, `root`, `status` | — | — | — |
 | [SplitButton](../packages/ui/src/components/split-button/split-button.tsx) | yes | `action`, `content`, `item`, `root`, `separator`, `trigger` | `action`, `content`, `item`, `root`, `separator`, `trigger` | — | — | `Action`, `Content`, `Item`, `Separator`, `Trigger` |
 | [SplitButton.Action](../packages/ui/src/components/split-button/split-button.tsx) | — | — | — | — | — | — |
