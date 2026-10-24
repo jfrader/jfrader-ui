@@ -293,6 +293,11 @@ panel material. The section has no background, border or radius to migrate.
 | [PhoneInput](../packages/ui/src/components/phone-input/phone-input.tsx) | — | — | `control`, `countryTrigger`, `description`, `error`, `label`, `list`, `number`, `option`, `panel`, `root`, `search`, `status` | `control`, `countryTrigger`, `description`, `error`, `label`, `list`, `number`, `option`, `panel`, `root`, `search`, `status` | — | — |
 | [PhotoGrid](../packages/ui/src/components/photo-grid/photo-grid.tsx) | yes | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `root`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `root`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | — | — | — |
 | [Pill](../packages/ui/src/components/pill/pill.tsx) | — | — | — | — | — | — |
+| [PlanSelector](../packages/ui/src/components/plan-selector/plan-selector.tsx) | yes | `item`, `label`, `list`, `root` | `item`, `label`, `list`, `root` | — | — | `Item`, `Label`, `List`, `Price` |
+| [PlanSelector.Item](../packages/ui/src/components/plan-selector/plan-selector.tsx) | — | `badge`, `label`, `selection` | `badge`, `label`, `selection` | — | — | — |
+| [PlanSelector.Label](../packages/ui/src/components/plan-selector/plan-selector.tsx) | — | — | — | — | — | — |
+| [PlanSelector.List](../packages/ui/src/components/plan-selector/plan-selector.tsx) | — | — | — | — | — | — |
+| [PlanSelector.Price](../packages/ui/src/components/plan-selector/plan-selector.tsx) | — | `amount`, `previous`, `unit` | `amount`, `previous`, `unit` | — | — | — |
 | [PokerTable](../packages/ui/src/components/poker-table/poker-table.tsx) | yes | `actions`, `root`, `seat` | `actions`, `root`, `seat` | — | `tableProps` | — |
 | [Popover](../packages/ui/src/components/popover/popover.tsx) | yes | `content`, `root`, `trigger` | `content`, `root`, `trigger` | — | — | `Content`, `Trigger` |
 | [Popover.Content](../packages/ui/src/components/popover/popover.tsx) | — | — | — | — | — | — |
@@ -368,11 +373,6 @@ panel material. The section has no background, border or radius to migrate.
 | [ToastStack](../packages/ui/src/components/toast-stack/toast-stack.tsx) | yes | `item`, `list`, `root`, `toggle` | `item`, `list`, `root`, `toggle` | — | — | — |
 | [ToggleGroup](../packages/ui/src/components/toggle-group/toggle-group.tsx) | yes | `item`, `root` | `item`, `root` | — | — | `Item` |
 | [ToggleGroup.Item](../packages/ui/src/components/toggle-group/toggle-group.tsx) | — | — | — | — | — | — |
-| [ToggleSubscription](../packages/ui/src/components/toggle-subscription/toggle-subscription.tsx) | yes | `item`, `label`, `list`, `price`, `root` | `item`, `label`, `list`, `price`, `root` | — | — | `Item`, `Label`, `List`, `Price` |
-| [ToggleSubscription.Item](../packages/ui/src/components/toggle-subscription/toggle-subscription.tsx) | — | `badge`, `label`, `selection` | `badge`, `label`, `selection` | — | — | — |
-| [ToggleSubscription.Label](../packages/ui/src/components/toggle-subscription/toggle-subscription.tsx) | — | — | — | — | — | — |
-| [ToggleSubscription.List](../packages/ui/src/components/toggle-subscription/toggle-subscription.tsx) | — | — | — | — | — | — |
-| [ToggleSubscription.Price](../packages/ui/src/components/toggle-subscription/toggle-subscription.tsx) | — | `amount`, `period`, `previous` | `amount`, `period`, `previous` | — | — | — |
 | [Tooltip](../packages/ui/src/components/tooltip/tooltip.tsx) | — | `content`, `trigger` | `content`, `trigger` | — | — | `Content`, `Trigger` |
 | [Tooltip.Content](../packages/ui/src/components/tooltip/tooltip.tsx) | — | — | — | — | — | — |
 | [Tooltip.Trigger](../packages/ui/src/components/tooltip/tooltip.tsx) | — | — | — | — | — | — |

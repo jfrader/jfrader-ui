@@ -11,6 +11,7 @@ import {
   type ComponentPropsWithRef,
   type ComponentType,
   type ComponentPropsWithoutRef,
+  type ReactElement,
   type ReactNode,
   type Dispatch,
   type SetStateAction,
@@ -26,177 +27,175 @@ import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { SegmentedControl, type SegmentedControlItemProps } from '../segmented-control';
 
-export type ToggleSubscriptionSize = 'md' | 'lg';
-export type ToggleSubscriptionTone = 'neutral' | 'accent' | 'success';
+export type PlanSelectorSize = 'md' | 'lg';
+export type PlanSelectorTone = 'neutral' | 'accent' | 'success';
 type SlotProps<Element extends 'span' | 'del'> = ComponentPropsWithRef<Element> & {
   sx?: Interpolation<Theme>;
 };
 
-export interface ToggleSubscriptionComposedProps
+export interface PlanSelectorComposedProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {
-  /** Controls the selected billing period. */
+  /** Controls the selected option. */
   value?: string;
-  /** Sets the initial uncontrolled billing period. No period is selected by default. */
+  /** Sets the initial uncontrolled option. No option is selected by default. */
   defaultValue?: string;
-  /** Receives the requested billing period. */
+  /** Receives the requested option value. */
   onValueChange?: (value: string) => void;
-  /** Disables all billing-period choices. Defaults to `false`. */
+  /** Disables every option. Defaults to `false`. */
   disabled?: boolean;
-  /** Sets the billing switch's visual size. Defaults to `md`. */
-  size?: ToggleSubscriptionSize;
+  /** Sets the selector's visual size. Defaults to `md`. */
+  size?: PlanSelectorSize;
   /** Sets the selection and badge color. Defaults to `success`. */
-  tone?: ToggleSubscriptionTone;
-  /** Sets the default price-formatting locale. Defaults to the runtime locale. */
+  tone?: PlanSelectorTone;
+  /** Sets the locale `PlanSelector.Price` formats with. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
   options?: never;
-  prices?: never;
   label?: never;
   slots?: never;
   component?: never;
   slotProps?: never;
 }
-export interface ToggleSubscriptionOption {
-  value: string;
+export interface PlanSelectorOption<V extends string = string> {
+  value: V;
   label: ReactNode;
   disabled?: boolean;
   id?: string;
   badge?: ReactNode;
   activeBadge?: ReactNode;
+  /** Shows content after the options while this option is selected, such as a `PlanSelector.Price`. */
+  detail?: ReactNode;
 }
-export type ToggleSubscriptionPriceDefinition = Pick<
-  ToggleSubscriptionPriceProps,
-  'amount' | 'currency' | 'formatOptions' | 'was' | 'period' | 'previousLabel'
->;
-export interface ToggleSubscriptionSlots {
-  /** Container wrapping the label and the period list. */
+export interface PlanSelectorSlots {
+  /** Container wrapping the label, the option list and the selected option's detail. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
-  /** Text naming the switch. */
-  label?: ComponentType<ToggleSubscriptionLabelProps>;
-  /** List holding one item per billing period. */
-  list?: ComponentType<ToggleSubscriptionListProps>;
-  /** One selectable billing period. */
-  item?: ComponentType<ToggleSubscriptionItemProps>;
-  /** Price text displayed inside an item. */
-  price?: ComponentType<ToggleSubscriptionPriceProps>;
+  /** Text naming the selector. */
+  label?: ComponentType<PlanSelectorLabelProps>;
+  /** List holding one item per option. */
+  list?: ComponentType<PlanSelectorListProps>;
+  /** One selectable option. */
+  item?: ComponentType<PlanSelectorItemProps>;
 }
-export interface ToggleSubscriptionSlotProps {
-  /** Container wrapping the label and the period list. */
+export interface PlanSelectorSlotProps {
+  /** Container wrapping the label, the option list and the selected option's detail. */
   root?: Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> & SxProps & {
 
     [attribute: `data-${string}`]: unknown;
   };
-  /** Text naming the switch. */
-  label?: Omit<ToggleSubscriptionLabelProps, 'children'>;
-  /** List holding one item per billing period. */
-  list?: Omit<ToggleSubscriptionListProps, 'children'>;
-  /** One selectable billing period. */
-  item?: Omit<ToggleSubscriptionItemProps, keyof ToggleSubscriptionOption | 'children'>;
-  /** Price text displayed inside an item. */
-  price?: Omit<ToggleSubscriptionPriceProps, keyof ToggleSubscriptionPriceDefinition>;
+  /** Text naming the selector. */
+  label?: Omit<PlanSelectorLabelProps, 'children'>;
+  /** List holding one item per option. */
+  list?: Omit<PlanSelectorListProps, 'children'>;
+  /** One selectable option. */
+  item?: Omit<PlanSelectorItemProps, keyof PlanSelectorOption | 'children'>;
 }
-export interface ToggleSubscriptionShorthandProps extends Omit<ToggleSubscriptionComposedProps, 'children' | 'options' | 'prices' | 'label' | 'slots' | 'slotProps' | 'component'> {
-  /** Defines the billing periods rendered as selectable items. */
-  options: readonly ToggleSubscriptionOption[];
-  /** Maps billing-period values to prices. Throws when the selected period has no price. */
-  prices: Readonly<Record<string, ToggleSubscriptionPriceDefinition>>;
-  /** Shows a label naming the billing-period switch. */
+export interface PlanSelectorShorthandProps<V extends string = string>
+  extends Omit<PlanSelectorComposedProps, 'value' | 'defaultValue' | 'onValueChange' | 'children' | 'options' | 'label' | 'slots' | 'slotProps' | 'component'> {
+  /** Controls the selected option. */
+  value?: NoInfer<V>;
+  /** Sets the initial uncontrolled option. No option is selected by default. */
+  defaultValue?: NoInfer<V>;
+  /** Receives the requested option value. */
+  onValueChange?: (value: V) => void;
+  /** Defines the options rendered as selectable items, each with an optional `detail`. */
+  options: readonly PlanSelectorOption<V>[];
+  /** Shows a label naming the selector. */
   label?: ReactNode;
-  /** Not accepted when `options` and `prices` supply the billing choices. */
+  /** Not accepted when `options` supplies the choices. */
   children?: never;
-  /** Replaces the elements rendering the switch and price parts. */
-  slots?: ToggleSubscriptionSlots;
+  /** Replaces the root, label, list and item elements. */
+  slots?: PlanSelectorSlots;
   /** Replaces the root element as a shorthand for `slots.root`. */
-  component?: ToggleSubscriptionSlots['root'];
-  /** Passes props and `sx` to individual switch and price parts. */
-  slotProps?: ToggleSubscriptionSlotProps;
+  component?: PlanSelectorSlots['root'];
+  /** Passes props and `sx` to the root, label, list and items. */
+  slotProps?: PlanSelectorSlotProps;
 }
-export type ToggleSubscriptionProps = ToggleSubscriptionComposedProps | ToggleSubscriptionShorthandProps;
-export interface ToggleSubscriptionListProps
+export type PlanSelectorProps<V extends string = string> = PlanSelectorComposedProps | PlanSelectorShorthandProps<V>;
+export interface PlanSelectorListProps
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange'>, SxProps {}
-export interface ToggleSubscriptionLabelProps extends ComponentPropsWithRef<'span'>, SxProps {}
-export interface ToggleSubscriptionItemSlots {
-  /** Text naming a billing period. */
+export interface PlanSelectorLabelProps extends ComponentPropsWithRef<'span'>, SxProps {}
+export interface PlanSelectorItemSlots {
+  /** Text naming an option. */
   label?: ComponentType<SlotProps<'span'>>;
-  /** Badge beside the billing period. */
+  /** Badge beside the option. */
   badge?: ComponentType<SlotProps<'span'>>;
-  /** Selection indicator for the active period. */
+  /** Selection indicator for the selected option. */
   selection?: ComponentType<SlotProps<'span'>>;
 }
-export interface ToggleSubscriptionPriceSlots {
+export interface PlanSelectorPriceSlots {
   /** Formatted current price. */
   amount?: ComponentType<SlotProps<'span'>>;
   /** Struck-through previous price. */
   previous?: ComponentType<SlotProps<'del'>>;
-  /** Billing period after the price. */
-  period?: ComponentType<SlotProps<'span'>>;
+  /** Unit text after the price. */
+  unit?: ComponentType<SlotProps<'span'>>;
 }
-export interface ToggleSubscriptionItemProps extends Omit<SegmentedControlItemProps, 'accessory' | 'slots'> {
+export interface PlanSelectorItemProps extends Omit<SegmentedControlItemProps, 'accessory' | 'slots'> {
   /** Replaces the label, badge and selection-indicator elements. */
-  slots?: ToggleSubscriptionItemSlots;
-  /** Shows a badge beside the billing-period label. */
+  slots?: PlanSelectorItemSlots;
+  /** Shows a badge beside the option label. */
   badge?: ReactNode;
-  /** Replaces `badge` while this billing period is selected. */
+  /** Replaces `badge` while this option is selected. */
   activeBadge?: ReactNode;
   /** Passes props and `sx` to the label, badge and selection indicator. */
   slotProps?: {
-    /** Text naming the billing period. */
+    /** Text naming the option. */
     label?: SlotProps<'span'>;
     /** Badge shown beside the label, such as a discount. */
     badge?: SlotProps<'span'>;
-    /** Check glyph marking the selected period. */
+    /** Check glyph marking the selected option. */
     selection?: SlotProps<'span'>;
   };
 }
-export interface ToggleSubscriptionPriceProps
+export interface PlanSelectorPriceProps
   extends Omit<ComponentPropsWithRef<'span'>, 'children'>, SxProps {
   /** Sets the current price in major currency units. Throws if not finite. */
   amount: number;
   /** Sets the currency code used by `Intl.NumberFormat`, such as `USD`. */
   currency: string;
-  /** Overrides the root's price-formatting locale. */
+  /** Overrides the root's formatting locale. */
   locale?: Intl.LocalesArgument;
   /** Configures currency formatting without changing the currency or formatting style. */
   formatOptions?: Omit<Intl.NumberFormatOptions, 'style' | 'currency'>;
   /** Shows a struck-through former price in major currency units when finite and greater than `amount`. */
   was?: number;
-  /** Adds billing-period text after the price. */
-  period?: ReactNode;
+  /** Adds unit text after the price, such as `/ month` or `/ seat`. */
+  unit?: ReactNode;
   /** Names the former price for assistive technology. Required when `was` is shown. */
   previousLabel?: string;
-  /** Replaces the current-price, former-price and billing-period elements. */
-  slots?: ToggleSubscriptionPriceSlots;
-  /** Passes props and `sx` to the current-price, former-price and billing-period elements. */
+  /** Replaces the current-price, former-price and unit elements. */
+  slots?: PlanSelectorPriceSlots;
+  /** Passes props and `sx` to the current-price, former-price and unit elements. */
   slotProps?: {
-    /** Formatted price for the current period. */
+    /** Formatted current price. */
     amount?: SlotProps<'span'>;
     /** Struck-through former price. */
     previous?: SlotProps<'del'>;
-    /** Billing period shown after the price. */
-    period?: SlotProps<'span'>;
+    /** Unit text shown after the price. */
+    unit?: SlotProps<'span'>;
   };
 }
 
 interface SelectionPart {
   props?: SlotProps<'span'>;
-  component?: ToggleSubscriptionItemSlots['selection'];
+  component?: PlanSelectorItemSlots['selection'];
 }
-interface ToggleSubscriptionContext {
+interface PlanSelectorContext {
   value: string | undefined;
   emptyValue: string;
   requestChange: (value: string) => void;
   disabled: boolean;
-  size: ToggleSubscriptionSize;
-  tone: ToggleSubscriptionTone;
+  size: PlanSelectorSize;
+  tone: PlanSelectorTone;
   locale: Intl.LocalesArgument | undefined;
   labels: string[];
   setLabels: Dispatch<SetStateAction<string[]>>;
   selections: ReadonlyMap<string, SelectionPart>;
   setSelections: Dispatch<SetStateAction<ReadonlyMap<string, SelectionPart>>>;
 }
-const Context = createContext<ToggleSubscriptionContext | null>(null);
-function useToggleSubscription() {
+const Context = createContext<PlanSelectorContext | null>(null);
+function usePlanSelector() {
   const context = useContext(Context);
-  if (!context) throw new Error('ToggleSubscription parts must be rendered inside <ToggleSubscription>.');
+  if (!context) throw new Error('PlanSelector parts must be rendered inside <PlanSelector>.');
   return context;
 }
 const rootStyle = css({
@@ -240,12 +239,12 @@ const badgeStyle = css({
 });
 const badgeCellStyle = css({ gridArea: '1 / 1', minInlineSize: 0, overflowWrap: 'anywhere' });
 const sizerStyle = css({ visibility: 'hidden', pointerEvents: 'none' });
-const toneStyles: Record<ToggleSubscriptionTone, SerializedStyles> = {
+const toneStyles: Record<PlanSelectorTone, SerializedStyles> = {
   neutral: css({ color: vars.color.textMuted }),
   accent: css({ borderColor: vars.color.accentText }),
   success: css({ borderColor: vars.color.success }),
 };
-const selectionToneStyles: Record<ToggleSubscriptionTone, SerializedStyles> = {
+const selectionToneStyles: Record<PlanSelectorTone, SerializedStyles> = {
   neutral: css({ backgroundColor: vars.color.surfaceRaised }),
   accent: css({ backgroundColor: vars.color.accentSoft }),
   success: css({ backgroundColor: vars.color.successSoft }),
@@ -275,7 +274,7 @@ const visualStyle = css({
 });
 const priceCellStyle = css({ gridArea: '1 / 1', minInlineSize: 0 });
 const previousStyle = css({ color: vars.color.textMuted, minInlineSize: 0 });
-const periodStyle = css({ color: vars.color.textMuted, minInlineSize: 0 });
+const unitStyle = css({ color: vars.color.textMuted, minInlineSize: 0 });
 const PRICE_SPRING_VISUAL_DURATION = Number.parseFloat(base.motion.duration.slow) / 1000; // '240ms' -> 0.24s
 const PRICE_SPRING = {
   type: 'spring',
@@ -288,11 +287,11 @@ function PriceSurface({
   nativeProps,
   ...rest
 }: ComponentPropsWithRef<'span'> & { nativeProps: ComponentPropsWithoutRef<'span'> }) {
-  return <span {...nativeProps} {...rest} ref={ref} data-ui="toggle-subscription-price" />;
+  return <span {...nativeProps} {...rest} ref={ref} data-ui="plan-selector-price" />;
 }
 const MotionPriceSurface = motion.create(PriceSurface);
 
-function ToggleSubscriptionRoot({
+function PlanSelectorRoot({
   rootElement: Root = 'div',
   slotStyles,
   ref,
@@ -307,7 +306,7 @@ function ToggleSubscriptionRoot({
   sx,
   children,
   ...rest
-}: ToggleSubscriptionComposedProps & { rootElement?: 'div' | ToggleSubscriptionSlots['root']; slotStyles?: Interpolation<Theme> }) {
+}: PlanSelectorComposedProps & { rootElement?: 'div' | PlanSelectorSlots['root']; slotStyles?: Interpolation<Theme> }) {
   const [value, requestChange] = useControlledState(valueProp, defaultValue, onValueChange);
   const [labels, setLabels] = useState<string[]>([]);
   const [selections, setSelections] = useState<ReadonlyMap<string, SelectionPart>>(new Map());
@@ -333,7 +332,7 @@ function ToggleSubscriptionRoot({
       <MotionConfig reducedMotion="user">
         <WithSx className={className} styles={[rootStyle, slotStyles]} sx={sx}>
           {(className) => (
-            <Root {...rest} ref={ref} className={className} data-ui="toggle-subscription">
+            <Root {...rest} ref={ref} className={className} data-ui="plan-selector">
               {children}
             </Root>
           )}
@@ -342,17 +341,17 @@ function ToggleSubscriptionRoot({
     </Context.Provider>
   );
 }
-ToggleSubscriptionRoot.displayName = 'ToggleSubscription';
+PlanSelectorRoot.displayName = 'PlanSelector';
 
-function ToggleSubscriptionLabel({
+function PlanSelectorLabel({
   ref,
   id: idProp,
   className,
   sx,
   children,
   ...rest
-}: ToggleSubscriptionLabelProps) {
-  const { setLabels } = useToggleSubscription();
+}: PlanSelectorLabelProps) {
+  const { setLabels } = usePlanSelector();
   const generatedId = useId();
   const id = idProp ?? generatedId;
   const present = isRenderable(children) && children !== '';
@@ -365,21 +364,21 @@ function ToggleSubscriptionLabel({
   return (
     <WithSx className={className} styles={labelStyle} sx={sx}>
       {(className) => (
-        <span {...rest} ref={ref} id={id} data-ui="toggle-subscription-label" className={className}>
+        <span {...rest} ref={ref} id={id} data-ui="plan-selector-label" className={className}>
           {children}
         </span>
       )}
     </WithSx>
   );
 }
-ToggleSubscriptionLabel.displayName = 'ToggleSubscription.Label';
+PlanSelectorLabel.displayName = 'PlanSelector.Label';
 
-function ToggleSubscriptionList({ ref, className, sx, children, ...rest }: ToggleSubscriptionListProps) {
-  const context = useToggleSubscription();
+function PlanSelectorList({ ref, className, sx, children, ...rest }: PlanSelectorListProps) {
+  const context = usePlanSelector();
   const selectionPart = context.value === undefined ? undefined : context.selections.get(context.value);
   const selection = selectionPart?.props;
   return (
-    <div data-ui="toggle-subscription-list" css={listStyle}>
+    <div data-ui="plan-selector-list" css={listStyle}>
       <WithSx className={className} styles={listStyle} sx={sx}>
         {(className) => (
           <SegmentedControl
@@ -409,9 +408,9 @@ function ToggleSubscriptionList({ ref, className, sx, children, ...rest }: Toggl
     </div>
   );
 }
-ToggleSubscriptionList.displayName = 'ToggleSubscription.List';
+PlanSelectorList.displayName = 'PlanSelector.List';
 
-function ToggleSubscriptionItem({
+function PlanSelectorItem({
   badge,
   activeBadge,
   slotProps,
@@ -420,10 +419,10 @@ function ToggleSubscriptionItem({
   className,
   sx,
   ...rest
-}: ToggleSubscriptionItemProps) {
+}: PlanSelectorItemProps) {
   const Badge = slots?.badge ?? 'span';
   const Label = slots?.label ?? 'span';
-  const context = useToggleSubscription();
+  const context = usePlanSelector();
   const { setSelections } = context;
   const selection = slotProps?.selection;
   const selectionComponent = slots?.selection;
@@ -442,7 +441,7 @@ function ToggleSubscriptionItem({
     context.value === rest.value && activeBadge !== undefined ? activeBadge : badge;
   const hasBadge = isRenderable(currentBadge) && currentBadge !== '';
   return (
-    <span data-ui="toggle-subscription-item" css={itemStyle}>
+    <span data-ui="plan-selector-item" css={itemStyle}>
       <WithSx className={className} styles={controlItemStyle} sx={sx}>
         {(className) => (
           <SegmentedControl.Item
@@ -452,7 +451,7 @@ function ToggleSubscriptionItem({
               hasBadge ? (
                 <Badge
                   {...withoutSx(slotProps?.badge)}
-                  data-ui="toggle-subscription-badge"
+                  data-ui="plan-selector-badge"
                   css={[badgeStyle, toneStyles[context.tone], slotProps?.badge?.sx]}
                 >
                   {isRenderable(badge) && badge !== '' && (
@@ -473,7 +472,7 @@ function ToggleSubscriptionItem({
             {isRenderable(children) && children !== '' && (
               <Label
                 {...withoutSx(slotProps?.label)}
-                data-ui="toggle-subscription-item-label"
+                data-ui="plan-selector-item-label"
                 css={[itemLabelStyle, slotProps?.label?.sx]}
               >
                 {children}
@@ -485,29 +484,29 @@ function ToggleSubscriptionItem({
     </span>
   );
 }
-ToggleSubscriptionItem.displayName = 'ToggleSubscription.Item';
+PlanSelectorItem.displayName = 'PlanSelector.Item';
 
-function ToggleSubscriptionPrice({
+function PlanSelectorPrice({
   ref,
   amount,
   currency,
   locale: localeProp,
   formatOptions,
   was,
-  period,
+  unit,
   previousLabel,
   slotProps,
   slots,
   className,
   sx,
   ...rest
-}: ToggleSubscriptionPriceProps) {
+}: PlanSelectorPriceProps) {
   const Amount = slots?.amount ?? 'span';
   const Previous = slots?.previous ?? 'del';
-  const Period = slots?.period ?? 'span';
+  const Unit = slots?.unit ?? 'span';
   // Validate before any hooks: keeps hook order stable even if the guard ever changes.
-  if (!Number.isFinite(amount)) throw new RangeError('ToggleSubscription.Price amount must be finite.');
-  const { locale } = useToggleSubscription();
+  if (!Number.isFinite(amount)) throw new RangeError('PlanSelector.Price amount must be finite.');
+  const { locale } = usePlanSelector();
   const reducedMotion = useReducedMotion();
   const locales = localeProp ?? locale;
   const formatKey = JSON.stringify([
@@ -519,14 +518,14 @@ function ToggleSubscriptionPrice({
     const [tags, currency, options] = JSON.parse(formatKey) as [
       string[],
       string,
-      ToggleSubscriptionPriceProps['formatOptions'],
+      PlanSelectorPriceProps['formatOptions'],
     ];
     return numberFormatter(tags, { ...options, style: 'currency', currency });
   }, [formatKey]);
   const formatted = formatter.format(amount);
   const hasPrevious = was !== undefined && Number.isFinite(was) && was > amount;
   if (hasPrevious && !previousLabel)
-    throw new Error('ToggleSubscription.Price requires previousLabel when was exceeds amount.');
+    throw new Error('PlanSelector.Price requires previousLabel when was exceeds amount.');
   return (
     <WithSx className={className} styles={priceStyle} sx={sx}>
       {(className) => (
@@ -540,7 +539,7 @@ function ToggleSubscriptionPrice({
         >
           <Amount
             {...withoutSx(slotProps?.amount)}
-            data-ui="toggle-subscription-amount"
+            data-ui="plan-selector-amount"
             css={[amountStyle, slotProps?.amount?.sx]}
           >
             <span css={visuallyHiddenStyle}>{formatted}</span>
@@ -562,54 +561,46 @@ function ToggleSubscriptionPrice({
           {hasPrevious && (
             <Previous
               {...withoutSx(slotProps?.previous)}
-              data-ui="toggle-subscription-previous"
+              data-ui="plan-selector-previous"
               css={[previousStyle, slotProps?.previous?.sx]}
             >
               <span css={visuallyHiddenStyle}>{previousLabel}</span>
               {formatter.format(was)}
             </Previous>
           )}
-          {isRenderable(period) && period !== '' && (
-            <Period
-              {...withoutSx(slotProps?.period)}
-              data-ui="toggle-subscription-period"
-              css={[periodStyle, slotProps?.period?.sx]}
+          {isRenderable(unit) && unit !== '' && (
+            <Unit
+              {...withoutSx(slotProps?.unit)}
+              data-ui="plan-selector-unit"
+              css={[unitStyle, slotProps?.unit?.sx]}
             >
-              {period}
-            </Period>
+              {unit}
+            </Unit>
           )}
         </MotionPriceSurface>
       )}
     </WithSx>
   );
 }
-ToggleSubscriptionPrice.displayName = 'ToggleSubscription.Price';
+PlanSelectorPrice.displayName = 'PlanSelector.Price';
 
-function ToggleSubscriptionShorthandPrice({
-  prices,
-  slots,
-  slotProps,
-}: Pick<ToggleSubscriptionShorthandProps, 'prices' | 'slots' | 'slotProps'>) {
-  const { value } = useToggleSubscription();
-  if (value === undefined) return null;
-  const price = Object.hasOwn(prices, value) ? prices[value] : undefined;
-  if (!price) {
-    throw new Error(`ToggleSubscription requires a price for selected period "${value}".`);
-  }
-  const Price = slots?.price ?? ToggleSubscriptionPrice;
-  return <Price {...slotProps?.price} {...price} />;
+function PlanSelectorShorthandDetail({ options }: { options: readonly PlanSelectorOption[] }) {
+  const { value } = usePlanSelector();
+  return options.find((option) => option.value === value)?.detail;
 }
-function ToggleSubscriptionComponent(props: ToggleSubscriptionProps) {
-  if (props.options === undefined) return <ToggleSubscriptionRoot {...props} />;
-  const { options, prices, label, component, slots, slotProps, ...rest } = props;
+function PlanSelectorComponent<V extends string = string>(props: PlanSelectorProps<V>) {
+  if (props.options === undefined) return <PlanSelectorRoot {...props} />;
+  const { options, label, component, slots, slotProps, onValueChange, ...rest } = props;
   const { className, style, sx: slotSx, ...rootProps } = slotProps?.root ?? {};
-  const Label = slots?.label ?? ToggleSubscriptionLabel;
-  const List = slots?.list ?? ToggleSubscriptionList;
-  const Item = slots?.item ?? ToggleSubscriptionItem;
+  const Label = slots?.label ?? PlanSelectorLabel;
+  const List = slots?.list ?? PlanSelectorList;
+  const Item = slots?.item ?? PlanSelectorItem;
   return (
-    <ToggleSubscriptionRoot
+    <PlanSelectorRoot
       {...rest}
       {...rootProps}
+      // Items only carry `V`, so every emitted value is one of the options.
+      onValueChange={onValueChange as ((value: string) => void) | undefined}
       rootElement={slots?.root ?? component}
       slotStyles={slotSx}
       className={[className, rest.className].filter(Boolean).join(' ') || undefined}
@@ -618,20 +609,32 @@ function ToggleSubscriptionComponent(props: ToggleSubscriptionProps) {
     >
       {isRenderable(label) && <Label {...slotProps?.label}>{label}</Label>}
       <List {...slotProps?.list}>
-        {options.map(({ label, ...option }) => (
-          <Item {...slotProps?.item} {...option} key={option.value}>
+        {options.map(({ value, label, disabled, id, badge, activeBadge }) => (
+          <Item {...slotProps?.item} key={value} value={value} disabled={disabled} id={id} badge={badge} activeBadge={activeBadge}>
             {label}
           </Item>
         ))}
       </List>
-      <ToggleSubscriptionShorthandPrice prices={prices} slots={slots} slotProps={slotProps} />
-    </ToggleSubscriptionRoot>
+      <PlanSelectorShorthandDetail options={options} />
+    </PlanSelectorRoot>
   );
 }
-ToggleSubscriptionComponent.displayName = 'ToggleSubscription';
-export const ToggleSubscription = Object.assign(ToggleSubscriptionComponent, {
-  List: ToggleSubscriptionList,
-  Item: ToggleSubscriptionItem,
-  Label: ToggleSubscriptionLabel,
-  Price: ToggleSubscriptionPrice,
-});
+PlanSelectorComponent.displayName = 'PlanSelector';
+
+export interface PlanSelectorComponentType {
+  <V extends string = string>(props: PlanSelectorShorthandProps<V>): ReactElement;
+  (props: PlanSelectorComposedProps): ReactElement;
+  /** Accepts a pre-built shorthand/composed union spread into the component. */
+  <V extends string = string>(props: PlanSelectorProps<V>): ReactElement;
+  displayName?: string;
+  List: typeof PlanSelectorList;
+  Item: typeof PlanSelectorItem;
+  Label: typeof PlanSelectorLabel;
+  Price: typeof PlanSelectorPrice;
+}
+export const PlanSelector = Object.assign(PlanSelectorComponent, {
+  List: PlanSelectorList,
+  Item: PlanSelectorItem,
+  Label: PlanSelectorLabel,
+  Price: PlanSelectorPrice,
+}) as PlanSelectorComponentType;
