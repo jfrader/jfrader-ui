@@ -436,6 +436,7 @@ const pages = [
     await userEvent.click(trigger);
     const shell = await canvas.findByRole('dialog');
     await expect(shell).toBe(layer(canvasElement));
+    await expect(getComputedStyle(shell).zIndex).toBe('200');
     await expect(shell).toHaveAccessibleName('Settings');
     await expect(shell).toHaveAccessibleDescription('Manage your workspace preferences.');
     await waitFor(() => expect(within(shell).getByRole('heading', { name: 'Settings' })).toHaveFocus());
@@ -1086,6 +1087,7 @@ const Header = styled.div({
     const trigger = canvas.getByRole('button', { name: 'Settings' });
     await userEvent.click(trigger);
     const panel = await canvas.findByRole('dialog', { name: 'Settings' });
+    await expect(getComputedStyle(layer(canvasElement)).zIndex).toBe('200');
     await expect(panel).toHaveAttribute('aria-modal', 'true');
     await expect(panel).toHaveAccessibleDescription('Manage your workspace preferences.');
     await waitFor(() => expect(within(panel).getByRole('heading', { name: 'Settings' })).toHaveFocus());

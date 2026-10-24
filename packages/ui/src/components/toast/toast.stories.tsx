@@ -180,6 +180,7 @@ function Notifications() {
   render: (args) => <Toast {...args}><Triggers /></Toast>,
   play: async ({ canvasElement }) => {
     const toast = await showToast(canvasElement, 'Show toast', TITLE);
+    await expect(getComputedStyle(toast.closest('[data-ui="toast-viewport"]')!).zIndex).toBe('300');
     await expect(toast).not.toHaveAttribute('role');
     await expect(within(toast).getByRole('status')).toHaveAttribute('aria-atomic', 'true');
     await expect(within(toast).getByRole('status').querySelector('button')).toBeNull();

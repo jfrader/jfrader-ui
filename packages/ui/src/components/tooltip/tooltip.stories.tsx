@@ -136,6 +136,7 @@ export const Default: StoryObj<TooltipShorthandProps> = {
     const trigger = getTrigger(canvasElement);
     await userEvent.tab();
     const tooltip = await bodyOf(canvasElement).findByRole('tooltip');
+    await expect(getComputedStyle(tooltip).zIndex).toBe('100');
     await expect(trigger).toHaveAccessibleDescription(TIP);
     await expect(canvasElement.ownerDocument.activeElement).toBe(trigger);
     await userEvent.keyboard('{Escape}');

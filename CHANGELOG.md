@@ -15,6 +15,12 @@
 
 - `PokerTable.potFrom` is replaced by `chipTransfer`. `useChipFlight` is replaced by `ChipFlights` and `useChipFlights`.
 
+## 0.11.1 — 2026-10-24
+
+### Fixed
+
+- Floating menus, selection lists, popovers, and tooltips render above sticky page content. Modal shells and toast viewports use shared layer tokens, with consumer styling overrides preserved.
+
 ## 0.11.0 — 2026-10-23
 
 ### Added

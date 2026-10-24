@@ -85,6 +85,9 @@ export const base = {
     cardFlight: '0 10px 14px rgba(0, 0, 0, 0.3)',
   },
   zIndex: {
+    popover: '100',
+    modal: '200',
+    toast: '300',
     cardFlight: '1000',
   },
   cardMaterial: {

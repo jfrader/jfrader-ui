@@ -80,6 +80,9 @@ export const vars = {
     "cardFlight": "var(--ui-shadow-card-flight)"
   },
   "zIndex": {
+    "popover": "var(--ui-z-index-popover)",
+    "modal": "var(--ui-z-index-modal)",
+    "toast": "var(--ui-z-index-toast)",
     "cardFlight": "var(--ui-z-index-card-flight)"
   },
   "cardMaterial": {

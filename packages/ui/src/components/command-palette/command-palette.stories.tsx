@@ -223,6 +223,7 @@ export const Default: ShorthandStory = {
   render: (args) => <CommandPalette {...args} />,
   play: async ({ args, canvasElement }) => {
     const { canvas, trigger, dialog, input } = await openPalette(canvasElement);
+    await expect(getComputedStyle(dialog).zIndex).toBe('200');
     await expect(trigger).toHaveAttribute('aria-haspopup', 'dialog');
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
     await expect(dialog).toHaveAttribute('aria-modal', 'true');

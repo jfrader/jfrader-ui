@@ -240,6 +240,7 @@ const LinkText = styled.p({ margin: 0, marginBlockEnd: theme.space[3] });
     await userEvent.tab();
     await userEvent.keyboard('{Enter}');
     const dialog = await bodyOf(canvasElement).findByRole('dialog', { name: HEADING });
+    await expect(getComputedStyle(dialog).zIndex).toBe('100');
     await expect(trigger).toHaveAttribute('aria-controls', dialog.id);
     await userEvent.tab();
     await expect(canvasElement.ownerDocument.activeElement).toBe(within(dialog).getByRole('button', { name: 'Copy link' }));
