@@ -346,6 +346,7 @@ const shellStyle = css({
 });
 
 const containedLayerStyle = css({
+  zIndex: vars.zIndex.modal,
   position: 'absolute',
   inset: 0,
   overflow: 'hidden',

@@ -8,6 +8,7 @@ import { nativeScrollbarStyle } from './native-scrollbar';
 
 /** Popup surface of Menu, Select and Combobox. */
 export const listboxSurfaceStyle = css(nativeScrollbarStyle, {
+  zIndex: vars.zIndex.popover,
   boxSizing: 'border-box',
   display: 'flex',
   flexDirection: 'column',

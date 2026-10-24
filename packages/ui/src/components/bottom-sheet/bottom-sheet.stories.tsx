@@ -336,6 +336,7 @@ export const Default: StoryObj<(props: BottomSheetShorthandProps) => ReactNode> 
     await expect(trigger).toHaveFocus();
     await userEvent.keyboard('{Enter}');
     const dialog = dialogIn(canvasElement);
+    await expect(getComputedStyle(dialog).zIndex).toBe('200');
     await expect(dialog.open).toBe(true);
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);

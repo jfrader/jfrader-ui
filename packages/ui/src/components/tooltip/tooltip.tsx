@@ -110,6 +110,7 @@ function useTooltipContext(part: string): TooltipContextValue {
 }
 
 export const tooltipContentStyle = css({
+  zIndex: vars.zIndex.popover,
   boxSizing: 'border-box',
   backgroundColor: vars.color.bgSoft,
   border: `1px solid ${vars.color.border}`,

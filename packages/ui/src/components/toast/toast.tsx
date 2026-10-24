@@ -190,9 +190,10 @@ const ToastQueueContext = createContext<ToastQueueContextValue | null>(null);
 const RendererScope = createContext(false);
 
 // Fixed + portaled at the end of the body (or the ThemeRoot's `portalContainer`): later in DOM
-// order than the page, so no z-index. ThemeBoundary carries the enclosing ThemeRoot's theme.
+// order than the page. ThemeBoundary carries the enclosing ThemeRoot's theme.
 // An empty viewport never blocks the page; active queues accept scrollbar interaction.
 const viewportStyle = css({
+  zIndex: vars.zIndex.toast,
   boxSizing: 'border-box',
   position: 'fixed',
   insetBlockEnd: vars.space[4],

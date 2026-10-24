@@ -123,6 +123,7 @@ function usePopoverContext(part: string): PopoverContextValue {
 }
 
 const contentStyle = css({
+  zIndex: vars.zIndex.popover,
   ...raisedSurface,
   borderRadius: vars.radius.lg,
   boxShadow: vars.shadow.overlay,

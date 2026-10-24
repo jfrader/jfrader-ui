@@ -222,6 +222,7 @@ const actions = [
     const trigger = await focusTrigger(canvasElement);
     await userEvent.keyboard('{ArrowDown}');
     const menu = await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER });
+    await expect(getComputedStyle(menu).zIndex).toBe('100');
     await expect(menu).toHaveClass('shorthand-menu-content');
     await expect(trigger).toHaveAttribute('aria-controls', menu.id);
     await expect(menu).toHaveAttribute('aria-labelledby', trigger.id);
