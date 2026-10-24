@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.17.0 — 2026-10-24
+
 ### Breaking pre-1.0
 
 - Removed `deal` and `revision` from `CardFlights`, `PokerTable`, and `TrucoTable`, plus `PokerTable.chipTransfer` and `PokerTable.potFrom`. `FlightProvider` and `useFlights()` are the only trigger surface for card and table motion.
