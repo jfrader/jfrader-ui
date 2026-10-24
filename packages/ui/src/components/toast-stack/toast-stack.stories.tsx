@@ -219,7 +219,7 @@ async function settled(element: HTMLElement) {
   });
 }
 /** Drives the stack's gestures with synthetic pointers, stubbing capture the way `swipe-actions` does. */
-function stackPointer(card: HTMLElement, step = 16) {
+function stackPointer(card: HTMLElement, step = 16, pointerType = 'touch') {
   const item = card.parentElement!;
   const capture = item.setPointerCapture;
   item.setPointerCapture = () => {};
@@ -233,7 +233,7 @@ function stackPointer(card: HTMLElement, step = 16) {
         pointerId: 1,
         isPrimary: true,
         button: 0,
-        pointerType: 'touch',
+        pointerType,
         clientX: rect.left + rect.width / 2 + dx,
         clientY: rect.top + rect.height / 2 + dy,
       });
@@ -246,9 +246,9 @@ function stackPointer(card: HTMLElement, step = 16) {
     },
   };
 }
-/** A finger tap: no hover, so the stack's own tap handle does the work. */
-function tapCard(card: HTMLElement) {
-  const pointer = stackPointer(card);
+/** A tap: no hover, so the stack's own tap handle does the work. */
+function tapCard(card: HTMLElement, pointerType = 'touch') {
+  const pointer = stackPointer(card, 16, pointerType);
   try {
     pointer.fire('pointerdown', 0);
     pointer.fire('pointerup', 0);
@@ -257,9 +257,9 @@ function tapCard(card: HTMLElement) {
   }
   fireEvent.click(card);
 }
-/** A finger drag, released where it stopped. A long `step` is a slow drag that stops before lifting. */
-function dragCard(card: HTMLElement, dx: number, dy = 0, step = 16) {
-  const pointer = stackPointer(card, step);
+/** A drag, released where it stopped. A long `step` is a slow drag that stops before lifting. */
+function dragCard(card: HTMLElement, dx: number, dy = 0, step = 16, pointerType = 'touch') {
+  const pointer = stackPointer(card, step, pointerType);
   try {
     pointer.fire('pointerdown', 0);
     pointer.fire('pointermove', dx / 2, dy / 2);
@@ -506,6 +506,7 @@ export const SwipeToDismiss: Story = {
     await settled(region);
     const card = region.querySelector<HTMLElement>('[data-ui="toast"]')!;
     const width = card.getBoundingClientRect().width;
+    const open = () => region.querySelectorAll('[data-state="open"]');
     // A vertical drag is the page scrolling, so the card stays put.
     dragCard(card, 4, width * 0.5);
     await settled(region);
@@ -513,10 +514,26 @@ export const SwipeToDismiss: Story = {
     // A short drag that the finger stopped before lifting springs back into the pile.
     dragCard(card, width * 0.2, 0, 200);
     await settled(region);
-    await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(3);
+    await expect(open()).toHaveLength(3);
     await expect(card.style.getPropertyValue('--toast-swipe-x')).toBe('');
-    // Past the dismissal share, the card leaves the queue.
-    dragCard(card, width * 0.6);
+    // The click that follows the drag cannot also fan the pile out.
+    fireEvent.click(card);
+    await expect(region).toHaveAttribute('data-expanded', 'false');
+    // A mouse drag is text selection: the card stays where it is.
+    dragCard(card, width * 0.6, 0, 16, 'mouse');
+    await settled(region);
+    await expect(open()).toHaveLength(3);
+    // A pen tap fans the pile out and tucks it back, the way a finger does.
+    tapCard(card, 'pen');
+    await expect(region).toHaveAttribute('data-expanded', 'true');
+    tapCard(card, 'pen');
+    await expect(region).toHaveAttribute('data-expanded', 'false');
+    // A pointerdown that lifts off the card without a pointerup cannot freeze the next drag.
+    const orphan = stackPointer(card);
+    orphan.fire('pointerdown', 0);
+    orphan.restore();
+    // A flick under the dismissal share still throws the card away.
+    dragCard(card, width * 0.3);
     await waitFor(async () => {
       await expect(region.querySelectorAll('[data-ui="toast"]')).toHaveLength(2);
     });

@@ -40,7 +40,7 @@ export interface ToastStackProps extends Omit<ComponentPropsWithRef<'div'>, 'chi
   maxVisible?: number;
   /** Names the notification region unless ARIA naming props override it. Defaults to `"Notifications"`. */
   label?: string;
-  /** Enables Alt+T to expand the stack and focus the newest dismiss button outside editable fields. Defaults to `false`. */
+  /** Enables Alt+T to move focus into the stack outside editable fields. Defaults to `false`. */
   hotkey?: boolean;
   /** Replaces the root `div`. `slots.root` takes precedence. */
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
@@ -155,9 +155,9 @@ function rubberBand(distance: number, width: number) {
 }
 
 /** Replaces Toast.Viewport. Mount one queue renderer per Toast provider.
- * A hover, a keyboard focus, or a touch tap fans the pile out. Escape dismisses the focused card,
- * a right swipe dismisses a card, and Alt+T must be enabled to reach the stack from the keyboard.
- * Toast items announce messages; the stack region is not live.
+ * A mouse hover, a keyboard focus, or a touch or pen tap fans the pile out. Escape dismisses the
+ * focused card, a touch or pen swipe right dismisses a card, and Alt+T must be enabled to reach the
+ * stack from the keyboard. Toast items announce messages; the stack region is not live.
  */
 function ToastStackContent({
   ref,
@@ -199,18 +199,26 @@ function ToastStackContent({
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [tapped, setTapped] = useState(false);
-  const [swiping, setSwiping] = useState(false);
+  // The toast under a live drag, so a dismissal mid-gesture can end it cleanly.
+  const [dragging, setDragging] = useState<string | null>(null);
   const [heights, setHeights] = useState<Record<string, number>>({});
   const previousOffsets = useRef(new Map<string, string>());
   const records = [...toasts].reverse();
   const open = records.filter((record) => record.state === 'open');
   const limit = Math.max(1, Math.floor(Number.isFinite(maxVisible) ? maxVisible : 3));
   const expanded = variant === 'list' || hovered || focused || tapped;
-  const paused = hovered || focused || tapped || swiping;
+  const paused = hovered || focused || tapped || dragging !== null;
   useEffect(registerRenderer, [registerRenderer]);
   useEffect(() => {
     if (!open.length) setTapped(false);
   }, [open.length]);
+  // A toast dismissed or evicted mid-drag never gets its pointerup, so the gesture ends here.
+  useEffect(() => {
+    if (dragging && !toasts.some((record) => record.id === dragging)) {
+      swipe.current = null;
+      setDragging(null);
+    }
+  }, [toasts, dragging]);
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (focused && root && !root.contains(root.ownerDocument.activeElement)) setFocused(false);
@@ -265,11 +273,15 @@ function ToastStackContent({
 
   function startSwipe(event: ReactPointerEvent<HTMLDivElement>, id: string) {
     pointerType.current = event.pointerType;
+    // A second finger belongs to the drag already in progress, so only a primary pointer starts one.
+    if (!event.isPrimary) return;
+    // A gesture that lost its pointerup to an element the finger left cannot block the next one.
     swipe.current = null;
     // The previous gesture is over, so its click, if any, has already arrived.
     swallowedClick.current = false;
-    // A button or a link has its own job on press, and only the primary button drags.
-    if (event.button !== 0 || (event.target as Element).closest('button, a')) return;
+    // Touch and pen drag; a mouse drag is text selection, and a button has its own job on press.
+    if (event.pointerType === 'mouse' || event.button !== 0) return;
+    if ((event.target as Element).closest('button, a')) return;
     const card = event.currentTarget;
     card.style.removeProperty('--toast-swipe-x');
     card.style.removeProperty('--toast-swipe-fade');
@@ -301,7 +313,7 @@ function ToastStackContent({
       swallowedClick.current = true;
       card.setPointerCapture(event.pointerId);
       card.dataset.swiping = 'true';
-      setSwiping(true);
+      setDragging(gesture.id);
       card.ownerDocument.getSelection()?.removeAllRanges();
     }
     const travelled = event.clientX - gesture.startX;
@@ -322,7 +334,7 @@ function ToastStackContent({
     const last = gesture.samples[gesture.samples.length - 1];
     const rested = event.timeStamp - (last?.time ?? event.timeStamp);
     delete card.dataset.swiping;
-    setSwiping(false);
+    setDragging(null);
     // A finger that stopped before it lifted carries no throw.
     const speed = cancelled || rested > THROW_REST_MS ? 0 : throwSpeed(gesture.samples);
     const landed = last?.x ?? 0;
@@ -397,7 +409,7 @@ function ToastStackContent({
           ref={mergedRef}
           onPointerEnter={(event) => {
             (rootProps.onPointerEnter ?? onPointerEnter)?.(event);
-            if (!event.defaultPrevented && event.pointerType !== 'touch') setHovered(true);
+            if (!event.defaultPrevented && event.pointerType === 'mouse') setHovered(true);
           }}
           onPointerLeave={(event) => {
             (rootProps.onPointerLeave ?? onPointerLeave)?.(event);
