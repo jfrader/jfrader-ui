@@ -4,7 +4,9 @@
 //   `role="alert"` for `tone: 'danger'` (assertive). Set aria-atomic="true" explicitly
 //   because some environments do not honor the role defaults. Controls are siblings.
 // - A live region inserted already populated is generally not announced, so each toast mounts
-//   empty and fills its content after ANNOUNCE_DELAY_MS (content change → announcement).
+//   empty and fills its content after ANNOUNCE_DELAY_MS (content change → announcement). The fill
+//   no longer waits for the toast to be exposed, so a message that is tucked behind a collapsed
+//   pile still announces when it arrives.
 // - Appearing toasts never move focus. Removing a focused toast continues focus to the first
 //   surviving toast's dismiss button; focus elsewhere is never moved.
 // - Deviation from the APG Alert advice against auto-disappearing alerts: toasts auto-dismiss
@@ -578,6 +580,7 @@ export function ToastItem({
   component: Root = 'div',
 }: {
   record: ToastRecord;
+  /** Keeps a toast out of the tab order and assistive-technology interaction until the pile fans out. */
   exposed?: boolean;
   paused?: boolean;
   style?: CSSProperties;
@@ -620,10 +623,12 @@ export function ToastItem({
   }, [duration]);
 
   useEffect(() => {
-    if (!exposed || populated) return;
+    if (populated) return;
+    // The frame mounts empty and the text arrives a beat later, so a message that is already tucked
+    // behind the pile still announces when it arrives instead of waiting for the fan out.
     const timer = setTimeout(() => setPopulated(true), ANNOUNCE_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [exposed, populated]);
+  }, [populated]);
 
   // Auto-dismiss counts down only while visible, open and not paused. Pausing
   // runs the cleanup, which banks the elapsed time; resuming continues from what is left.
@@ -676,7 +681,6 @@ export function ToastItem({
       {...withoutSx(partProps)}
       ref={mergedRootRef}
       inert={state === 'closing' || !exposed}
-      aria-hidden={state === 'closing' || !exposed ? true : undefined}
       data-toast-id={id}
       style={{ ...partProps?.style, ...style }}
       className={[className, partProps?.className].filter(Boolean).join(' ')}

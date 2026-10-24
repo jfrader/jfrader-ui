@@ -54,7 +54,7 @@ Hovering, focusing, or tapping the pile fans it out, and swiping a card right di
 
 Tab visits the notification controls from newest to oldest. Escape dismisses the focused toast, not a notification elsewhere on the page. Enter and Space activate buttons. The optional Alt+T shortcut focuses notifications but does not interrupt editing in a text field.
 
-Only exposed messages announce. Use persistent notifications for actions readers must complete.`,
+Every message announces when it arrives, whether or not it is tucked behind the pile. A tucked card keeps its message in the accessibility tree but leaves the tab order until the pile fans out. Use persistent notifications for actions readers must complete.`,
     },
   },
 } satisfies Meta<typeof ToastStack>;
@@ -292,11 +292,13 @@ export const Default: Story = {
     await expect(getComputedStyle(region.querySelector('[data-ui="toast-stack-list"]')!).boxShadow).not.toBe('none');
     await expect(getComputedStyle(cards[0]!).boxShadow).toBe('none');
     await expect(cards[0]).toHaveTextContent('Message sent');
+    // A tucked card leaves the tab order but keeps its message in the accessibility tree, so the
+    // message that announced on arrival is still there to read.
     await expect(cards[1]).toHaveAttribute('inert');
-    await expect(cards[1]).toHaveAttribute('aria-hidden', 'true');
-    await expect(cards[1]?.querySelector('[role="status"]')).toBeEmptyDOMElement();
-    await expect(within(region).getAllByRole('status')).toHaveLength(1);
-    await expect(within(region).getByRole('status').querySelector('button')).toBeNull();
+    await expect(cards[1]).not.toHaveAttribute('aria-hidden');
+    await expect(cards[1]).toHaveTextContent('Export ready');
+    await expect(region.querySelectorAll('[role="status"], [role="alert"]')).toHaveLength(3);
+    await expect(cards[0]!.querySelector('[role="status"]')!.querySelector('button')).toBeNull();
     await userEvent.hover(region);
     await settled(region);
     // Nothing above the pile drives it: no control carries the expanded state.
@@ -459,8 +461,9 @@ export const Keyboard: Story = {
     await waitFor(async () => {
       await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(2);
     });
+    // Focus lands on the next open card, not on the one that is still fading out.
     await expect(canvasElement.ownerDocument.activeElement).toBe(
-      within(region).getAllByRole('button', { name: 'Dismiss' })[0],
+      region.querySelector('[data-state="open"] [data-toast-dismiss]'),
     );
     await settled(region);
   },
@@ -995,7 +998,7 @@ export const NativeDismissKeys: Story = {
     await userEvent.keyboard('{Enter}');
     await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(1);
     await expect(canvasElement.ownerDocument.activeElement).toBe(
-      within(region).getByRole('button', { name: 'Dismiss' }),
+      region.querySelector('[data-state="open"] [data-toast-dismiss]'),
     );
     await userEvent.keyboard(' ');
     await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(0);

@@ -5,6 +5,7 @@
 ### Changed
 
 - Breaking pre-1.0 `ToastStack` cleanup: the expand button above the pile is gone. The stack fans out on hover, on focus, and on a tap, a card swipes right to dismiss, and the pile casts one shadow while collapsed. `expandLabel`, `collapseLabel`, `slots.toggle` and `slotProps.toggle` are removed; Alt+T only moves focus into the stack, which collapses again when focus leaves.
+- `Toast` announces a message as soon as it arrives, so a notification tucked behind a collapsed pile still reaches a screen reader, and its text stays in the accessibility tree while the card is inert.
 
 ## 0.12.0 — 2026-10-24
 
