@@ -8,6 +8,7 @@ import { CARD_FRAME } from '../game-card/card-frame';
 import { GameCard } from '../game-card';
 import { FLIGHT_GEOMETRY as config } from './geometry';
 import type { CardFlightSpec } from './card-flights';
+import type { FlightOutcome } from '../flights';
 
 const bodyStyle = css({
   position: 'fixed', left: 0, top: 0, pointerEvents: 'none', zIndex: vars.zIndex.cardFlight,
@@ -24,7 +25,7 @@ const pose = (x: number, y: number, rotate: number, scale: number) =>
   `translate(${x}px, ${y}px) rotate(${rotate}deg) scale(${scale})`;
 
 export function CardFlight({ flightId, spec, onStart, onFinish }: {
-  flightId: number; spec: CardFlightSpec; onStart?: (cancel: () => void) => void; onFinish: () => void;
+  flightId: number; spec: CardFlightSpec; onStart?: (cancel: () => void) => void; onFinish: (outcome?: FlightOutcome) => void;
 }) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const shadowRef = useRef<HTMLDivElement>(null);
@@ -76,7 +77,7 @@ export function CardFlight({ flightId, spec, onStart, onFinish }: {
     onStart?.(cancel);
     void Promise.all([travel, lifted, flip, departure.finished]).then(() => {
       if (active) { body.style.display = 'none'; onFinish(); }
-    }).catch(() => { if (active) { cancel(); onFinish(); } });
+    }).catch(() => { if (active) { cancel(); onFinish({ status: 'cancelled' }); } });
     return cancel;
   }, [flightId]);
   const style: CSSProperties & { '--game-card-width': string } = {

@@ -15,7 +15,7 @@ const meta = {
   args: { chips: [{ value: 5, count: 5 }], locale: 'en-US', size: 'xl' },
   parameters: { docs: {
     description: { component: 'Show blinds, bets, and pots as towers of casino chips.' },
-    usage: 'The stack is decorative unless you supply a label. Put the real total in the surrounding pot or seat text, or in the image label, even when the visible chips are capped. Counts are nonnegative safe integers. Empty stacks render nothing.\n\nWrap your endpoints and controls in `ChipFlights`, then call `send` from `useChipFlights()` with the element refs. The provider owns the flight layer. The promise resolves with a landed, cancelled, or skipped status.',
+    usage: 'The stack is decorative unless you supply a label. Put the real total in the surrounding pot or seat text, or in the image label, even when the visible chips are capped. Counts are nonnegative safe integers. Empty stacks render nothing.\n\nWrap your endpoints and controls in `ChipFlights`, then call `send` from `useChipFlights()` with the element refs. The provider owns the flight layer. The promise resolves with a landed, cancelled, or skipped status. Use `FlightProvider` and `useFlights` for serial table transfers and pot holds. See the [Flights guide](https://ui.jfrader.com/#/components/flights) for the provider and low-level hook contracts.',
     sections: [{ title: 'Chips in motion', stories: ['SendChipsToThePot'] }, { title: 'Hooks', stories: ['ChipFlightHook'] }, { title: 'Bets and pots', stories: ['Pot', 'BetLine', 'StackHeights', 'Capped'] }, { title: 'View and scale', stories: ['Flat', 'Sizes', 'Light'] }],
   } },
 } satisfies Meta<typeof GameChipStack>;

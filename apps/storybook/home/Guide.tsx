@@ -8,6 +8,7 @@ import './guide.css';
 const guidePaths: Record<string, string> = {
   './getting-started.md': 'foundations-getting-started',
   './theming.md': 'foundations-theming',
+  './flights.md': 'foundations-flights',
   './styling.md': 'foundations-styling',
 };
 

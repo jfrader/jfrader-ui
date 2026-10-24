@@ -11,6 +11,7 @@ import { useLatestCallback } from '../../utils/use-latest-callback';
 import { useThemeScope } from '../../styling/theme-scope';
 import { GameChip, GAME_CHIP_SIZES, type GameChipSize } from '../game-chip/game-chip';
 import type { GameChipStackChip } from './game-chip-stack';
+import type { FlightOutcome } from '../flights';
 
 export interface ChipFlightOptions {
   /** Measures the departure element in viewport coordinates. */
@@ -30,12 +31,7 @@ export interface UseChipFlightOptions {
   /** Reports activity edges, including cancellation and unmount. */
   onBusyChange?: (busy: boolean) => void;
 }
-export interface ChipFlightResult {
-  /** Reports landing, explicit cancellation or unmount, or a skipped flight. */
-  status: 'landed' | 'cancelled' | 'skipped';
-  /** Explains why motion was skipped. */
-  reason?: 'reduced-motion' | 'missing-geometry';
-}
+export type ChipFlightResult = FlightOutcome;
 export interface ChipFlightsProps extends UseChipFlightOptions {
   /** Contains the departure and landing elements and controls. */
   children: ReactNode;

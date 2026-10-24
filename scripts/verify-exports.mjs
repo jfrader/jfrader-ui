@@ -40,6 +40,7 @@ if (!manifest.peerDependencies?.shiki || manifest.peerDependenciesMeta?.shiki?.o
 const subpathOnlyComponents = new Set([
   'call-overlay',
   'card-flights',
+  'flights',
   'deck',
   'flip-game-card',
   'game-actions',

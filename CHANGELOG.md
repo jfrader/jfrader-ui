@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added
+
+- `FlightProvider` and `useFlights` in `@jfrader/ui/flights` own deals, chip transfers, and resyncs with completion handles. The Flights guide covers outcomes, card groups, serial chip transfers, and custom surfaces.
+
+### Deprecated
+
+- `deal` and `revision` on `CardFlights`, `PokerTable`, and `TrucoTable`, plus `PokerTable.chipTransfer` and `PokerTable.potFrom`, are replaced by `useFlights` calls inside `FlightProvider`. They remain supported for one minor release and warn in development.
+
 ## 0.13.0 — 2026-10-24
 
 ### Changed

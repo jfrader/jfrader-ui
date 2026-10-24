@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type ComponentPropsWithRef, type ComponentType, type ReactNode, type Ref } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ComponentPropsWithRef, type ComponentType, type ReactNode, type Ref } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import Decimal from 'decimal.js';
@@ -19,6 +19,10 @@ import { CARD_FRAME } from '../game-card/card-frame';
 import { GameSeat, type GameSeatProps } from '../game-seat';
 import { GameTable, useGameTableSeat, type GameTableProps } from '../game-table';
 import { PersonAvatar } from '../person-avatar';
+import type { FlightOutcome, TableFlightEvent } from '../flights/types';
+import { useFlightSurface } from '../flights/flight-provider';
+
+declare const process: { env: { NODE_ENV?: string } };
 
 /** One card on the community board. */
 export interface PokerTableCard {
@@ -112,10 +116,11 @@ export interface PokerTableProps extends SxProps {
   board?: readonly PokerTableCard[];
   /** Chip total shown in the center. Omit to hide the pot. */
   pot?: number;
-  /** Sends chips from a seat to the pot once per new id. The amount defaults to the pot increase. A new id cancels the active transfer. The pot remains authoritative. */
+  /** Sends chips from a seat when the pot increases.
+   * @deprecated Call useFlights().sendChips() inside FlightProvider instead. Retained for one minor release. */
   chipTransfer?: { id: string | number; fromPlayerKey: string; amount?: number };
   /** Names the rendered seat whose plaque sends chips when pot grows.
-   * @deprecated Use `chipTransfer` with an explicit transfer id instead.
+   * @deprecated Call useFlights().sendChips() inside FlightProvider instead. Retained for one minor release.
    */
   potFrom?: string;
   /** Sets the positive, finite chip values used to depict the pot, largest first. Must not be empty. Defaults to [1000, 500, 100, 25, 5, 1]. Unrepresented remainders remain in the formatted total. */
@@ -128,9 +133,11 @@ export interface PokerTableProps extends SxProps {
   actionsLabel?: string;
   /** Overrides the default copy. */
   labels?: Partial<PokerTableLabels>;
-  /** Change to deal the hole cards. The first render appears in place. */
+  /** Change to deal the hole cards. The first render appears in place.
+   * @deprecated Call useFlights().deal() inside FlightProvider instead. Retained for one minor release. */
   deal?: string | number;
-  /** Change to replace the card snapshot without animation. */
+  /** Change to replace the card snapshot without animation.
+   * @deprecated Call useFlights().resync() inside FlightProvider instead. Retained for one minor release. */
   revision?: string | number;
   /** Seat receiving the first dealt card. */
   forehand?: string;
@@ -178,6 +185,12 @@ const BOARD_SLOTS = 5;
 const DEFAULT_DENOMINATIONS = [1000, 500, 100, 25, 5, 1] as const;
 const POT_MAX_VISIBLE = 3;
 const Exact = Decimal.clone({ precision: 40 });
+type TransferEvent = Extract<TableFlightEvent, { kind: 'transfer' }>;
+interface ChipLane {
+  pending: TransferEvent[];
+  active: TransferEvent | null;
+  generation: number;
+}
 
 function potChips(pot: number | undefined, denominations: readonly number[]): GameChipStackChip[] {
   const values = [...new Set(denominations)];
@@ -377,6 +390,8 @@ function PokerTableContent({
   style,
   sx,
 }: PokerTableProps) {
+  const surface = useFlightSurface('chips');
+  const flights = surface.events;
   const labels = { ...DEFAULT_LABELS, ...labelOverrides };
   const Root = slots?.root ?? component ?? 'div';
   const Seat = slots?.seat ?? GameSeat;
@@ -387,9 +402,14 @@ function PokerTableContent({
   const mergedRef = useMergeRefs([ref, rootSlot?.ref, tableRef]);
   const [shownPot, setShownPot] = useState(pot);
   const previousPot = useRef(pot);
-  const generation = useRef(0);
-  const seenTransfers = useRef(new Set<string | number>());
-  const warnedPotFrom = useRef(false);
+  const seenTransfers = useRef(new Set<string>());
+  const legacyTransfer = useRef<string | number | undefined>(undefined);
+  const legacySequence = useRef(0);
+  const legacyTransfers = useRef(new WeakSet<TableFlightEvent>());
+  const previousRevision = useRef(revision);
+  const presentTransfers = useRef(new Set<string>());
+  const warned = useRef(new Set<string>());
+  const lane = useRef<ChipLane>({ pending: [], active: null, generation: 0 });
   const activity = useRef<{ card: boolean; chip: boolean; last: boolean | undefined }>({ card: false, chip: false, last: undefined });
   const notify = useLatestCallback(onBusyChange);
   const report = useCallback((kind: 'card' | 'chip', value: boolean) => {
@@ -398,49 +418,85 @@ function PokerTableContent({
     if (busy !== activity.current.last) { activity.current.last = busy; notify(busy); }
   }, [notify]);
   const cardActivity = useCallback((busy: boolean) => report('card', busy), [report]);
-  const { send, cancel, busy: chipBusy } = useChipFlights();
-  useEffect(() => { report('chip', chipBusy); }, [chipBusy, report]);
-  useEffect(() => () => { report('chip', false); }, [report]);
-  const updatePot = useLatestCallback((next: number | undefined) => {
-    const previous = previousPot.current;
-    previousPot.current = next;
-    const increase = (next ?? 0) - (previous ?? 0);
-    const explicit = chipTransfer !== undefined;
-    const fresh = explicit && !seenTransfers.current.has(chipTransfer.id);
-    if (explicit && !fresh && Object.is(next, previous)) return;
-    if (fresh) {
-      seenTransfers.current.add(chipTransfer.id);
-      if (seenTransfers.current.size > 100) {
-        const oldest = seenTransfers.current.values().next().value;
-        if (oldest !== undefined) seenTransfers.current.delete(oldest);
-      }
-    }
-    const revision = ++generation.current;
+  const { send, cancel } = useChipFlights();
+  const settle = surface.settle;
+  const clearLane = useCallback(() => {
+    const state = lane.current;
+    state.generation++;
     cancel();
-    const fromKey = explicit ? (fresh ? chipTransfer.fromPlayerKey : undefined) : potFrom;
-    if (!explicit && potFrom && increase > 0 && !warnedPotFrom.current) {
-      warnedPotFrom.current = true;
-      if (process.env.NODE_ENV !== 'production') console.warn('PokerTable: potFrom is deprecated. Use chipTransfer instead.');
-    }
-    if (fromKey !== undefined && !players.some(player => player.key === fromKey)) {
-      if (process.env.NODE_ENV !== 'production') console.warn(`PokerTable: unknown fromPlayerKey "${fromKey}". Available keys: ${players.map(player => player.key).join(', ')}`);
-      setShownPot(next);
-      return;
-    }
+    if (state.active) settle(state.active.id, { status: 'cancelled' });
+    state.pending.forEach(event => settle(event.id, { status: 'cancelled' }));
+    state.active = null;
+    state.pending = [];
+  }, [cancel, settle]);
+  const drain = useLatestCallback(() => {
+    const state = lane.current;
+    if (state.active) return;
+    const event = state.pending.shift();
+    if (!event) { setShownPot(previousPot.current); report('chip', false); return; }
+    state.active = event;
+    const generation = state.generation;
     const seat = Array.from(tableRef.current?.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]') ?? [])
-      .find(node => node.dataset.slotPlayer === fromKey);
+      .find(node => node.dataset.slotPlayer === event.from);
     const from = seat?.querySelector<HTMLElement>('[data-ui~="game-seat"]');
     const to = potRef.current?.querySelector<HTMLElement>('[data-ui="game-chip-stack"]') ?? potRef.current;
-    const amount = explicit ? chipTransfer.amount ?? increase : increase;
-    if (next !== undefined && Number.isFinite(next) && increase > 0 && Number.isFinite(amount) && amount > 0 && fromKey !== undefined && from && to) {
-      void send({ from, to, chips: potChips(amount, denominations), size: 'sm', locale })
-        .then(() => { if (generation.current === revision) setShownPot(next); });
-    } else setShownPot(next);
+    if (!players.some(player => player.key === event.from) && process.env.NODE_ENV !== 'production') console.warn(`PokerTable: unknown player key "${event.from}".`);
+    const supported = event.to === undefined || event.to === 'pot';
+    const result = supported && from && to && Number.isFinite(event.amount) && event.amount > 0
+      ? send({ from, to, chips: potChips(event.amount, denominations), size: 'sm', locale })
+      : Promise.resolve<FlightOutcome>({ status: 'skipped', reason: 'missing-geometry' });
+    if (supported && from?.isConnected && to?.isConnected && from.getBoundingClientRect().width > 0 && to.getBoundingClientRect().width > 0 &&
+      Number.isFinite(event.amount) && event.amount > 0 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) report('chip', true);
+    void result.then(outcome => {
+      if (state.generation !== generation || state.active !== event) return;
+      state.active = null;
+      settle(event.id, outcome);
+      drain();
+    });
   });
-  useEffect(() => {
-    updatePot(pot);
-  }, [pot, potFrom, chipTransfer?.id, updatePot]);
-  useEffect(() => () => { generation.current++; cancel(); }, [cancel]);
+  useLayoutEffect(() => {
+    for (const [name, value] of [['chipTransfer', chipTransfer], ['potFrom', potFrom]] as const) {
+      if (value !== undefined && !warned.current.has(name)) {
+        warned.current.add(name);
+        if (process.env.NODE_ENV !== 'production') console.warn(`PokerTable: ${name} is deprecated. Use useFlights() inside FlightProvider instead.`);
+      }
+    }
+    const increase = (pot ?? 0) - (previousPot.current ?? 0);
+    if (chipTransfer && chipTransfer.id === legacyTransfer.current && increase !== 0 && process.env.NODE_ENV !== 'production') console.warn(`PokerTable: stale chipTransfer id "${chipTransfer.id}". Trigger a new request with useFlights() instead.`);
+    flights.forEach(event => {
+      if (event.kind === 'transfer' && seenTransfers.current.has(event.id) && !presentTransfers.current.has(event.id) && process.env.NODE_ENV !== 'production') console.warn(`PokerTable: stale flight id "${event.id}". Trigger a new request with useFlights() instead.`);
+    });
+    presentTransfers.current = new Set(flights.map(event => event.id));
+    const incoming = flights.filter(event => event.kind !== 'deal' && !seenTransfers.current.has(event.id));
+    incoming.forEach(event => seenTransfers.current.add(event.id));
+    if (increase > 0 && (chipTransfer ? chipTransfer.id !== legacyTransfer.current : potFrom !== undefined)) {
+      const event: TransferEvent = { id: `legacy-transfer-${++legacySequence.current}`, kind: 'transfer', from: chipTransfer?.fromPlayerKey ?? potFrom!, amount: chipTransfer?.amount ?? increase };
+      legacyTransfers.current.add(event);
+      incoming.push(event);
+    }
+    legacyTransfer.current = chipTransfer?.id;
+    const state = lane.current;
+    const resynced = previousRevision.current !== revision || incoming.some(event => event.kind === 'resync');
+    if (previousRevision.current !== revision) clearLane();
+    previousRevision.current = revision;
+    if (state.active && !legacyTransfers.current.has(state.active) && !flights.some(event => event.id === state.active?.id)) {
+      state.generation++;
+      cancel();
+      state.active = null;
+    }
+    state.pending = state.pending.filter(event => legacyTransfers.current.has(event) || flights.some(input => input.id === event.id));
+    const wasBusy = Boolean(state.active || state.pending.length);
+    for (const event of incoming) {
+      if (event.kind === 'resync') { clearLane(); settle(event.id, { status: 'skipped', reason: 'resync' }); }
+      else if (event.kind === 'transfer') state.pending.push(event);
+    }
+    if (resynced) setShownPot(pot);
+    else if (!wasBusy && state.pending.length) setShownPot(previousPot.current);
+    previousPot.current = pot;
+    if (!state.active && !state.pending.length) setShownPot(pot);
+    drain();
+  });
+  useEffect(() => () => { clearLane(); report('chip', false); }, [clearLane, report]);
   const rootClasses = [className, rootSlot?.className].filter(Boolean).join(' ') || undefined;
   const formatter = new Intl.NumberFormat(locale);
   const visiblePot = shownPot;
