@@ -1,6 +1,8 @@
 import { StrictMode, useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
+import { MotionConfig } from 'motion/react';
+import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
 import { Dialog } from '../dialog';
@@ -26,6 +28,12 @@ const grouped: readonly DockItem[] = [
   ] },
   tools[1]!,
 ];
+const runningTools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V', running: true },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H', running: true },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
 const meta = {
   title: 'Inputs/Dock',
   component: Dock,
@@ -43,7 +51,7 @@ const meta = {
     docs: {
       sections: [
         { title: 'Basic', stories: ['Default'] },
-        { title: 'Items', stories: ['AlwaysLabelsTouch', 'BadgesLarge', 'BadgesZero', 'LongLabels'] },
+        { title: 'Items', stories: ['RunningTools', 'AlwaysLabelsTouch', 'BadgesLarge', 'BadgesZero', 'LongLabels'] },
         { title: 'Groups', stories: ['Grouped', 'DisabledEmptyGroups'] },
         { title: 'Selection', stories: ['NoSelection', 'RemovedOrDisabledSelection'] },
         { title: 'Reorder', stories: ['Reorderable', 'MoveOptions'] },
@@ -62,6 +70,11 @@ Use Dock for persistent or floating toolbars that hold creative canvas tools, dr
 - Each item and group requires a unique \`id\` across the dock. Nested groups are not supported.
 - Trays support one level of grouping and open above or adjacent to their trigger.
 - Shortcut badges are visual hints and do not register global keyboard shortcuts.
+- \`running\` puts a dot beneath a tool and adds "Running" to its name. The selected tool's dot stretches into a bar.
+
+### Motion
+
+Icons near the pointer grow and rise; the buttons keep their size and position. Touch, persistent labels and reduced motion turn magnification off.
 
 ### Keyboard and accessibility
 
@@ -169,6 +182,76 @@ const tools: readonly DockItem[] = [
   },
 };
 export const Light: Story = { ...Default, name: 'Light theme', decorators: [withLightTheme] };
+export const RunningTools: Story = {
+  name: 'Running tools',
+  args: { items: runningTools, defaultValue: 'select' },
+  parameters: {
+    docs: {
+      description: { story: 'Mark tools with an active task; the selected tool shows a longer bar.' },
+      source: {
+        language: 'tsx',
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
+const tools: readonly DockItem[] = [
+  { id: 'select', label: 'Select', icon, shortcut: 'V', running: true },
+  { id: 'hand', label: 'Hand', icon, shortcut: 'H', running: true },
+  { id: 'locked', label: 'Locked', icon, disabled: true },
+  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+];
+
+<Dock items={tools} defaultValue="select" />`,
+      },
+    },
+  },
+  play: async ({ canvas }) => {
+    const select = canvas.getByRole('button', { name: 'Select, V, Running, Selected' });
+    const hand = canvas.getByRole('button', { name: 'Hand, H, Running' });
+    const text = canvas.getByRole('button', { name: 'Text, T' });
+    // Selected and running differ in shape: a bar against a dot, both against the same baseline.
+    const bar = getComputedStyle(select.querySelector('[data-ui="dock-selection"]')!, '::after');
+    const dot = hand.querySelector<HTMLElement>('[data-ui="dock-running"]')!.getBoundingClientRect();
+    await expect(parseFloat(bar.width)).toBeGreaterThanOrEqual(dot.width * 3);
+    await expect(parseFloat(bar.height)).toBeCloseTo(dot.height, 0);
+    await expect(dot.width).toBeGreaterThanOrEqual(3);
+    await expect(hand.querySelector('[data-ui="dock-selection"]')).toBeNull();
+    await expect(text.querySelector('[data-ui="dock-running"]')).toBeNull();
+    await expect(text.querySelector('[data-ui="dock-selection"]')).toBeNull();
+  },
+};
+const glyphScale = (button: HTMLElement) =>
+  new DOMMatrix(getComputedStyle(button.querySelector('[data-ui="dock-glyph"]')!).transform).a;
+export const Magnification: Story = {
+  name: 'Pointer magnification',
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const buttons = ['Select, V, Selected', 'Hand, H', 'Locked', 'Text, T'].map((name) => canvas.getByRole('button', { name }));
+    const [select, hand, locked, text] = buttons as [HTMLElement, HTMLElement, HTMLElement, HTMLElement];
+    const before = buttons.map((button) => button.getBoundingClientRect());
+    const center = hand.getBoundingClientRect();
+    await userEvent.pointer({ target: hand, coords: { clientX: center.left + center.width / 2, clientY: center.top + center.height / 2 } });
+    await waitFor(() => expect(glyphScale(hand)).toBeGreaterThan(1.38));
+    await waitFor(() => expect(glyphScale(select)).toBeGreaterThan(1.15));
+    // A smooth falloff: neighbors grow less than the target, the tool two tiles away barely moves.
+    await expect(glyphScale(select)).toBeLessThan(glyphScale(hand));
+    await expect(Math.abs(glyphScale(select) - glyphScale(locked))).toBeLessThan(0.02);
+    await expect(glyphScale(text)).toBeLessThan(1.05);
+    await expect(glyphScale(text)).toBeLessThan(glyphScale(select));
+    // Targets never move under the pointer.
+    buttons.forEach((button, index) => {
+      const box = button.getBoundingClientRect();
+      expect(Math.abs(box.left - before[index]!.left)).toBeLessThan(0.5);
+      expect(Math.abs(box.width - before[index]!.width)).toBeLessThan(0.5);
+    });
+    await userEvent.pointer({ target: canvasElement.ownerDocument.body, coords: { clientX: 0, clientY: 0 } });
+    await waitFor(() => { for (const button of buttons) expect(glyphScale(button)).toBeLessThan(1.01); });
+  },
+};
 export const Grouped: Story = {
   name: 'Grouped tools',
   args: { items: grouped, defaultValue: 'rectangle' },
@@ -1129,9 +1212,22 @@ export const InheritedRTL: Story = {
 };
 export const ReducedMotion: Story = {
   ...Reorderable,
+  name: 'Reduced motion',
+  decorators: [(Story) => <MotionConfig reducedMotion="always"><Story /></MotionConfig>],
+  play: async (context) => {
+    await Reorderable.play!(context);
+    const { canvas, userEvent } = context;
+    const hand = canvas.getByRole('button', { name: 'Hand, H' });
+    const box = hand.getBoundingClientRect();
+    await userEvent.pointer({ target: hand, coords: { clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 } });
+    await new Promise((resolve) => setTimeout(resolve, motionDurationMs.slow));
+    await expect(glyphScale(hand)).toBe(1);
+    await userEvent.click(hand);
+    await expect(hand).toHaveAttribute('aria-pressed', 'true');
+  },
   parameters: {
     docs: {
-      description: { story: 'Enable reduced motion in browser rendering settings to inspect instant tray, selection and order changes. The play checks keyboard behavior, not media emulation.' },
+      description: { story: 'Change selection, order and trays without movement; icons do not magnify.' },
       source: {
         language: 'tsx',
         code: `import { Dock, type DockItem } from '@jfrader/ui';

@@ -7,32 +7,41 @@ import {
   useState,
   type ComponentPropsWithRef,
   type ComponentType,
+  type CSSProperties,
   type ReactNode,
 } from 'react';
-import { MotionConfig, motion, useReducedMotion } from 'motion/react';
+import { useReducedMotionConfig } from 'motion/react';
+import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
-import { motionDurationMs } from '../../styling/motion-timings';
 import { focusRingOutset } from '../../styling/focus-ring';
-import { listboxScrollStyle } from '../../styling/listbox-style';
+import { iconWrapperStyle } from '../../styling/icon-wrapper';
+import { listboxScrollStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import {
   GeneratedRoot,
   type GeneratedRootSlotProps,
 } from '../../utils/generated-root';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { useReducedMotion } from '../../utils/use-reduced-motion';
 import { moveRovingFocus } from '../../utils/roving-focus';
 import { ANCHOR_GAP } from '../../overlay/use-overlay-floating';
+import { Button } from '../button';
 import {
   MenuController,
   MenuContentPart,
   MenuItemPart,
   MenuTriggerPart,
+  menuItemStyles,
+  menuItemToneStyles,
   useMenuContext,
   type MenuContentProps,
   type MenuItemProps,
   type MenuTriggerProps,
 } from '../menu/menu';
+import { Spinner } from '../spinner';
+import { tooltipContentStyle } from '../tooltip/tooltip';
 
 export interface RadialMenuAction {
   id: string;
@@ -54,9 +63,11 @@ export interface RadialMenuSlots {
 }
 export interface RadialMenuProps
   extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
-  /** Sets the text on the menu trigger. */
+  /** Names the round hub button that opens the menu. */
   label: string;
-  /** Supplies actions in arc order; more than six actions use a vertical list. */
+  /** Replaces the hub glyph. Defaults to a plus that turns into a close cross while open. */
+  icon?: ReactNode;
+  /** Supplies actions in arc order; more than eight actions use a vertical list. */
   actions: readonly RadialMenuAction[];
   /** Runs the selected action by id and requests closing on success in the same open cycle. Rejection keeps the menu open. */
   onAction?: (id: string) => void | Promise<void>;
@@ -66,9 +77,9 @@ export interface RadialMenuProps
   defaultOpen?: boolean;
   /** Called when the menu requests opening or closing. */
   onOpenChange?: (open: boolean) => void;
-  /** Sets the action arc radius in pixels, with a minimum of 40. Defaults to 104 for omitted or non-finite values. */
+  /** Sets the action arc radius in pixels, with a minimum of 48. Defaults to 104 for omitted or non-finite values. A radius too small to clear the hub uses a list. */
   radius?: number;
-  /** Sets the arc span in degrees, clamped to 1–360. Defaults to 150 for omitted or non-finite values. */
+  /** Sets the arc span in degrees, clamped to 1–360. The arc widens, up to a full ring, when the actions need more room. Omitted or non-finite values space actions 45° apart. */
   spread?: number;
   /** Physical angle in degrees: up -90, right 0, down 90, left 180. */
   direction?: number;
@@ -100,79 +111,119 @@ export interface RadialMenuProps
     status?: Part<ComponentPropsWithRef<'div'>>;
   };
 }
-const TARGET = 40;
+// Hub and satellites share one round size: the large button height, above the touch target.
+const ITEM = parseFloat(base.space[12]);
 const DEFAULT_RADIUS = 104;
+// One rhythm at every count: three actions fan across 90°, eight close into a ring.
+const DEFAULT_STEP = 45;
+const MAX_RADIAL_ACTIONS = 8;
 const HOLD_MS = 250;
-const HIT_RADIUS = 48;
+const HIT_RADIUS = ITEM;
 const DEAD_ZONE = 34;
 const MOVEMENT_THRESHOLD = 8;
-const triggerGestureStyle = css({ touchAction: 'none' });
+const DEGREES = 180 / Math.PI;
 const rootStyle = css({
   display: 'inline-block',
   color: vars.color.text,
   fontFamily: vars.font.sans,
 });
-const controlStyle = css({
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: vars.space[2],
-  minInlineSize: vars.space[10],
-  minBlockSize: vars.space[10],
-  padding: vars.space[2],
-  border: `1px solid ${vars.color.borderControl}`,
+const hubStyle = css({
+  touchAction: 'none',
+  inlineSize: vars.space[12],
+  minInlineSize: vars.space[12],
+  paddingInline: 0,
   borderRadius: vars.radius.full,
-  background: vars.color.surfaceRaised,
-  color: vars.color.text,
-  font: 'inherit',
-  cursor: 'pointer',
-  '&:focus-visible': focusRingOutset,
-  '&:hover, &[data-targeted="true"]': {
-    background: vars.color.accentSoft,
-    color: vars.color.accentText,
+  boxShadow: vars.shadow.overlay,
+  '& svg': {
+    inlineSize: vars.space[5],
+    blockSize: vars.space[5],
+    transitionProperty: 'rotate',
+    transitionDuration: vars.motion.duration.base,
+    transitionTimingFunction: vars.motion.easeStandard,
   },
-  '&[data-tone="danger"]': { color: vars.color.dangerText },
-  '&[aria-disabled="true"], &:disabled': {
-    cursor: 'not-allowed',
-    color: vars.color.textMuted,
-  },
+  '&[aria-expanded="true"] [data-hub-glyph] svg': { rotate: '45deg' },
+  '&[data-reduced-motion] svg': { transitionDuration: '0s' },
+  [REDUCED_MOTION]: { '& svg': { transitionDuration: '0s' } },
+  [FORCED_COLORS]: { boxShadow: 'none', border: '1px solid ButtonText' },
 });
 const contentStyle = css({
   position: 'relative',
   outline: 'none',
   pointerEvents: 'none',
-  '&[data-linear="true"]': {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: vars.space[2],
-    padding: vars.space[2],
-    background: vars.color.surfaceRaised,
-    borderRadius: vars.radius.md,
-    border: `1px solid ${vars.color.borderControl}`,
-  },
 });
-const linearContentStyle = css(listboxScrollStyle, {
+const linearContentStyle = css(listboxSurfaceStyle, listboxScrollStyle, {
+  pointerEvents: 'auto',
+});
+const radialItemStyle = css({
+  position: 'absolute',
   boxSizing: 'border-box',
-  maxInlineSize: `calc(100vw - ${vars.space[8]})`,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  inlineSize: vars.space[12],
+  blockSize: vars.space[12],
+  padding: 0,
+  border: `1px solid ${vars.color.borderControl}`,
+  borderRadius: vars.radius.full,
+  backgroundColor: vars.color.surfaceRaised,
+  boxShadow: vars.shadow.overlay,
+  color: vars.color.text,
+  font: 'inherit',
+  fontSize: vars.textSize.md,
+  fontWeight: vars.fontWeight.medium,
+  cursor: 'pointer',
   pointerEvents: 'auto',
-});
-const itemStyle = css({
-  pointerEvents: 'auto',
-  maxInlineSize: '100%',
-  overflowWrap: 'anywhere',
-  '&[data-radial="true"]': {
-    position: 'absolute',
-    inlineSize: vars.space[10],
-    blockSize: vars.space[10],
-    padding: 0,
+  transitionProperty: 'opacity, scale, translate, background-color, border-color, color',
+  transitionDuration: vars.motion.duration.base,
+  transitionTimingFunction: vars.motion.easeStandard,
+  '@starting-style': {
+    opacity: 0,
+    scale: '0.4',
+    translate: 'var(--radial-from-x) var(--radial-from-y)',
   },
   '& svg': { inlineSize: vars.space[5], blockSize: vars.space[5] },
+  '&:hover:not([aria-disabled="true"]), &[data-active]:not([aria-disabled="true"]), &[data-targeted="true"]': {
+    scale: '1.08',
+    borderColor: vars.color.accent,
+    backgroundColor: vars.color.surfaceHover,
+    color: vars.color.accentText,
+  },
+  '&:focus-visible': focusRingOutset,
+  '&[data-tone="danger"]': { color: vars.color.dangerText },
+  '&[data-tone="danger"]:hover:not([aria-disabled="true"]), &[data-tone="danger"][data-active]:not([aria-disabled="true"]), &[data-tone="danger"][data-targeted="true"]': {
+    borderColor: vars.color.danger,
+    color: vars.color.dangerText,
+  },
+  '&[aria-disabled="true"]': { opacity: 0.55, cursor: 'not-allowed' },
+  '[data-reduced-motion] > &': { transitionDuration: '0s' },
+  [REDUCED_MOTION]: { transitionDuration: '0s' },
+  [FORCED_COLORS]: {
+    boxShadow: 'none',
+    borderColor: 'ButtonText',
+    '&[data-targeted="true"], &[data-active]': { borderColor: 'Highlight' },
+  },
+});
+const linearItemStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space[2],
+});
+const captionStyle = css(tooltipContentStyle, {
+  position: 'absolute',
+  translate: '-50% -50%',
+  whiteSpace: 'nowrap',
+  pointerEvents: 'none',
 });
 const statusStyle = css({
   fontSize: vars.textSize.sm,
   color: vars.color.textMuted,
   marginBlockStart: vars.space[2],
 });
+const plusGlyph = (
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="M10 4v12M4 10h12" />
+  </svg>
+);
 const defaultMessages = {
   pending: (label: string) => `${label}: pending`,
   done: (label: string) => `${label}: done`,
@@ -188,7 +239,7 @@ export function RadialMenu({
   ...props
 }: RadialMenuProps) {
   const clampedRadius = Number.isFinite(radius)
-    ? Math.max(TARGET, radius)
+    ? Math.max(ITEM, radius)
     : DEFAULT_RADIUS;
   const [linear, setLinear] = useState(false);
   const [current = false, request] = useControlledState(
@@ -200,34 +251,33 @@ export function RadialMenu({
     if (disabled && current) request(false);
   }, [disabled, current, request]);
   return (
-    <MotionConfig reducedMotion="user">
-      <MenuController
-        open={current && !disabled}
-        onOpenChange={request}
-        placement="top"
-        positioning={{
-          gap: linear ? ANCHOR_GAP : -(clampedRadius + TARGET),
-          transform: false,
-          collision: props.collision,
-        }}
-      >
-        <RadialMenuBody
-          {...props}
-          radius={clampedRadius}
-          disabled={disabled}
-          onLinearChange={setLinear}
-        />
-      </MenuController>
-    </MotionConfig>
+    <MenuController
+      open={current && !disabled}
+      onOpenChange={request}
+      placement="top"
+      positioning={{
+        gap: linear ? ANCHOR_GAP : -(clampedRadius + ITEM),
+        transform: false,
+        collision: props.collision,
+      }}
+    >
+      <RadialMenuBody
+        {...props}
+        radius={clampedRadius}
+        disabled={disabled}
+        onLinearChange={setLinear}
+      />
+    </MenuController>
   );
 }
 
 function RadialMenuBody({
   label,
+  icon,
   actions,
   onAction,
   radius: r,
-  spread = 150,
+  spread,
   direction = -90,
   disabled,
   announce = true,
@@ -245,15 +295,21 @@ function RadialMenuBody({
   onLinearChange: (linear: boolean) => void;
 }) {
   const context = useMenuContext('RadialMenu', 'Root');
-  const reduce = useReducedMotion();
+  const deviceReduced = useReducedMotion();
+  const forcedReduced = useReducedMotionConfig();
+  const reduced = Boolean(deviceReduced) || forcedReduced === true;
   const [status, setStatus] = useState('');
-  const [pending, setPending] = useState(false);
+  const [pendingId, setPendingId] = useState<string | null>(null);
   const [target, setTarget] = useState<string | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const [focused, setFocused] = useState<string | null>(null);
   const [rtl, setRtl] = useState(false);
   const operation = useRef<object | null>(null);
   const openCycle = useRef(0);
   useLayoutEffect(() => {
     openCycle.current += 1;
+    setHovered(null);
+    setFocused(null);
   }, [context.open]);
   const gesture = useRef<{
     id: number;
@@ -300,37 +356,37 @@ function RadialMenuBody({
       setTarget(null);
     }
   }, [disabled]);
-  const arc = Number.isFinite(spread)
+  const count = actions.length;
+  const preferred = spread !== undefined && Number.isFinite(spread)
     ? Math.min(360, Math.max(1, spread))
-    : 150;
+    : undefined;
   const angle = Number.isFinite(direction)
     ? ((direction % 360) + 360) % 360
     : 270;
-  const diameter = r * 2 + TARGET;
+  const diameter = r * 2 + ITEM;
+  // Smallest angle between neighbors that keeps a gap between their circles. The arc widens to
+  // that spacing and closes into a full ring when the widened arc would wrap around the hub.
+  const minStep = 2 * Math.asin(Math.min(1, (ITEM + ANCHOR_GAP) / (2 * r))) * DEGREES;
+  const pitch = preferred === undefined ? Math.max(DEFAULT_STEP, minStep) : minStep;
+  const span = count < 2 ? 0 : Math.max(preferred ?? 0, (count - 1) * pitch);
+  const ring = preferred === 360 || (count > 1 && span + pitch >= 360);
+  const sweep = ring ? 360 : span;
+  const step = count < 2 ? 0 : ring ? 360 / count : span / (count - 1);
   const positions = actions.map((_, index) => {
-    const step =
-      arc === 360
-        ? arc / actions.length
-        : arc / Math.max(1, actions.length - 1);
-    const degrees =
-      angle +
-      (actions.length === 1 ? 0 : (-arc / 2 + index * step) * (rtl ? -1 : 1));
+    const degrees = angle + (index - (count - 1) / 2) * step * (rtl ? -1 : 1);
     return {
-      x: Math.cos((degrees * Math.PI) / 180) * r,
-      y: Math.sin((degrees * Math.PI) / 180) * r,
+      x: Math.cos(degrees / DEGREES) * r,
+      y: Math.sin(degrees / DEGREES) * r,
     };
   });
-  const overlap = positions.some((a, i) =>
-    positions.some(
-      (b, j) => i !== j && Math.hypot(a.x - b.x, a.y - b.y) < TARGET + ANCHOR_GAP,
-    ),
-  );
+  const crowded = ring && count * minStep > 360;
   const linear =
-    actions.length > 6 ||
-    overlap ||
+    count > MAX_RADIAL_ACTIONS ||
+    crowded ||
+    r < ITEM + ANCHOR_GAP ||
     (collision === 'shift' &&
-      (diameter + TARGET > viewport.width ||
-        diameter + TARGET > viewport.height));
+      (diameter + ITEM > viewport.width ||
+        diameter + ITEM > viewport.height));
   useLayoutEffect(() => {
     onLinearChange(linear);
   }, [linear, onLinearChange]);
@@ -340,7 +396,7 @@ function RadialMenuBody({
     const token = {};
     const cycle = openCycle.current;
     operation.current = token;
-    setPending(true);
+    setPendingId(action.id);
     setStatus(copy.pending(action.label));
     try {
       await onAction?.(action.id);
@@ -352,7 +408,7 @@ function RadialMenuBody({
     } finally {
       if (operation.current === token) {
         operation.current = null;
-        setPending(false);
+        setPendingId(null);
       }
     }
   };
@@ -366,6 +422,9 @@ function RadialMenuBody({
     gesture.current = null;
     setTarget(null);
   };
+  const inactive = disabled || !count;
+  const spotlight = actions.find((action) => action.id === (target ?? hovered ?? focused));
+  const captionDistance = r / 2;
   return (
     <GeneratedRoot
       {...props}
@@ -376,13 +435,17 @@ function RadialMenuBody({
       css={rootStyle}
       sx={sx}
     >
-      <MenuTriggerPart
+      <Button
         {...triggerProps}
-        family="RadialMenu"
-        marker="radial-menu-trigger"
-        styles={[controlStyle, triggerGestureStyle, triggerCss]}
-        slots={{ trigger: slots?.trigger }}
-        disabled={disabled || !actions.length}
+        variant="solid"
+        tone="accent"
+        size="lg"
+        disabled={inactive}
+        aria-label={triggerProps['aria-labelledby'] === undefined ? (triggerProps['aria-label'] ?? label) : triggerProps['aria-label']}
+        data-ui="radial-menu-trigger"
+        data-reduced-motion={reduced || undefined}
+        css={hubStyle}
+        sx={triggerCss}
         onKeyDown={(event) => {
           triggerProps.onKeyDown?.(event);
           if (
@@ -438,16 +501,13 @@ function RadialMenuBody({
           const x = event.clientX - rect.x - diameter / 2;
           const y = event.clientY - rect.y - diameter / 2;
           const distance = Math.hypot(x, y);
-          const pointerAngle = (Math.atan2(y, x) * 180) / Math.PI;
+          const pointerAngle = Math.atan2(y, x) * DEGREES;
           const delta = Math.abs(((pointerAngle - angle + 540) % 360) - 180);
-          const allowance =
-            actions.length <= 1
-              ? 30
-              : arc / Math.max(1, actions.length - 1) / 2;
+          const allowance = count <= 1 ? 30 : step / 2;
           if (
             distance < DEAD_ZONE ||
             distance > r + HIT_RADIUS ||
-            delta > Math.min(180, arc / 2 + allowance)
+            delta > Math.min(180, sweep / 2 + allowance)
           ) {
             setTarget(null);
             return;
@@ -481,9 +541,21 @@ function RadialMenuBody({
         }}
         onPointerCancel={cancelGesture}
         onLostPointerCapture={cancelGesture}
+        render={({ ref, 'data-ui': marker, ...rendered }) => (
+          <MenuTriggerPart
+            {...rendered}
+            ref={ref}
+            disabled={inactive}
+            family="RadialMenu"
+            marker={marker}
+            slots={{ trigger: slots?.trigger }}
+          />
+        )}
       >
-        {label}
-      </MenuTriggerPart>
+        <span css={iconWrapperStyle} aria-hidden data-hub-glyph>
+          {icon ?? plusGlyph}
+        </span>
+      </Button>
       <MenuContentPart
         {...contentProps}
         dir={rtl ? 'rtl' : 'ltr'}
@@ -492,7 +564,8 @@ function RadialMenuBody({
         styles={[contentStyle, linear && linearContentStyle, contentCss]}
         slots={{ content: slots?.content }}
         data-linear={linear}
-        aria-busy={pending || undefined}
+        data-reduced-motion={reduced || undefined}
+        aria-busy={pendingId !== null || undefined}
         style={{
           ...contentProps.style,
           width: linear ? undefined : diameter,
@@ -511,44 +584,81 @@ function RadialMenuBody({
           });
         }}
       >
-        {actions.map((action, index) => (
-          <motion.div
-            key={action.id}
-            initial={reduce ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: reduce ? 0 : motionDurationMs.base / 1000 }}
-          >
+        {actions.map((action, index) => {
+          const glyph = pendingId === action.id
+            ? <Spinner size="sm" decorative />
+            : action.icon ?? action.label.slice(0, 1);
+          const point = positions[index]!;
+          return (
             <MenuItemPart
               {...itemProps}
+              key={action.id}
               family="RadialMenu"
               marker="radial-menu-item"
               slots={{ item: slots?.item }}
-              styles={[controlStyle, itemStyle, itemCss]}
+              styles={linear
+                ? [menuItemStyles, menuItemToneStyles[action.tone ?? 'neutral'], linearItemStyle, itemCss]
+                : [radialItemStyle, itemCss]}
               closeOnSelect={false}
-              busy={pending}
+              busy={pendingId !== null}
               disabled={action.disabled}
-              title={action.label}
               aria-label={action.label}
               data-tone={action.tone}
               data-targeted={target === action.id}
               data-radial={!linear}
               style={{
                 ...itemProps.style,
-                left: linear ? undefined : r + positions[index]!.x,
-                top: linear ? undefined : r + positions[index]!.y,
+                ...(linear ? undefined : {
+                  left: r + point.x,
+                  top: r + point.y,
+                  '--radial-from-x': `${-point.x}px`,
+                  '--radial-from-y': `${-point.y}px`,
+                } as CSSProperties),
+              }}
+              onPointerEnter={(event) => {
+                itemProps.onPointerEnter?.(event);
+                setHovered(action.id);
+              }}
+              onPointerLeave={(event) => {
+                itemProps.onPointerLeave?.(event);
+                setHovered((current) => (current === action.id ? null : current));
+              }}
+              onFocus={(event) => {
+                itemProps.onFocus?.(event);
+                setFocused(action.id);
+              }}
+              onBlur={(event) => {
+                itemProps.onBlur?.(event);
+                setFocused((current) => (current === action.id ? null : current));
               }}
               onSelect={() => void select(action)}
             >
               {linear ? (
-                action.label
+                <>
+                  {(pendingId === action.id || action.icon !== undefined) && (
+                    <span css={iconWrapperStyle} aria-hidden>{glyph}</span>
+                  )}
+                  {action.label}
+                </>
               ) : (
-                <span aria-hidden="true">
-                  {action.icon ?? action.label.slice(0, 1)}
-                </span>
+                <span aria-hidden="true">{glyph}</span>
               )}
             </MenuItemPart>
-          </motion.div>
-        ))}
+          );
+        })}
+        {!linear && spotlight && (
+          <span
+            aria-hidden
+            css={captionStyle}
+            data-ui="radial-menu-caption"
+            style={{
+              left: r + ITEM / 2 + Math.cos(angle / DEGREES) * captionDistance,
+              top: r + ITEM / 2 + Math.sin(angle / DEGREES) * captionDistance,
+            }}
+          >
+            {spotlight.label}
+          </span>
+        )}
       </MenuContentPart>
       {status && (
         <WithSx styles={[statusStyle, statusCss]}>

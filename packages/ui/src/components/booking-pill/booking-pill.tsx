@@ -11,10 +11,11 @@ import {
   type ReactNode,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
-import { motion, MotionConfig } from 'motion/react';
+import { motion, MotionConfig, useReducedMotionConfig } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css } from '../../styling/css';
-import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
+import { css, type SerializedStyles } from '../../styling/css';
+import { disclosureCaret } from '../../styling/disclosure-caret';
+import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { motionDurationMs } from '../../styling/motion-timings';
 import type { SxProps } from '../../styling/sx';
@@ -23,6 +24,7 @@ import { dateTimeFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useReducedMotion } from '../../utils/use-reduced-motion';
+import { ButtonGroup, type ButtonGroupItemProps } from '../button-group';
 import { Calendar, type CalendarProps } from '../calendar';
 import {
   dateFromIso,
@@ -36,12 +38,16 @@ import {
   type FieldSlots,
   type FieldParts,
 } from '../field/field-slot';
+import { moneyFormat } from '../money-input/money-math';
+import { Pill } from '../pill';
 import { Select, type SelectItemProps } from '../select';
+import { Spinner } from '../spinner';
 import { TimePicker, type TimePickerProps } from '../time-picker';
 import { minutes } from '../time-picker/time-picker';
 
 export type BookingPillStep = 'party' | 'date' | 'time' | 'review';
-export type BookingPillStatus = 'idle' | 'pending' | 'success' | 'error';
+export type BookingPillStatus = 'idle' | 'pending' | 'success' | 'error' | 'cancelled';
+export type BookingPillSize = 'sm' | 'md';
 export interface BookingDraft {
   partySize: number;
   date: string;
@@ -50,6 +56,12 @@ export interface BookingDraft {
 export interface Booking extends BookingDraft {
   time: string;
 }
+export interface BookingPrice {
+  /** Integer amount in the currency's minor units, for example `4500` for £45.00. */
+  amount: number;
+  /** ISO 4217 currency code, for example `GBP`. */
+  currency: string;
+}
 export interface BookingPillLabels {
   trigger: (draft: BookingDraft, open: boolean) => ReactNode;
   stepParty: string;
@@ -57,6 +69,7 @@ export interface BookingPillLabels {
   stepTime: string;
   stepReview: string;
   stepBooked: string;
+  stepCancelled: string;
   decreaseParty: string;
   increaseParty: string;
   partyCount: (count: number) => string;
@@ -64,6 +77,8 @@ export interface BookingPillLabels {
   next: string;
   confirm: string;
   confirming: string;
+  cancel: string;
+  cancelling: string;
   newBooking: string;
   unavailable: string;
   noAvailability: string;
@@ -72,7 +87,12 @@ export interface BookingPillLabels {
   party: string;
   date: string;
   time: string;
+  price: string;
+  statusPending: string;
+  statusBooked: string;
+  statusCancelled: string;
   errorFallback: (error: unknown) => string;
+  cancelErrorFallback: (error: unknown) => string;
   stepStatus: (step: string) => string;
 }
 type Anatomy = {
@@ -125,6 +145,10 @@ export interface BookingPillProps
   venue: string;
   /** Adds venue details beneath the current step title. */
   venueDetail?: ReactNode;
+  /** Shows a price in the trigger and booking summary, formatted for `locale`. */
+  price?: BookingPrice;
+  /** Sets the pill height, text size and action size. `sm` matches small buttons. Defaults to `md`. */
+  size?: BookingPillSize;
   /** Controls the party size, date and selected time. */
   value?: BookingDraft;
   /** Seeds the draft and reset target. Defaults to two guests within the party bounds, `startDate` and the first available time. */
@@ -159,9 +183,11 @@ export interface BookingPillProps
   maxPartySize?: number;
   /** Confirms a valid booking. Resolution shows the receipt; rejection shows an error. */
   onConfirm: (booking: Booking) => void | Promise<void>;
+  /** Cancels a confirmed booking from its receipt. Resolution marks it cancelled; rejection keeps it booked with an error. Omit to hide the cancel action. */
+  onCancel?: (booking: Booking) => void | Promise<void>;
   /** Runs after requesting the initial draft and `party` step for a new booking. */
   onReset?: () => void;
-  /** Sets the locale for dates, times and guest counts. */
+  /** Sets the locale for dates, times, prices and guest counts. */
   locale?: string;
   /** Sets 12- or 24-hour time display. Defaults to the locale's hour cycle. */
   hourCycle?: 'h12' | 'h23';
@@ -180,6 +206,7 @@ export interface BookingPillProps
   /** Replaces the root element. `slots.root` takes precedence. */
   component?: BookingPillSlots['root'];
 }
+type Operation = 'confirm' | 'cancel';
 const STEP_ORDER: readonly BookingPillStep[] = [
   'party',
   'date',
@@ -191,6 +218,7 @@ const FACE_SPRING = {
   bounce: 0.12,
   visualDuration: motionDurationMs.slow / 1000,
 } as const;
+const NARROW_QUERY = '@container booking-pill (max-width: 22rem)';
 const ALL_AVAILABLE = () => true;
 const DEFAULT_LABELS: Omit<BookingPillLabels, 'partyCount' | 'trigger'> = {
   stepParty: 'Party size',
@@ -198,12 +226,15 @@ const DEFAULT_LABELS: Omit<BookingPillLabels, 'partyCount' | 'trigger'> = {
   stepTime: 'Select time',
   stepReview: 'Review booking',
   stepBooked: 'Booking confirmed',
+  stepCancelled: 'Booking cancelled',
   decreaseParty: 'Decrease party size',
   increaseParty: 'Increase party size',
   back: 'Back',
   next: 'Next',
   confirm: 'Confirm booking',
   confirming: 'Confirming...',
+  cancel: 'Cancel booking',
+  cancelling: 'Cancelling...',
   newBooking: 'New booking',
   unavailable: 'Unavailable',
   noAvailability: 'No available times for this date.',
@@ -212,100 +243,209 @@ const DEFAULT_LABELS: Omit<BookingPillLabels, 'partyCount' | 'trigger'> = {
   party: 'Party',
   date: 'Date',
   time: 'Time',
+  price: 'Price',
+  statusPending: 'Confirming',
+  statusBooked: 'Booked',
+  statusCancelled: 'Cancelled',
   errorFallback: () => 'Could not confirm this booking. Try another time.',
+  cancelErrorFallback: () => 'Could not cancel this booking. Try again.',
   stepStatus: (title) => `Step: ${title}`,
 };
+const checkGlyph = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden data-glyph="check">
+    <path d="m3.5 8.5 3 3 6-7" />
+  </svg>
+);
+const crossGlyph = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden data-glyph="cross">
+    <path d="m4.5 4.5 7 7m0-7-7 7" />
+  </svg>
+);
+const minusGlyph = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3.5 8h9" />
+  </svg>
+);
+const plusGlyph = (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M3.5 8h9M8 3.5v9" />
+  </svg>
+);
+// The pill and its panel share one radius: at the closed height it reads as a full stadium, and
+// opening only grows the box downward instead of swapping corners.
 const rootStyle = css({
+  boxSizing: 'border-box',
   display: 'grid',
+  gridTemplateRows: 'auto 0fr',
   inlineSize: '100%',
   maxInlineSize: '28rem',
   minInlineSize: 0,
+  containerType: 'inline-size',
+  containerName: 'booking-pill',
   border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.lg,
+  borderRadius: vars.radius.xl,
   backgroundColor: vars.color.surfaceRaised,
+  boxShadow: vars.shadow.raised,
   color: vars.color.text,
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
-  overflowWrap: 'anywhere',
-  '&[data-state="closed"]': { borderRadius: vars.radius.full },
-  [FORCED_COLORS]: { borderColor: 'CanvasText' },
-});
-const buttonStyle = css({
-  minBlockSize: vars.space[10],
-  paddingInline: vars.space[4],
-  paddingBlock: vars.space[2],
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.md,
-  backgroundColor: vars.color.surface,
-  color: vars.color.text,
-  font: 'inherit',
-  cursor: 'pointer',
-  '&:focus-visible': focusRingOutset,
-  '&:disabled, &[aria-disabled="true"]': {
-    cursor: 'not-allowed',
-    opacity: 0.6,
+  lineHeight: vars.lineHeight.base,
+  transitionProperty: 'grid-template-rows, box-shadow',
+  transitionDuration: vars.motion.duration.slow,
+  transitionTimingFunction: vars.motion.easeStandard,
+  '&[data-state="open"]': {
+    gridTemplateRows: 'auto 1fr',
+    boxShadow: vars.shadow.overlay,
   },
-  [FORCED_COLORS]: { borderColor: 'ButtonText' },
-});
-const primaryStyle = css({
-  backgroundColor: vars.color.accent,
-  color: vars.color.accentContrast,
+  '&[data-reduced-motion]': { transitionDuration: '0s' },
+  [REDUCED_MOTION]: { transitionDuration: '0s' },
+  [FORCED_COLORS]: { borderColor: 'CanvasText', boxShadow: 'none' },
 });
 const triggerStyle = css({
-  display: 'grid',
-  gap: vars.space[1],
+  boxSizing: 'border-box',
+  display: 'flex',
+  alignItems: 'center',
+  gap: vars.space[3],
   inlineSize: '100%',
-  textAlign: 'start',
+  minInlineSize: 0,
+  margin: 0,
   border: 0,
   borderRadius: 'inherit',
   backgroundColor: 'transparent',
+  color: 'inherit',
+  font: 'inherit',
+  textAlign: 'start',
+  cursor: 'pointer',
+  transitionProperty: 'background-color',
+  transitionDuration: vars.motion.duration.fast,
+  transitionTimingFunction: vars.motion.easeStandard,
+  '&:hover:not(:disabled)': { backgroundColor: vars.color.surfaceHover },
   '&:focus-visible': focusRingInset,
-  overflowWrap: 'anywhere',
+  '&:disabled': { cursor: 'not-allowed' },
+  '&[aria-expanded="true"]': { borderEndStartRadius: 0, borderEndEndRadius: 0 },
+  '&::after': {
+    ...disclosureCaret,
+    alignSelf: 'center',
+    color: vars.color.textMuted,
+    transform: 'rotate(90deg)',
+  },
+  '&[aria-expanded="true"]::after': { transform: 'rotate(-90deg)' },
+  '&:dir(rtl)::after': { transform: 'rotate(-90deg)' },
+  '&:dir(rtl)[aria-expanded="true"]::after': { transform: 'rotate(90deg)' },
+  '[data-reduced-motion] > &, [data-reduced-motion] > &::after': { transitionDuration: '0s' },
+  [REDUCED_MOTION]: { '&, &::after': { transitionDuration: '0s' } },
+  [FORCED_COLORS]: { '&:focus-visible': { outlineColor: 'Highlight' } },
+});
+const triggerSizeStyles: Record<BookingPillSize, SerializedStyles> = {
+  sm: css({ minBlockSize: vars.space[10], paddingInline: vars.space[4] }),
+  md: css({ minBlockSize: vars.space[12], paddingInline: vars.space[5] }),
+};
+const lineStyle = css({
+  display: 'flex',
+  alignItems: 'baseline',
+  gap: vars.space[2],
+  flex: 1,
+  minInlineSize: 0,
+  whiteSpace: 'nowrap',
+});
+const primaryTextStyles: Record<BookingPillSize, SerializedStyles> = {
+  sm: css({ fontSize: vars.textSize.sm }),
+  md: css({ fontSize: vars.textSize.md }),
+};
+const secondaryTextStyles: Record<BookingPillSize, SerializedStyles> = {
+  sm: css({ fontSize: vars.textSize.xs }),
+  md: css({ fontSize: vars.textSize.sm }),
+};
+const actionStyle = css({
+  flexShrink: 0,
+  fontWeight: vars.fontWeight.semibold,
+  '&[data-cancelled]': { textDecorationLine: 'line-through', color: vars.color.textMuted },
+  [NARROW_QUERY]: { flexShrink: 1, minInlineSize: 0, overflow: 'clip', textOverflow: 'ellipsis' },
+});
+const venueStyle = css({
+  flex: 1,
+  minInlineSize: 0,
+  overflow: 'clip',
+  textOverflow: 'ellipsis',
+  color: vars.color.textMuted,
+  [NARROW_QUERY]: visuallyHiddenStyle,
+});
+const priceStyle = css({
+  flexShrink: 0,
+  marginInlineStart: 'auto',
+  fontWeight: vars.fontWeight.medium,
+  fontVariantNumeric: 'tabular-nums',
+});
+const statusPillStyle = css({
+  flexShrink: 0,
+  gap: vars.space[1],
+  '& svg': { inlineSize: '1em', blockSize: '1em' },
 });
 const contentStyle = css({
-  padding: vars.space[4],
-  borderBlockStart: `1px solid ${vars.color.borderControl}`,
-  '&[hidden]': { display: 'none' },
+  minBlockSize: 0,
+  overflow: 'clip',
+  visibility: 'hidden',
+  transitionProperty: 'visibility',
+  transitionDuration: '0s',
+  transitionDelay: vars.motion.duration.slow,
+  '[data-state="open"] > &': { visibility: 'visible', transitionDelay: '0s' },
+  '[data-reduced-motion] > &': { transitionDelay: '0s' },
+  [REDUCED_MOTION]: { transitionDelay: '0s' },
+});
+const faceStyle = css({
+  minInlineSize: 0,
+  [REDUCED_MOTION]: { transform: 'none !important' },
 });
 const stackStyle = css({
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr)',
   gap: vars.space[4],
   minInlineSize: 0,
+  marginInline: vars.space[4],
+  paddingBlock: vars.space[4],
+  borderBlockStart: `1px solid ${vars.color.border}`,
+  [FORCED_COLORS]: { borderBlockStartColor: 'CanvasText' },
 });
 const titleStyle = css({
   margin: 0,
   fontSize: vars.textSize.lg,
   fontWeight: vars.fontWeight.semibold,
+  lineHeight: vars.lineHeight.tight,
   overflowWrap: 'anywhere',
+  borderRadius: vars.radius.sm,
+  '&:focus-visible': { outline: `2px solid ${vars.color.focusRing}`, outlineOffset: vars.space[1] },
 });
 const rowStyle = css({
   display: 'flex',
-  alignItems: 'center',
+  alignItems: 'baseline',
   flexWrap: 'wrap',
   justifyContent: 'space-between',
   gap: vars.space[3],
 });
-const mutedStyle = css({ color: vars.color.textMuted, margin: 0 });
+const actionsStyle = css({
+  display: 'flex',
+  justifyContent: 'flex-end',
+});
+const mutedStyle = css({ color: vars.color.textMuted, margin: 0, overflowWrap: 'anywhere' });
 const ticketStyle = css({
   display: 'grid',
-  gap: vars.space[3],
+  gap: vars.space[2],
   margin: 0,
   padding: vars.space[4],
-  border: `1px solid ${vars.color.borderControl}`,
+  border: `1px solid ${vars.color.border}`,
   borderRadius: vars.radius.md,
   backgroundColor: vars.color.surface,
   overflowWrap: 'anywhere',
+  '[data-step="cancelled"] &': { textDecorationLine: 'line-through' },
+  [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
+const ticketValueStyle = css({ fontVariantNumeric: 'tabular-nums', textAlign: 'end' });
+const partyCountStyle = css({ minInlineSize: `calc(${vars.space[12]} * 2)`, fontVariantNumeric: 'tabular-nums' });
 const errorStyle = css({ margin: 0, color: vars.color.dangerText });
 const optionStyle = css({
   display: 'flex',
   flexWrap: 'wrap',
   gap: vars.space[2],
-});
-const faceStyle = css({
-  minInlineSize: 0,
-  [REDUCED_MOTION]: { transform: 'none !important' },
 });
 
 type TimeContextValue = {
@@ -329,9 +469,22 @@ function BookingTimeOption(props: SelectItemProps) {
 }
 BookingTimeOption.displayName = 'BookingPill.TimeOption';
 
+// Default renderers for the replaceable action buttons: a slot receives native button props, and
+// `aria-busy` becomes the group button's loading spinner.
+function BookingAction({ 'aria-busy': busy, ...props }: ButtonGroupItemProps) {
+  return <ButtonGroup.Item {...props} loading={busy === true || busy === 'true'} />;
+}
+BookingAction.displayName = 'BookingPill.Action';
+function BookingPrimaryAction(props: ButtonGroupItemProps) {
+  return <BookingAction {...props} variant="solid" tone="accent" />;
+}
+BookingPrimaryAction.displayName = 'BookingPill.PrimaryAction';
+
 export function BookingPill({
   venue,
   venueDetail,
+  price,
+  size = 'md',
   value,
   defaultValue,
   onValueChange,
@@ -349,6 +502,7 @@ export function BookingPill({
   minPartySize = 1,
   maxPartySize = 12,
   onConfirm,
+  onCancel,
   onReset,
   locale,
   hourCycle,
@@ -372,13 +526,14 @@ export function BookingPill({
     !Number.isInteger(maxPartySize) ||
     minPartySize < 1 ||
     maxPartySize < minPartySize ||
+    (price !== undefined && !Number.isSafeInteger(price.amount)) ||
     times.some(
       (time, index) =>
         minutes(time) === undefined || (index > 0 && time <= times[index - 1]!),
     )
   )
     throw new Error(
-      'BookingPill requires a civil startDate, positive integer days/party bounds and ordered unique HH:mm times',
+      'BookingPill requires a civil startDate, positive integer days/party bounds, an integer minor-unit price and ordered unique HH:mm times',
     );
   const contentId = useId();
   const titleId = useId();
@@ -388,7 +543,9 @@ export function BookingPill({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const mergedRef = useMergeRefs([ref, rootRef]);
-  const reduced = useReducedMotion();
+  const deviceReduced = useReducedMotion();
+  const forcedReduced = useReducedMotionConfig();
+  const reduced = Boolean(deviceReduced) || forcedReduced === true;
   const initialParty = Math.min(Math.max(2, minPartySize), maxPartySize);
   const seed = useRef(
     defaultValue ?? {
@@ -419,6 +576,7 @@ export function BookingPill({
     onStepChange,
   );
   const [status, setStatus] = useState<BookingPillStatus>('idle');
+  const [operation, setOperation] = useState<Operation>('confirm');
   const [error, setError] = useState<unknown>();
   const [receipt, setReceipt] = useState<Booking | null>(null);
   const generation = useRef(0);
@@ -432,10 +590,7 @@ export function BookingPill({
     ...DEFAULT_LABELS,
     partyCount: (count) =>
       `${numbers.format(count)} ${plurals.select(count) === 'one' ? 'guest' : 'guests'}`,
-    trigger: (draft, expanded) =>
-      expanded
-        ? 'Close booking'
-        : `Book for ${numbers.format(draft.partySize)}`,
+    trigger: (draft) => `Book for ${numbers.format(draft.partySize)}`,
     ...customLabels,
   };
   const titles = {
@@ -464,6 +619,8 @@ export function BookingPill({
     review: valid,
   }[step];
   const blocked = disabled || status === 'pending';
+  const settled = status === 'success' || status === 'cancelled' || (status === 'pending' && operation === 'cancel');
+  const face = settled ? (status === 'cancelled' ? 'cancelled' : 'booked') : step;
   const shown = receipt ?? draft;
   const formattedDate = isIsoDate(shown.date)
     ? dateTimeFormatter(locale, {
@@ -481,6 +638,37 @@ export function BookingPill({
           minute: '2-digit',
           hourCycle,
         }).format(new Date(timeMinutes * 60_000));
+  const formattedSlot =
+    receipt && isIsoDate(receipt.date)
+      ? dateTimeFormatter(locale, {
+          ...CIVIL_DATE_FORMAT_OPTIONS,
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+          hour: 'numeric',
+          minute: '2-digit',
+          hourCycle,
+        }).format(new Date(dateFromIso(receipt.date).getTime() + minutes(receipt.time)! * 60_000))
+      : null;
+  const formattedPrice = price ? moneyFormat(locale, price.currency, 'symbol').format(price.amount) : null;
+  const faceTitle = face === 'booked' ? labels.stepBooked : face === 'cancelled' ? labels.stepCancelled : titles[face];
+  const statusPill =
+    status === 'pending' ? (
+      <Pill tone="neutral" css={statusPillStyle} data-status="pending">
+        <Spinner size="sm" decorative />
+        {operation === 'cancel' ? labels.cancelling : labels.statusPending}
+      </Pill>
+    ) : status === 'success' ? (
+      <Pill tone="success" css={statusPillStyle} data-status="booked">
+        {checkGlyph}
+        {labels.statusBooked}
+      </Pill>
+    ) : status === 'cancelled' ? (
+      <Pill tone="neutral" css={statusPillStyle} data-status="cancelled">
+        {crossGlyph}
+        {labels.statusCancelled}
+      </Pill>
+    ) : null;
 
   useEffect(
     () => () => {
@@ -496,7 +684,7 @@ export function BookingPill({
       if (doc.activeElement === intent || doc.activeElement === doc.body) {
         if (!open && closeIntent.current) triggerRef.current?.focus();
         else if (open) {
-          if (status === 'success') titleRef.current?.focus();
+          if (status === 'success' || status === 'cancelled') titleRef.current?.focus();
           else
             contentRef.current
               ?.querySelector<HTMLElement>(
@@ -508,7 +696,7 @@ export function BookingPill({
     }
     focusIntent.current = null;
     closeIntent.current = false;
-  }, [open, step, status === 'success']);
+  }, [open, face]);
   function rememberFocus() {
     const active = rootRef.current?.ownerDocument.activeElement;
     focusIntent.current =
@@ -545,40 +733,49 @@ export function BookingPill({
     )
       requestDraft(next);
   }
-  async function confirm() {
-    if (blocked || pending.current || !valid || draft.time === null) return;
+  async function run(kind: Operation, booking: Booking, request: (booking: Booking) => void | Promise<void>) {
     pending.current = true;
     const token = ++generation.current;
-    const booking: Booking = { ...draft, time: draft.time };
     rememberFocus();
+    setOperation(kind);
     setStatus('pending');
     setError(undefined);
     try {
-      await onConfirm(booking);
+      await request(booking);
       if (generation.current === token) {
         setReceipt(booking);
-        setStatus('success');
+        setStatus(kind === 'confirm' ? 'success' : 'cancelled');
       }
     } catch (reason) {
       if (generation.current === token) {
         setError(reason);
-        setStatus('error');
+        setStatus(kind === 'confirm' ? 'error' : 'success');
       }
     } finally {
       if (generation.current === token) pending.current = false;
     }
+  }
+  function confirm() {
+    if (blocked || pending.current || !valid || draft.time === null) return;
+    void run('confirm', { ...draft, time: draft.time }, onConfirm);
+  }
+  function cancel() {
+    if (blocked || pending.current || !receipt || !onCancel) return;
+    void run('cancel', receipt, onCancel);
   }
   function reset() {
     if (blocked) return;
     generation.current++;
     rememberFocus();
     setStatus('idle');
+    setOperation('confirm');
     setError(undefined);
     setReceipt(null);
     requestDraft({ ...seed });
     requestStep('party');
     onReset?.();
   }
+  const failed = error !== undefined && status !== 'pending';
   return (
     <FieldSlot
       element="div"
@@ -592,7 +789,10 @@ export function BookingPill({
       className={className}
       data-ui="booking-pill"
       data-state={open ? 'open' : 'closed'}
-      data-step={status === 'success' ? 'booked' : step}
+      data-step={face}
+      data-size={size}
+      data-status={status}
+      data-reduced-motion={reduced || undefined}
       behavior={{
         onKeyDown: (event) => {
           if (
@@ -604,7 +804,7 @@ export function BookingPill({
             return;
           event.preventDefault();
           const index = STEP_ORDER.indexOf(step);
-          if (index > 0) navigate(STEP_ORDER[index - 1]!);
+          if (!settled && index > 0) navigate(STEP_ORDER[index - 1]!);
           else close();
         },
       }}
@@ -615,7 +815,7 @@ export function BookingPill({
         slotProps={slotProps?.trigger}
         ref={triggerRef}
         type="button"
-        styles={[buttonStyle, triggerStyle]}
+        styles={[triggerStyle, triggerSizeStyles[size]]}
         disabled={blocked}
         aria-expanded={open}
         aria-controls={contentId}
@@ -631,8 +831,24 @@ export function BookingPill({
           },
         }}
       >
-        <span>{labels.trigger(draft, open)}</span>
-        <span css={mutedStyle}>{venue}</span>
+        <span css={lineStyle} data-ui="booking-pill-line">
+          {statusPill}
+          <span
+            css={[actionStyle, primaryTextStyles[size]]}
+            data-ui="booking-pill-action"
+            data-cancelled={status === 'cancelled' || undefined}
+          >
+            {formattedSlot ?? labels.trigger(draft, open)}
+          </span>
+          <span css={[venueStyle, secondaryTextStyles[size]]} data-ui="booking-pill-venue">
+            {venue}
+          </span>
+          {formattedPrice !== null && (
+            <span css={[priceStyle, primaryTextStyles[size]]} data-ui="booking-pill-price">
+              {formattedPrice}
+            </span>
+          )}
+        </span>
       </FieldSlot>
       <FieldSlot
         element="div"
@@ -642,15 +858,14 @@ export function BookingPill({
         id={contentId}
         role="group"
         aria-labelledby={titleId}
-        hidden={!open}
         styles={contentStyle}
         aria-describedby={
-          [rest['aria-describedby'], status === 'error' && errorId]
+          [rest['aria-describedby'], failed && errorId]
             .filter(Boolean)
             .join(' ') || undefined
         }
       >
-        <MotionConfig reducedMotion="user">
+        <MotionConfig reducedMotion={reduced ? 'always' : 'user'}>
           <motion.div
             css={faceStyle}
             layout={reduced ? false : 'size'}
@@ -666,7 +881,7 @@ export function BookingPill({
                 styles={titleStyle}
                 tabIndex={-1}
               >
-                {status === 'success' ? labels.stepBooked : titles[step]}
+                {faceTitle}
               </FieldSlot>
               {isRenderable(venueDetail) && (
                 <FieldSlot
@@ -678,46 +893,43 @@ export function BookingPill({
                   {venueDetail}
                 </FieldSlot>
               )}
-              {status === 'success' || step === 'review' ? (
-                <div css={ticketStyle}>
+              {settled || step === 'review' ? (
+                <div css={ticketStyle} data-ui="booking-pill-ticket">
                   {[
                     [labels.venue, venue],
                     [labels.party, labels.partyCount(shown.partySize)],
                     [labels.date, formattedDate],
                     [labels.time, formattedTime],
+                    ...(formattedPrice !== null ? [[labels.price, formattedPrice]] : []),
                   ].map(([name, text]) => (
                     <div key={name} css={rowStyle}>
                       <span css={mutedStyle}>{name}</span>
-                      <span>{text}</span>
+                      <span css={ticketValueStyle}>{text}</span>
                     </div>
                   ))}
                 </div>
               ) : step === 'party' ? (
-                <div css={rowStyle}>
-                  <button
-                    type="button"
-                    css={buttonStyle}
+                <ButtonGroup size={size} aria-label={labels.party} disabled={blocked}>
+                  <ButtonGroup.Item
                     aria-label={labels.decreaseParty}
-                    disabled={blocked || draft.partySize <= minPartySize}
+                    startIcon={minusGlyph}
+                    disabled={draft.partySize <= minPartySize}
                     onClick={() =>
                       patchDraft({ partySize: draft.partySize - 1 })
                     }
-                  >
-                    −
-                  </button>
-                  <output>{labels.partyCount(draft.partySize)}</output>
-                  <button
-                    type="button"
-                    css={buttonStyle}
+                  />
+                  <ButtonGroup.Label css={partyCountStyle}>
+                    <output>{labels.partyCount(draft.partySize)}</output>
+                  </ButtonGroup.Label>
+                  <ButtonGroup.Item
                     aria-label={labels.increaseParty}
-                    disabled={blocked || draft.partySize >= maxPartySize}
+                    startIcon={plusGlyph}
+                    disabled={draft.partySize >= maxPartySize}
                     onClick={() =>
                       patchDraft({ partySize: draft.partySize + 1 })
                     }
-                  >
-                    +
-                  </button>
-                </div>
+                  />
+                </ButtonGroup>
               ) : step === 'date' ? (
                 <div inert={blocked || undefined}>
                   <Calendar
@@ -761,7 +973,7 @@ export function BookingPill({
                   )}
                 </TimeContext>
               )}
-              {status === 'error' && (
+              {failed && (
                 <FieldSlot
                   element="p"
                   component={slots?.error}
@@ -770,28 +982,37 @@ export function BookingPill({
                   role="alert"
                   styles={errorStyle}
                 >
-                  {labels.errorFallback(error)}
+                  {status === 'success'
+                    ? labels.cancelErrorFallback(error)
+                    : labels.errorFallback(error)}
                 </FieldSlot>
               )}
-              <div css={rowStyle}>
-                {status === 'success' ? (
-                  <button
-                    type="button"
-                    css={[buttonStyle, primaryStyle]}
-                    disabled={disabled}
-                    onClick={reset}
-                  >
-                    {labels.newBooking}
-                  </button>
+              <div css={actionsStyle}>
+                {settled ? (
+                  <ButtonGroup size={size}>
+                    {onCancel && status !== 'cancelled' && (
+                      <BookingAction
+                        tone="danger"
+                        disabled={disabled}
+                        aria-disabled={blocked || undefined}
+                        aria-busy={status === 'pending' || undefined}
+                        onClick={cancel}
+                      >
+                        {status === 'pending' ? labels.cancelling : labels.cancel}
+                      </BookingAction>
+                    )}
+                    <BookingPrimaryAction disabled={blocked} onClick={reset}>
+                      {labels.newBooking}
+                    </BookingPrimaryAction>
+                  </ButtonGroup>
                 ) : (
-                  <>
+                  <ButtonGroup size={size}>
                     {step !== 'party' && (
                       <FieldSlot
                         element="button"
-                        component={slots?.back}
+                        component={slots?.back ?? BookingAction}
                         slotProps={slotProps?.back}
                         type="button"
-                        styles={buttonStyle}
                         disabled={blocked}
                         behavior={{
                           onClick: (event) => {
@@ -808,10 +1029,9 @@ export function BookingPill({
                     {step !== 'review' ? (
                       <FieldSlot
                         element="button"
-                        component={slots?.next}
+                        component={slots?.next ?? BookingPrimaryAction}
                         slotProps={slotProps?.next}
                         type="button"
-                        styles={[buttonStyle, primaryStyle]}
                         disabled={blocked || !canNext}
                         behavior={{
                           onClick: (event) => {
@@ -827,17 +1047,16 @@ export function BookingPill({
                     ) : (
                       <FieldSlot
                         element="button"
-                        component={slots?.confirm}
+                        component={slots?.confirm ?? BookingPrimaryAction}
                         slotProps={slotProps?.confirm}
                         type="button"
-                        styles={[buttonStyle, primaryStyle]}
                         disabled={disabled || (!valid && status !== 'pending')}
                         // Pending keeps the button focusable (busy) while aria-disabled reports why it cannot confirm.
                         aria-disabled={blocked || !valid}
                         aria-busy={status === 'pending' || undefined}
                         behavior={{
                           onClick: (event) => {
-                            if (!event.defaultPrevented) void confirm();
+                            if (!event.defaultPrevented) confirm();
                           },
                         }}
                       >
@@ -846,7 +1065,7 @@ export function BookingPill({
                           : labels.confirm}
                       </FieldSlot>
                     )}
-                  </>
+                  </ButtonGroup>
                 )}
               </div>
             </div>
@@ -861,11 +1080,7 @@ export function BookingPill({
         aria-atomic="true"
         styles={visuallyHiddenStyle}
       >
-        {open
-          ? labels.stepStatus(
-              status === 'success' ? labels.stepBooked : titles[step],
-            )
-          : ''}
+        {open ? labels.stepStatus(faceTitle) : ''}
       </FieldSlot>
     </FieldSlot>
   );
