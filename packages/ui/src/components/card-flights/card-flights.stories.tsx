@@ -199,7 +199,7 @@ export function Match() {
     description: { component: 'Animate cards moving from a deck or hand to their next position.' },
     sections: [
       { title: 'Deals and plays', stories: ['ComposedBoard'] },
-      { title: 'Custom boards', stories: ['CustomTarget'] },
+      { title: 'Hooks', stories: ['CustomTarget'] },
     ],
     usage: `### Board updates
 Use one table per flight board. The first render appears in place; later deals start at the deck or table centre and follow seat order, one card per seat per round. Accept a play by updating your rendered hand and piles. Keep source identities stable and give each play a unique identity. Missing origins appear in place.
@@ -207,6 +207,8 @@ Use one table per flight board. The first render appears in place; later deals s
 Apply server snapshots as resynchronizations so active flights are cancelled rather than replayed. Do not combine the rendered-tree engine with deprecated deal/play hooks.
 
 Give each play a unique id and preserve its source cardId when they differ. New play nodes fly from the previous matching hand card or the rival seat's last hidden card. GameHand.Confirm captures the hand position before accepting a play; custom drag controls capture it with useCardFlightOrigin(). Piles show all cards by default; visible limits destinations to the newest N cards.
+
+Read \`useCardFlightStatus().busy\` to disable custom controls while a flight is active. It reads false outside a CardFlights provider.
 
 Use CardFlights.Target for custom hand, play, board or hidden-seat destinations. A board card that appears after the first render flies from the deck and reveals its face; pass \`face\` to override it. Hidden hands inherit their player key inside GameTable.Seat; pass an explicit playerKey outside it. Address hidden-seat targets by seatKey and card index. CardFlights.Deck supplies a custom deal origin.
 
@@ -273,10 +275,10 @@ export const ComposedBoard: Story = {
 
 /** Play into a custom node without a GameCardStack. */
 export const CustomTarget: Story = {
-  name: 'Custom play destination',
+  name: 'Custom origin and status',
   render: () => <CustomMatch />,
   parameters: { docs: {
-    description: { story: 'Move one card between the Hand and Play slots. Press Play card, then Return card.' },
+    description: { story: 'Move one card between the Hand and Play slots. `useCardFlightOrigin` captures the departure and `useCardFlightStatus` reports the flight.' },
     source: { language: 'tsx', code: `import { useRef, useState } from 'react';
 import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
