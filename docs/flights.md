@@ -74,7 +74,3 @@ Reduced motion completes deals and transfers without travel and resolves them as
 ## Custom chip surfaces
 
 Use `ChipFlights` and `useChipFlights().send` for custom measured departure and landing elements outside the table surfaces. `send` returns `Promise<FlightOutcome>`, owns one active chip flight, and cancels its predecessor. Supply `from`, `to`, and denomination `chips`; the primitive does not provide the table's serial lane or pot hold. See the GameChipStack Hooks example.
-
-## Deprecated triggers
-
-`deal` and `revision` on the card and table surfaces, plus `PokerTable.chipTransfer` and `PokerTable.potFrom`, remain for one minor release and warn once per prop in development. They still work without a provider. Replace them with `useFlights()` calls inside `FlightProvider`. Legacy chip triggers still require a pot increase; `sendChips()` does not.

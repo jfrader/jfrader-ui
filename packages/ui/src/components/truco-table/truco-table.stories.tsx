@@ -55,12 +55,12 @@ const TURN = { remainingMs: 45000, durationMs: 60000 };
 type Phase = 'idle' | 'trick';
 
 function TrucoGame() {
+  const flights = useFlights();
   const [phase, setPhase] = useState<Phase>('idle');
   const [hand, setHand] = useState<readonly TrucoTableCard[]>([]);
   const [plays, setPlays] = useState<readonly TrucoTablePlay[]>([]);
   const [hidden, setHidden] = useState<Record<string, number>>({});
   const [active, setActive] = useState<string | undefined>(undefined);
-  const [deal, setDeal] = useState(0);
   const [message, setMessage] = useState('Two teams · First to 30');
   const [busy, setBusy] = useState(false);
 
@@ -70,7 +70,7 @@ function TrucoGame() {
     setPlays([]);
     setHidden({ alex: 3, blair: 3, drew: 3 });
     setActive('you');
-    setDeal((value) => value + 1);
+    flights.deal();
     setMessage('Your hand · Three cards');
   };
 
@@ -81,6 +81,7 @@ function TrucoGame() {
     setHidden({});
     setActive(undefined);
     setMessage('Two teams · First to 30');
+    flights.resync();
   };
 
   const playCard = (played: TrucoTableCard) => {
@@ -131,7 +132,6 @@ function TrucoGame() {
         score={SCORE}
         announcement={message}
         actions={actions}
-        deal={deal}
         onBusyChange={setBusy}
       />
     </DocsStage>
@@ -167,7 +167,7 @@ Give the parent container an explicit inline and block size, exactly as for Game
 The table, score line, and local hand are labelled groups. The event line is a polite live region. Every card needs a label. Select a card with Enter or Space, then activate Play card. Piles are compact summaries of the cards each seat played.`,
     },
   },
-  render: () => <TrucoGame />,
+  render: () => <FlightProvider><TrucoGame /></FlightProvider>,
 } satisfies Meta<typeof TrucoTable>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -221,6 +221,7 @@ export const TrucoTrick: Story = {
       },
       source: { language: 'tsx', code: `import { useState } from 'react';
 import { styled } from '@jfrader/ui';
+import { FlightProvider, useFlights } from '@jfrader/ui/flights';
 import {
   TrucoTable,
   type TrucoTableCard,
@@ -264,13 +265,13 @@ const score: readonly TrucoTableScore[] = [
 
 const turn = { remainingMs: 45000, durationMs: 60000 };
 
-export default function Example() {
+function TrucoSurface() {
+  const flights = useFlights();
   const [dealt, setDealt] = useState(false);
   const [yourHand, setYourHand] = useState<readonly TrucoTableCard[]>([]);
   const [plays, setPlays] = useState<readonly TrucoTablePlay[]>([]);
   const [hidden, setHidden] = useState<Record<string, number>>({});
   const [active, setActive] = useState<string | undefined>(undefined);
-  const [deal, setDeal] = useState(0);
   const [message, setMessage] = useState('Two teams · First to 30');
   const [busy, setBusy] = useState(false);
 
@@ -280,7 +281,7 @@ export default function Example() {
     setPlays([]);
     setHidden({ alex: 3, blair: 3, drew: 3 });
     setActive('you');
-    setDeal((value) => value + 1);
+    flights.deal();
     setMessage('Your hand · Three cards');
   };
 
@@ -291,6 +292,7 @@ export default function Example() {
     setHidden({});
     setActive(undefined);
     setMessage('Two teams · First to 30');
+    flights.resync();
   };
 
   const playCard = (played: TrucoTableCard) => {
@@ -339,11 +341,13 @@ export default function Example() {
         score={score}
         announcement={message}
         actions={actions}
-        deal={deal}
         onBusyChange={setBusy}
       />
     </Stage>
   );
+}
+export default function Example() {
+  return <FlightProvider><TrucoSurface /></FlightProvider>;
 }` },
     },
   },

@@ -263,29 +263,6 @@ export const ReducedMotion: Story = {
   },
 };
 
-export const StaleId: Story = {
-  tags: ['!autodocs'], render: () => <StaleLegacyTransfer />,
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    const warning = spyOn(console, 'warn').mockImplementation(() => {});
-    try {
-      await userEvent.click(canvas.getByRole('button', { name: 'Legacy transfer' }));
-      await waitFor(() => expect(canvasElement.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
-      await waitFor(() => expect(canvasElement.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).toBeNull(), { timeout: 6000 });
-      await userEvent.click(canvas.getByRole('button', { name: 'Legacy transfer' }));
-      await expect(warning).toHaveBeenCalledWith('PokerTable: stale chipTransfer id "manual". Trigger a new request with useFlights() instead.');
-      await expect(canvasElement.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).toBeNull();
-    } finally { warning.mockRestore(); }
-  },
-};
-
-function StaleLegacyTransfer() {
-  const [state, setState] = useState({ pot: 100, id: 'initial' });
-  return <>
-    <Button onClick={() => setState(current => ({ pot: current.pot + 25, id: 'manual' }))}>Legacy transfer</Button>
-    <Stage><PokerTable title="Poker" players={players} pot={state.pot} chipTransfer={{ id: state.id, fromPlayerKey: 'you', amount: 25 }} /></Stage>
-  </>;
-}
-
 function ReactiveCards() {
   const flights = useFlights();
   const [played, setPlayed] = useState(false);
@@ -319,42 +296,6 @@ export const ReactiveGroup: Story = {
     await expect(doc.querySelector('[data-flight-target="hand:hand-7"]')).not.toBeNull();
     await expect(canvas.getByLabelText('Deal result')).toHaveTextContent('null');
     await waitFor(() => expect(canvas.getByLabelText('Deal result')).toHaveTextContent('"landed"'), { timeout: 6000 });
-  },
-};
-
-function DeprecatedTable() {
-  const [snapshot, setSnapshot] = useState({ pot: 100, deal: 0, revision: 0 });
-  return <>
-    <Controls>
-      <Button onClick={() => setSnapshot(current => ({ ...current, pot: current.pot + 25, deal: current.deal + 1 }))}>Legacy deal</Button>
-      <Button onClick={() => setSnapshot(current => ({ ...current, revision: current.revision + 1 }))}>Legacy resync</Button>
-    </Controls>
-    <Stage><PokerTable players={players} title="Poker" {...snapshot} potFrom="you"
-      chipTransfer={{ id: snapshot.deal, fromPlayerKey: 'you', amount: 25 }} /></Stage>
-  </>;
-}
-const legacyWarning = fn();
-export const DeprecatedProps: Story = {
-  tags: ['!autodocs'], render: () => <DeprecatedTable />,
-  beforeEach: () => {
-    legacyWarning.mockClear();
-    const warning = spyOn(console, 'warn').mockImplementation(legacyWarning);
-    return () => warning.mockRestore();
-  },
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    const warnings = [
-      'PokerTable: chipTransfer is deprecated. Use useFlights() inside FlightProvider instead.',
-      'PokerTable: potFrom is deprecated. Use useFlights() inside FlightProvider instead.',
-      'CardFlights: deal is deprecated. Use useFlights() inside FlightProvider instead.',
-      'CardFlights: revision is deprecated. Use useFlights() inside FlightProvider instead.',
-    ];
-    for (const message of warnings) await expect(legacyWarning).toHaveBeenCalledWith(message);
-    await userEvent.click(canvas.getByRole('button', { name: 'Legacy deal' }));
-    await waitFor(() => expect(canvasElement.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
-    await waitFor(() => expect(canvasElement.ownerDocument.querySelector('[data-ui="card-flight"]')).not.toBeNull());
-    await userEvent.click(canvas.getByRole('button', { name: 'Legacy resync' }));
-    await waitFor(() => expect(canvasElement.ownerDocument.querySelector('[data-ui="chip-flight-layer"], [data-ui="card-flight"]')).toBeNull());
-    await expect(legacyWarning).toHaveBeenCalledTimes(4);
   },
 };
 

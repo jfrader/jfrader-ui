@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Breaking pre-1.0
+
+- Removed `deal` and `revision` from `CardFlights`, `PokerTable`, and `TrucoTable`, plus `PokerTable.chipTransfer` and `PokerTable.potFrom`. `FlightProvider` and `useFlights()` are the only trigger surface for card and table motion.
+- Removed the public `useChipFlight` hook and its `UseChipFlightOptions` and `ChipFlightController` types. Use `ChipFlights` and `useChipFlights()` for custom chip surfaces; `ChipFlightOptions` and `ChipFlightResult` remain public.
+
 ## 0.14.0 — 2026-10-24
 
 ### Added

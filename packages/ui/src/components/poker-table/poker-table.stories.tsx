@@ -71,16 +71,13 @@ interface GameState {
   street: Street;
   pot: number;
   board: number;
-  deal: number;
   message: string;
-  potFrom?: string;
 }
 
 const START: GameState = {
   street: 'idle',
   pot: 0,
   board: 0,
-  deal: 0,
   message: 'Blinds 10 / 20 · Six seats',
 };
 
@@ -101,8 +98,8 @@ function playerCards(key: PlayerKey, street: Street) {
 }
 
 function act(state: GameState, action: string): GameState {
-  if (action === 'deal') return { ...state, street: 'preflop', pot: 30, deal: state.deal + 1, message: 'Blinds posted · Your turn' };
-  if (action === 'new') return { ...START, deal: state.deal, message: START.message };
+  if (action === 'deal') return { ...state, street: 'preflop', pot: 30, message: 'Blinds posted · Your turn' };
+  if (action === 'new') return { ...START };
   if (action === 'fold') return { ...state, street: 'folded', message: 'You fold · Blair takes the pot' };
   if (state.street === 'preflop') {
     return { ...state, street: 'flop', board: 3, pot: state.pot + (action === 'raise' ? 100 : 40),
@@ -135,10 +132,18 @@ function actionsFor(street: Street, play: (action: string) => void, busy: boolea
 }
 
 function PokerGame() {
+  const flights = useFlights();
   const [game, setGame] = useState<GameState>(START);
   const [busy, setBusy] = useState(false);
-  const play = (action: string) => setGame(current => ({ ...act(current, action),
-    potFrom: action === 'raise' || (action === 'call' && current.street === 'preflop') ? 'you' : undefined }));
+  const play = (action: string) => {
+    const next = act(game, action);
+    setGame(next);
+    if (action === 'deal') flights.deal();
+    else if (action === 'new') flights.resync();
+    else if (action === 'raise' || (action === 'call' && game.street === 'preflop')) {
+      flights.sendChips({ from: 'you', amount: next.pot - game.pot });
+    }
+  };
 
   const players: PokerTablePlayer[] = SEATS.map((seat) => {
     const cards = playerCards(seat.key, game.street);
@@ -163,12 +168,10 @@ function PokerGame() {
         subtitle={`${STREET_LABELS[game.street]} · Hand 42`}
         board={BOARD.slice(0, game.board)}
         pot={game.pot || undefined}
-        chipTransfer={game.potFrom ? { id: `${game.deal}-${game.pot}`, fromPlayerKey: game.potFrom } : undefined}
         denominations={DENOMINATIONS}
         locale="en-US"
         announcement={game.message}
         actions={actionsFor(game.street, play, busy)}
-        deal={game.deal}
         onBusyChange={setBusy}
       />
     </DocsStage>
@@ -204,7 +207,7 @@ Give the parent container an explicit inline and block size, exactly as for Game
 The table is a labelled group, the board is a labelled group, and the event line is a polite live region. Every card needs a label. Commands use the GameActions toolbar and keep their native button behavior.`,
     },
   },
-  render: () => <PokerGame />,
+  render: () => <FlightProvider><PokerGame /></FlightProvider>,
 } satisfies Meta<typeof PokerTable>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -402,10 +405,11 @@ export const PokerHand: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Deal a hand, call or raise through the streets, and reach a showdown. Every action is a prop; the script lives in this example, not in the component.',
+        story: 'Deal a hand, call or raise through the streets, and reach a showdown.',
       },
       source: { language: 'tsx', code: `import { useState } from 'react';
 import { styled } from '@jfrader/ui';
+import { FlightProvider, useFlights } from '@jfrader/ui/flights';
 import {
   PokerTable,
   type PokerTableCard,
@@ -468,21 +472,19 @@ const STREET_LABELS: Record<Street, string> = {
 const turn = { remainingMs: 45000, durationMs: 60000 };
 const denominations = [25, 5, 1] as const;
 
-export default function Example() {
+function PokerSurface() {
+  const flights = useFlights();
   const [street, setStreet] = useState<Street>('idle');
   const [pot, setPot] = useState(0);
-  const [potFrom, setPotFrom] = useState<string>();
   const [boardCount, setBoardCount] = useState(0);
-  const [deal, setDeal] = useState(0);
   const [message, setMessage] = useState('Blinds 10 / 20 · Six seats');
   const [busy, setBusy] = useState(false);
 
   const play = (action: string) => {
-    setPotFrom(action === 'raise' || (action === 'call' && street === 'preflop') ? 'you' : undefined);
     if (action === 'deal') {
       setStreet('preflop');
       setPot(30);
-      setDeal((value) => value + 1);
+      flights.deal();
       setMessage('Blinds posted · Your turn');
       return;
     }
@@ -491,6 +493,7 @@ export default function Example() {
       setPot(0);
       setBoardCount(0);
       setMessage('Blinds 10 / 20 · Six seats');
+      flights.resync();
       return;
     }
     if (action === 'fold') {
@@ -501,27 +504,34 @@ export default function Example() {
     if (street === 'preflop') {
       setStreet('flop');
       setBoardCount(3);
-      setPot((value) => value + (action === 'raise' ? 100 : 40));
+      const amount = action === 'raise' ? 100 : 40;
+      setPot(value => value + amount);
+      flights.sendChips({ from: 'you', amount });
       setMessage(action === 'raise' ? 'You raise to 60 · Blair calls · Flop: Q♠ J♠ 10♠' : 'Blair calls 20 · Flop: Q♠ J♠ 10♠');
       return;
     }
     if (street === 'flop') {
       setStreet('turn');
       setBoardCount(4);
-      setPot((value) => value + (action === 'raise' ? 120 : 80));
+      const amount = action === 'raise' ? 120 : 80;
+      setPot(value => value + amount);
+      if (action === 'raise') flights.sendChips({ from: 'you', amount });
       setMessage(action === 'raise' ? 'You bet 40 · Blair calls · Turn: 2♥' : 'Drew checks · Turn: 2♥');
       return;
     }
     if (street === 'turn') {
       setStreet('river');
       setBoardCount(5);
-      setPot((value) => value + (action === 'raise' ? 200 : 160));
+      const amount = action === 'raise' ? 200 : 160;
+      setPot(value => value + amount);
+      if (action === 'raise') flights.sendChips({ from: 'you', amount });
       setMessage(action === 'raise' ? 'You bet 80 · Drew calls · River: 3♦' : 'Emery checks · River: 3♦');
       return;
     }
     if (street === 'river') {
       setStreet('showdown');
       setPot((value) => value + (action === 'raise' ? 240 : 0));
+      if (action === 'raise') flights.sendChips({ from: 'you', amount: 240 });
       setMessage('You win with a royal flush');
     }
   };
@@ -560,16 +570,17 @@ export default function Example() {
         subtitle={STREET_LABELS[street] + ' · Hand 42'}
         board={board.slice(0, boardCount)}
         pot={pot || undefined}
-        chipTransfer={potFrom ? { id: deal + '-' + pot, fromPlayerKey: potFrom } : undefined}
         denominations={denominations}
         locale="en-US"
         announcement={message}
         actions={actions}
-        deal={deal}
         onBusyChange={setBusy}
       />
     </Stage>
   );
+}
+export default function Example() {
+  return <FlightProvider><PokerSurface /></FlightProvider>;
 }
 ` },
     },
@@ -674,17 +685,21 @@ export const EmptyTable: Story = {
 };
 
 function PotFlightExample({ onBusyChange, from = 'you' }: { onBusyChange?: (busy: boolean) => void; from?: string }) {
+  const flights = useFlights();
   const [pot, setPot] = useState(30);
   const [busy, setBusy] = useState(false);
   return <DocsStage><PokerTable players={SEATS} title="Texas Hold'em" subtitle="Preflop · Hand 42" pot={pot}
-    potFrom={from} denominations={DENOMINATIONS} locale="en-US"
+    denominations={DENOMINATIONS} locale="en-US"
     onBusyChange={value => { setBusy(value); onBusyChange?.(value); }}
-    actions={[{ key: 'raise', label: 'Raise 60', tone: 'accent', disabled: busy, onSelect: () => setPot(value => value + 100) }]} />
+    actions={[{ key: 'raise', label: 'Raise 60', tone: 'accent', disabled: busy, onSelect: () => {
+      setPot(value => value + 100);
+      flights.sendChips({ from, amount: 100 });
+    } }]} />
   </DocsStage>;
 }
 export const PotFlight: Story = {
   tags: ['!autodocs'], args: { onBusyChange: fn() },
-  render: args => <PotFlightExample onBusyChange={args.onBusyChange} />,
+  render: args => <FlightProvider><PotFlightExample onBusyChange={args.onBusyChange} /></FlightProvider>,
   play: async ({ canvasElement, args, userEvent }) => {
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
     const canvas = within(table);
@@ -701,7 +716,7 @@ export const PotFlight: Story = {
 };
 export const PotFlightReducedMotion: Story = {
   name: 'Poker chips reduced motion', tags: ['!autodocs'], args: { onBusyChange: fn() },
-  render: args => <PotFlightExample onBusyChange={args.onBusyChange} />,
+  render: args => <FlightProvider><PotFlightExample onBusyChange={args.onBusyChange} /></FlightProvider>,
   play: async ({ canvasElement, args, userEvent }) => {
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
     await expect(table.ownerDocument.defaultView!.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true);
@@ -712,7 +727,7 @@ export const PotFlightReducedMotion: Story = {
   },
 };
 export const PotFlightMissingSeat: Story = {
-  tags: ['!autodocs'], render: () => <PotFlightExample from="missing-seat" />,
+  tags: ['!autodocs'], render: () => <FlightProvider><PotFlightExample from="missing-seat" /></FlightProvider>,
   play: async ({ canvasElement, userEvent }) => {
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
     const warn = console.warn;
@@ -727,42 +742,15 @@ export const PotFlightMissingSeat: Story = {
   },
 };
 
-function TransferEdgeExample() {
-  const [state, setState] = useState({ pot: 30, id: 0, fromPlayerKey: 'you' });
-  return <DocsStage><PokerTable players={TRANSFER_PLAYERS} title="Poker" pot={state.pot} locale="en-US"
-    chipTransfer={state} dock={<>
-      <Button onClick={() => setState(current => ({ ...current, pot: current.pot + 60 }))}>Same id</Button>
-      <Button onClick={() => setState(current => ({ ...current, id: current.id + 1 }))}>No increase</Button>
-      <Button onClick={() => setState(current => ({ pot: current.pot + 60, id: current.id + 1, fromPlayerKey: 'unknown' }))}>Unknown seat</Button>
-      <Button onClick={() => setState(current => ({ pot: current.pot + 60, id: current.id + 1, fromPlayerKey: 'you' }))}>Transfer</Button>
-    </>} /></DocsStage>;
-}
-export const TransferEdges: Story = {
-  tags: ['!autodocs'], render: () => <TransferEdgeExample />,
+export const MissingTransferPlaque: Story = {
+  tags: ['!autodocs'], render: () => <FlightProvider><FlightControlsExample /></FlightProvider>,
   play: async ({ canvasElement, userEvent }) => {
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
-    const canvas = within(table);
-    const pot = table.querySelector('[data-poker-pot]');
-    const noFlight = async () => expect(table.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).toBeNull();
-    await userEvent.click(canvas.getByRole('button', { name: 'Same id' }));
-    await expect(pot).toHaveTextContent('Pot90');
-    await noFlight();
-    await userEvent.click(canvas.getByRole('button', { name: 'No increase' }));
-    await expect(pot).toHaveTextContent('Pot90');
-    await noFlight();
-    const warn = console.warn;
-    const warning = fn(warn);
-    console.warn = warning;
-    try {
-      await userEvent.click(canvas.getByRole('button', { name: 'Unknown seat' }));
-      await expect(warning).toHaveBeenCalledWith('PokerTable: unknown player key "unknown".');
-    } finally { console.warn = warn; }
-    await expect(pot).toHaveTextContent('Pot150');
-    await noFlight();
-    table.querySelector('[data-slot-player="you"] [data-ui~="game-seat"]')?.remove();
-    table.querySelector('[data-slot-player="you"]')?.remove();
-    await userEvent.click(canvas.getByRole('button', { name: 'Transfer' }));
-    await expect(pot).toHaveTextContent('Pot210');
-    await noFlight();
+    const plaque = table.querySelector('[data-slot-player="you"] [data-ui~="game-seat"]');
+    await expect(plaque).not.toBeNull();
+    plaque?.remove();
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Raise 60' }));
+    await waitFor(() => expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot90'));
+    await expect(table.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).toBeNull();
   },
 };

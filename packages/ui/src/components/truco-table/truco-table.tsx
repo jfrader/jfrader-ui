@@ -128,12 +128,6 @@ export interface TrucoTableProps extends SxProps {
   actionsLabel?: string;
   /** Overrides the default copy. */
   labels?: Partial<TrucoTableLabels>;
-  /** Change to deal the hands. The first render appears in place.
-   * @deprecated Call useFlights().deal() inside FlightProvider instead. Retained for one minor release. */
-  deal?: string | number;
-  /** Change to replace the card snapshot without animation.
-   * @deprecated Call useFlights().resync() inside FlightProvider instead. Retained for one minor release. */
-  revision?: string | number;
   /** Seat receiving the first dealt card. */
   forehand?: string;
   /** Formats scores and counts. Defaults to the runtime locale. */
@@ -296,8 +290,6 @@ export function TrucoTable({
   actions,
   actionsLabel,
   labels: labelOverrides,
-  deal,
-  revision,
   forehand,
   locale,
   deck = 'spanish',
@@ -339,7 +331,7 @@ export function TrucoTable({
           style={{ ...style, ...rootSlot?.style }}
         >
           <DeckProvider default={deck}>
-            <CardFlights deal={deal} revision={revision} forehand={forehand} onBusyChange={onBusyChange}>
+            <CardFlights forehand={forehand} onBusyChange={onBusyChange}>
               <GameTable
                 {...tableProps}
                 places={Math.max(players.length, 2)}
