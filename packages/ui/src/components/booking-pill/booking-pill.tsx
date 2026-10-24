@@ -440,7 +440,13 @@ const ticketStyle = css({
   [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
 const ticketValueStyle = css({ fontVariantNumeric: 'tabular-nums', textAlign: 'end' });
-const partyCountStyle = css({ minInlineSize: `calc(${vars.space[12]} * 2)`, fontVariantNumeric: 'tabular-nums' });
+const partyCountStyle = css({
+  minInlineSize: `calc(${vars.space[12]} * 2)`,
+  fontVariantNumeric: 'tabular-nums',
+  // The stepper cannot reserve a wide count cell inside a narrow panel: the buttons either side
+  // would then sit outside it. Let the count shrink and the row fit.
+  [NARROW_QUERY]: { minInlineSize: 0, flexShrink: 1, paddingInline: vars.space[1] },
+});
 const errorStyle = css({ margin: 0, color: vars.color.dangerText });
 const optionStyle = css({
   display: 'flex',
