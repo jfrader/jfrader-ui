@@ -13,7 +13,7 @@ import { useFlightScope } from './flight-provider';
 import type { FlightEventInput, FlightOutcome } from './types';
 
 const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto' });
-const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], padding: vars.space[2] });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
 const Output = styled.output({ display: 'block', color: vars.color.text, backgroundColor: vars.color.bg });
 const CardStage = styled.div({ display: 'flex', gap: vars.space[8], padding: vars.space[4] });
 const players = [{ key: 'you', name: 'You', chips: 200, isMe: true, hiddenCards: 2 }, { key: 'rival', name: 'Rival', chips: 200, hiddenCards: 2 }];
@@ -36,6 +36,11 @@ function QueueTable({ onBusyChange, onResync }: { onBusyChange?: (busy: boolean)
     return handle;
   };
   return <>
+    <Stage><PokerTable onBusyChange={onBusyChange} title="Poker" players={players} pot={pot} locale="en-US" /></Stage>
+    <Output aria-label="Queue busy">{String(flights.busy)}</Output>
+    <Output aria-label="Queue size">{events.length}</Output>
+    <Output aria-label="Outcomes">{JSON.stringify(outcomes)}</Output>
+    <Output aria-label="Busy edges">{JSON.stringify(edges)}</Output>
     <Controls>
       <Button onClick={() => push({ kind: 'transfer', from: 'you', amount: 25 })}>Transfer</Button>
       <Button onClick={() => { setPot(175); push({ kind: 'transfer', from: 'you', amount: 25 }); push({ kind: 'transfer', from: 'rival', amount: 50 }); }}>Two transfers</Button>
@@ -49,19 +54,14 @@ function QueueTable({ onBusyChange, onResync }: { onBusyChange?: (busy: boolean)
       <Button onClick={() => { push({ kind: 'transfer', from: 'you', amount: 25 }); push({ kind: 'transfer', from: 'rival', amount: 25 }); push({ kind: 'deal' }); push({ kind: 'resync' }); }}>Resync batch</Button>
       <Button onClick={() => { setPot(250); push({ kind: 'resync' }); push({ kind: 'transfer', from: 'you', amount: 25 }); }}>Resync then transfer</Button>
     </Controls>
-    <Output aria-label="Queue busy">{String(flights.busy)}</Output>
-    <Output aria-label="Queue size">{events.length}</Output>
-    <Output aria-label="Outcomes">{JSON.stringify(outcomes)}</Output>
-    <Output aria-label="Busy edges">{JSON.stringify(edges)}</Output>
-    <Stage><PokerTable onBusyChange={onBusyChange} title="Poker" players={players} pot={pot} locale="en-US" /></Stage>
   </>;
 }
 
 function QueueDemo() {
   const flights = useFlights();
   return <>
-    <Button onClick={() => flights.sendChips({ from: 'you', amount: 25 })}>Transfer</Button>
-    <Stage><PokerTable title="Poker" players={players} pot={100} /></Stage>
+    <Stage data-flight-stage><PokerTable title="Poker" players={players} pot={100} /></Stage>
+    <Controls><Button onClick={() => flights.sendChips({ from: 'you', amount: 25 })}>Transfer</Button></Controls>
   </>;
 }
 
@@ -70,17 +70,19 @@ const meta = {
   component: FlightProvider,
   tags: ['autodocs'],
   args: { children: null, onBusyChange: fn(), onResync: fn() },
-  render: args => <FlightProvider><QueueTable onBusyChange={args.onBusyChange} onResync={args.onResync} /></FlightProvider>,
-  parameters: { docs: {
+  render: () => <FlightProvider><QueueDemo /></FlightProvider>,
+  parameters: { layout: 'fullscreen', docs: {
     description: { component: 'Queue card deals, chip transfers, and snapshot resynchronization.' },
     usage: 'Wrap one surface and its controls in FlightProvider. Call useFlights from the controls to deal cards, send chips, or resync. See the [Flights guide](https://ui.jfrader.com/#/components/flights) for lane policies, outcomes, and custom chip surfaces.',
     sections: [{ title: 'Hooks', stories: ['Queue'] }],
     source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
 import { Button } from '@jfrader/ui/button';
 import { FlightProvider, useFlights } from '@jfrader/ui/flights';
 import { PokerTable } from '@jfrader/ui/poker-table';
 
 const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto' });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
 function PokerSurface() {
   const flights = useFlights();
   const players = [
@@ -88,8 +90,8 @@ function PokerSurface() {
     { key: 'rival', name: 'Rival', chips: 200, hiddenCards: 2 },
   ];
   return <>
-    <Button onClick={() => flights.sendChips({ from: 'you', amount: 25 })}>Transfer</Button>
     <Stage><PokerTable title="Poker" players={players} pot={100} /></Stage>
+    <Controls><Button onClick={() => flights.sendChips({ from: 'you', amount: 25 })}>Transfer</Button></Controls>
   </>;
 }
 export function Poker() {
@@ -98,14 +100,21 @@ export function Poker() {
   } },
 } satisfies Meta<FlightProviderProps & { onResync: (outcome: FlightOutcome) => void }>;
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<FlightProviderProps & { onResync: (outcome: FlightOutcome) => void }>;
+const renderQueueTable: Story['render'] = args => <FlightProvider><QueueTable onBusyChange={args.onBusyChange} onResync={args.onResync} /></FlightProvider>;
 
 export const Queue: Story = {
   name: 'Provider and hook',
   render: () => <FlightProvider><QueueDemo /></FlightProvider>,
+  play: async ({ canvas, canvasElement }) => {
+    const stage = canvasElement.querySelector('[data-flight-stage]')!;
+    await expect(canvas.getByRole('button', { name: 'Transfer' }).getBoundingClientRect().top)
+      .toBeGreaterThanOrEqual(stage.getBoundingClientRect().bottom);
+  },
 };
 
 export const UnchangedPot: Story = {
+  render: renderQueueTable,
   tags: ['!autodocs'],
   play: async ({ canvas, canvasElement, userEvent }) => {
     const doc = canvasElement.ownerDocument;
@@ -120,6 +129,7 @@ export const UnchangedPot: Story = {
 };
 
 export const SerialTransfers: Story = {
+  render: renderQueueTable,
   tags: ['!autodocs'],
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     const doc = canvasElement.ownerDocument;
@@ -146,6 +156,7 @@ export const SerialTransfers: Story = {
 };
 
 export const LatestDeal: Story = {
+  render: renderQueueTable,
   tags: ['!autodocs'],
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Two deals' }));
@@ -158,6 +169,7 @@ export const LatestDeal: Story = {
 };
 
 export const DealAndTransfer: Story = {
+  render: renderQueueTable,
   tags: ['!autodocs'],
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Deal and transfer' }));
@@ -170,6 +182,7 @@ export const DealAndTransfer: Story = {
 };
 
 export const Resync: Story = {
+  render: renderQueueTable,
   tags: ['!autodocs'],
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Two transfers' }));
@@ -188,6 +201,7 @@ export const Resync: Story = {
 };
 
 export const ResyncBoundary: Story = {
+  render: renderQueueTable,
   tags: ['!autodocs'],
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Resync batch' }));
@@ -200,6 +214,7 @@ export const ResyncBoundary: Story = {
 };
 
 export const UnknownPlayer: Story = {
+  render: renderQueueTable,
   tags: ['!autodocs'],
   play: async ({ canvas, userEvent }) => {
     const warning = spyOn(console, 'warn').mockImplementation(() => {});
@@ -213,6 +228,7 @@ export const UnknownPlayer: Story = {
 };
 
 export const TransferAfterResync: Story = {
+  render: renderQueueTable,
   tags: ['!autodocs'],
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Two transfers' }));
@@ -231,6 +247,7 @@ export const TransferAfterResync: Story = {
 };
 
 export const Cancel: Story = {
+  render: renderQueueTable,
   tags: ['!autodocs'],
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole('button', { name: 'Two transfers' }));
@@ -241,6 +258,7 @@ export const Cancel: Story = {
 };
 
 export const ReducedMotion: Story = {
+  render: renderQueueTable,
   tags: ['!autodocs'],
   play: async ({ canvas, canvasElement, userEvent }) => {
     const view = canvasElement.ownerDocument.defaultView!;
@@ -263,39 +281,11 @@ export const ReducedMotion: Story = {
   },
 };
 
-export const StaleId: Story = {
-  tags: ['!autodocs'], render: () => <StaleLegacyTransfer />,
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    const warning = spyOn(console, 'warn').mockImplementation(() => {});
-    try {
-      await userEvent.click(canvas.getByRole('button', { name: 'Legacy transfer' }));
-      await waitFor(() => expect(canvasElement.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
-      await waitFor(() => expect(canvasElement.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).toBeNull(), { timeout: 6000 });
-      await userEvent.click(canvas.getByRole('button', { name: 'Legacy transfer' }));
-      await expect(warning).toHaveBeenCalledWith('PokerTable: stale chipTransfer id "manual". Trigger a new request with useFlights() instead.');
-      await expect(canvasElement.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).toBeNull();
-    } finally { warning.mockRestore(); }
-  },
-};
-
-function StaleLegacyTransfer() {
-  const [state, setState] = useState({ pot: 100, id: 'initial' });
-  return <>
-    <Button onClick={() => setState(current => ({ pot: current.pot + 25, id: 'manual' }))}>Legacy transfer</Button>
-    <Stage><PokerTable title="Poker" players={players} pot={state.pot} chipTransfer={{ id: state.id, fromPlayerKey: 'you', amount: 25 }} /></Stage>
-  </>;
-}
-
 function ReactiveCards() {
   const flights = useFlights();
   const [played, setPlayed] = useState(false);
   const [outcome, setOutcome] = useState<FlightOutcome | null>(null);
   return <>
-    <Controls>
-      <Button onClick={() => { const handle = flights.deal(); void handle.result.then(setOutcome); }}>Deal</Button>
-      <Button onClick={() => setPlayed(true)}>Play</Button>
-    </Controls>
-    <Output aria-label="Deal result">{JSON.stringify(outcome)}</Output>
     <CardFlights>
       <CardStage>
         <CardFlights.Deck><GameCard label="Deck" /></CardFlights.Deck>
@@ -305,6 +295,11 @@ function ReactiveCards() {
         {played && <CardFlights.Target kind="play" cardId="hand-0"><GameCard label="Played card" /></CardFlights.Target>}
       </CardStage>
     </CardFlights>
+    <Output aria-label="Deal result">{JSON.stringify(outcome)}</Output>
+    <Controls>
+      <Button onClick={() => { const handle = flights.deal(); void handle.result.then(setOutcome); }}>Deal</Button>
+      <Button onClick={() => setPlayed(true)}>Play</Button>
+    </Controls>
   </>;
 }
 
@@ -319,42 +314,6 @@ export const ReactiveGroup: Story = {
     await expect(doc.querySelector('[data-flight-target="hand:hand-7"]')).not.toBeNull();
     await expect(canvas.getByLabelText('Deal result')).toHaveTextContent('null');
     await waitFor(() => expect(canvas.getByLabelText('Deal result')).toHaveTextContent('"landed"'), { timeout: 6000 });
-  },
-};
-
-function DeprecatedTable() {
-  const [snapshot, setSnapshot] = useState({ pot: 100, deal: 0, revision: 0 });
-  return <>
-    <Controls>
-      <Button onClick={() => setSnapshot(current => ({ ...current, pot: current.pot + 25, deal: current.deal + 1 }))}>Legacy deal</Button>
-      <Button onClick={() => setSnapshot(current => ({ ...current, revision: current.revision + 1 }))}>Legacy resync</Button>
-    </Controls>
-    <Stage><PokerTable players={players} title="Poker" {...snapshot} potFrom="you"
-      chipTransfer={{ id: snapshot.deal, fromPlayerKey: 'you', amount: 25 }} /></Stage>
-  </>;
-}
-const legacyWarning = fn();
-export const DeprecatedProps: Story = {
-  tags: ['!autodocs'], render: () => <DeprecatedTable />,
-  beforeEach: () => {
-    legacyWarning.mockClear();
-    const warning = spyOn(console, 'warn').mockImplementation(legacyWarning);
-    return () => warning.mockRestore();
-  },
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    const warnings = [
-      'PokerTable: chipTransfer is deprecated. Use useFlights() inside FlightProvider instead.',
-      'PokerTable: potFrom is deprecated. Use useFlights() inside FlightProvider instead.',
-      'CardFlights: deal is deprecated. Use useFlights() inside FlightProvider instead.',
-      'CardFlights: revision is deprecated. Use useFlights() inside FlightProvider instead.',
-    ];
-    for (const message of warnings) await expect(legacyWarning).toHaveBeenCalledWith(message);
-    await userEvent.click(canvas.getByRole('button', { name: 'Legacy deal' }));
-    await waitFor(() => expect(canvasElement.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
-    await waitFor(() => expect(canvasElement.ownerDocument.querySelector('[data-ui="card-flight"]')).not.toBeNull());
-    await userEvent.click(canvas.getByRole('button', { name: 'Legacy resync' }));
-    await waitFor(() => expect(canvasElement.ownerDocument.querySelector('[data-ui="chip-flight-layer"], [data-ui="card-flight"]')).toBeNull());
-    await expect(legacyWarning).toHaveBeenCalledTimes(4);
   },
 };
 
@@ -398,10 +357,10 @@ export const MissingSurface: Story = {
 function ScopedSurface({ name }: { name: string }) {
   const flights = useFlights();
   return <>
-    <Button onClick={() => flights.sendChips({ from: 'you', amount: 25 })}>{name} transfer</Button>
+    <Stage><PokerTable title={name} players={players} pot={100} /></Stage>
     <Output aria-label={`${name} busy`}>{String(flights.busy)}</Output>
     <Output aria-label={`${name} last`}>{JSON.stringify(flights.last)}</Output>
-    <Stage><PokerTable title={name} players={players} pot={100} /></Stage>
+    <Controls><Button onClick={() => flights.sendChips({ from: 'you', amount: 25 })}>{name} transfer</Button></Controls>
   </>;
 }
 export const NestedProviders: Story = {

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useRef, useState } from 'react';
 import { expect, fn, waitFor } from 'storybook/test';
 import { renderToString } from 'react-dom/server';
-import { GameChipStack, ChipFlights, useChipFlights, useChipFlight } from '@jfrader/ui/game-chip-stack';
+import { GameChipStack, ChipFlights, useChipFlights } from '@jfrader/ui/game-chip-stack';
 import { Flex } from '@jfrader/ui/flex';
 import { expectInside } from '../../testing/geometry-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -326,19 +326,18 @@ export const ProviderUnmount: Story = {
   },
 };
 
-function MissingGeometryDemo({ omitLayer = false }: { omitLayer?: boolean }) {
+function MissingGeometryDemo() {
   const from = useRef<HTMLSpanElement>(null);
   const { send, busy } = useChipFlights();
-  const raw = useChipFlight();
   const [status, setStatus] = useState('Ready');
   return <Flex direction="column" gap="md">
     <GameChipStack ref={from} chips={[{ value: 25, count: 4 }]} size="xl" />
     <Button onClick={async () => {
       if (!from.current) return;
-      const result = await (omitLayer ? raw.fly : send)({ from: from.current, to: omitLayer ? from.current : from.current.ownerDocument.createElement('span'), chips: [{ value: 25, count: 1 }] });
+      const result = await send({ from: from.current, to: from.current.ownerDocument.createElement('span'), chips: [{ value: 25, count: 1 }] });
       setStatus(`${result.status}: ${result.reason}`);
     }}>Send chips</Button>
-    <span role="status">{busy || raw.busy ? 'In flight' : status}</span>
+    <span role="status">{busy ? 'In flight' : status}</span>
   </Flex>;
 }
 export const MissingGeometry: Story = {
@@ -347,9 +346,6 @@ export const MissingGeometry: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Send chips' }));
     await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('skipped: missing-geometry'));
   },
-};
-export const OmittedEscapeHatchLayer: Story = {
-  ...MissingGeometry, render: () => <ChipFlights><MissingGeometryDemo omitLayer /></ChipFlights>,
 };
 export const ProviderReducedMotion: Story = {
   tags: ['!autodocs'], render: () => <ChipFlights><FlightDemo /></ChipFlights>,

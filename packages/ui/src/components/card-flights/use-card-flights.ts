@@ -54,7 +54,7 @@ function useMeasuredLaunch(resyncKey: string | number | undefined) {
   };
 }
 
-/** @deprecated Use <CardFlights deal={deal}> instead. Removed in the next major release. */
+/** @deprecated Wrap the surface in FlightProvider and call useFlights().deal() instead. Removed in the next major release. */
 export function useDealFlights({ handIndex, dealt, forehandIdx, players, resyncKey }: DealFlightsOptions) {
   assertLegacyFlightEngine(useFlightRegistry()?.treeOwned);
   useDealFlightEngine({ handIndex, dealt, forehandIdx, resyncKey }, () => players);
@@ -242,7 +242,7 @@ export interface BoardFlightsResult {
   reset: () => void;
 }
 
-/** @deprecated Render <CardFlights deal={deal}> around the board instead. Removed in the next major release. */
+/** @deprecated Wrap the board in FlightProvider and call useFlights().deal() instead. Removed in the next major release. */
 export function useBoardFlights({ hand, handKey, plays, forehandIdx = 0, resyncKey, seats }: BoardFlightsOptions): BoardFlightsResult {
   assertLegacyFlightEngine(useFlightRegistry()?.treeOwned);
   const { landingTargets, reset } = useCardFlights();

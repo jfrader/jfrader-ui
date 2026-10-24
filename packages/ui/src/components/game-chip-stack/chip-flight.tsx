@@ -27,14 +27,12 @@ export interface ChipFlightOptions {
   /** Formats denominations as an ISO 4217 currency. */
   currency?: string;
 }
-export interface UseChipFlightOptions {
-  /** Reports activity edges, including cancellation and unmount. */
-  onBusyChange?: (busy: boolean) => void;
-}
 export type ChipFlightResult = FlightOutcome;
-export interface ChipFlightsProps extends UseChipFlightOptions {
+export interface ChipFlightsProps {
   /** Contains the departure and landing elements and controls. */
   children: ReactNode;
+  /** Reports activity edges, including cancellation and unmount. */
+  onBusyChange?: (busy: boolean) => void;
 }
 export interface ChipFlightsController {
   /** Sends decorative chips, cancelling the previous flight. Always resolves on completion or cancellation. */
@@ -44,7 +42,7 @@ export interface ChipFlightsController {
   /** Reports whether chips are in flight. */
   busy: boolean;
 }
-export interface ChipFlightController {
+interface ChipFlightController {
   /** Starts a flight, cancelling its predecessor. Resolves after landing or cancellation. Missing geometry and reduced motion resolve immediately. */
   fly: (options: ChipFlightOptions) => Promise<ChipFlightResult>;
   /** Stops the current flight, removes its layer, and resolves its promise. */
@@ -123,10 +121,7 @@ function FlightLayer({ flight, complete, finish }: { flight: Flight; complete: (
   </div>;
 }
 
-/** Animates decorative chips between measured elements without owning a balance or game state.
- * @deprecated Use `ChipFlights` and `useChipFlights` to mount the flight layer automatically.
- */
-export function useChipFlight({ onBusyChange }: UseChipFlightOptions = {}): ChipFlightController {
+function useChipFlight({ onBusyChange }: Pick<ChipFlightsProps, 'onBusyChange'> = {}): ChipFlightController {
   const reduced = useReducedMotion();
   const scope = useThemeScope();
   const portalReady = useRef(scope?.portalContainer !== null);

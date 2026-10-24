@@ -22,6 +22,7 @@ const DocsStage = styled.div({
   marginInline: 'auto',
 });
 const NarrowStage = styled(DocsStage)({ inlineSize: 390, blockSize: 844 });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
 
 const pokerCard = (id: string, label: string, suit: string, rank: string | number): PokerTableCard => ({
   id,
@@ -71,16 +72,13 @@ interface GameState {
   street: Street;
   pot: number;
   board: number;
-  deal: number;
   message: string;
-  potFrom?: string;
 }
 
 const START: GameState = {
   street: 'idle',
   pot: 0,
   board: 0,
-  deal: 0,
   message: 'Blinds 10 / 20 · Six seats',
 };
 
@@ -101,8 +99,8 @@ function playerCards(key: PlayerKey, street: Street) {
 }
 
 function act(state: GameState, action: string): GameState {
-  if (action === 'deal') return { ...state, street: 'preflop', pot: 30, deal: state.deal + 1, message: 'Blinds posted · Your turn' };
-  if (action === 'new') return { ...START, deal: state.deal, message: START.message };
+  if (action === 'deal') return { ...state, street: 'preflop', pot: 30, message: 'Blinds posted · Your turn' };
+  if (action === 'new') return { ...START };
   if (action === 'fold') return { ...state, street: 'folded', message: 'You fold · Blair takes the pot' };
   if (state.street === 'preflop') {
     return { ...state, street: 'flop', board: 3, pot: state.pot + (action === 'raise' ? 100 : 40),
@@ -135,10 +133,18 @@ function actionsFor(street: Street, play: (action: string) => void, busy: boolea
 }
 
 function PokerGame() {
+  const flights = useFlights();
   const [game, setGame] = useState<GameState>(START);
   const [busy, setBusy] = useState(false);
-  const play = (action: string) => setGame(current => ({ ...act(current, action),
-    potFrom: action === 'raise' || (action === 'call' && current.street === 'preflop') ? 'you' : undefined }));
+  const play = (action: string) => {
+    const next = act(game, action);
+    setGame(next);
+    if (action === 'deal') flights.deal();
+    else if (action === 'new') flights.resync();
+    else if (action === 'raise' || (action === 'call' && game.street === 'preflop')) {
+      flights.sendChips({ from: 'you', amount: next.pot - game.pot });
+    }
+  };
 
   const players: PokerTablePlayer[] = SEATS.map((seat) => {
     const cards = playerCards(seat.key, game.street);
@@ -163,12 +169,10 @@ function PokerGame() {
         subtitle={`${STREET_LABELS[game.street]} · Hand 42`}
         board={BOARD.slice(0, game.board)}
         pot={game.pot || undefined}
-        chipTransfer={game.potFrom ? { id: `${game.deal}-${game.pot}`, fromPlayerKey: game.potFrom } : undefined}
         denominations={DENOMINATIONS}
         locale="en-US"
         announcement={game.message}
         actions={actionsFor(game.street, play, busy)}
-        deal={game.deal}
         onBusyChange={setBusy}
       />
     </DocsStage>
@@ -187,7 +191,7 @@ const meta = {
       description: {
         component: 'Lay out a poker table with seats, stacks, hole cards, a community board, an event line, and commands.',
       },
-      sections: [{ title: 'Hooks', stories: ['FlightControls'] }, { title: 'Chip transfers', stories: ['ChipTransfer'] }, { title: 'The pot', stories: ['Pot'] }, { title: 'A hand', stories: ['PokerHand'] }],
+      sections: [{ title: 'A hand', stories: ['PokerHand'] }, { title: 'Hooks', stories: ['FlightControls'] }, { title: 'Chip transfers', stories: ['ChipTransfer'] }, { title: 'The pot', stories: ['Pot'] }],
       usage: `### When to use
 Use PokerTable for a Hold'em-style table with seats, stacks, hidden or revealed cards, a pot, a community board, and a command bar. The component is presentational: it renders the state you pass and reports commands through the action items' \`onSelect\`. It depicts the pot total you supply using \`denominations\` and never computes that total. Betting rules, turn order, hand ranking, and card values belong to your application.
 
@@ -204,7 +208,7 @@ Give the parent container an explicit inline and block size, exactly as for Game
 The table is a labelled group, the board is a labelled group, and the event line is a polite live region. Every card needs a label. Commands use the GameActions toolbar and keep their native button behavior.`,
     },
   },
-  render: () => <PokerGame />,
+  render: () => <FlightProvider><PokerGame /></FlightProvider>,
 } satisfies Meta<typeof PokerTable>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -225,19 +229,289 @@ const TRANSFER_PLAYERS: readonly PokerTablePlayer[] = [
 function FlightControlsExample() {
   const flights = useFlights();
   const [pot, setPot] = useState(30);
-  return <><Button onClick={() => { setPot(current => current + 60); flights.sendChips({ from: 'you', amount: 60 }); }}>Raise 60</Button>
-    <DocsStage><PokerTable players={TRANSFER_PLAYERS} title="Texas Hold'em" pot={pot} /></DocsStage>
+  return <>
+    <DocsStage data-flight-stage><PokerTable players={TRANSFER_PLAYERS} title="Texas Hold'em" pot={pot} /></DocsStage>
+    <Controls><Button onClick={() => { setPot(current => current + 60); flights.sendChips({ from: 'you', amount: 60 }); }}>Raise 60</Button></Controls>
   </>;
 }
+export const PokerHand: Story = {
+  name: 'Poker hand',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Deal a hand, call or raise through the streets, and reach a showdown.',
+      },
+      source: { language: 'tsx', code: `import { useState } from 'react';
+import { styled } from '@jfrader/ui';
+import { FlightProvider, useFlights } from '@jfrader/ui/flights';
+import {
+  PokerTable,
+  type PokerTableCard,
+  type PokerTablePlayer,
+} from '@jfrader/ui/poker-table';
+
+const Stage = styled.div({
+  inlineSize: '100%',
+  maxInlineSize: 640,
+  blockSize: 640,
+  marginInline: 'auto',
+});
+
+const card = (id: string, label: string, suit: string, rank: string | number): PokerTableCard => ({
+  id,
+  label,
+  value: { suit, rank },
+});
+
+const yourCards = [
+  card('ace-spades', 'Ace of spades', 'spades', 'A'),
+  card('king-spades', 'King of spades', 'spades', 'K'),
+];
+const board = [
+  card('queen-spades', 'Queen of spades', 'spades', 'Q'),
+  card('jack-spades', 'Jack of spades', 'spades', 'J'),
+  card('ten-spades', 'Ten of spades', 'spades', 10),
+  card('two-hearts', 'Two of hearts', 'hearts', 2),
+  card('three-diamonds', 'Three of diamonds', 'diamonds', 3),
+];
+const showdown = {
+  alex: [card('nine-hearts', 'Nine of hearts', 'hearts', 9), card('nine-diamonds', 'Nine of diamonds', 'diamonds', 9)],
+  blair: [card('ace-hearts', 'Ace of hearts', 'hearts', 'A'), card('queen-diamonds', 'Queen of diamonds', 'diamonds', 'Q')],
+  drew: [card('eight-clubs', 'Eight of clubs', 'clubs', 8), card('seven-clubs', 'Seven of clubs', 'clubs', 7)],
+  emery: [card('king-diamonds', 'King of diamonds', 'diamonds', 'K'), card('jack-hearts', 'Jack of hearts', 'hearts', 'J')],
+  frankie: [card('six-spades', 'Six of spades', 'spades', 6), card('six-hearts', 'Six of hearts', 'hearts', 6)],
+};
+
+const seats = [
+  { key: 'alex', name: 'Alex', chips: 1240 },
+  { key: 'blair', name: 'Blair', chips: 980, dealer: true },
+  { key: 'you', name: 'You', chips: 1500, isMe: true },
+  { key: 'drew', name: 'Drew', chips: 760 },
+  { key: 'emery', name: 'Emery', chips: 2100 },
+  { key: 'frankie', name: 'Frankie', chips: 640 },
+] satisfies readonly PokerTablePlayer[];
+
+type Street = 'idle' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown' | 'folded';
+
+const STREET_LABELS: Record<Street, string> = {
+  idle: 'Waiting',
+  preflop: 'Preflop',
+  flop: 'Flop',
+  turn: 'Turn',
+  river: 'River',
+  showdown: 'Showdown',
+  folded: 'Hand over',
+};
+
+const turn = { remainingMs: 45000, durationMs: 60000 };
+const denominations = [25, 5, 1] as const;
+
+function PokerSurface() {
+  const flights = useFlights();
+  const [street, setStreet] = useState<Street>('idle');
+  const [pot, setPot] = useState(0);
+  const [boardCount, setBoardCount] = useState(0);
+  const [message, setMessage] = useState('Blinds 10 / 20 · Six seats');
+  const [busy, setBusy] = useState(false);
+
+  const play = (action: string) => {
+    if (action === 'deal') {
+      setStreet('preflop');
+      setPot(30);
+      flights.deal();
+      setMessage('Blinds posted · Your turn');
+      return;
+    }
+    if (action === 'new') {
+      setStreet('idle');
+      setPot(0);
+      setBoardCount(0);
+      setMessage('Blinds 10 / 20 · Six seats');
+      flights.resync();
+      return;
+    }
+    if (action === 'fold') {
+      setStreet('folded');
+      setMessage('You fold · Blair takes the pot');
+      return;
+    }
+    if (street === 'preflop') {
+      setStreet('flop');
+      setBoardCount(3);
+      const amount = action === 'raise' ? 100 : 40;
+      setPot(value => value + amount);
+      flights.sendChips({ from: 'you', amount });
+      setMessage(action === 'raise' ? 'You raise to 60 · Blair calls · Flop: Q♠ J♠ 10♠' : 'Blair calls 20 · Flop: Q♠ J♠ 10♠');
+      return;
+    }
+    if (street === 'flop') {
+      setStreet('turn');
+      setBoardCount(4);
+      const amount = action === 'raise' ? 120 : 80;
+      setPot(value => value + amount);
+      if (action === 'raise') flights.sendChips({ from: 'you', amount });
+      setMessage(action === 'raise' ? 'You bet 40 · Blair calls · Turn: 2♥' : 'Drew checks · Turn: 2♥');
+      return;
+    }
+    if (street === 'turn') {
+      setStreet('river');
+      setBoardCount(5);
+      const amount = action === 'raise' ? 200 : 160;
+      setPot(value => value + amount);
+      if (action === 'raise') flights.sendChips({ from: 'you', amount });
+      setMessage(action === 'raise' ? 'You bet 80 · Drew calls · River: 3♦' : 'Emery checks · River: 3♦');
+      return;
+    }
+    if (street === 'river') {
+      setStreet('showdown');
+      setPot((value) => value + (action === 'raise' ? 240 : 0));
+      if (action === 'raise') flights.sendChips({ from: 'you', amount: 240 });
+      setMessage('You win with a royal flush');
+    }
+  };
+
+  const active = street === 'preflop' || street === 'flop' || street === 'turn' || street === 'river';
+  const reveal = street === 'showdown';
+  const players: PokerTablePlayer[] = seats.map((seat) => ({
+    ...seat,
+    cards: seat.key === 'you'
+      ? street === 'idle' ? undefined : yourCards
+      : reveal ? showdown[seat.key as keyof typeof showdown] : undefined,
+    hiddenCards: street !== 'idle' && seat.key !== 'you' && !reveal ? 2 : 0,
+    state: (seat.key === 'you' && reveal) || (seat.key === 'blair' && street === 'folded')
+      ? 'winner'
+      : seat.key === 'you' && active ? 'active' : 'idle',
+    turn: seat.key === 'you' && active ? turn : undefined,
+    folded: seat.key === 'you' && street === 'folded',
+  }));
+
+  const actions = street === 'idle'
+    ? [{ key: 'deal', label: 'Deal hand', tone: 'accent' as const, disabled: busy, onSelect: () => play('deal') }]
+    : street === 'showdown' || street === 'folded'
+      ? [{ key: 'new', label: 'New hand', tone: 'accent' as const, disabled: busy, onSelect: () => play('new') }]
+      : [
+        { key: 'fold', label: 'Fold', tone: 'danger' as const, variant: 'outline' as const, disabled: busy, onSelect: () => play('fold') },
+        { key: 'call', label: street === 'preflop' ? 'Call 20' : 'Check', variant: 'soft' as const, disabled: busy, onSelect: () => play('call') },
+        { key: 'raise', label: street === 'preflop' ? 'Raise 60' : 'Bet ' + (street === 'flop' ? 40 : street === 'turn' ? 80 : 120),
+          tone: 'accent' as const, disabled: busy, onSelect: () => play('raise') },
+      ];
+
+  return (
+    <Stage>
+      <PokerTable
+        players={players}
+        title="Texas Hold'em"
+        subtitle={STREET_LABELS[street] + ' · Hand 42'}
+        board={board.slice(0, boardCount)}
+        pot={pot || undefined}
+        denominations={denominations}
+        locale="en-US"
+        announcement={message}
+        actions={actions}
+        onBusyChange={setBusy}
+      />
+    </Stage>
+  );
+}
+export default function Example() {
+  return <FlightProvider><PokerSurface /></FlightProvider>;
+}
+` },
+    },
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]');
+    await expect(table).not.toBeNull();
+    const canvas = within(table!);
+    const seats = table!.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]');
+    await expect(seats).toHaveLength(6);
+    await expect(table!.querySelectorAll('[data-ui="game-hand-hidden-card"]'), 'initial hidden cards').toHaveLength(0);
+    await expect(canvas.getByRole('status')).toHaveTextContent('Blinds 10 / 20');
+
+    const dealButton = canvas.getByRole('button', { name: 'Deal hand' });
+    await userEvent.tab();
+    await expect(table!.ownerDocument.activeElement).toBe(dealButton);
+    await expect(getComputedStyle(dealButton).outlineStyle).not.toBe('none');
+
+    await userEvent.click(dealButton);
+    const fold = canvas.getByRole('button', { name: 'Fold' });
+    if (canvasElement.ownerDocument.querySelector('[data-ui="card-flight"]')) {
+      await expect(fold).toHaveAttribute('aria-disabled', 'true');
+    }
+    await landed(canvasElement.ownerDocument);
+    await expect(fold).not.toHaveAttribute('aria-disabled', 'true');
+    await expect(table!.querySelectorAll('[data-ui="game-hand-hidden-card"]'), 'dealt hidden cards').toHaveLength(10);
+    await expect(table!.querySelectorAll('[data-ui="game-table-seat"] [data-ui~="game-card"]')).toHaveLength(12);
+    await expect(canvas.getByRole('status')).toHaveTextContent('Your turn');
+    await expect(canvas.getByRole('button', { name: 'Call 20' })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: 'Raise 60' })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: 'Fold' })).toBeVisible();
+    const dock = table!.querySelector<HTMLElement>('[data-ui="game-table-dock"]')!;
+    const center = table!.querySelector<HTMLElement>('[data-ui="game-table-center"]')!.getBoundingClientRect();
+    await expect(dock).not.toBeNull();
+    for (const name of ['Fold', 'Call 20', 'Raise 60']) {
+      await expect(canvas.getByRole('button', { name }).closest('[data-ui="game-table-dock"]')).toBe(dock);
+    }
+    await expect(dock.getBoundingClientRect().top).toBeGreaterThan(center.top + center.height / 2);
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Call 20' }));
+    await landed(canvasElement.ownerDocument);
+    await expect(table!.querySelectorAll('[data-board-card]'), 'flop cards').toHaveLength(3);
+    await expect(canvas.getByRole('status')).toHaveTextContent('Flop');
+    await expect(canvas.getByRole('button', { name: 'Check' }).closest('[data-ui="game-table-dock"]')).toBe(dock);
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Check' }));
+    await landed(canvasElement.ownerDocument);
+    await expect(table!.querySelectorAll('[data-board-card]'), 'turn cards').toHaveLength(4);
+    await expect(canvas.getByRole('status')).toHaveTextContent('Turn');
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Check' }));
+    await landed(canvasElement.ownerDocument);
+    await expect(table!.querySelectorAll('[data-board-card]'), 'river cards').toHaveLength(5);
+    await expect(canvas.getByRole('status')).toHaveTextContent('River');
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Check' }));
+    await landed(canvasElement.ownerDocument);
+    await expect(canvas.getByRole('status')).toHaveTextContent('royal flush');
+    await expect(table!.querySelectorAll('[data-ui="game-hand-hidden-card"]')).toHaveLength(0);
+    await expect(table!.querySelectorAll('[data-ui="game-table-seat"] [data-ui~="game-card"]')).toHaveLength(12);
+    await expect(table!.querySelectorAll('[data-ui="game-seat"][data-state="winner"]')).toHaveLength(1);
+    await expect(canvas.getByRole('button', { name: 'New hand' })).toBeVisible();
+
+    const surface = table!.querySelector<HTMLElement>('[data-game-surface]');
+    if (!surface) throw new Error('Missing surface');
+    for (const seat of seats) await expectInside(seat, table!);
+    await expectInside(table!.querySelector<HTMLElement>('[data-ui="game-table-center"]')!, surface);
+
+    await userEvent.click(canvas.getByRole('button', { name: 'New hand' }));
+    await expect(table!.querySelectorAll('[data-board-card]'), 'reset board').toHaveLength(0);
+    await expect(canvas.getByRole('button', { name: 'Deal hand' })).toBeVisible();
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Deal hand' }));
+    await landed(canvasElement.ownerDocument);
+    await userEvent.click(canvas.getByRole('button', { name: 'Fold' }));
+    await expect(canvas.getByRole('status')).toHaveTextContent('You fold');
+    await expect(canvas.getByRole('button', { name: 'New hand' })).toBeVisible();
+    await expect(table!.querySelectorAll('[data-ui="game-seat"][data-state="winner"]')).toHaveLength(1);
+
+    await userEvent.click(canvas.getByRole('button', { name: 'New hand' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Deal hand' }));
+    await landed(canvasElement.ownerDocument);
+    await expect(canvas.getByRole('button', { name: 'Call 20' })).toBeVisible();
+  },
+};
+
 export const FlightControls: Story = {
   name: 'Flight controls', render: () => <FlightProvider><FlightControlsExample /></FlightProvider>,
   parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
 import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
 import { Button } from '@jfrader/ui/button';
 import { FlightProvider, useFlights } from '@jfrader/ui/flights';
 import { PokerTable } from '@jfrader/ui/poker-table';
 
 const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto' });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
 const players = [
   { key: 'you', name: 'You', chips: 1500, isMe: true },
   { key: 'blair', name: 'Blair', chips: 980 },
@@ -245,21 +519,29 @@ const players = [
 function PokerSurface() {
   const flights = useFlights();
   const [pot, setPot] = useState(30);
-  return <><Button onClick={() => {
+  return <>
+    <Stage><PokerTable players={players} title="Texas Hold'em" pot={pot} /></Stage>
+    <Controls><Button onClick={() => {
       setPot(current => current + 60);
       flights.sendChips({ from: 'you', amount: 60 });
-    }}>Raise 60</Button>
-    <Stage><PokerTable players={players} title="Texas Hold'em" pot={pot} /></Stage></>;
+    }}>Raise 60</Button></Controls>
+  </>;
 }
 export function Poker() {
   return <FlightProvider><PokerSurface /></FlightProvider>;
 }` } } },
+  play: async ({ canvas, canvasElement }) => {
+    const stage = canvasElement.querySelector('[data-flight-stage]')!;
+    await expect(canvas.getByRole('button', { name: 'Raise 60' }).getBoundingClientRect().top)
+      .toBeGreaterThanOrEqual(stage.getBoundingClientRect().bottom);
+  },
 };
 function TransferExample() {
   const flights = useFlights();
   const [pot, setPot] = useState(30);
-  return <><Button onClick={() => { setPot(current => current + 60); flights.sendChips({ from: 'you', amount: 60 }); }}>Raise 60</Button>
+  return <>
     <TransferStage><PokerTable players={TRANSFER_PLAYERS} title="Texas Hold'em" pot={pot} locale="en-US" /></TransferStage>
+    <Controls><Button onClick={() => { setPot(current => current + 60); flights.sendChips({ from: 'you', amount: 60 }); }}>Raise 60</Button></Controls>
   </>;
 }
 const transferActivity = fn((_busy: boolean) => {});
@@ -277,6 +559,7 @@ const Stage = styled.div({
   inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto',
   '& [data-game-surface]': { background: \`radial-gradient(ellipse at center, transparent, color-mix(in srgb, \${vars.color.chipInk} 70%, transparent)), repeating-linear-gradient(25deg, transparent 0 2px, color-mix(in srgb, \${vars.color.chipSpot} 3%, transparent) 2px 3px), color-mix(in srgb, \${vars.color.chipGreen} 35%, \${vars.color.chipInk})\` },
 });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
 const players = [
   { key: 'you', name: 'You', chips: 1500, isMe: true },
   { key: 'blair', name: 'Blair', chips: 980 },
@@ -284,11 +567,12 @@ const players = [
 function PokerSurface() {
   const flights = useFlights();
   const [pot, setPot] = useState(30);
-  return <><Button onClick={() => {
+  return <>
+    <Stage><PokerTable players={players} title="Texas Hold'em" pot={pot} locale="en-US" /></Stage>
+    <Controls><Button onClick={() => {
         setPot(current => current + 60);
         flights.sendChips({ from: 'you', amount: 60 });
-      }}>Raise 60</Button>
-    <Stage><PokerTable players={players} title="Texas Hold'em" pot={pot} locale="en-US" /></Stage>
+      }}>Raise 60</Button></Controls>
   </>;
 }
 export default function Example() {
@@ -397,256 +681,6 @@ export const NarrowPot: Story = {
   },
 };
 
-export const PokerHand: Story = {
-  name: 'Poker hand',
-  parameters: {
-    docs: {
-      description: {
-        story: 'Deal a hand, call or raise through the streets, and reach a showdown. Every action is a prop; the script lives in this example, not in the component.',
-      },
-      source: { language: 'tsx', code: `import { useState } from 'react';
-import { styled } from '@jfrader/ui';
-import {
-  PokerTable,
-  type PokerTableCard,
-  type PokerTablePlayer,
-} from '@jfrader/ui/poker-table';
-
-const Stage = styled.div({
-  inlineSize: '100%',
-  maxInlineSize: 640,
-  blockSize: 640,
-  marginInline: 'auto',
-});
-
-const card = (id: string, label: string, suit: string, rank: string | number): PokerTableCard => ({
-  id,
-  label,
-  value: { suit, rank },
-});
-
-const yourCards = [
-  card('ace-spades', 'Ace of spades', 'spades', 'A'),
-  card('king-spades', 'King of spades', 'spades', 'K'),
-];
-const board = [
-  card('queen-spades', 'Queen of spades', 'spades', 'Q'),
-  card('jack-spades', 'Jack of spades', 'spades', 'J'),
-  card('ten-spades', 'Ten of spades', 'spades', 10),
-  card('two-hearts', 'Two of hearts', 'hearts', 2),
-  card('three-diamonds', 'Three of diamonds', 'diamonds', 3),
-];
-const showdown = {
-  alex: [card('nine-hearts', 'Nine of hearts', 'hearts', 9), card('nine-diamonds', 'Nine of diamonds', 'diamonds', 9)],
-  blair: [card('ace-hearts', 'Ace of hearts', 'hearts', 'A'), card('queen-diamonds', 'Queen of diamonds', 'diamonds', 'Q')],
-  drew: [card('eight-clubs', 'Eight of clubs', 'clubs', 8), card('seven-clubs', 'Seven of clubs', 'clubs', 7)],
-  emery: [card('king-diamonds', 'King of diamonds', 'diamonds', 'K'), card('jack-hearts', 'Jack of hearts', 'hearts', 'J')],
-  frankie: [card('six-spades', 'Six of spades', 'spades', 6), card('six-hearts', 'Six of hearts', 'hearts', 6)],
-};
-
-const seats = [
-  { key: 'alex', name: 'Alex', chips: 1240 },
-  { key: 'blair', name: 'Blair', chips: 980, dealer: true },
-  { key: 'you', name: 'You', chips: 1500, isMe: true },
-  { key: 'drew', name: 'Drew', chips: 760 },
-  { key: 'emery', name: 'Emery', chips: 2100 },
-  { key: 'frankie', name: 'Frankie', chips: 640 },
-] satisfies readonly PokerTablePlayer[];
-
-type Street = 'idle' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown' | 'folded';
-
-const STREET_LABELS: Record<Street, string> = {
-  idle: 'Waiting',
-  preflop: 'Preflop',
-  flop: 'Flop',
-  turn: 'Turn',
-  river: 'River',
-  showdown: 'Showdown',
-  folded: 'Hand over',
-};
-
-const turn = { remainingMs: 45000, durationMs: 60000 };
-const denominations = [25, 5, 1] as const;
-
-export default function Example() {
-  const [street, setStreet] = useState<Street>('idle');
-  const [pot, setPot] = useState(0);
-  const [potFrom, setPotFrom] = useState<string>();
-  const [boardCount, setBoardCount] = useState(0);
-  const [deal, setDeal] = useState(0);
-  const [message, setMessage] = useState('Blinds 10 / 20 · Six seats');
-  const [busy, setBusy] = useState(false);
-
-  const play = (action: string) => {
-    setPotFrom(action === 'raise' || (action === 'call' && street === 'preflop') ? 'you' : undefined);
-    if (action === 'deal') {
-      setStreet('preflop');
-      setPot(30);
-      setDeal((value) => value + 1);
-      setMessage('Blinds posted · Your turn');
-      return;
-    }
-    if (action === 'new') {
-      setStreet('idle');
-      setPot(0);
-      setBoardCount(0);
-      setMessage('Blinds 10 / 20 · Six seats');
-      return;
-    }
-    if (action === 'fold') {
-      setStreet('folded');
-      setMessage('You fold · Blair takes the pot');
-      return;
-    }
-    if (street === 'preflop') {
-      setStreet('flop');
-      setBoardCount(3);
-      setPot((value) => value + (action === 'raise' ? 100 : 40));
-      setMessage(action === 'raise' ? 'You raise to 60 · Blair calls · Flop: Q♠ J♠ 10♠' : 'Blair calls 20 · Flop: Q♠ J♠ 10♠');
-      return;
-    }
-    if (street === 'flop') {
-      setStreet('turn');
-      setBoardCount(4);
-      setPot((value) => value + (action === 'raise' ? 120 : 80));
-      setMessage(action === 'raise' ? 'You bet 40 · Blair calls · Turn: 2♥' : 'Drew checks · Turn: 2♥');
-      return;
-    }
-    if (street === 'turn') {
-      setStreet('river');
-      setBoardCount(5);
-      setPot((value) => value + (action === 'raise' ? 200 : 160));
-      setMessage(action === 'raise' ? 'You bet 80 · Drew calls · River: 3♦' : 'Emery checks · River: 3♦');
-      return;
-    }
-    if (street === 'river') {
-      setStreet('showdown');
-      setPot((value) => value + (action === 'raise' ? 240 : 0));
-      setMessage('You win with a royal flush');
-    }
-  };
-
-  const active = street === 'preflop' || street === 'flop' || street === 'turn' || street === 'river';
-  const reveal = street === 'showdown';
-  const players: PokerTablePlayer[] = seats.map((seat) => ({
-    ...seat,
-    cards: seat.key === 'you'
-      ? street === 'idle' ? undefined : yourCards
-      : reveal ? showdown[seat.key as keyof typeof showdown] : undefined,
-    hiddenCards: street !== 'idle' && seat.key !== 'you' && !reveal ? 2 : 0,
-    state: (seat.key === 'you' && reveal) || (seat.key === 'blair' && street === 'folded')
-      ? 'winner'
-      : seat.key === 'you' && active ? 'active' : 'idle',
-    turn: seat.key === 'you' && active ? turn : undefined,
-    folded: seat.key === 'you' && street === 'folded',
-  }));
-
-  const actions = street === 'idle'
-    ? [{ key: 'deal', label: 'Deal hand', tone: 'accent' as const, disabled: busy, onSelect: () => play('deal') }]
-    : street === 'showdown' || street === 'folded'
-      ? [{ key: 'new', label: 'New hand', tone: 'accent' as const, disabled: busy, onSelect: () => play('new') }]
-      : [
-        { key: 'fold', label: 'Fold', tone: 'danger' as const, variant: 'outline' as const, disabled: busy, onSelect: () => play('fold') },
-        { key: 'call', label: street === 'preflop' ? 'Call 20' : 'Check', variant: 'soft' as const, disabled: busy, onSelect: () => play('call') },
-        { key: 'raise', label: street === 'preflop' ? 'Raise 60' : 'Bet ' + (street === 'flop' ? 40 : street === 'turn' ? 80 : 120),
-          tone: 'accent' as const, disabled: busy, onSelect: () => play('raise') },
-      ];
-
-  return (
-    <Stage>
-      <PokerTable
-        players={players}
-        title="Texas Hold'em"
-        subtitle={STREET_LABELS[street] + ' · Hand 42'}
-        board={board.slice(0, boardCount)}
-        pot={pot || undefined}
-        chipTransfer={potFrom ? { id: deal + '-' + pot, fromPlayerKey: potFrom } : undefined}
-        denominations={denominations}
-        locale="en-US"
-        announcement={message}
-        actions={actions}
-        deal={deal}
-        onBusyChange={setBusy}
-      />
-    </Stage>
-  );
-}
-` },
-    },
-  },
-  play: async ({ canvasElement, userEvent }) => {
-    const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]');
-    await expect(table).not.toBeNull();
-    const canvas = within(table!);
-    const seats = table!.querySelectorAll<HTMLElement>('[data-ui="game-table-seat"]');
-    await expect(seats).toHaveLength(6);
-    await expect(table!.querySelectorAll('[data-ui="game-hand-hidden-card"]'), 'initial hidden cards').toHaveLength(0);
-    await expect(canvas.getByRole('status')).toHaveTextContent('Blinds 10 / 20');
-
-    const dealButton = canvas.getByRole('button', { name: 'Deal hand' });
-    await userEvent.tab();
-    await expect(table!.ownerDocument.activeElement).toBe(dealButton);
-    await expect(getComputedStyle(dealButton).outlineStyle).not.toBe('none');
-
-    await userEvent.click(dealButton);
-    const fold = canvas.getByRole('button', { name: 'Fold' });
-    if (canvasElement.ownerDocument.querySelector('[data-ui="card-flight"]')) {
-      await expect(fold).toHaveAttribute('aria-disabled', 'true');
-    }
-    await landed(canvasElement.ownerDocument);
-    await expect(fold).not.toHaveAttribute('aria-disabled', 'true');
-    await expect(table!.querySelectorAll('[data-ui="game-hand-hidden-card"]'), 'dealt hidden cards').toHaveLength(10);
-    await expect(table!.querySelectorAll('[data-ui="game-table-seat"] [data-ui~="game-card"]')).toHaveLength(12);
-    await expect(canvas.getByRole('status')).toHaveTextContent('Your turn');
-    await expect(canvas.getByRole('button', { name: 'Call 20' })).toBeVisible();
-    await expect(canvas.getByRole('button', { name: 'Raise 60' })).toBeVisible();
-    await expect(canvas.getByRole('button', { name: 'Fold' })).toBeVisible();
-
-    await userEvent.click(canvas.getByRole('button', { name: 'Call 20' }));
-    await landed(canvasElement.ownerDocument);
-    await expect(table!.querySelectorAll('[data-board-card]'), 'flop cards').toHaveLength(3);
-    await expect(canvas.getByRole('status')).toHaveTextContent('Flop');
-
-    await userEvent.click(canvas.getByRole('button', { name: 'Check' }));
-    await landed(canvasElement.ownerDocument);
-    await expect(table!.querySelectorAll('[data-board-card]'), 'turn cards').toHaveLength(4);
-    await expect(canvas.getByRole('status')).toHaveTextContent('Turn');
-
-    await userEvent.click(canvas.getByRole('button', { name: 'Check' }));
-    await landed(canvasElement.ownerDocument);
-    await expect(table!.querySelectorAll('[data-board-card]'), 'river cards').toHaveLength(5);
-    await expect(canvas.getByRole('status')).toHaveTextContent('River');
-
-    await userEvent.click(canvas.getByRole('button', { name: 'Check' }));
-    await landed(canvasElement.ownerDocument);
-    await expect(canvas.getByRole('status')).toHaveTextContent('royal flush');
-    await expect(table!.querySelectorAll('[data-ui="game-hand-hidden-card"]')).toHaveLength(0);
-    await expect(table!.querySelectorAll('[data-ui="game-table-seat"] [data-ui~="game-card"]')).toHaveLength(12);
-    await expect(table!.querySelectorAll('[data-ui="game-seat"][data-state="winner"]')).toHaveLength(1);
-    await expect(canvas.getByRole('button', { name: 'New hand' })).toBeVisible();
-
-    const surface = table!.querySelector<HTMLElement>('[data-game-surface]');
-    if (!surface) throw new Error('Missing surface');
-    for (const seat of seats) await expectInside(seat, table!);
-    await expectInside(table!.querySelector<HTMLElement>('[data-ui="game-table-center"]')!, surface);
-
-    await userEvent.click(canvas.getByRole('button', { name: 'New hand' }));
-    await expect(table!.querySelectorAll('[data-board-card]'), 'reset board').toHaveLength(0);
-    await expect(canvas.getByRole('button', { name: 'Deal hand' })).toBeVisible();
-
-    await userEvent.click(canvas.getByRole('button', { name: 'Deal hand' }));
-    await landed(canvasElement.ownerDocument);
-    await userEvent.click(canvas.getByRole('button', { name: 'Fold' }));
-    await expect(canvas.getByRole('status')).toHaveTextContent('You fold');
-    await expect(canvas.getByRole('button', { name: 'New hand' })).toBeVisible();
-    await expect(table!.querySelectorAll('[data-ui="game-seat"][data-state="winner"]')).toHaveLength(1);
-
-    await userEvent.click(canvas.getByRole('button', { name: 'New hand' }));
-    await userEvent.click(canvas.getByRole('button', { name: 'Deal hand' }));
-    await landed(canvasElement.ownerDocument);
-    await expect(canvas.getByRole('button', { name: 'Call 20' })).toBeVisible();
-  },
-};
 
 export const EmptyCommands: Story = {
   name: 'Empty commands',
@@ -674,17 +708,21 @@ export const EmptyTable: Story = {
 };
 
 function PotFlightExample({ onBusyChange, from = 'you' }: { onBusyChange?: (busy: boolean) => void; from?: string }) {
+  const flights = useFlights();
   const [pot, setPot] = useState(30);
   const [busy, setBusy] = useState(false);
   return <DocsStage><PokerTable players={SEATS} title="Texas Hold'em" subtitle="Preflop · Hand 42" pot={pot}
-    potFrom={from} denominations={DENOMINATIONS} locale="en-US"
+    denominations={DENOMINATIONS} locale="en-US"
     onBusyChange={value => { setBusy(value); onBusyChange?.(value); }}
-    actions={[{ key: 'raise', label: 'Raise 60', tone: 'accent', disabled: busy, onSelect: () => setPot(value => value + 100) }]} />
+    actions={[{ key: 'raise', label: 'Raise 60', tone: 'accent', disabled: busy, onSelect: () => {
+      setPot(value => value + 100);
+      flights.sendChips({ from, amount: 100 });
+    } }]} />
   </DocsStage>;
 }
 export const PotFlight: Story = {
   tags: ['!autodocs'], args: { onBusyChange: fn() },
-  render: args => <PotFlightExample onBusyChange={args.onBusyChange} />,
+  render: args => <FlightProvider><PotFlightExample onBusyChange={args.onBusyChange} /></FlightProvider>,
   play: async ({ canvasElement, args, userEvent }) => {
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
     const canvas = within(table);
@@ -701,7 +739,7 @@ export const PotFlight: Story = {
 };
 export const PotFlightReducedMotion: Story = {
   name: 'Poker chips reduced motion', tags: ['!autodocs'], args: { onBusyChange: fn() },
-  render: args => <PotFlightExample onBusyChange={args.onBusyChange} />,
+  render: args => <FlightProvider><PotFlightExample onBusyChange={args.onBusyChange} /></FlightProvider>,
   play: async ({ canvasElement, args, userEvent }) => {
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
     await expect(table.ownerDocument.defaultView!.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true);
@@ -712,7 +750,7 @@ export const PotFlightReducedMotion: Story = {
   },
 };
 export const PotFlightMissingSeat: Story = {
-  tags: ['!autodocs'], render: () => <PotFlightExample from="missing-seat" />,
+  tags: ['!autodocs'], render: () => <FlightProvider><PotFlightExample from="missing-seat" /></FlightProvider>,
   play: async ({ canvasElement, userEvent }) => {
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
     const warn = console.warn;
@@ -727,42 +765,15 @@ export const PotFlightMissingSeat: Story = {
   },
 };
 
-function TransferEdgeExample() {
-  const [state, setState] = useState({ pot: 30, id: 0, fromPlayerKey: 'you' });
-  return <DocsStage><PokerTable players={TRANSFER_PLAYERS} title="Poker" pot={state.pot} locale="en-US"
-    chipTransfer={state} dock={<>
-      <Button onClick={() => setState(current => ({ ...current, pot: current.pot + 60 }))}>Same id</Button>
-      <Button onClick={() => setState(current => ({ ...current, id: current.id + 1 }))}>No increase</Button>
-      <Button onClick={() => setState(current => ({ pot: current.pot + 60, id: current.id + 1, fromPlayerKey: 'unknown' }))}>Unknown seat</Button>
-      <Button onClick={() => setState(current => ({ pot: current.pot + 60, id: current.id + 1, fromPlayerKey: 'you' }))}>Transfer</Button>
-    </>} /></DocsStage>;
-}
-export const TransferEdges: Story = {
-  tags: ['!autodocs'], render: () => <TransferEdgeExample />,
+export const MissingTransferPlaque: Story = {
+  tags: ['!autodocs'], render: () => <FlightProvider><FlightControlsExample /></FlightProvider>,
   play: async ({ canvasElement, userEvent }) => {
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
-    const canvas = within(table);
-    const pot = table.querySelector('[data-poker-pot]');
-    const noFlight = async () => expect(table.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).toBeNull();
-    await userEvent.click(canvas.getByRole('button', { name: 'Same id' }));
-    await expect(pot).toHaveTextContent('Pot90');
-    await noFlight();
-    await userEvent.click(canvas.getByRole('button', { name: 'No increase' }));
-    await expect(pot).toHaveTextContent('Pot90');
-    await noFlight();
-    const warn = console.warn;
-    const warning = fn(warn);
-    console.warn = warning;
-    try {
-      await userEvent.click(canvas.getByRole('button', { name: 'Unknown seat' }));
-      await expect(warning).toHaveBeenCalledWith('PokerTable: unknown player key "unknown".');
-    } finally { console.warn = warn; }
-    await expect(pot).toHaveTextContent('Pot150');
-    await noFlight();
-    table.querySelector('[data-slot-player="you"] [data-ui~="game-seat"]')?.remove();
-    table.querySelector('[data-slot-player="you"]')?.remove();
-    await userEvent.click(canvas.getByRole('button', { name: 'Transfer' }));
-    await expect(pot).toHaveTextContent('Pot210');
-    await noFlight();
+    const plaque = table.querySelector('[data-slot-player="you"] [data-ui~="game-seat"]');
+    await expect(plaque).not.toBeNull();
+    plaque?.remove();
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Raise 60' }));
+    await waitFor(() => expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot90'));
+    await expect(table.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).toBeNull();
   },
 };

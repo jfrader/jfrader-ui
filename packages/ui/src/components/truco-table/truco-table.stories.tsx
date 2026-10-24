@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { styled } from '../../index';
+import { vars } from '@jfrader/tokens/vars';
 import { Button } from '../button';
 import { FlightProvider, useFlights } from '../flights';
 import { expectInside } from '../../testing/geometry-assertions';
@@ -19,6 +20,7 @@ const DocsStage = styled.div({
   blockSize: 720,
   marginInline: 'auto',
 });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
 
 const card = (id: string, label: string, suit: string, rank: string | number): TrucoTableCard => ({
   id,
@@ -55,12 +57,12 @@ const TURN = { remainingMs: 45000, durationMs: 60000 };
 type Phase = 'idle' | 'trick';
 
 function TrucoGame() {
+  const flights = useFlights();
   const [phase, setPhase] = useState<Phase>('idle');
   const [hand, setHand] = useState<readonly TrucoTableCard[]>([]);
   const [plays, setPlays] = useState<readonly TrucoTablePlay[]>([]);
   const [hidden, setHidden] = useState<Record<string, number>>({});
   const [active, setActive] = useState<string | undefined>(undefined);
-  const [deal, setDeal] = useState(0);
   const [message, setMessage] = useState('Two teams · First to 30');
   const [busy, setBusy] = useState(false);
 
@@ -70,7 +72,7 @@ function TrucoGame() {
     setPlays([]);
     setHidden({ alex: 3, blair: 3, drew: 3 });
     setActive('you');
-    setDeal((value) => value + 1);
+    flights.deal();
     setMessage('Your hand · Three cards');
   };
 
@@ -81,6 +83,7 @@ function TrucoGame() {
     setHidden({});
     setActive(undefined);
     setMessage('Two teams · First to 30');
+    flights.resync();
   };
 
   const playCard = (played: TrucoTableCard) => {
@@ -131,7 +134,6 @@ function TrucoGame() {
         score={SCORE}
         announcement={message}
         actions={actions}
-        deal={deal}
         onBusyChange={setBusy}
       />
     </DocsStage>
@@ -167,7 +169,7 @@ Give the parent container an explicit inline and block size, exactly as for Game
 The table, score line, and local hand are labelled groups. The event line is a polite live region. Every card needs a label. Select a card with Enter or Space, then activate Play card. Piles are compact summaries of the cards each seat played.`,
     },
   },
-  render: () => <TrucoGame />,
+  render: () => <FlightProvider><TrucoGame /></FlightProvider>,
 } satisfies Meta<typeof TrucoTable>;
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -177,41 +179,12 @@ const landed = async (document: Document) => waitFor(() => expect(flights(docume
 
 function FlightControlsExample() {
   const flights = useFlights();
-  return <><Button onClick={() => flights.deal()}>Deal hand</Button>
-    <DocsStage><TrucoTable players={SEATS.map(player => ({ ...player, hiddenCards: player.isMe ? 0 : 3 }))} title="Truco" hand={HAND}
+  return <>
+    <DocsStage data-flight-stage><TrucoTable players={SEATS.map(player => ({ ...player, hiddenCards: player.isMe ? 0 : 3 }))} title="Truco" hand={HAND}
       /></DocsStage>
+    <Controls><Button onClick={() => flights.deal()}>Deal hand</Button></Controls>
   </>;
 }
-export const FlightControls: Story = {
-  name: 'Flight controls', render: () => <FlightProvider><FlightControlsExample /></FlightProvider>,
-  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
-import { Button } from '@jfrader/ui/button';
-import { FlightProvider, useFlights } from '@jfrader/ui/flights';
-import { TrucoTable, type TrucoTableCard } from '@jfrader/ui/truco-table';
-
-const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 720, marginInline: 'auto' });
-const players = [
-  { key: 'alex', name: 'Alex', teamIdx: 0, hiddenCards: 3 },
-  { key: 'blair', name: 'Blair', teamIdx: 1, hiddenCards: 3 },
-  { key: 'you', name: 'You', teamIdx: 0, isMe: true },
-  { key: 'drew', name: 'Drew', teamIdx: 1, hiddenCards: 3 },
-];
-const hand: TrucoTableCard[] = [
-  { id: 'seven-swords', label: 'Seven of swords', value: { suit: 'espadas', rank: 7 } },
-  { id: 'ace-golds', label: 'Ace of golds', value: { suit: 'oros', rank: 1 } },
-  { id: 'three-cups', label: 'Three of cups', value: { suit: 'copas', rank: 3 } },
-];
-function TrucoSurface() {
-  const flights = useFlights();
-  return <><Button onClick={() => flights.deal()}>Deal hand</Button>
-    <Stage><TrucoTable players={players} title="Truco" hand={hand} /></Stage>
-  </>;
-}
-export function Truco() {
-  return <FlightProvider><TrucoSurface /></FlightProvider>;
-}` } } },
-};
-
 export const TrucoTrick: Story = {
   name: 'Truco trick',
   parameters: {
@@ -221,6 +194,7 @@ export const TrucoTrick: Story = {
       },
       source: { language: 'tsx', code: `import { useState } from 'react';
 import { styled } from '@jfrader/ui';
+import { FlightProvider, useFlights } from '@jfrader/ui/flights';
 import {
   TrucoTable,
   type TrucoTableCard,
@@ -264,13 +238,13 @@ const score: readonly TrucoTableScore[] = [
 
 const turn = { remainingMs: 45000, durationMs: 60000 };
 
-export default function Example() {
+function TrucoSurface() {
+  const flights = useFlights();
   const [dealt, setDealt] = useState(false);
   const [yourHand, setYourHand] = useState<readonly TrucoTableCard[]>([]);
   const [plays, setPlays] = useState<readonly TrucoTablePlay[]>([]);
   const [hidden, setHidden] = useState<Record<string, number>>({});
   const [active, setActive] = useState<string | undefined>(undefined);
-  const [deal, setDeal] = useState(0);
   const [message, setMessage] = useState('Two teams · First to 30');
   const [busy, setBusy] = useState(false);
 
@@ -280,7 +254,7 @@ export default function Example() {
     setPlays([]);
     setHidden({ alex: 3, blair: 3, drew: 3 });
     setActive('you');
-    setDeal((value) => value + 1);
+    flights.deal();
     setMessage('Your hand · Three cards');
   };
 
@@ -291,6 +265,7 @@ export default function Example() {
     setHidden({});
     setActive(undefined);
     setMessage('Two teams · First to 30');
+    flights.resync();
   };
 
   const playCard = (played: TrucoTableCard) => {
@@ -339,11 +314,13 @@ export default function Example() {
         score={score}
         announcement={message}
         actions={actions}
-        deal={deal}
         onBusyChange={setBusy}
       />
     </Stage>
   );
+}
+export default function Example() {
+  return <FlightProvider><TrucoSurface /></FlightProvider>;
 }` },
     },
   },
@@ -397,6 +374,45 @@ export default function Example() {
     await expect(table!.querySelectorAll('[data-ui="game-hand"] [data-ui~="game-card"]')).toHaveLength(3);
   },
 };
+
+export const FlightControls: Story = {
+  name: 'Flight controls', render: () => <FlightProvider><FlightControlsExample /></FlightProvider>,
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { Button } from '@jfrader/ui/button';
+import { FlightProvider, useFlights } from '@jfrader/ui/flights';
+import { TrucoTable, type TrucoTableCard } from '@jfrader/ui/truco-table';
+
+const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 720, marginInline: 'auto' });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
+const players = [
+  { key: 'alex', name: 'Alex', teamIdx: 0, hiddenCards: 3 },
+  { key: 'blair', name: 'Blair', teamIdx: 1, hiddenCards: 3 },
+  { key: 'you', name: 'You', teamIdx: 0, isMe: true },
+  { key: 'drew', name: 'Drew', teamIdx: 1, hiddenCards: 3 },
+];
+const hand: TrucoTableCard[] = [
+  { id: 'seven-swords', label: 'Seven of swords', value: { suit: 'espadas', rank: 7 } },
+  { id: 'ace-golds', label: 'Ace of golds', value: { suit: 'oros', rank: 1 } },
+  { id: 'three-cups', label: 'Three of cups', value: { suit: 'copas', rank: 3 } },
+];
+function TrucoSurface() {
+  const flights = useFlights();
+  return <>
+    <Stage><TrucoTable players={players} title="Truco" hand={hand} /></Stage>
+    <Controls><Button onClick={() => flights.deal()}>Deal hand</Button></Controls>
+  </>;
+}
+export function Truco() {
+  return <FlightProvider><TrucoSurface /></FlightProvider>;
+}` } } },
+  play: async ({ canvas, canvasElement }) => {
+    const stage = canvasElement.querySelector('[data-flight-stage]')!;
+    await expect(canvas.getByRole('button', { name: 'Deal hand' }).getBoundingClientRect().top)
+      .toBeGreaterThanOrEqual(stage.getBoundingClientRect().bottom);
+  },
+};
+
 
 export const EmptyCommands: Story = {
   name: 'Empty commands',

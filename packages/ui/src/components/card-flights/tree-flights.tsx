@@ -15,12 +15,6 @@ import type { CardFlightEvent, FlightId, FlightOutcome } from '../flights/types'
 import { useFlightSurface } from '../flights/flight-provider';
 
 export interface CardFlightsProps {
-  /** Change when a new deal is rendered. The initial tree appears in place.
-   * @deprecated Call useFlights().deal() inside FlightProvider instead. Retained for one minor release. */
-  deal?: string | number;
-  /** Change to replace the board snapshot without animation and cancel active flights.
-   * @deprecated Call useFlights().resync() inside FlightProvider instead. Retained for one minor release. */
-  revision?: string | number;
   /** Seat key receiving the first card; defaults to the first registered table seat. */
   forehand?: string;
   /** Render the card tree whose committed changes drive flights. */
@@ -40,24 +34,21 @@ function deckOrigin(nodes: readonly SnapshotNode[], table?: { node: HTMLElement 
   return { ...box, width, height: width * CARD_FRAME.ratio, rotate: 0 };
 }
 
-function TreeEngine({ deal, revision, forehand }: Omit<CardFlightsProps, 'children'>) {
+function TreeEngine({ forehand }: Omit<CardFlightsProps, 'children'>) {
   const surface = useFlightSurface('cards');
   const flights = surface.events.filter((event): event is CardFlightEvent => event.kind !== 'transfer');
   const onFlightSettled = surface.settle;
   const registry = useFlightRegistry()!;
   const actions = useFlightActions();
-  const latest = useRef({ deal, revision, forehand, actions, flights, onFlightSettled });
-  latest.current = { deal, revision, forehand, actions, flights, onFlightSettled };
+  const latest = useRef({ forehand, actions, flights, onFlightSettled });
+  latest.current = { forehand, actions, flights, onFlightSettled };
   const seen = useRef(new Set<FlightId>());
   const active = useRef<FlightId | null>(null);
-  const warned = useRef(new Set<string>());
-  const legacySequence = useRef(0);
-  const present = useRef(new Set<FlightId>());
   const settle = (id: FlightId, outcome: FlightOutcome) => {
     if (active.current === id) active.current = null;
     latest.current.onFlightSettled?.(id, outcome);
   };
-  const previous = useRef<{ deal: typeof deal; revision: typeof revision; nodes: SnapshotNode[] } | null>(null);
+  const previous = useRef<{ nodes: SnapshotNode[] } | null>(null);
   const measuredNodes = useRef<readonly HTMLElement[]>([]);
   const identities = useRef(new Map<HTMLElement, string>());
   const pending = useRef(false);
@@ -68,21 +59,10 @@ function TreeEngine({ deal, revision, forehand }: Omit<CardFlightsProps, 'childr
     queueMicrotask(() => {
       pending.current = false;
       if (!mounted.current) return;
-      const { deal, revision, forehand, actions, flights } = latest.current;
-      for (const [name, value] of [['deal', deal], ['revision', revision]] as const) {
-        if (value !== undefined && !warned.current.has(name)) { warned.current.add(name); warnFlight(`CardFlights: ${name} is deprecated. Use useFlights() inside FlightProvider instead.`); }
-      }
+      const { forehand, actions, flights } = latest.current;
       if (active.current && !flights.some(event => event.id === active.current)) actions.reset();
-      flights.forEach(event => {
-        if (seen.current.has(event.id) && !present.current.has(event.id)) warnFlight(`CardFlights: stale flight id "${event.id}". Trigger a new request with useFlights() instead.`);
-      });
-      present.current = new Set(flights.map(event => event.id));
       const unseen: CardFlightEvent[] = flights.filter(event => !seen.current.has(event.id));
       unseen.forEach(event => seen.current.add(event.id));
-      if (previous.current) {
-        if (previous.current.revision !== revision) unseen.push({ id: `legacy-resync-${++legacySequence.current}`, kind: 'resync' });
-        else if (previous.current.deal !== deal) unseen.push({ id: `legacy-deal-${++legacySequence.current}`, kind: 'deal' });
-      }
       let requestedDeal: CardFlightEvent | undefined;
       let resync = false;
       for (const event of unseen) {
@@ -105,12 +85,11 @@ function TreeEngine({ deal, revision, forehand }: Omit<CardFlightsProps, 'childr
       identities.current = new Map(live.map((entry) => [entry.node, identityOf(entry)]));
       const nodeSetChanged = identityChanged || live.length !== previousNodes.length ||
         live.some((entry, index) => entry.node !== previousNodes[index]);
-      const triggerChanged = !previous.current || previous.current.deal !== deal || previous.current.revision !== revision;
-      if (previous.current && !nodeSetChanged && !triggerChanged && !unseen.length) return;
+      if (previous.current && !nodeSetChanged && !unseen.length) return;
       measuredNodes.current = live.map((entry) => entry.node);
       const nodes = live.map((entry) => ({ ...entry, box: measureCardBox(entry.node) }));
       const baseline = previous.current;
-      previous.current = { deal, revision, nodes };
+      previous.current = { nodes };
       if ((!baseline || resync) && !requestedDeal) return;
       if (actions.reducedMotion) {
         if (requestedDeal) settle(requestedDeal.id, { status: 'skipped', reason: 'reduced-motion' });
@@ -158,7 +137,7 @@ function TreeEngine({ deal, revision, forehand }: Omit<CardFlightsProps, 'childr
           target: targetKey(entry), from, to: entry.box, face: entry.faceOverride ?? entry.face, durationMs: motionDurationMs.cardDeal,
           delayMs: index * motionDurationMs.cardDealStagger }));
       }
-      if (requestedDeal && flights.includes(requestedDeal)) active.current = requestedDeal.id;
+      if (requestedDeal) active.current = requestedDeal.id;
       actions.launch(specs, requestedDeal ? { id: requestedDeal.id, settle } : undefined);
     });
   };
@@ -256,9 +235,9 @@ function BusyReporter({ onBusyChange }: Pick<CardFlightsProps, 'onBusyChange'>) 
 }
 
 /** Animate the committed card tree. First render and resync snapshots appear in place. */
-export function CardFlights({ children, deal, revision, forehand, onBusyChange }: CardFlightsProps) {
+export function CardFlights({ children, forehand, onBusyChange }: CardFlightsProps) {
   return <TreeOwnedContext value><CardFlightsProvider headless>{children}
-    <TreeEngine deal={deal} revision={revision} forehand={forehand} /><BusyReporter onBusyChange={onBusyChange} />
+    <TreeEngine forehand={forehand} /><BusyReporter onBusyChange={onBusyChange} />
   </CardFlightsProvider></TreeOwnedContext>;
 }
 CardFlights.displayName = 'CardFlights';
