@@ -97,7 +97,7 @@ export interface DataTablePartProps {
   className?: string;
   sx?: Interpolation<Theme>;
 }
-export interface SortableDataTableSlots {
+export interface DataTableSlots {
   /** Container above the table holding the `toolbar` content. */
   toolbar?: ComponentType<ComponentPropsWithRef<'div'> & DataTablePartProps>;
   /** Scrollable container wrapping the table. */
@@ -120,7 +120,7 @@ export interface SortableDataTableSlots {
   status?: ComponentType<ComponentPropsWithRef<'p'> & DataTablePartProps>;
 }
 export type DataTableSlotProps = {
-  [Part in keyof SortableDataTableSlots]?: ComponentProps<NonNullable<SortableDataTableSlots[Part]>>;
+  [Part in keyof DataTableSlots]?: ComponentProps<NonNullable<DataTableSlots[Part]>>;
 };
 interface DataTableSortValueProps<Id extends string> {
   /** Controls the sort order, primary column first. Use `[]` for input order. Takes precedence over `value`. */
@@ -168,7 +168,7 @@ type DataTableSelectionProps<T> =
       /** Names each row in its selection checkbox label. Required when rows are selectable. */
       getRowLabel?: (row: T) => string;
     };
-export type SortableDataTableProps<T, Id extends string = string, Key extends string = string> = Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> &
+export type DataTableProps<T, Id extends string = string, Key extends string = string> = Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'> &
   SxProps & {
     /** Supplies the records displayed and, in client mode, sorted by the table. */
     rows: readonly T[];
@@ -223,7 +223,7 @@ export type SortableDataTableProps<T, Id extends string = string, Key extends st
     /** Passes props to toolbar, table, scrolling and selection parts. */
     slotProps?: DataTableSlotProps;
     /** Replaces toolbar, table, scrolling and selection parts. */
-    slots?: SortableDataTableSlots;
+    slots?: DataTableSlots;
   } & DataTableSortProps<Id> &
   DataTableSelectionProps<T>;
 
@@ -275,15 +275,15 @@ const toolbarStyle = css({
 const scrollerStyle = css({
   isolation: 'isolate',
   overflowX: 'auto',
-  maxBlockSize: 'var(--ui-sortable-data-table-max-height, none)',
+  maxBlockSize: 'var(--ui-data-table-max-height, none)',
   // Clears the sticky header plus the focus ring drawn outside a focused row control.
-  scrollPaddingBlockStart: `calc(var(--ui-sortable-data-table-header-size, 0px) + ${vars.space[2]})`,
+  scrollPaddingBlockStart: `calc(var(--ui-data-table-header-size, 0px) + ${vars.space[2]})`,
   maxInlineSize: '100%',
   border: `1px solid ${vars.color.border}`,
   borderRadius: vars.radius.md,
   '&:focus-visible': focusRingInset,
 });
-const tableStyle = css({ minInlineSize: 'var(--ui-sortable-data-table-min-width, auto)', inlineSize: '100%', borderCollapse: 'separate', borderSpacing: 0, tableLayout: 'auto' });
+const tableStyle = css({ minInlineSize: 'var(--ui-data-table-min-width, auto)', inlineSize: '100%', borderCollapse: 'separate', borderSpacing: 0, tableLayout: 'auto' });
 const captionStyle = css({ textAlign: 'start', padding: vars.space[4], fontWeight: vars.fontWeight.medium });
 const cellStyle = css({
   paddingInline: vars.space[3],
@@ -449,7 +449,7 @@ function sortRows<T>(rows: readonly T[], keys: readonly SortKey<T>[], collator: 
 
 // Native table: Tab/Shift+Tab visit controls; Enter/Space sort through native buttons.
 // Bounded collections only; compose Pagination externally, without grid navigation or virtualization.
-export function SortableDataTable<T, const Id extends string = string, Key extends string = string>({
+export function DataTable<T, const Id extends string = string, Key extends string = string>({
   ref,
   rows,
   columns,
@@ -487,7 +487,7 @@ export function SortableDataTable<T, const Id extends string = string, Key exten
   className,
   sx,
   ...rest
-}: SortableDataTableProps<T, Id, Key>) {
+}: DataTableProps<T, Id, Key>) {
   const Toolbar = slots?.toolbar ?? 'div';
   const Scroller = slots?.scroller ?? 'div';
   const Table = slots?.table ?? 'table';
@@ -568,7 +568,7 @@ export function SortableDataTable<T, const Id extends string = string, Key exten
     const scroller = scrollerRef.current;
     if (!header || !scroller) return;
     const update = () => {
-      scroller.style.setProperty('--ui-sortable-data-table-header-size', `${header.getBoundingClientRect().height}px`);
+      scroller.style.setProperty('--ui-data-table-header-size', `${header.getBoundingClientRect().height}px`);
     };
     update();
     setScrolled(scroller.scrollTop > 0);
@@ -684,11 +684,11 @@ export function SortableDataTable<T, const Id extends string = string, Key exten
   return (
     <WithSx className={className} styles={[rootStyle]} sx={sx}>
       {(rootClass) => (
-        <div {...rest} ref={ref} className={rootClass} data-ui="sortable-data-table" data-density={density}>
+        <div {...rest} ref={ref} className={rootClass} data-ui="data-table" data-density={density}>
           {isRenderable(toolbar) && (
             <Toolbar
               {...withoutSx(slotProps?.toolbar)}
-              data-ui="sortable-data-table-toolbar"
+              data-ui="data-table-toolbar"
               className={slotProps?.toolbar?.className}
               css={[toolbarStyle, slotProps?.toolbar?.sx]}
             >
@@ -702,11 +702,11 @@ export function SortableDataTable<T, const Id extends string = string, Key exten
             aria-label={messages.scrollLabel}
             aria-describedby={rest['aria-describedby']}
             tabIndex={0}
-            data-ui="sortable-data-table-scroller"
+            data-ui="data-table-scroller"
             className={slotProps?.scroller?.className}
             css={[scrollerStyle, slotProps?.scroller?.sx]}
             style={{
-              '--ui-sortable-data-table-max-height': typeof maxTableHeight === 'number' ? `${maxTableHeight}px` : maxTableHeight ?? 'none',
+              '--ui-data-table-max-height': typeof maxTableHeight === 'number' ? `${maxTableHeight}px` : maxTableHeight ?? 'none',
               ...slotProps?.scroller?.style,
             } as CSSProperties}
             onScroll={(event) => {
@@ -721,7 +721,7 @@ export function SortableDataTable<T, const Id extends string = string, Key exten
               className={slotProps?.table?.className}
               css={[tableStyle, slotProps?.table?.sx]}
               style={{
-                '--ui-sortable-data-table-min-width': typeof minTableWidth === 'number' ? `${minTableWidth}px` : minTableWidth ?? 'auto',
+                '--ui-data-table-min-width': typeof minTableWidth === 'number' ? `${minTableWidth}px` : minTableWidth ?? 'auto',
                 ...slotProps?.table?.style,
               } as CSSProperties}
             >
@@ -823,7 +823,7 @@ export function SortableDataTable<T, const Id extends string = string, Key exten
                         )}
                         {/* Beside the button, not inside it, so the button's visible text stays within its name. */}
                         {priority !== null && sortOrder.length > 1 && (
-                          <span aria-hidden="true" data-ui="sortable-data-table-sort-priority" css={sortPriorityStyle}>
+                          <span aria-hidden="true" data-ui="data-table-sort-priority" css={sortPriorityStyle}>
                             {numberFormat.format(priority)}
                           </span>
                         )}
@@ -833,7 +833,7 @@ export function SortableDataTable<T, const Id extends string = string, Key exten
                 </tr>
               </thead>
               {loading && (
-                <tbody data-ui="sortable-data-table-loading">
+                <tbody data-ui="data-table-loading">
                   {statusRow(
                     <span css={loadingContentStyle}>
                       <Spinner size="sm" decorative />
@@ -926,4 +926,4 @@ export function SortableDataTable<T, const Id extends string = string, Key exten
     </WithSx>
   );
 }
-SortableDataTable.displayName = 'SortableDataTable';
+DataTable.displayName = 'DataTable';

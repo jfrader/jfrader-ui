@@ -99,7 +99,7 @@ function DialogCustomizationFixture() {
 const FixtureFrame = styled.div({ padding: vars.space[4] });
 
 const meta = {
-  title: 'Surfaces/Dialog',
+  title: 'Surfaces/Dialog interior slots',
   component: Dialog,
   parameters: { docs: { description: { component: 'Open a modal dialog with a title, content and close action.' } } },
 } satisfies Meta<typeof Dialog>;

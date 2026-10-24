@@ -384,8 +384,12 @@ Shared assertions in `src/testing/`, reused before writing a local copy:
   `Foundations`, `Inputs`, `Data display`, `Data`, `Media`, `Feedback`, `Navigation`,
   `Surfaces`, `Layout`, `Actions`, `Games`, `Showcase`). A new section is added there
   and to this list in the same change.
-- Story files for the same component within a section share one `title`, even when integration
-  fixtures live in separate files. Keep their export names unique and their existing docs/sidebar tags.
+- One docs page comes from one story file. A second file that only feeds another page carries
+  `tags: ['!autodocs']`, which keeps it out of the docs front and lets it share its component's
+  `title`; a second file that should be a page of its own gets its own `title`. Two published files
+  must never share a title, because the docs front renders one page per file and the sidebar would
+  then show two entries with the same name. Keep export names unique and keep each file's existing
+  docs/sidebar tags.
 - React 19 ref-as-prop: components are plain functions reading `ref` from props typed with
   `ComponentPropsWithRef<'el'>`; never `forwardRef`. Every public component and compound part sets a
   dotted `displayName` (`Dialog.Trigger`) so DevTools and Storybook code panels show the public name.

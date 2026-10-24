@@ -619,10 +619,10 @@ export const PauseOnHover: Story = {
 export const LoadingUpdate: Story = {
   name: 'Complete a loading message',
   parameters: { docs: {
-    description: { story: 'Select Complete to replace a loading message without adding another card.' },
+    description: { story: 'Select Finish the update to replace a loading message without adding another card.' },
     source: { language: 'tsx', code: stackSource([{ title: 'Saving project', loading: true }]) },
   } },
-  render: (args) => <Harness {...args} initial={[{ title: 'Saving project', loading: true }]} fixtures={['unknown-id']} />,
+  render: (args) => <Harness {...args} initial={[{ title: 'Saving project', loading: true }]} />,
   play: async ({ canvasElement, userEvent }) => {
     const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
     await settled(region);
@@ -632,8 +632,22 @@ export const LoadingUpdate: Story = {
     await expect(await within(region).findByText('Saved successfully')).toBeVisible();
     await expect(region.querySelector('[data-ui="toast"]')).toBe(item);
     await expect(region.querySelector('[data-ui="spinner"]')).toBeNull();
+  },
+};
+
+/** Unknown ids are ignored, and the fixture button stays out of the documented examples. */
+export const UnknownIdIgnored: Story = {
+  tags: ['!autodocs'],
+  render: (args) => (
+    <Harness {...args} initial={[{ title: 'Saving project', loading: true }]} fixtures={['unknown-id']} />
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    const item = region.querySelector('[data-ui="toast"]');
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Unknown id' }));
     await expect(region.querySelector('[data-ui="toast"]')).toBe(item);
+    await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(1);
   },
 };
 

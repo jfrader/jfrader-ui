@@ -1,7 +1,7 @@
 export {
-  SortableDataTable,
-  type SortableDataTableProps,
-  type SortableDataTableSlots,
+  DataTable,
+  type DataTableProps,
+  type DataTableSlots,
   type DataColumn,
   type DataColumnAlign,
   type DataTableDensity,
@@ -12,4 +12,4 @@ export {
   type DataTableSortButtonDetails,
   type SortDirection,
   type SortState,
-} from './sortable-data-table';
+} from './data-table';
