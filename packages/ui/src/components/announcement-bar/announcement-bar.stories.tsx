@@ -128,6 +128,25 @@ export function Example() {
       'aria-roledescription',
       'slide',
     );
+    // Icon controls are square targets with the glyph centred, and the trailing controls end at
+    // the bar's inner edge whether the bar runs in one row or stacks.
+    const centre = (rect: DOMRect) => [rect.left + rect.width / 2, rect.top + rect.height / 2];
+    const icons = ['Previous announcement', 'Next announcement', 'Dismiss announcement'].map((name) =>
+      canvas.getByRole('button', { name }),
+    );
+    for (const button of icons) {
+      const box = button.getBoundingClientRect();
+      const glyph = button.querySelector('svg')!.getBoundingClientRect();
+      await expect([box.width, box.height]).toEqual([32, 32]);
+      await expect([glyph.width, glyph.height]).toEqual([16, 16]);
+      const [x, y] = centre(box);
+      const [glyphX, glyphY] = centre(glyph);
+      await expect(Math.abs(x! - glyphX!)).toBeLessThan(0.5);
+      await expect(Math.abs(y! - glyphY!)).toBeLessThan(0.5);
+    }
+    const layout = part(canvasElement, 'content')!.parentElement!;
+    const innerEnd = layout.getBoundingClientRect().right - parseFloat(getComputedStyle(layout).paddingRight);
+    await expect(Math.abs(icons[2]!.getBoundingClientRect().right - innerEnd)).toBeLessThan(1);
   },
 };
 export const Inverted: Story = {

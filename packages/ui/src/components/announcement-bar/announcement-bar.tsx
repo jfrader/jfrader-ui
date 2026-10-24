@@ -24,6 +24,7 @@ import { useControlledState } from '../../utils/use-controlled-state';
 import { useLatestCallback } from '../../utils/use-latest-callback';
 import { Button } from '../button';
 import { Countdown, type CountdownProps } from '../countdown';
+import { chromeIcons } from '../viewer-chrome/viewer-chrome';
 
 export interface Announcement {
   id: string;
@@ -243,10 +244,6 @@ const slideStyle = css({
   [REDUCED_MOTION]: { animation: 'none' },
 });
 const messageStyle = css({ overflowWrap: 'anywhere', minInlineSize: 0 });
-const directionalStyle = css({
-  display: 'inline-block',
-  '&:dir(rtl)': { transform: 'scaleX(-1)' },
-});
 const controlsStyle = css({
   flex: '1 1 0',
   display: 'flex',
@@ -257,6 +254,9 @@ const controlsStyle = css({
   maxInlineSize: `calc((100% - ${layoutInner}) * 999)`,
   '&:empty': { flexBasis: layoutGap, marginInline: `calc(-0.5 * ${layoutGap})` },
 });
+// Narrow: the trailing controls fill their own line and end-align, so the stacked bar spans the
+// width from the copy at the start to the controls at the end.
+const trailingControlsStyle = css({ '&:not(:empty)': { maxInlineSize: 'none' } });
 const controlStyle = css({
   minBlockSize: vars.space[8],
   blockSize: 'auto',
@@ -274,6 +274,7 @@ const controlStyle = css({
   },
   [FORCED_COLORS]: { borderColor: 'ButtonText', color: 'ButtonText' },
 });
+const iconControlStyle = css({ inlineSize: vars.space[8], paddingInline: 0 });
 const actionStyle = css({
   ...focusRingOutset,
   outline: 'none',
@@ -470,7 +471,7 @@ export function AnnouncementBar({
         type="button"
         render={(buttonProps) => <Control {...buttonProps} data-ui={`announcement-bar-${part}`} />}
         size="sm"
-        sx={[controlStyle, props?.sx]}
+        sx={[controlStyle, part !== 'rotation' && iconControlStyle, props?.sx]}
         aria-label={props?.['aria-label'] ?? name}
         aria-controls={part === 'previous' || part === 'next' ? contentId : undefined}
         aria-pressed={undefined}
@@ -654,29 +655,15 @@ export function AnnouncementBar({
                     ))}
                 </div>
               </Content>
-              <div css={controlsStyle}>
+              <div css={[controlsStyle, trailingControlsStyle]}>
                 {multiple && (controls || autoPlay) && (
                   <>
-                    {control(
-                      'previous',
-                      labels.previous,
-                      <span aria-hidden="true" css={directionalStyle}>
-                        ‹
-                      </span>,
-                      () => navigate(-1),
-                    )}
-                    {control(
-                      'next',
-                      labels.next,
-                      <span aria-hidden="true" css={directionalStyle}>
-                        ›
-                      </span>,
-                      () => navigate(1),
-                    )}
+                    {control('previous', labels.previous, chromeIcons.previous, () => navigate(-1))}
+                    {control('next', labels.next, chromeIcons.next, () => navigate(1))}
                   </>
                 )}
                 {dismissible &&
-                  control('dismiss', labels.dismiss, <span aria-hidden="true">×</span>, () => {
+                  control('dismiss', labels.dismiss, chromeIcons.close, () => {
                     focusAfterDismiss.current =
                       root.current?.contains(root.current.ownerDocument.activeElement) ?? false;
                     requestOpen(false);

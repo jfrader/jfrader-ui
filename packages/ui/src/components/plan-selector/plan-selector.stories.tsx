@@ -430,10 +430,18 @@ export const BadgeActiveSwap: Story = {
   play: async ({ canvas, userEvent }) => {
     const annual = canvas.getByRole('radio', { name: 'Annual' });
     const width = annual.getBoundingClientRect().width;
+    const badge = () => annual.querySelector<HTMLElement>('[data-ui="plan-selector-badge"]')!;
+    const widths = () => [badge(), badge().parentElement!].map((element) => element.getBoundingClientRect().width);
+    // The shorter badge hugs its text inside the space reserved for the longer one.
+    const [shortBadge, reserved] = widths();
+    await expect(shortBadge).toBeLessThan(reserved! - 1);
     await userEvent.click(annual);
     await expect(annual).toHaveAccessibleName('Annual');
     await expect(annual).toHaveAccessibleDescription('Annual saving applied');
     await expect(Math.abs(annual.getBoundingClientRect().width - width)).toBeLessThan(1);
+    const [longBadge, sameReserved] = widths();
+    await expect(Math.abs(longBadge! - sameReserved!)).toBeLessThan(1);
+    await expect(Math.abs(sameReserved! - reserved!)).toBeLessThan(1);
   },
 };
 export const Keyboard: Story = {

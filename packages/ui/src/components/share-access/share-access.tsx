@@ -234,6 +234,8 @@ const CONTAINER = 'share-access';
 // Below this width a member's role picker moves under their name. Container queries cannot read
 // custom properties, so the breakpoint is a literal.
 const NARROW = `@container ${CONTAINER} (max-width: 22rem)`;
+// Below this width the invitation field takes its own line above the role and invite controls.
+const INVITE_STACKED = `@container ${CONTAINER} (max-width: 30rem)`;
 const rootStyle = css({
   display: 'grid',
   gap: vars.space[4],
@@ -262,16 +264,35 @@ const linkSectionStyle = css({
   paddingBlockStart: vars.space[4],
   borderBlockStart: `1px solid ${vars.color.border}`,
 });
+// The invitation and the people share one set of columns (avatar, name, role, action) through
+// subgrid, so every role control and its trailing action line up whatever each action's width.
+const accessGridStyle = css({
+  display: 'grid',
+  gridTemplateColumns: 'auto minmax(0, 1fr) auto auto',
+  columnGap: vars.space[3],
+  rowGap: vars.space[4],
+  minInlineSize: 0,
+  [NARROW]: { gridTemplateColumns: 'auto minmax(0, 1fr) auto' },
+});
+const sectionStyle = css({
+  gridColumn: '1 / -1',
+  display: 'grid',
+  gridTemplateColumns: 'subgrid',
+  minInlineSize: 0,
+  '& > *': { gridColumn: '1 / -1' },
+});
 // A labeled field is taller than its control; align the actions to the control's bottom edge
 // instead of centering them against the label.
 const inviteRowStyle = css({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'flex-end',
-  gap: vars.space[2],
+  display: 'grid',
+  gridTemplateColumns: 'subgrid',
+  alignItems: 'end',
+  rowGap: vars.space[2],
   minInlineSize: 0,
+  '& > [data-part="role"]': { gridColumn: 3 },
+  [NARROW]: { '& > [data-part="role"]': { gridColumn: '1 / 3', justifySelf: 'start' } },
 });
-const inviteFieldStyle = css({ flex: `1 1 calc(${vars.space[12]} * 4)`, minInlineSize: 0 });
+const inviteFieldStyle = css({ gridColumn: '1 / 3', minInlineSize: 0, [INVITE_STACKED]: { gridColumn: '1 / -1' } });
 // Lists that start empty take no space until they have rows.
 const trailingListStyle = css({
   display: 'flex',
@@ -300,16 +321,13 @@ const chipStyle = css({
   '&[data-selected=true]': { outline: `2px solid ${vars.color.focusRing}` },
 });
 const chipErrorStyle = css({ flexBasis: '100%', paddingBlockEnd: vars.space[1], color: vars.color.dangerText });
-// One grid for every row, shared through subgrid, so names, roles and remove actions line up.
 const memberListStyle = css({
   display: 'grid',
-  gridTemplateColumns: 'auto minmax(0, 1fr) auto auto',
-  columnGap: vars.space[3],
+  gridTemplateColumns: 'subgrid',
   listStyle: 'none',
   margin: 0,
   padding: 0,
   minInlineSize: 0,
-  [NARROW]: { gridTemplateColumns: 'auto minmax(0, 1fr) auto' },
 });
 const memberRowStyle = css({
   gridColumn: '1 / -1',
@@ -317,6 +335,7 @@ const memberRowStyle = css({
   gridTemplateColumns: 'subgrid',
   alignItems: 'center',
   minBlockSize: vars.space[12],
+  '& > [data-part="remove"]': { gridColumn: 4, justifySelf: 'end' },
   [NARROW]: {
     rowGap: vars.space[1],
     paddingBlock: vars.space[2],
@@ -737,300 +756,304 @@ export function ShareAccess({
                       : '',
               }}
             >
-              <div data-ui="share-access-invitation">
-                <div css={inviteRowStyle}>
-                  <Combobox
-                    value={null}
-                    open={suggestions && !pending}
-                    onOpenChange={setSuggestions}
-                    onInputChange={(next) => {
-                      if (skipLabel.current) {
-                        skipLabel.current = false;
-                        setQuery('');
-                        return;
+              <div css={accessGridStyle}>
+                <div data-ui="share-access-invitation" css={sectionStyle}>
+                  <div css={inviteRowStyle}>
+                    <Combobox
+                      value={null}
+                      open={suggestions && !pending}
+                      onOpenChange={setSuggestions}
+                      onInputChange={(next) => {
+                        if (skipLabel.current) {
+                          skipLabel.current = false;
+                          setQuery('');
+                          return;
+                        }
+                        setQuery(next);
+                        setSelectedChip(false);
+                      }}
+                      onValueChange={(email) => {
+                        const contact = directory.find((item) => item.email === email);
+                        if (contact) {
+                          skipLabel.current = true;
+                          add(contact);
+                        }
+                      }}
+                      filter={(label, query) =>
+                        label
+                          .toLocaleLowerCase()
+                          .split(/\s+/)
+                          .some((part) => part.startsWith(query.toLocaleLowerCase()))
                       }
-                      setQuery(next);
-                      setSelectedChip(false);
-                    }}
-                    onValueChange={(email) => {
-                      const contact = directory.find((item) => item.email === email);
-                      if (contact) {
-                        skipLabel.current = true;
-                        add(contact);
-                      }
-                    }}
-                    filter={(label, query) =>
-                      label
-                        .toLocaleLowerCase()
-                        .split(/\s+/)
-                        .some((part) => part.startsWith(query.toLocaleLowerCase()))
-                    }
-                  >
-                    <Field
-                      {...slotProps.inviteField}
-                      ref={inputRef}
-                      sx={[inviteFieldStyle, slotProps.inviteField?.sx]}
-                      label={text.inviteLabel}
-                      disabled={pending}
-                      inputValue={query}
-                      aria-invalid={!!error || chips.some((person) => person.invalid) || undefined}
+                    >
+                      <Field
+                        {...slotProps.inviteField}
+                        ref={inputRef}
+                        sx={[inviteFieldStyle, slotProps.inviteField?.sx]}
+                        label={text.inviteLabel}
+                        disabled={pending}
+                        inputValue={query}
+                        aria-invalid={!!error || chips.some((person) => person.invalid) || undefined}
+                        aria-describedby={
+                          [slotProps.inviteField?.['aria-describedby'], error && `${id}-error`]
+                            .filter(Boolean)
+                            .join(' ') || undefined
+                        }
+                        onKeyDown={(event) => {
+                          slotProps.inviteField?.onKeyDown?.(event);
+                          if (
+                            event.defaultPrevented ||
+                            event.nativeEvent.isComposing ||
+                            event.nativeEvent.keyCode === 229
+                          )
+                            return;
+                          if (event.key === 'Escape' && suggestions) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setQuery('');
+                            setSuggestions(false);
+                          } else if (event.key === 'Backspace' && !query && chips.length) {
+                            event.preventDefault();
+                            if (selectedChip) removeChip(chips[chips.length - 1]!);
+                            else setSelectedChip(true);
+                          } else if (
+                            [',', ';', 'Tab'].includes(event.key) ||
+                            (event.key === ' ' && query.includes('@'))
+                          ) {
+                            if (query.trim()) {
+                              if (event.key !== 'Tab') event.preventDefault();
+                              tokenize();
+                            }
+                          } else if (
+                            event.key === 'Enter' &&
+                            !(suggestions && event.currentTarget.getAttribute('aria-activedescendant'))
+                          ) {
+                            event.preventDefault();
+                            if (query.trim()) tokenize();
+                            else void invite();
+                          }
+                        }}
+                      />
+                      <Combobox.List>
+                        {directory.map((person) => (
+                          <Combobox.Item
+                            key={person.email}
+                            value={person.email}
+                            textValue={`${person.name ?? ''} ${person.email}`}
+                          >
+                            {person.name ?? person.email} {person.name && person.email}
+                          </Combobox.Item>
+                        ))}
+                        <Combobox.Empty>{text.noResults}</Combobox.Empty>
+                      </Combobox.List>
+                    </Combobox>
+                    <span data-part="role">
+                      <InviteRole
+                        labelPlacement="hidden"
+                        {...slotProps.inviteRole}
+                        options={roles}
+                        label={text.inviteRole}
+                        value={inviteRole}
+                        onValueChange={(next) => {
+                          scalarRequests.current['invite-role'] = next;
+                          requestInviteRole(next as ShareRole);
+                        }}
+                      />
+                    </span>
+                    <Invite
+                      {...slotProps.inviteButton}
+                      data-ui="share-access-invite"
                       aria-describedby={
-                        [slotProps.inviteField?.['aria-describedby'], error && `${id}-error`]
+                        [slotProps.inviteButton?.['aria-describedby'], error && `${id}-error`]
                           .filter(Boolean)
                           .join(' ') || undefined
                       }
-                      onKeyDown={(event) => {
-                        slotProps.inviteField?.onKeyDown?.(event);
-                        if (
-                          event.defaultPrevented ||
-                          event.nativeEvent.isComposing ||
-                          event.nativeEvent.keyCode === 229
-                        )
-                          return;
-                        if (event.key === 'Escape' && suggestions) {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          setQuery('');
-                          setSuggestions(false);
-                        } else if (event.key === 'Backspace' && !query && chips.length) {
-                          event.preventDefault();
-                          if (selectedChip) removeChip(chips[chips.length - 1]!);
-                          else setSelectedChip(true);
-                        } else if (
-                          [',', ';', 'Tab'].includes(event.key) ||
-                          (event.key === ' ' && query.includes('@'))
-                        ) {
-                          if (query.trim()) {
-                            if (event.key !== 'Tab') event.preventDefault();
-                            tokenize();
-                          }
-                        } else if (
-                          event.key === 'Enter' &&
-                          !(suggestions && event.currentTarget.getAttribute('aria-activedescendant'))
-                        ) {
-                          event.preventDefault();
-                          if (query.trim()) tokenize();
-                          else void invite();
-                        }
+                      loading={pending}
+                      disabled={!chips.length || slotProps.inviteButton?.disabled}
+                      onClick={(event) => {
+                        slotProps.inviteButton?.onClick?.(event);
+                        if (!event.defaultPrevented) void invite();
                       }}
-                    />
-                    <Combobox.List>
-                      {directory.map((person) => (
-                        <Combobox.Item
-                          key={person.email}
-                          value={person.email}
-                          textValue={`${person.name ?? ''} ${person.email}`}
-                        >
-                          {person.name ?? person.email} {person.name && person.email}
-                        </Combobox.Item>
-                      ))}
-                      <Combobox.Empty>{text.noResults}</Combobox.Empty>
-                    </Combobox.List>
-                  </Combobox>
-                  <InviteRole
-                    labelPlacement="hidden"
-                    {...slotProps.inviteRole}
-                    options={roles}
-                    label={text.inviteRole}
-                    value={inviteRole}
-                    onValueChange={(next) => {
-                      scalarRequests.current['invite-role'] = next;
-                      requestInviteRole(next as ShareRole);
-                    }}
-                  />
-                  <Invite
-                    {...slotProps.inviteButton}
-                    data-ui="share-access-invite"
-                    aria-describedby={
-                      [slotProps.inviteButton?.['aria-describedby'], error && `${id}-error`]
-                        .filter(Boolean)
-                        .join(' ') || undefined
-                    }
-                    loading={pending}
-                    disabled={!chips.length || slotProps.inviteButton?.disabled}
-                    onClick={(event) => {
-                      slotProps.inviteButton?.onClick?.(event);
-                      if (!event.defaultPrevented) void invite();
-                    }}
-                  >
-                    {pending ? text.sending : text.inviteAction}
-                  </Invite>
-                </div>
-                <ChipList
-                  {...withoutSx(slotProps.chipList)}
-                  css={[trailingListStyle, slotProps.chipList?.sx]}
-                  data-ui="share-access-chip-list"
-                  aria-label={text.chips}
-                >
-                  {chips.map((person, index) => (
-                    <motion.li
-                      key={person.email}
-                      layout={!reduced}
-                      transition={SPRING}
-                      css={chipStyle}
-                      data-ui="share-access-chip"
-                      data-invalid={person.invalid}
-                      data-selected={selectedChip && index === chips.length - 1}
                     >
-                      <span>{person.email}</span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        sx={iconButtonStyle}
-                        disabled={pending}
-                        aria-label={text.remove(person.email)}
-                        onClick={() => removeChip(person)}
-                      >
-                        <span aria-hidden="true">×</span>
-                      </Button>
-                      {person.invalid && <span css={chipErrorStyle}>{text.invalidEmail}</span>}
-                    </motion.li>
-                  ))}
-                </ChipList>
-                {error && (
-                  <p id={`${id}-error`} css={errorStyle} role="alert">
-                    {error}
-                  </p>
-                )}
-              </div>
-              <div data-ui="share-access-people">
-                <h3 id={`${id}-people`} css={[sectionHeadingStyle, peopleHeadingStyle]}>
-                  {text.people}
-                </h3>
-                {members.length > 0 ? (
-                  <MemberList
-                    {...withoutSx(slotProps.memberList)}
-                    css={[memberListStyle, slotProps.memberList?.sx]}
-                    data-ui="share-access-member-list"
-                    aria-labelledby={`${id}-people`}
+                      {pending ? text.sending : text.inviteAction}
+                    </Invite>
+                  </div>
+                  <ChipList
+                    {...withoutSx(slotProps.chipList)}
+                    css={[trailingListStyle, slotProps.chipList?.sx]}
+                    data-ui="share-access-chip-list"
+                    aria-label={text.chips}
                   >
-                    {members.map((member) => (
+                    {chips.map((person, index) => (
                       <motion.li
-                        key={member.id}
+                        key={person.email}
                         layout={!reduced}
-                        layoutDependency={rowMoves}
                         transition={SPRING}
-                        css={memberRowStyle}
-                        data-ui="share-access-member"
-                        data-member-id={member.id}
+                        css={chipStyle}
+                        data-ui="share-access-chip"
+                        data-invalid={person.invalid}
+                        data-selected={selectedChip && index === chips.length - 1}
                       >
-                        <span aria-hidden="true">
-                          <Avatar name={member.name ?? member.email} src={member.src} size="md" />
-                        </span>
-                        <span css={identityStyle}>
-                          <span css={nameLineStyle}>
-                            <span css={nameStyle}>{member.name ?? member.email}</span>
-                            {member.id === selfId && <span css={mutedStyle}>{text.self}</span>}
-                            {member.pending && <Pill>{text.pending}</Pill>}
-                          </span>
-                          {member.name && <span css={emailStyle}>{member.email}</span>}
-                        </span>
-                        {member.role === 'owner' ? (
-                          <span data-part="role" css={ownerStyle}>
-                            {text.owner}
-                          </span>
-                        ) : (
-                          <>
-                            <span data-part="role">
-                              <MemberRole
-                                size="sm"
-                                {...slotProps.memberRole}
-                                options={roles}
-                                label={text.roleFor(member.name ?? member.email, member.role)}
-                                labelPlacement="hidden"
-                                value={member.role}
-                                onValueChange={(next) => {
-                                  const role = next as ShareRole;
-                                  mutate(
-                                    members.map((item) =>
-                                      item.id === member.id ? { ...item, role } : item,
-                                    ),
-                                    {
-                                      type: 'member-role',
-                                      name: member.name ?? member.email,
-                                      role,
-                                    },
-                                    (list) =>
-                                      list.some((item) => item.id === member.id && item.role === role),
-                                  );
-                                }}
-                              />
-                            </span>
-                            <span data-part="remove">
-                              <Remove
-                                size="sm"
-                                variant="ghost"
-                                {...slotProps.removeButton}
-                                sx={[iconButtonStyle, slotProps.removeButton?.sx]}
-                                aria-label={text.remove(member.name ?? member.email)}
-                                onClick={(event) => {
-                                  slotProps.removeButton?.onClick?.(event);
-                                  if (!event.defaultPrevented) remove(member, event.currentTarget);
-                                }}
-                              >
-                                <span aria-hidden="true">×</span>
-                              </Remove>
-                            </span>
-                          </>
-                        )}
-                      </motion.li>
-                    ))}
-                  </MemberList>
-                ) : (
-                  <EmptyState
-                    data-ui="share-access-empty"
-                    variant="inline"
-                    headingLevel={4}
-                    title={text.empty}
-                    description={text.emptyHint}
-                    sx={emptyStyle}
-                  />
-                )}
-                <UndoList
-                  {...withoutSx(slotProps.undoList)}
-                  css={[trailingListStyle, slotProps.undoList?.sx]}
-                  data-ui="share-access-undo-list"
-                  aria-label={text.removed}
-                >
-                  {removals
-                    .filter(({ member }) => !members.some((item) => item.id === member.id))
-                    .map((removal) => (
-                      <li key={removal.member.id} css={undoRowStyle} data-ui="share-access-undo">
-                        <span>
-                          <span css={nameStyle}>{removal.member.name ?? removal.member.email}</span>{' '}
-                          <span css={mutedStyle}>{text.removed}</span>
-                        </span>
-                        <Undo
-                          size="sm"
-                          variant="outline"
-                          {...slotProps.undoButton}
-                          data-undo-id={removal.member.id}
-                          onClick={(event) => {
-                            slotProps.undoButton?.onClick?.(event);
-                            if (!event.defaultPrevented) undo(removal, event.currentTarget);
-                          }}
-                        >
-                          {text.undo}
-                        </Undo>
-                        <Dismiss
+                        <span>{person.email}</span>
+                        <Button
                           size="sm"
                           variant="ghost"
-                          {...slotProps.dismissUndoButton}
-                          sx={[iconButtonStyle, slotProps.dismissUndoButton?.sx]}
-                          aria-label={`${text.dismissUndo}: ${removal.member.email}`}
-                          onClick={(event) => {
-                            slotProps.dismissUndoButton?.onClick?.(event);
-                            if (!event.defaultPrevented) {
-                              setRemovals((items) => items.filter((item) => item !== removal));
-                              input.current?.focus();
-                            }
-                          }}
+                          sx={iconButtonStyle}
+                          disabled={pending}
+                          aria-label={text.remove(person.email)}
+                          onClick={() => removeChip(person)}
                         >
                           <span aria-hidden="true">×</span>
-                        </Dismiss>
-                      </li>
+                        </Button>
+                        {person.invalid && <span css={chipErrorStyle}>{text.invalidEmail}</span>}
+                      </motion.li>
                     ))}
-                </UndoList>
+                  </ChipList>
+                  {error && (
+                    <p id={`${id}-error`} css={errorStyle} role="alert">
+                      {error}
+                    </p>
+                  )}
+                </div>
+                <div data-ui="share-access-people" css={sectionStyle}>
+                  <h3 id={`${id}-people`} css={[sectionHeadingStyle, peopleHeadingStyle]}>
+                    {text.people}
+                  </h3>
+                  {members.length > 0 ? (
+                    <MemberList
+                      {...withoutSx(slotProps.memberList)}
+                      css={[memberListStyle, slotProps.memberList?.sx]}
+                      data-ui="share-access-member-list"
+                      aria-labelledby={`${id}-people`}
+                    >
+                      {members.map((member) => (
+                        <motion.li
+                          key={member.id}
+                          layout={!reduced}
+                          layoutDependency={rowMoves}
+                          transition={SPRING}
+                          css={memberRowStyle}
+                          data-ui="share-access-member"
+                          data-member-id={member.id}
+                        >
+                          <span aria-hidden="true">
+                            <Avatar name={member.name ?? member.email} src={member.src} size="md" />
+                          </span>
+                          <span css={identityStyle}>
+                            <span css={nameLineStyle}>
+                              <span css={nameStyle}>{member.name ?? member.email}</span>
+                              {member.id === selfId && <span css={mutedStyle}>{text.self}</span>}
+                              {member.pending && <Pill>{text.pending}</Pill>}
+                            </span>
+                            {member.name && <span css={emailStyle}>{member.email}</span>}
+                          </span>
+                          {member.role === 'owner' ? (
+                            <span data-part="role" css={ownerStyle}>
+                              {text.owner}
+                            </span>
+                          ) : (
+                            <>
+                              <span data-part="role">
+                                <MemberRole
+                                  size="sm"
+                                  {...slotProps.memberRole}
+                                  options={roles}
+                                  label={text.roleFor(member.name ?? member.email, member.role)}
+                                  labelPlacement="hidden"
+                                  value={member.role}
+                                  onValueChange={(next) => {
+                                    const role = next as ShareRole;
+                                    mutate(
+                                      members.map((item) =>
+                                        item.id === member.id ? { ...item, role } : item,
+                                      ),
+                                      {
+                                        type: 'member-role',
+                                        name: member.name ?? member.email,
+                                        role,
+                                      },
+                                      (list) =>
+                                        list.some((item) => item.id === member.id && item.role === role),
+                                    );
+                                  }}
+                                />
+                              </span>
+                              <span data-part="remove">
+                                <Remove
+                                  size="sm"
+                                  variant="ghost"
+                                  {...slotProps.removeButton}
+                                  sx={[iconButtonStyle, slotProps.removeButton?.sx]}
+                                  aria-label={text.remove(member.name ?? member.email)}
+                                  onClick={(event) => {
+                                    slotProps.removeButton?.onClick?.(event);
+                                    if (!event.defaultPrevented) remove(member, event.currentTarget);
+                                  }}
+                                >
+                                  <span aria-hidden="true">×</span>
+                                </Remove>
+                              </span>
+                            </>
+                          )}
+                        </motion.li>
+                      ))}
+                    </MemberList>
+                  ) : (
+                    <EmptyState
+                      data-ui="share-access-empty"
+                      variant="inline"
+                      headingLevel={4}
+                      title={text.empty}
+                      description={text.emptyHint}
+                      sx={emptyStyle}
+                    />
+                  )}
+                  <UndoList
+                    {...withoutSx(slotProps.undoList)}
+                    css={[trailingListStyle, slotProps.undoList?.sx]}
+                    data-ui="share-access-undo-list"
+                    aria-label={text.removed}
+                  >
+                    {removals
+                      .filter(({ member }) => !members.some((item) => item.id === member.id))
+                      .map((removal) => (
+                        <li key={removal.member.id} css={undoRowStyle} data-ui="share-access-undo">
+                          <span>
+                            <span css={nameStyle}>{removal.member.name ?? removal.member.email}</span>{' '}
+                            <span css={mutedStyle}>{text.removed}</span>
+                          </span>
+                          <Undo
+                            size="sm"
+                            variant="outline"
+                            {...slotProps.undoButton}
+                            data-undo-id={removal.member.id}
+                            onClick={(event) => {
+                              slotProps.undoButton?.onClick?.(event);
+                              if (!event.defaultPrevented) undo(removal, event.currentTarget);
+                            }}
+                          >
+                            {text.undo}
+                          </Undo>
+                          <Dismiss
+                            size="sm"
+                            variant="ghost"
+                            {...slotProps.dismissUndoButton}
+                            sx={[iconButtonStyle, slotProps.dismissUndoButton?.sx]}
+                            aria-label={`${text.dismissUndo}: ${removal.member.email}`}
+                            onClick={(event) => {
+                              slotProps.dismissUndoButton?.onClick?.(event);
+                              if (!event.defaultPrevented) {
+                                setRemovals((items) => items.filter((item) => item !== removal));
+                                input.current?.focus();
+                              }
+                            }}
+                          >
+                            <span aria-hidden="true">×</span>
+                          </Dismiss>
+                        </li>
+                      ))}
+                  </UndoList>
+                </div>
               </div>
               <div data-ui="share-access-link" css={linkSectionStyle}>
                 <h3 css={sectionHeadingStyle}>{text.access}</h3>

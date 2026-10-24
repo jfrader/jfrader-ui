@@ -220,10 +220,19 @@ const labelStyle = css({
   fontSize: vars.textSize.sm,
   fontWeight: vars.fontWeight.medium,
 });
-const badgeStyle = css({
+// Reserves the widest of `badge` and `activeBadge` so the item keeps its width when they swap; the
+// visible badge hugs its own text at the start of that space, beside the label.
+const badgeSlotStyle = css({
   display: 'inline-grid',
   gridTemplateColumns: 'minmax(0, 1fr)',
+  justifyItems: 'start',
   maxInlineSize: '100%',
+});
+const badgeStyle = css({
+  gridArea: '1 / 1',
+  minInlineSize: 0,
+  maxInlineSize: '100%',
+  overflowWrap: 'anywhere',
   boxSizing: 'border-box',
   border: `1px solid ${vars.color.borderControl}`,
   borderRadius: vars.radius.full,
@@ -237,7 +246,6 @@ const badgeStyle = css({
     color: 'CanvasText',
   },
 });
-const badgeCellStyle = css({ gridArea: '1 / 1', minInlineSize: 0, overflowWrap: 'anywhere' });
 const sizerStyle = css({ visibility: 'hidden', pointerEvents: 'none' });
 const toneStyles: Record<PlanSelectorTone, SerializedStyles> = {
   neutral: css({ color: vars.color.textMuted }),
@@ -449,23 +457,22 @@ function PlanSelectorItem({
             className={className}
             accessory={
               hasBadge ? (
-                <Badge
-                  {...withoutSx(slotProps?.badge)}
-                  data-ui="plan-selector-badge"
-                  css={[badgeStyle, toneStyles[context.tone], slotProps?.badge?.sx]}
-                >
-                  {isRenderable(badge) && badge !== '' && (
-                    <span aria-hidden="true" css={[badgeCellStyle, sizerStyle]}>
-                      {badge}
-                    </span>
+                <span css={badgeSlotStyle}>
+                  {[badge, activeBadge].map((sizer, index) =>
+                    isRenderable(sizer) && sizer !== '' ? (
+                      <span key={index} aria-hidden="true" css={[badgeStyle, sizerStyle, slotProps?.badge?.sx]}>
+                        {sizer}
+                      </span>
+                    ) : null,
                   )}
-                  {isRenderable(activeBadge) && activeBadge !== '' && (
-                    <span aria-hidden="true" css={[badgeCellStyle, sizerStyle]}>
-                      {activeBadge}
-                    </span>
-                  )}
-                  <span css={badgeCellStyle}>{currentBadge}</span>
-                </Badge>
+                  <Badge
+                    {...withoutSx(slotProps?.badge)}
+                    data-ui="plan-selector-badge"
+                    css={[badgeStyle, toneStyles[context.tone], slotProps?.badge?.sx]}
+                  >
+                    {currentBadge}
+                  </Badge>
+                </span>
               ) : undefined
             }
           >

@@ -151,6 +151,10 @@ export const Default: Story = {
     await expect(remove.getBoundingClientRect().width).toBe(32);
     await expect(remove.getBoundingClientRect().height).toBe(32);
     await expect(remove.getBoundingClientRect().right).toBeCloseTo(memberRow.getBoundingClientRect().right, 0);
+    // The invitation shares the member columns: role controls and trailing actions line up even
+    // though Invite is wider than a remove button.
+    await expectAligned([inviteControl, memberControl], 'right');
+    await expectAligned([invite, remove], 'right');
     const roleLabel = memberRow.querySelector<HTMLElement>('[data-ui="select-label"]')!;
     await expect(roleLabel.parentElement!.getBoundingClientRect().width).toBeLessThanOrEqual(1);
     await expect(within(memberRow).getByText('sam@example.com')).toBeVisible();
@@ -337,6 +341,11 @@ export const Narrow: Story = {
       await expect(rect.left).toBeGreaterThanOrEqual(bounds.left - 1);
       await expect(rect.right).toBeLessThanOrEqual(bounds.right + 1);
     }
+    const canvas = within(canvasElement);
+    await expectAligned(
+      [canvas.getByRole('button', { name: 'Invite' }), canvas.getByRole('button', { name: 'Remove Sam Lee' })],
+      'right',
+    );
   },
 };
 

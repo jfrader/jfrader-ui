@@ -85,6 +85,11 @@ export interface TimelineLabels {
   empty: string;
   /** Heading of the trailing group for events whose date cannot be read. */
   invalidTime: string;
+  /**
+   * Day heading text from the formatted day, relative ("today") or absolute ("Thursday, October 8,
+   * 2026"). Defaults to upper-casing the first letter in the formatting locale.
+   */
+  dayHeading: (day: string) => string;
   /** Announced when events with new ids arrive. */
   newEvents: (count: number) => string;
   /** Event count shown beside each day heading. */
@@ -298,17 +303,20 @@ function relativeTime(epoch: number, now: number, distance: number, format: Form
 
 function dayHeading(group: DayGroup, format: Formatters, labels: TimelineLabels) {
   if (group.epoch === null) return labels.invalidTime;
-  if (group.distance !== null && Math.abs(group.distance) <= 1) return format.relative.format(group.distance, 'day');
-  return format.day.format(group.epoch);
+  if (group.distance !== null && Math.abs(group.distance) <= 1)
+    return labels.dayHeading(format.relative.format(group.distance, 'day'));
+  return labels.dayHeading(format.day.format(group.epoch));
 }
 
 function defaultLabels(format: Formatters): TimelineLabels {
   const count = (n: number, one: string, other: string) =>
     `${format.number.format(n)} ${format.plural.select(n) === 'one' ? one : other}`;
+  const { locale } = format.relative.resolvedOptions();
   return {
     region: 'Activity',
     empty: 'No activity yet',
     invalidTime: 'Unknown time',
+    dayHeading: ([first = '', ...rest]) => first.toLocaleUpperCase(locale) + rest.join(''),
     newEvents: (n) => count(n, 'new event', 'new events'),
     dayCount: (n) => count(n, 'event', 'events'),
   };
@@ -352,6 +360,7 @@ const MARKER_SIZE = vars.space[6];
 const MARKER_GAP = vars.space[3];
 const ROW_HEAD = vars.space[8];
 const RAIL_WIDTH = '2px';
+const TRIGGER_BORDER = '1px';
 
 const scrollerStyle = css({
   '&[data-bounded]': {
@@ -482,7 +491,7 @@ const titleLineStyle = css({
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'center',
-  columnGap: vars.space[1],
+  columnGap: vars.space[2],
   minBlockSize: ROW_HEAD,
 });
 
@@ -502,7 +511,7 @@ const triggerStyle = css({
   paddingBlock: vars.space[1],
   paddingInline: 'var(--timeline-trigger-pad)',
   // Transparent border becomes the button boundary in forced colors.
-  border: '1px solid transparent',
+  border: `${TRIGGER_BORDER} solid transparent`,
   borderRadius: vars.radius.sm,
   background: 'transparent',
   font: 'inherit',
@@ -518,10 +527,9 @@ const triggerStyle = css({
   '&[aria-expanded="true"]::after': { transform: 'rotate(90deg)' },
   // The caret points toward inline-end, so under RTL it turns the other way to point down.
   '&[aria-expanded="true"]:dir(rtl)::after': { transform: 'rotate(-90deg)' },
-  // A leading disclosure moves its padding into the marker gap so its text starts on the content
-  // column, like a plain title and the meta line below it.
-  marginInlineStart: 'calc(-1 * var(--timeline-trigger-pad))',
-  '[data-ui="timeline-actor"] ~ &': { marginInlineStart: 0 },
+  // The disclosure moves its border and padding into the space before it (the marker gap, or the gap
+  // after the actor), so its text starts where a plain title's would.
+  marginInlineStart: `calc(-1 * (var(--timeline-trigger-pad) + ${TRIGGER_BORDER}))`,
   '&:hover': { backgroundColor: vars.color.surfaceHover },
   '&:focus-visible': { ...focusRingInset },
   [REDUCED_MOTION]: { transitionDuration: '0s', '&::after': { transitionDuration: '0s' } },
