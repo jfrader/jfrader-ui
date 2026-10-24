@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.11.0 — 2026-10-23
+
 ### Added
 
 - `useChipFlight` flies decorative chips between elements with cancellation and reduced-motion support. `PokerTable` accepts `potFrom` to animate contributions before showing the new total.
