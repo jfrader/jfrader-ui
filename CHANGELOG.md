@@ -10,6 +10,7 @@
 ### Fixed
 
 - Flight examples keep the command bar under the table, and the component docs open on the playable game example instead of a hook demo.
+
 ## 0.16.0 — 2026-10-24
 
 ### Changed
