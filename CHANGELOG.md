@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.11.1 — 2026-10-24
+
 ### Fixed
 
 - Floating menus, selection lists, popovers, and tooltips render above sticky page content. Modal shells and toast viewports use shared layer tokens, with consumer styling overrides preserved.
