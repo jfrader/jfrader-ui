@@ -388,6 +388,7 @@ const items: readonly ContextMenuAction[] = [
     const box = target.getBoundingClientRect();
     await contextClick(userEvent, target, box.left + 40, box.top + 20);
     const menu = await findMenu(canvasElement);
+    await expect(getComputedStyle(menu).zIndex).toBe('100');
     await expect(menu).toHaveAttribute('data-ui', 'context-menu');
     await expect(target).toHaveAttribute('aria-expanded', 'true');
     await expect(within(menu).getAllByRole('menuitem')).toHaveLength(4);

@@ -150,7 +150,7 @@ export const Elevation: Story = {
             <TokenRow key={role} preview={null} name={tokenPath('cardMaterial', role)} variable={customProperty('cardMaterial', role)} values={[{ label: 'Value', value }]} />
           ))}
         </TokenFamily>
-        <TokenFamily title="Layering" blurb="Cards in flight use this stacking level above the table." count={LAYER_TOKENS.length}>
+        <TokenFamily title="Layering" blurb="Popover layers cover page content; modal shells sit above popovers, toast viewports above modals, and cards in flight above toasts. Native modal dialogs stay in the browser's top layer, outside ordinary z-index ordering. Override a surface with sx or change its layer token through ThemeRoot tokens." count={LAYER_TOKENS.length}>
           {LAYER_TOKENS.map(({ role, value }) => (
             <TokenRow key={role} preview={null} name={tokenPath('zIndex', role)} variable={customProperty('zIndex', role)} values={[{ label: 'Value', value }]} />
           ))}

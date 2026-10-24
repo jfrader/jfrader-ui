@@ -397,6 +397,7 @@ const FieldStack = styled.div({
     const dialog = await canvas.findByRole('dialog', { name: TITLE });
     await settle(dialog);
     await expect(dialog).toHaveAttribute('data-ui', 'drawer');
+    await expect(getComputedStyle(dialog).zIndex).toBe('200');
     await expect(dialog).toHaveAttribute('aria-modal', 'true');
     await expect(dialog).toHaveAccessibleName(TITLE);
     await expect(dialog).toHaveAccessibleDescription(DESCRIPTION);

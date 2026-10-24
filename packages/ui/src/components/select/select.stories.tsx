@@ -5,6 +5,7 @@ import { expect, fireEvent, fn, mocked, userEvent, waitFor, within } from 'story
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
 import { Button } from '../button';
 import { Popover } from '../popover';
 import {
@@ -37,6 +38,81 @@ const EdgeFrame = styled.div({
 const LABEL = 'Fruit';
 const PLACEHOLDER = 'Pick a fruit';
 const TYPEAHEAD_PAUSE_MS = 550;
+
+const LayerFrame = styled.div({
+  inlineSize: `min(320px, calc(100vw - ${vars.space[8]}))`,
+  minBlockSize: '320px',
+});
+const StickySibling = styled.div({
+  position: 'sticky',
+  top: 0,
+  zIndex: 1,
+  blockSize: '160px',
+  backgroundColor: vars.color.surfaceRaised,
+});
+
+export const AboveStickyContent: StoryObj = {
+  name: 'Above sticky content',
+  tags: ['!autodocs'],
+  render: () => (
+    <LayerFrame>
+      <div><Select label={LABEL} options={FRUITS} /></div>
+      <StickySibling data-testid="sticky-sibling">Sticky content</StickySibling>
+    </LayerFrame>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const doc = canvasElement.ownerDocument;
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole('combobox', { name: LABEL });
+    await userEvent.click(trigger);
+    const list = await within(doc.body).findByRole('listbox', { name: LABEL });
+    await expect(getComputedStyle(list).zIndex).toBe('100');
+    await settleMotion(list);
+    const option = within(list).getByRole('option', { name: 'Apple' });
+    await waitFor(() => {
+      const rect = option.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      const sticky = canvas.getByTestId('sticky-sibling');
+      const covered = sticky.getBoundingClientRect();
+      expect(getComputedStyle(sticky).position).toBe('sticky');
+      expect(getComputedStyle(sticky).zIndex).toBe('1');
+      expect(x).toBeGreaterThan(covered.left);
+      expect(x).toBeLessThan(covered.right);
+      expect(y).toBeGreaterThan(covered.top);
+      expect(y).toBeLessThan(covered.bottom);
+      expect(option.contains(doc.elementFromPoint(x, y))).toBe(true);
+    });
+    await userEvent.click(option);
+    await expect(trigger).toHaveTextContent('Apple');
+    await waitFor(() => expect(within(doc.body).queryByRole('listbox')).toBeNull());
+  },
+};
+
+export const LayerOverride: StoryObj = {
+  name: 'Layer override',
+  tags: ['!autodocs'],
+  render: () => (
+    <LayerFrame>
+      <Select label={LABEL} options={FRUITS} slotProps={{ content: { sx: { zIndex: vars.zIndex.toast } } }} />
+      <Select>
+        <Select.Trigger aria-label="CSS layer"><Select.Value placeholder={PLACEHOLDER} /></Select.Trigger>
+        <Select.Content css={{ zIndex: vars.zIndex.modal }}>
+          <Select.Item value="apple">Apple</Select.Item>
+        </Select.Content>
+      </Select>
+    </LayerFrame>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    await userEvent.click(within(canvasElement).getByRole('combobox', { name: LABEL }));
+    const list = await within(canvasElement.ownerDocument.body).findByRole('listbox', { name: LABEL });
+    await expect(getComputedStyle(list).zIndex).toBe('300');
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(within(canvasElement).getByRole('combobox', { name: 'CSS layer' }));
+    const cssList = await within(canvasElement.ownerDocument.body).findByRole('listbox', { name: 'CSS layer' });
+    await expect(getComputedStyle(cssList).zIndex).toBe('200');
+  },
+};
 
 export const NestedDismissal: StoryObj = {
   tags: ['!autodocs'],

@@ -305,6 +305,7 @@ function setNativeAutoFocus(input: HTMLInputElement | null) {
     await userEvent.keyboard('{Enter}');
     const dialog = await canvas.findByRole('dialog', { name: TITLE });
     await expect(dialog).toHaveClass('shorthand-dialog-shell');
+    await expect(getComputedStyle(dialog).zIndex).toBe('200');
     await expect(dialog.querySelectorAll('[data-ui~="dialog-panel"]')).toHaveLength(1);
     const title = canvas.getByRole('heading', { name: TITLE });
     await expect(title).toHaveClass('shorthand-dialog-title');

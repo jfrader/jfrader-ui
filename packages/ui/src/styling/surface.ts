@@ -85,6 +85,7 @@ export const translucentControlStyle = css([
 
 /** Native `<dialog>` shell reset with the scrim backdrop; the panel inside draws the surface. */
 export const modalShellReset = {
+  zIndex: vars.zIndex.modal,
   border: 0,
   padding: 0,
   background: 'transparent',
