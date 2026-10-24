@@ -41,6 +41,11 @@ export function syncReadme() {
   if (existing !== content) {
     writeFileSync(targetPath, content, 'utf8');
   }
+  const flightsSource = readFileSync(path.join(repoRoot, 'docs/flights.md'), 'utf8').replace(/^#\s+[^\n]+\n+/, '');
+  const flightsTarget = path.join(guidanceDir, 'flights.md');
+  if (!existsSync(flightsTarget) || readFileSync(flightsTarget, 'utf8') !== flightsSource) {
+    writeFileSync(flightsTarget, flightsSource, 'utf8');
+  }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

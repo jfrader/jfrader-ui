@@ -9,6 +9,7 @@ import { WithSx, withoutSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { CardFlights } from '../card-flights';
+import type { CardFlightEvent, FlightId, FlightOutcome } from '../flights';
 import { DeckProvider } from '../deck';
 import { GameActions, type GameActionItem, type GameActionsProps } from '../game-actions';
 import { GameCard, type GameCardValue } from '../game-card';
@@ -128,10 +129,16 @@ export interface TrucoTableProps extends SxProps {
   actionsLabel?: string;
   /** Overrides the default copy. */
   labels?: Partial<TrucoTableLabels>;
-  /** Change to deal the hands. The first render appears in place. */
+  /** Change to deal the hands. The first render appears in place.
+   * @deprecated Push a deal with useFlightQueue instead. Retained for one minor release. */
   deal?: string | number;
-  /** Change to replace the card snapshot without animation. */
+  /** Change to replace the card snapshot without animation.
+   * @deprecated Push a resync with useFlightQueue instead. Retained for one minor release. */
   revision?: string | number;
+  /** Queued card deals and snapshot resyncs. */
+  flights?: readonly CardFlightEvent[];
+  /** Reports completion of each queued event. */
+  onFlightSettled?: (id: FlightId, outcome: FlightOutcome) => void;
   /** Seat receiving the first dealt card. */
   forehand?: string;
   /** Formats scores and counts. Defaults to the runtime locale. */
@@ -296,6 +303,8 @@ export function TrucoTable({
   labels: labelOverrides,
   deal,
   revision,
+  flights,
+  onFlightSettled,
   forehand,
   locale,
   deck = 'spanish',
@@ -337,7 +346,7 @@ export function TrucoTable({
           style={{ ...style, ...rootSlot?.style }}
         >
           <DeckProvider default={deck}>
-            <CardFlights deal={deal} revision={revision} forehand={forehand} onBusyChange={onBusyChange}>
+            <CardFlights deal={deal} revision={revision} forehand={forehand} flights={flights} onFlightSettled={onFlightSettled} onBusyChange={onBusyChange}>
               <GameTable
                 {...tableProps}
                 places={Math.max(players.length, 2)}
