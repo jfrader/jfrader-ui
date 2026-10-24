@@ -638,14 +638,22 @@ function useSheetSurface(context: SheetContext, dialogRef: RefObject<HTMLDialogE
         String(Math.min(1, Math.max(0, (height.current - position) / Math.max(1, height.current)))),
       );
     };
+    // Only block-axis geometry moves the sheet. Inline-only changes (the scroll lock hiding the
+    // page scrollbar widens the visual viewport) must not cut the entrance or a drag short.
+    let geometry = '';
     const measure = () => {
       const viewport = win.visualViewport;
-      cancelDrag();
       const viewportHeight = viewport?.height ?? win.innerHeight;
-      safeInset.current = Number.parseFloat(win.getComputedStyle(panel).paddingBottom) || 0;
+      const offsetTop = viewport?.offsetTop ?? 0;
+      const inset = Number.parseFloat(win.getComputedStyle(panel).paddingBottom) || 0;
+      const next = `${viewportHeight} ${offsetTop} ${inset}`;
+      if (next === geometry) return;
+      geometry = next;
+      cancelDrag();
+      safeInset.current = inset;
       height.current = Math.max(1, viewportHeight - safeInset.current);
       dialog.style.blockSize = `${viewportHeight}px`;
-      dialog.style.insetBlockStart = `${viewport?.offsetTop ?? 0}px`;
+      dialog.style.insetBlockStart = `${offsetTop}px`;
       if (!exiting.current) {
         animation.current?.stop();
         drag.current = null;

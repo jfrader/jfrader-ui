@@ -15,6 +15,7 @@ import { PersonAvatar } from '../person-avatar';
 import { sceneSource } from '../scene';
 import { Stack } from '../stack';
 import { Flex } from '../flex';
+import { expectPulseFromDot } from '../status-dot/status-dot-assertions';
 
 const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly AvatarSize[];
 
@@ -184,7 +185,7 @@ export function Example() {
       render();
       await expect(sharedFallback.getNode()).toBe(host.querySelector('[data-ui="avatar-fallback"]'));
       await expect(ownFallback.getNode()).toBe(sharedFallback.getNode());
-      await expect(sharedStatus.getNode()).toBe(host.querySelector('[data-ui="avatar-status"]'));
+      await expect(sharedStatus.getNode()).toBe(host.querySelector('[data-ui~="avatar-status"]'));
       await expect(ownStatus.getNode()).toBe(sharedStatus.getNode());
       render(PHOTO_SRC);
       await expect(sharedFallback.isCleanedUp()).toBe(true);
@@ -497,17 +498,21 @@ export const AllStatuses: Story = {
       { id: 's2', name: 'Grace Hopper', status: 'away' },
       { id: 's3', name: 'Margaret Hamilton', status: 'busy' },
       { id: 's4', name: 'Katherine Johnson', status: 'offline' },
-      { id: 's5', name: 'Hedy Lamarr', status: 'online', statusLabel: 'en línea' },
+      { id: 's5', name: 'Hedy Lamarr', status: 'online', statusLabel: 'en línea', pulse: true },
     ],
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     for (const status of STATUSES) {
       const avatar = canvas.getByRole('img', { name: new RegExp(`, ${status}$`) });
-      const dot = avatar.querySelector(`[data-status="${status}"]`);
+      const dot = avatar.querySelector(`[data-ui~="status-dot"][data-status="${status}"]`);
       await expect(dot).toHaveAttribute('aria-hidden', 'true');
+      await expect(dot).not.toHaveAttribute('data-pulse');
     }
-    await expect(canvas.getByRole('img', { name: 'Hedy Lamarr, en línea' })).toBeInTheDocument();
+    const hedy = canvas.getByRole('img', { name: 'Hedy Lamarr, en línea' });
+    const pulsing = hedy.querySelector<HTMLElement>('[data-ui~="status-dot"]')!;
+    await expect(pulsing).toHaveAttribute('data-pulse');
+    await expectPulseFromDot(pulsing);
   },
 };
 

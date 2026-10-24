@@ -2,7 +2,6 @@ export { InlineEdit } from './inline-edit';
 export type {
   InlineEditControlProps,
   InlineEditMessages,
-  InlineEditPartProps,
   InlineEditPhase,
   InlineEditProps,
   InlineEditSize,

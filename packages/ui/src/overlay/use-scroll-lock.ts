@@ -45,9 +45,10 @@ export function useScrollLock(active: boolean, getDocument?: () => Document | un
         bodyOverflow: doc.body.style.overflow,
         rootPaddingInlineEnd: doc.documentElement.style.paddingInlineEnd,
       });
+      // Measured before hiding overflow: once hidden, the scrollbar is gone and reads as 0.
+      const width = scrollbarWidth(doc);
       doc.documentElement.style.overflow = 'hidden';
       doc.body.style.overflow = 'hidden';
-      const width = scrollbarWidth(doc);
       if (width > 0) doc.documentElement.style.paddingInlineEnd = `${width}px`;
     }
 

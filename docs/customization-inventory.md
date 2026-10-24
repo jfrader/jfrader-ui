@@ -8,9 +8,9 @@ composed modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **171**; public callable parts: **188**.
-- Families exposing `slots.root`: **119**; remaining without a family-level root slot: **52** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **130**; remaining without family-level interior slots: **41** (includes components without generated anatomy).
+- Public callable families: **172**; public callable parts: **188**.
+- Families exposing `slots.root`: **119**; remaining without a family-level root slot: **53** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **131**; remaining without family-level interior slots: **41** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -181,8 +181,8 @@ panel material. The section has no background, border or radius to migrate.
 | [Drawer.Panel](../packages/ui/src/components/drawer/drawer.tsx) | yes | `root` | `root` | — | — | — |
 | [Drawer.Title](../packages/ui/src/components/drawer/drawer.tsx) | — | — | — | — | — | — |
 | [Drawer.Trigger](../packages/ui/src/components/drawer/drawer.tsx) | — | — | — | — | — | — |
-| [EditableDetails](../packages/ui/src/components/editable-details/editable-details.tsx) | yes | `item`, `list`, `root`, `section` | `item`, `list`, `root`, `section` | — | — | `Item`, `List`, `Section` |
-| [EditableDetails.Item](../packages/ui/src/components/editable-details/editable-details.tsx) | — | `description`, `edit`, `editor`, `label`, `summary` | `description`, `edit`, `editor`, `label`, `summary` | — | — | — |
+| [EditableDetails](../packages/ui/src/components/editable-details/editable-details.tsx) | yes | `edit`, `item`, `list`, `root`, `section` | `edit`, `item`, `list`, `root`, `section` | — | — | `Item`, `List`, `Section` |
+| [EditableDetails.Item](../packages/ui/src/components/editable-details/editable-details.tsx) | — | `description`, `label` | `description`, `label` | — | — | — |
 | [EditableDetails.List](../packages/ui/src/components/editable-details/editable-details.tsx) | — | — | — | — | — | — |
 | [EditableDetails.Section](../packages/ui/src/components/editable-details/editable-details.tsx) | — | `heading`, `panel`, `trigger` | `heading`, `panel`, `trigger` | — | — | — |
 | [Emblem](../packages/ui/src/components/emblem/emblem.tsx) | — | `image`, `monogram` | `image`, `monogram` | — | — | — |
@@ -245,7 +245,7 @@ panel material. The section has no background, border or radius to migrate.
 | [HoverCard.Trigger](../packages/ui/src/components/hover-card/hover-card.tsx) | — | — | — | — | — | — |
 | [ImageCompare](../packages/ui/src/components/image-compare/image-compare.tsx) | — | `after`, `afterLabel`, `before`, `beforeLabel`, `divider`, `frame`, `handle`, `resetButton` | `after`, `afterLabel`, `before`, `beforeLabel`, `divider`, `frame`, `handle`, `resetButton` | — | — | — |
 | [InlineEdit](../packages/ui/src/components/inline-edit/inline-edit.tsx) | yes | `actions`, `cancel`, `control`, `description`, `editor`, `error`, `instructions`, `label`, `retry`, `root`, `save`, `status`, `trigger` | `actions`, `cancel`, `control`, `description`, `editor`, `error`, `instructions`, `label`, `retry`, `root`, `save`, `status`, `trigger` | — | `controlProps` | — |
-| [InputGroup](../packages/ui/src/components/input-group/input-group.tsx) | yes | `root` | `root` | — | — | `Addon`, `Input`, `Textarea` |
+| [InputGroup](../packages/ui/src/components/input-group/input-group.tsx) | yes | `description`, `error`, `frame`, `label`, `root` | `description`, `error`, `frame`, `label`, `root` | — | — | `Addon`, `Input`, `Textarea` |
 | [InputGroup.Addon](../packages/ui/src/components/input-group/input-group.tsx) | — | — | — | — | — | — |
 | [InputGroup.Input](../packages/ui/src/components/input-group/input-group.tsx) | — | — | — | — | — | — |
 | [InputGroup.Textarea](../packages/ui/src/components/input-group/input-group.tsx) | — | — | — | — | — | — |
@@ -294,6 +294,11 @@ panel material. The section has no background, border or radius to migrate.
 | [PhoneInput](../packages/ui/src/components/phone-input/phone-input.tsx) | — | — | `control`, `countryTrigger`, `description`, `error`, `label`, `list`, `number`, `option`, `panel`, `root`, `search`, `status` | `control`, `countryTrigger`, `description`, `error`, `label`, `list`, `number`, `option`, `panel`, `root`, `search`, `status` | — | — |
 | [PhotoGrid](../packages/ui/src/components/photo-grid/photo-grid.tsx) | yes | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `root`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `root`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | — | — | — |
 | [Pill](../packages/ui/src/components/pill/pill.tsx) | — | — | — | — | — | — |
+| [PlanSelector](../packages/ui/src/components/plan-selector/plan-selector.tsx) | yes | `item`, `label`, `list`, `root` | `item`, `label`, `list`, `root` | — | — | `Item`, `Label`, `List`, `Price` |
+| [PlanSelector.Item](../packages/ui/src/components/plan-selector/plan-selector.tsx) | — | `badge`, `label`, `selection` | `badge`, `label`, `selection` | — | — | — |
+| [PlanSelector.Label](../packages/ui/src/components/plan-selector/plan-selector.tsx) | — | — | — | — | — | — |
+| [PlanSelector.List](../packages/ui/src/components/plan-selector/plan-selector.tsx) | — | — | — | — | — | — |
+| [PlanSelector.Price](../packages/ui/src/components/plan-selector/plan-selector.tsx) | — | `amount`, `previous`, `unit` | `amount`, `previous`, `unit` | — | — | — |
 | [PokerTable](../packages/ui/src/components/poker-table/poker-table.tsx) | yes | `actions`, `root`, `seat` | `actions`, `root`, `seat` | — | `tableProps` | — |
 | [Popover](../packages/ui/src/components/popover/popover.tsx) | yes | `content`, `root`, `trigger` | `content`, `root`, `trigger` | — | — | `Content`, `Trigger` |
 | [Popover.Content](../packages/ui/src/components/popover/popover.tsx) | — | — | — | — | — | — |
@@ -331,7 +336,7 @@ panel material. The section has no background, border or radius to migrate.
 | [Skeleton.Block](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | — |
 | [Skeleton.Morph](../packages/ui/src/components/skeleton/skeleton.tsx) | — | — | — | — | — | — |
 | [Slider](../packages/ui/src/components/slider/slider.tsx) | yes | `bubble`, `control`, `description`, `end`, `error`, `fill`, `label`, `mark`, `readout`, `root`, `start`, `thumb`, `track` | `bubble`, `control`, `description`, `end`, `error`, `fill`, `label`, `mark`, `readout`, `root`, `start`, `thumb`, `track` | — | — | — |
-| [SortableDataTable](../packages/ui/src/components/sortable-data-table/sortable-data-table.tsx) | — | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table` | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table` | — | — | — |
+| [SortableDataTable](../packages/ui/src/components/sortable-data-table/sortable-data-table.tsx) | — | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table`, `toolbar` | `caption`, `cell`, `footer`, `headerCell`, `row`, `scroller`, `sortButton`, `status`, `table`, `toolbar` | — | — | — |
 | [Spinner](../packages/ui/src/components/spinner/spinner.tsx) | yes | `indicator`, `root`, `status` | `indicator`, `root`, `status` | — | — | — |
 | [SplitButton](../packages/ui/src/components/split-button/split-button.tsx) | yes | `action`, `content`, `item`, `root`, `separator`, `trigger` | `action`, `content`, `item`, `root`, `separator`, `trigger` | — | — | `Action`, `Content`, `Item`, `Separator`, `Trigger` |
 | [SplitButton.Action](../packages/ui/src/components/split-button/split-button.tsx) | — | — | — | — | — | — |
@@ -340,6 +345,7 @@ panel material. The section has no background, border or radius to migrate.
 | [SplitButton.Separator](../packages/ui/src/components/split-button/split-button.tsx) | — | — | — | — | — | — |
 | [SplitButton.Trigger](../packages/ui/src/components/split-button/split-button.tsx) | — | — | — | — | — | — |
 | [Stack](../packages/ui/src/components/stack/stack.tsx) | — | — | — | — | — | — |
+| [StatusDot](../packages/ui/src/components/status-dot/status-dot.tsx) | — | — | — | — | — | — |
 | [Stepper](../packages/ui/src/components/stepper/stepper.tsx) | — | `caption`, `connector`, `description`, `head`, `item`, `label`, `list`, `marker`, `root` | `caption`, `connector`, `description`, `head`, `item`, `label`, `list`, `marker`, `root` | — | — | — |
 | [StreamingCaret](../packages/ui/src/components/streaming-caret/streaming-caret.tsx) | — | — | — | — | — | — |
 | [StretchRefresh](../packages/ui/src/components/stretch-refresh/stretch-refresh.tsx) | — | `empty`, `feed`, `header`, `indicator`, `item`, `list`, `refreshButton`, `status`, `subtitle`, `title` | `empty`, `feed`, `header`, `indicator`, `item`, `list`, `refreshButton`, `status`, `subtitle`, `title` | — | — | — |
@@ -368,11 +374,6 @@ panel material. The section has no background, border or radius to migrate.
 | [ToastStack](../packages/ui/src/components/toast-stack/toast-stack.tsx) | yes | `item`, `list`, `root` | `item`, `list`, `root` | — | — | — |
 | [ToggleGroup](../packages/ui/src/components/toggle-group/toggle-group.tsx) | yes | `item`, `root` | `item`, `root` | — | — | `Item` |
 | [ToggleGroup.Item](../packages/ui/src/components/toggle-group/toggle-group.tsx) | — | — | — | — | — | — |
-| [ToggleSubscription](../packages/ui/src/components/toggle-subscription/toggle-subscription.tsx) | yes | `item`, `label`, `list`, `price`, `root` | `item`, `label`, `list`, `price`, `root` | — | — | `Item`, `Label`, `List`, `Price` |
-| [ToggleSubscription.Item](../packages/ui/src/components/toggle-subscription/toggle-subscription.tsx) | — | `badge`, `label`, `selection` | `badge`, `label`, `selection` | — | — | — |
-| [ToggleSubscription.Label](../packages/ui/src/components/toggle-subscription/toggle-subscription.tsx) | — | — | — | — | — | — |
-| [ToggleSubscription.List](../packages/ui/src/components/toggle-subscription/toggle-subscription.tsx) | — | — | — | — | — | — |
-| [ToggleSubscription.Price](../packages/ui/src/components/toggle-subscription/toggle-subscription.tsx) | — | `amount`, `period`, `previous` | `amount`, `period`, `previous` | — | — | — |
 | [Tooltip](../packages/ui/src/components/tooltip/tooltip.tsx) | — | `content`, `trigger` | `content`, `trigger` | — | — | `Content`, `Trigger` |
 | [Tooltip.Content](../packages/ui/src/components/tooltip/tooltip.tsx) | — | — | — | — | — | — |
 | [Tooltip.Trigger](../packages/ui/src/components/tooltip/tooltip.tsx) | — | — | — | — | — | — |

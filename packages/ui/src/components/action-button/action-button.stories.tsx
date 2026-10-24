@@ -6,6 +6,7 @@ import { ActionButton, type ActionButtonValue } from './index';
 import { Button } from '../button';
 import { styled } from '../../styling/styled';
 import { Surface } from '../surface';
+import { settleMotion } from '../../testing/motion-assertions';
 
 const PublishPanel = styled(Surface)({
   boxSizing: 'border-box',
@@ -24,6 +25,18 @@ const DocumentLabel = styled.p({
   color: vars.color.text,
 });
 const ButtonRow = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[3] });
+const NarrowLane = styled.div({ inlineSize: `calc(${vars.space[8]} * 5)`, maxInlineSize: '100%' });
+
+async function expectSingleLine(button: HTMLElement) {
+  const label = button.querySelector('[data-ui="action-button-label"]');
+  await expect(label).toBeTruthy();
+  if (!label) return;
+  await expect(label.getClientRects().length).toBe(1);
+  const range = label.ownerDocument.createRange();
+  range.selectNodeContents(label);
+  const lineTops = new Set(Array.from(range.getClientRects(), (rect) => rect.top));
+  await expect(lineTops.size).toBe(1);
+}
 
 const meta = {
   title: 'Actions/ActionButton',
@@ -50,6 +63,10 @@ Return the real promise from \`onAction\`. Use \`Button loading\` when you do no
 ### State
 
 A rejected controlled state request does not cancel the action. Concurrent activations are blocked until its promise settles. Errors remain until retry or an external update. Success normally returns to idle after 2400ms; these examples keep the result visible.
+
+### Label width
+
+Labels stay on one line while the button grows or shrinks to their natural width. When the container is narrower, the label truncates with an ellipsis. The accessible name retains the full label.
 
 ### Keyboard and accessibility
 
@@ -308,18 +325,44 @@ export const Customization: Story = {
   },
 };
 export const LongLabelsRTL: Story = {
-  args: { label: 'نشر التغييرات المحفوظة', dir: 'rtl' },
+  args: { label: 'نشر التغييرات المحفوظة', successLabel: 'تم نشر جميع التغييرات المحفوظة بنجاح', dir: 'rtl' },
+  render: (args) => <NarrowLane><ActionButton {...args} /></NarrowLane>,
+  play: async ({ canvas, userEvent }) => {
+    const button = canvas.getByRole('button');
+    await expect(getComputedStyle(button).direction).toBe('rtl');
+    await expectSingleLine(button);
+    await userEvent.click(button);
+    await waitFor(() => expect(button).toHaveAttribute('data-state', 'success'));
+    await expectSingleLine(button);
+    await settleMotion(button);
+    await expectSingleLine(button);
+    const label = button.querySelector('[data-ui="action-button-label"]');
+    await expect(label).toBeTruthy();
+    if (!label) return;
+    await expect(label.scrollWidth).toBeGreaterThan(label.clientWidth);
+    await expect(getComputedStyle(label).textOverflow).toBe('ellipsis');
+    await expect(button.getBoundingClientRect().width).toBeLessThanOrEqual(
+      button.parentElement!.getBoundingClientRect().width,
+    );
+  },
 };
 export const ReducedMotion: Story = {
   name: 'Action Button Reduced Motion',
-  args: { value: 'pending' },
-  play: async ({ canvas }) => {
-    const svg = canvas.getByRole('button').querySelector('svg');
+  play: async ({ args, canvas, userEvent }) => {
+    let finish = () => {};
+    args.onAction.mockImplementationOnce(() => new Promise<void>((resolve) => { finish = resolve; }));
+    const button = canvas.getByRole('button');
+    await userEvent.click(button);
+    await waitFor(() => expect(button).toHaveAttribute('data-state', 'pending'));
+    const svg = button.querySelector('svg');
     await expect(
       svg
         ?.getAnimations({ subtree: true })
         .filter((animation) => animation.effect?.getComputedTiming().iterations === Infinity),
     ).toHaveLength(0);
+    finish();
+    await waitFor(() => expect(button).toHaveAttribute('data-state', 'success'));
+    await expectSingleLine(button);
   },
 };
 export const NaturalWidth: Story = {
@@ -327,8 +370,22 @@ export const NaturalWidth: Story = {
   play: async ({ canvas, userEvent }) => {
     const button = canvas.getByRole('button', { name: 'Save' });
     const before = button.getBoundingClientRect().width;
+    await expectSingleLine(button);
     await userEvent.click(button);
+    await waitFor(() => expect(button).toHaveAttribute('data-state', 'success'));
+    await expectSingleLine(button);
+    const label = button.querySelector('[data-ui="action-button-label"]');
+    await expect(label).toBeTruthy();
+    if (!label) return;
+    const heights: number[] = [];
+    for (let frame = 0; frame < 20; frame += 1) {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      heights.push(label.getBoundingClientRect().height);
+    }
+    await expect(new Set(heights).size).toBe(1);
     await waitFor(() => expect(button.getBoundingClientRect().width).toBeGreaterThan(before + 40));
+    await waitFor(() => expect(label.clientWidth).toBeGreaterThanOrEqual(label.scrollWidth));
+    await expectSingleLine(button);
   },
 };
 export const UnmountDuringAction: Story = {

@@ -1,6 +1,6 @@
 {
   "name": "@jfrader/ui",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "React component library based on Emotion and CSS custom properties.",
   "keywords": [
     "react",
@@ -139,6 +139,7 @@
     "./payment-flow": { "types": "./src/components/payment-flow/index.ts", "import": "./src/components/payment-flow/index.ts" },
     "./photo-grid": { "types": "./src/components/photo-grid/index.ts", "import": "./src/components/photo-grid/index.ts" },
     "./pill": { "types": "./src/components/pill/index.ts", "import": "./src/components/pill/index.ts" },
+    "./plan-selector": { "types": "./src/components/plan-selector/index.ts", "import": "./src/components/plan-selector/index.ts" },
     "./popover": { "types": "./src/components/popover/index.ts", "import": "./src/components/popover/index.ts" },
     "./progress": { "types": "./src/components/progress/index.ts", "import": "./src/components/progress/index.ts" },
     "./radial-menu": { "types": "./src/components/radial-menu/index.ts", "import": "./src/components/radial-menu/index.ts" },
@@ -159,6 +160,7 @@
     "./spinner": { "types": "./src/components/spinner/index.ts", "import": "./src/components/spinner/index.ts" },
     "./split-button": { "types": "./src/components/split-button/index.ts", "import": "./src/components/split-button/index.ts" },
     "./stack": { "types": "./src/components/stack/index.ts", "import": "./src/components/stack/index.ts" },
+    "./status-dot": { "types": "./src/components/status-dot/index.ts", "import": "./src/components/status-dot/index.ts" },
     "./stepper": { "types": "./src/components/stepper/index.ts", "import": "./src/components/stepper/index.ts" },
     "./stretch-refresh": { "types": "./src/components/stretch-refresh/index.ts", "import": "./src/components/stretch-refresh/index.ts" },
     "./surface": { "types": "./src/components/surface/index.ts", "import": "./src/components/surface/index.ts" },
@@ -178,7 +180,6 @@
     "./toast": { "types": "./src/components/toast/index.ts", "import": "./src/components/toast/index.ts" },
     "./toast-stack": { "types": "./src/components/toast-stack/index.ts", "import": "./src/components/toast-stack/index.ts" },
     "./toggle-group": { "types": "./src/components/toggle-group/index.ts", "import": "./src/components/toggle-group/index.ts" },
-    "./toggle-subscription": { "types": "./src/components/toggle-subscription/index.ts", "import": "./src/components/toggle-subscription/index.ts" },
     "./tooltip": { "types": "./src/components/tooltip/index.ts", "import": "./src/components/tooltip/index.ts" },
     "./tree-view": { "types": "./src/components/tree-view/index.ts", "import": "./src/components/tree-view/index.ts" },
     "./typewriter-terminal": { "types": "./src/components/typewriter-terminal/index.ts", "import": "./src/components/typewriter-terminal/index.ts" },

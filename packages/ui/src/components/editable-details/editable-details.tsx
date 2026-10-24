@@ -1,21 +1,37 @@
 'use client';
 
-// APG Disclosure: native buttons toggle with Enter/Space; Tab follows document order.
-// Editors own all form behavior. Hidden section panels retain their mounted sessions.
+// APG Disclosure: each section is a heading wrapping a native button with aria-expanded and
+// aria-controls; Enter/Space toggle it and Tab follows document order. Rows are a definition list,
+// the label in `dt` and the value in `dd`. An editable row's value is an InlineEdit, which owns its
+// keyboard, pending and error contract; this component never edits anything itself.
+//
+// `rows` is the generic row model. The consumer maps its own data into rows, marks a text row
+// editable by giving it `edit` (the context its save needs), and persists through
+// `onSave(next, row)`. A row whose value is not text brings its own editor through `renderEditor`:
+// the editor persists through `submit(persist)` with its own typed value, and the row owns the
+// session around it (open state, initial focus, pending, error and focus return). The component
+// owns presentation and which sections are expanded. Composition (Section, List, Item) builds the
+// same anatomy by hand.
+//
+// Focus ownership follows the React tree, not the DOM, so focus in a portaled picker still counts
+// as inside its section and its editor.
 import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useId,
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
   type ComponentPropsWithRef,
   type ComponentType,
   type ReactNode,
   type Ref,
   type RefCallback,
   type RefObject,
+  type SyntheticEvent,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
@@ -24,113 +40,225 @@ import { disclosureCaret, disclosureCaretInlineSize } from '../../styling/disclo
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
+import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { Button, buttonBlockSizes } from '../button/button';
+import { FieldError } from '../field/field-anatomy';
+import { InlineEdit, type InlineEditProps } from '../inline-edit';
 
 declare const process: { env: { NODE_ENV?: string } };
 
-export interface EditableDetailsMessages {
-  edit: string;
-}
+export type EditableDetailsHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
+
 export interface EditableDetailsPartProps {
   className?: string;
   sx?: Interpolation<Theme>;
 }
 
-export interface EditableDetailsItemRecord {
-  /** Stable identifier for this item, used as React key. */
-  value: string;
-  /** Label describing this detail. */
-  label: ReactNode;
-  /** Content rendered for this detail in summary/read view. */
-  content: ReactNode;
-  /** Custom editor renderer. When provided, renders the Edit button and manages editor session. */
-  renderEditor?: (props: EditableDetailsEditorProps) => ReactNode;
-  /** Controls editor open state. */
-  open?: boolean;
-  /** Initial editor open state. */
-  defaultOpen?: boolean;
-  /** Callback fired when editor open state changes. */
-  onOpenChange?: (open: boolean) => void;
-  /** Optional item-specific slotProps overrides. */
-  slotProps?: EditableDetailsItemProps['slotProps'];
+interface RowIdentity {
+  /** Unique among all rows; identifies the row in `onSave` and in the expansion state. */
+  id: string;
+  /** Names the row: the term of a value row, the title of a section row. */
+  label: string;
 }
 
-export interface EditableDetailsSectionRecord {
-  /** Stable identifier for this section, used as React key. */
-  value: string;
-  /** Section heading title. */
-  title: ReactNode;
-  /** Items contained within this section. */
-  items: readonly EditableDetailsItemRecord[];
-  /** Heading level for this section (1-6). Defaults to 3. */
-  headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
-  /** Controls section disclosure open state. */
-  open?: boolean;
-  /** Initial section disclosure open state. */
-  defaultOpen?: boolean;
-  /** Callback fired when section open state changes. */
-  onOpenChange?: (open: boolean) => void;
-  /** Ref to the disclosure trigger button. */
-  triggerRef?: Ref<HTMLButtonElement>;
-  /** Optional section-specific slotProps overrides. */
-  slotProps?: EditableDetailsSectionProps['slotProps'];
+/** A read-only detail. Without `edit` there is no edit affordance. */
+export interface EditableDetailsValueRow extends RowIdentity {
+  /** Content shown as the value. Empty content shows the root's `emptyValue`. */
+  value?: ReactNode;
+  edit?: never;
+  renderEditor?: never;
+  children?: never;
 }
+
+/** A detail edited in place through InlineEdit. */
+export interface EditableDetailsEditableRow<Context extends {} = true> extends RowIdentity {
+  /** The persisted text. The row shows it until your data changes, never the draft. */
+  value: string;
+  /**
+   * Makes the row editable and is handed back to `onSave` with the row: `true`, or what persisting
+   * needs, such as a record id.
+   */
+  edit: Context;
+  /** Returns a nonempty message to block the save and keep the editor open. */
+  validate?: InlineEditProps['validate'];
+  /** Turns the draft into the saved value. Defaults to the draft as typed. */
+  normalize?: InlineEditProps['normalize'];
+  /** Edits in a textarea; Shift+Enter inserts a newline. */
+  multiline?: boolean;
+  /** Native placeholder of the editor. */
+  inputPlaceholder?: string;
+  /** Error for this row from outside, such as a conflict; marks the editor invalid and blocks saving. */
+  error?: ReactNode;
+  renderEditor?: never;
+  children?: never;
+}
+
+/** What a row hands to its `renderEditor` while the editor is open. */
+export interface EditableDetailsEditorProps {
+  /** Attach to the element that takes focus when the editor opens. Without it, the editor group takes focus. */
+  initialFocusRef: RefCallback<HTMLElement>;
+  /**
+   * Saves through `persist`, which writes your value with your own function. The row is pending
+   * until a returned promise settles. A resolved save closes the editor and returns focus to the
+   * row's Edit button. A throw or rejection keeps the editor open and shows the row's error.
+   * Ignored while a save is pending.
+   */
+  submit: (persist: () => void | Promise<unknown>) => void;
+  /** Closes the editor without saving and returns focus to the row's Edit button. Ignored while a save is pending. */
+  cancel: () => void;
+  /** Whether a save is pending. Make the editor's fields and actions inert while it is `true`. */
+  pending: boolean;
+  /** Id of the row's error message while one shows. Add it to `aria-describedby` of the field it concerns. */
+  errorId: string | undefined;
+  /** Whether every enclosing section is expanded. Close portaled and top-layer surfaces while it is `false`. */
+  visible: boolean;
+}
+
+/** A detail whose value is not text, edited by the editor you render. */
+export interface EditableDetailsEditorRow extends RowIdentity {
+  /** Content shown as the value while the editor is closed. Empty content shows the root's `emptyValue`. */
+  value?: ReactNode;
+  /**
+   * Makes the row editable and renders its editor while it is open. Your editor keeps its own
+   * draft and persists through `submit`; `onSave` is not called for this row.
+   */
+  renderEditor: (editor: EditableDetailsEditorProps) => ReactNode;
+  /** Error for this row from outside, such as a conflict, shown under the value or the open editor. */
+  error?: ReactNode;
+  edit?: never;
+  validate?: never;
+  normalize?: never;
+  multiline?: never;
+  inputPlaceholder?: never;
+  children?: never;
+}
+
+/** A collapsible group of rows. */
+export interface EditableDetailsSectionRow<Context extends {} = true> extends RowIdentity {
+  /** Rows inside the section. Value rows group into one list; section rows nest. */
+  children: readonly EditableDetailsRow<Context>[];
+  value?: never;
+  edit?: never;
+  renderEditor?: never;
+}
+
+export type EditableDetailsRow<Context extends {} = true> =
+  | EditableDetailsValueRow
+  | EditableDetailsEditableRow<Context>
+  | EditableDetailsEditorRow
+  | EditableDetailsSectionRow<Context>;
+
+/** Text of the Edit button and save failure of rows with `renderEditor`. */
+export interface EditableDetailsMessages {
+  /** Visible text of the Edit button. */
+  edit: string;
+  /** Accessible name of the Edit button; it starts with the visible text. */
+  editLabel: (context: { label: string }) => string;
+  /** Error shown when `persist` throws or rejects. */
+  failed: string;
+}
+
+/** InlineEdit props shared by every editable row. Row data and saving stay with the row. */
+export type EditableDetailsEditProps = Partial<
+  Omit<
+    InlineEditProps,
+    | 'value'
+    | 'defaultValue'
+    | 'onValueChange'
+    | 'onSave'
+    | 'label'
+    | 'validate'
+    | 'normalize'
+    | 'multiline'
+    | 'inputPlaceholder'
+    | 'error'
+  >
+>;
 
 export interface EditableDetailsSlots {
   /** Replaces the root container element; renders a `div` by default. */
   root?: ComponentType<ComponentPropsWithRef<'div'>>;
-  /** Replaces the collapsible section container. */
+  /** Replaces each section generated from a section row. */
   section?: ComponentType<EditableDetailsSectionProps>;
-  /** Replaces the definition list container for items. */
+  /** Replaces each definition list generated for value rows. */
   list?: ComponentType<EditableDetailsListProps>;
-  /** Replaces each detail item row in the list. */
+  /** Replaces each item generated from a value or editable row. */
   item?: ComponentType<EditableDetailsItemProps>;
+  /** Replaces the InlineEdit of each text row with `edit`; forward its props and ref. */
+  edit?: ComponentType<InlineEditProps>;
 }
 
 export interface EditableDetailsSlotProps {
   /** Root container element around the sections. */
-  root?: ComponentPropsWithRef<'div'> &
-    SxProps & {
-
-      [attribute: `data-${string}`]: unknown;
-    };
-  /** Collapsible section container. */
-  section?: Partial<Omit<EditableDetailsSectionProps, 'children' | 'title'>>;
-  /** Definition list container for items. */
+  root?: ComponentPropsWithRef<'div'> & SxProps & { [attribute: `data-${string}`]: unknown };
+  /** Each generated section. */
+  section?: Partial<
+    Omit<EditableDetailsSectionProps, 'children' | 'title' | 'headingLevel' | 'open' | 'defaultOpen' | 'onOpenChange'>
+  >;
+  /** Each generated definition list. */
   list?: Partial<EditableDetailsListProps>;
-  /** Each detail item row in the list. */
+  /** Each generated item. */
   item?: Partial<Omit<EditableDetailsItemProps, 'children' | 'label'>>;
+  /** InlineEdit of each text row with `edit`, such as `size`, `saveOnBlur` or `messages`. */
+  edit?: EditableDetailsEditProps;
 }
 
 export interface EditableDetailsBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'children'>, SxProps {
-  /** Overrides the edit button text. Defaults to `Edit`. */
-  messages?: Partial<EditableDetailsMessages>;
   /** Replace the root. Exactly sugar for `slots.root`; declare the component outside render. */
   component?: ComponentType<ComponentPropsWithRef<'div'>>;
   [attribute: `data-${string}`]: unknown;
 }
 
-export interface EditableDetailsComposedProps extends EditableDetailsBaseProps {
-  /** Composes sections and detail lists instead of supplying `sections`. */
-  children?: ReactNode;
-  sections?: never;
-  /** Replaces the root, section, list and item components. */
-  slots?: EditableDetailsSlots;
-  /** Passes props and `sx` to the root and repeated sections, lists and items. */
-  slotProps?: EditableDetailsSlotProps;
-}
-
-export interface EditableDetailsShorthandProps extends EditableDetailsBaseProps {
-  /** Structured section records to render. */
-  sections: readonly EditableDetailsSectionRecord[];
+export interface EditableDetailsRowsProps<Context extends {} = true> extends EditableDetailsBaseProps {
+  /** Rows mapped from your data. A row is editable when it has `edit` (text) or `renderEditor` (any value). */
+  rows: readonly EditableDetailsRow<Context>[];
+  /**
+   * Persists a text row's changed value; rows with `renderEditor` persist through their editor. A
+   * returned promise keeps that row pending until it settles; throw or reject to keep its editor
+   * open with the failure as its error. Update your data so the row's `value` reflects the save.
+   */
+  onSave: (next: string, row: EditableDetailsEditableRow<NoInfer<Context>>) => void | Promise<unknown>;
+  /** Overrides the English Edit button text and save failure of rows with `renderEditor`. */
+  messages?: Partial<EditableDetailsMessages>;
+  /** Ids of the expanded section rows. */
+  expanded?: readonly string[];
+  /** Section rows expanded initially, or `'all'`. Defaults to `'all'`. */
+  defaultExpanded?: readonly string[] | 'all';
+  /** Receives the requested expanded ids when a section is toggled. */
+  onExpandedChange?: (expanded: readonly string[]) => void;
+  /** Heading level of top-level section rows; each nested level adds one, up to 6. Defaults to `3`. */
+  headingLevel?: EditableDetailsHeadingLevel;
+  /** Shown for an empty value: a blank read-only value, or the placeholder of an empty editable one. */
+  emptyValue?: ReactNode;
   children?: never;
-  /** Replaces the root, section, list and item components. */
+  /** Replaces the root and the generated sections, lists, items and editors. */
   slots?: EditableDetailsSlots;
-  /** Passes props and `sx` to the root and repeated sections, lists and items. */
+  /** Passes props and `sx` to the root and to every generated section, list, item and editor. */
   slotProps?: EditableDetailsSlotProps;
 }
 
-export type EditableDetailsProps = EditableDetailsComposedProps | EditableDetailsShorthandProps;
+export interface EditableDetailsComposedProps extends EditableDetailsBaseProps {
+  /** Composes sections, lists and items instead of supplying `rows`. */
+  children?: ReactNode;
+  rows?: never;
+  onSave?: never;
+  messages?: never;
+  expanded?: never;
+  defaultExpanded?: never;
+  onExpandedChange?: never;
+  headingLevel?: never;
+  emptyValue?: never;
+  /** Replaces the root. */
+  slots?: Pick<EditableDetailsSlots, 'root'>;
+  /** Passes props and `sx` to the root. */
+  slotProps?: Pick<EditableDetailsSlotProps, 'root'>;
+}
+
+export type EditableDetailsProps<Context extends {} = true> =
+  | EditableDetailsRowsProps<Context>
+  | EditableDetailsComposedProps;
+
 export interface EditableDetailsSectionSlots {
   /** Groups the section disclosure trigger. Renders an `h3` by default, or the heading set by `headingLevel`. */
   heading?: ComponentType<EditableDetailsPartProps>;
@@ -143,14 +271,8 @@ export interface EditableDetailsSectionSlots {
 export interface EditableDetailsItemSlots {
   /** Displays the detail label. */
   label?: ComponentType<EditableDetailsPartProps>;
-  /** Contains the detail summary or editor. */
+  /** Contains the detail value. */
   description?: ComponentType<EditableDetailsPartProps>;
-  /** Groups the read-only value and edit button. */
-  summary?: ComponentType<EditableDetailsPartProps>;
-  /** Opens the detail editor. */
-  edit?: ComponentType<EditableDetailsPartProps>;
-  /** Contains the active editor. Renders a `div` by default. */
-  editor?: ComponentType<EditableDetailsPartProps>;
 }
 
 export interface EditableDetailsSectionProps extends Omit<ComponentPropsWithRef<'section'>, 'title'>, SxProps {
@@ -159,7 +281,7 @@ export interface EditableDetailsSectionProps extends Omit<ComponentPropsWithRef<
   /** Displays the section's disclosure button text. */
   title: ReactNode;
   /** Sets the section heading's HTML level. Defaults to `3`. */
-  headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
+  headingLevel?: EditableDetailsHeadingLevel;
   /** Controls whether the section body is visible. */
   open?: boolean;
   /** Shows the uncontrolled section body initially. Defaults to `false`. */
@@ -178,50 +300,39 @@ export interface EditableDetailsSectionProps extends Omit<ComponentPropsWithRef<
     panel?: EditableDetailsPartProps;
   };
 }
+
 export interface EditableDetailsListProps extends ComponentPropsWithRef<'dl'>, SxProps {}
-export interface EditableDetailsEditorProps {
-  initialFocusRef: RefCallback<HTMLElement>;
-  complete: () => void;
-  cancel: () => void;
-  visible: boolean;
-}
+
 export interface EditableDetailsItemProps extends ComponentPropsWithRef<'div'>, SxProps {
-  /** Replaces the item's label, summary, edit button and editor parts. */
+  /** Replaces the item's label and value parts. */
   slots?: EditableDetailsItemSlots;
-  /** Names the detail beside its summary or editor. */
+  /** Names the detail beside its value. */
   label: ReactNode;
-  /** Renders the editor and enables the edit button. The caller owns form state and saving. */
-  renderEditor?: (props: EditableDetailsEditorProps) => ReactNode;
-  /** Controls the editor session; requires `renderEditor`. */
-  open?: boolean;
-  /** Opens the uncontrolled editor initially when `renderEditor` is provided. Defaults to `false`. */
-  defaultOpen?: boolean;
-  /** Receives requests to open or close the editor. */
-  onOpenChange?: (open: boolean) => void;
-  /** Passes props and `sx` to the item's label, summary, edit button and editor parts. */
+  /** Passes props and `sx` to the item's label and value parts. */
   slotProps?: {
     /** Definition term (`<dt>`) displaying the item label. */
     label?: EditableDetailsPartProps;
-    /** Definition description (`<dd>`) holding the summary or editor. */
+    /** Definition description (`<dd>`) holding the value. */
     description?: EditableDetailsPartProps;
-    /** Container holding the read-only value and edit button. */
-    summary?: EditableDetailsPartProps;
-    /** Button that switches the item into edit mode. */
-    edit?: EditableDetailsPartProps;
-    /** Container holding the active editor form fields. Renders a `div` by default. */
-    editor?: EditableDetailsPartProps;
   };
 }
 
-const DEFAULT_MESSAGES: EditableDetailsMessages = { edit: 'Edit' };
 const HEADINGS = { 1: 'h1', 2: 'h2', 3: 'h3', 4: 'h4', 5: 'h5', 6: 'h6' } as const;
-const MessagesContext = createContext(DEFAULT_MESSAGES);
+const DEFAULT_HEADING_LEVEL: EditableDetailsHeadingLevel = 3;
+const MAX_HEADING_LEVEL: EditableDetailsHeadingLevel = 6;
 const SectionDepthContext = createContext(0);
 interface DisclosureScope {
-  visible: boolean;
   triggers: readonly RefObject<HTMLButtonElement | null>[];
+  /** Whether every enclosing section is expanded. */
+  visible: boolean;
 }
-const DisclosureContext = createContext<DisclosureScope>({ visible: true, triggers: [] });
+const DisclosureContext = createContext<DisclosureScope>({ triggers: [], visible: true });
+
+const DEFAULT_MESSAGES: EditableDetailsMessages = {
+  edit: 'Edit',
+  editLabel: ({ label }) => `Edit ${label}`,
+  failed: 'Could not save. Try again.',
+};
 
 // Row geometry, published on the section as custom properties. A section title starts after the
 // row inset and the caret glyph, and the panel pads its content by that same column, so the
@@ -231,6 +342,8 @@ const rowInset = vars.space[1];
 const rowGap = vars.space[2];
 const rowInsetVar = 'var(--editable-details-row-inset)';
 const rowGapVar = 'var(--editable-details-row-gap)';
+// Every value sits on one line of the editor's small block, editable or not, so rows keep one rhythm.
+const valueLine = buttonBlockSizes.sm;
 
 const rootStyle = css({
   label: 'editable-details', display: 'grid', gap: vars.space[8], minInlineSize: 0,
@@ -273,26 +386,28 @@ const panelStyle = css({
 });
 const listStyle = css({ margin: 0, minInlineSize: 0 });
 const itemStyle = css({
-  display: 'flex', flexWrap: 'wrap', gap: vars.space[2], minInlineSize: 0,
-  paddingBlock: vars.space[2], minBlockSize: vars.space[8], alignItems: 'start',
+  display: 'flex', flexWrap: 'wrap', columnGap: vars.space[2], minInlineSize: 0,
+  paddingBlock: vars.space[1], alignItems: 'start',
   '&:where(:not(:last-child))': { borderBlockEnd: `1px solid ${vars.color.border}` },
 });
-const labelStyle = css({ flex: '1 1 12rem', minInlineSize: 0, color: vars.color.textMuted, fontWeight: vars.fontWeight.regular });
-const descriptionStyle = css({ flex: '2 1 18rem', minInlineSize: 0, margin: 0 });
-const summaryStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'start', gap: vars.space[2], minInlineSize: 0 });
-const valueStyle = css({ flex: '1 1 8rem', minInlineSize: 0, fontWeight: vars.fontWeight.medium, color: vars.color.text });
-const editStyle = css({
-  minBlockSize: vars.space[8], paddingInline: vars.space[2], paddingBlock: vars.space[1],
-  border: '1px solid transparent', borderRadius: vars.radius.sm,
-  background: 'transparent', color: vars.color.textMuted, font: 'inherit', fontSize: vars.textSize.sm, cursor: 'pointer',
-  marginInlineStart: 'auto',
-  '&:hover': { backgroundColor: vars.color.surfaceHover, color: vars.color.text }, '&:focus-visible': focusRingInset,
-  [FORCED_COLORS]: { borderColor: 'ButtonText', color: 'ButtonText' },
+const lineStyle = css({ display: 'flex', alignItems: 'center', minBlockSize: valueLine, minInlineSize: 0 });
+const labelStyle = css({ flex: '1 1 12rem', color: vars.color.textMuted, fontWeight: vars.fontWeight.regular });
+const descriptionStyle = css({ flex: '2 1 18rem', margin: 0, fontSize: vars.textSize.md, color: vars.color.text });
+// A read-only value takes the InlineEdit trigger's inline box, so its text starts where an
+// editable value's text does.
+const valueStyle = css({
+  boxSizing: 'border-box', minInlineSize: 0, paddingInline: vars.space[2],
+  borderInline: '1px solid transparent',
 });
+const editStyle = css({ flex: '1 1 auto' });
+// A row with its own editor: the value and its Edit button rest on the value line, the open editor
+// replaces both, and the row's error follows either.
+const editorRowStyle = css({ display: 'grid', gap: vars.space[1], flex: '1 1 auto', minInlineSize: 0 });
+const summaryStyle = css({ display: 'flex', alignItems: 'center', gap: vars.space[2], minBlockSize: valueLine, minInlineSize: 0 });
+const summaryValueStyle = css({ flex: '1 1 auto' });
 const editorStyle = css({
-  minInlineSize: 0, maxInlineSize: '100%', padding: vars.space[3],
-  border: `1px solid ${vars.color.border}`, borderRadius: vars.radius.sm,
-  background: vars.color.surfaceInset, '&:focus': focusRingInset,
+  display: 'grid', gap: vars.space[3], minInlineSize: 0, paddingBlock: vars.space[1],
+  borderRadius: vars.radius.sm, '&:focus-visible': focusRingInset,
 });
 
 function isVisible(element: HTMLElement | null): element is HTMLElement {
@@ -309,24 +424,25 @@ function focusDisclosure(triggers: DisclosureScope['triggers']) {
   }
 }
 
-// Remember the last real focus target: removing or hiding focused DOM can leave activeElement at body.
-function useFocusMemory(root: RefObject<HTMLElement | null>, invalidateWithin = false) {
-  const last = useRef<Element | null>(null);
-  const intent = useRef(false);
+// Whether focus last landed in this part's React tree, portaled content included. Hiding or
+// removing the focused element leaves activeElement at body without a focusin, so ownership holds
+// until focus lands elsewhere or a press outside may move it. Spread `claim` as the part's
+// `onFocus` and `onMouseDown`: React dispatches from its root, below the document, so the claim is
+// recorded before the document listener settles the same event.
+function useFocusOwnership(root: RefObject<HTMLElement | null>) {
+  const owned = useRef(false);
+  const claimed = useRef<Event | null>(null);
   useLayoutEffect(() => {
     const element = root.current;
     if (!element) return;
     const doc = element.ownerDocument;
-    last.current = doc.activeElement;
-    const focus = () => {
-      last.current = doc.activeElement;
-      if (invalidateWithin || !element.contains(doc.activeElement)) intent.current = false;
+    owned.current = element.contains(doc.activeElement);
+    const inside = (event: Event) => claimed.current === event || event.composedPath().includes(element);
+    const focus = (event: FocusEvent) => {
+      owned.current = inside(event);
     };
     const press = (event: MouseEvent) => {
-      if (!event.defaultPrevented && (invalidateWithin || !event.composedPath().includes(element))) intent.current = false;
-      if (!event.defaultPrevented && !event.composedPath().includes(element)) {
-        last.current = null;
-      }
+      if (!event.defaultPrevented && !inside(event)) owned.current = false;
     };
     doc.addEventListener('focusin', focus);
     doc.addEventListener('mousedown', press);
@@ -334,12 +450,11 @@ function useFocusMemory(root: RefObject<HTMLElement | null>, invalidateWithin = 
       doc.removeEventListener('focusin', focus);
       doc.removeEventListener('mousedown', press);
     };
-  }, [root, invalidateWithin]);
-  return { last, intent };
-}
-function ownedFocus(element: HTMLElement, last: Element | null) {
-  const active = element.ownerDocument.activeElement;
-  return element.contains(active) || (active === element.ownerDocument.body && last !== null && element.contains(last));
+  }, [root]);
+  const claim = useCallback((event: SyntheticEvent) => {
+    claimed.current = event.nativeEvent;
+  }, []);
+  return { owned, claim };
 }
 
 const tokens = (...values: Array<unknown>): string | undefined => {
@@ -347,18 +462,42 @@ const tokens = (...values: Array<unknown>): string | undefined => {
   return list.join(' ') || undefined;
 };
 
-function EditableDetailsRoot(props: EditableDetailsProps) {
+// A blank string is no value to show, unlike `0` or other renderable content.
+const isEmptyValue = (value: ReactNode) => !isRenderable(value) || (typeof value === 'string' && value.trim() === '');
+
+const isSectionRow =<Context extends {}>(row: EditableDetailsRow<Context>): row is EditableDetailsSectionRow<Context> =>
+  row.children !== undefined;
+const isEditableRow = <Context extends {}>(row: EditableDetailsRow<Context>): row is EditableDetailsEditableRow<Context> =>
+  row.edit !== undefined;
+const isEditorRow = <Context extends {}>(row: EditableDetailsRow<Context>): row is EditableDetailsEditorRow =>
+  row.renderEditor !== undefined;
+type DetailRow<Context extends {}> = EditableDetailsValueRow | EditableDetailsEditableRow<Context> | EditableDetailsEditorRow;
+
+function sectionIds<Context extends {}>(rows: readonly EditableDetailsRow<Context>[]): string[] {
+  return rows.flatMap((row) => (isSectionRow(row) ? [row.id, ...sectionIds(row.children)] : []));
+}
+
+const headingAt = (base: EditableDetailsHeadingLevel, depth: number) =>
+  Math.min(base + depth, MAX_HEADING_LEVEL) as EditableDetailsHeadingLevel;
+
+function EditableDetailsRoot<Context extends {} = true>(props: EditableDetailsProps<Context>) {
   const {
     ref,
     component,
     slots,
     slotProps,
-    messages,
     className,
     style,
     sx,
     'data-ui': consumerDataUi,
-    sections,
+    rows,
+    onSave,
+    messages,
+    expanded: expandedProp,
+    defaultExpanded = 'all',
+    onExpandedChange,
+    headingLevel = DEFAULT_HEADING_LEVEL,
+    emptyValue,
     children,
     ...restProps
   } = props;
@@ -370,114 +509,124 @@ function EditableDetailsRoot(props: EditableDetailsProps) {
   }
 
   const RootPart = slots?.root ?? component ?? 'div';
-  const rootSlot = slotProps?.root;
   const {
-
     className: slotClassName,
     style: slotStyle,
     ref: slotRef,
     sx: slotSx,
     'data-ui': slotDataUi,
     ...slotRest
-  } = rootSlot ?? {};
+  } = slotProps?.root ?? {};
 
   const merged = { ref, ...restProps, ...slotRest };
   const effectiveRef = slotRef ?? ref;
   const mergedStyle = style || slotStyle ? { ...style, ...slotStyle } : undefined;
   const mergedClassName = [slotClassName, className].filter(Boolean).join(' ') || undefined;
 
-  const inherited = useContext(MessagesContext);
-  const text = useMemo(() => ({ ...inherited, ...messages }), [inherited, messages]);
+  // The expansion seed resolves once, like any default.
+  const [expansionSeed] = useState(() =>
+    defaultExpanded === 'all' ? sectionIds(rows ?? []) : defaultExpanded,
+  );
+  const [expandedState, requestExpanded] = useControlledState<readonly string[]>(
+    expandedProp,
+    expansionSeed,
+    onExpandedChange,
+  );
+  const expanded = useMemo(() => new Set(expandedState), [expandedState]);
 
-  let renderedContent: ReactNode;
-  if (sections !== undefined) {
-    const SectionPart = slots?.section ?? EditableDetailsSection;
-    const ListPart = slots?.list ?? EditableDetailsList;
-    const ItemPart = slots?.item ?? EditableDetailsItem;
+  const renderRows = (list: readonly EditableDetailsRow<Context>[], depth: number): ReactNode => {
+    if (!rows || !onSave) return null;
+    const rowSlots = slots as EditableDetailsSlots | undefined;
+    const parts = slotProps as EditableDetailsSlotProps | undefined;
+    const SectionPart = rowSlots?.section ?? EditableDetailsSection;
+    const ListPart = rowSlots?.list ?? EditableDetailsList;
+    const ItemPart = rowSlots?.item ?? EditableDetailsItem;
+    const EditPart = rowSlots?.edit ?? InlineEdit;
+    const text: EditableDetailsMessages = { ...DEFAULT_MESSAGES, ...messages };
 
-    renderedContent = sections.map((section) => {
-      const {
-        value: sectionValue,
-        title: sectionTitle,
-        items: sectionItems,
-        headingLevel: sectionHeadingLevel,
-        open: sectionOpen,
-        defaultOpen: sectionDefaultOpen,
-        onOpenChange: sectionOnOpenChange,
-        triggerRef: sectionTriggerRef,
-        slotProps: sectionItemSlotProps,
-      } = section;
+    const renderItem = (row: DetailRow<Context>) => (
+      <ItemPart key={row.id} {...parts?.item} label={row.label}>
+        {isEditorRow(row) ? (
+          <EditorValue row={row} emptyValue={emptyValue} text={text} />
+        ) : isEditableRow(row) ? (
+          <EditPart
+            variant="body"
+            size="sm"
+            placeholder={emptyValue}
+            {...parts?.edit}
+            label={row.label}
+            value={row.value}
+            onSave={(next) => onSave(next, row)}
+            validate={row.validate}
+            normalize={row.normalize}
+            multiline={row.multiline}
+            inputPlaceholder={row.inputPlaceholder}
+            error={row.error}
+            sx={[editStyle, parts?.edit?.sx]}
+          />
+        ) : (
+          <span css={valueStyle}>{isEmptyValue(row.value) ? emptyValue : row.value}</span>
+        )}
+      </ItemPart>
+    );
 
-      return (
-        <SectionPart
-          key={sectionValue}
-          {...slotProps?.section}
-          triggerRef={sectionTriggerRef ?? slotProps?.section?.triggerRef}
-          title={sectionTitle}
-          headingLevel={sectionHeadingLevel ?? slotProps?.section?.headingLevel}
-          open={sectionOpen !== undefined ? sectionOpen : slotProps?.section?.open}
-          defaultOpen={sectionDefaultOpen !== undefined ? sectionDefaultOpen : slotProps?.section?.defaultOpen}
-          onOpenChange={sectionOnOpenChange ?? slotProps?.section?.onOpenChange}
-          slotProps={sectionItemSlotProps ?? slotProps?.section?.slotProps}
-        >
-          <ListPart {...slotProps?.list}>
-            {sectionItems.map((item) => {
-              const {
-                value: itemValue,
-                label: itemLabel,
-                content: itemContent,
-                renderEditor: itemRenderEditor,
-                open: itemOpen,
-                defaultOpen: itemDefaultOpen,
-                onOpenChange: itemOnOpenChange,
-                slotProps: itemCustomSlotProps,
-              } = item;
-
-              return (
-                <ItemPart
-                  key={itemValue}
-                  {...slotProps?.item}
-                  label={itemLabel}
-                  renderEditor={itemRenderEditor ?? slotProps?.item?.renderEditor}
-                  open={itemOpen !== undefined ? itemOpen : slotProps?.item?.open}
-                  defaultOpen={itemDefaultOpen !== undefined ? itemDefaultOpen : slotProps?.item?.defaultOpen}
-                  onOpenChange={itemOnOpenChange ?? slotProps?.item?.onOpenChange}
-                  slotProps={itemCustomSlotProps ?? slotProps?.item?.slotProps}
-                >
-                  {itemContent}
-                </ItemPart>
-              );
-            })}
-          </ListPart>
-        </SectionPart>
+    // Consecutive value rows share one list; a section row ends it.
+    const output: ReactNode[] = [];
+    let pending: Array<DetailRow<Context>> = [];
+    const flush = () => {
+      if (pending.length === 0) return;
+      output.push(
+        <ListPart key={`list-${pending[0]!.id}`} {...parts?.list}>
+          {pending.map(renderItem)}
+        </ListPart>,
       );
-    });
-  } else {
-    renderedContent = children;
-  }
+      pending = [];
+    };
+    for (const row of list) {
+      if (!isSectionRow(row)) {
+        pending.push(row);
+        continue;
+      }
+      flush();
+      output.push(
+        <SectionPart
+          key={row.id}
+          {...parts?.section}
+          title={row.label}
+          headingLevel={headingAt(headingLevel, depth)}
+          open={expanded.has(row.id)}
+          onOpenChange={(open) =>
+            requestExpanded(open ? [...(expandedState ?? []), row.id] : (expandedState ?? []).filter((id) => id !== row.id))
+          }
+        >
+          {renderRows(row.children, depth + 1)}
+        </SectionPart>,
+      );
+    }
+    flush();
+    return output;
+  };
 
   return (
-    <MessagesContext.Provider value={text}>
-      <WithSx className={mergedClassName} styles={[rootStyle, slotSx]} sx={sx}>
-        {(classes) => (
-          <RootPart
-            {...merged}
-            ref={effectiveRef}
-            style={mergedStyle}
-            className={classes}
-            data-ui={tokens('editable-details', consumerDataUi, slotDataUi)}
-          >
-            {renderedContent}
-          </RootPart>
-        )}
-      </WithSx>
-    </MessagesContext.Provider>
+    <WithSx className={mergedClassName} styles={[rootStyle, slotSx]} sx={sx}>
+      {(classes) => (
+        <RootPart
+          {...merged}
+          ref={effectiveRef}
+          style={mergedStyle}
+          className={classes}
+          data-ui={tokens('editable-details', consumerDataUi, slotDataUi)}
+        >
+          {rows ? renderRows(rows, 0) : children}
+        </RootPart>
+      )}
+    </WithSx>
   );
 }
 EditableDetailsRoot.displayName = 'EditableDetails';
 
 function EditableDetailsSection({
-  ref, title, headingLevel = 3, open: openProp, defaultOpen = false, onOpenChange,
+  ref, title, headingLevel = DEFAULT_HEADING_LEVEL, open: openProp, defaultOpen = false, onOpenChange,
   triggerRef, slotProps, slots, children, className, sx, ...rest
 }: EditableDetailsSectionProps) {
   const [open, requestOpen] = useControlledState(openProp, defaultOpen, onOpenChange);
@@ -486,18 +635,18 @@ function EditableDetailsSection({
   const button = useRef<HTMLButtonElement>(null);
   const mergedTrigger = useMergeRefs([button, triggerRef]);
   const panel = useRef<HTMLDivElement>(null);
-  const memory = useFocusMemory(panel);
+  const focus = useFocusOwnership(panel);
   const id = useId();
   const Heading = slots?.heading ?? HEADINGS[headingLevel];
   const Trigger = slots?.trigger ?? 'button';
   const Panel = slots?.panel ?? 'div';
-  const visible = parent.visible && !!open;
   const triggers = useMemo(() => [button, ...parent.triggers], [parent.triggers]);
-  const scope = useMemo(() => ({ visible, triggers }), [visible, triggers]);
+  const visible = parent.visible && !!open;
+  const scope = useMemo(() => ({ triggers, visible }), [triggers, visible]);
+  // Collapsing a section that holds focus hands it to the nearest visible disclosure.
   useLayoutEffect(() => {
-    const element = panel.current;
-    if (!visible && element && ownedFocus(element, memory.last.current)) focusDisclosure(scope.triggers);
-  }, [visible, scope, memory.last]);
+    if (!open && focus.owned.current) focusDisclosure(scope.triggers);
+  }, [open, scope, focus.owned]);
   return (
     <WithSx className={className} styles={sectionStyle} sx={sx}>
       {(className) => (
@@ -524,6 +673,8 @@ function EditableDetailsSection({
               ref={panel}
               id={`${id}-panel`}
               hidden={!open}
+              onFocus={focus.claim}
+              onMouseDown={focus.claim}
               css={[panelStyle, slotProps?.panel?.sx]}
               className={slotProps?.panel?.className}
               data-ui="editable-details-section-panel"
@@ -547,159 +698,18 @@ function EditableDetailsList({ className, sx, ...rest }: EditableDetailsListProp
 }
 EditableDetailsList.displayName = 'EditableDetails.List';
 
-interface SessionProps {
-  renderEditor: NonNullable<EditableDetailsItemProps['renderEditor']>;
-  labelId: string;
-  hostId: string;
-  part?: EditableDetailsPartProps;
-  component?: EditableDetailsItemSlots['editor'];
-  edit: RefObject<HTMLButtonElement | null>;
-  requestClose: () => void;
-  focusIntent: RefObject<boolean>;
-  acceptedClose: RefObject<boolean>;
-}
-function EditorSession({ renderEditor, labelId, hostId, part, component, edit, requestClose, focusIntent, acceptedClose }: SessionProps) {
-  const Editor = component ?? 'div';
-  const scope = useContext(DisclosureContext);
-  const host = useRef<HTMLDivElement>(null);
-  const target = useRef<HTMLElement | null>(null);
-  const memory = useFocusMemory(host);
-  const alive = useRef(false);
-  const closeRequested = useRef(false);
-  const returnFocus = memory.intent;
-  const initialFocusRef = useCallback<RefCallback<HTMLElement>>((node) => {
-    target.current = node;
-    return () => { if (target.current === node) target.current = null; };
-  }, []);
-  const close = useCallback(() => {
-    if (!alive.current) return;
-    closeRequested.current = true;
-    const element = host.current;
-    returnFocus.current = !!element && ownedFocus(element, memory.last.current);
-    requestClose();
-  }, [requestClose, memory.last, returnFocus]);
-  useLayoutEffect(() => {
-    alive.current = true;
-    const element = host.current;
-    return () => {
-      alive.current = false;
-      if (!element) return;
-      const owned = ownedFocus(element, memory.last.current);
-      queueMicrotask(() => {
-        if (element.isConnected || !owned || element.ownerDocument.activeElement !== element.ownerDocument.body) return;
-        if (acceptedClose.current && closeRequested.current && !returnFocus.current) return;
-        if (returnFocus.current && isVisible(edit.current)) edit.current.focus();
-        else focusDisclosure(scope.triggers);
-      });
-    };
-  }, [acceptedClose, edit, memory.last, returnFocus, scope.triggers]);
-  useLayoutEffect(() => {
-    if (!focusIntent.current) return;
-    focusIntent.current = false;
-    const element = host.current;
-    if (!element || !scope.visible) return;
-    if (isVisible(target.current)) {
-      target.current.focus();
-      if (element.ownerDocument.activeElement === target.current) return;
-    }
-    element.focus();
-  }, [focusIntent, scope.visible]);
-  return (
-    <Editor
-      {...withoutSx(part)}
-      ref={host}
-      id={hostId}
-      role="group"
-      aria-labelledby={labelId}
-      tabIndex={-1}
-      className={part?.className}
-      css={[editorStyle, part?.sx]}
-      data-ui="editable-details-editor"
-    >
-      {renderEditor({ initialFocusRef, complete: close, cancel: close, visible: scope.visible })}
-    </Editor>
-  );
-}
-
-function EditableDetailsItem({
-  ref, label, renderEditor, open: openProp, defaultOpen = false, onOpenChange,
-  children, slotProps, slots, className, sx, ...rest
-}: EditableDetailsItemProps) {
+function EditableDetailsItem({ label, children, slotProps, slots, className, sx, ...rest }: EditableDetailsItemProps) {
   const Label = slots?.label ?? 'dt';
   const Description = slots?.description ?? 'dd';
-  const Summary = slots?.summary ?? 'div';
-  const Edit = slots?.edit ?? 'button';
-  const [open, requestOpen, resetOpen] = useControlledState(openProp, renderEditor ? defaultOpen : false, onOpenChange);
-  const scope = useContext(DisclosureContext);
-  const text = useContext(MessagesContext);
-  const root = useRef<HTMLDivElement>(null);
-  const edit = useRef<HTMLButtonElement>(null);
-  const memory = useFocusMemory(root, true);
-  const wasCapable = useRef(!!renderEditor);
-  const acceptedClose = useRef(false);
-  acceptedClose.current = !open && !!renderEditor;
-  const id = useId();
-  useLayoutEffect(() => {
-    if (wasCapable.current && !renderEditor) {
-      memory.intent.current = false;
-      resetOpen();
-    }
-    wasCapable.current = !!renderEditor;
-  }, [renderEditor, resetOpen, memory.intent]);
-  const recoverRemovedRow = useCallback<RefCallback<HTMLDivElement>>((node) => {
-    root.current = node;
-    return () => {
-      if (node && ownedFocus(node, memory.last.current)) {
-        queueMicrotask(() => {
-          if (!node.isConnected && node.ownerDocument.activeElement === node.ownerDocument.body) focusDisclosure(scope.triggers);
-        });
-      }
-      root.current = null;
-    };
-  }, [memory.last, scope.triggers]);
-  const mergedRef = useMergeRefs([recoverRemovedRow, ref]);
-  const requestClose = useCallback(() => requestOpen(false), [requestOpen]);
-  const editing = !!open && !!renderEditor;
   return (
     <WithSx className={className} styles={itemStyle} sx={sx}>
       {(className) => (
-        <div {...rest} ref={mergedRef} className={className} data-ui="editable-details-item" data-state={editing ? 'open' : 'closed'}>
-          <Label {...withoutSx(slotProps?.label)} id={`${id}-label`} css={[labelStyle, slotProps?.label?.sx]} className={slotProps?.label?.className}>
+        <div {...rest} className={className} data-ui="editable-details-item">
+          <Label {...withoutSx(slotProps?.label)} css={[lineStyle, labelStyle, slotProps?.label?.sx]} className={slotProps?.label?.className}>
             {label}
           </Label>
-          <Description {...withoutSx(slotProps?.description)} css={[descriptionStyle, slotProps?.description?.sx]} className={slotProps?.description?.className}>
-            {editing ? (
-              <EditorSession
-                renderEditor={renderEditor}
-                labelId={`${id}-label`}
-                hostId={`${id}-editor`}
-                part={slotProps?.editor}
-                component={slots?.editor}
-                edit={edit}
-                requestClose={requestClose}
-                focusIntent={memory.intent}
-                acceptedClose={acceptedClose}
-              />
-            ) : (
-              <Summary {...withoutSx(slotProps?.summary)} css={[summaryStyle, slotProps?.summary?.sx]} className={slotProps?.summary?.className}>
-                <div css={valueStyle}>{children}</div>
-                {renderEditor && (
-                  <Edit
-                    {...withoutSx(slotProps?.edit)}
-                    ref={edit}
-                    type="button"
-                    id={`${id}-edit`}
-                    aria-labelledby={`${id}-edit ${id}-label`}
-                    onClick={() => { memory.intent.current = true; requestOpen(true); }}
-                    css={[editStyle, slotProps?.edit?.sx]}
-                    className={slotProps?.edit?.className}
-                    data-ui="editable-details-edit"
-                  >
-                    {text.edit}
-                  </Edit>
-                )}
-              </Summary>
-            )}
+          <Description {...withoutSx(slotProps?.description)} css={[lineStyle, descriptionStyle, slotProps?.description?.sx]} className={slotProps?.description?.className}>
+            {children}
           </Description>
         </div>
       )}
@@ -707,6 +717,138 @@ function EditableDetailsItem({
   );
 }
 EditableDetailsItem.displayName = 'EditableDetails.Item';
+
+type EditorPhase = 'idle' | 'saving' | 'failed';
+type EditorFocusIntent = 'editor' | 'edit';
+
+interface EditorValueProps {
+  row: EditableDetailsEditorRow;
+  emptyValue: ReactNode;
+  text: EditableDetailsMessages;
+}
+
+// The session around a consumer editor. The editor owns its draft and its persistence; the row owns
+// whether it is open, which save is current, the error, and where focus goes on open and close.
+function EditorValue({ row, emptyValue, text }: EditorValueProps) {
+  const [open, setOpen] = useState(false);
+  const [phase, setPhase] = useState<EditorPhase>('idle');
+  const [focusIntent, setFocusIntent] = useState<EditorFocusIntent | null>(null);
+  const { visible } = useContext(DisclosureContext);
+  const root = useRef<HTMLDivElement>(null);
+  const group = useRef<HTMLDivElement>(null);
+  const editButton = useRef<HTMLButtonElement>(null);
+  const initialFocus = useRef<HTMLElement | null>(null);
+  // The save whose settlement still counts; an unmount drops it.
+  const run = useRef<object | null>(null);
+  const focus = useFocusOwnership(root);
+  const errorId = useId();
+
+  useEffect(() => () => {
+    run.current = null;
+  }, []);
+
+  // An intent applies once its state commits: the editor's designated element on open, the Edit
+  // button on close.
+  useLayoutEffect(() => {
+    if (focusIntent === null || (focusIntent === 'editor') !== open) return;
+    setFocusIntent(null);
+    if (focusIntent === 'edit') {
+      editButton.current?.focus();
+      return;
+    }
+    const target = initialFocus.current;
+    if (isVisible(target)) target.focus();
+    if (target?.ownerDocument.activeElement !== target) group.current?.focus();
+  }, [focusIntent, open]);
+
+  const initialFocusRef = useCallback<RefCallback<HTMLElement>>((node) => {
+    initialFocus.current = node;
+    return () => {
+      if (initialFocus.current === node) initialFocus.current = null;
+    };
+  }, []);
+
+  const close = () => {
+    if (focus.owned.current) setFocusIntent('edit');
+    setOpen(false);
+  };
+
+  const submit = (persist: () => void | Promise<unknown>) => {
+    if (run.current !== null) return;
+    const current = {};
+    run.current = current;
+    setPhase('saving');
+    const settle = (ok: boolean) => {
+      if (run.current !== current) return;
+      run.current = null;
+      setPhase(ok ? 'idle' : 'failed');
+      if (ok) close();
+    };
+    // The executor turns a synchronous throw into a rejection.
+    new Promise<unknown>((resolve) => resolve(persist())).then(
+      () => settle(true),
+      () => settle(false),
+    );
+  };
+
+  const cancel = () => {
+    if (run.current !== null) return;
+    setPhase('idle');
+    close();
+  };
+
+  const startEditing = () => {
+    setPhase('idle');
+    setFocusIntent('editor');
+    setOpen(true);
+  };
+
+  const errorContent = isRenderable(row.error) ? row.error : phase === 'failed' ? text.failed : null;
+  const hasError = isRenderable(errorContent);
+  const describedBy = hasError ? errorId : undefined;
+  const pending = phase === 'saving';
+
+  return (
+    <div
+      ref={root}
+      css={editorRowStyle}
+      data-state={open ? 'open' : 'closed'}
+      data-phase={phase}
+      onFocus={focus.claim}
+      onMouseDown={focus.claim}
+    >
+      {open ? (
+        <div
+          ref={group}
+          role="group"
+          aria-label={row.label}
+          aria-busy={pending || undefined}
+          aria-describedby={describedBy}
+          tabIndex={-1}
+          css={editorStyle}
+          data-ui="editable-details-editor"
+        >
+          {row.renderEditor({ initialFocusRef, submit, cancel, pending, errorId: describedBy, visible })}
+        </div>
+      ) : (
+        <div css={summaryStyle}>
+          <span css={[valueStyle, summaryValueStyle]}>{isEmptyValue(row.value) ? emptyValue : row.value}</span>
+          <Button
+            ref={editButton}
+            variant="ghost"
+            size="sm"
+            aria-label={text.editLabel({ label: row.label })}
+            aria-describedby={describedBy}
+            onClick={startEditing}
+          >
+            {text.edit}
+          </Button>
+        </div>
+      )}
+      <FieldError id={errorId}>{errorContent}</FieldError>
+    </div>
+  );
+}
 
 export const EditableDetails = Object.assign(EditableDetailsRoot, {
   Section: EditableDetailsSection, List: EditableDetailsList, Item: EditableDetailsItem,

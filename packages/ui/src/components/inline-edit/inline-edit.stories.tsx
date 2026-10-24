@@ -31,8 +31,9 @@ function sizeFrameTarget(button: HTMLButtonElement | null) {
 }
 
 const sizes = ['sm', 'md', 'lg'] as const;
-const minHeights = { sm: 32, md: 40, lg: 48 };
-const actionSizes = { sm: 24, md: 32, lg: 40 };
+const variants = ['title', 'body'] as const;
+// Button's block size per size, in px: the one height the value, editor and actions share.
+const blockSizes = { sm: parseFloat(base.space[8]), md: parseFloat(base.space[10]), lg: parseFloat(base.space[12]) };
 const Frame = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: 'min(100%, 420px)' });
 const Narrow = styled.div({ inlineSize: '220px' });
 
@@ -113,7 +114,9 @@ const meta = {
 
 - A changed draft calls \`onSave(next)\`. After it resolves, the widget requests \`onValueChange(next)\`, then \`onOpenChange(false)\`. An unchanged draft closes without calling \`onSave\`.
 - The trigger shows the persisted value. Controlled values keep their old text until the parent updates them. Implement optimistic updates outside the widget.
-- A thrown or rejected save keeps the draft open with a status message. Enter or Save retries. If the parent closed the editor during the save, Retry resaves the failed draft.
+- While a returned promise is pending, Save shows a spinner and the status reads \`messages.saving\`.
+- A thrown or rejected save keeps the draft open and shows \`messages.failed\` as the error: the editor is \`aria-invalid\` and described by it. Enter or Save retries; editing the draft clears it. If the parent closed the editor during the save, Retry resaves the failed draft.
+- A parent that writes the saved value before the promise settles (an optimistic update) does not cancel the save.
 - During a save, the editor is read-only and Save/Cancel are inert. An external \`value\` update or unmount discards the pending save; its result requests nothing.
 - \`normalize\` converts the draft; nothing is trimmed by default. A message from \`validate\`, or an \`error\` prop, blocks saving.
 
@@ -408,6 +411,9 @@ export const Keyboard: Story = {
     const saveButton = canvas.getByRole('button', { name: 'Save' });
     const cancelButton = canvas.getByRole('button', { name: 'Cancel' });
     await expect(saveButton).toHaveAttribute('aria-disabled', 'true');
+    // Save is the pending indicator: Button's loading state, spinner and busy.
+    await expect(saveButton).toHaveAttribute('aria-busy', 'true');
+    await expect(cancelButton).toHaveAttribute('aria-disabled', 'true');
     await userEvent.click(saveButton);
     await userEvent.click(cancelButton);
     await expect(onSave).toHaveBeenCalledTimes(1);
@@ -712,8 +718,10 @@ export const Open: Story = {
     for (const name of ['Save', 'Cancel']) {
       const action = canvas.getByRole('button', { name });
       await expect(action).toHaveAttribute('type', 'button');
+      // Actions are the shared Button, square at the editor's block size.
+      await expect(action).toHaveAttribute('data-ui', 'button');
       const box = action.getBoundingClientRect();
-      await expect([box.width, box.height]).toEqual([32, 32]);
+      await expect([box.width, box.height]).toEqual([blockSizes.md, blockSizes.md]);
     }
   },
 };
@@ -800,11 +808,16 @@ export const Failed: Story = {
     const onSave = args.onSave as Spy;
     await userEvent.tab();
     await userEvent.keyboard('{Enter}Zeus{Enter}');
-    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Could not save. Try again.'));
+    // The failure is the editor's error: announced as an alert, wired to the still-open editor.
+    const alert = await canvas.findByRole('alert');
+    await expect(alert).toHaveTextContent('Could not save. Try again.');
     const editor = canvas.getByRole('textbox');
     await expect(rootOf(canvasElement)).toHaveAttribute('data-phase', 'failed');
     await expect(editor).toHaveValue('Zeus');
     await expect(editor).not.toHaveAttribute('readonly');
+    await expect(editor).toHaveAttribute('aria-invalid', 'true');
+    await expect(editor.getAttribute('aria-describedby')!.split(' ')).toContain(alert.id);
+    await expect(statusOf(canvasElement)).toBeEmptyDOMElement();
     await expectFocus(editor);
     // A throwing save fails the same way; Enter tries again with the kept draft.
     onSave.mockImplementation(() => {
@@ -817,6 +830,11 @@ export const Failed: Story = {
     await expect(args.onValueChange).not.toHaveBeenCalled();
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
     await expect(canvas.queryByRole('button', { name: 'Retry save' })).toBeNull();
+    // Editing the draft starts over: the error and the invalid state clear.
+    await userEvent.keyboard('!');
+    await expect(canvas.queryByRole('alert')).toBeNull();
+    await expect(editor).not.toHaveAttribute('aria-invalid');
+    await expect(rootOf(canvasElement)).toHaveAttribute('data-phase', 'idle');
   },
 };
 
@@ -847,7 +865,10 @@ export const Retry: Story = {
     await expect(onSave).toHaveBeenLastCalledWith('');
     await waitFor(() => expect(rootOf(canvasElement)).toHaveAttribute('data-phase', 'failed'));
     await expect(canvas.getByRole('button', { name: 'Retry save' })).toBeVisible();
-    await expect(canvas.getByRole('status')).toHaveTextContent('Could not save. Try again.');
+    await expect(canvas.getByRole('alert')).toHaveTextContent('Could not save. Try again.');
+    await expect(canvas.getByRole('button', { name: 'Edit Project name: Apollo' })).toHaveAccessibleDescription(
+      'Could not save. Try again.',
+    );
     await expect(args.onValueChange).not.toHaveBeenCalled();
   },
 };
@@ -1378,28 +1399,116 @@ export function Summary({ save }: { save: InlineEditProps['onSave'] }) {
 };
 
 export const Sizes: Story = {
-  tags: ['!autodocs'],
-  args: { variant: 'body' },
+  parameters: { docs: {
+    description: { story: 'Each size gives the value, the editor and its Save and Cancel Buttons one shared height.' },
+    source: { language: 'tsx', code: `import { InlineEdit, type InlineEditProps } from '@jfrader/ui';
+
+export function ProjectNames({ save }: { save: InlineEditProps['onSave'] }) {
+  return <>
+    <InlineEdit size="sm" label="Small" defaultValue="Apollo" onSave={save} />
+    <InlineEdit size="md" label="Medium" defaultValue="Apollo" onSave={save} />
+    <InlineEdit size="lg" label="Large" defaultValue="Apollo" onSave={save} />
+  </>;
+}` },
+  } },
   render: (args) => (
     <>
+      {variants.flatMap((variant) =>
+        sizes.map((size) => (
+          <InlineEdit key={`${variant}-${size}`} {...args} variant={variant} size={size} label={`Name ${variant} ${size}`} />
+        )),
+      )}
+      {variants.flatMap((variant) =>
+        sizes.map((size) => (
+          <div key={`open-${variant}-${size}`} data-testid={`open-${variant}-${size}`}>
+            <InlineEdit {...args} variant={variant} size={size} label={`Open ${variant} ${size}`} defaultOpen />
+          </div>
+        )),
+      )}
       {sizes.map((size) => (
-        <InlineEdit key={size} {...args} size={size} label={`Name ${size}`} />
-      ))}
-      {sizes.map((size) => (
-        <InlineEdit key={`open-${size}`} {...args} size={size} label={`Open ${size}`} defaultOpen />
+        <div key={`multiline-${size}`} data-testid={`multiline-${size}`}>
+          <InlineEdit {...args} multiline variant="body" size={size} label={`Notes ${size}`} defaultOpen />
+        </div>
       ))}
     </>
   ),
   play: async ({ canvas }) => {
-    for (const size of sizes) {
-      const trigger = canvas.getByRole('button', { name: new RegExp(`^Edit Name ${size}`) });
-      await expect(trigger.getBoundingClientRect().height).toBeGreaterThanOrEqual(minHeights[size]);
-      const editor = canvas.getByRole('textbox', { name: `Open ${size}` });
-      await expect(editor.getBoundingClientRect().height).toBeGreaterThanOrEqual(minHeights[size]);
-      const save = canvas.getAllByRole('button', { name: 'Save' })[sizes.indexOf(size)]!;
-      const box = save.getBoundingClientRect();
-      await expect([box.width, box.height]).toEqual([actionSizes[size], actionSizes[size]]);
+    for (const variant of variants) {
+      for (const size of sizes) {
+        const height = blockSizes[size];
+        // Resting and editing take the same block, so opening never shifts the row.
+        const trigger = canvas.getByRole('button', { name: new RegExp(`^Edit Name ${variant} ${size}`) });
+        await expect(trigger.getBoundingClientRect().height).toBe(height);
+        // The idle status region adds nothing: the widget is its value's height.
+        await expect(trigger.closest('[data-ui="inline-edit"]')!.getBoundingClientRect().height).toBe(height);
+        const open = within(canvas.getByTestId(`open-${variant}-${size}`));
+        const editor = open.getByRole('textbox').getBoundingClientRect();
+        await expect(editor.height).toBe(height);
+        for (const name of ['Save', 'Cancel']) {
+          const action = open.getByRole('button', { name });
+          await expect(action).toHaveAttribute('data-ui', 'button');
+          const box = action.getBoundingClientRect();
+          await expect([box.width, box.height]).toEqual([height, height]);
+          await expect(box.top).toBe(editor.top);
+        }
+      }
     }
+    // A multiline editor grows; its actions keep the size's block and sit on its first line.
+    for (const size of sizes) {
+      const open = within(canvas.getByTestId(`multiline-${size}`));
+      const editor = open.getByRole('textbox').getBoundingClientRect();
+      await expect(editor.height).toBeGreaterThanOrEqual(blockSizes[size]);
+      const save = open.getByRole('button', { name: 'Save' }).getBoundingClientRect();
+      await expect(save.height).toBe(blockSizes[size]);
+      await expect(save.top).toBe(editor.top);
+    }
+  },
+};
+
+/** The parent writes the saved value before the save resolves, then the save settles. */
+function OptimisticField(props: InlineEditProps & { persist: (next: string) => Promise<void> }) {
+  const { persist, ...rest } = props;
+  const [value, setValue] = useState('Apollo');
+  return (
+    <InlineEdit
+      {...rest}
+      defaultValue={undefined}
+      value={value}
+      onSave={async (next) => {
+        setValue(next);
+        await persist(next);
+      }}
+    />
+  );
+}
+OptimisticField.displayName = 'OptimisticInlineEdit';
+
+export const OptimisticSave: Story = {
+  tags: ['!autodocs'],
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { InlineEdit } from '@jfrader/ui';
+
+export function ProjectName({ persist }: { persist: (next: string) => Promise<void> }) {
+  const [name, setName] = useState('Apollo');
+  return <InlineEdit label="Project name" value={name}
+    onSave={async next => { setName(next); await persist(next); }} />;
+}` } } },
+  args: { onOpenChange: fn() },
+  render: (args) => {
+    const save = args.onSave as Spy;
+    return <OptimisticField {...args} persist={(next) => save(next) as Promise<void>} />;
+  },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const pending = deferred();
+    (args.onSave as Spy).mockImplementation(() => pending.promise);
+    await userEvent.tab();
+    await userEvent.keyboard('{Enter}Zeus{Enter}');
+    // The optimistic value lands while the save is pending; the save is still in flight.
+    await expect(rootOf(canvasElement)).toHaveAttribute('data-phase', 'saving');
+    pending.resolve();
+    await expectFocus(await canvas.findByRole('button', { name: 'Edit Project name: Zeus' }));
+    await expect(rootOf(canvasElement)).toHaveAttribute('data-phase', 'saved');
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
   },
 };
 
@@ -1548,7 +1657,7 @@ export const FalsyNodes: Story = {
     for (const name of ['Save', 'Cancel']) {
       const action = canvas.getByRole('button', { name });
       await expect(action).toBeEmptyDOMElement();
-      await expect(action.getBoundingClientRect().width).toBe(32);
+      await expect(action.getBoundingClientRect().width).toBe(blockSizes.md);
     }
     const ids = Array.from(canvasElement.querySelectorAll('[id]'), (node) => node.id);
     await expect(new Set(ids).size).toBe(ids.length);
