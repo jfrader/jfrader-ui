@@ -14,24 +14,31 @@ Call `resync()` when applying a server snapshot. It cancels active and pending m
 
 ```tsx filename="poker.tsx"
 import { useState } from 'react';
+import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
 import { Button } from '@jfrader/ui/button';
 import { FlightProvider, useFlights } from '@jfrader/ui/flights';
 import { PokerTable, type PokerTablePlayer } from '@jfrader/ui/poker-table';
+
+const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto' });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
 
 function PokerSurface({ players }: { players: readonly PokerTablePlayer[] }) {
   const flights = useFlights();
   const [pot, setPot] = useState(100);
   return <>
-    <Button onClick={() => flights.deal()}>Deal</Button>
-    <Button onClick={() => {
-      const from = players[0]?.key;
-      if (from === undefined) return;
-      setPot(current => current + 25);
-      const transfer = flights.sendChips({ from, amount: 25 });
-      void transfer.result.then(outcome => console.log(outcome.status));
-    }}>Bet 25</Button>
-    <Button onClick={() => flights.resync()}>Resync</Button>
-    <PokerTable title="Poker" players={players} pot={pot} />
+    <Stage><PokerTable title="Poker" players={players} pot={pot} /></Stage>
+    <Controls>
+      <Button onClick={() => flights.deal()}>Deal</Button>
+      <Button onClick={() => {
+        const from = players[0]?.key;
+        if (from === undefined) return;
+        setPot(current => current + 25);
+        const transfer = flights.sendChips({ from, amount: 25 });
+        void transfer.result.then(outcome => console.log(outcome.status));
+      }}>Bet 25</Button>
+      <Button onClick={() => flights.resync()}>Resync</Button>
+    </Controls>
   </>;
 }
 export function Poker({ players }: { players: readonly PokerTablePlayer[] }) {

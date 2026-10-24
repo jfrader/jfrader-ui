@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { styled } from '../../index';
+import { vars } from '@jfrader/tokens/vars';
 import { Button } from '../button';
 import { FlightProvider, useFlights } from '../flights';
 import { expectInside } from '../../testing/geometry-assertions';
@@ -19,6 +20,7 @@ const DocsStage = styled.div({
   blockSize: 720,
   marginInline: 'auto',
 });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
 
 const card = (id: string, label: string, suit: string, rank: string | number): TrucoTableCard => ({
   id,
@@ -177,41 +179,12 @@ const landed = async (document: Document) => waitFor(() => expect(flights(docume
 
 function FlightControlsExample() {
   const flights = useFlights();
-  return <><Button onClick={() => flights.deal()}>Deal hand</Button>
-    <DocsStage><TrucoTable players={SEATS.map(player => ({ ...player, hiddenCards: player.isMe ? 0 : 3 }))} title="Truco" hand={HAND}
+  return <>
+    <DocsStage data-flight-stage><TrucoTable players={SEATS.map(player => ({ ...player, hiddenCards: player.isMe ? 0 : 3 }))} title="Truco" hand={HAND}
       /></DocsStage>
+    <Controls><Button onClick={() => flights.deal()}>Deal hand</Button></Controls>
   </>;
 }
-export const FlightControls: Story = {
-  name: 'Flight controls', render: () => <FlightProvider><FlightControlsExample /></FlightProvider>,
-  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
-import { Button } from '@jfrader/ui/button';
-import { FlightProvider, useFlights } from '@jfrader/ui/flights';
-import { TrucoTable, type TrucoTableCard } from '@jfrader/ui/truco-table';
-
-const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 720, marginInline: 'auto' });
-const players = [
-  { key: 'alex', name: 'Alex', teamIdx: 0, hiddenCards: 3 },
-  { key: 'blair', name: 'Blair', teamIdx: 1, hiddenCards: 3 },
-  { key: 'you', name: 'You', teamIdx: 0, isMe: true },
-  { key: 'drew', name: 'Drew', teamIdx: 1, hiddenCards: 3 },
-];
-const hand: TrucoTableCard[] = [
-  { id: 'seven-swords', label: 'Seven of swords', value: { suit: 'espadas', rank: 7 } },
-  { id: 'ace-golds', label: 'Ace of golds', value: { suit: 'oros', rank: 1 } },
-  { id: 'three-cups', label: 'Three of cups', value: { suit: 'copas', rank: 3 } },
-];
-function TrucoSurface() {
-  const flights = useFlights();
-  return <><Button onClick={() => flights.deal()}>Deal hand</Button>
-    <Stage><TrucoTable players={players} title="Truco" hand={hand} /></Stage>
-  </>;
-}
-export function Truco() {
-  return <FlightProvider><TrucoSurface /></FlightProvider>;
-}` } } },
-};
-
 export const TrucoTrick: Story = {
   name: 'Truco trick',
   parameters: {
@@ -401,6 +374,45 @@ export default function Example() {
     await expect(table!.querySelectorAll('[data-ui="game-hand"] [data-ui~="game-card"]')).toHaveLength(3);
   },
 };
+
+export const FlightControls: Story = {
+  name: 'Flight controls', render: () => <FlightProvider><FlightControlsExample /></FlightProvider>,
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { Button } from '@jfrader/ui/button';
+import { FlightProvider, useFlights } from '@jfrader/ui/flights';
+import { TrucoTable, type TrucoTableCard } from '@jfrader/ui/truco-table';
+
+const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 720, marginInline: 'auto' });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
+const players = [
+  { key: 'alex', name: 'Alex', teamIdx: 0, hiddenCards: 3 },
+  { key: 'blair', name: 'Blair', teamIdx: 1, hiddenCards: 3 },
+  { key: 'you', name: 'You', teamIdx: 0, isMe: true },
+  { key: 'drew', name: 'Drew', teamIdx: 1, hiddenCards: 3 },
+];
+const hand: TrucoTableCard[] = [
+  { id: 'seven-swords', label: 'Seven of swords', value: { suit: 'espadas', rank: 7 } },
+  { id: 'ace-golds', label: 'Ace of golds', value: { suit: 'oros', rank: 1 } },
+  { id: 'three-cups', label: 'Three of cups', value: { suit: 'copas', rank: 3 } },
+];
+function TrucoSurface() {
+  const flights = useFlights();
+  return <>
+    <Stage><TrucoTable players={players} title="Truco" hand={hand} /></Stage>
+    <Controls><Button onClick={() => flights.deal()}>Deal hand</Button></Controls>
+  </>;
+}
+export function Truco() {
+  return <FlightProvider><TrucoSurface /></FlightProvider>;
+}` } } },
+  play: async ({ canvas, canvasElement }) => {
+    const stage = canvasElement.querySelector('[data-flight-stage]')!;
+    await expect(canvas.getByRole('button', { name: 'Deal hand' }).getBoundingClientRect().top)
+      .toBeGreaterThanOrEqual(stage.getBoundingClientRect().bottom);
+  },
+};
+
 
 export const EmptyCommands: Story = {
   name: 'Empty commands',

@@ -55,11 +55,11 @@ function Status() { const { busy } = useCardFlightStatus(); return <StatusOutput
 function QueueExample() {
   const flights = useFlights();
   return <>
-    <Controls><Button onClick={() => flights.deal()}>Deal hand</Button><StatusOutput aria-label="Flight status">{flights.busy ? 'Flying' : 'Ready'}</StatusOutput></Controls>
-    <CardFlights><CustomStage>
+    <CardFlights><CustomStage data-flight-stage>
       <CardFlights.Deck><GameCard label="Deck" /></CardFlights.Deck>
       <CardFlights.Target kind="hand" cardId="ace"><GameCard value={cards[0]!.value} label={cards[0]!.label} /></CardFlights.Target>
     </CustomStage></CardFlights>
+    <Controls><Button onClick={() => flights.deal()}>Deal hand</Button><StatusOutput aria-label="Flight status">{flights.busy ? 'Flying' : 'Ready'}</StatusOutput></Controls>
   </>;
 }
 
@@ -72,9 +72,6 @@ function MatchTree({ plays, controls, onPlay, onBurst, onDeal, onResync, onClear
   const own = plays.filter((play) => play.playerKey === 'own');
   const rival = plays.filter((play) => play.playerKey === 'rival');
   return <>
-    <Controls><Button onClick={onDeal}>Deal hand</Button><Button onClick={onClear}>Clear plays</Button>
-      {controls === 'full' && <><Button onClick={onResync}>Resync board</Button><Button onClick={onBurst}>Play all</Button></>}
-      <Status /></Controls>
     <Board><GameTable places={2} seats={seats}>
       <GameTable.Seat slotKey="rival"><GameHand.Hidden count={cards.length - rival.length} label="Rival hand" /></GameTable.Seat>
       <GameTable.Dock><ResponsiveHand cards={cards.filter((card) => !own.some((play) => play.cardId === card.id))}
@@ -83,6 +80,9 @@ function MatchTree({ plays, controls, onPlay, onBurst, onDeal, onResync, onClear
         <GameCardStack.Pile playerKey={seat.key} label={`${seat.key} pile`} visible={3} cards={plays.filter((play) => play.playerKey === seat.key)} />
       </GameTable.Play>)}
     </GameTable></Board>
+    <Controls><Button onClick={onDeal}>Deal hand</Button><Button onClick={onClear}>Clear plays</Button>
+      {controls === 'full' && <><Button onClick={onResync}>Resync board</Button><Button onClick={onBurst}>Play all</Button></>}
+      <Status /></Controls>
   </>;
 }
 
@@ -128,11 +128,11 @@ function CustomPlay() {
     setPlayed((value) => !value);
   };
   return <>
-    <Controls><Button onClick={toggle}>{played ? 'Return card' : 'Play card'}</Button><Status /></Controls>
     <CustomStage>
       <Slot><SlotLabel>Hand</SlotLabel>{!played && <CardFlights.Target ref={hand} kind="hand" cardId="custom"><GameCard {...required(cards[0])} /></CardFlights.Target>}</Slot>
       <Slot><SlotLabel>Play</SlotLabel>{played && <CardFlights.Target kind="play" cardId="custom"><GameCard {...required(cards[0])} /></CardFlights.Target>}</Slot>
     </CustomStage>
+    <Controls><Button onClick={toggle}>{played ? 'Return card' : 'Play card'}</Button><Status /></Controls>
   </>;
 }
 
@@ -191,11 +191,6 @@ function MatchSurface() {
   ]);
   return <div ref={setHost}><ThemeRoot theme="dark" portalContainer={host}><DemoTheme>
     <CardFlights forehand="rival">
-      <Controls>
-        <Button onClick={() => { setPlays([]); flights.deal(); }}>Deal hand</Button>
-        <Button onClick={() => setPlays([])}>Clear plays</Button>
-        <FlightStatus />
-      </Controls>
       <Board><GameTable places={2} seats={seats}>
         <GameTable.Seat slotKey="rival">
           <GameHand.Hidden count={cards.length - rival.length} label="Rival hand" />
@@ -209,6 +204,11 @@ function MatchSurface() {
             cards={plays.filter(play => play.playerKey === seat.key)} />
         </GameTable.Play>)}
       </GameTable></Board>
+      <Controls>
+        <Button onClick={() => { setPlays([]); flights.deal(); }}>Deal hand</Button>
+        <Button onClick={() => setPlays([])}>Clear plays</Button>
+        <FlightStatus />
+      </Controls>
     </CardFlights>
   </DemoTheme></ThemeRoot></div>;
 }
@@ -239,47 +239,6 @@ Flights are decorative and hidden from assistive technology. Select a hand card 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const FlightControls: Story = {
-  name: 'Flight controls', render: () => <FlightProvider><QueueExample /></FlightProvider>,
-  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
-import { vars } from '@jfrader/tokens/vars';
-import { Button } from '@jfrader/ui/button';
-import { CardFlights } from '@jfrader/ui/card-flights';
-import { GameCard } from '@jfrader/ui/game-card';
-import { FlightProvider, useFlights } from '@jfrader/ui/flights';
-
-const Controls = styled.div({ display: 'flex', justifyContent: 'center', gap: vars.space[2], padding: vars.space[3] });
-const Stage = styled.div({ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: vars.space[8], minBlockSize: 320 });
-const Output = styled.output({ color: vars.color.text, background: vars.color.bg });
-function CardSurface() {
-  const flights = useFlights();
-  return <>
-    <Controls><Button onClick={() => flights.deal()}>Deal hand</Button>
-      <Output aria-label="Flight status">{flights.busy ? 'Flying' : 'Ready'}</Output></Controls>
-    <CardFlights><Stage>
-      <CardFlights.Deck><GameCard label="Deck" /></CardFlights.Deck>
-      <CardFlights.Target kind="hand" cardId="ace">
-        <GameCard value={{ deck: 'french', suit: 'spades', rank: 'A' }} label="Ace of spades" />
-      </CardFlights.Target>
-    </Stage></CardFlights>
-  </>;
-}
-export function Cards() {
-  return <FlightProvider><CardSurface /></FlightProvider>;
-}` } } },
-};
-
-function mockMotion(reduced = false) {
-  const original = window.matchMedia.bind(window);
-  return spyOn(window, 'matchMedia').mockImplementation((query) => query === '(prefers-reduced-motion: reduce)'
-    ? { ...original(query), matches: reduced, media: query, onchange: null, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => true }
-    : original(query));
-}
-const flights = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>('[data-ui="card-flight"]')];
-const landed = async (root: HTMLElement) => waitFor(() => expect(flights(root)).toHaveLength(0));
-function required<T>(value: T | null | undefined): T { if (value == null) throw new Error('Missing measured card'); return value; }
-
-/** Deal from the table centre, then confirm a local card and receive a rival reply. */
 export const ComposedBoard: Story = {
   name: 'Deal and play at a table',
   parameters: { docs: { description: { story: 'Press Deal hand to deal both hands from the table center. Select a card, press Play selected, and watch the rival reply land in its pile.' } } },
@@ -323,6 +282,54 @@ export const ComposedBoard: Story = {
 };
 
 /** Play into a custom node without a GameCardStack. */
+
+export const FlightControls: Story = {
+  name: 'Flight controls', render: () => <FlightProvider><QueueExample /></FlightProvider>,
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { Button } from '@jfrader/ui/button';
+import { CardFlights } from '@jfrader/ui/card-flights';
+import { GameCard } from '@jfrader/ui/game-card';
+import { FlightProvider, useFlights } from '@jfrader/ui/flights';
+
+const Controls = styled.div({ display: 'flex', justifyContent: 'center', gap: vars.space[2], padding: vars.space[3] });
+const Stage = styled.div({ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: vars.space[8], minBlockSize: 320 });
+const Output = styled.output({ color: vars.color.text, background: vars.color.bg });
+function CardSurface() {
+  const flights = useFlights();
+  return <>
+    <CardFlights><Stage>
+      <CardFlights.Deck><GameCard label="Deck" /></CardFlights.Deck>
+      <CardFlights.Target kind="hand" cardId="ace">
+        <GameCard value={{ deck: 'french', suit: 'spades', rank: 'A' }} label="Ace of spades" />
+      </CardFlights.Target>
+    </Stage></CardFlights>
+    <Controls><Button onClick={() => flights.deal()}>Deal hand</Button>
+      <Output aria-label="Flight status">{flights.busy ? 'Flying' : 'Ready'}</Output></Controls>
+  </>;
+}
+export function Cards() {
+  return <FlightProvider><CardSurface /></FlightProvider>;
+}` } } },
+  play: async ({ canvas, canvasElement }) => {
+    const stage = required(canvasElement.querySelector('[data-flight-stage]'));
+    await expect(canvas.getByRole('button', { name: 'Deal hand' }).getBoundingClientRect().top)
+      .toBeGreaterThanOrEqual(stage.getBoundingClientRect().bottom);
+  },
+};
+
+function mockMotion(reduced = false) {
+  const original = window.matchMedia.bind(window);
+  return spyOn(window, 'matchMedia').mockImplementation((query) => query === '(prefers-reduced-motion: reduce)'
+    ? { ...original(query), matches: reduced, media: query, onchange: null, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => true }
+    : original(query));
+}
+const flights = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>('[data-ui="card-flight"]')];
+const landed = async (root: HTMLElement) => waitFor(() => expect(flights(root)).toHaveLength(0));
+function required<T>(value: T | null | undefined): T { if (value == null) throw new Error('Missing measured card'); return value; }
+
+/** Deal from the table centre, then confirm a local card and receive a rival reply. */
+
 export const CustomTarget: Story = {
   name: 'Custom origin and status',
   render: () => <CustomMatch />,
@@ -364,10 +371,6 @@ function CustomPlay() {
     setPlayed(value => !value);
   };
   return <>
-    <Controls>
-      <Button onClick={toggle}>{played ? 'Return card' : 'Play card'}</Button>
-      <FlightStatus />
-    </Controls>
     <Board>
       <Slot>
         <SlotLabel>Hand</SlotLabel>
@@ -378,6 +381,10 @@ function CustomPlay() {
         {played && <CardFlights.Target kind="play" cardId="custom"><GameCard {...ace} /></CardFlights.Target>}
       </Slot>
     </Board>
+    <Controls>
+      <Button onClick={toggle}>{played ? 'Return card' : 'Play card'}</Button>
+      <FlightStatus />
+    </Controls>
   </>;
 }
 
@@ -491,13 +498,13 @@ function DeckProbe() {
   const [busy, setBusy] = useState(false);
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   return <div ref={setHost}><ThemeRoot theme="dark" portalContainer={host}>
-    <Controls><Button onClick={() => flights.deal()}>Deal custom</Button>
-      <Button onClick={() => setShow(false)}>Remove board</Button><StatusOutput aria-label="Reported status">{busy ? 'Flying' : 'Ready'}</StatusOutput></Controls>
     {show && <CardFlights onBusyChange={setBusy}><CustomBoard>
       <CardFlights.Deck><GameCard label="Deck" /></CardFlights.Deck>
       <CardFlights.Target kind="hand" cardId="custom"><GameCard label="Custom hand" /></CardFlights.Target>
       <CardFlights.Target kind="seat" seatKey="rival" index={0}><GameCard label="Custom rival" /></CardFlights.Target>
     </CustomBoard></CardFlights>}
+    <Controls><Button onClick={() => flights.deal()}>Deal custom</Button>
+      <Button onClick={() => setShow(false)}>Remove board</Button><StatusOutput aria-label="Reported status">{busy ? 'Flying' : 'Ready'}</StatusOutput></Controls>
   </ThemeRoot></div>;
 }
 
@@ -506,14 +513,16 @@ function OriginPlay() {
   const source = useRef<HTMLDivElement>(null);
   const [played, setPlayed] = useState(false);
   return <>
-    <Controls>
+    <CustomBoard>
       <div ref={source}><GameCard {...required(cards[0])} /></div>
+      {played && <CardFlights.Target kind="play" cardId="custom-origin">
+        <GameCard {...required(cards[0])} />
+      </CardFlights.Target>}
+    </CustomBoard>
+    <Controls>
       <Button onClick={() => { if (source.current) remember?.('custom-origin', source.current); setPlayed(true); }}>Play with origin</Button>
       <Status />
     </Controls>
-    {played && <CustomBoard><CardFlights.Target kind="play" cardId="custom-origin">
-      <GameCard {...required(cards[0])} />
-    </CardFlights.Target></CustomBoard>}
   </>;
 }
 
@@ -611,18 +620,18 @@ function BoardRevealFixture() {
   const flights = useFlights();
   const [revealed, setRevealed] = useState(0);
   return <DemoTheme><CardFlights>
-    <Controls>
-      <Button onClick={() => setRevealed((count) => Math.min(boardCards.length, count + 1))}>Reveal card</Button>
-      <Button onClick={() => { setRevealed(0); flights.resync(); }}>Reset board</Button>
-      <Button onClick={() => { setRevealed((count) => Math.min(boardCards.length, count + 1)); flights.deal(); }}>Deal and reveal</Button>
-      <Status />
-    </Controls>
     <CustomBoard>
       <CardFlights.Deck><GameCard size="sm" label="Deck" /></CardFlights.Deck>
       {boardCards.slice(0, revealed).map((card) => <CardFlights.Target key={card.id} kind="board" cardId={card.id}>
         <GameCard size="sm" {...card} />
       </CardFlights.Target>)}
     </CustomBoard>
+    <Controls>
+      <Button onClick={() => setRevealed((count) => Math.min(boardCards.length, count + 1))}>Reveal card</Button>
+      <Button onClick={() => { setRevealed(0); flights.resync(); }}>Reset board</Button>
+      <Button onClick={() => { setRevealed((count) => Math.min(boardCards.length, count + 1)); flights.deal(); }}>Deal and reveal</Button>
+      <Status />
+    </Controls>
   </CardFlights></DemoTheme>;
 }
 

@@ -22,6 +22,7 @@ const DocsStage = styled.div({
   marginInline: 'auto',
 });
 const NarrowStage = styled(DocsStage)({ inlineSize: 390, blockSize: 844 });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
 
 const pokerCard = (id: string, label: string, suit: string, rank: string | number): PokerTableCard => ({
   id,
@@ -190,7 +191,7 @@ const meta = {
       description: {
         component: 'Lay out a poker table with seats, stacks, hole cards, a community board, an event line, and commands.',
       },
-      sections: [{ title: 'Hooks', stories: ['FlightControls'] }, { title: 'Chip transfers', stories: ['ChipTransfer'] }, { title: 'The pot', stories: ['Pot'] }, { title: 'A hand', stories: ['PokerHand'] }],
+      sections: [{ title: 'A hand', stories: ['PokerHand'] }, { title: 'Hooks', stories: ['FlightControls'] }, { title: 'Chip transfers', stories: ['ChipTransfer'] }, { title: 'The pot', stories: ['Pot'] }],
       usage: `### When to use
 Use PokerTable for a Hold'em-style table with seats, stacks, hidden or revealed cards, a pot, a community board, and a command bar. The component is presentational: it renders the state you pass and reports commands through the action items' \`onSelect\`. It depicts the pot total you supply using \`denominations\` and never computes that total. Betting rules, turn order, hand ranking, and card values belong to your application.
 
@@ -228,178 +229,11 @@ const TRANSFER_PLAYERS: readonly PokerTablePlayer[] = [
 function FlightControlsExample() {
   const flights = useFlights();
   const [pot, setPot] = useState(30);
-  return <><Button onClick={() => { setPot(current => current + 60); flights.sendChips({ from: 'you', amount: 60 }); }}>Raise 60</Button>
-    <DocsStage><PokerTable players={TRANSFER_PLAYERS} title="Texas Hold'em" pot={pot} /></DocsStage>
+  return <>
+    <DocsStage data-flight-stage><PokerTable players={TRANSFER_PLAYERS} title="Texas Hold'em" pot={pot} /></DocsStage>
+    <Controls><Button onClick={() => { setPot(current => current + 60); flights.sendChips({ from: 'you', amount: 60 }); }}>Raise 60</Button></Controls>
   </>;
 }
-export const FlightControls: Story = {
-  name: 'Flight controls', render: () => <FlightProvider><FlightControlsExample /></FlightProvider>,
-  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
-import { styled } from '@jfrader/ui';
-import { Button } from '@jfrader/ui/button';
-import { FlightProvider, useFlights } from '@jfrader/ui/flights';
-import { PokerTable } from '@jfrader/ui/poker-table';
-
-const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto' });
-const players = [
-  { key: 'you', name: 'You', chips: 1500, isMe: true },
-  { key: 'blair', name: 'Blair', chips: 980 },
-];
-function PokerSurface() {
-  const flights = useFlights();
-  const [pot, setPot] = useState(30);
-  return <><Button onClick={() => {
-      setPot(current => current + 60);
-      flights.sendChips({ from: 'you', amount: 60 });
-    }}>Raise 60</Button>
-    <Stage><PokerTable players={players} title="Texas Hold'em" pot={pot} /></Stage></>;
-}
-export function Poker() {
-  return <FlightProvider><PokerSurface /></FlightProvider>;
-}` } } },
-};
-function TransferExample() {
-  const flights = useFlights();
-  const [pot, setPot] = useState(30);
-  return <><Button onClick={() => { setPot(current => current + 60); flights.sendChips({ from: 'you', amount: 60 }); }}>Raise 60</Button>
-    <TransferStage><PokerTable players={TRANSFER_PLAYERS} title="Texas Hold'em" pot={pot} locale="en-US" /></TransferStage>
-  </>;
-}
-const transferActivity = fn((_busy: boolean) => {});
-export const ChipTransfer: Story = {
-  name: 'Chip transfer', args: { onBusyChange: transferActivity },
-  render: args => <FlightProvider onBusyChange={args.onBusyChange}><TransferExample /></FlightProvider>,
-  parameters: { docs: { source: { code: `import { useState } from 'react';
-import { styled } from '@jfrader/ui';
-import { vars } from '@jfrader/tokens/vars';
-import { PokerTable } from '@jfrader/ui/poker-table';
-import { Button } from '@jfrader/ui/button';
-import { FlightProvider, useFlights } from '@jfrader/ui/flights';
-
-const Stage = styled.div({
-  inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto',
-  '& [data-game-surface]': { background: \`radial-gradient(ellipse at center, transparent, color-mix(in srgb, \${vars.color.chipInk} 70%, transparent)), repeating-linear-gradient(25deg, transparent 0 2px, color-mix(in srgb, \${vars.color.chipSpot} 3%, transparent) 2px 3px), color-mix(in srgb, \${vars.color.chipGreen} 35%, \${vars.color.chipInk})\` },
-});
-const players = [
-  { key: 'you', name: 'You', chips: 1500, isMe: true },
-  { key: 'blair', name: 'Blair', chips: 980 },
-];
-function PokerSurface() {
-  const flights = useFlights();
-  const [pot, setPot] = useState(30);
-  return <><Button onClick={() => {
-        setPot(current => current + 60);
-        flights.sendChips({ from: 'you', amount: 60 });
-      }}>Raise 60</Button>
-    <Stage><PokerTable players={players} title="Texas Hold'em" pot={pot} locale="en-US" /></Stage>
-  </>;
-}
-export default function Example() {
-  return <FlightProvider><PokerSurface /></FlightProvider>;
-}` } } },
-  play: async ({ canvasElement, userEvent }) => {
-    const idle = () => new Promise<void>(resolve => { transferActivity.mockImplementation((busy: boolean) => { if (!busy) resolve(); }); });
-    const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
-    const raise = within(canvasElement).getByRole('button', { name: 'Raise 60' });
-    const firstLanding = idle();
-    await userEvent.click(raise);
-    await waitFor(() => expect(table.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
-    await expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot30');
-    await firstLanding;
-    await landed(table.ownerDocument);
-    await waitFor(() => expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot90'));
-    const batchLanding = idle();
-    await userEvent.click(raise);
-    const oldLayer = table.ownerDocument.querySelector('[data-ui="chip-flight"]');
-    await userEvent.click(raise);
-    await expect(oldLayer?.isConnected).toBe(true);
-    await batchLanding;
-    await expect(oldLayer?.isConnected).toBe(false);
-    await landed(table.ownerDocument);
-    await waitFor(() => expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot210'));
-  },
-};
-
-export const Pot: Story = {
-  args: { pot: 1886, board: BOARD, locale: 'en-US', denominations: [1, 25, 1000, 5, 100, 500] },
-  render: args => <DocsStage><PokerTable {...args} /></DocsStage>,
-  parameters: { docs: { source: { code: `import { styled } from '@jfrader/ui';
-import { PokerTable, type PokerTableCard } from '@jfrader/ui/poker-table';
-
-const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto' });
-const players = [
-  { key: 'alex', name: 'Alex', chips: 1240 },
-  { key: 'blair', name: 'Blair', chips: 980, dealer: true },
-  { key: 'you', name: 'You', chips: 1500, isMe: true },
-  { key: 'drew', name: 'Drew', chips: 760 },
-  { key: 'emery', name: 'Emery', chips: 2100 },
-  { key: 'frankie', name: 'Frankie', chips: 640 },
-];
-const board: PokerTableCard[] = [
-  { id: 'queen-spades', label: 'Queen of spades', value: { suit: 'spades', rank: 'Q' } },
-  { id: 'jack-spades', label: 'Jack of spades', value: { suit: 'spades', rank: 'J' } },
-  { id: 'ten-spades', label: 'Ten of spades', value: { suit: 'spades', rank: 10 } },
-  { id: 'two-hearts', label: 'Two of hearts', value: { suit: 'hearts', rank: 2 } },
-  { id: 'three-diamonds', label: 'Three of diamonds', value: { suit: 'diamonds', rank: 3 } },
-];
-
-<Stage>
-  <PokerTable players={players} title="Texas Hold'em" board={board} pot={1886}
-    denominations={[1, 25, 1000, 5, 100, 500]} locale="en-US" />
-</Stage>` } } },
-  play: async ({ canvasElement }) => {
-    const table = canvasElement.querySelector('[data-ui="poker-table"]')!;
-    const stack = table.querySelector('[data-ui="game-chip-stack"]')!;
-    await expect(stack).toHaveAttribute('aria-hidden', 'true');
-    await expect(stack).not.toHaveAttribute('aria-label');
-    await expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot1,886');
-    const towers = [...stack.querySelectorAll('[data-ui="game-chip-stack-stack"]')];
-    await expect(towers.map(tower => [tower.getAttribute('data-value'), tower.getAttribute('data-count')]))
-      .toEqual([['1000', '1'], ['500', '1'], ['100', '3'], ['25', '3'], ['5', '2'], ['1', '1']]);
-    const surface = table.querySelector('[data-game-surface]')!;
-    await expectInside(table.querySelector('[data-ui="game-table-center"]')!, surface);
-    await expectInside(stack, surface);
-    await expectInside(within(table as HTMLElement).getByRole('group', { name: 'Community cards' }), surface);
-    for (const denominations of [[], [0], [-1], [NaN], [Infinity]]) {
-      await expect(() => renderToString(<PokerTable players={SEATS} title="Poker" denominations={denominations} />))
-        .toThrow(RangeError);
-      await expect(() => renderToString(<PokerTable players={SEATS} title="Poker" denominations={denominations} />))
-        .toThrow('PokerTable denominations must contain at least one positive, finite value.');
-    }
-    for (const pot of [undefined, 0]) {
-      await expect(renderToString(<PokerTable players={SEATS} title="Poker" pot={pot} />)).not.toContain('game-chip-stack');
-    }
-  },
-};
-
-export const FractionalPot: Story = {
-  tags: ['!autodocs'], args: { pot: 0.35, denominations: [0.1, 0.2, 0.1], locale: 'en-US' },
-  render: args => <DocsStage><PokerTable {...args} /></DocsStage>,
-  play: async ({ canvasElement }) => {
-    const table = canvasElement.querySelector('[data-ui="poker-table"]')!;
-    await expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot0.35');
-    await expect([...table.querySelectorAll('[data-ui="game-chip-stack-stack"]')].map(tower => [tower.getAttribute('data-value'), tower.getAttribute('data-count')]))
-      .toEqual([['0.2', '1'], ['0.1', '1']]);
-  },
-};
-
-export const NarrowPot: Story = {
-  tags: ['!autodocs'], args: Pot.args,
-  render: args => <NarrowStage><PokerTable {...args} /></NarrowStage>,
-  play: async ({ canvasElement }) => {
-    const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
-    await expect(table.getBoundingClientRect().width).toBe(390);
-    await expect(table.getBoundingClientRect().height).toBe(844);
-    const surface = table.querySelector('[data-game-surface]')!;
-    const pot = table.querySelector('[data-poker-pot-group]')!;
-    const stack = pot.querySelector('[data-ui="game-chip-stack"]')!;
-    await expectInside(pot, surface);
-    await expectInside(stack, surface);
-    await expectInside(within(table).getByRole('group', { name: 'Community cards' }), surface);
-    for (const tower of stack.querySelectorAll('[data-ui="game-chip-stack-stack"]')) await expectInside(tower, pot);
-  },
-};
-
 export const PokerHand: Story = {
   name: 'Poker hand',
   parameters: {
@@ -612,11 +446,19 @@ export default function Example() {
     await expect(canvas.getByRole('button', { name: 'Call 20' })).toBeVisible();
     await expect(canvas.getByRole('button', { name: 'Raise 60' })).toBeVisible();
     await expect(canvas.getByRole('button', { name: 'Fold' })).toBeVisible();
+    const dock = table!.querySelector<HTMLElement>('[data-ui="game-table-dock"]')!;
+    const center = table!.querySelector<HTMLElement>('[data-ui="game-table-center"]')!.getBoundingClientRect();
+    await expect(dock).not.toBeNull();
+    for (const name of ['Fold', 'Call 20', 'Raise 60']) {
+      await expect(canvas.getByRole('button', { name }).closest('[data-ui="game-table-dock"]')).toBe(dock);
+    }
+    await expect(dock.getBoundingClientRect().top).toBeGreaterThan(center.top + center.height / 2);
 
     await userEvent.click(canvas.getByRole('button', { name: 'Call 20' }));
     await landed(canvasElement.ownerDocument);
     await expect(table!.querySelectorAll('[data-board-card]'), 'flop cards').toHaveLength(3);
     await expect(canvas.getByRole('status')).toHaveTextContent('Flop');
+    await expect(canvas.getByRole('button', { name: 'Check' }).closest('[data-ui="game-table-dock"]')).toBe(dock);
 
     await userEvent.click(canvas.getByRole('button', { name: 'Check' }));
     await landed(canvasElement.ownerDocument);
@@ -658,6 +500,187 @@ export default function Example() {
     await expect(canvas.getByRole('button', { name: 'Call 20' })).toBeVisible();
   },
 };
+
+export const FlightControls: Story = {
+  name: 'Flight controls', render: () => <FlightProvider><FlightControlsExample /></FlightProvider>,
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { Button } from '@jfrader/ui/button';
+import { FlightProvider, useFlights } from '@jfrader/ui/flights';
+import { PokerTable } from '@jfrader/ui/poker-table';
+
+const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto' });
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
+const players = [
+  { key: 'you', name: 'You', chips: 1500, isMe: true },
+  { key: 'blair', name: 'Blair', chips: 980 },
+];
+function PokerSurface() {
+  const flights = useFlights();
+  const [pot, setPot] = useState(30);
+  return <>
+    <Stage><PokerTable players={players} title="Texas Hold'em" pot={pot} /></Stage>
+    <Controls><Button onClick={() => {
+      setPot(current => current + 60);
+      flights.sendChips({ from: 'you', amount: 60 });
+    }}>Raise 60</Button></Controls>
+  </>;
+}
+export function Poker() {
+  return <FlightProvider><PokerSurface /></FlightProvider>;
+}` } } },
+  play: async ({ canvas, canvasElement }) => {
+    const stage = canvasElement.querySelector('[data-flight-stage]')!;
+    await expect(canvas.getByRole('button', { name: 'Raise 60' }).getBoundingClientRect().top)
+      .toBeGreaterThanOrEqual(stage.getBoundingClientRect().bottom);
+  },
+};
+function TransferExample() {
+  const flights = useFlights();
+  const [pot, setPot] = useState(30);
+  return <>
+    <TransferStage><PokerTable players={TRANSFER_PLAYERS} title="Texas Hold'em" pot={pot} locale="en-US" /></TransferStage>
+    <Controls><Button onClick={() => { setPot(current => current + 60); flights.sendChips({ from: 'you', amount: 60 }); }}>Raise 60</Button></Controls>
+  </>;
+}
+const transferActivity = fn((_busy: boolean) => {});
+export const ChipTransfer: Story = {
+  name: 'Chip transfer', args: { onBusyChange: transferActivity },
+  render: args => <FlightProvider onBusyChange={args.onBusyChange}><TransferExample /></FlightProvider>,
+  parameters: { docs: { source: { code: `import { useState } from 'react';
+import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { PokerTable } from '@jfrader/ui/poker-table';
+import { Button } from '@jfrader/ui/button';
+import { FlightProvider, useFlights } from '@jfrader/ui/flights';
+
+const Stage = styled.div({
+  inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto',
+  '& [data-game-surface]': { background: \`radial-gradient(ellipse at center, transparent, color-mix(in srgb, \${vars.color.chipInk} 70%, transparent)), repeating-linear-gradient(25deg, transparent 0 2px, color-mix(in srgb, \${vars.color.chipSpot} 3%, transparent) 2px 3px), color-mix(in srgb, \${vars.color.chipGreen} 35%, \${vars.color.chipInk})\` },
+});
+const Controls = styled.div({ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: vars.space[2], padding: vars.space[3] });
+const players = [
+  { key: 'you', name: 'You', chips: 1500, isMe: true },
+  { key: 'blair', name: 'Blair', chips: 980 },
+];
+function PokerSurface() {
+  const flights = useFlights();
+  const [pot, setPot] = useState(30);
+  return <>
+    <Stage><PokerTable players={players} title="Texas Hold'em" pot={pot} locale="en-US" /></Stage>
+    <Controls><Button onClick={() => {
+        setPot(current => current + 60);
+        flights.sendChips({ from: 'you', amount: 60 });
+      }}>Raise 60</Button></Controls>
+  </>;
+}
+export default function Example() {
+  return <FlightProvider><PokerSurface /></FlightProvider>;
+}` } } },
+  play: async ({ canvasElement, userEvent }) => {
+    const idle = () => new Promise<void>(resolve => { transferActivity.mockImplementation((busy: boolean) => { if (!busy) resolve(); }); });
+    const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
+    const raise = within(canvasElement).getByRole('button', { name: 'Raise 60' });
+    const firstLanding = idle();
+    await userEvent.click(raise);
+    await waitFor(() => expect(table.ownerDocument.querySelector('[data-ui="chip-flight-layer"]')).not.toBeNull());
+    await expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot30');
+    await firstLanding;
+    await landed(table.ownerDocument);
+    await waitFor(() => expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot90'));
+    const batchLanding = idle();
+    await userEvent.click(raise);
+    const oldLayer = table.ownerDocument.querySelector('[data-ui="chip-flight"]');
+    await userEvent.click(raise);
+    await expect(oldLayer?.isConnected).toBe(true);
+    await batchLanding;
+    await expect(oldLayer?.isConnected).toBe(false);
+    await landed(table.ownerDocument);
+    await waitFor(() => expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot210'));
+  },
+};
+
+export const Pot: Story = {
+  args: { pot: 1886, board: BOARD, locale: 'en-US', denominations: [1, 25, 1000, 5, 100, 500] },
+  render: args => <DocsStage><PokerTable {...args} /></DocsStage>,
+  parameters: { docs: { source: { code: `import { styled } from '@jfrader/ui';
+import { PokerTable, type PokerTableCard } from '@jfrader/ui/poker-table';
+
+const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 640, marginInline: 'auto' });
+const players = [
+  { key: 'alex', name: 'Alex', chips: 1240 },
+  { key: 'blair', name: 'Blair', chips: 980, dealer: true },
+  { key: 'you', name: 'You', chips: 1500, isMe: true },
+  { key: 'drew', name: 'Drew', chips: 760 },
+  { key: 'emery', name: 'Emery', chips: 2100 },
+  { key: 'frankie', name: 'Frankie', chips: 640 },
+];
+const board: PokerTableCard[] = [
+  { id: 'queen-spades', label: 'Queen of spades', value: { suit: 'spades', rank: 'Q' } },
+  { id: 'jack-spades', label: 'Jack of spades', value: { suit: 'spades', rank: 'J' } },
+  { id: 'ten-spades', label: 'Ten of spades', value: { suit: 'spades', rank: 10 } },
+  { id: 'two-hearts', label: 'Two of hearts', value: { suit: 'hearts', rank: 2 } },
+  { id: 'three-diamonds', label: 'Three of diamonds', value: { suit: 'diamonds', rank: 3 } },
+];
+
+<Stage>
+  <PokerTable players={players} title="Texas Hold'em" board={board} pot={1886}
+    denominations={[1, 25, 1000, 5, 100, 500]} locale="en-US" />
+</Stage>` } } },
+  play: async ({ canvasElement }) => {
+    const table = canvasElement.querySelector('[data-ui="poker-table"]')!;
+    const stack = table.querySelector('[data-ui="game-chip-stack"]')!;
+    await expect(stack).toHaveAttribute('aria-hidden', 'true');
+    await expect(stack).not.toHaveAttribute('aria-label');
+    await expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot1,886');
+    const towers = [...stack.querySelectorAll('[data-ui="game-chip-stack-stack"]')];
+    await expect(towers.map(tower => [tower.getAttribute('data-value'), tower.getAttribute('data-count')]))
+      .toEqual([['1000', '1'], ['500', '1'], ['100', '3'], ['25', '3'], ['5', '2'], ['1', '1']]);
+    const surface = table.querySelector('[data-game-surface]')!;
+    await expectInside(table.querySelector('[data-ui="game-table-center"]')!, surface);
+    await expectInside(stack, surface);
+    await expectInside(within(table as HTMLElement).getByRole('group', { name: 'Community cards' }), surface);
+    for (const denominations of [[], [0], [-1], [NaN], [Infinity]]) {
+      await expect(() => renderToString(<PokerTable players={SEATS} title="Poker" denominations={denominations} />))
+        .toThrow(RangeError);
+      await expect(() => renderToString(<PokerTable players={SEATS} title="Poker" denominations={denominations} />))
+        .toThrow('PokerTable denominations must contain at least one positive, finite value.');
+    }
+    for (const pot of [undefined, 0]) {
+      await expect(renderToString(<PokerTable players={SEATS} title="Poker" pot={pot} />)).not.toContain('game-chip-stack');
+    }
+  },
+};
+
+export const FractionalPot: Story = {
+  tags: ['!autodocs'], args: { pot: 0.35, denominations: [0.1, 0.2, 0.1], locale: 'en-US' },
+  render: args => <DocsStage><PokerTable {...args} /></DocsStage>,
+  play: async ({ canvasElement }) => {
+    const table = canvasElement.querySelector('[data-ui="poker-table"]')!;
+    await expect(table.querySelector('[data-poker-pot]')).toHaveTextContent('Pot0.35');
+    await expect([...table.querySelectorAll('[data-ui="game-chip-stack-stack"]')].map(tower => [tower.getAttribute('data-value'), tower.getAttribute('data-count')]))
+      .toEqual([['0.2', '1'], ['0.1', '1']]);
+  },
+};
+
+export const NarrowPot: Story = {
+  tags: ['!autodocs'], args: Pot.args,
+  render: args => <NarrowStage><PokerTable {...args} /></NarrowStage>,
+  play: async ({ canvasElement }) => {
+    const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
+    await expect(table.getBoundingClientRect().width).toBe(390);
+    await expect(table.getBoundingClientRect().height).toBe(844);
+    const surface = table.querySelector('[data-game-surface]')!;
+    const pot = table.querySelector('[data-poker-pot-group]')!;
+    const stack = pot.querySelector('[data-ui="game-chip-stack"]')!;
+    await expectInside(pot, surface);
+    await expectInside(stack, surface);
+    await expectInside(within(table).getByRole('group', { name: 'Community cards' }), surface);
+    for (const tower of stack.querySelectorAll('[data-ui="game-chip-stack-stack"]')) await expectInside(tower, pot);
+  },
+};
+
 
 export const EmptyCommands: Story = {
   name: 'Empty commands',
