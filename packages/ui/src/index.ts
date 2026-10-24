@@ -99,6 +99,7 @@ export * from './components/sortable-data-table';
 export * from './components/spinner';
 export * from './components/split-button';
 export * from './components/stack';
+export * from './components/status-dot';
 export * from './components/stepper';
 export * from './components/streaming-caret';
 export * from './components/stretch-refresh';

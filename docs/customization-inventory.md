@@ -8,9 +8,9 @@ composed modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **170**; public callable parts: **188**.
-- Families exposing `slots.root`: **119**; remaining without a family-level root slot: **51** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **131**; remaining without family-level interior slots: **39** (includes components without generated anatomy).
+- Public callable families: **171**; public callable parts: **188**.
+- Families exposing `slots.root`: **119**; remaining without a family-level root slot: **52** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **131**; remaining without family-level interior slots: **40** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -339,6 +339,7 @@ panel material. The section has no background, border or radius to migrate.
 | [SplitButton.Separator](../packages/ui/src/components/split-button/split-button.tsx) | — | — | — | — | — | — |
 | [SplitButton.Trigger](../packages/ui/src/components/split-button/split-button.tsx) | — | — | — | — | — | — |
 | [Stack](../packages/ui/src/components/stack/stack.tsx) | — | — | — | — | — | — |
+| [StatusDot](../packages/ui/src/components/status-dot/status-dot.tsx) | — | — | — | — | — | — |
 | [Stepper](../packages/ui/src/components/stepper/stepper.tsx) | — | `caption`, `connector`, `description`, `head`, `item`, `label`, `list`, `marker`, `root` | `caption`, `connector`, `description`, `head`, `item`, `label`, `list`, `marker`, `root` | — | — | — |
 | [StreamingCaret](../packages/ui/src/components/streaming-caret/streaming-caret.tsx) | — | — | — | — | — | — |
 | [StretchRefresh](../packages/ui/src/components/stretch-refresh/stretch-refresh.tsx) | — | `empty`, `feed`, `header`, `indicator`, `item`, `list`, `refreshButton`, `status`, `subtitle`, `title` | `empty`, `feed`, `header`, `indicator`, `item`, `list`, `refreshButton`, `status`, `subtitle`, `title` | — | — | — |

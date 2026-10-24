@@ -5,6 +5,7 @@ import { expectAligned } from '../../testing/geometry-assertions';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { Button } from '../button';
+import { ShareSheet } from '../share-sheet';
 import { Surface } from '../surface';
 import { ShareAccess, type ShareAccessMember } from './index';
 
@@ -51,14 +52,19 @@ const meta = {
       sections: [
         { title: 'People and permissions', stories: ['Default', 'PendingInvite', 'EmptyMembers'] },
         { title: 'Link sharing', stories: ['LinkAccess'] },
+        { title: 'Choosing a sharing surface', stories: ['ShareAccessOrShareSheet'] },
       ],
       description: {
         component:
           'Invite people to a document, change their roles, and choose who can use its link.',
       },
-      usage: `### Invitations
+      usage: `### When to use
+- Use ShareAccess where people manage a document's access over time: who has it, with which role, and whether the link works for anyone.
+- Use ShareSheet to send a link once to a few people or channels. It keeps no member list and no roles.
+
+### Invitations
 - Owners cannot be changed or removed. Persist invitations in your app; no network calls or permission enforcement are included. A rejected invitation preserves the draft. When controlling members, reflect invited email addresses in the member list to clear submitted chips.
-- Undo remains available until dismissed and inserts the removed person around their surviving neighbours.
+- Undo remains available until dismissed and inserts the removed person around their surviving neighbors.
 
 ### Keyboard and accessibility
 
@@ -125,15 +131,38 @@ export const Default: Story = {
       Math.abs(ownerRow.getBoundingClientRect().height - memberRow.getBoundingClientRect().height),
     ).toBeLessThanOrEqual(1);
 
+    // Rows share one grid: names, the role column and the remove column line up across rows.
+    const part = (row: HTMLElement, name: string) =>
+      row.querySelector<HTMLElement>(`:scope > [data-part="${name}"]`)!;
+    await expectAligned([part(ownerRow, 'role'), part(memberRow, 'role')], 'left');
+    await expectAligned(
+      [...rows].map((row) => row.querySelector<HTMLElement>(':scope > span:nth-child(2)')!),
+      'left',
+    );
+    const owner = within(ownerRow).getByText('Owner');
+    await expect(within(ownerRow).queryByRole('button')).not.toBeInTheDocument();
+    await expect(within(ownerRow).queryByRole('combobox')).not.toBeInTheDocument();
+    await expect(owner).toBeVisible();
+
     const role = within(memberRow).getByRole('combobox', { name: 'Role for Sam Lee' });
+    const remove = within(memberRow).getByRole('button', { name: 'Remove Sam Lee' });
     await expect(role).toBeVisible();
-    await expect(role.getBoundingClientRect().height).toBe(40);
+    await expect(role.getBoundingClientRect().right).toBeLessThan(remove.getBoundingClientRect().left);
+    await expect(remove.getBoundingClientRect().width).toBe(32);
+    await expect(remove.getBoundingClientRect().height).toBe(32);
+    await expect(remove.getBoundingClientRect().right).toBeCloseTo(memberRow.getBoundingClientRect().right, 0);
     const roleLabel = memberRow.querySelector<HTMLElement>('[data-ui="select-label"]')!;
     await expect(roleLabel.parentElement!.getBoundingClientRect().width).toBeLessThanOrEqual(1);
+    await expect(within(memberRow).getByText('sam@example.com')).toBeVisible();
 
+    // The link controls sit after the people, under their own heading and rule.
+    const people = canvas.getByRole('heading', { name: 'People with access', level: 3 });
+    const general = canvas.getByRole('heading', { name: 'General access', level: 3 });
+    await expect(people.compareDocumentPosition(general) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const access = canvasElement.querySelector<HTMLElement>(
       '[data-ui="select-trigger"][data-share-control="access"]',
     )!;
+    await expect(general.compareDocumentPosition(access) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     await expectAligned([access, access.parentElement!], 'right');
   },
 };
@@ -177,6 +206,12 @@ export const EmptyMembers: Story = {
 </SharePanel>` },
   } },
   args: { defaultValue: [] },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('heading', { name: 'No people added', level: 4 })).toBeVisible();
+    await expect(canvas.getByText('Invite people by name or email.')).toBeVisible();
+    await expect(canvas.queryByRole('list', { name: 'People with access' })).not.toBeInTheDocument();
+  },
 };
 export const PendingInvite: Story = {
   name: 'Pending invitation',
@@ -209,6 +244,68 @@ export const PendingInvite: Story = {
         pending: true,
       },
     ],
+  },
+};
+const SurfaceChoice = styled('div')({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-start',
+  gap: vars.space[6],
+});
+export const ShareAccessOrShareSheet: Story = {
+  name: 'ShareAccess or ShareSheet',
+  parameters: { docs: {
+    description: {
+      story:
+        'Use ShareAccess to manage who keeps access and with which role. Use ShareSheet, behind its Share button, to send the link once.',
+    },
+    source: { language: 'tsx', code: `${sharePanelSource}
+
+<SharePanel>
+  <ShareAccess
+    title="Roadmap"
+    link="https://example.com/roadmap"
+    selfId="owner"
+    defaultValue={[
+      { id: 'owner', name: 'Alex Rivera', email: 'alex@example.com', role: 'owner' },
+      { id: 'editor', name: 'Sam Lee', email: 'sam@example.com', role: 'editor' },
+    ]}
+  />
+</SharePanel>
+<ShareSheet
+  title="Roadmap"
+  link="https://example.com/roadmap"
+  people={[
+    { id: 'jo', name: 'Jo Morgan' },
+    { id: 'jamie', name: 'Jamie Bell' },
+  ]}
+  accessOptions={[
+    { value: 'view', label: 'Can view' },
+    { value: 'comment', label: 'Can comment' },
+  ]}
+/>` },
+  } },
+  render: (args) => (
+    <SurfaceChoice>
+      <SharePanel><ShareAccess {...args} /></SharePanel>
+      <ShareSheet
+        title="Roadmap"
+        link="https://example.com/roadmap"
+        people={[
+          { id: 'jo', name: 'Jo Morgan' },
+          { id: 'jamie', name: 'Jamie Bell' },
+        ]}
+        accessOptions={[
+          { value: 'view', label: 'Can view' },
+          { value: 'comment', label: 'Can comment' },
+        ]}
+      />
+    </SurfaceChoice>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('list', { name: 'People with access' })).toBeVisible();
+    await expect(canvas.getByRole('button', { name: 'Share' })).toHaveAttribute('aria-expanded', 'false');
   },
 };
 export const RTL: Story = { args: { dir: 'rtl', defaultAccess: 'link' } };
@@ -266,6 +363,7 @@ export const KeyboardInvites: Story = {
       }),
     ).toBeVisible();
     await expect(canvas.getByRole('list', { name: 'Invitations' })).toBeEmptyDOMElement();
+    await expectRowsSettled(canvasElement);
   },
 };
 
@@ -304,6 +402,15 @@ export const InviteWithoutRandomUUID: Story = {
       }),
     ).toBeVisible();
     await expect(canvas.getByRole('list', { name: 'Invitations' })).toBeEmptyDOMElement();
+    // Clearing the chips shifts the member list up. Rows spring only when membership changes,
+    // so they move with the list instead of sliding over the link section below.
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+    for (const row of canvasElement.querySelectorAll<HTMLElement>('[data-ui="share-access-member"]')) {
+      await expect(getComputedStyle(row).transform).toBe('none');
+    }
+    await expectRowsSettled(canvasElement);
   },
 };
 
@@ -315,8 +422,12 @@ export const InvalidChip: Story = {
       canvas.getByRole('combobox', { name: 'Name or email' }),
       'not-an-email{Enter}',
     );
+    const chip = within(canvas.getByRole('list', { name: 'Invitations' })).getByRole('listitem');
+    // The chip names its own problem in text, not only with its danger border.
+    await expect(within(chip).getByText('Enter a valid email address.')).toBeVisible();
+    await expect(chip).toHaveAttribute('data-invalid', 'true');
     await userEvent.click(canvas.getByRole('button', { name: 'Invite' }));
-    await expect(canvas.getByText('Enter a valid email address.')).toBeVisible();
+    await expect(canvas.getByRole('alert')).toHaveTextContent('Enter a valid email address.');
     await expect(canvas.getByRole('combobox', { name: 'Name or email' })).toHaveAttribute(
       'aria-invalid',
       'true',
@@ -347,17 +458,60 @@ export const InviteFailure: Story = {
 
 export const RemoveAndUndo: Story = {
   tags: ['!autodocs'],
-  play: async ({ canvasElement, userEvent }) => {
+  args: {
+    defaultValue: [...members, { id: 'viewer', email: 'jo@example.com', name: 'Jo Morgan', role: 'viewer' }],
+    onValueChange: fn(),
+  },
+  play: async ({ canvasElement, userEvent, args }) => {
     const canvas = within(canvasElement);
+    const order = () =>
+      [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="share-access-member"]')].map(
+        (row) => row.dataset.memberId,
+      );
     await expect(
       canvas.queryByRole('button', { name: 'Remove Alex Rivera' }),
     ).not.toBeInTheDocument();
     await userEvent.click(canvas.getByRole('button', { name: 'Remove Sam Lee' }));
+    await expect(order()).toEqual(['owner', 'viewer']);
+    const undoList = canvas.getByRole('list', { name: 'Removed' });
+    await expect(within(undoList).getByText('Sam Lee')).toBeVisible();
     const undo = canvas.getByRole('button', { name: 'Undo' });
     await expect(canvasElement.ownerDocument.activeElement).toBe(undo);
+    await expect(getComputedStyle(undo).outlineStyle).not.toBe('none');
     await userEvent.keyboard('{Enter}');
-    await expect(canvas.getByRole('button', { name: 'Remove Sam Lee' })).toBeVisible();
+    // Undo puts the person back between their old neighbors, with focus on their row.
+    await expect(order()).toEqual(['owner', 'editor', 'viewer']);
+    await expect(canvasElement.ownerDocument.activeElement).toBe(
+      canvas.getByRole('combobox', { name: 'Role for Sam Lee' }),
+    );
     await expect(canvas.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith([
+      members[0],
+      members[1],
+      expect.objectContaining({ id: 'viewer' }),
+    ]);
+  },
+};
+
+export const ChangeRole: Story = {
+  tags: ['!autodocs'],
+  args: { onValueChange: fn() },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const canvas = within(canvasElement);
+    const role = canvas.getByRole('combobox', { name: 'Role for Sam Lee' });
+    await expect(role).toHaveTextContent('Editor');
+    await userEvent.click(role);
+    await userEvent.keyboard('{End}{Enter}');
+    await expect(role).toHaveTextContent('Viewer');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenCalledWith([
+      members[0],
+      { ...members[1], role: 'viewer' },
+    ]);
+    await expect(canvasElement.querySelector('[data-ui="share-access-status"]')).toHaveTextContent(
+      'Updated role for Sam Lee',
+    );
   },
 };
 

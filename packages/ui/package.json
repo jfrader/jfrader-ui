@@ -158,6 +158,7 @@
     "./spinner": { "types": "./src/components/spinner/index.ts", "import": "./src/components/spinner/index.ts" },
     "./split-button": { "types": "./src/components/split-button/index.ts", "import": "./src/components/split-button/index.ts" },
     "./stack": { "types": "./src/components/stack/index.ts", "import": "./src/components/stack/index.ts" },
+    "./status-dot": { "types": "./src/components/status-dot/index.ts", "import": "./src/components/status-dot/index.ts" },
     "./stepper": { "types": "./src/components/stepper/index.ts", "import": "./src/components/stepper/index.ts" },
     "./stretch-refresh": { "types": "./src/components/stretch-refresh/index.ts", "import": "./src/components/stretch-refresh/index.ts" },
     "./surface": { "types": "./src/components/surface/index.ts", "import": "./src/components/surface/index.ts" },

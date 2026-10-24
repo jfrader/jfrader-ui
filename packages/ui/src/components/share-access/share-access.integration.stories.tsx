@@ -54,7 +54,7 @@ export const RootCustomization: Story = {
     await expect(root).toHaveClass('custom-access');
     await expect(root).toHaveAttribute('data-ui', 'share-access');
     await expect(root).toHaveAttribute('aria-describedby', 'inner-description');
-    await expect(canvas.getByRole('heading')).toHaveClass('custom-heading');
+    await expect(canvas.getByRole('heading', { level: 2 })).toHaveClass('custom-heading');
   },
 };
 
@@ -218,7 +218,7 @@ export const IndependentInstances: Story = {
   ),
   play: async ({ canvasElement, userEvent }) => {
     const canvas = within(canvasElement);
-    const headings = canvas.getAllByRole('heading');
+    const headings = canvas.getAllByRole('heading', { level: 2 });
     await expect(new Set(headings.map((heading) => heading.id)).size).toBe(2);
     const fields = canvas.getAllByRole('combobox', { name: 'Name or email' });
     await userEvent.type(fields[0]!, 'jo@example.com{Enter}');
