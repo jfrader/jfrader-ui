@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.12.0 — 2026-10-24
+
 ### Added
 
 - `ChipFlights` owns the chip flight layer; `useChipFlights` sends chips and reports landed, cancelled, or skipped results.
