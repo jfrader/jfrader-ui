@@ -12,7 +12,7 @@
   "dependencies": {
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
-    "@jfrader/react-storydocs": "^0.17.2",
+    "@jfrader/react-storydocs": "^0.18.0",
     "@jfrader/tokens": "workspace:*",
     "@jfrader/ui": "workspace:*",
     "react": "^19.3.0",
