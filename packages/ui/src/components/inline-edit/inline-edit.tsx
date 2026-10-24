@@ -11,8 +11,13 @@
 // Persistence comes before commitment: a changed draft goes through `onSave`, and only a
 // resolved save requests `onValueChange(next)` and then `onOpenChange(false)`. The trigger
 // always shows the persisted value (the controlled prop), never the draft. A failed save keeps
-// the draft open with a status message; one closed by the parent mid-save offers Retry. An
-// external value update or unmount while a save is pending drops that save's settlement.
+// the draft open and reports through the error part, like validation; one closed by the parent
+// mid-save offers Retry. An external value update or unmount while a save is pending drops that
+// save's settlement, unless the update is the value being saved (an optimistic parent).
+//
+// Geometry: one block size per `size`, Button's. The resting value, the single-line editor and
+// the Save/Cancel Buttons all take it, so opening never shifts the row and the actions line up
+// with the field.
 // Keyboard and button saves/cancels return focus to the trigger once the close is accepted, even
 // later, unless focus has moved elsewhere meanwhile; leaving saves never move focus.
 import type { ComponentType } from 'react';
@@ -40,10 +45,12 @@ import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { inputControlStyle } from '../../styling/input-control';
 import { loadingRing } from '../../styling/loading-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import type { SxProps } from '../../styling/sx';
+import { withoutSx, type SxProps } from '../../styling/sx';
+import { touchTargetStyle } from '../../styling/touch-target';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { Button, buttonBlockSizes, type ButtonProps } from '../button/button';
 import { FieldDescription, FieldError } from '../field/field-anatomy';
 import { FieldSlot, type FieldSlots, type FieldParts, type FieldElementProps } from '../field/field-slot';
 
@@ -66,16 +73,21 @@ export interface InlineEditMessages {
   instructions: (context: { multiline: boolean }) => string;
   saving: string;
   saved: string;
+  /** Error shown and announced when `onSave` throws or rejects. */
   failed: string;
 }
 
-export interface InlineEditPartProps {
-  className?: string;
-}
+type ActionPart = 'save' | 'cancel' | 'retry';
 
-export type InlineEditSlotProps = Omit<FieldParts<InlineEditAnatomy>, 'control'> & {
+export type InlineEditSlotProps = Omit<FieldParts<InlineEditAnatomy>, 'control' | ActionPart> & {
   /** Input or textarea control receiving draft edits. Renders an `input` by default, or a `textarea` when `multiline` is true. */
   control?: FieldElementProps<'input'> | FieldElementProps<'textarea'>;
+  /** Save Button. Size, variant and the accessible name stay component-owned. */
+  save?: ButtonProps;
+  /** Cancel Button. Size, variant and the accessible name stay component-owned. */
+  cancel?: ButtonProps;
+  /** Retry Button shown after a save fails with the editor closed. */
+  retry?: ButtonProps;
 };
 
 /** Native editor attributes and handlers. The component sets value, editability and placeholder. */
@@ -97,24 +109,30 @@ type InlineEditAnatomy = {
   trigger: 'button';
   /** Input or textarea control receiving draft edits. Renders an `input` by default, or a `textarea` when `multiline` is true. */
   control: 'input';
-  /** Action button container holding save and cancel buttons. */
+  /** Action container holding the Save and Cancel Buttons. */
   actions: 'div';
-  /** Confirmation button saving the edited value. */
+  /** Button saving the edited value. */
   save: 'button';
-  /** Cancellation button discarding draft changes. */
+  /** Button discarding draft changes. */
   cancel: 'button';
-  /** Retry button re-attempting a failed save request. */
+  /** Button re-attempting a failed save after the editor closed. */
   retry: 'button';
   /** Helper text element displayed below the field. */
   description: 'span';
-  /** Validation error message displayed when invalid. */
+  /** Validation, external or failed-save error displayed when invalid. */
   error: 'span';
   /** Screen-reader live region announcing save status. */
   status: 'span';
 };
-export type InlineEditSlots = Omit<FieldSlots<InlineEditAnatomy>, 'control'> & {
+export type InlineEditSlots = Omit<FieldSlots<InlineEditAnatomy>, 'control' | ActionPart> & {
   /** Input or textarea control receiving draft edits. Renders an `input` by default, or a `textarea` when `multiline` is true. */
   control?: ComponentType<ComponentPropsWithRef<'input'> | ComponentPropsWithRef<'textarea'>>;
+  /** Replaces the Save Button; forwards the Button props and ref it receives. */
+  save?: ComponentType<ButtonProps>;
+  /** Replaces the Cancel Button; forwards the Button props and ref it receives. */
+  cancel?: ComponentType<ButtonProps>;
+  /** Replaces the Retry Button; forwards the Button props and ref it receives. */
+  retry?: ComponentType<ButtonProps>;
 };
 
 export interface InlineEditProps
@@ -131,7 +149,10 @@ export interface InlineEditProps
   defaultOpen?: boolean;
   /** Requests entering or leaving editing mode. */
   onOpenChange?: (open: boolean) => void;
-  /** Saves a changed value. Throw or reject to report a failed save. */
+  /**
+   * Persists a changed value. A returned promise keeps the editor pending until it settles; throw or
+   * reject to keep the editor open with `messages.failed` as its error.
+   */
   onSave: (next: string) => void | Promise<unknown>;
   /** Accessible name of the editor and part of the trigger's name. */
   label: string;
@@ -143,7 +164,7 @@ export interface InlineEditProps
   multiline?: boolean;
   /** Chooses title or body typography. Defaults to `title`. */
   variant?: InlineEditVariant;
-  /** Sets the trigger and editor minimum height. Defaults to `md`. */
+  /** Sets one block size, Button's, for the value, the single-line editor and its actions. Defaults to `md`. */
   size?: InlineEditSize;
   /** Disables editing and saving. Defaults to `false`. */
   disabled?: boolean;
@@ -167,9 +188,9 @@ export interface InlineEditProps
   messages?: Partial<InlineEditMessages>;
   /** Replaces the trigger's decorative pencil icon. */
   editIcon?: ReactNode;
-  /** Replaces the save button's decorative check icon. */
+  /** Replaces the Save Button's decorative check icon. */
   saveIcon?: ReactNode;
-  /** Replaces the cancel button's decorative cross icon. */
+  /** Replaces the Cancel Button's decorative cross icon. */
   cancelIcon?: ReactNode;
   /** Replace the wrapper div; `slots.root` takes precedence. */
   component?: InlineEditSlots['root'];
@@ -194,6 +215,9 @@ const DEFAULT_MESSAGES: InlineEditMessages = {
   saved: 'Saved',
   failed: 'Could not save. Try again.',
 };
+
+type AnnouncedPhase = Extract<InlineEditPhase, 'saving' | 'saved'>;
+const isAnnounced = (phase: InlineEditPhase): phase is AnnouncedPhase => phase === 'saving' || phase === 'saved';
 
 const identity = (draft: string) => draft;
 
@@ -229,17 +253,35 @@ const variantStyles: Record<InlineEditVariant, SerializedStyles> = {
 const fieldBox = {
   boxSizing: 'border-box',
   margin: 0,
-  paddingBlock: vars.space[1],
   paddingInline: vars.space[2],
-  borderRadius: vars.radius.sm,
+  borderRadius: vars.radius.md,
   fontFamily: 'inherit',
-  lineHeight: 'inherit',
+} as const;
+
+// A single line centers in the size's block with tight leading, so a title fits the smallest size.
+// Multiline text keeps body leading and pads its first line instead.
+const lineStyles = {
+  single: css({ paddingBlock: 0, lineHeight: vars.lineHeight.tight }),
+  multi: css({ paddingBlock: vars.space[1], lineHeight: 'inherit' }),
 } as const;
 
 const minBlockStyles: Record<InlineEditSize, SerializedStyles> = {
-  sm: css({ minBlockSize: vars.space[8] }),
-  md: css({ minBlockSize: vars.space[10] }),
-  lg: css({ minBlockSize: vars.space[12] }),
+  sm: css({ minBlockSize: buttonBlockSizes.sm }),
+  md: css({ minBlockSize: buttonBlockSizes.md }),
+  lg: css({ minBlockSize: buttonBlockSizes.lg }),
+};
+
+const blockStyles: Record<InlineEditSize, SerializedStyles> = {
+  sm: css({ blockSize: buttonBlockSizes.sm }),
+  md: css({ blockSize: buttonBlockSizes.md }),
+  lg: css({ blockSize: buttonBlockSizes.lg }),
+};
+
+// Empty triggers and icon actions are square at the size's block.
+const squareStyles: Record<InlineEditSize, SerializedStyles> = {
+  sm: css({ minInlineSize: buttonBlockSizes.sm }),
+  md: css({ minInlineSize: buttonBlockSizes.md }),
+  lg: css({ minInlineSize: buttonBlockSizes.lg }),
 };
 
 const triggerStyle = css({
@@ -270,13 +312,6 @@ const triggerStyle = css({
     '&:hover:not(:disabled):not([aria-disabled="true"])': { borderColor: 'ButtonText' },
   },
 });
-
-// Empty triggers stay square at the size's minimum.
-const triggerSizeStyles: Record<InlineEditSize, SerializedStyles> = {
-  sm: css({ minInlineSize: vars.space[8] }),
-  md: css({ minInlineSize: vars.space[10] }),
-  lg: css({ minInlineSize: vars.space[12] }),
-};
 
 const valueStyle = css({
   minInlineSize: 0,
@@ -322,66 +357,13 @@ const actionsStyle = css({
   flexShrink: 0,
 });
 
-const actionStyle = css({
-  display: 'inline-grid',
-  placeItems: 'center',
-  flexShrink: 0,
-  boxSizing: 'border-box',
-  margin: 0,
-  padding: 0,
-  border: '1px solid transparent',
-  borderRadius: vars.radius.sm,
-  backgroundColor: 'transparent',
-  color: vars.color.textMuted,
-  fontFamily: vars.font.sans,
-  fontSize: vars.textSize.md,
-  fontWeight: vars.fontWeight.regular,
-  cursor: 'pointer',
-  transitionProperty: 'background-color, color',
-  transitionDuration: vars.motion.duration.fast,
-  transitionTimingFunction: vars.motion.easeStandard,
-  '&:hover:not(:disabled):not([aria-disabled="true"])': {
-    backgroundColor: vars.color.surfaceHover,
-    color: vars.color.text,
-  },
-  '&:focus-visible': focusRingOutset,
-  '&:disabled, &[aria-disabled="true"]': { cursor: 'not-allowed', opacity: 0.55 },
-  [REDUCED_MOTION]: { transitionDuration: '0s' },
-  [FORCED_COLORS]: { color: 'ButtonText', borderColor: 'ButtonText' },
-});
-
-const saveStyle = css({
-  backgroundColor: vars.color.accentSoft,
-  color: vars.color.accentText,
-  '&:hover:not(:disabled):not([aria-disabled="true"])': {
-    backgroundColor: vars.color.accentSoftHover,
-    color: vars.color.accentText,
-  },
-});
-
-// Icon actions are square: 24px at sm, 32px by default.
-const actionSizeStyles: Record<InlineEditSize, SerializedStyles> = {
-  sm: css({ inlineSize: vars.space[6], blockSize: vars.space[6] }),
-  md: css({ inlineSize: vars.space[8], blockSize: vars.space[8] }),
-  lg: css({ inlineSize: vars.space[10], blockSize: vars.space[10] }),
+// Save and Cancel are icon-only Buttons of the editor's size, square at its block.
+const iconActionStyle = css({ flexShrink: 0, paddingInline: 0 });
+const iconActionSizeStyles: Record<InlineEditSize, SerializedStyles> = {
+  sm: css({ inlineSize: buttonBlockSizes.sm }),
+  md: css({ inlineSize: buttonBlockSizes.md }),
+  lg: css({ inlineSize: buttonBlockSizes.lg }),
 };
-
-// The actions lane matches the editor's single-line height so the icons center on its first line.
-const actionsSizeStyles: Record<InlineEditSize, SerializedStyles> = {
-  sm: css({ minBlockSize: vars.space[8] }),
-  md: css({ minBlockSize: vars.space[10] }),
-  lg: css({ minBlockSize: vars.space[12] }),
-};
-
-const retryStyle = css({
-  display: 'inline-flex',
-  alignItems: 'center',
-  minBlockSize: vars.space[8],
-  paddingInline: vars.space[3],
-  borderColor: vars.color.borderControl,
-  color: vars.color.text,
-  fontSize: vars.textSize.sm,
-});
 
 const statusStyle = css({
   display: 'inline-flex',
@@ -390,9 +372,10 @@ const statusStyle = css({
   fontSize: vars.textSize.sm,
   fontWeight: vars.fontWeight.regular,
   color: vars.color.textMuted,
+  // An idle live region stays in the accessibility tree but leaves the grid, so the widget is
+  // exactly its value's height.
+  '&:empty': { position: 'absolute' },
 });
-
-const failedStatusStyle = css({ color: vars.color.dangerText });
 
 const glyphStyle = css({
   display: 'inline-flex',
@@ -439,11 +422,38 @@ const crossGlyph = (
   </svg>
 );
 
-const statusGlyphs: Record<Exclude<InlineEditPhase, 'idle'>, ReactNode> = {
+const statusGlyphs: Record<AnnouncedPhase, ReactNode> = {
   saving: <span css={ringStyle} />,
   saved: <span css={savedGlyphStyle}>{checkGlyph}</span>,
-  failed: crossGlyph,
 };
+
+interface ActionProps extends ButtonProps {
+  component?: ComponentType<ButtonProps>;
+  partProps?: ButtonProps;
+}
+
+// Generated actions are Buttons. As in FieldSlot, own props win over `slotProps`, handlers from
+// both run (the part's first), and styles stack own, then the part's `sx`.
+function InlineEditAction({ component: Action = Button, partProps: part, className, sx, ...own }: ActionProps) {
+  const merged: ButtonProps = { ...withoutSx(part), ...own };
+  for (const key of Object.keys(part ?? {})) {
+    if (!/^on[A-Z]/.test(key)) continue;
+    const ownHandler = Reflect.get(own, key);
+    const partHandler = Reflect.get(part!, key);
+    if (typeof partHandler !== 'function') continue;
+    Reflect.set(merged, key, (event: unknown) => {
+      partHandler(event);
+      if (typeof ownHandler === 'function') ownHandler(event);
+    });
+  }
+  return (
+    <Action
+      {...merged}
+      className={[part?.className, className].filter(Boolean).join(' ') || undefined}
+      sx={[sx, part?.sx]}
+    />
+  );
+}
 
 export function InlineEdit({
   ref,
@@ -529,7 +539,7 @@ export function InlineEdit({
   const mergedControlRef = useMergeRefs([controlElement, controlRef]);
   const pointerOpen = useRef(false);
   const composing = useRef(false);
-  const runRef = useRef<object | null>(null);
+  const runRef = useRef<{ next: string } | null>(null);
   const mounted = useRef(false);
   const openRef = useRef(isOpen);
   openRef.current = isOpen;
@@ -557,11 +567,12 @@ export function InlineEdit({
   }, []);
 
   // A persisted value that changes while a save is pending came from outside: that save's
-  // settlement is stale and must not overwrite it.
+  // settlement is stale and must not overwrite it. The value being saved is that save landing
+  // early (an optimistic parent), so the save keeps settling.
   useLayoutEffect(() => {
     if (committedRef.current === committed) return;
     committedRef.current = committed;
-    if (runRef.current === null) return;
+    if (runRef.current === null || runRef.current.next === committed) return;
     runRef.current = null;
     setPhase('idle');
   }, [committed]);
@@ -627,12 +638,12 @@ export function InlineEdit({
   const editable = !disabled && !readOnly;
   const saving = phase === 'saving';
   const hasExternalError = isRenderable(error);
-  const errorContent = hasExternalError ? error : invalid;
+  const errorContent = hasExternalError ? error : (invalid ?? (phase === 'failed' ? text.failed : null));
   const hasError = isRenderable(errorContent);
   const hasDescription = isRenderable(description);
 
   const persist = (next: string, returnFocus: boolean) => {
-    const run = {};
+    const run = { next };
     runRef.current = run;
     setPhase('saving');
     const settle = (ok: boolean) => {
@@ -723,6 +734,11 @@ export function InlineEdit({
     if (!editable || saving) return;
     setDraft(event.currentTarget.value);
     setInvalid(null);
+    // Editing past a failure starts over: the error clears and Retry no longer targets the old draft.
+    if (phase === 'failed') {
+      setPhase('idle');
+      setFailedDraft(null);
+    }
   };
 
   const handleControlKeyDown = (event: KeyboardEvent<ControlElement>) => {
@@ -794,7 +810,16 @@ export function InlineEdit({
     onCompositionEnd: handleCompositionEnd,
   };
   const { rows: _rows, wrap: _wrap, ...inputAttributes } = controlAttributes;
-  const controlCss = [inputControlStyle, controlStyle, variantStyles[variant], minBlockStyles[size]];
+  const line = multiline ? lineStyles.multi : lineStyles.single;
+  const controlCss = [
+    inputControlStyle,
+    controlStyle,
+    variantStyles[variant],
+    line,
+    multiline ? minBlockStyles[size] : blockStyles[size],
+    touchTargetStyle,
+  ];
+  const iconActionCss = [iconActionStyle, iconActionSizeStyles[size]];
 
   return (
     <FieldSlot
@@ -861,48 +886,35 @@ export function InlineEdit({
                 styles={controlCss}
               />
             )}
-            <FieldSlot
-              element="div"
-              component={slots?.actions}
-              slotProps={slotProps?.actions}
-              styles={[actionsStyle, actionsSizeStyles[size]]}
-            >
-              <FieldSlot
-                element="button"
+            <FieldSlot element="div" component={slots?.actions} slotProps={slotProps?.actions} styles={actionsStyle}>
+              <InlineEditAction
                 component={slots?.save}
-                slotProps={slotProps?.save}
-                type="button"
+                partProps={slotProps?.save}
+                variant="soft"
+                tone="accent"
+                size={size}
+                loading={saving}
                 aria-label={text.save}
-                aria-disabled={saving || readOnly || undefined}
+                aria-disabled={readOnly || undefined}
                 disabled={disabled}
+                startIcon={isRenderable(saveIcon) ? saveIcon : undefined}
                 onMouseDown={keepFocus}
                 onClick={() => save(true)}
-                styles={[actionStyle, saveStyle, actionSizeStyles[size]]}
-              >
-                {isRenderable(saveIcon) && (
-                  <span aria-hidden css={iconWrapperStyle}>
-                    {saveIcon}
-                  </span>
-                )}
-              </FieldSlot>
-              <FieldSlot
-                element="button"
+                sx={iconActionCss}
+              />
+              <InlineEditAction
                 component={slots?.cancel}
-                slotProps={slotProps?.cancel}
-                type="button"
+                partProps={slotProps?.cancel}
+                variant="ghost"
+                size={size}
                 aria-label={text.cancel}
                 aria-disabled={saving || readOnly || undefined}
                 disabled={disabled}
+                startIcon={isRenderable(cancelIcon) ? cancelIcon : undefined}
                 onMouseDown={keepFocus}
                 onClick={cancel}
-                styles={[actionStyle, actionSizeStyles[size]]}
-              >
-                {isRenderable(cancelIcon) && (
-                  <span aria-hidden css={iconWrapperStyle}>
-                    {cancelIcon}
-                  </span>
-                )}
-              </FieldSlot>
+                sx={iconActionCss}
+              />
             </FieldSlot>
           </FieldSlot>
         </>
@@ -924,7 +936,7 @@ export function InlineEdit({
             pointerOpen.current = false;
           }}
           onClick={handleTriggerClick}
-          styles={[triggerStyle, variantStyles[variant], minBlockStyles[size], triggerSizeStyles[size]]}
+          styles={[triggerStyle, variantStyles[variant], line, minBlockStyles[size], squareStyles[size], touchTargetStyle]}
         >
           {isEmpty ? (
             // Named by its content, so a visible placeholder is always part of the name.
@@ -949,18 +961,18 @@ export function InlineEdit({
         {errorContent}
       </FieldError>
       {!isOpen && failedDraft !== null && (
-        <FieldSlot
-          element="button"
+        <InlineEditAction
           component={slots?.retry}
-          slotProps={slotProps?.retry}
-          type="button"
-          aria-disabled={saving || !editable || undefined}
+          partProps={slotProps?.retry}
+          variant="outline"
+          size={size}
+          loading={saving}
+          aria-disabled={!editable || undefined}
           disabled={disabled}
           onClick={retry}
-          styles={[actionStyle, retryStyle]}
         >
           {text.retry}
-        </FieldSlot>
+        </InlineEditAction>
       )}
       <FieldSlot
         element="span"
@@ -969,9 +981,9 @@ export function InlineEdit({
         role="status"
         aria-live="polite"
         aria-atomic="true"
-        styles={[statusStyle, phase === 'failed' && failedStatusStyle]}
+        styles={statusStyle}
       >
-        {phase !== 'idle' && (
+        {isAnnounced(phase) && (
           <>
             <span key={phase} aria-hidden css={glyphStyle}>
               {statusGlyphs[phase]}
