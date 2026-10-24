@@ -2,6 +2,8 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { styled } from '../../index';
+import { Button } from '../button';
+import { FlightProvider, useFlights } from '../flights';
 import { expectInside } from '../../testing/geometry-assertions';
 import {
   TrucoTable,
@@ -148,11 +150,13 @@ const meta = {
       description: {
         component: 'Lay out a truco table with teams, hidden hands, the local hand, play piles, a score line, events, and calls.',
       },
-      sections: [{ title: 'A trick', stories: ['TrucoTrick'] }],
+      sections: [{ title: 'A trick', stories: ['TrucoTrick'] }, { title: 'Hooks', stories: ['FlightControls'] }],
       usage: `### When to use
 Use TrucoTable for a two-team trick game with hidden hands, a local hand, one play pile per seat, a score line, and calls. The component is presentational: it renders the state you pass and reports the selected card through \`onPlayIntent\`. Turn order, trick resolution, scoring, card values, and legality belong to your application.
 
-Pass \`deal\` to deal the hands and grow \`plays\` to land cards on the seats. New cards fly from the deck, the local hand, or the seat that played them. \`onBusyChange\` reports flight activity so you can disable calls. The table keeps seats on the felt edge on wide containers and moves them inside the felt on narrow ones so the surface uses the available width.
+Wrap the table and controls in \`FlightProvider\` and call \`useFlights().deal()\`. Grow \`plays\` to land cards on the seats. New cards fly from the deck, the local hand, or the seat that played them. \`onBusyChange\` reports flight activity so you can disable calls. The table keeps seats on the felt edge on wide containers and moves them inside the felt on narrow ones so the surface uses the available width.
+
+See the [Flights guide](https://ui.jfrader.com/#/components/flights) for deal completion, reactive plays, and resync requests.
 
 ### Values and constraints
 
@@ -170,6 +174,43 @@ type Story = StoryObj<typeof meta>;
 
 const flights = (document: Document) => document.querySelectorAll('[data-ui="card-flight"]');
 const landed = async (document: Document) => waitFor(() => expect(flights(document)).toHaveLength(0), { timeout: 4000 });
+
+function FlightControlsExample() {
+  const flights = useFlights();
+  return <><Button onClick={() => flights.deal()}>Deal hand</Button>
+    <DocsStage><TrucoTable players={SEATS.map(player => ({ ...player, hiddenCards: player.isMe ? 0 : 3 }))} title="Truco" hand={HAND}
+      /></DocsStage>
+  </>;
+}
+export const FlightControls: Story = {
+  name: 'Flight controls', render: () => <FlightProvider><FlightControlsExample /></FlightProvider>,
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { Button } from '@jfrader/ui/button';
+import { FlightProvider, useFlights } from '@jfrader/ui/flights';
+import { TrucoTable, type TrucoTableCard } from '@jfrader/ui/truco-table';
+
+const Stage = styled.div({ inlineSize: '100%', maxInlineSize: 640, blockSize: 720, marginInline: 'auto' });
+const players = [
+  { key: 'alex', name: 'Alex', teamIdx: 0, hiddenCards: 3 },
+  { key: 'blair', name: 'Blair', teamIdx: 1, hiddenCards: 3 },
+  { key: 'you', name: 'You', teamIdx: 0, isMe: true },
+  { key: 'drew', name: 'Drew', teamIdx: 1, hiddenCards: 3 },
+];
+const hand: TrucoTableCard[] = [
+  { id: 'seven-swords', label: 'Seven of swords', value: { suit: 'espadas', rank: 7 } },
+  { id: 'ace-golds', label: 'Ace of golds', value: { suit: 'oros', rank: 1 } },
+  { id: 'three-cups', label: 'Three of cups', value: { suit: 'copas', rank: 3 } },
+];
+function TrucoSurface() {
+  const flights = useFlights();
+  return <><Button onClick={() => flights.deal()}>Deal hand</Button>
+    <Stage><TrucoTable players={players} title="Truco" hand={hand} /></Stage>
+  </>;
+}
+export function Truco() {
+  return <FlightProvider><TrucoSurface /></FlightProvider>;
+}` } } },
+};
 
 export const TrucoTrick: Story = {
   name: 'Truco trick',

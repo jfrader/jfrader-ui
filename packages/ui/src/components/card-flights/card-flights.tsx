@@ -11,6 +11,7 @@ import { FLIGHT_GEOMETRY, measureCardBox, type CardBox } from './geometry';
 import type { FlightCard } from './use-card-flights';
 import { assertLegacyFlightEngine, createFlightRegistry, FlightRegistryContext } from './flight-registry';
 import { BusyContext, FlightContext as Context, OriginContext, TreeOwnedContext, useFlightActions } from './flight-context';
+import type { FlightId, FlightOutcome } from '../flights/types';
 
 /** @deprecated Render CardFlights.Target instead. Removed in the next major release. */
 export type CardFlightSpec = {
@@ -33,7 +34,8 @@ interface FlightRecord {
   timer: ReturnType<typeof setTimeout> | null;
   cancel?: () => void;
   start: (cancel: () => void) => void;
-  finish: () => void;
+  finish: (outcome?: FlightOutcome) => void;
+  complete?: (outcome: FlightOutcome) => void;
 }
 
 /** @deprecated Use CardFlights and useCardFlightStatus(). Removed in the next major release. */
@@ -86,7 +88,7 @@ function useFlightReducedMotion() {
   return useSyncExternalStore(store.subscribe, store.snapshot, () => false);
 }
 
-/** @deprecated Use <CardFlights revision={snapshot}> instead. Removed in the next major release. */
+/** @deprecated Use CardFlights and useFlights for snapshot resyncs. Removed in the next major release. */
 export function CardFlightsProvider({ children, scopeRef: externalScopeRef, headless = false, component, slots, slotProps, className, style, sx, ...rest }: CardFlightsProviderProps) {
   const internalScopeRef = useRef<HTMLDivElement>(null);
   const scopeRef = externalScopeRef ?? internalScopeRef;
@@ -114,13 +116,17 @@ export function CardFlightsProvider({ children, scopeRef: externalScopeRef, head
       record.spec.destination.style.setProperty('visibility', record.visibility, record.priority);
     };
     const clear = () => {
-      records.current.forEach(restore);
+      records.current.forEach(record => { restore(record); record.complete?.({ status: 'cancelled' }); });
       records.current.clear();
       origins.current.clear();
     };
     return {
       clear,
-      prune: () => { records.current.forEach((record) => { if (!record.spec.destination.isConnected) record.finish(); }); },
+      prune: () => {
+        let changed = false;
+        records.current.forEach((record, key) => { if (!record.spec.destination.isConnected) { restore(record); records.current.delete(key); record.complete?.({ status: 'cancelled' }); changed = true; } });
+        if (changed) setFlights([...records.current.values()]);
+      },
       reset: () => { clear(); setFlights([]); setResetEpoch((epoch) => epoch + 1); },
       synchronize: (key: string | number | undefined) => {
         if (snapshot && snapshot.key !== key) {
@@ -130,33 +136,45 @@ export function CardFlightsProvider({ children, scopeRef: externalScopeRef, head
         }
         snapshot = { key };
       },
-      launch: (specs: readonly CardFlightSpec[]) => {
-        if (!specs.length) return;
+      launch: (specs: readonly CardFlightSpec[], group?: { id: FlightId; settle: (id: FlightId, outcome: FlightOutcome) => void }) => {
+        const reduced = reducedRef.current || (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        let remaining = specs.length;
+        let outcome: FlightOutcome = { status: 'landed' };
+        const complete = group ? (result: FlightOutcome) => {
+          if (result.status === 'cancelled' || outcome.status === 'landed') outcome = result;
+          if (--remaining === 0) group.settle(group.id, outcome);
+        } : undefined;
+        if (!specs.length) { group?.settle(group.id, { status: 'skipped', reason: 'missing-geometry' }); return; }
         for (const spec of specs) {
           const previous = records.current.get(spec.target);
-          if (previous) { restore(previous); records.current.delete(spec.target); }
-          if (reducedRef.current || spec.durationMs <= 0 || spec.to.width <= 0 || spec.to.height <= 0) continue;
+          if (previous) { restore(previous); records.current.delete(spec.target); previous.complete?.({ status: 'cancelled' }); }
+          if (reduced || spec.durationMs <= 0 || spec.from.width <= 0 || spec.from.height <= 0 || spec.to.width <= 0 || spec.to.height <= 0) {
+            complete?.({ status: 'skipped', reason: reduced ? 'reduced-motion' : 'missing-geometry' });
+            continue;
+          }
           const record: FlightRecord = {
             id: ++nextId.current, spec,
             visibility: spec.destination.style.getPropertyValue('visibility'),
             priority: spec.destination.style.getPropertyPriority('visibility'),
             timer: null,
+            complete,
             start: (cancel) => {
               if (record.timer !== null) clearTimeout(record.timer);
               record.timer = null;
               record.cancel = cancel;
             },
-            finish: () => {
+            finish: (outcome) => {
               if (records.current.get(spec.target) !== record) return;
               restore(record);
               records.current.delete(spec.target);
+              complete?.(outcome ?? (reducedRef.current ? { status: 'skipped', reason: 'reduced-motion' } : { status: 'landed' }));
               setFlights([...records.current.values()]);
             },
           };
           spec.destination.style.setProperty('visibility', 'hidden');
           records.current.set(spec.target, record);
           // Only an unmounted portal has a deadline; mounted flights own their actual landing.
-          record.timer = setTimeout(record.finish, spec.durationMs + (spec.delayMs ?? 0));
+          record.timer = setTimeout(() => record.finish({ status: 'skipped', reason: 'missing-geometry' }), spec.durationMs + (spec.delayMs ?? 0));
         }
         setFlights([...records.current.values()]);
       },

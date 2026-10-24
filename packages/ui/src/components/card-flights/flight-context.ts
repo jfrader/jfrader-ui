@@ -3,13 +3,14 @@
 import { createContext, useContext, type RefObject } from 'react';
 import type { CardFlightSpec } from './card-flights';
 import type { CardBox } from './geometry';
+import type { FlightId, FlightOutcome } from '../flights/types';
 
 export interface CardFlightsContextValue {
   scopeRef: RefObject<HTMLElement | null>;
   reducedMotion: boolean;
   resetEpoch: number;
   landingTargets: ReadonlySet<string>;
-  launch: (specs: readonly CardFlightSpec[]) => void;
+  launch: (specs: readonly CardFlightSpec[], group?: { id: FlightId; settle: (id: FlightId, outcome: FlightOutcome) => void }) => void;
   reset: () => void;
   synchronize: (key: string | number | undefined) => void;
   rememberPlayOrigin: (cardKey: string, elementOrBox: HTMLElement | CardBox) => void;

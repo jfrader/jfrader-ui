@@ -663,6 +663,7 @@ export const UnchangedBoardDoesNotMeasure: Story = {
     }
     const origin = measureCardBox(required(canvasElement.querySelector<HTMLElement>('[data-hand-card="own:0"]')));
     await userEvent.click(canvas.getByRole('button', { name: 'Play without capture' }));
+    await waitFor(() => expect(flights(canvasElement).some(node => node.dataset.flightTarget === 'played:0-own-own:0')).toBe(true));
     await expectOrigin(required(flights(canvasElement)[0]), origin,
       required(canvasElement.querySelector<HTMLElement>('[data-played-key="0-own-own:0"]')));
     await landed(canvasElement);
@@ -742,10 +743,13 @@ export const RealComponentsAndStagger: Story = {
     const scheduledDelays = new Map<string, number>();
     const pendingPaints: string[] = [];
     const prematureFrames = new Map<string, number>();
-    const started = performance.now();
+    const deadline = performance.now() + 5000;
+    let sawFlight = false;
     const sampling = new Promise<void>((resolve) => {
       const frame = () => {
-        for (const node of flights(canvasElement)) {
+        const active = flights(canvasElement);
+        sawFlight ||= active.length > 0;
+        for (const node of active) {
           const track = node.getAnimations()[0];
           const visible = getComputedStyle(node).visibility === 'visible';
           const progress = track?.effect?.getComputedTiming().progress;
@@ -763,7 +767,7 @@ export const RealComponentsAndStagger: Story = {
           }
           if (visible && progress !== null && progress !== undefined && progress > 0 && !departures.has(node.dataset.flightTarget!)) departures.set(node.dataset.flightTarget!, performance.now());
         }
-        if (performance.now() - started < 1000) requestAnimationFrame(frame);
+        if ((!sawFlight || active.length > 0) && performance.now() < deadline) requestAnimationFrame(frame);
         else resolve();
       };
       requestAnimationFrame(frame);
@@ -785,6 +789,7 @@ export const RealComponentsAndStagger: Story = {
     await landed(canvasElement);
     const hiddenOrigin = measureCardBox(required([...canvasElement.querySelectorAll<HTMLElement>('[data-seat-hidden-card="rival"]')].at(-1)));
     await userEvent.click(canvas.getByRole('button', { name: 'Play rival' }));
+    await waitFor(() => expect(flights(canvasElement).some(node => node.dataset.flightTarget === 'played:0-rival-rival:0')).toBe(true));
     await expectOrigin(required(flights(canvasElement)[0]), hiddenOrigin,
       required(canvasElement.querySelector<HTMLElement>('[data-played-key="0-rival-rival:0"]')));
     await landed(canvasElement);

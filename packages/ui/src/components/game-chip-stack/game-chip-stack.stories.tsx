@@ -15,8 +15,8 @@ const meta = {
   args: { chips: [{ value: 5, count: 5 }], locale: 'en-US', size: 'xl' },
   parameters: { docs: {
     description: { component: 'Show blinds, bets, and pots as towers of casino chips.' },
-    usage: 'The stack is decorative unless you supply a label. Put the real total in the surrounding pot or seat text, or in the image label, even when the visible chips are capped. Counts are nonnegative safe integers. Empty stacks render nothing.\n\nWrap your endpoints and controls in `ChipFlights`, then call `send` from `useChipFlights()` with the element refs. The provider owns the flight layer. The promise resolves with a landed, cancelled, or skipped status.',
-    sections: [{ title: 'Chips in motion', stories: ['SendChipsToThePot'] }, { title: 'Bets and pots', stories: ['Pot', 'BetLine', 'StackHeights', 'Capped'] }, { title: 'View and scale', stories: ['Flat', 'Sizes', 'Light'] }],
+    usage: 'The stack is decorative unless you supply a label. Put the real total in the surrounding pot or seat text, or in the image label, even when the visible chips are capped. Counts are nonnegative safe integers. Empty stacks render nothing.\n\nWrap your endpoints and controls in `ChipFlights`, then call `send` from `useChipFlights()` with the element refs. The provider owns the flight layer. The promise resolves with a landed, cancelled, or skipped status. Use `FlightProvider` and `useFlights` for serial table transfers and pot holds. See the [Flights guide](https://ui.jfrader.com/#/components/flights) for the provider and low-level hook contracts.',
+    sections: [{ title: 'Chips in motion', stories: ['SendChipsToThePot'] }, { title: 'Hooks', stories: ['ChipFlightHook'] }, { title: 'Bets and pots', stories: ['Pot', 'BetLine', 'StackHeights', 'Capped'] }, { title: 'View and scale', stories: ['Flat', 'Sizes', 'Light'] }],
   } },
 } satisfies Meta<typeof GameChipStack>;
 export default meta;
@@ -258,6 +258,55 @@ function Transfer() {
     await userEvent.click(canvas.getByRole('button', { name: 'Send chips' }));
     await userEvent.click(canvas.getByRole('button', { name: 'Cancel flight' }));
     await expect(canvas.getByRole('status')).toHaveTextContent('cancelled');
+  },
+};
+function HookDemo() {
+  const from = useRef<HTMLSpanElement>(null);
+  const to = useRef<HTMLSpanElement>(null);
+  const { send, busy } = useChipFlights();
+  const [outcome, setOutcome] = useState('Ready');
+  return <Flex direction="column" gap="md" align="center">
+    <Flex gap="lg" align="end">
+      <GameChipStack ref={from} chips={[{ value: 25, count: 1 }]} size="md" label="Source 25" />
+      <GameChipStack ref={to} chips={[{ value: 5, count: 1 }]} size="md" label="Pot 5" />
+    </Flex>
+    <Button disabled={busy} onClick={async () => {
+      if (!from.current || !to.current) return;
+      const result = await send({ from: from.current, to: to.current, chips: [{ value: 5, count: 1 }], size: 'md' });
+      setOutcome(result.reason ? `${result.status} (${result.reason})` : result.status);
+    }}>Send 5</Button>
+    <span role="status">{busy ? 'In flight' : outcome}</span>
+  </Flex>;
+}
+export const ChipFlightHook: Story = {
+  name: 'Read the send result',
+  render: () => <ChipFlights><HookDemo /></ChipFlights>,
+  parameters: { docs: { source: { code: `import { useRef, useState } from 'react';
+import { ChipFlights, GameChipStack, useChipFlights } from '@jfrader/ui/game-chip-stack';
+import { Button } from '@jfrader/ui/button';
+import { Flex } from '@jfrader/ui/flex';
+
+function SendFive() {
+  const from = useRef<HTMLSpanElement>(null), to = useRef<HTMLSpanElement>(null);
+  const { send, busy } = useChipFlights();
+  const [outcome, setOutcome] = useState('Ready');
+  return <Flex direction="column" gap="md" align="center">
+    <Flex gap="lg" align="end">
+      <GameChipStack ref={from} chips={[{ value: 25, count: 1 }]} size="md" label="Source 25" />
+      <GameChipStack ref={to} chips={[{ value: 5, count: 1 }]} size="md" label="Pot 5" />
+    </Flex>
+    <Button disabled={busy} onClick={async () => {
+      if (!from.current || !to.current) return;
+      const result = await send({ from: from.current, to: to.current, chips: [{ value: 5, count: 1 }], size: 'md' });
+      setOutcome(result.reason ? \`\${result.status} (\${result.reason})\` : result.status);
+    }}>Send 5</Button>
+    <span role="status">{busy ? 'In flight' : outcome}</span>
+  </Flex>;
+}
+<ChipFlights><SendFive /></ChipFlights>` } } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole('button', { name: 'Send 5' }));
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('landed'), { timeout: 4000 });
   },
 };
 export const ProviderUnmount: Story = {

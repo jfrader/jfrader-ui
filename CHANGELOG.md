@@ -35,6 +35,22 @@
 - `LinkPreview`'s site icon renders as an image instead of an uncoloured circle.
 - `Timeline`'s connector centre matches the marker centre and its group headings align with the event content column.
 - `RadialMenu`'s satellites use icons instead of text characters.
+## 0.14.0 — 2026-10-24
+
+### Added
+
+- `FlightProvider` and `useFlights` in `@jfrader/ui/flights` own deals, chip transfers, and resyncs with completion handles. The Flights guide covers outcomes, card groups, serial chip transfers, and custom surfaces.
+
+### Deprecated
+
+- `deal` and `revision` on `CardFlights`, `PokerTable`, and `TrucoTable`, plus `PokerTable.chipTransfer` and `PokerTable.potFrom`, are replaced by `useFlights` calls inside `FlightProvider`. They remain supported for one minor release and warn in development.
+
+## 0.13.0 — 2026-10-24
+
+### Changed
+
+- Breaking pre-1.0 `ToastStack` cleanup: the expand button above the pile is gone. The stack fans out on hover, on focus, and on a tap, a card swipes right to dismiss, and the pile casts one shadow while collapsed. `expandLabel`, `collapseLabel`, `slots.toggle` and `slotProps.toggle` are removed; Alt+T only moves focus into the stack, which collapses again when focus leaves.
+- `Toast` no longer marks a closing card `aria-hidden`: a card leaves the accessibility tree through `inert` as soon as it is tucked behind the pile or starts closing, and it announces the first time it is readable.
 
 ## 0.12.0 — 2026-10-24
 

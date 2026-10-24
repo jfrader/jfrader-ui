@@ -12,6 +12,7 @@ import { GameTable } from '../game-table';
 import { Surface } from '../surface';
 import { ThemeRoot } from '../theme-root';
 import { CardFlights, useBoardFlights, useCardFlightOrigin, useCardFlightStatus, type PlayingCard } from './index';
+import { FlightProvider, useFlights } from '../flights';
 import { measureCardBox } from './geometry';
 
 const STAGE_MAX_INLINE_SIZE = 640;
@@ -50,6 +51,17 @@ const seats = [{ key: 'own', teamIdx: 0, isMe: true }, { key: 'rival', teamIdx: 
 type Play = PlayingCard & { cardId: string; playerKey: string };
 
 function Status() { const { busy } = useCardFlightStatus(); return <StatusOutput aria-label="Flight status">{busy ? 'Flying' : 'Ready'}</StatusOutput>; }
+
+function QueueExample() {
+  const flights = useFlights();
+  return <>
+    <Controls><Button onClick={() => flights.deal()}>Deal hand</Button><StatusOutput aria-label="Flight status">{flights.busy ? 'Flying' : 'Ready'}</StatusOutput></Controls>
+    <CardFlights><CustomStage>
+      <CardFlights.Deck><GameCard label="Deck" /></CardFlights.Deck>
+      <CardFlights.Target kind="hand" cardId="ace"><GameCard value={cards[0]!.value} label={cards[0]!.label} /></CardFlights.Target>
+    </CustomStage></CardFlights>
+  </>;
+}
 
 /** `compact` shows the docs controls; `full` adds the resync and burst controls the regression stories drive. */
 type ControlMode = 'compact' | 'full';
@@ -199,14 +211,16 @@ export function Match() {
     description: { component: 'Animate cards moving from a deck or hand to their next position.' },
     sections: [
       { title: 'Deals and plays', stories: ['ComposedBoard'] },
-      { title: 'Custom boards', stories: ['CustomTarget'] },
+      { title: 'Hooks', stories: ['FlightControls', 'CustomTarget'] },
     ],
     usage: `### Board updates
 Use one table per flight board. The first render appears in place; later deals start at the deck or table centre and follow seat order, one card per seat per round. Accept a play by updating your rendered hand and piles. Keep source identities stable and give each play a unique identity. Missing origins appear in place.
 
-Apply server snapshots as resynchronizations so active flights are cancelled rather than replayed. Do not combine the rendered-tree engine with deprecated deal/play hooks.
+Wrap the surface and controls in \`FlightProvider\`, then call \`useFlights().deal()\` or \`useFlights().resync()\`. See the [Flights guide](https://ui.jfrader.com/#/components/flights) for outcomes, deal groups, and lane policies. Do not combine the rendered-tree engine with deprecated deal/play hooks.
 
 Give each play a unique id and preserve its source cardId when they differ. New play nodes fly from the previous matching hand card or the rival seat's last hidden card. GameHand.Confirm captures the hand position before accepting a play; custom drag controls capture it with useCardFlightOrigin(). Piles show all cards by default; visible limits destinations to the newest N cards.
+
+Read \`useCardFlightStatus().busy\` to disable custom controls while a flight is active. It reads false outside a CardFlights provider.
 
 Use CardFlights.Target for custom hand, play, board or hidden-seat destinations. A board card that appears after the first render flies from the deck and reveals its face; pass \`face\` to override it. Hidden hands inherit their player key inside GameTable.Seat; pass an explicit playerKey outside it. Address hidden-seat targets by seatKey and card index. CardFlights.Deck supplies a custom deal origin.
 
@@ -217,6 +231,36 @@ Flights are decorative and hidden from assistive technology. Select a hand card 
 } satisfies Meta<typeof CardFlights>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const FlightControls: Story = {
+  name: 'Flight controls', render: () => <FlightProvider><QueueExample /></FlightProvider>,
+  parameters: { docs: { source: { language: 'tsx', code: `import { styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+import { Button } from '@jfrader/ui/button';
+import { CardFlights } from '@jfrader/ui/card-flights';
+import { GameCard } from '@jfrader/ui/game-card';
+import { FlightProvider, useFlights } from '@jfrader/ui/flights';
+
+const Controls = styled.div({ display: 'flex', justifyContent: 'center', gap: vars.space[2], padding: vars.space[3] });
+const Stage = styled.div({ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: vars.space[8], minBlockSize: 320 });
+const Output = styled.output({ color: vars.color.text, background: vars.color.bg });
+function CardSurface() {
+  const flights = useFlights();
+  return <>
+    <Controls><Button onClick={() => flights.deal()}>Deal hand</Button>
+      <Output aria-label="Flight status">{flights.busy ? 'Flying' : 'Ready'}</Output></Controls>
+    <CardFlights><Stage>
+      <CardFlights.Deck><GameCard label="Deck" /></CardFlights.Deck>
+      <CardFlights.Target kind="hand" cardId="ace">
+        <GameCard value={{ deck: 'french', suit: 'spades', rank: 'A' }} label="Ace of spades" />
+      </CardFlights.Target>
+    </Stage></CardFlights>
+  </>;
+}
+export function Cards() {
+  return <FlightProvider><CardSurface /></FlightProvider>;
+}` } } },
+};
 
 function mockMotion(reduced = false) {
   const original = window.matchMedia.bind(window);
@@ -273,10 +317,10 @@ export const ComposedBoard: Story = {
 
 /** Play into a custom node without a GameCardStack. */
 export const CustomTarget: Story = {
-  name: 'Custom play destination',
+  name: 'Custom origin and status',
   render: () => <CustomMatch />,
   parameters: { docs: {
-    description: { story: 'Move one card between the Hand and Play slots. Press Play card, then Return card.' },
+    description: { story: 'Move one card between the Hand and Play slots. `useCardFlightOrigin` captures the departure and `useCardFlightStatus` reports the flight.' },
     source: { language: 'tsx', code: `import { useRef, useState } from 'react';
 import { styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';

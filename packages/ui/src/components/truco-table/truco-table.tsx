@@ -128,9 +128,11 @@ export interface TrucoTableProps extends SxProps {
   actionsLabel?: string;
   /** Overrides the default copy. */
   labels?: Partial<TrucoTableLabels>;
-  /** Change to deal the hands. The first render appears in place. */
+  /** Change to deal the hands. The first render appears in place.
+   * @deprecated Call useFlights().deal() inside FlightProvider instead. Retained for one minor release. */
   deal?: string | number;
-  /** Change to replace the card snapshot without animation. */
+  /** Change to replace the card snapshot without animation.
+   * @deprecated Call useFlights().resync() inside FlightProvider instead. Retained for one minor release. */
   revision?: string | number;
   /** Seat receiving the first dealt card. */
   forehand?: string;
