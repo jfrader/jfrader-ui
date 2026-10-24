@@ -6,6 +6,7 @@ import { withLightTheme } from '../../testing/story-decorators';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { Button } from '../button';
+import { Surface } from '../surface';
 import { AnnouncementBar, type AnnouncementBarProps, type AnnouncementBarTone } from './index';
 
 const Stack = styled.div({
@@ -66,10 +67,12 @@ const meta = {
          { title: 'Dismissal', stories: ['Dismissible', 'NonDismissible'] },
          { title: 'Actions', stories: ['NativeLink'] },
          { title: 'Controlled state', stories: ['ControlledMessages'] },
-         { title: 'States and appearance', stories: ['AllTones', 'Inverted'] },
+         { title: 'States and appearance', stories: ['OnPage', 'AllTones', 'Inverted'] },
        ],
        usage: `### When to use
 Show site-wide news or a deadline above the main content. Keep urgent errors beside the affected task instead. Store persistent dismissal preferences in your application.
+
+Render the bar at the full width of the page or panel it announces for. It has no side borders, and the tone shows as a rule along its top edge.
 
 ### Rotation
 
@@ -183,6 +186,122 @@ const messages = [
     </Stack>
   ),
 };
+const Page = styled.div({
+  overflow: 'clip',
+  color: vars.color.text,
+  fontFamily: vars.font.sans,
+  backgroundColor: vars.color.bg,
+  border: `1px solid ${vars.color.border}`,
+  borderRadius: vars.radius.lg,
+});
+const PageTop = styled.div({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  gap: vars.space[3],
+  paddingBlock: vars.space[3],
+  paddingInline: vars.space[4],
+  fontWeight: vars.fontWeight.semibold,
+});
+const PageBody = styled.div({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
+  gap: vars.space[3],
+  padding: vars.space[4],
+});
+const PagePanel = styled(Surface)({ padding: vars.space[4], color: vars.color.textMuted });
+const pageSource = `import { AnnouncementBar, Surface, styled, theme } from '@jfrader/ui';
+
+const Page = styled.div({
+  overflow: 'clip',
+  color: theme.color.text,
+  fontFamily: theme.font.sans,
+  backgroundColor: theme.color.bg,
+  border: \`1px solid \${theme.color.border}\`,
+  borderRadius: theme.radius.lg,
+});
+const PageTop = styled.div({
+  display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: theme.space[3],
+  paddingBlock: theme.space[3], paddingInline: theme.space[4], fontWeight: theme.fontWeight.semibold,
+});
+const PageBody = styled.div({
+  display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 12rem), 1fr))',
+  gap: theme.space[3], padding: theme.space[4],
+});
+const PagePanel = styled(Surface)({ padding: theme.space[4], color: theme.color.textMuted });
+
+const messages = [
+  { id: 'release', message: 'The new workspace is ready.', action: { label: 'Explore workspace', href: '/workspace' } },
+  { id: 'maintenance', message: 'Scheduled maintenance on Sunday.' },
+];
+
+<Page>
+  <PageTop><span>Northwind</span><span>Projects</span></PageTop>
+  <AnnouncementBar messages={messages} tone="info" />
+  <PageBody>
+    <PagePanel>Active projects</PagePanel>
+    <PagePanel>Recent exports</PagePanel>
+  </PageBody>
+</Page>`;
+
+function OnPageExample(args: AnnouncementBarProps) {
+  return (
+    <Stack>
+      {(['subtle', 'inverted'] as const).map((variant) => (
+        <Page key={variant} data-testid={`page-${variant}`}>
+          <PageTop><span>Northwind</span><span>Projects</span></PageTop>
+          <AnnouncementBar {...args} variant={variant} tone="info" label={`${variant} announcements`} />
+          <PageBody>
+            <PagePanel>Active projects</PagePanel>
+            <PagePanel>Recent exports</PagePanel>
+          </PageBody>
+        </Page>
+      ))}
+    </Stack>
+  );
+}
+
+export const OnPage: Story = {
+  name: 'Bar on a page',
+  parameters: { docs: {
+    description: { story: 'Place the bar edge to edge between the page header and the content. The tone shows as a rule along its top edge.' },
+    source: { language: 'tsx', code: pageSource },
+  } },
+  render: (args) => <OnPageExample {...args} />,
+  play: async ({ canvas }) => {
+    const resolve = (host: HTMLElement, color: string) => {
+      const probe = host.ownerDocument.createElement('span');
+      probe.style.color = color;
+      host.append(probe);
+      const value = getComputedStyle(probe).color;
+      probe.remove();
+      return value;
+    };
+    for (const variant of ['subtle', 'inverted'] as const) {
+      const page = canvas.getByTestId(`page-${variant}`);
+      const bar = within(page).getByRole('region', { name: `${variant} announcements` });
+      const style = getComputedStyle(bar);
+      // No inline borders: both side edges match and meet the page edges.
+      await expect(style.borderLeftWidth).toBe('0px');
+      await expect(style.borderRightWidth).toBe('0px');
+      const pageBox = page.getBoundingClientRect();
+      const barBox = bar.getBoundingClientRect();
+      await expect(Math.abs(barBox.left - (pageBox.left + parseFloat(getComputedStyle(page).borderLeftWidth)))).toBeLessThan(1);
+      await expect(Math.abs(barBox.right - (pageBox.right - parseFloat(getComputedStyle(page).borderRightWidth)))).toBeLessThan(1);
+      await expect(style.borderTopWidth).toBe('3px');
+      await expect(style.borderBottomWidth).toBe('1px');
+      if (variant === 'subtle') {
+        await expect(style.borderTopColor).toBe(resolve(bar, vars.color.info));
+        await expect(style.borderBottomColor).toBe(resolve(bar, vars.color.borderControl));
+      } else {
+        await expect(style.borderTopColor).toBe('rgba(0, 0, 0, 0)');
+        await expect(style.borderBottomColor).toBe('rgba(0, 0, 0, 0)');
+        await expect(style.backgroundClip).toBe('border-box');
+      }
+    }
+  },
+};
+
 export const Single: Story = {
   name: 'Single message',
   parameters: {

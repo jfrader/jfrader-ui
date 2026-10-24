@@ -21,6 +21,9 @@ declare const process: { env: { NODE_ENV?: string } };
 
 const Frame = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '32rem', maxInlineSize: `calc(100vw - ${vars.space[4]} * 2)` });
 const PaddedSurface = styled(Surface)({ padding: vars.space[4] });
+const Panel = styled(Surface)({ display: 'grid', gap: vars.space[3], padding: vars.space[4] });
+const PanelTitle = styled.h3({ margin: 0, fontSize: vars.textSize.md, fontWeight: vars.fontWeight.semibold });
+const PanelText = styled.p({ margin: 0, color: vars.color.textMuted });
 // These values exercise sx, registered classes and slot styling.
 const padding = css({ padding: vars.space[4] });
 const independentMaterial = css({
@@ -92,20 +95,53 @@ export type SurfaceTypeRegression = {
 export const Default: Story = {
   name: 'Basic panel',
   parameters: { docs: {
-    description: { story: 'Start with a flat panel without padding or interactive behavior.' },
-    source: { language: 'tsx', code: `import { Surface } from '@jfrader/ui';
+    description: { story: 'Add your own padding to a flat panel and put headings, text, and actions inside it.' },
+    source: { language: 'tsx', code: `import { Button, Surface, styled, theme } from '@jfrader/ui';
 
-<Surface>Panel contents</Surface>` },
+const Panel = styled(Surface)({ display: 'grid', gap: theme.space[3], padding: theme.space[4] });
+const PanelTitle = styled.h3({ margin: 0, fontSize: theme.textSize.md, fontWeight: theme.fontWeight.semibold });
+const PanelText = styled.p({ margin: 0, color: theme.color.textMuted });
+
+<Panel>
+  <PanelTitle>Storage</PanelTitle>
+  <PanelText>18.4 GB of 50 GB used across three projects.</PanelText>
+  <div><Button size="sm" variant="outline">Manage storage</Button></div>
+</Panel>` },
   } },
-  render: (args) => <Surface {...args} />,
-  play: async ({ canvasElement }) => {
-    const root = canvasElement.querySelector('[data-ui="surface"]')!;
+  render: (args) => (
+    <Panel {...args}>
+      <PanelTitle>Storage</PanelTitle>
+      <PanelText>18.4 GB of 50 GB used across three projects.</PanelText>
+      <div><Button size="sm" variant="outline">Manage storage</Button></div>
+    </Panel>
+  ),
+  play: async ({ canvas, canvasElement }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="surface"]')!;
     await expect(root).toHaveAttribute('data-surface-variant', 'flat');
     await expect(root).not.toHaveAttribute('role');
     await expect(root).not.toHaveAttribute('tabindex');
-    await expect(getComputedStyle(root).padding).toBe('0px');
     await expect(getComputedStyle(root).boxShadow).toBe('none');
     await expect(getComputedStyle(root).borderTopStyle).toBe('solid');
+    // The inset comes from the example's styled Panel: the same root without it has none.
+    const title = canvas.getByRole('heading', { name: 'Storage' });
+    const inset = title.getBoundingClientRect().left - root.getBoundingClientRect().left - parseFloat(getComputedStyle(root).borderLeftWidth);
+    await expect(inset).toBeCloseTo(parseFloat(getComputedStyle(root).paddingLeft), 0);
+    await expect(inset).toBeGreaterThan(0);
+  },
+};
+
+/** A surface without consumer styles has no padding. */
+export const UnpaddedRoot: Story = {
+  tags: ['!autodocs'],
+  render: (args) => <><Surface {...args} data-testid="bare" /><Panel {...args} data-testid="panel" /></>,
+  play: async ({ canvas }) => {
+    const bare = canvas.getByTestId('bare');
+    const panel = canvas.getByTestId('panel');
+    for (const side of ['Top', 'Right', 'Bottom', 'Left'] as const) {
+      await expect(getComputedStyle(bare)[`padding${side}`]).toBe('0px');
+      await expect(parseFloat(getComputedStyle(panel)[`padding${side}`])).toBeGreaterThan(0);
+    }
+    await expect(bare.getAttribute('data-surface-variant')).toBe(panel.getAttribute('data-surface-variant'));
   },
 };
 

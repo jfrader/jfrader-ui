@@ -3,9 +3,11 @@
 import {
   createContext,
   useContext,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
   type CSSProperties,
   type ComponentPropsWithRef,
   type ComponentType,
@@ -36,6 +38,10 @@ export interface FilterValue {
 export interface FilterToolbarMessages {
   remove: (filter: FilterValue) => string;
   clear: string;
+  /** Labels the narrow-layout button that shows the collapsed filter controls. */
+  moreFilters: (hidden: number) => string;
+  /** Labels the same button while the collapsed filter controls are shown. */
+  fewerFilters: string;
 }
 
 export interface FilterControlsState {
@@ -258,7 +264,21 @@ const CONTROL_SELECTOR = [
 const DEFAULT_MESSAGES: FilterToolbarMessages = {
   remove: (filter) => `Remove ${filter.label}: ${filter.valueLabel ?? filter.value}`,
   clear: 'Clear all',
+  moreFilters: (hidden) => `More filters (${hidden})`,
+  fewerFilters: 'Fewer filters',
 };
+
+// The toolbar's own inline size picks the arrangement, so it holds in a sidebar, a split view or
+// a full page alike. Wide: controls, count and clear share the first row. Medium: controls take
+// the first row and count/clear share the last. Narrow: everything stacks and generated filters
+// past NARROW_VISIBLE_FILTERS collapse behind a toggle.
+const CONTAINER = 'filter-toolbar';
+const WIDE_MIN = '48rem';
+const NARROW_MAX = '30rem';
+const WIDE = `@container ${CONTAINER} (min-width: ${WIDE_MIN})`;
+const NARROW = `@container ${CONTAINER} (max-width: ${NARROW_MAX})`;
+const CONTROL_MIN_INLINE_SIZE = '11.25rem';
+const NARROW_VISIBLE_FILTERS = 2;
 
 const ENGLISH_PLURALS = new Intl.PluralRules('en');
 const defaultFormatCount = (count: number, formatted: string) =>
@@ -312,12 +332,21 @@ const rowStyle = css({
   '& > *': { minInlineSize: 0, maxInlineSize: '100%' },
 });
 
+// Controls own the flexible track; count and clear size to their content. Columns carry no gap,
+// so an absent count or clear leaves no stray gutter; those parts space themselves.
 const rootStyle = css({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: vars.space[3],
+  display: 'grid',
+  gridTemplateColumns: `minmax(min(100%, ${CONTROL_MIN_INLINE_SIZE}), 1fr) auto auto`,
+  gridAutoFlow: 'row dense',
+  alignItems: 'start',
+  rowGap: vars.space[3],
   minInlineSize: 0,
-  padding: vars.space[4],
+  containerType: 'inline-size',
+  containerName: CONTAINER,
+  // The root cannot query its own container, so its padding steps down from the parent's inline
+  // size instead: the narrow padding below NARROW_MAX, the regular padding above it.
+  padding: `clamp(${vars.space[3]}, (100% - ${NARROW_MAX}) * 999, ${vars.space[4]})`,
+  ':where(&) > *': { gridColumn: '1 / -1' },
   border: `1px solid ${vars.color.border}`,
   borderRadius: vars.radius.md,
   backgroundColor: vars.color.surface,
@@ -327,6 +356,29 @@ const rootStyle = css({
   '&:focus': focusRingOutset,
   [FORCED_COLORS]: { borderColor: 'CanvasText', backgroundColor: 'Canvas', color: 'CanvasText' },
 });
+
+// Composed controls keep their natural widths and wrap. Generated controls are alike, so they
+// share an even column grid instead of leaving ragged rows.
+const controlsStyle = css(rowStyle, {
+  gridColumn: '1 / -1',
+  '&[data-arrangement="grid"]': {
+    display: 'grid',
+    gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${CONTROL_MIN_INLINE_SIZE}), 1fr))`,
+    alignItems: 'start',
+  },
+  [WIDE]: { gridColumn: '1', gridRow: '1' },
+  [NARROW]: { '&[data-overflow="collapsed"] > [data-filter-overflow]': { display: 'none' } },
+});
+
+const generatedFieldStyle = css({ alignItems: 'stretch' });
+
+const overflowToggleStyle = css({
+  display: 'none',
+  justifySelf: 'start',
+  [NARROW]: { display: 'inline-flex' },
+});
+
+const activeFiltersStyle = css(rowStyle, { gridColumn: '1 / -1', '&:empty': { display: 'none' } });
 
 const listStyle = css({ margin: 0, padding: 0, listStyle: 'none' });
 
@@ -366,7 +418,11 @@ const removeStyle = css({
 }, touchTargetStyle);
 
 const clearStyle = css({
-  alignSelf: 'flex-start',
+  gridColumn: '2 / -1',
+  justifySelf: 'end',
+  marginInlineStart: vars.space[3],
+  [WIDE]: { gridRow: '1', gridColumn: '3' },
+  [NARROW]: { gridColumn: '1 / -1', justifySelf: 'start', marginInlineStart: 0 },
   maxInlineSize: '100%',
   blockSize: 'auto',
   minBlockSize: vars.space[8],
@@ -378,6 +434,18 @@ const clearStyle = css({
 }, touchTargetStyle);
 
 const statusStyle = css({
+  gridColumn: '1',
+  alignSelf: 'center',
+  [WIDE]: {
+    gridRow: '1',
+    gridColumn: '2',
+    alignSelf: 'start',
+    display: 'flex',
+    alignItems: 'center',
+    minBlockSize: vars.space[8],
+    marginInlineStart: vars.space[3],
+  },
+  [NARROW]: { gridColumn: '1 / -1' },
   margin: 0,
   minInlineSize: 0,
   overflowWrap: 'anywhere',
@@ -449,6 +517,8 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
   const RootPart = slots?.root ?? component ?? 'div';
   const pending = useRef<PendingFocus | null>(null);
   const messages = useMemo(() => ({ ...DEFAULT_MESSAGES, ...messagesProp }), [messagesProp]);
+  const [overflowExpanded, setOverflowExpanded] = useState(false);
+  const generatedControlsId = useId();
 
   const context = useMemo<ToolbarContext>(() => {
     const handleValueChange = (next: readonly FilterValue[]) => {
@@ -532,8 +602,13 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
     const ActiveFiltersPart = slots?.activeFilters ?? ActiveFilters;
     const ClearPart = slots?.clear ?? Clear;
     const ResultCountPart = slots?.resultCount ?? ResultCount;
+    // Collapsing a single filter would trade it for a toggle of the same size, so the toggle
+    // appears only when it hides two or more.
+    const hiddenCount = filters.length > NARROW_VISIBLE_FILTERS + 1 ? filters.length - NARROW_VISIBLE_FILTERS : 0;
+    const controlsId = slotProps?.controls?.id ?? generatedControlsId;
+    const overflowFlag = (index: number) => (hiddenCount > 0 && index >= NARROW_VISIBLE_FILTERS ? '' : undefined);
 
-    const renderedControls = filters.map((def) => {
+    const renderedControls = filters.map((def, index) => {
       if (def.type === 'select') {
         const selectedFilter = value.find((f) => f.id === def.id);
         const selectedVal = selectedFilter?.value ?? '';
@@ -580,8 +655,9 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
               ...customSelectSlotProps,
               root: {
                 className: selectClass,
-                sx: selectSx,
+                sx: [generatedFieldStyle, selectSx],
                 style: selectStyle,
+                'data-filter-overflow': overflowFlag(index),
                 ...customSelectSlotProps?.root,
               },
               trigger: {
@@ -641,8 +717,9 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
               ...customMultiSlotProps,
               root: {
                 className: multiClass,
-                sx: multiSx,
+                sx: [generatedFieldStyle, multiSx],
                 style: multiStyle,
+                'data-filter-overflow': overflowFlag(index),
                 ...customMultiSlotProps?.root,
               },
               trigger: {
@@ -660,8 +737,27 @@ function FilterToolbarRoot(props: FilterToolbarProps) {
 
     renderedContent = (
       <>
-        <ControlsPart {...slotProps?.controls}>
+        <ControlsPart
+          data-arrangement="grid"
+          data-overflow={hiddenCount > 0 ? (overflowExpanded ? 'expanded' : 'collapsed') : undefined}
+          {...slotProps?.controls}
+          id={controlsId}
+        >
           {renderedControls}
+          {hiddenCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              data-ui="filter-toolbar-overflow"
+              aria-expanded={overflowExpanded}
+              aria-controls={controlsId}
+              sx={overflowToggleStyle}
+              onClick={() => setOverflowExpanded((expanded) => !expanded)}
+              render={(props) => <button {...props} type="button" />}
+            >
+              {overflowExpanded ? messages.fewerFilters : messages.moreFilters(hiddenCount)}
+            </Button>
+          )}
         </ControlsPart>
         <ActiveFiltersPart {...slotProps?.activeFilters} />
         <ClearPart {...slotProps?.clear} />
@@ -704,7 +800,7 @@ FilterToolbarRoot.displayName = 'FilterToolbar';
 function Controls({ children, className, sx, ...rest }: FilterToolbarControlsProps) {
   const { value, disabled, onValueChange } = useToolbar('Controls');
   return (
-    <WithSx className={className} styles={rowStyle} sx={sx}>
+    <WithSx className={className} styles={controlsStyle} sx={sx}>
       {(className) => (
         <div {...rest} data-ui="filter-toolbar-controls" className={className}>
           {typeof children === 'function' ? children({ value, disabled, onValueChange }) : children}
@@ -723,7 +819,7 @@ function ActiveFilters({ empty, slotProps, slots, className, sx, ...rest }: Filt
   const Remove = slots?.remove ?? 'button';
   const { value, disabled, messages, remove } = useToolbar('ActiveFilters');
   return (
-    <WithSx className={className} styles={rowStyle} sx={sx}>
+    <WithSx className={className} styles={activeFiltersStyle} sx={sx}>
       {(className) => (
         <div {...rest} data-ui="filter-toolbar-active-filters" className={className}>
           {value.length > 0 ? (

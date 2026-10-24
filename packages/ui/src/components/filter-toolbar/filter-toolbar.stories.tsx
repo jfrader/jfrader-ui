@@ -205,7 +205,7 @@ const meta = {
         { title: 'Filters and controls', stories: ['ShorthandActivation', 'SearchTextField', 'Composed'] },
         { title: 'Result counts', stories: ['ZeroResults', 'CommittedResultCount'] },
         { title: 'Clear', stories: ['ShorthandKeyboardRemoveAndClear'] },
-        { title: 'Layout and overflow', stories: ['LongChips'] },
+        { title: 'Layout and overflow', stories: ['WideLayout', 'MediumLayout', 'NarrowLayout', 'LongChips'] },
         { title: 'States', stories: ['Empty', 'LoadingResults', 'ShorthandDisabled'] },
       ],
       usage: `### When to use
@@ -216,6 +216,12 @@ Use a filter toolbar above a collection to edit criteria, review active filters 
 Result counts describe the results your application has committed; changing filters does not calculate a count. Keep the previous count while loading and announce the replacement when the request finishes. Translate the count and control labels for your audience.
 
 Keep multiselect chip IDs stable and unique across the toolbar. Do not switch between controlled and uncontrolled values. Use custom controls for free-text, date or range criteria.
+
+### Layout
+
+The toolbar arranges itself from its own width, not the viewport's. From \`48rem\`, the count and Clear all sit beside the filters. Between \`30rem\` and \`48rem\`, they move to the last row. Below \`30rem\`, every part stacks.
+
+Generated filters share an even column grid. Below \`30rem\`, a toolbar with four or more generated filters shows the first two and a More filters button for the rest, so list the most used filters first. Composed controls and active filter chips keep their natural widths and wrap. Give the toolbar a definite width when its parent sizes to its content.
 
 ### Keyboard and accessibility
 
@@ -1257,6 +1263,268 @@ const Frame = styled.div({ inlineSize: '100%', maxInlineSize: 280 });
     }
     const status = canvas.getByRole('status');
     await expect(status.scrollWidth).toBeLessThanOrEqual(status.clientWidth + 1);
+  },
+};
+
+const BACKLOG_FILTERS: readonly FilterToolbarDefinition[] = [
+  {
+    type: 'select', id: 'status', label: 'Status', placeholder: 'Any status',
+    options: [
+      { value: 'open', label: 'Open' },
+      { value: 'in-review', label: 'In review' },
+      { value: 'blocked', label: 'Blocked' },
+      { value: 'closed', label: 'Closed' },
+    ],
+  },
+  {
+    type: 'multiselect', id: 'assignee', label: 'Assignee', placeholder: 'Anyone',
+    options: [
+      { id: 'assignee-ada', value: 'ada', label: 'Ada Lovelace' },
+      { id: 'assignee-grace', value: 'grace', label: 'Grace Hopper' },
+      { id: 'assignee-alan', value: 'alan', label: 'Alan Turing' },
+    ],
+  },
+  {
+    type: 'select', id: 'priority', label: 'Priority', placeholder: 'Any priority',
+    options: [
+      { value: 'urgent', label: 'Urgent' },
+      { value: 'high', label: 'High' },
+      { value: 'normal', label: 'Normal' },
+    ],
+  },
+  {
+    type: 'select', id: 'milestone', label: 'Release milestone', placeholder: 'Any release milestone',
+    options: [
+      { value: 'autumn', label: 'Autumn platform release' },
+      { value: 'winter', label: 'Winter maintenance window' },
+    ],
+  },
+  {
+    type: 'multiselect', id: 'segment', label: 'Customer segment', placeholder: 'Every customer segment',
+    options: [
+      { id: 'segment-enterprise', value: 'enterprise', label: 'Enterprise accounts' },
+      { id: 'segment-public', value: 'public', label: 'Public sector organizations' },
+      { id: 'segment-education', value: 'education', label: 'Education' },
+    ],
+  },
+  {
+    type: 'select', id: 'team', label: 'Reporting team', placeholder: 'Any reporting team',
+    options: [
+      { value: 'payments', label: 'Payments infrastructure' },
+      { value: 'developer', label: 'Developer experience' },
+    ],
+  },
+];
+
+const BACKLOG_DEFAULT: readonly FilterValue[] = [
+  { id: 'status', label: 'Status', value: 'open', valueLabel: 'Open' },
+  { id: 'assignee-ada', label: 'Assignee', value: 'ada', valueLabel: 'Ada Lovelace' },
+  { id: 'milestone', label: 'Release milestone', value: 'autumn', valueLabel: 'Autumn platform release' },
+  { id: 'segment-public', label: 'Customer segment', value: 'public', valueLabel: 'Public sector organizations' },
+];
+
+const WideFrame = styled.div({ inlineSize: '60rem', maxInlineSize: '100%' });
+const MediumFrame = styled.div({ inlineSize: '40rem', maxInlineSize: '100%' });
+const CompactFrame = styled.div({ inlineSize: '20rem', maxInlineSize: '100%' });
+
+const backlogSource = (frame: string, width: string) => `import { FilterToolbar, styled, type FilterToolbarDefinition, type FilterValue } from '@jfrader/ui';
+
+const ${frame} = styled.div({ inlineSize: '${width}', maxInlineSize: '100%' });
+
+const filters: FilterToolbarDefinition[] = [
+  { type: 'select', id: 'status', label: 'Status', placeholder: 'Any status', options: [
+    { value: 'open', label: 'Open' }, { value: 'in-review', label: 'In review' },
+    { value: 'blocked', label: 'Blocked' }, { value: 'closed', label: 'Closed' },
+  ] },
+  { type: 'multiselect', id: 'assignee', label: 'Assignee', placeholder: 'Anyone', options: [
+    { id: 'assignee-ada', value: 'ada', label: 'Ada Lovelace' },
+    { id: 'assignee-grace', value: 'grace', label: 'Grace Hopper' },
+    { id: 'assignee-alan', value: 'alan', label: 'Alan Turing' },
+  ] },
+  { type: 'select', id: 'priority', label: 'Priority', placeholder: 'Any priority', options: [
+    { value: 'urgent', label: 'Urgent' }, { value: 'high', label: 'High' }, { value: 'normal', label: 'Normal' },
+  ] },
+  { type: 'select', id: 'milestone', label: 'Release milestone', placeholder: 'Any release milestone', options: [
+    { value: 'autumn', label: 'Autumn platform release' }, { value: 'winter', label: 'Winter maintenance window' },
+  ] },
+  { type: 'multiselect', id: 'segment', label: 'Customer segment', placeholder: 'Every customer segment', options: [
+    { id: 'segment-enterprise', value: 'enterprise', label: 'Enterprise accounts' },
+    { id: 'segment-public', value: 'public', label: 'Public sector organizations' },
+    { id: 'segment-education', value: 'education', label: 'Education' },
+  ] },
+  { type: 'select', id: 'team', label: 'Reporting team', placeholder: 'Any reporting team', options: [
+    { value: 'payments', label: 'Payments infrastructure' }, { value: 'developer', label: 'Developer experience' },
+  ] },
+];
+
+const activeFilters: FilterValue[] = [
+  { id: 'status', label: 'Status', value: 'open', valueLabel: 'Open' },
+  { id: 'assignee-ada', label: 'Assignee', value: 'ada', valueLabel: 'Ada Lovelace' },
+  { id: 'milestone', label: 'Release milestone', value: 'autumn', valueLabel: 'Autumn platform release' },
+  { id: 'segment-public', label: 'Customer segment', value: 'public', valueLabel: 'Public sector organizations' },
+];
+
+<${frame}>
+  <FilterToolbar filters={filters} defaultValue={activeFilters} resultCount={1284} />
+</${frame}>`;
+
+export const WideLayout: Story = {
+  name: 'Wide toolbar',
+  parameters: { docs: {
+    description: { story: 'Keep the result count and Clear all beside the filter grid, with active filters on the row below.' },
+    source: { language: 'tsx', code: backlogSource('Frame', '60rem') },
+  } },
+  render: () => (
+    <WideFrame>
+      <FilterToolbar filters={BACKLOG_FILTERS} defaultValue={BACKLOG_DEFAULT} resultCount={1284} />
+    </WideFrame>
+  ),
+};
+
+export const MediumLayout: Story = {
+  name: 'Medium toolbar',
+  parameters: { docs: {
+    description: { story: 'Give the filters the full first row and move the count and Clear all to the last row.' },
+    source: { language: 'tsx', code: backlogSource('Frame', '40rem') },
+  } },
+  render: () => (
+    <MediumFrame>
+      <FilterToolbar filters={BACKLOG_FILTERS} defaultValue={BACKLOG_DEFAULT} resultCount={1284} />
+    </MediumFrame>
+  ),
+};
+
+export const NarrowLayout: Story = {
+  name: 'Narrow toolbar',
+  parameters: { docs: {
+    description: { story: 'Show the first two filters and press More filters for the rest.' },
+    source: { language: 'tsx', code: backlogSource('Frame', '20rem') },
+  } },
+  render: () => (
+    <CompactFrame>
+      <FilterToolbar filters={BACKLOG_FILTERS} defaultValue={BACKLOG_DEFAULT} resultCount={1284} />
+    </CompactFrame>
+  ),
+};
+
+// Fixed frames, wider than the test viewport on purpose: the toolbar measures its own container,
+// so each frame lands in one arrangement regardless of the page width.
+const FIXED_FRAMES = {
+  wide: styled.div({ inlineSize: '60rem' }),
+  medium: styled.div({ inlineSize: '40rem' }),
+  narrow: styled.div({ inlineSize: '20rem' }),
+};
+const FrameStack = styled.div({ display: 'grid', gap: vars.space[4], justifyItems: 'start' });
+const LooseNote = styled.p({ margin: 0, color: vars.color.textMuted });
+
+function rect(element: Element) {
+  return element.getBoundingClientRect();
+}
+
+export const ContainerWidths: Story = {
+  tags: ['!autodocs'],
+  render: () => (
+    <FrameStack>
+      {(Object.keys(FIXED_FRAMES) as (keyof typeof FIXED_FRAMES)[]).map((width) => {
+        const Frame = FIXED_FRAMES[width];
+        return (
+          <Frame key={width} data-testid={width}>
+            <FilterToolbar filters={BACKLOG_FILTERS} defaultValue={BACKLOG_DEFAULT} resultCount={1284} label={`${width} filters`} />
+          </Frame>
+        );
+      })}
+      <FIXED_FRAMES.wide data-testid="composed">
+        <FilterToolbar defaultValue={FILTERS} label="composed filters">
+          <FilterToolbar.Controls><Button>Closed</Button></FilterToolbar.Controls>
+          <LooseNote>Saved view</LooseNote>
+          <FilterToolbar.ActiveFilters />
+          <FilterToolbar.Clear />
+          <FilterToolbar.ResultCount count={12} />
+        </FilterToolbar>
+      </FIXED_FRAMES.wide>
+    </FrameStack>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    const parts = (width: string) => {
+      const root = within(canvas.getByTestId(width)).getByRole('group');
+      const scope = within(root);
+      const part = (name: string) => root.querySelector<HTMLElement>(`[data-ui~="filter-toolbar-${name}"]`)!;
+      return {
+        root, scope,
+        controls: part('controls'), chips: part('active-filters'), clear: part('clear'), count: part('result-count'),
+        toggle: root.querySelector<HTMLElement>('[data-ui~="filter-toolbar-overflow"]'),
+        triggers: scope.queryAllByRole('combobox', { hidden: true }),
+      };
+    };
+    const contentBox = (root: HTMLElement) => {
+      const box = rect(root);
+      const style = getComputedStyle(root);
+      return {
+        left: box.left + parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft),
+        right: box.right - parseFloat(style.borderRightWidth) - parseFloat(style.paddingRight),
+      };
+    };
+    const evenWidths = async (triggers: HTMLElement[]) => {
+      for (const trigger of triggers) await expect(Math.abs(rect(trigger).width - rect(triggers[0]!).width)).toBeLessThan(1);
+    };
+
+    // Wide: controls, count and clear share the first row; chips follow below.
+    const wide = parts('wide');
+    await expect(getComputedStyle(wide.root).paddingTop).toBe('16px');
+    await expect(Math.abs(rect(wide.count).top - rect(wide.controls).top)).toBeLessThan(1);
+    await expect(Math.abs(rect(wide.clear).top - rect(wide.controls).top)).toBeLessThan(1);
+    await expect(rect(wide.count).left).toBeGreaterThanOrEqual(rect(wide.controls).right);
+    await expect(rect(wide.clear).left).toBeGreaterThanOrEqual(rect(wide.count).right);
+    await expect(rect(wide.chips).top).toBeGreaterThanOrEqual(rect(wide.controls).bottom);
+    for (const trigger of wide.triggers) await expect(trigger).toBeVisible();
+    await evenWidths(wide.triggers);
+    await expect(wide.toggle).not.toBeVisible();
+
+    // Medium: controls span the row, chips follow, count and clear share the last row.
+    const medium = parts('medium');
+    const mediumBox = contentBox(medium.root);
+    await expect(Math.abs(rect(medium.controls).right - mediumBox.right)).toBeLessThan(1);
+    await expect(rect(medium.chips).top).toBeGreaterThanOrEqual(rect(medium.controls).bottom);
+    await expect(rect(medium.count).top).toBeGreaterThanOrEqual(rect(medium.chips).bottom);
+    await expect(rect(medium.clear).top).toBeGreaterThanOrEqual(rect(medium.chips).bottom);
+    await expect(rect(medium.count).top).toBeLessThan(rect(medium.clear).bottom);
+    await expect(Math.abs(rect(medium.count).left - mediumBox.left)).toBeLessThan(1);
+    await expect(Math.abs(rect(medium.clear).right - mediumBox.right)).toBeLessThan(1);
+    for (const trigger of medium.triggers) await expect(trigger).toBeVisible();
+    await evenWidths(medium.triggers);
+    await expect(medium.toggle).not.toBeVisible();
+
+    // Narrow: one column, filters past the second collapse behind the toggle, clear and count stack.
+    const narrow = parts('narrow');
+    await expect(getComputedStyle(narrow.root).paddingTop).toBe('12px');
+    await expect(narrow.root.scrollWidth).toBeLessThanOrEqual(narrow.root.clientWidth + 1);
+    for (const trigger of narrow.triggers.slice(0, 2)) await expect(trigger).toBeVisible();
+    for (const trigger of narrow.triggers.slice(2)) await expect(trigger).not.toBeVisible();
+    await expect(rect(narrow.triggers[1]!).top).toBeGreaterThanOrEqual(rect(narrow.triggers[0]!).bottom);
+    await expect(rect(narrow.count).top).toBeGreaterThanOrEqual(rect(narrow.clear).bottom);
+    const toggle = narrow.scope.getByRole('button', { name: 'More filters (4)' });
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(toggle).toHaveAttribute('aria-controls', narrow.controls.id);
+    await userEvent.click(toggle);
+    await expect(toggle).toHaveAccessibleName('Fewer filters');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    for (const trigger of narrow.triggers) await expect(trigger).toBeVisible();
+    await expect(rect(toggle).top).toBeGreaterThanOrEqual(rect(narrow.triggers.at(-1)!).bottom);
+    await userEvent.tab({ shift: true });
+    await userEvent.tab();
+    await focus(toggle);
+    await userEvent.keyboard('{Enter}');
+    await focus(toggle);
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    await expect(narrow.triggers[2]).not.toBeVisible();
+
+    // Composed: unknown children take a full row of their own.
+    const composed = parts('composed');
+    const note = composed.scope.getByText('Saved view');
+    const composedBox = contentBox(composed.root);
+    await expect(Math.abs(rect(note).left - composedBox.left)).toBeLessThan(1);
+    await expect(Math.abs(rect(note).right - composedBox.right)).toBeLessThan(1);
+    await expect(rect(note).top).toBeGreaterThanOrEqual(rect(composed.controls).bottom);
   },
 };
 

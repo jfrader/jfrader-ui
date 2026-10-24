@@ -181,8 +181,9 @@ const rootStyle = css({
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   lineHeight: vars.lineHeight.base,
-  borderBlock: `1px solid ${vars.color.borderControl}`,
-  borderInlineStart: `${TONE_RULE} solid var(--announcement-tone)`,
+  // The bar runs edge to edge, so it draws no inline borders; the tone rule runs along its top.
+  borderBlockStart: `${TONE_RULE} solid var(--announcement-tone)`,
+  borderBlockEnd: `1px solid ${vars.color.borderControl}`,
   transitionProperty: 'grid-template-rows, opacity',
   transitionDuration: vars.motion.duration.slow,
   transitionTimingFunction: vars.motion.easeStandard,
@@ -197,9 +198,10 @@ const rootStyle = css({
 const invertedStyle = css({
   backgroundColor: vars.color.text,
   color: vars.color.bg,
-  '--announcement-tone': 'currentColor',
-  borderColor: 'currentColor',
-  [FORCED_COLORS]: { backgroundColor: 'Canvas', color: 'CanvasText' },
+  // Transparent borders show the slab's own background, so no page-colored strip edges it.
+  '--announcement-tone': 'transparent',
+  borderColor: 'transparent',
+  [FORCED_COLORS]: { backgroundColor: 'Canvas', color: 'CanvasText', borderColor: 'ButtonText' },
 });
 const toneStyles = {
   neutral: css({ '--announcement-tone': vars.color.borderControl }),
@@ -213,13 +215,13 @@ const shellStyle = css({
 });
 // Wide/narrow switch from the bar's own width, without size containment (which would drop the
 // bar's intrinsic width in shrink-to-fit parents). Flex percentages resolve against the layout's
-// content box, so the threshold is WIDE_MIN minus the tone rule and padding. Wide: the side groups
+// content box, so the threshold is WIDE_MIN minus the padding. Wide: the side groups
 // share free space equally around the max-content copy. Narrow: the side caps collapse to their
 // fit-content and the copy claims a full line, giving start-aligned rows in DOM order (rotation,
 // copy, navigation/dismiss) rather than copy first. An empty group stays as the wide mirror spacer;
 // its basis and margins cancel the gap, so when narrow it shares the copy's line instead of a row.
 const layoutGap = vars.space[3];
-const layoutInner = `(${WIDE_MIN} - ${TONE_RULE} - 2 * ${vars.space[4]})`;
+const layoutInner = `(${WIDE_MIN} - 2 * ${vars.space[4]})`;
 const layoutStyle = css({
   display: 'flex',
   flexWrap: 'wrap',
