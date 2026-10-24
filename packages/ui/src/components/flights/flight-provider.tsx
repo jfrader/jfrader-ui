@@ -58,14 +58,15 @@ export function FlightProvider({ children, onBusyChange }: FlightProviderProps) 
   const push = useCallback((event: FlightEventInput): FlightHandle => {
     const handle = queue.push(event);
     if (typeof window === 'undefined') return handle;
-    const required = event.kind === 'transfer' ? 'chips' : 'cards';
-    const remaining = new Set<SurfaceKind>(event.kind === 'resync' ? registrations.current.keys() : [required]);
+    const required = event.kind === 'transfer' ? 'chips' : event.kind === 'deal' ? 'cards' : null;
+    const remaining = new Set<SurfaceKind>(event.kind === 'resync' ? registrations.current.keys() : required ? [required] : []);
     const wasBusy = pending.current.size > 0;
     pending.current.set(handle.id, { remaining, outcome: { status: 'landed' } });
     if (!wasBusy) notify(true);
-    if (!registrations.current.has(required)) {
+    const missing = required ? !registrations.current.has(required) : registrations.current.size === 0;
+    if (missing) {
       const command = { deal: 'deal()', transfer: 'sendChips()', resync: 'resync()' }[event.kind];
-      if (process.env.NODE_ENV !== 'production') console.warn(`FlightProvider: ${command} has no registered ${required} surface. Render its surface inside this FlightProvider before triggering motion.`);
+      if (process.env.NODE_ENV !== 'production') console.warn(`FlightProvider: ${command} has no registered ${required ?? 'flight'} surface. Render its surface inside this FlightProvider before triggering motion.`);
       finish(handle.id, { status: 'skipped', reason: 'not-ready' });
     }
     return handle;
