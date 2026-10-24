@@ -364,7 +364,7 @@ panel material. The section has no background, border or radius to migrate.
 | [Toast](../packages/ui/src/components/toast/toast.tsx) | — | `viewport` | `viewport` | — | `viewportProps` | `Provider`, `Viewport` |
 | [Toast.Provider](../packages/ui/src/components/toast/toast.tsx) | — | `viewport` | `viewport` | — | `viewportProps` | — |
 | [Toast.Viewport](../packages/ui/src/components/toast/toast.tsx) | yes | `item`, `root` | `item`, `root` | — | — | — |
-| [ToastStack](../packages/ui/src/components/toast-stack/toast-stack.tsx) | yes | `item`, `list`, `root`, `toggle` | `item`, `list`, `root`, `toggle` | — | — | — |
+| [ToastStack](../packages/ui/src/components/toast-stack/toast-stack.tsx) | yes | `item`, `list`, `root` | `item`, `list`, `root` | — | — | — |
 | [ToggleGroup](../packages/ui/src/components/toggle-group/toggle-group.tsx) | yes | `item`, `root` | `item`, `root` | — | — | `Item` |
 | [ToggleGroup.Item](../packages/ui/src/components/toggle-group/toggle-group.tsx) | — | — | — | — | — | — |
 | [ToggleSubscription](../packages/ui/src/components/toggle-subscription/toggle-subscription.tsx) | yes | `item`, `label`, `list`, `price`, `root` | `item`, `label`, `list`, `price`, `root` | — | — | `Item`, `Label`, `List`, `Price` |

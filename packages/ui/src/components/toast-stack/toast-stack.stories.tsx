@@ -1,6 +1,6 @@
 import { Component, useEffect, useRef, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
+import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { Button } from '../button';
@@ -36,6 +36,7 @@ const meta = {
         { title: 'Basic', stories: ['Default'] },
         { title: 'Queue and stacking', stories: ['List', 'OverflowPromotion'] },
         { title: 'Placement', stories: ['Positions', 'Contained'] },
+        { title: 'Dismissing', stories: ['SwipeToDismiss', 'SwipeToDismissRtl'] },
         { title: 'Pause and limits', stories: ['PauseOnHover'] },
         { title: 'Actions', stories: ['UndoPrevented'] },
         { title: 'Controlled updates', stories: ['LoadingUpdate'] },
@@ -47,13 +48,13 @@ Group non-blocking notifications in a compact pile, or use a list when several m
 
 Mount one queue renderer per provider. A contained stack needs a positioned host with enough height for the expanded messages. The queue limit removes the oldest message; the visible limit only changes the collapsed pile.
 
-Hovering or focusing the stack pauses dismissal. Messages hidden behind the newest card keep their remaining time until exposed.
+Hovering, focusing, or tapping the pile fans it out, and swiping a card right dismisses it. All three pause dismissal. Messages hidden behind the newest card keep their remaining time until exposed.
 
 ### Keyboard and accessibility
 
-Tab visits the toggle and controls from newest to oldest. Escape dismisses the focused toast, not a notification elsewhere on the page. Enter and Space activate buttons. The optional Alt+T shortcut focuses notifications but does not interrupt editing in a text field.
+Tab visits the notification controls from newest to oldest. Escape dismisses the focused toast, not a notification elsewhere on the page. Enter and Space activate buttons. The optional Alt+T shortcut focuses notifications but does not interrupt editing in a text field.
 
-Only exposed messages announce. Use persistent notifications for actions readers must complete.`,
+Every message announces when its card becomes readable. A tucked card is inert, so it stays out of the tab order and out of the accessibility tree until the pile fans out, and it announces then. Use persistent notifications for actions readers must complete.`,
     },
   },
 } satisfies Meta<typeof ToastStack>;
@@ -217,6 +218,57 @@ async function settled(element: HTMLElement) {
     await expect(element.querySelector('[data-populated="true"]')).not.toBeNull();
   });
 }
+/** Drives the stack's gestures with synthetic pointers, stubbing capture the way `swipe-actions` does. */
+function stackPointer(card: HTMLElement, step = 16, pointerType = 'touch') {
+  const item = card.parentElement!;
+  const capture = item.setPointerCapture;
+  item.setPointerCapture = () => {};
+  const rect = card.getBoundingClientRect();
+  let time = 0;
+  return {
+    fire: (type: string, dx: number, dy = 0) => {
+      const event = new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 1,
+        isPrimary: true,
+        button: 0,
+        pointerType,
+        clientX: rect.left + rect.width / 2 + dx,
+        clientY: rect.top + rect.height / 2 + dy,
+      });
+      time += step;
+      Object.defineProperty(event, 'timeStamp', { value: time });
+      return fireEvent(item, event);
+    },
+    restore: () => {
+      item.setPointerCapture = capture;
+    },
+  };
+}
+/** A tap: no hover, so the stack's own tap handle does the work. */
+function tapCard(card: HTMLElement, pointerType = 'touch') {
+  const pointer = stackPointer(card, 16, pointerType);
+  try {
+    pointer.fire('pointerdown', 0);
+    pointer.fire('pointerup', 0);
+  } finally {
+    pointer.restore();
+  }
+  fireEvent.click(card);
+}
+/** A drag, released where it stopped. A long `step` is a slow drag that stops before lifting. */
+function dragCard(card: HTMLElement, dx: number, dy = 0, step = 16, pointerType = 'touch') {
+  const pointer = stackPointer(card, step, pointerType);
+  try {
+    pointer.fire('pointerdown', 0);
+    pointer.fire('pointermove', dx / 2, dy / 2);
+    pointer.fire('pointermove', dx, dy);
+    pointer.fire('pointerup', dx, dy);
+  } finally {
+    pointer.restore();
+  }
+}
 
 export const Default: Story = {
   name: 'Notification stack',
@@ -240,16 +292,18 @@ export const Default: Story = {
     await expect(getComputedStyle(region.querySelector('[data-ui="toast-stack-list"]')!).boxShadow).not.toBe('none');
     await expect(getComputedStyle(cards[0]!).boxShadow).toBe('none');
     await expect(cards[0]).toHaveTextContent('Message sent');
+    // A tucked card is inert: out of the tab order and out of the accessibility tree, so its
+    // live region only fills, and announces, once the pile fans the card out.
     await expect(cards[1]).toHaveAttribute('inert');
-    await expect(cards[1]).toHaveAttribute('aria-hidden', 'true');
-    await expect(cards[1]?.querySelector('[role="status"]')).toBeEmptyDOMElement();
-    await expect(within(region).getAllByRole('status')).toHaveLength(1);
-    await expect(within(region).getByRole('status').querySelector('button')).toBeNull();
+    await expect(cards[1]).not.toHaveAttribute('aria-hidden');
+    await expect(cards[1]!.querySelector('[role="status"]')).toBeEmptyDOMElement();
+    await expect(region.querySelectorAll('[role="status"], [role="alert"]')).toHaveLength(3);
+    await expect(cards[0]!.querySelector('[role="status"]')!.querySelector('button')).toBeNull();
     await userEvent.hover(region);
     await settled(region);
-    const outside = within(canvasElement).getByRole('button', { name: 'Outside' });
-    const toggle = within(region).getByRole('button', { name: 'Collapse notifications' });
-    await expect(toggle.getBoundingClientRect().top).toBeGreaterThanOrEqual(outside.getBoundingClientRect().bottom);
+    // Nothing above the pile drives it: no control carries the expanded state.
+    for (const button of within(region).getAllByRole('button'))
+      await expect(button).not.toHaveAttribute('aria-expanded');
   },
 };
 
@@ -366,9 +420,13 @@ export const OverflowPromotion: Story = {
     await settled(region);
     await expect(region.querySelectorAll('[data-ui="toast"]')).toHaveLength(4);
     await expect(region.querySelectorAll('[data-stack-visible="true"]')).toHaveLength(2);
-    await expect(within(region).getByRole('button', { name: 'Expand notifications' })).toHaveTextContent(
-      '(+2)',
-    );
+    // Hovering exposes the two cards the collapsed pile holds back.
+    await userEvent.hover(region);
+    await settled(region);
+    await expect(region.querySelectorAll('[data-stack-visible="true"]')).toHaveLength(4);
+    await userEvent.unhover(region);
+    await settled(region);
+    await expect(region.querySelectorAll('[data-stack-visible="true"]')).toHaveLength(2);
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Dismiss newest' }));
     await bodyOf(canvasElement).findByText('Upload complete');
     await expect(bodyOf(canvasElement).queryByText('Profile saved')).toBeNull();
@@ -387,15 +445,14 @@ export const Keyboard: Story = {
     await userEvent.keyboard('{Escape}');
     await expect(region.querySelectorAll('[data-ui="toast"]')).toHaveLength(3);
     await userEvent.tab();
-    const toggle = within(region).getByRole('button', { name: 'Collapse notifications' });
-    await expect(canvasElement.ownerDocument.activeElement).toBe(toggle);
-    await expect(getComputedStyle(toggle).outlineStyle).not.toBe('none');
-    await expect(toggle).toHaveAttribute(
-      'aria-controls',
-      region.querySelector('[data-ui="toast-stack-list"]')!.id,
-    );
+    const newest = within(region).getAllByRole('button', { name: 'Dismiss' })[0]!;
+    await expect(canvasElement.ownerDocument.activeElement).toBe(newest);
+    await expect(getComputedStyle(newest).outlineStyle).not.toBe('none');
+    // Focusing the stack fans it out, and leaving it tucks the pile back down.
+    await expect(region).toHaveAttribute('data-expanded', 'true');
     await userEvent.tab({ shift: true });
     await expect(canvasElement.ownerDocument.activeElement).toBe(outside);
+    await expect(region).toHaveAttribute('data-expanded', 'false');
     await userEvent.keyboard('{Alt>}t{/Alt}');
     const dismiss = within(region).getAllByRole('button', { name: 'Dismiss' })[0]!;
     await expect(canvasElement.ownerDocument.activeElement).toBe(dismiss);
@@ -404,8 +461,9 @@ export const Keyboard: Story = {
     await waitFor(async () => {
       await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(2);
     });
+    // Focus lands on the next open card, not on the one that is still fading out.
     await expect(canvasElement.ownerDocument.activeElement).toBe(
-      within(region).getAllByRole('button', { name: 'Dismiss' })[0],
+      region.querySelector('[data-state="open"] [data-toast-dismiss]'),
     );
     await settled(region);
   },
@@ -431,12 +489,81 @@ export const HoverAndTouchExpansion: Story = {
     await expect(list.getBoundingClientRect().height).toBeGreaterThan(collapsedHeight);
     await userEvent.unhover(region);
     await expect(region).toHaveAttribute('data-expanded', 'false');
-    await userEvent.click(within(region).getByRole('button', { name: 'Expand notifications' }));
+    // Touch has no hover, so a tap on a card fans the pile out and a tap outside tucks it back.
+    tapCard(region.querySelector<HTMLElement>('[data-ui="toast"]')!);
     await userEvent.unhover(region);
     await expect(region).toHaveAttribute('data-expanded', 'true');
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'Outside' }));
     await expect(region).toHaveAttribute('data-expanded', 'false');
     await settled(region);
+  },
+};
+export const SwipeToDismiss: Story = {
+  name: 'Swipe a card away',
+  parameters: { docs: {
+    description: { story: 'Drag a card right past half its width to dismiss it; a short or vertical drag springs back.' },
+  } },
+  render: (args) => <Harness {...args} initial={messages.slice(0, 3)} />,
+  play: async ({ canvasElement }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    const card = region.querySelector<HTMLElement>('[data-ui="toast"]')!;
+    const width = card.getBoundingClientRect().width;
+    const open = () => region.querySelectorAll('[data-state="open"]');
+    // A vertical drag is the page scrolling, so the card stays put.
+    dragCard(card, 4, width * 0.5);
+    await settled(region);
+    await expect(card.style.getPropertyValue('--toast-swipe-x')).toBe('');
+    // A short drag that the finger stopped before lifting springs back into the pile.
+    dragCard(card, width * 0.2, 0, 200);
+    await settled(region);
+    await expect(open()).toHaveLength(3);
+    await expect(card.style.getPropertyValue('--toast-swipe-x')).toBe('');
+    // The click that follows the drag cannot also fan the pile out.
+    fireEvent.click(card);
+    await expect(region).toHaveAttribute('data-expanded', 'false');
+    // A mouse drag is text selection: the card stays where it is.
+    dragCard(card, width * 0.6, 0, 16, 'mouse');
+    await settled(region);
+    await expect(open()).toHaveLength(3);
+    // A pen tap fans the pile out and tucks it back, the way a finger does.
+    tapCard(card, 'pen');
+    await expect(region).toHaveAttribute('data-expanded', 'true');
+    tapCard(card, 'pen');
+    await expect(region).toHaveAttribute('data-expanded', 'false');
+    // A pointerdown that lifts off the card without a pointerup cannot freeze the next drag.
+    const orphan = stackPointer(card);
+    orphan.fire('pointerdown', 0);
+    orphan.restore();
+    // A flick under the dismissal share still throws the card away.
+    dragCard(card, width * 0.3);
+    await waitFor(async () => {
+      await expect(region.querySelectorAll('[data-ui="toast"]')).toHaveLength(2);
+    });
+    await expect(within(region).queryByText('Message sent')).toBeNull();
+  },
+};
+export const SwipeToDismissRtl: Story = {
+  name: 'Swipe the other way in RTL',
+  parameters: { docs: {
+    description: { story: 'A right-to-left stack dismisses toward its start edge, so the swipe follows the writing direction.' },
+  } },
+  args: { sx: { direction: 'rtl' } },
+  render: (args) => <Harness {...args} initial={messages.slice(0, 3)} />,
+  play: async ({ canvasElement }) => {
+    const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
+    await settled(region);
+    const card = region.querySelector<HTMLElement>('[data-ui="toast"]')!;
+    const width = card.getBoundingClientRect().width;
+    // In RTL the dismiss edge is on the left, so a rightward drag only springs back.
+    dragCard(card, width * 0.6);
+    await settled(region);
+    await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(3);
+    dragCard(card, -width * 0.6);
+    await waitFor(async () => {
+      await expect(region.querySelectorAll('[data-ui="toast"]')).toHaveLength(2);
+    });
+    await expect(within(region).queryByText('Message sent')).toBeNull();
   },
 };
 export const PauseOnHover: Story = {
@@ -521,20 +648,16 @@ export const CollapsedMixedHeights: Story = {
     await userEvent.unhover(region);
     await settled(region);
     const cards = region.querySelectorAll<HTMLElement>('[data-ui~="toast"]');
-    const toggle = within(region).getByRole('button', { name: 'Expand notifications' });
     await expect(getComputedStyle(cards[1]!).overflow).toBe('hidden');
     await expect(cards[1]!.getBoundingClientRect().height).toBe(cards[0]!.getBoundingClientRect().height);
-    await expect(cards[1]!.getBoundingClientRect().top).toBeGreaterThanOrEqual(toggle.getBoundingClientRect().bottom);
+    // The taller card waits behind the pile and peeks above the front one.
+    await expect(cards[1]!.getBoundingClientRect().top).toBeLessThan(cards[0]!.getBoundingClientRect().top);
     await expect(cards[1]).toHaveAttribute('inert');
   },
 };
 
 export const LongLabels: Story = {
-  args: {
-    expandLabel: 'Expand notifications for all your international collaboration workspaces',
-    collapseLabel: 'Collapse notifications for all your international collaboration workspaces',
-    sx: { inlineSize: '18rem' },
-  },
+  args: { sx: { inlineSize: '18rem' } },
   render: (args) => <Harness {...args} initial={[
     { title: 'Export ready', duration: null },
     { title: 'Upload failed', duration: null, action: {
@@ -542,31 +665,27 @@ export const LongLabels: Story = {
       onClick: (event) => event.preventDefault(),
     } },
   ]} />,
-  play: async ({ canvasElement, userEvent, args }) => {
+  play: async ({ canvasElement, userEvent }) => {
     const region = await bodyOf(canvasElement).findByRole('region', { name: 'Notifications' });
     await settled(region);
+    // Long copy wraps inside a narrow pile instead of widening it, collapsed and fanned out.
     for (const expanded of [false, true]) {
       await expect(region.scrollWidth).toBeLessThanOrEqual(region.clientWidth);
       for (const button of within(region).getAllByRole('button')) {
         await expect(button.scrollWidth).toBeLessThanOrEqual(button.clientWidth);
         await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
       }
+      for (const card of region.querySelectorAll<HTMLElement>('[data-ui="toast"]')) {
+        await expect(card.getBoundingClientRect().right).toBeLessThanOrEqual(
+          region.getBoundingClientRect().right,
+        );
+      }
       if (!expanded) {
-        await userEvent.click(within(region).getByRole('button', { name: args.expandLabel }));
+        await userEvent.hover(region);
         await settled(region);
+        await expect(region).toHaveAttribute('data-expanded', 'true');
       }
     }
-    await userEvent.tab();
-    await userEvent.tab({ shift: true });
-    const toggle = within(region).getByRole('button', { name: args.collapseLabel });
-    await expect(canvasElement.ownerDocument.activeElement).toBe(toggle);
-    await expect(getComputedStyle(toggle).outlineStyle).not.toBe('none');
-    const focusSpace = parseFloat(getComputedStyle(toggle).outlineWidth) + parseFloat(getComputedStyle(toggle).outlineOffset);
-    const bounds = region.getBoundingClientRect();
-    const target = toggle.getBoundingClientRect();
-    await expect(target.left - focusSpace).toBeGreaterThanOrEqual(bounds.left);
-    await expect(target.right + focusSpace).toBeLessThanOrEqual(bounds.right);
-    await expect(target.top - focusSpace).toBeGreaterThanOrEqual(bounds.top);
   },
 };
 export const UndoPrevented: Story = {
@@ -902,7 +1021,7 @@ export const NativeDismissKeys: Story = {
     await userEvent.keyboard('{Enter}');
     await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(1);
     await expect(canvasElement.ownerDocument.activeElement).toBe(
-      within(region).getByRole('button', { name: 'Dismiss' }),
+      region.querySelector('[data-state="open"] [data-toast-dismiss]'),
     );
     await userEvent.keyboard(' ');
     await expect(region.querySelectorAll('[data-state="open"]')).toHaveLength(0);
