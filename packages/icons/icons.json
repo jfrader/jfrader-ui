@@ -1,5 +1,22 @@
 [
   {
+    "name": "accessibility",
+    "category": "people",
+    "tags": [
+      "wheelchair",
+      "access",
+      "mobility",
+      "disability"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "align-center",
     "category": "editing",
     "tags": [
@@ -223,6 +240,23 @@
     "since": "0.2.0"
   },
   {
+    "name": "badge",
+    "category": "people",
+    "tags": [
+      "identity",
+      "portrait",
+      "lanyard",
+      "identification"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "bank",
     "category": "money",
     "tags": [
@@ -337,6 +371,23 @@
     "since": "0.2.0"
   },
   {
+    "name": "bitcoin",
+    "category": "money",
+    "tags": [
+      "btc",
+      "coin",
+      "crypto",
+      "chain"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
     "name": "bold",
     "category": "editing",
     "tags": [
@@ -387,6 +438,39 @@
     "since": "0.2.0"
   },
   {
+    "name": "braces",
+    "category": "development",
+    "tags": [
+      "curly",
+      "syntax",
+      "object",
+      "programming"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "branch",
+    "category": "development",
+    "tags": [
+      "git",
+      "fork",
+      "revision",
+      "graph"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "broadcast",
     "category": "communication",
     "tags": [
@@ -410,6 +494,23 @@
       "paint",
       "bristles",
       "art"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "bug",
+    "category": "development",
+    "tags": [
+      "insect",
+      "defect",
+      "debug",
+      "issue"
     ],
     "aliases": [],
     "variants": [
@@ -924,6 +1025,23 @@
     "since": "0.2.0"
   },
   {
+    "name": "code",
+    "category": "development",
+    "tags": [
+      "source",
+      "programming",
+      "brackets",
+      "syntax"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "coins",
     "category": "money",
     "tags": [
@@ -975,12 +1093,45 @@
     "since": "0.2.0"
   },
   {
+    "name": "commit",
+    "category": "development",
+    "tags": [
+      "git",
+      "revision",
+      "history",
+      "checkpoint"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "compass",
     "category": "navigation",
     "tags": [
       "direction",
       "bearing",
       "explore"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "contact",
+    "category": "people",
+    "tags": [
+      "address",
+      "card",
+      "portrait",
+      "directory"
     ],
     "aliases": [],
     "variants": [
@@ -1137,6 +1288,23 @@
       "panels",
       "overview",
       "widgets"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "database",
+    "category": "development",
+    "tags": [
+      "data",
+      "storage",
+      "cylinder",
+      "records"
     ],
     "aliases": [],
     "variants": [
@@ -1763,6 +1931,23 @@
     "since": "0.2.0"
   },
   {
+    "name": "frown",
+    "category": "people",
+    "tags": [
+      "face",
+      "sad",
+      "emotion",
+      "negative"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "globe",
     "category": "device",
     "tags": [
@@ -1821,6 +2006,23 @@
       "pan",
       "grab",
       "drag"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "handshake",
+    "category": "people",
+    "tags": [
+      "agreement",
+      "partnership",
+      "hands",
+      "collaboration"
     ],
     "aliases": [],
     "variants": [
@@ -2349,6 +2551,22 @@
     "since": "0.2.0"
   },
   {
+    "name": "merge",
+    "category": "development",
+    "tags": [
+      "git",
+      "combine",
+      "join",
+      "graph"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "message",
     "category": "communication",
     "tags": [
@@ -2662,6 +2880,23 @@
     "since": "0.2.0"
   },
   {
+    "name": "package",
+    "category": "development",
+    "tags": [
+      "parcel",
+      "box",
+      "dependency",
+      "module"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "palette",
     "category": "editing",
     "tags": [
@@ -2915,6 +3150,23 @@
     "since": "0.2.0"
   },
   {
+    "name": "person-circle",
+    "category": "people",
+    "tags": [
+      "avatar",
+      "profile",
+      "account",
+      "user"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "person-minus",
     "category": "people",
     "tags": [
@@ -3150,6 +3402,38 @@
     "variants": [
       "line",
       "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "progress",
+    "category": "status",
+    "tags": [
+      "loading",
+      "rail",
+      "completion",
+      "track"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "pull-request",
+    "category": "development",
+    "tags": [
+      "git",
+      "review",
+      "contribution",
+      "changes"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
     ],
     "expressive": false,
     "since": "0.2.0"
@@ -3474,6 +3758,25 @@
     "since": "0.2.0"
   },
   {
+    "name": "satoshi",
+    "category": "money",
+    "tags": [
+      "sats",
+      "subunit",
+      "lightning",
+      "fraction"
+    ],
+    "aliases": [
+      "sats"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
     "name": "save",
     "category": "action",
     "tags": [
@@ -3599,6 +3902,23 @@
     ],
     "expressive": false,
     "since": "0.1.0"
+  },
+  {
+    "name": "server",
+    "category": "development",
+    "tags": [
+      "rack",
+      "host",
+      "infrastructure",
+      "slots"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
   },
   {
     "name": "settings",
@@ -3779,6 +4099,23 @@
     "since": "0.2.0"
   },
   {
+    "name": "smile",
+    "category": "people",
+    "tags": [
+      "face",
+      "happy",
+      "emotion",
+      "positive"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "snow",
     "category": "weather",
     "tags": [
@@ -3840,6 +4177,23 @@
     "aliases": [],
     "variants": [
       "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "star",
+    "category": "status",
+    "tags": [
+      "favorite",
+      "rating",
+      "saved",
+      "point"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
     ],
     "expressive": false,
     "since": "0.2.0"
@@ -4088,6 +4442,23 @@
       "solid"
     ],
     "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "terminal",
+    "category": "development",
+    "tags": [
+      "console",
+      "shell",
+      "prompt",
+      "cli"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
     "since": "0.2.0"
   },
   {
