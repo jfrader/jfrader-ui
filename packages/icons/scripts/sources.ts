@@ -132,11 +132,15 @@ export function artifacts(sources: Source[], metadata: MetadataSource): Map<stri
     const components = entry.variants.map((variant) => {
       const source = sources.find((item) => item.name === entry.name && item.variant === variant)!;
       const name = componentName(entry.name) + (variant === 'solid' ? 'Solid' : '');
-      const children = parsed.get(source)!.map(({ tag, attrs }) => `      <${tag} ${Object.entries(attrs).map(([key, value]) => `${key.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase())}=${JSON.stringify(value)}`).join(' ')} />`).join('\n');
+      // Generated without JSX: this package is compiled under consumers' JSX settings, and a
+      // story importing it must not drag that consumer's JSX runtime into the icon sources.
+      const children = parsed.get(source)!.map(({ tag, attrs }) =>
+        `h('${tag}', { ${Object.entries(attrs).map(([key, value]) => `${/^[a-z]+$/.test(key) ? key : JSON.stringify(key)}: '${value}'`).join(', ')} })`,
+      ).join(', ');
       const defaults = variant === 'solid' ? ", { variant: 'solid' }" : '';
-      return `export const ${name} = createSvgIcon(\n  <>\n${children}\n  </>,\n  'Icons.${name}'${defaults},\n);\n`;
+      return `export const ${name} = createSvgIcon(h(Fragment, null, ${children}), 'Icons.${name}'${defaults});\n`;
     });
-    files.set(`src/generated/${entry.name}.tsx`, `${header}import { createSvgIcon } from '@jfrader/ui/svg-icon';\n\n${components.join('\n')}`);
+    files.set(`src/generated/${entry.name}.tsx`, `${header}import { createElement as h, Fragment } from 'react';\nimport { createSvgIcon } from '@jfrader/ui/svg-icon';\n\n${components.join('\n')}`);
   }
   files.set('src/generated/index.ts', header + table.map((entry) => `export { ${entry.variants.map((variant) => componentName(entry.name) + (variant === 'solid' ? 'Solid' : '')).join(', ')} } from './${entry.name}';`).join('\n') + '\n');
   files.set('icons.json', JSON.stringify(table, null, 2) + '\n');
