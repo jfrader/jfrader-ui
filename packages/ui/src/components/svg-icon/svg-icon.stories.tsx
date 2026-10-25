@@ -10,7 +10,8 @@ import { SvgIcon, createSvgIcon, type SvgIconTone } from './index';
 
 const drawing = <><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.1 15.1 20 20" /></>;
 const SearchIcon = createSvgIcon(drawing, 'Icons.Search');
-const SearchSolidIcon = createSvgIcon(drawing, 'Icons.SearchSolid', { variant: 'solid' });
+const solidDrawing = <path d="M9 5 18 12 9 19Z" />;
+const PlaySolidIcon = createSvgIcon(solidDrawing, 'Icons.PlaySolid', { variant: 'solid' });
 const Row = styled.div({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[4] });
 const TextRun = styled.p({ fontFamily: vars.font.sans, fontSize: vars.textSize.lg, color: vars.color.text, margin: 0 });
 const TONES = ['inherit', 'accent', 'danger', 'warning', 'success', 'info', 'muted'] as const satisfies readonly SvgIconTone[];
@@ -129,18 +130,19 @@ const drawing = <><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.1 15.1 20 2
   },
 };
 export const Factory: Story = {
-  render: (args) => <Row><SearchIcon {...args} tone="accent" size="lg" label="Factory search" /><SearchSolidIcon {...args} tone="accent" size="lg" label="Factory solid" /><SvgIcon {...args} tone="accent" size="lg" label="Base search" /></Row>,
+  render: (args) => <Row><SearchIcon {...args} tone="accent" size="lg" label="Factory search" /><PlaySolidIcon {...args} tone="accent" size="lg" label="Factory solid" /><SvgIcon {...args} tone="accent" size="lg" label="Base search" /></Row>,
   parameters: { docs: { description: { story: 'Your own icon in 6 lines: declare a drawing once and pass the same props to the factory icon and base. A third argument bakes in props such as `variant`, `viewBox`, or `inheritViewBox`.' }, source: { code: `import { createSvgIcon, SvgIcon } from '@jfrader/ui';
 const drawing = <><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.1 15.1 20 20" /></>;
 const SearchIcon = createSvgIcon(drawing, 'Icons.Search');
-const SearchSolidIcon = createSvgIcon(drawing, 'Icons.SearchSolid', { variant: 'solid' });
+const solidDrawing = <path d="M9 5 18 12 9 19Z" />;
+const PlaySolidIcon = createSvgIcon(solidDrawing, 'Icons.PlaySolid', { variant: 'solid' });
 const factoryIcon = <SearchIcon tone="accent" size="lg" label="Factory search" />;
-const solidIcon = <SearchSolidIcon tone="accent" size="lg" label="Factory solid" />;
+const solidIcon = <PlaySolidIcon tone="accent" size="lg" label="Factory solid" />;
 const baseIcon = <SvgIcon tone="accent" size="lg" label="Base search">{drawing}</SvgIcon>;
 <>{factoryIcon}{solidIcon}{baseIcon}</>` } } },
   play: async ({ canvasElement }) => {
     await expect(SearchIcon.displayName).toBe('Icons.Search');
-    await expect(SearchSolidIcon.displayName).toBe('Icons.SearchSolid');
+    await expect(PlaySolidIcon.displayName).toBe('Icons.PlaySolid');
     const [factory, baked, base] = canvasElement.querySelectorAll('svg');
     await expect(factory!.getBoundingClientRect().width).toBe(base!.getBoundingClientRect().width);
     await expect(getComputedStyle(factory!).color).toBe(getComputedStyle(base!).color);
