@@ -61,7 +61,8 @@ import {
   listboxScrollStyle,
   listboxSurfaceStyle,
 } from '../../styling/listbox-style';
-import { COARSE_POINTER, FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { touchTargetStyle } from '../../styling/touch-target';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
@@ -310,6 +311,8 @@ function useSelectItemContext(): SelectContextValue {
 }
 
 const selectTriggerStyle = css({
+  paddingBlock: 0,
+  lineHeight: vars.lineHeight.tight,
   justifyContent: 'flex-start',
   gap: vars.space[2],
   minInlineSize: '180px',
@@ -340,12 +343,6 @@ const selectCaretStyle = css({
     '&::after': { forcedColorAdjust: 'none', borderBlockStartColor: 'CanvasText' },
   },
 });
-
-const triggerSizes = {
-  sm: css({ minBlockSize: vars.space[8], [COARSE_POINTER]: { minBlockSize: vars.size.touch } }),
-  md: css({ minBlockSize: vars.space[10], [COARSE_POINTER]: { minBlockSize: vars.size.touch } }),
-  lg: css({ minBlockSize: vars.space[12] }),
-};
 
 const valueStyle = css({
   minInlineSize: 0,
@@ -767,7 +764,8 @@ function SelectTrigger({
         triggerStyle,
         selectTriggerStyle,
         selectCaretStyle,
-        triggerSizes[size],
+        controlSizeStyles[size],
+        controlTouchTargetStyles[size],
         variant === 'morph' && morphTriggerStyle,
       ]}
       sx={sx}

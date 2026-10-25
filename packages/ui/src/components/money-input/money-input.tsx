@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
+import { controlBlockSize, controlTextSize } from '../../styling/control-size';
 import { css } from '../../styling/css';
 import { withoutSx, type SxProps } from '../../styling/sx';
 import { inputControlStyle } from '../../styling/input-control';
@@ -161,9 +162,9 @@ const controlStyle = css({
   [FORCED_COLORS]: { backgroundColor: 'Canvas', color: 'CanvasText', borderColor: 'CanvasText' },
 });
 const sizes = {
-  sm: css({ blockSize: vars.space[8], fontSize: vars.textSize.sm }),
-  md: css({ blockSize: vars.space[10], fontSize: vars.textSize.md }),
-  lg: css({ blockSize: vars.space[12], fontSize: vars.textSize.xl }),
+  sm: css({ blockSize: controlBlockSize.sm, fontSize: controlTextSize.sm }),
+  md: css({ blockSize: controlBlockSize.md, fontSize: controlTextSize.md }),
+  lg: css({ blockSize: controlBlockSize.lg, fontSize: controlTextSize.lg }),
 };
 const currencyStyle = css({
   color: vars.color.text,

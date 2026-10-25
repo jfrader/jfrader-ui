@@ -254,6 +254,7 @@ export const Sizes: Story = {
 export const Standard: Story = { args: { variant: 'standard' } };
 /** Give a checkout total a taller editor. */
 export const Prominent: Story = {
+  parameters: { docs: { description: { story: 'The prominent amount editor uses an 80px height and larger text instead of the single-line size scale. Use the standard variant in a row with other controls.' } } },
   args: { variant: 'prominent', currencies: ['USD', 'JPY'] },
   play: async ({ canvas, userEvent }) => {
     const input = canvas.getByRole('spinbutton');

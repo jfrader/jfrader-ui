@@ -195,6 +195,9 @@ export const vars = {
     "easePlayedPileShadow": "var(--ui-motion-ease-played-pile-shadow)"
   },
   "size": {
+    "controlSm": "var(--ui-size-control-sm)",
+    "controlMd": "var(--ui-size-control-md)",
+    "controlLg": "var(--ui-size-control-lg)",
     "touch": "var(--ui-size-touch)",
     "personAvatarLg": "var(--ui-size-person-avatar-lg)",
     "emblemSm": "var(--ui-size-emblem-sm)",

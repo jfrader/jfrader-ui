@@ -16,6 +16,7 @@ import {
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
+import { controlBlockSize, controlTextSize } from '../../styling/control-size';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { loadingRing, loadingRingPulse } from '../../styling/loading-ring';
@@ -63,6 +64,7 @@ export interface ButtonProps extends Omit<ComponentPropsWithRef<'button'>, 'colo
 const HOVER = '&:hover:not(:disabled):not([aria-disabled="true"])';
 
 const baseStyle = css(touchTargetStyle, {
+  boxSizing: 'border-box',
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -90,16 +92,12 @@ const baseStyle = css(touchTargetStyle, {
   },
 });
 
-export const buttonBlockSizes = {
-  sm: vars.space[8],
-  md: vars.space[10],
-  lg: vars.space[12],
-} satisfies Record<ButtonSize, string>;
+export const buttonBlockSizes = controlBlockSize;
 
 const sizeStyles: Record<ButtonSize, SerializedStyles> = {
-  sm: css({ blockSize: buttonBlockSizes.sm, paddingInline: vars.space[3], fontSize: vars.textSize.sm }),
-  md: css({ blockSize: buttonBlockSizes.md, paddingInline: vars.space[4], fontSize: vars.textSize.sm }),
-  lg: css({ blockSize: buttonBlockSizes.lg, paddingInline: vars.space[5], fontSize: vars.textSize.md }),
+  sm: css({ blockSize: controlBlockSize.sm, paddingInline: vars.space[3], fontSize: controlTextSize.sm }),
+  md: css({ blockSize: controlBlockSize.md, paddingInline: vars.space[4], fontSize: controlTextSize.md }),
+  lg: css({ blockSize: controlBlockSize.lg, paddingInline: vars.space[5], fontSize: controlTextSize.lg }),
 };
 
 const variantStyles: Record<ButtonVariant, Record<ButtonTone, SerializedStyles>> = {
