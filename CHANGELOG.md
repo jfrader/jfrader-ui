@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.18.0 — 2026-10-25
+
 ### Changed
 
 - Button, TextField, Select, NumberField, MoneyInput, and SegmentedControl share 2rem, 2.5rem, and 3rem control heights. SegmentedControl now includes its track padding in that height, Select's small trigger is shorter, and MoneyInput uses the same text sizes as other controls. Remove consumer height overrides so controls retain their responsive sizing and touch targets. Multiline textareas and prominent amount editors keep their taller layouts.
