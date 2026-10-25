@@ -107,7 +107,7 @@ function files(directory) {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const root = fileURLToPath(new URL('../../../', import.meta.url));
-  const errors = ['packages/ui/src', 'apps/storybook', 'apps/pilot'].flatMap((directory) =>
+  const errors = ['packages/ui/src', 'packages/icons/src', 'packages/styling/src', 'apps/storybook', 'apps/pilot'].flatMap((directory) =>
     files(path.join(root, directory)).flatMap((file) => checkStylingApi(readFileSync(file, 'utf8'), path.relative(root, file))),
   );
   if (errors.length) {

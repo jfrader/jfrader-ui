@@ -17,6 +17,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { componentDirectory } from './component-directory.mjs';
 
 const root = fileURLToPath(new URL('../packages/ui/src/components', import.meta.url));
 const EXEMPT = new Set(['root', 'component', 'components']);
@@ -24,8 +25,9 @@ const EXEMPT = new Set(['root', 'component', 'components']);
 export function findUnwiredKeys(componentsRoot = root) {
   const findings = [];
   for (const family of readdirSync(componentsRoot).sort()) {
-    const directory = path.join(componentsRoot, family);
-    if (!statSync(directory).isDirectory()) continue;
+    const entry = path.join(componentsRoot, family);
+    if (!statSync(entry).isDirectory()) continue;
+    const directory = componentDirectory(entry);
     const sources = readdirSync(directory)
       .filter((name) => name.endsWith('.tsx') && !name.includes('.stories.') && !name.includes('.test.'))
       .map((name) => path.join(directory, name));

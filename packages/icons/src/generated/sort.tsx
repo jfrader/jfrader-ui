@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Sort = createSvgIcon(h(Fragment, null, h('path', { d: 'M3 5H13M3 11H10M3 17H7M18 4V20M15 17 18 20 21 17' })), 'Icons.Sort');
 

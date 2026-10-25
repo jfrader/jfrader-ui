@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -154,6 +154,19 @@ test('Article and ArticleSection each publish one documentation page', () => {
     });
     assert.deepEqual(published, [`${family}.stories.tsx`], `${family}: auxiliary story files would create duplicate docs navigation`);
   }
+});
+
+test('component re-exports retain documentation checks in the owning package', (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), 'jfrader-docs-owner-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  mkdirSync(path.join(root, 'components/svg-icon'), { recursive: true });
+  mkdirSync(path.join(root, 'node_modules/@jfrader'), { recursive: true });
+  const icons = path.resolve(import.meta.dirname, '../../../packages/icons');
+  symlinkSync(icons, path.join(root, 'node_modules/@jfrader/icons'), 'dir');
+  writeFileSync(path.join(root, 'components/svg-icon/index.ts'), "export { SvgIcon } from '@jfrader/icons/svg-icon';\n");
+  assert.deepEqual(checkComponentDocs(path.join(root, 'components')), { checked: 1, errors: [] });
+  const source = readFileSync(path.join(icons, 'src/svg-icon/svg-icon.stories.tsx'), 'utf8');
+  assert.match(source, /title: 'Data display\/SvgIcon'/);
 });
 
 const titled = (title, tags = "['autodocs']") => `

@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadCsf, metaObjectPath } from 'storybook/internal/csf-tools';
+import { componentDirectory } from '../../../scripts/component-directory.mjs';
 
 const DESCRIPTION_PATH = ['parameters', 'docs', 'description', 'component'];
 const SNIPPET_COMPONENTS = new Set(['game-card', 'flip-game-card', 'game-hand', 'game-card-stack', 'game-chip', 'game-chip-stack', 'deck', 'pattern', 'card-flights', 'flights']);
@@ -172,7 +173,7 @@ export function checkDuplicateDocsTitles(componentsDir) {
   const errors = [];
   for (const dir of readdirSync(componentsDir, { withFileTypes: true })) {
     if (!dir.isDirectory()) continue;
-    const folder = path.join(componentsDir, dir.name);
+    const folder = componentDirectory(path.join(componentsDir, dir.name));
     for (const story of readdirSync(folder).filter((file) => /\.stories\.tsx?$/.test(file))) {
       const fileName = path.join(folder, story);
       try {
@@ -199,7 +200,7 @@ export function checkComponentDocs(componentsDir) {
   const errors = [];
   let checked = 0;
   for (const dir of readdirSync(componentsDir, { withFileTypes: true })) {
-    const folder = path.join(componentsDir, dir.name);
+    const folder = componentDirectory(path.join(componentsDir, dir.name));
     if (!dir.isDirectory() || !existsSync(path.join(folder, 'index.ts'))) continue;
     const stories = readdirSync(folder).filter((file) => /\.stories\.tsx?$/.test(file));
     if (stories.length === 0) errors.push(`${dir.name}: missing component stories.`);

@@ -1,5 +1,5 @@
-export { SvgIcon, createSvgIcon } from './svg-icon';
+export { SvgIcon, createSvgIcon } from '@jfrader/icons/svg-icon';
 export type {
   SvgIconProps, SvgIconVariant, SvgIconSize, SvgIconTone, SvgIconSlots,
   SvgIconSlotProps, SvgIconRootProps, SvgIconTitleProps, CreatedSvgIconProps,
-} from './svg-icon';
+} from '@jfrader/icons/svg-icon';

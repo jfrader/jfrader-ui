@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const MessageDots = createSvgIcon(h(Fragment, null, h('path', { d: 'M7 4H17A4 4 0 0 1 21 8V14A4 4 0 0 1 17 18H7L4 21V17A4 4 0 0 1 3 14V8A4 4 0 0 1 7 4Z' }), h('circle', { cx: '7.5', cy: '11', r: '1.25', fill: 'currentColor', stroke: 'none' }), h('circle', { cx: '12', cy: '11', r: '1.25', fill: 'currentColor', stroke: 'none' }), h('circle', { cx: '16.5', cy: '11', r: '1.25', fill: 'currentColor', stroke: 'none' })), 'Icons.MessageDots');
 

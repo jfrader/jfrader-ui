@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Podium = createSvgIcon(h(Fragment, null, h('path', { d: 'M3 20V11H9V5H15V14H21V20H3ZM9 11V20M15 14V20' })), 'Icons.Podium');
 

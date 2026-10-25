@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Eyedropper = createSvgIcon(h(Fragment, null, h('path', { d: 'M10 10 4 16V20H8L14 14M9 7 17 15M12 10 17 5A2 2 0 0 1 20 5A2 2 0 0 1 20 8L15 13' })), 'Icons.Eyedropper');
 

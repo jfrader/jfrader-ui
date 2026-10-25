@@ -1,8 +1,7 @@
 import type { ComponentPropsWithRef, ComponentType, ReactNode } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type SerializedStyles } from '../../styling/css';
-import { WithSx, type SxProps } from '../../styling/sx';
+import { css, WithSx, type SerializedStyles, type SxProps } from '@jfrader/styling';
 
 export type SvgIconVariant = 'line' | 'solid';
 export type SvgIconSize = 'sm' | 'md' | 'lg' | 'inherit' | number;

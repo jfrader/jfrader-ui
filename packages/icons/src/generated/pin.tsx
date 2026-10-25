@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Pin = createSvgIcon(h(Fragment, null, h('path', { d: 'M7 3H17M8 3V9L5 12V15H19V12L16 9V3M12 15V21' })), 'Icons.Pin');
 

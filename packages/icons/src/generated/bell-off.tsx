@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const BellOff = createSvgIcon(h(Fragment, null, h('path', { d: 'M9 4.8A6 6 0 0 1 18 10V13M6 9V14L4 17H17M10 21H14M3 3 21 21' })), 'Icons.BellOff');
 

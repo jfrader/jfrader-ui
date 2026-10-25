@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const PiggyBank = createSvgIcon(h(Fragment, null, h('path', { d: 'M6 8C8 6 12 5 15 7L18 4V9L21 10V15H18L16 17V20H13V18H9V20H6V17C2 14 3 10 6 8ZM8 10H12M3 11V8' }), h('circle', { cx: '16', cy: '11', r: '1.25', fill: 'currentColor', stroke: 'none' })), 'Icons.PiggyBank');
 

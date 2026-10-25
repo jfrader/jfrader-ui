@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const EyeOff = createSvgIcon(h(Fragment, null, h('path', { d: 'M3 3 21 21M10 6.2C10.65 6.07 11.32 6 12 6C16 6 19 8 21 12C20.34 13.33 19.56 14.44 18.67 15.33M6.3 7.7C5 8.78 3.9 10.21 3 12C5 16 8 18 12 18C13.49 18 14.84 17.72 16.07 17.17M10 12A2 2 0 0 0 12 14' })), 'Icons.EyeOff');
 

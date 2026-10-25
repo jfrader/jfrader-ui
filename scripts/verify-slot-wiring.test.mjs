@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { findUnwiredKeys } from './verify-slot-wiring.mjs';
+import { componentDirectory } from './component-directory.mjs';
 
 function fixture(files) {
   const root = mkdtempSync(path.join(tmpdir(), 'slot-wiring-'));
@@ -15,6 +16,27 @@ function fixture(files) {
 }
 
 const family = (body) => `packages/ui/src/components/widget/widget.tsx`;
+
+test('package re-exports keep the owning component in slot verification', (t) => {
+  const root = fixture({
+    'components/widget/index.ts': "export { Widget } from '@jfrader/fixture/widget';\n",
+    'node_modules/@jfrader/fixture/package.json': JSON.stringify({
+      name: '@jfrader/fixture', type: 'module',
+      exports: { './widget': { types: './src/widget/index.ts', import: './src/widget/index.ts' } },
+    }),
+    'node_modules/@jfrader/fixture/src/widget/index.ts': "export { Widget } from './widget';\n",
+    'node_modules/@jfrader/fixture/src/widget/widget.tsx': 'export interface WidgetSlots {\n  header?: ComponentType<X>;\n}\n',
+  });
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const directory = path.join(root, 'components/widget');
+  const owner = path.join(root, 'node_modules/@jfrader/fixture/src/widget');
+  assert.equal(componentDirectory(directory), owner);
+  assert.deepEqual(findUnwiredKeys(path.join(root, 'components')), [{ family: 'widget', unwired: ['header'] }]);
+  writeFileSync(path.join(owner, 'index.ts'), "export { Widget } from '@jfrader/fixture/widget';\n");
+  assert.throws(() => componentDirectory(directory), /Circular component re-export/);
+  writeFileSync(path.join(directory, 'index.ts'), "export { Widget } from '@jfrader/missing/widget';\n");
+  assert.throws(() => componentDirectory(directory), /Cannot resolve component re-export/);
+});
 
 test('a declared key that the family renders passes', () => {
   const root = fixture({

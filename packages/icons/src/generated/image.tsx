@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Image = createSvgIcon(h(Fragment, null, h('rect', { x: '3', y: '4', width: '18', height: '16', rx: '4' }), h('circle', { cx: '8', cy: '9', r: '1.25', fill: 'currentColor', stroke: 'none' }), h('path', { d: 'M4 18 9 13 12 16 17 11 21 15' })), 'Icons.Image');
 

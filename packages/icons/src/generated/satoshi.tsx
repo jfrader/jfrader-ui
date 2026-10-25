@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Satoshi = createSvgIcon(h(Fragment, null, h('path', { d: 'M16 8.5C14.5 7 8 7 8 10.25C8 13.5 16 11.5 16 15C16 18.5 9.5 18.5 8 17M6 12.5H18' })), 'Icons.Satoshi');
 

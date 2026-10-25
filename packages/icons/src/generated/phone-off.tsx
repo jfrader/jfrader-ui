@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const PhoneOff = createSvgIcon(h(Fragment, null, h('path', { d: 'M7 3A2 2 0 0 1 9 5V6M3 7C3.96 14.89 10.66 21 19 21A2 2 0 0 0 21 19V17A2 2 0 0 0 19 15H17A2 2 0 0 0 15 17V18C11.7 17.09 9.24 15.34 7.57 12.77M3 3 21 21' })), 'Icons.PhoneOff');
 

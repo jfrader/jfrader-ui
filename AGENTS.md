@@ -10,8 +10,10 @@ documentation spec, review checklist).
   properties.
 - `packages/tokens`: typed token source (`src/tokens.ts`) and the generator that emits CSS variables
   and typed `var()` references.
-- `packages/ui`: components, one folder per component under `src/components/`.
-- `packages/icons`: hand-written SVG sources and metadata; generated React icons and `icons.json`.
+- `packages/styling`: shared Emotion seam, `sx`, theme typing, and media queries, built on tokens.
+- `packages/icons`: `SvgIcon`, `createSvgIcon`, hand-written SVG sources and metadata; generated React
+  icons and `icons.json`, built on styling and tokens.
+- `packages/ui`: components, one folder per component under `src/components/`, built on icons and styling.
 - `apps/storybook`: workbench, component docs, and browser tests.
 - `apps/docs`: documentation site published at `ui.jfrader.com`, built from the same Markdown files
   the workbench renders. Its overview page is synced from `README.md` by
@@ -52,8 +54,11 @@ Packing and publishing are in `docs/releasing.md`.
 - `@emotion/react`, `@emotion/styled` (re-exported as the app-facing `styled`; components never use
   it), and `@floating-ui/react` (Popover, Tooltip, Menu).
 - `motion` (v14.x, imported as `motion/react`).
-- `@jfrader/icons` provides React icons and peers on `@jfrader/ui`, sharing one `SvgIcon` base.
-  `@jfrader/ui` may import it only from stories as a devDependency, never from runtime components.
+- `@jfrader/styling` depends on `@jfrader/tokens` and owns the shared Emotion seam.
+- `@jfrader/icons` owns `SvgIcon` and `createSvgIcon`, depends on styling and tokens, and uses
+  `@floating-ui/react` for ref composition. It has no runtime dependency on `@jfrader/ui`.
+- `@jfrader/ui` depends on `@jfrader/icons` and `@jfrader/styling`; runtime components may import glyphs.
+  Keep the dependency direction tokens → styling → icons → ui, with no cycle.
 - `lucide-react` is approved for consumer apps only; `@jfrader/ui` must not depend on it.
 - `shiki` is an optional peer and a devDependency for stories. Only
   `packages/ui/src/components/code-block/shiki.ts`, published as the `./code-block/shiki` subpath, may

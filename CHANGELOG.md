@@ -4,6 +4,7 @@
 
 ### Added
 
+- `SvgIcon` and `createSvgIcon` are now also importable from `@jfrader/icons` and `@jfrader/icons/svg-icon`. Existing imports from `@jfrader/ui` and `@jfrader/ui/svg-icon` still work.
 - `SvgIcon` and `createSvgIcon`: one drawing component for library icons and your own marks, with `line` and `solid` paint, size presets plus exact pixels and `size="inherit"`, semantic tones, accessible naming, and replaceable root and title.
 - `@jfrader/icons`: 300 icons on a 24-unit grid, each with a solid twin where a selected state needs one, including Bitcoin and Satoshi marks. Generated from SVG sources with a geometry lint, exported per icon.
 

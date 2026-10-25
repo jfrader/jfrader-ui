@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Move = createSvgIcon(h(Fragment, null, h('path', { d: 'M12 3.5V20.5M3.5 12H20.5M8.82 6.68 12 3.5 15.18 6.68M8.82 17.32 12 20.5 15.18 17.32M6.68 8.82 3.5 12 6.68 15.18M17.32 8.82 20.5 12 17.32 15.18' })), 'Icons.Move');
 

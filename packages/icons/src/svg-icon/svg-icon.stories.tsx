@@ -2,10 +2,10 @@ import { StrictMode, createRef, useState, type ComponentPropsWithRef } from 'rea
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
-import { styled } from '../../styling/styled';
-import { withLightTheme } from '../../testing/story-decorators';
-import { createRefCleanupTracker } from '../../testing/interior-slot-assertions';
-import { Button } from '../button';
+import { styled } from '../../../ui/src/styling/styled';
+import { withLightTheme } from '../../../ui/src/testing/story-decorators';
+import { createRefCleanupTracker } from '../../../ui/src/testing/interior-slot-assertions';
+import { Button } from '../../../ui/src/components/button';
 import { SvgIcon, createSvgIcon, type SvgIconTone } from './index';
 
 const drawing = <><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.1 15.1 20 20" /></>;

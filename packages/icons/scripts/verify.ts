@@ -18,7 +18,7 @@ export function verify(root: string, entries: MetadataSource = readMetadata(root
       if (!files.has(`src/generated/${file}`)) fail(`src/generated/${file}`, 'orphaned generated file');
     }
     const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
-    const expected = { '.': './src/index.ts', './metadata': './icons.json', './*': './src/generated/*.tsx' };
+    const expected = { '.': './src/index.ts', './metadata': './icons.json', './svg-icon': './src/svg-icon/index.ts', './*': './src/generated/*.tsx' };
     for (const [subpath, target] of Object.entries(expected)) {
       const entry = manifest.exports?.[subpath];
       if (typeof entry === 'string' ? entry !== target : entry?.types !== target || entry?.import !== target) fail('package.json', `invalid export ${subpath}`);

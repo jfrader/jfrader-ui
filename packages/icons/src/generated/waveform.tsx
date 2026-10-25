@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Waveform = createSvgIcon(h(Fragment, null, h('path', { d: 'M4 10V14M8 6V18M12 3V21M16 6V18M20 10V14' })), 'Icons.Waveform');
 

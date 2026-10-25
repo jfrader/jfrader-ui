@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Wifi = createSvgIcon(h(Fragment, null, h('path', { d: 'M3 7C8 3 16 3 21 7M6 11C9 8 15 8 18 11M9 15C10.5 13.5 13.5 13.5 15 15' }), h('circle', { cx: '12', cy: '19', r: '1.25', fill: 'currentColor', stroke: 'none' })), 'Icons.Wifi');
 

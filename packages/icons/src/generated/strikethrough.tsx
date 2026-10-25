@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Strikethrough = createSvgIcon(h(Fragment, null, h('path', { d: 'M17 6C15 3 7 3 7 7C7 9 9 10 12 10M12 14C15 14 17 15 17 17C17 21 9 21 7 18M3 12H21' })), 'Icons.Strikethrough');
 

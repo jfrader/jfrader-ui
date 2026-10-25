@@ -40,7 +40,7 @@ for (const entry of entries) {
     if (!/^[A-Z]/.test(exported.name)) continue;
     const symbol = exported.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(exported) : exported;
     const declaration = symbol.valueDeclaration;
-    if (declaration && declaration.getSourceFile().fileName.includes('/components/')) collect(exported.name, checker.getTypeOfSymbolAtLocation(symbol, declaration), declaration);
+    if (declaration && declaration.getSourceFile().fileName.startsWith(path.join(root, 'packages') + path.sep)) collect(exported.name, checker.getTypeOfSymbolAtLocation(symbol, declaration), declaration);
   }
 }
 

@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Language = createSvgIcon(h(Fragment, null, h('circle', { cx: '9.5', cy: '13.5', r: '6.5' }), h('path', { d: 'M9.5 7C5.5 11 5.5 16 9.5 20C13.5 16 13.5 11 9.5 7ZM3 13.5H16M15 3H21M18 3V8' })), 'Icons.Language');
 

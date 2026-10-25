@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Desktop = createSvgIcon(h(Fragment, null, h('rect', { x: '3', y: '3', width: '18', height: '13', rx: '2' }), h('path', { d: 'M12 16V21M8 21H16' })), 'Icons.Desktop');
 

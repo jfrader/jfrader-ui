@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Hashtag = createSvgIcon(h(Fragment, null, h('path', { d: 'M9 3C9 9 7 15 7 21M17 3C17 9 15 15 15 21M4 8H21M3 16H20' })), 'Icons.Hashtag');
 

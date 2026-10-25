@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Handshake = createSvgIcon(h(Fragment, null, h('path', { d: 'M2 7H5V15H2ZM19 7H22V15H19ZM5 8H8L10 6H14L19 9M19 14 14 19H11L5 13M8 8 6 10M14 6 10 10A2 2 0 0 0 13 12L14 11 18 15M11 15 14 18' })), 'Icons.Handshake');
 

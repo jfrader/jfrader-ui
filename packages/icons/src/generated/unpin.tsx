@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Unpin = createSvgIcon(h(Fragment, null, h('path', { d: 'M10 3H17M16 3V9L19 12V15M8 8V9L5 12V15H15M12 15V21M3 3 21 21' })), 'Icons.Unpin');
 

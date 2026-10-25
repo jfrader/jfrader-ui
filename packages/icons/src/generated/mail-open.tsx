@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const MailOpen = createSvgIcon(h(Fragment, null, h('path', { d: 'M3 9 8 4C10 2 14 2 16 4L21 9V17A4 4 0 0 1 17 21H7A4 4 0 0 1 3 17V9ZM3 9 10 16C11 17 13 17 14 16L21 9' })), 'Icons.MailOpen');
 

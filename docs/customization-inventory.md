@@ -350,7 +350,7 @@ panel material. The section has no background, border or radius to migrate.
 | [StreamingCaret](../packages/ui/src/components/streaming-caret/streaming-caret.tsx) | — | — | — | — | — | — |
 | [StretchRefresh](../packages/ui/src/components/stretch-refresh/stretch-refresh.tsx) | — | `empty`, `feed`, `header`, `indicator`, `item`, `list`, `refreshButton`, `status`, `subtitle`, `title` | `empty`, `feed`, `header`, `indicator`, `item`, `list`, `refreshButton`, `status`, `subtitle`, `title` | — | — | — |
 | [Surface](../packages/ui/src/components/surface/surface.tsx) | yes | `root` | `root` | — | — | — |
-| [SvgIcon](../packages/ui/src/components/svg-icon/svg-icon.tsx) | yes | `root`, `title` | `root`, `title` | — | — | — |
+| [SvgIcon](../packages/icons/src/svg-icon/svg-icon.tsx) | yes | `root`, `title` | `root`, `title` | — | — | — |
 | [SwipeActions](../packages/ui/src/components/swipe-actions/swipe-actions.tsx) | — | `root`, `row` | `root`, `row` | — | — | `Row` |
 | [SwipeActions.Row](../packages/ui/src/components/swipe-actions/swipe-actions.tsx) | — | `action`, `actionIcon`, `actionLabel`, `body`, `content`, `menu`, `menuItem`, `trigger` | `action`, `actionIcon`, `actionLabel`, `body`, `content`, `menu`, `menuItem`, `trigger` | — | — | — |
 | [Switch](../packages/ui/src/components/switch/switch.tsx) | — | `control`, `description`, `label`, `root` | `control`, `description`, `label`, `root` | — | — | — |

@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Headphones = createSvgIcon(h(Fragment, null, h('path', { d: 'M4 13V11A8 8 0 0 1 20 11V13' }), h('rect', { x: '3', y: '12', width: '5', height: '9', rx: '2' }), h('rect', { x: '16', y: '12', width: '5', height: '9', rx: '2' })), 'Icons.Headphones');
 

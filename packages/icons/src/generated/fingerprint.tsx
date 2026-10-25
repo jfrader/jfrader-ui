@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Fingerprint = createSvgIcon(h(Fragment, null, h('path', { d: 'M3.5 11A8.5 8.5 0 0 1 20.5 11V14M4 15C4 17 3.5 18 3 19M7 19C8 17 7 14 7 11A5 5 0 0 1 17 11V14C17 17 18 19 20 20M10.5 21C12 18 10.5 14 10.5 11A1.5 1.5 0 0 1 13.5 11V14C13.5 17 14 19 15.5 21' })), 'Icons.Fingerprint');
 

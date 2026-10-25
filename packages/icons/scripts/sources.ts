@@ -140,7 +140,7 @@ export function artifacts(sources: Source[], metadata: MetadataSource): Map<stri
       const defaults = variant === 'solid' ? ", { variant: 'solid' }" : '';
       return `export const ${name} = createSvgIcon(h(Fragment, null, ${children}), 'Icons.${name}'${defaults});\n`;
     });
-    files.set(`src/generated/${entry.name}.tsx`, `${header}import { createElement as h, Fragment } from 'react';\nimport { createSvgIcon } from '@jfrader/ui/svg-icon';\n\n${components.join('\n')}`);
+    files.set(`src/generated/${entry.name}.tsx`, `${header}import { createElement as h, Fragment } from 'react';\nimport { createSvgIcon } from '../svg-icon';\n\n${components.join('\n')}`);
   }
   files.set('src/generated/index.ts', header + table.map((entry) => `export { ${entry.variants.map((variant) => componentName(entry.name) + (variant === 'solid' ? 'Solid' : '')).join(', ')} } from './${entry.name}';`).join('\n') + '\n');
   files.set('icons.json', JSON.stringify(table, null, 2) + '\n');

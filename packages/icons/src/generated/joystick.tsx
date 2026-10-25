@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Joystick = createSvgIcon(h(Fragment, null, h('circle', { cx: '8', cy: '6', r: '3' }), h('path', { d: 'M10 8 16 14' }), h('rect', { x: '3', y: '14', width: '18', height: '7', rx: '2' })), 'Icons.Joystick');
 

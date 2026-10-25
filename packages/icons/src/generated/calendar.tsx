@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Calendar = createSvgIcon(h(Fragment, null, h('rect', { x: '3', y: '5', width: '18', height: '16', rx: '4' }), h('path', { d: 'M8 3V7M16 3V7M3 11H21M8 16H10M14 16H16' })), 'Icons.Calendar');
 

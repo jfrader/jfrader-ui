@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Mute = createSvgIcon(h(Fragment, null, h('path', { d: 'M3 9H6L11 4V20L6 15H3V9ZM16 9 22 15M16 15 22 9' })), 'Icons.Mute');
 

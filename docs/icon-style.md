@@ -1,5 +1,7 @@
 # Icon style
 
+The `SvgIcon` base component and `createSvgIcon` factory ship with `@jfrader/icons`.
+
 The one visual language for every icon the design system draws. Decided on 2026-10-25 from five
 rendered candidates (GURI-3254, epic GURI-3253); the solid companion is part of the same decision.
 

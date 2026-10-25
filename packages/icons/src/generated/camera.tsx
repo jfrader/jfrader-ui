@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Camera = createSvgIcon(h(Fragment, null, h('path', { d: 'M7 7 10 4H14L17 7H19A2 2 0 0 1 21 9V18A2 2 0 0 1 19 20H5A2 2 0 0 1 3 18V9A2 2 0 0 1 5 7Z' }), h('circle', { cx: '12', cy: '13', r: '4' })), 'Icons.Camera');
 

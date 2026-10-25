@@ -1,4 +1,4 @@
-import type { CreatedSvgIconProps } from '@jfrader/ui/svg-icon';
+import type { CreatedSvgIconProps } from './svg-icon';
 
 /** Props every generated icon accepts: the full `SvgIcon` surface minus its drawing. */
 export type IconProps = CreatedSvgIconProps;

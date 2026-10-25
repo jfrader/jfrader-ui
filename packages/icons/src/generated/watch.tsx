@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Watch = createSvgIcon(h(Fragment, null, h('rect', { x: '6', y: '6', width: '12', height: '12', rx: '4' }), h('path', { d: 'M9 6V3H15V6M9 18V21H15V18M12 9V12H15' })), 'Icons.Watch');
 

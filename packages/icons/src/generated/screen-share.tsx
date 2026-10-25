@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const ScreenShare = createSvgIcon(h(Fragment, null, h('path', { d: 'M8 7H5A2 2 0 0 0 3 9V18A2 2 0 0 0 5 20H19A2 2 0 0 0 21 18V9A2 2 0 0 0 19 7H16M8 7 12 3 16 7M12 3V14' })), 'Icons.ScreenShare');
 

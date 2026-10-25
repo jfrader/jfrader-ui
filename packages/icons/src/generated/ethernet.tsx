@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Ethernet = createSvgIcon(h(Fragment, null, h('path', { d: 'M7 3H17A2 2 0 0 1 19 5V15H15V18H9V15H5V5A2 2 0 0 1 7 3ZM9 7V11M15 7V11M12 18V21' })), 'Icons.Ethernet');
 

@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Microphone = createSvgIcon(h(Fragment, null, h('rect', { x: '9', y: '3', width: '6', height: '12', rx: '4' }), h('path', { d: 'M5.5 10V11.5A6.5 6.5 0 0 0 18.5 11.5V10M12 18V21M8 21H16' })), 'Icons.Microphone');
 

@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Mobile = createSvgIcon(h(Fragment, null, h('rect', { x: '7', y: '3', width: '10', height: '18', rx: '4' }), h('path', { d: 'M10.5 6.5H13.5' })), 'Icons.Mobile');
 

@@ -12,6 +12,18 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const metadata = readMetadata(root);
 const search = readFileSync(join(root, 'src/icons/search.svg'), 'utf8');
 
+test('tokens, styling, icons, and ui keep their dependency direction', () => {
+  const layers = ['tokens', 'styling', 'icons', 'ui'];
+  for (const [layer, name] of layers.entries()) {
+    const manifest = JSON.parse(readFileSync(join(root, '..', name, 'package.json'), 'utf8'));
+    const dependencies = { ...manifest.dependencies, ...manifest.peerDependencies, ...manifest.devDependencies };
+    for (const [target, dependency] of layers.entries()) {
+      if (target >= layer) assert.equal(dependencies[`@jfrader/${dependency}`], undefined, `${name} must not depend on ${dependency}`);
+    }
+    if (layer > 0) assert.ok(manifest.dependencies[`@jfrader/${layers[layer - 1]}`], `${name} declares its foundation`);
+  }
+});
+
 for (const [name, change, message] of [
   ['wrong viewBox', (svg: string) => svg.replace('0 0 24 24', '0 0 16 16'), /root attributes/],
   ['stray transform', (svg: string) => svg.replace('<path ', '<path transform="translate(1)" '), /forbidden attribute/],
@@ -59,7 +71,7 @@ test('solid companions generate beside the line component and update metadata', 
   const play = files.get('src/generated/play.tsx')!;
   assert.match(play, /export const PlaySolid = createSvgIcon\(/);
   assert.match(play, /'Icons\.PlaySolid', \{ variant: 'solid' \}/);
-  assert.match(play, /import \{ createSvgIcon \} from '@jfrader\/ui\/svg-icon';/);
+  assert.match(play, /import \{ createSvgIcon \} from '\.\.\/svg-icon';/);
   assert.match(files.get('src/generated/index.ts')!, /export \{ Play, PlaySolid \}/);
   const table = JSON.parse(files.get('icons.json')!);
   assert.deepEqual(table.find((entry: { name: string }) => entry.name === 'play').variants, ['line', 'solid']);

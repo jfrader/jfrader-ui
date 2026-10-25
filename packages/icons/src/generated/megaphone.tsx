@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Megaphone = createSvgIcon(h(Fragment, null, h('path', { d: 'M10 10H4V14H10L17 21V3L10 10ZM10 10V14M6 14V21H10V18M21 9V15' })), 'Icons.Megaphone');
 

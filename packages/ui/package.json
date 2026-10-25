@@ -202,6 +202,8 @@
     "@emotion/styled": "^11.14.0",
     "@floating-ui/react": "^0.27.20",
     "@internationalized/number": "^3.6.9",
+    "@jfrader/icons": "workspace:^",
+    "@jfrader/styling": "workspace:*",
     "@jfrader/tokens": "workspace:*",
     "culori": "^4.0.2",
     "decimal.js": "^10.6.0",
@@ -228,7 +230,6 @@
   },
   "devDependencies": {
     "@emotion/cache": "^11.14.0",
-    "@jfrader/icons": "workspace:^",
     "@storybook/react-vite": "^10.6.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

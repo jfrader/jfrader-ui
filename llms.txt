@@ -6,8 +6,9 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 ## Packages
 
 - @jfrader/tokens (packages/tokens): typed token source, generated CSS vars and typed var() references
-- @jfrader/ui (packages/ui): React components
-- @jfrader/icons (packages/icons): SVG sources, generated React icons, and searchable metadata
+- @jfrader/styling (packages/styling): shared Emotion seam, sx, theme typing, and media queries over tokens
+- @jfrader/icons (packages/icons): SvgIcon, createSvgIcon, SVG sources, generated React icons, and searchable metadata; depends on styling and tokens, below ui
+- @jfrader/ui (packages/ui): React components over icons and styling; re-exports SvgIcon and createSvgIcon
 - @jfrader/storybook (apps/storybook): workbench, component docs, browser tests
 - @jfrader/docs (apps/docs): documentation site published at ui.jfrader.com
 - @jfrader/pilot (apps/pilot): reference Vite consumer app
@@ -20,7 +21,7 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 - Generated typed vars: packages/tokens/src/generated/vars.ts (import as @jfrader/tokens/vars)
 - Component inventory: packages/ui/src/index.ts
 - Components: packages/ui/src/components/<name>/
-- Styling seam: packages/ui/src/styling/css.ts
+- Styling seam: packages/styling/src/css.ts (packages/ui/src/styling/ keeps compatibility re-exports)
 - Storybook config: apps/storybook/.storybook/
 - Game components and procedural scene: opt-in subpaths (@jfrader/ui/game-table, @jfrader/ui/scene, and so on), not re-exported by the root barrel
 

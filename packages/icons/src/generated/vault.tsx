@@ -1,6 +1,6 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
 import { createElement as h, Fragment } from 'react';
-import { createSvgIcon } from '@jfrader/ui/svg-icon';
+import { createSvgIcon } from '../svg-icon';
 
 export const Vault = createSvgIcon(h(Fragment, null, h('rect', { x: '3', y: '3', width: '18', height: '18', rx: '4' }), h('circle', { cx: '13', cy: '12', r: '4' }), h('path', { d: 'M13 8V10M13 14V16M9 12H11M15 12H17M3 8H5M3 16H5' })), 'Icons.Vault');
 
