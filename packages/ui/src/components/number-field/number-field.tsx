@@ -5,7 +5,7 @@ import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { inputControlStyle } from '../../styling/input-control';
-import { controlBlockSize, controlSizeStyles } from '../../styling/control-size';
+import { controlBlockSize, controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import type { SxProps } from '../../styling/sx';
@@ -315,7 +315,7 @@ export function NumberField({
       onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) stopHold(); }}>
       <FieldLabel component={slots?.label} id={labelId} htmlFor={field.id} required={required} part={slotProps?.label}>{label}</FieldLabel>
       <FieldSlot element="div" component={slots?.shell} slotProps={slotProps?.shell}
-        styles={[inputControlStyle, shellStyle, controlSizeStyles[size]]} data-disabled={disabled ? '' : undefined} data-invalid={isRenderable(displayedError) ? '' : undefined}>
+        styles={[inputControlStyle, shellStyle, controlSizeStyles[size], controlTouchTargetStyles[size]]} data-disabled={disabled ? '' : undefined} data-invalid={isRenderable(displayedError) ? '' : undefined}>
         {renderStepper('decrement', -1, decrementIcon ?? <StepIcon increment={false} />, decrementLabel ?? messages.decrement(labelText))}
         {isRenderable(prefixNode) && <FieldSlot element="span" component={slots?.prefix} slotProps={slotProps?.prefix} styles={affixStyle} aria-hidden="true">{prefixNode}</FieldSlot>}
         <FieldSlot element="input" component={slots?.control} slotProps={slotProps?.control} {...native}

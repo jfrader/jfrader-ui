@@ -56,7 +56,7 @@ function LayoutSelection(props: ComponentPropsWithRef<'span'>) {
 };
 
 const Stack = styled.div({ display: 'grid', gap: vars.space[4], justifyItems: 'start' });
-const ControlRows = styled.div({ display: 'grid', gap: vars.space[4], overflowX: 'auto', maxInlineSize: '100%' });
+const ControlRows = styled.div({ display: 'grid', gap: vars.space[4], maxInlineSize: '100%' });
 const ControlRow = styled.div({ display: 'flex', alignItems: 'baseline', gap: vars.space[3], '& > *': { flexShrink: 0 } });
 const SingleLineField = styled(TextField)({ inlineSize: `calc(${vars.space[10]} * 4)`, flexShrink: 0 });
 
@@ -83,6 +83,7 @@ export const SharedControlSizes: Story = {
     await expect(document.scrollWidth).toBeLessThanOrEqual(document.clientWidth);
     for (const [size, height] of [['sm', 32], ['md', 40], ['lg', 48]] as const) {
       const row = canvasElement.querySelector<HTMLElement>(`[data-control-size="${size}"]`)!;
+      await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth);
       const controls = [
         row.querySelector<HTMLElement>('[data-ui="button"]')!,
         row.querySelector<HTMLElement>('input:not([type="hidden"])')!,
@@ -116,7 +117,10 @@ export const SharedControlSizes200PercentText: Story = {
     await expect(document.scrollWidth).toBeLessThanOrEqual(document.clientWidth);
     for (const [size, height] of [['sm', 64], ['md', 80], ['lg', 96]] as const) {
       const row = canvasElement.querySelector<HTMLElement>(`[data-control-size="${size}"]`)!;
-      for (const control of row.querySelectorAll<HTMLElement>('[data-ui="button"], [data-ui="text-field"] input, [data-ui="segmented-control"], [data-ui="select-trigger"]')) {
+      const controls = row.querySelectorAll<HTMLElement>('[data-ui="button"], [data-ui="text-field"] input, [data-ui="segmented-control"], [data-ui="select-trigger"]');
+      await expect(controls).toHaveLength(4);
+      await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth);
+      for (const control of controls) {
         await expect(control.getBoundingClientRect().height).toBe(height);
         await expect(control.scrollHeight).toBeLessThanOrEqual(control.clientHeight + 1);
       }
@@ -133,10 +137,17 @@ export const SharedControlSizesTouch: Story = {
     await expect(canvasElement.ownerDocument.defaultView!.matchMedia('(pointer: coarse)').matches).toBe(true);
     for (const [size, height] of [['sm', 44], ['md', 44], ['lg', 48]] as const) {
       const row = canvasElement.querySelector<HTMLElement>(`[data-control-size="${size}"]`)!;
-      for (const control of row.querySelectorAll<HTMLElement>('[data-ui="button"], [data-ui="segmented-control"], [data-ui="select-trigger"]')) {
+      const controls = row.querySelectorAll<HTMLElement>('[data-ui="button"], [data-ui="text-field"] input, [data-ui="segmented-control"], [data-ui="select-trigger"]');
+      await expect(controls).toHaveLength(4);
+      await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth);
+      await expectAligned(controls, 'bottom');
+      await expect(row.querySelector<HTMLElement>('[data-ui="select-trigger"]')!.getBoundingClientRect().width).toBeGreaterThanOrEqual(180);
+      for (const control of controls) {
         await expect(control.getBoundingClientRect().height).toBe(height);
       }
-      for (const segment of row.querySelectorAll<HTMLElement>('[role="radio"]')) {
+      const segments = row.querySelectorAll<HTMLElement>('[role="radio"]');
+      await expect(segments).toHaveLength(2);
+      for (const segment of segments) {
         await expect(segment.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
       }
     }

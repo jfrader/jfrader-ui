@@ -50,7 +50,8 @@ import { touchTargetStyle } from '../../styling/touch-target';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
-import { Button, buttonBlockSizes, type ButtonProps } from '../button/button';
+import { Button, type ButtonProps } from '../button/button';
+import { controlBlockSize } from '../../styling/control-size';
 import { FieldDescription, FieldError } from '../field/field-anatomy';
 import { FieldSlot, type FieldSlots, type FieldParts, type FieldElementProps } from '../field/field-slot';
 
@@ -266,22 +267,22 @@ const lineStyles = {
 } as const;
 
 const minBlockStyles: Record<InlineEditSize, SerializedStyles> = {
-  sm: css({ minBlockSize: buttonBlockSizes.sm }),
-  md: css({ minBlockSize: buttonBlockSizes.md }),
-  lg: css({ minBlockSize: buttonBlockSizes.lg }),
+  sm: css({ minBlockSize: controlBlockSize.sm }),
+  md: css({ minBlockSize: controlBlockSize.md }),
+  lg: css({ minBlockSize: controlBlockSize.lg }),
 };
 
 const blockStyles: Record<InlineEditSize, SerializedStyles> = {
-  sm: css({ blockSize: buttonBlockSizes.sm }),
-  md: css({ blockSize: buttonBlockSizes.md }),
-  lg: css({ blockSize: buttonBlockSizes.lg }),
+  sm: css({ blockSize: controlBlockSize.sm }),
+  md: css({ blockSize: controlBlockSize.md }),
+  lg: css({ blockSize: controlBlockSize.lg }),
 };
 
 // Empty triggers and icon actions are square at the size's block.
 const squareStyles: Record<InlineEditSize, SerializedStyles> = {
-  sm: css({ minInlineSize: buttonBlockSizes.sm }),
-  md: css({ minInlineSize: buttonBlockSizes.md }),
-  lg: css({ minInlineSize: buttonBlockSizes.lg }),
+  sm: css({ minInlineSize: controlBlockSize.sm }),
+  md: css({ minInlineSize: controlBlockSize.md }),
+  lg: css({ minInlineSize: controlBlockSize.lg }),
 };
 
 const triggerStyle = css({
@@ -360,9 +361,9 @@ const actionsStyle = css({
 // Save and Cancel are icon-only Buttons of the editor's size, square at its block.
 const iconActionStyle = css({ flexShrink: 0, paddingInline: 0 });
 const iconActionSizeStyles: Record<InlineEditSize, SerializedStyles> = {
-  sm: css({ inlineSize: buttonBlockSizes.sm }),
-  md: css({ inlineSize: buttonBlockSizes.md }),
-  lg: css({ inlineSize: buttonBlockSizes.lg }),
+  sm: css({ inlineSize: controlBlockSize.sm }),
+  md: css({ inlineSize: controlBlockSize.md }),
+  lg: css({ inlineSize: controlBlockSize.lg }),
 };
 
 const statusStyle = css({

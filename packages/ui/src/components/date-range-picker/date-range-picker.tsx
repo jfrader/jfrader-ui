@@ -67,6 +67,7 @@ import {
   type UseInteractionsReturn,
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
+import { controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -404,9 +405,9 @@ const triggerStyle = css({
 });
 
 const triggerSizeStyles: Record<DateRangePickerSize, SerializedStyles> = {
-  sm: css({ minBlockSize: vars.space[8], paddingInline: vars.space[3], fontSize: vars.textSize.sm }),
-  md: css({ minBlockSize: vars.space[10], paddingInline: vars.space[4], fontSize: vars.textSize.sm }),
-  lg: css({ minBlockSize: vars.space[12], paddingInline: vars.space[4], fontSize: vars.textSize.md }),
+  sm: css(controlSizeStyles.sm, controlTouchTargetStyles.sm, { paddingInline: vars.space[3] }),
+  md: css(controlSizeStyles.md, controlTouchTargetStyles.md, { paddingInline: vars.space[4] }),
+  lg: css(controlSizeStyles.lg, controlTouchTargetStyles.lg, { paddingInline: vars.space[4] }),
 };
 
 const iconStyle = css({

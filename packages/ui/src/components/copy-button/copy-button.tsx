@@ -25,6 +25,7 @@ import {
 } from 'react';
 import { flushSync } from 'react-dom';
 import { vars } from '@jfrader/tokens/vars';
+import { controlBlockSize, controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { loadingRing } from '../../styling/loading-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -116,16 +117,16 @@ const wrappingStyle = css({
 });
 
 const minBlockStyles: Record<ButtonSize, SerializedStyles> = {
-  sm: css({ minBlockSize: vars.space[8] }),
-  md: css({ minBlockSize: vars.space[10] }),
-  lg: css({ minBlockSize: vars.space[12] }),
+  sm: css(controlSizeStyles.sm, controlTouchTargetStyles.sm),
+  md: css(controlSizeStyles.md, controlTouchTargetStyles.md),
+  lg: css(controlSizeStyles.lg, controlTouchTargetStyles.lg),
 };
 
 // Icon-only buttons are square at every size.
 const iconOnlyStyles: Record<ButtonSize, SerializedStyles> = {
-  sm: css({ inlineSize: vars.space[8], paddingInline: 0 }),
-  md: css({ inlineSize: vars.space[10], paddingInline: 0 }),
-  lg: css({ inlineSize: vars.space[12], paddingInline: 0 }),
+  sm: css({ inlineSize: controlBlockSize.sm, paddingInline: 0 }),
+  md: css({ inlineSize: controlBlockSize.md, paddingInline: 0 }),
+  lg: css({ inlineSize: controlBlockSize.lg, paddingInline: 0 }),
 };
 
 const stackStyle = css({

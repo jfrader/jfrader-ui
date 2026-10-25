@@ -16,6 +16,7 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
+import { controlBlockSize, controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { inputControlStyle } from '../../styling/input-control';
@@ -252,8 +253,9 @@ const rangeStyle = css({
 });
 const swatchStyle = css({
   display: 'inline-block',
-  inlineSize: vars.space[8],
-  blockSize: vars.space[8],
+  boxSizing: 'border-box',
+  inlineSize: 'var(--picker-preview-size)',
+  blockSize: 'var(--picker-preview-size)',
   borderRadius: vars.radius.md,
   border: `1px solid ${vars.color.borderControl}`,
   backgroundColor: 'var(--picker-color)',
@@ -261,15 +263,16 @@ const swatchStyle = css({
   flexShrink: 0,
 });
 const triggerStyles = {
-  sm: css({ minBlockSize: vars.space[8] }),
-  md: css({ minBlockSize: vars.space[10] }),
-  lg: css({ minBlockSize: vars.space[12] }),
+  sm: css(controlSizeStyles.sm, controlTouchTargetStyles.sm, { '--picker-preview-size': `calc(${controlBlockSize.sm} - ${vars.space[2]})` }),
+  md: css(controlSizeStyles.md, controlTouchTargetStyles.md, { '--picker-preview-size': `calc(${controlBlockSize.md} - ${vars.space[2]})` }),
+  lg: css(controlSizeStyles.lg, controlTouchTargetStyles.lg, { '--picker-preview-size': `calc(${controlBlockSize.lg} - ${vars.space[2]})` }),
 };
 const triggerStyle = css({
   display: 'inline-flex',
   alignItems: 'center',
   gap: vars.space[2],
   minInlineSize: '10rem',
+  paddingBlock: 0,
   paddingInline: vars.space[3],
   cursor: 'pointer',
   textAlign: 'start',

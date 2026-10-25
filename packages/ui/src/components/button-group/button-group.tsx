@@ -15,6 +15,7 @@ import {
 import { useMergeRefs, type Placement } from '@floating-ui/react';
 import { MotionConfig, animate, motion, useMotionValue, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
+import { controlBlockSize, controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { css, keyframes, type SerializedStyles } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -274,9 +275,9 @@ const segmentStyle = css({
   [FORCED_COLORS]: { borderColor: 'ButtonText' },
 });
 const sizeStyles: Record<ButtonSize, SerializedStyles> = {
-  sm: css({ minBlockSize: vars.space[8], minInlineSize: vars.space[8] }),
-  md: css({ minBlockSize: vars.space[10], minInlineSize: vars.space[10] }),
-  lg: css({ minBlockSize: vars.space[12], minInlineSize: vars.space[12] }),
+  sm: css(controlSizeStyles.sm, controlTouchTargetStyles.sm, { minInlineSize: controlBlockSize.sm }),
+  md: css(controlSizeStyles.md, controlTouchTargetStyles.md, { minInlineSize: controlBlockSize.md }),
+  lg: css(controlSizeStyles.lg, controlTouchTargetStyles.lg, { minInlineSize: controlBlockSize.lg }),
 };
 const iconOnlyStyle = css({ paddingInline: vars.space[2] });
 const trayStyle = css({

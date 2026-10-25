@@ -5,6 +5,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { doubleRootText, expectControlHeights } from '../../testing/control-size-assertions';
 import { Button, type ButtonSize, type ButtonTone, type ButtonVariant } from './index';
 
 const VARIANTS = ['solid', 'soft', 'outline', 'ghost'] as const satisfies readonly ButtonVariant[];
@@ -165,6 +166,19 @@ const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[
       ))}
     </Row>
   ),
+};
+
+export const RootRelativeSizes: Story = {
+  ...Sizes,
+  name: 'Root-relative control sizes',
+  beforeEach: doubleRootText,
+  play: async ({ canvas }) => { await expectControlHeights(canvas.getAllByRole('button'), [64, 80, 96]); },
+};
+
+export const ControlSizeContract: Story = {
+  ...Sizes,
+  name: 'Control size contract',
+  play: async ({ canvas }) => { await expectControlHeights(canvas.getAllByRole('button')); },
 };
 
 export const ControlBoundaries: Story = {

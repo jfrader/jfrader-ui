@@ -16,7 +16,7 @@ import {
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
-import { controlBlockSize, controlTextSize } from '../../styling/control-size';
+import { controlFixedSizeStyles } from '../../styling/control-size';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { loadingRing, loadingRingPulse } from '../../styling/loading-ring';
@@ -92,12 +92,10 @@ const baseStyle = css(touchTargetStyle, {
   },
 });
 
-export const buttonBlockSizes = controlBlockSize;
-
 const sizeStyles: Record<ButtonSize, SerializedStyles> = {
-  sm: css({ blockSize: controlBlockSize.sm, paddingInline: vars.space[3], fontSize: controlTextSize.sm }),
-  md: css({ blockSize: controlBlockSize.md, paddingInline: vars.space[4], fontSize: controlTextSize.md }),
-  lg: css({ blockSize: controlBlockSize.lg, paddingInline: vars.space[5], fontSize: controlTextSize.lg }),
+  sm: css(controlFixedSizeStyles.sm, { paddingInline: vars.space[3] }),
+  md: css(controlFixedSizeStyles.md, { paddingInline: vars.space[4] }),
+  lg: css(controlFixedSizeStyles.lg, { paddingInline: vars.space[5] }),
 };
 
 const variantStyles: Record<ButtonVariant, Record<ButtonTone, SerializedStyles>> = {

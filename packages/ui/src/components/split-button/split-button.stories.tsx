@@ -2,6 +2,7 @@ import { Component, useState, type ComponentPropsWithRef, type MouseEvent, type 
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlMinimums } from '../../testing/control-size-assertions';
 import { ClassNames, css } from '../../styling/css';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button, type ButtonSize, type ButtonTone, type ButtonVariant } from '../button';
@@ -657,6 +658,11 @@ export const Tones: Story = {
   },
 };
 
+export const RootRelativeSizes: Story = {
+  name: 'Root-relative control sizes', beforeEach: doubleRootText,
+  render: (args, context) => Sizes.render!(args, context),
+  play: async ({ canvasElement }) => { await expectControlMinimums(canvasElement.querySelectorAll('[data-ui~="split-button-action"]')); },
+};
 export const Sizes: Story = {
   render: (args) => (
     <Row>

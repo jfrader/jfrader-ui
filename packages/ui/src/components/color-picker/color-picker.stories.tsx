@@ -7,6 +7,7 @@ import {
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlHeights } from '../../testing/control-size-assertions';
 import { styled } from '../../styling/styled';
 import { ThemeRoot } from '../theme-root';
 import { Button } from '../button';
@@ -505,6 +506,11 @@ const messages: ColorPickerMessages = {
   },
   args: { required: true, description: 'Brand color' },
 };
+export const RootRelativeSizes: Story = {
+  name: 'Root-relative control sizes', beforeEach: doubleRootText,
+  render: (args, context) => Sizes.render!(args, context),
+  play: async ({ canvasElement }) => { await expectControlHeights(canvasElement.querySelectorAll('[data-ui="color-picker"] button[aria-haspopup="dialog"]'), [64, 80, 96]); },
+};
 export const Sizes: Story = {
   render: (args) => (
     <Grid>
@@ -513,6 +519,7 @@ export const Sizes: Story = {
       ))}
     </Grid>
   ),
+  play: async ({ canvasElement }) => { await expectControlHeights(canvasElement.querySelectorAll('[data-ui="color-picker"] button[aria-haspopup="dialog"]')); },
 };
 export const Narrow: Story = {
   render: (args) => (

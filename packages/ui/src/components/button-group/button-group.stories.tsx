@@ -2,6 +2,7 @@ import { useState, type ComponentPropsWithRef, type MouseEventHandler, type RefC
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlMinimums } from '../../testing/control-size-assertions';
 import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -366,6 +367,11 @@ export const Tones: Story = {
       <ButtonGroup.Item tone="danger">Delete</ButtonGroup.Item>
     </ButtonGroup>
   ),
+};
+export const RootRelativeSizes: Story = {
+  name: 'Root-relative control sizes', beforeEach: doubleRootText,
+  render: (args, context) => Sizes.render!(args, context),
+  play: async ({ canvas }) => { await expectControlMinimums(canvas.getAllByRole('group').map(group => within(group).getAllByRole('button')[0]!)); },
 };
 export const Sizes: Story = {
   render: (args) => (

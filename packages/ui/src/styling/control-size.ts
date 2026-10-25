@@ -1,7 +1,6 @@
 import { vars } from '@jfrader/tokens/vars';
 import { css } from './css';
 import { COARSE_POINTER } from './media';
-import { touchTargetStyle } from './touch-target';
 
 export const controlBlockSize = {
   sm: vars.size.controlSm,
@@ -22,7 +21,7 @@ export const controlSizeStyles = {
 };
 
 function controlTouchTargetStyle(size: keyof typeof controlBlockSize) {
-  return css(touchTargetStyle, {
+  return css({
     [COARSE_POINTER]: { minBlockSize: `max(${controlBlockSize[size]}, ${vars.size.touch})` },
   });
 }
@@ -31,4 +30,10 @@ export const controlTouchTargetStyles = {
   sm: controlTouchTargetStyle('sm'),
   md: controlTouchTargetStyle('md'),
   lg: controlTouchTargetStyle('lg'),
+};
+
+export const controlFixedSizeStyles = {
+  sm: css({ boxSizing: 'border-box', blockSize: controlBlockSize.sm, fontSize: controlTextSize.sm }),
+  md: css({ boxSizing: 'border-box', blockSize: controlBlockSize.md, fontSize: controlTextSize.md }),
+  lg: css({ boxSizing: 'border-box', blockSize: controlBlockSize.lg, fontSize: controlTextSize.lg }),
 };

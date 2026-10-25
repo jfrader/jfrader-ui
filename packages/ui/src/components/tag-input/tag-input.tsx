@@ -23,6 +23,7 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
+import { controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
@@ -192,23 +193,17 @@ const shellStyle = css({
 });
 
 const shellSizeStyles: Record<TagInputSize, SerializedStyles> = {
-  sm: css({
-    minBlockSize: vars.space[8],
+  sm: css(controlSizeStyles.sm, controlTouchTargetStyles.sm, {
     paddingBlock: `calc(${vars.space[1]} / 2)`,
     paddingInline: vars.space[1],
-    fontSize: vars.textSize.sm,
   }),
-  md: css({
-    minBlockSize: vars.space[10],
+  md: css(controlSizeStyles.md, controlTouchTargetStyles.md, {
     paddingBlock: vars.space[1],
     paddingInline: vars.space[2],
-    fontSize: vars.textSize.sm,
   }),
-  lg: css({
-    minBlockSize: vars.space[12],
+  lg: css(controlSizeStyles.lg, controlTouchTargetStyles.lg, {
     paddingBlock: vars.space[2],
     paddingInline: vars.space[2],
-    fontSize: vars.textSize.md,
   }),
 };
 

@@ -13,6 +13,7 @@ import {
 import { animate, motion, MotionConfig, useReducedMotion } from 'motion/react';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
+import { controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -170,8 +171,8 @@ const chipStyle = css({
   },
 });
 const sizeStyles = {
-  sm: css({ minBlockSize: vars.space[8], fontSize: vars.textSize.sm }),
-  md: css({ minBlockSize: vars.space[10], fontSize: vars.textSize.md }),
+  sm: css(controlSizeStyles.sm, controlTouchTargetStyles.sm),
+  md: css(controlSizeStyles.md, controlTouchTargetStyles.md),
 };
 const labelStyle = css({ minInlineSize: 0, whiteSpace: 'normal' });
 const checkStyle = css({ display: 'inline-flex', flexShrink: 0, overflow: 'hidden', alignItems: 'center' });

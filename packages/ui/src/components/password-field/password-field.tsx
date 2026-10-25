@@ -10,6 +10,7 @@
 import { useEffect, useId, useRef, type ChangeEvent, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
+import { controlFixedSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
@@ -103,23 +104,17 @@ const shellStyle = css({
 
 // Reserve the reveal lane and its inset in the control's inline-end padding.
 const controlSizeStyles: Record<PasswordFieldSize, SerializedStyles> = {
-  sm: css({
-    blockSize: vars.space[8],
+  sm: css(controlFixedSizeStyles.sm, controlTouchTargetStyles.sm, {
     paddingInlineStart: vars.space[3],
     paddingInlineEnd: vars.space[10],
-    fontSize: vars.textSize.sm,
   }),
-  md: css({
-    blockSize: vars.space[10],
+  md: css(controlFixedSizeStyles.md, controlTouchTargetStyles.md, {
     paddingInlineStart: vars.space[4],
     paddingInlineEnd: vars.space[10],
-    fontSize: vars.textSize.sm,
   }),
-  lg: css({
-    blockSize: vars.space[12],
+  lg: css(controlFixedSizeStyles.lg, controlTouchTargetStyles.lg, {
     paddingInlineStart: vars.space[4],
     paddingInlineEnd: vars.space[12],
-    fontSize: vars.textSize.md,
   }),
 };
 

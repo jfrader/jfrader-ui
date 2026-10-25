@@ -5,7 +5,7 @@ import type { ChangeEvent, ComponentPropsWithRef, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { inputControlStyle } from '../../styling/input-control';
-import { controlBlockSize, controlTextSize } from '../../styling/control-size';
+import { controlFixedSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import type { SxProps } from '../../styling/sx';
 import {
   FieldDescription,
@@ -59,9 +59,9 @@ export interface TextFieldProps extends Omit<ComponentPropsWithRef<'input'>, 'si
 }
 
 const sizeStyles: Record<TextFieldSize, SerializedStyles> = {
-  sm: css({ blockSize: controlBlockSize.sm, paddingInline: vars.space[3], fontSize: controlTextSize.sm }),
-  md: css({ blockSize: controlBlockSize.md, paddingInline: vars.space[4], fontSize: controlTextSize.md }),
-  lg: css({ blockSize: controlBlockSize.lg, paddingInline: vars.space[4], fontSize: controlTextSize.lg }),
+  sm: css(controlFixedSizeStyles.sm, controlTouchTargetStyles.sm, { paddingInline: vars.space[3] }),
+  md: css(controlFixedSizeStyles.md, controlTouchTargetStyles.md, { paddingInline: vars.space[4] }),
+  lg: css(controlFixedSizeStyles.lg, controlTouchTargetStyles.lg, { paddingInline: vars.space[4] }),
 };
 
 export function TextField({
