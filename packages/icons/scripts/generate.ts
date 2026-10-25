@@ -1,10 +1,10 @@
 import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { metadata } from '../src/metadata';
-import { artifacts, readSources } from './sources';
+import { artifacts, readMetadata, readSources } from './sources';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
+const metadata = readMetadata(root);
 const sources = readSources(root);
 const files = artifacts(sources, metadata);
 const generated = join(root, 'src/generated');

@@ -1,13 +1,16 @@
 [
   {
-    "name": "chart",
+    "name": "chart-bar",
     "category": "money",
     "tags": [
       "analytics",
       "bars",
-      "statistics"
+      "statistics",
+      "chart"
     ],
-    "aliases": [],
+    "aliases": [
+      "chart"
+    ],
     "variants": [
       "line"
     ],

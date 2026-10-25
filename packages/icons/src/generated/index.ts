@@ -1,5 +1,5 @@
 /* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
-export { Chart } from './chart';
+export { ChartBar } from './chart-bar';
 export { Home } from './home';
 export { Lock } from './lock';
 export { Play } from './play';

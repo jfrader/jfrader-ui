@@ -5,6 +5,24 @@ import { componentName } from '../src/name';
 import { geometryPoints } from './geometry';
 
 export type MetadataSource = Record<string, Omit<IconMetadata, 'variants' | 'category'> & { category?: IconMetadata['category'] }>;
+
+/** Read every `src/metadata/*.json` batch and merge it. One name may live in exactly one file. */
+export function readMetadata(root: string): MetadataSource {
+  const directory = join(root, 'src/metadata');
+  const merged: MetadataSource = {};
+  const owner = new Map<string, string>();
+  if (!existsSync(directory)) throw new Error('src/metadata is missing');
+  for (const entry of readdirSync(directory).filter((file) => file.endsWith('.json')).sort((a, b) => a.localeCompare(b, 'en'))) {
+    const batch = JSON.parse(readFileSync(join(directory, entry), 'utf8')) as MetadataSource;
+    for (const [name, value] of Object.entries(batch)) {
+      const previous = owner.get(name);
+      if (previous) throw new Error(`metadata for ${name} is declared in both ${previous} and ${entry}`);
+      owner.set(name, entry);
+      merged[name] = value;
+    }
+  }
+  return merged;
+}
 export interface Source { name: string; file: string; variant: IconVariant; svg: string }
 export interface Element { tag: string; attrs: Record<string, string> }
 

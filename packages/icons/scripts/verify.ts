@@ -1,10 +1,9 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { metadata } from '../src/metadata';
-import { artifacts, collect, readSources, type MetadataSource } from './sources';
+import { artifacts, collect, readMetadata, readSources, type MetadataSource } from './sources';
 
-export function verify(root: string, entries: MetadataSource = metadata): string[] {
+export function verify(root: string, entries: MetadataSource = readMetadata(root)): string[] {
   const sources = readSources(root);
   const { errors, fail } = collect(sources, entries);
   if (!errors.size) {

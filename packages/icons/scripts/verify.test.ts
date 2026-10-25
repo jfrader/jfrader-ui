@@ -4,12 +4,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { metadata } from '../src/metadata';
 import { geometryPoints, pathPoints } from './geometry';
-import { artifacts, collect, parseSvg, readSources } from './sources';
+import { artifacts, collect, parseSvg, readMetadata, readSources } from './sources';
 import { verify } from './verify';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
+const metadata = readMetadata(root);
 const search = readFileSync(join(root, 'src/icons/search.svg'), 'utf8');
 
 for (const [name, change, message] of [
@@ -27,7 +27,7 @@ for (const [name, change, message] of [
 
 test('all eight real seeds and generated exports pass', () => {
   const names = new Set(readSources(root).filter((source) => source.variant === 'line').map((source) => source.name));
-  for (const name of ['chart', 'home', 'lock', 'play', 'search', 'send', 'settings', 'wallet']) assert.ok(names.has(name));
+  for (const name of ['chart-bar', 'home', 'lock', 'play', 'search', 'send', 'settings', 'wallet']) assert.ok(names.has(name));
   assert.deepEqual(verify(root), []);
 });
 
