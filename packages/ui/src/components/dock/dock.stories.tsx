@@ -4,6 +4,8 @@ import { expect, fn, waitFor, within } from 'storybook/test';
 import { MotionConfig } from 'motion/react';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectInside } from '../../testing/geometry-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
 import { Button } from '../button';
 import { Dialog } from '../dialog';
 import { ThemeRoot } from '../theme-root';
@@ -141,6 +143,21 @@ async function assertFocus(button: HTMLElement) {
 function page(canvasElement: HTMLElement) { return within(canvasElement.ownerDocument.body); }
 function ids(toolbar: HTMLElement) {
   return Array.from(toolbar.querySelectorAll<HTMLElement>('[data-dock-item]'), (button) => button.dataset.dockItem);
+}
+
+async function expectPersistentLabels(container: HTMLElement) {
+  await settleMotion(container);
+  const buttons = container.querySelectorAll<HTMLButtonElement>('[data-dock-item]');
+  await expect(buttons.length).toBeGreaterThan(0);
+  for (const button of buttons) {
+    const icon = button.querySelector<HTMLElement>('[data-ui="dock-icon"]')!;
+    const label = button.querySelector<HTMLElement>('[data-ui="dock-glyph"] > span:not([data-ui])')!;
+    await expect(label).toBeVisible();
+    await expect(label.getBoundingClientRect().top).toBeGreaterThanOrEqual(icon.getBoundingClientRect().bottom - 1);
+    await expectInside(icon, button);
+    await expectInside(label, button);
+    await expect(label.scrollWidth).toBeLessThanOrEqual(label.clientWidth + 1);
+  }
 }
 
 export const Default: Story = {
@@ -290,10 +307,10 @@ const items: readonly DockItem[] = [
 };
 export const NoSelection: Story = {
   name: 'No selected tool',
-  args: { value: null },
+  args: { defaultValue: null },
   parameters: {
     docs: {
-      description: { story: 'Keep tools available without marking a current selection.' },
+      description: { story: 'Start without a selected tool, then choose one.' },
       source: {
         language: 'tsx',
         code: `import { Dock, type DockItem } from '@jfrader/ui';
@@ -311,13 +328,32 @@ const tools: readonly DockItem[] = [
   { id: 'text', label: 'Text', icon, shortcut: 'T' },
 ];
 
-<Dock items={tools} value={null} />`,
+<Dock items={tools} defaultValue={null} />`,
       },
     },
   },
-  play: async ({ canvas }) => {
+};
+export const NoSelectionInteraction: Story = {
+  ...NoSelection,
+  name: 'Select an initially unselected tool',
+  tags: ['!autodocs'],
+  play: async ({ canvas, userEvent, args }) => {
     for (const button of canvas.getAllByRole('button')) await expect(button).toHaveAttribute('aria-pressed', 'false');
-    await expect(canvas.getByRole('button', { name: 'Select, V' }).tabIndex).toBe(0);
+    const select = canvas.getByRole('button', { name: 'Select, V' });
+    const hand = canvas.getByRole('button', { name: 'Hand, H' });
+    const text = canvas.getByRole('button', { name: 'Text, T' });
+    await expect(select.tabIndex).toBe(0);
+    await userEvent.tab();
+    await assertFocus(select);
+    await userEvent.keyboard('{ArrowRight}{Enter}');
+    await expect(hand).toHaveAttribute('aria-pressed', 'true');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('hand');
+    await userEvent.click(text);
+    await expect(text).toHaveAttribute('aria-pressed', 'true');
+    await expect(hand).toHaveAttribute('aria-pressed', 'false');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('text');
   },
 };
 export const AlwaysLabelsTouch: Story = {
@@ -357,6 +393,20 @@ const items: readonly DockItem[] = [
       },
     },
   },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expectPersistentLabels(canvas.getByRole('toolbar'));
+    const group = canvas.getByRole('button', { name: 'Shapes: Rectangle, R' });
+    await userEvent.click(group);
+    const tray = await page(canvasElement).findByRole('group');
+    await expectPersistentLabels(tray);
+    await userEvent.click(within(tray).getByRole('button', { name: 'Ellipse, O' }));
+    await expect(group).toHaveAccessibleName('Shapes: Ellipse, O, Selected');
+    await expect(group).toHaveAttribute('aria-expanded', 'false');
+    const hand = canvas.getByRole('button', { name: 'Hand, H' });
+    await userEvent.click(hand);
+    await expect(hand).toHaveAttribute('aria-pressed', 'true');
+    await expectPersistentLabels(canvas.getByRole('toolbar'));
+  },
 };
 export const LongLabels: Story = {
   name: 'Long item labels',
@@ -387,6 +437,9 @@ const items: readonly DockItem[] = [
 <Dock items={items} labels="always" />`,
       },
     },
+  },
+  play: async ({ canvas }) => {
+    await expectPersistentLabels(canvas.getByRole('toolbar'));
   },
 };
 export const NarrowOverflow: Story = {

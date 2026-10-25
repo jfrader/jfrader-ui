@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- `Dock` keeps persistent labels beneath tool icons and wraps long labels inside their buttons.
+
 ## 0.17.1 — 2026-10-25
 
 ### Fixed

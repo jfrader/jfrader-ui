@@ -193,7 +193,12 @@ const controlStyle = css({
     '&[aria-pressed="true"]': { color: 'Highlight', borderColor: 'Highlight' },
   },
 });
-const alwaysControlStyle = css({ inlineSize: 'auto', paddingInline: vars.space[3], gap: vars.space[2] });
+const alwaysControlStyle = css({
+  inlineSize: 'auto', maxInlineSize: `calc(${vars.space[12]} * 3)`,
+  blockSize: 'auto', minBlockSize: vars.space[10], alignItems: 'stretch',
+  paddingInline: vars.space[3], paddingBlock: vars.space[2],
+  whiteSpace: 'normal', overflowWrap: 'anywhere',
+});
 /** Join idref lists without duplicates (external ids can legitimately repeat). */
 const uniqueIds = (...ids: Array<string | undefined>) => {
   const out = new Set<string>();
@@ -223,6 +228,7 @@ const selectionStyle = css({
   [FORCED_COLORS]: { backgroundColor: 'Canvas', '&::after': { backgroundColor: 'Highlight', forcedColorAdjust: 'none' } },
 });
 const glyphStyle = css({ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: vars.space[2] });
+const alwaysGlyphStyle = css({ flexDirection: 'column', gap: vars.space[1], minInlineSize: 0, textAlign: 'center' });
 const badgeStyle = css({
   position: 'relative', gridArea: '1 / 1', alignSelf: 'start', justifySelf: 'end',
   insetBlockStart: `calc(-1 * ${vars.space[1]})`, insetInlineEnd: `calc(-1 * ${vars.space[1]})`,
@@ -390,7 +396,7 @@ function DockControl({
         />}
         {tool?.running && <span aria-hidden css={runningStyle} data-ui="dock-running" />}
         <span id={`${id}-name`} css={visuallyHiddenStyle}>{native['aria-label'] ?? name}</span>
-        <motion.span css={glyphStyle} aria-hidden data-ui="dock-glyph"
+        <motion.span css={[glyphStyle, labels === 'always' && alwaysGlyphStyle]} aria-hidden data-ui="dock-glyph"
           style={reduced ? { scale: 1, y: 0 } : { scale, y: lift }}>
           <AnimatePresence mode="wait" initial={false}>
             {isRenderable(icon) && <motion.span key={tool?.id ?? item.id} css={iconStyle}
