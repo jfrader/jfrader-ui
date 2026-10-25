@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- `Dock` uses text-scaled captions, compact group trays, disclosure cues, and underline-only selection markers.
+
 ### Fixed
 
 - `Dock` keeps persistent labels beneath tool icons and wraps long labels inside their buttons.

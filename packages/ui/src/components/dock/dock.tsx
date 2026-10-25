@@ -12,6 +12,7 @@ import {
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
+import { disclosureCaret } from '../../styling/disclosure-caret';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { translucentControlStyle } from '../../styling/surface';
@@ -147,6 +148,7 @@ const LABEL_FIRST_HOVER_MS = 120;
 const LABEL_COOLDOWN_MS = 300;
 const LABEL_LEAVE_MS = 100;
 const DRAG_THRESHOLD_PX = 8;
+const MAX_LABEL_INLINE_SIZE = '18ch';
 const SELECTION_SPRING = { type: 'spring', stiffness: 420, damping: 38 } as const;
 const REORDER_SPRING = { type: 'spring', stiffness: 450, damping: 40 } as const;
 const PRESS_SPRING = { type: 'spring', stiffness: 500, damping: 35 } as const;
@@ -181,22 +183,27 @@ const toolbarStyle = css([{
   border: '1px solid', borderRadius: vars.radius.lg,
 }, translucentControlStyle]);
 const cellStyle = css({ position: 'relative', flexShrink: 0, display: 'grid' });
+const SELECTED_CONTROL = '&[aria-pressed="true"], &[aria-pressed="true"]:hover:not(:disabled):not([aria-disabled="true"])';
 const controlStyle = css({
   gridArea: '1 / 1', justifySelf: 'center',
   position: 'relative', boxSizing: 'border-box', flexShrink: 0,
   inlineSize: vars.space[10], minInlineSize: vars.space[10], blockSize: vars.space[10],
   padding: vars.space[1], borderColor: 'transparent', color: vars.color.text,
   touchAction: 'pan-y',
-  '&[aria-pressed="true"]': { color: vars.color.accentText },
+  [SELECTED_CONTROL]: { color: vars.color.accentText },
   [FORCED_COLORS]: {
     backgroundColor: 'Canvas', color: 'CanvasText', borderColor: 'CanvasText',
-    '&[aria-pressed="true"]': { color: 'Highlight', borderColor: 'Highlight' },
+    [SELECTED_CONTROL]: { color: 'Highlight', borderColor: 'Highlight' },
   },
 });
+const trayControlStyle = css({
+  borderRadius: vars.radius.sm, paddingInline: vars.space[2], paddingBlock: vars.space[1], alignItems: 'center',
+});
 const alwaysControlStyle = css({
-  inlineSize: 'auto', maxInlineSize: `calc(${vars.space[12]} * 3)`,
+  inlineSize: 'max-content', minInlineSize: vars.space[12], maxInlineSize: MAX_LABEL_INLINE_SIZE,
   blockSize: 'auto', minBlockSize: vars.space[10], alignItems: 'stretch',
   paddingInline: vars.space[3], paddingBlock: vars.space[2],
+  fontSize: vars.textSize.xs,
   whiteSpace: 'normal', overflowWrap: 'anywhere',
 });
 /** Join idref lists without duplicates (external ids can legitimately repeat). */
@@ -205,8 +212,8 @@ const uniqueIds = (...ids: Array<string | undefined>) => {
   for (const value of ids) for (const id of value?.split(/\s+/).filter(Boolean) ?? []) out.add(id);
   return out.size ? [...out].join(' ') : undefined;
 };
-const iconStyle = css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: vars.textSize.md });
-// One indicator vocabulary: a running tool shows a dot; the selected tool's plate stretches that dot
+const iconStyle = css({ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: vars.space[1], fontSize: vars.textSize.md });
+// One indicator vocabulary: a running tool shows a dot; the selected tool stretches that dot
 // into a bar, so the two states differ in shape as well as color.
 const indicatorStyle = {
   content: '""', position: 'absolute', insetBlockEnd: vars.space[1],
@@ -219,7 +226,7 @@ const runningStyle = css({
   [FORCED_COLORS]: { backgroundColor: 'CanvasText', forcedColorAdjust: 'none' },
 });
 const selectionStyle = css({
-  position: 'absolute', inset: 0, backgroundColor: vars.color.accentSoft, pointerEvents: 'none',
+  position: 'absolute', inset: 0, borderRadius: 'inherit', pointerEvents: 'none',
   '&::after': {
     ...indicatorStyle,
     insetInlineStart: `calc(50% - ${vars.space[4]} / 2)`, inlineSize: vars.space[4],
@@ -227,8 +234,18 @@ const selectionStyle = css({
   },
   [FORCED_COLORS]: { backgroundColor: 'Canvas', '&::after': { backgroundColor: 'Highlight', forcedColorAdjust: 'none' } },
 });
-const glyphStyle = css({ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: vars.space[2] });
-const alwaysGlyphStyle = css({ flexDirection: 'column', gap: vars.space[1], minInlineSize: 0, textAlign: 'center' });
+const glyphStyle = css({ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: vars.space[2], minInlineSize: 0 });
+const alwaysGlyphStyle = css({ flexDirection: 'column', gap: vars.space[1], textAlign: 'center' });
+const persistentLabelStyle = css({ fontWeight: vars.fontWeight.regular, lineHeight: vars.lineHeight.base });
+const groupCaretStyle = css({
+  display: 'inline-flex',
+  '&::after': { ...disclosureCaret, transform: 'rotate(90deg)' },
+  '&[data-open]::after': { transform: 'rotate(-90deg)' },
+  '&:dir(rtl)::after': { transform: 'rotate(-90deg)' },
+  '&[data-open]:dir(rtl)::after': { transform: 'rotate(90deg)' },
+  '&[data-reduced-motion]::after': { transitionDuration: '0s' },
+  [REDUCED_MOTION]: { '&::after': { transitionDuration: '0s' } },
+});
 const badgeStyle = css({
   position: 'relative', gridArea: '1 / 1', alignSelf: 'start', justifySelf: 'end',
   insetBlockStart: `calc(-1 * ${vars.space[1]})`, insetInlineEnd: `calc(-1 * ${vars.space[1]})`,
@@ -240,10 +257,10 @@ const badgeStyle = css({
   [FORCED_COLORS]: { backgroundColor: 'Canvas', color: 'CanvasText', outline: '1px solid CanvasText', boxShadow: 'none' },
 });
 const trayStyle = css([{
-  display: 'flex', gap: vars.space[2], padding: vars.space[2], boxSizing: 'border-box',
+  display: 'flex', gap: vars.space[1], padding: vars.space[1], boxSizing: 'border-box',
   inlineSize: 'max-content', maxInlineSize: `calc(100vw - 2 * ${vars.space[2]})`, overflowX: 'auto',
   zIndex: vars.zIndex.popover,
-  border: '1px solid', borderRadius: vars.radius.lg,
+  border: '1px solid', borderRadius: vars.radius.md,
   '&[hidden]': { display: 'none' },
 }, translucentControlStyle]);
 const trayContentStyle = css({ display: 'flex', gap: vars.space[1] });
@@ -299,6 +316,7 @@ interface DragSnapshot {
 
 interface ControlProps {
   item: DockItem;
+  inTray?: boolean;
   tool?: DockTool;
   selected: boolean;
   tabIndex: number;
@@ -327,7 +345,7 @@ interface ControlProps {
 }
 
 function DockControl({
-  item, tool, selected, tabIndex, expanded, controls, labels, name, count, namespace, layoutOrder, lens, slot = {}, badgeSlot,
+  item, inTray = false, tool, selected, tabIndex, expanded, controls, labels, name, count, namespace, layoutOrder, lens, slot = {}, badgeSlot,
   component: Control = Button, badgeComponent,
   register, activate, keyDown, focused, hovered, leave, startDrag, updateDrag, finishDrag,
 }: ControlProps) {
@@ -351,7 +369,7 @@ function DockControl({
       layoutDependency={layoutOrder} transition={REORDER_SPRING} style={{ x }}>
       <Control
         {...native} ref={ref} variant="ghost" id={slot.id ?? id}
-        css={[controlStyle, labels === 'always' && alwaysControlStyle, slotCss]}
+        css={[controlStyle, labels === 'always' && alwaysControlStyle, inTray && trayControlStyle, slotCss]}
         type="button" disabled={!enabled(item)} tabIndex={tabIndex} aria-pressed={selected} aria-hidden={undefined}
         aria-expanded={expanded} aria-controls={joinIds(native['aria-controls'], controls)}
         aria-haspopup={isGroup(item) ? false : native['aria-haspopup']}
@@ -393,18 +411,21 @@ function DockControl({
       >
         {selected && <motion.span
           aria-hidden css={selectionStyle} data-ui="dock-selection" layoutId={`${namespace}-selection`}
-          transition={reduced ? { duration: 0 } : SELECTION_SPRING} style={{ borderRadius: vars.radius.md }}
+          transition={reduced ? { duration: 0 } : SELECTION_SPRING}
         />}
         {tool?.running && <span aria-hidden css={runningStyle} data-ui="dock-running" />}
         <span id={`${id}-name`} css={visuallyHiddenStyle}>{native['aria-label'] ?? name}</span>
-        <motion.span css={[glyphStyle, labels === 'always' && alwaysGlyphStyle]} aria-hidden data-ui="dock-glyph"
+        <motion.span css={[glyphStyle, labels === 'always' && !inTray && alwaysGlyphStyle]} aria-hidden data-ui="dock-glyph"
           style={reduced ? { scale: 1, y: 0 } : { scale, y: lift }}>
           <AnimatePresence mode="wait" initial={false}>
             {isRenderable(icon) && <motion.span key={tool?.id ?? item.id} css={iconStyle}
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              transition={{ duration: reduced ? FAST_FADE_SECONDS / 2 : FAST_FADE_SECONDS }} data-ui="dock-icon">{icon}</motion.span>}
+              transition={{ duration: reduced ? FAST_FADE_SECONDS / 2 : FAST_FADE_SECONDS }} data-ui="dock-icon">
+              {icon}
+              {isGroup(item) && <span css={groupCaretStyle} data-open={expanded || undefined} data-reduced-motion={reduced || undefined} />}
+            </motion.span>}
           </AnimatePresence>
-          {labels === 'always' && <span>{tool?.label ?? item.label}</span>}
+          {labels === 'always' && <span css={persistentLabelStyle} data-ui="dock-label">{tool?.label ?? item.label}</span>}
         </motion.span>
       </Control>
       {count !== null && <Badge {...withoutSx(badgeSlot)} css={[badgeStyle, badgeSlot?.sx]} aria-hidden data-ui="dock-badge">
@@ -732,7 +753,7 @@ function DockWidget({
                 visibility: shown && !floating.isPositioned ? 'hidden' : traySlot?.style?.visibility }} data-ui="dock-tray">
               <motion.div css={trayContentStyle} layout={reduced ? false : 'size'} layoutDependency={renderedGroup.id}
                 transition={reduced ? { duration: 0 } : SELECTION_SPRING}>
-                {renderedGroup.items.map((tool) => <DockControl key={tool.id} item={tool} tool={tool} name={name(tool)}
+                {renderedGroup.items.map((tool) => <DockControl key={tool.id} item={tool} inTray tool={tool} name={name(tool)}
                   selected={enabled(renderedGroup) && tool.id === value && !tool.disabled} namespace={`${namespace}-tray`} lens={lens(tool.id)}
                   labels={labels} count={badgeCount(tool) !== null ? formatter.format(badgeCount(tool)!) : null}
                   tabIndex={shown && childStop?.id === tool.id ? 0 : -1} slot={slotProps?.trayItem?.(tool)} badgeSlot={slotProps?.badge}
