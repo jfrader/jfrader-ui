@@ -9,6 +9,7 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlMinimums } from '../../testing/control-size-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { TagInput, type TagInputProps } from './index';
 import { Button } from '../button';
@@ -523,6 +524,11 @@ function Topics() {
   },
 };
 
+export const RootRelativeSizes: Story = {
+  name: 'Root-relative control sizes', beforeEach: doubleRootText,
+  render: (args, context) => Sizes.render!(args, context),
+  play: async ({ canvas }) => { await expectControlMinimums(canvas.getAllByRole('textbox').map(input => input.parentElement!)); },
+};
 export const Sizes: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `<>
   <TagInput label="Small topics" size="sm" defaultValue={['design']} />

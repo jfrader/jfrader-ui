@@ -17,7 +17,7 @@ import { REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { moveRovingFocus, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { Button, type ButtonProps, type ButtonSize, type ButtonTone, type ButtonVariant } from '../button';
-import { buttonBlockSizes } from '../button/button';
+import { controlBlockSize } from '../../styling/control-size';
 
 export interface GameActionItem {
   /** Unique key for the action. */
@@ -141,9 +141,9 @@ const actionStyle = css({
 });
 
 const actionSizeStyles = {
-  sm: css({ minBlockSize: buttonBlockSizes.sm }),
-  md: css({ minBlockSize: buttonBlockSizes.md }),
-  lg: css({ minBlockSize: buttonBlockSizes.lg }),
+  sm: css({ minBlockSize: controlBlockSize.sm }),
+  md: css({ minBlockSize: controlBlockSize.md }),
+  lg: css({ minBlockSize: controlBlockSize.lg }),
 } satisfies Record<ButtonSize, ReturnType<typeof css>>;
 
 function DefaultAction(props: ButtonProps) {

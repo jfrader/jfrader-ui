@@ -5,6 +5,7 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type Comp
 import { FloatingFocusManager, useDismiss, useInteractions, useListNavigation, useMergeRefs } from '@floating-ui/react';
 import { getCountries, getCountryCallingCode } from 'libphonenumber-js/max';
 import { vars } from '@jfrader/tokens/vars';
+import { controlFixedSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { disclosureCaret } from '../../styling/disclosure-caret';
@@ -125,9 +126,9 @@ const defaults: Omit<PhoneInputMessages, 'results'> = {
 };
 const shellStyle = css({ display: 'flex', alignItems: 'center', minInlineSize: 0, borderRadius: vars.radius.sm, overflow: 'visible' });
 const sizes: Record<NonNullable<PhoneInputProps['size']>, SerializedStyles> = {
-  sm: css({ blockSize: vars.space[8], fontSize: vars.textSize.sm }),
-  md: css({ blockSize: vars.space[10], fontSize: vars.textSize.sm }),
-  lg: css({ blockSize: vars.space[12], fontSize: vars.textSize.md }),
+  sm: css(controlFixedSizeStyles.sm, controlTouchTargetStyles.sm),
+  md: css(controlFixedSizeStyles.md, controlTouchTargetStyles.md),
+  lg: css(controlFixedSizeStyles.lg, controlTouchTargetStyles.lg),
 };
 const buttonStyle = css({
   font: 'inherit', color: vars.color.text, background: 'transparent', border: 0, borderRadius: vars.radius.sm,

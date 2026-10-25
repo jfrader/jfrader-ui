@@ -27,6 +27,7 @@ import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { SegmentedControl, type SegmentedControlItemProps } from '../segmented-control';
+import { controlBlockSize } from '../../styling/control-size';
 
 export type PlanSelectorSize = 'md' | 'lg';
 export type PlanSelectorTone = 'neutral' | 'accent' | 'success';
@@ -387,7 +388,9 @@ function PlanSelectorList({ ref, className, sx, children, ...rest }: PlanSelecto
   const selectionPart = context.value === undefined ? undefined : context.selections.get(context.value);
   const selection = selectionPart?.props;
   return (
-    <div data-ui="plan-selector-list" css={listStyle}>
+    // A plan card is content, not a plain segment: keep it at the control height even though the
+    // segmented track subtracts its own padding from the inner items.
+    <div data-ui="plan-selector-list" css={[listStyle, { '& [role="radio"]': { minBlockSize: controlBlockSize[context.size] } }]}>
       <WithSx className={className} styles={listStyle} sx={sx}>
         {(className) => (
           <SegmentedControl

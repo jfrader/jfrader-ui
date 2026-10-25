@@ -17,6 +17,7 @@ import { useMergeRefs } from '@floating-ui/react';
 import { animate, motion, MotionConfig, useMotionValue } from 'motion/react';
 import { useReducedMotion } from '../../utils/use-reduced-motion';
 import { vars } from '@jfrader/tokens/vars';
+import { controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { FORCED_COLORS } from '../../styling/media';
@@ -172,20 +173,14 @@ const controlStyle = css({
   },
 });
 const sizeStyles: Record<TimePickerSize, SerializedStyles> = {
-  sm: css({
-    minBlockSize: vars.space[8],
+  sm: css(controlSizeStyles.sm, controlTouchTargetStyles.sm, {
     paddingInline: vars.space[3],
-    fontSize: vars.textSize.sm,
   }),
-  md: css({
-    minBlockSize: vars.space[10],
+  md: css(controlSizeStyles.md, controlTouchTargetStyles.md, {
     paddingInline: vars.space[4],
-    fontSize: vars.textSize.sm,
   }),
-  lg: css({
-    minBlockSize: vars.space[12],
+  lg: css(controlSizeStyles.lg, controlTouchTargetStyles.lg, {
     paddingInline: vars.space[4],
-    fontSize: vars.textSize.md,
   }),
 };
 const valueStyle = css({

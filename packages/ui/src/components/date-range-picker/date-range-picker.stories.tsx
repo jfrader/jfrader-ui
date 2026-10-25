@@ -2,6 +2,7 @@ import { useId, useState, type ComponentPropsWithRef, type ReactNode } from 'rea
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlMinimums } from '../../testing/control-size-assertions';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { ANCHOR_GAP } from '../../overlay/use-overlay-floating';
@@ -1363,6 +1364,11 @@ export const ShortViewport: Story = {
   },
 };
 
+export const RootRelativeSizes: Story = {
+  name: 'Root-relative control sizes', beforeEach: doubleRootText,
+  render: (args, context) => Sizes.render!(args, context),
+  play: async ({ canvasElement }) => { await expectControlMinimums(canvasElement.querySelectorAll('button[data-ui="date-range-picker"]')); },
+};
 export const Sizes: Story = {
   args: { defaultValue: WEEK },
   render: (args) => (

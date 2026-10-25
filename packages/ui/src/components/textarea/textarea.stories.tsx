@@ -49,6 +49,8 @@ Use a textarea for messages, notes and other multi-line text. Use TextField for 
 
 ### Values and constraints
 
+Textareas use twice the single-line control size as their minimum height (4rem, 5rem, and 6rem). Multiple rows, manual resizing, and automatic growth can make them taller.
+
 Automatic growth depends on browser support for CSS field-sizing. Supporting browsers size to the text and ignore the row count; other browsers keep the row-based height. Keep a usable fallback height and enough space for long content.
 
 ### Forms

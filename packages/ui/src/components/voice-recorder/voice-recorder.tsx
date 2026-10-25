@@ -24,7 +24,7 @@ import { isRenderable } from '../../utils/renderable';
 import { createDurationFormatters } from '../../utils/duration-format';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button, type ButtonProps } from '../button';
-import { buttonBlockSizes } from '../button/button';
+import { controlBlockSize } from '../../styling/control-size';
 import { Avatar } from '../avatar';
 import { VoiceOrb } from '../voice-orb';
 
@@ -333,7 +333,7 @@ const rootStyle = css({
 
 const sizeStyles: Record<VoiceRecorderSize, SerializedStyles> = {
   sm: css({
-    '--voice-recorder-control-size': buttonBlockSizes.sm,
+    '--voice-recorder-control-size': controlBlockSize.sm,
     fontSize: vars.textSize.sm,
     '& [data-ui="voice-recorder-composer"]': {
       padding: vars.space[3],
@@ -341,7 +341,7 @@ const sizeStyles: Record<VoiceRecorderSize, SerializedStyles> = {
     },
   }),
   md: css({
-    '--voice-recorder-control-size': buttonBlockSizes.md,
+    '--voice-recorder-control-size': controlBlockSize.md,
     fontSize: vars.textSize.md,
     '& [data-ui="voice-recorder-composer"]': {
       padding: vars.space[4],

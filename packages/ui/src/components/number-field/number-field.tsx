@@ -5,6 +5,7 @@ import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { inputControlStyle } from '../../styling/input-control';
+import { controlBlockSize, controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import type { SxProps } from '../../styling/sx';
@@ -103,11 +104,6 @@ const rootStyles: Record<NumberFieldSize, SerializedStyles> = {
   md: css({ inlineSize: `calc(${vars.space[12]} * 4)` }),
   lg: css({ inlineSize: `calc(${vars.space[8]} * 7)` }),
 };
-const shellSizes: Record<NumberFieldSize, SerializedStyles> = {
-  sm: css({ minBlockSize: vars.space[8], fontSize: vars.textSize.sm }),
-  md: css({ minBlockSize: vars.space[10], fontSize: vars.textSize.sm }),
-  lg: css({ minBlockSize: vars.space[12], fontSize: vars.textSize.md }),
-};
 const shellStyle = css({
   display: 'flex', alignItems: 'center', flexWrap: 'wrap', borderRadius: vars.radius.sm,
   gap: vars.space[1], paddingInline: vars.space[1],
@@ -115,7 +111,7 @@ const shellStyle = css({
   [FORCED_COLORS]: { borderColor: 'ButtonText' },
 });
 const controlStyle = css({
-  flex: '1 1 0', minInlineSize: vars.space[8], inlineSize: 0, minBlockSize: `calc(${vars.space[8]} - 2px)`,
+  flex: '1 1 0', minInlineSize: vars.space[8], inlineSize: 0, minBlockSize: `calc(${controlBlockSize.sm} - 2px)`,
   padding: 0, border: 0, borderRadius: 0, background: 'transparent', color: 'inherit',
   font: 'inherit', lineHeight: vars.lineHeight.base, fontVariantNumeric: 'tabular-nums', textAlign: 'center',
   '&:focus-visible': { outline: 'none' },
@@ -319,7 +315,7 @@ export function NumberField({
       onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) stopHold(); }}>
       <FieldLabel component={slots?.label} id={labelId} htmlFor={field.id} required={required} part={slotProps?.label}>{label}</FieldLabel>
       <FieldSlot element="div" component={slots?.shell} slotProps={slotProps?.shell}
-        styles={[inputControlStyle, shellStyle, shellSizes[size]]} data-disabled={disabled ? '' : undefined} data-invalid={isRenderable(displayedError) ? '' : undefined}>
+        styles={[inputControlStyle, shellStyle, controlSizeStyles[size], controlTouchTargetStyles[size]]} data-disabled={disabled ? '' : undefined} data-invalid={isRenderable(displayedError) ? '' : undefined}>
         {renderStepper('decrement', -1, decrementIcon ?? <StepIcon increment={false} />, decrementLabel ?? messages.decrement(labelText))}
         {isRenderable(prefixNode) && <FieldSlot element="span" component={slots?.prefix} slotProps={slotProps?.prefix} styles={affixStyle} aria-hidden="true">{prefixNode}</FieldSlot>}
         <FieldSlot element="input" component={slots?.control} slotProps={slotProps?.control} {...native}

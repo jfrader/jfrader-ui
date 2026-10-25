@@ -27,6 +27,7 @@ import {
   type Placement,
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
+import { controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { css, keyframes } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
@@ -241,10 +242,11 @@ const triggerSkin = css({
   justifyContent: 'flex-start',
   '&[aria-invalid="true"]': { borderColor: vars.color.dangerText },
 });
+const triggerSizeReset = css({ paddingBlock: 0, lineHeight: vars.lineHeight.tight });
 const sizes = {
-  sm: css({ minBlockSize: vars.space[8] }),
-  md: css({ minBlockSize: vars.space[10] }),
-  lg: css({ minBlockSize: vars.space[12] }),
+  sm: css(controlSizeStyles.sm, controlTouchTargetStyles.sm),
+  md: css(controlSizeStyles.md, controlTouchTargetStyles.md),
+  lg: css(controlSizeStyles.lg, controlTouchTargetStyles.lg),
 };
 const valueStyle = css({
   display: 'flex',
@@ -290,7 +292,6 @@ const optionStyle = css({
 });
 const clearStyle = css({
   flexShrink: 0,
-  minBlockSize: vars.space[6],
   minInlineSize: vars.space[6],
 });
 
@@ -759,7 +760,7 @@ function MultiSelectTrigger({
     }
   };
   return (
-    <WithSx className={className} styles={[triggerStyle, triggerSkin, sizes[size]]} sx={sx}>
+    <WithSx className={className} styles={[triggerStyle, triggerSkin, triggerSizeReset, sizes[size]]} sx={sx}>
       {(className) => (
         <button
           {...m.getReferenceProps({
@@ -1008,7 +1009,7 @@ function MultiSelectClear({
     pending.current = null;
   });
   return (
-    <WithSx className={className} styles={[triggerStyle, clearStyle]} sx={sx}>
+    <WithSx className={className} styles={[triggerStyle, triggerSizeReset, controlSizeStyles.sm, controlTouchTargetStyles.sm, clearStyle]} sx={sx}>
       {(className) => (
         <button
           {...rest}

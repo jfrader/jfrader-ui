@@ -9,6 +9,7 @@ import { useId, useState, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlMinimums } from '../../testing/control-size-assertions';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -160,6 +161,11 @@ export const Revealed: Story = {
   },
 };
 
+export const RootRelativeSizes: Story = {
+  name: 'Root-relative control sizes', beforeEach: doubleRootText,
+  render: (args, context) => Sizes.render!(args, context),
+  play: async ({ canvasElement }) => { await expectControlMinimums(canvasElement.querySelectorAll('input[type="password"]')); },
+};
 export const Sizes: Story = {
   parameters: { docs: { description: { story: 'Compare password inputs and reveal buttons at each size.' }, source: { language: 'tsx', code: `import { PasswordField } from '@jfrader/ui';
 
