@@ -102,7 +102,7 @@ export function collect(sources: Source[], metadata: MetadataSource) {
       const elements = parseSvg(source.svg, source.variant);
       parsed.set(source, elements);
       const paths = elements.filter(({ tag }) => tag === 'path').map(({ attrs }) => (attrs.d ?? '').match(/[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?\d*)/g)?.join(' ')).join('|');
-      const fingerprint = paths || JSON.stringify(elements);
+      const fingerprint = `${source.variant}:${paths || JSON.stringify(elements)}`;
       const duplicate = fingerprints.get(fingerprint);
       if (duplicate) fail(source.file, `duplicate path data from ${duplicate}`);
       else fingerprints.set(fingerprint, source.file);

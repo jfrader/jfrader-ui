@@ -1,0 +1,20 @@
+/* Generated from src/icons and src/metadata.ts. Do not edit. Run pnpm generate. */
+import { createSvgIcon } from '@jfrader/ui/svg-icon';
+
+export const Group = createSvgIcon(
+  <>
+      <path d="M3 7V3H7M17 3H21V7M3 17V21H7M17 21H21V17" />
+      <rect x="7" y="8" width="3" height="8" rx="2" />
+      <rect x="14" y="8" width="3" height="8" rx="2" />
+  </>,
+  'Icons.Group',
+);
+
+export const GroupSolid = createSvgIcon(
+  <>
+      <path d="M2.5 7V2.5H7V4.5H4.5V7ZM17 2.5H21.5V7H19.5V4.5H17ZM2.5 17H4.5V19.5H7V21.5H2.5ZM19.5 17H21.5V21.5H17V19.5H19.5Z" />
+      <rect x="7" y="8" width="3" height="8" rx="2" />
+      <rect x="14" y="8" width="3" height="8" rx="2" />
+  </>,
+  'Icons.GroupSolid', { variant: 'solid' },
+);

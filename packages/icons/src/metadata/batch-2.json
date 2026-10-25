@@ -1,0 +1,322 @@
+{
+  "message": {
+    "name": "message",
+    "category": "communication",
+    "tags": ["chat", "comment", "speech", "conversation"],
+    "aliases": ["chat", "comment"],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "person": {
+    "name": "person",
+    "category": "people",
+    "tags": ["user", "profile", "avatar", "account"],
+    "aliases": ["user", "profile"],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "people": {
+    "name": "people",
+    "category": "people",
+    "tags": ["users", "team", "group", "members"],
+    "aliases": ["users", "team"],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "phone": {
+    "name": "phone",
+    "category": "communication",
+    "tags": ["call", "telephone", "handset", "contact"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "globe": {
+    "name": "globe",
+    "category": "device",
+    "tags": ["world", "international", "internet", "language"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "command": {
+    "name": "command",
+    "category": "development",
+    "tags": ["shortcut", "keyboard", "modifier", "hotkey"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "return": {
+    "name": "return",
+    "category": "arrow",
+    "tags": ["enter", "keyboard", "submit", "confirm"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "circle": {
+    "name": "circle",
+    "category": "status",
+    "tags": ["marker", "ring", "timeline", "outline"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "clock": {
+    "name": "clock",
+    "category": "status",
+    "tags": ["time", "hour", "schedule", "dial"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "timer": {
+    "name": "timer",
+    "category": "status",
+    "tags": ["countdown", "stopwatch", "duration", "deadline"],
+    "aliases": ["countdown", "stopwatch"],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "flag": {
+    "name": "flag",
+    "category": "status",
+    "tags": ["finish", "milestone", "goal", "report"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "retry": {
+    "name": "retry",
+    "category": "action",
+    "tags": ["try-again", "reload", "recover", "restart"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "paperclip": {
+    "name": "paperclip",
+    "category": "file",
+    "tags": ["attachment", "attach", "clip", "file"],
+    "aliases": ["attachment"],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "track-previous": {
+    "name": "track-previous",
+    "category": "media",
+    "tags": ["previous", "skip-back", "song", "audio"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "track-next": {
+    "name": "track-next",
+    "category": "media",
+    "tags": ["next", "skip", "song", "audio"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "expand": {
+    "name": "expand",
+    "category": "media",
+    "tags": ["fullscreen", "maximize", "enlarge", "corners"],
+    "aliases": ["fullscreen"],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "collapse": {
+    "name": "collapse",
+    "category": "media",
+    "tags": ["minimize", "shrink", "exit-fullscreen", "corners"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "music": {
+    "name": "music",
+    "category": "media",
+    "tags": ["notes", "song", "audio", "melody"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "waveform": {
+    "name": "waveform",
+    "category": "media",
+    "tags": ["audio", "levels", "sound", "recording"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "replay": {
+    "name": "replay",
+    "category": "media",
+    "tags": ["play-again", "restart", "playback", "loop"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "step-forward": {
+    "name": "step-forward",
+    "category": "media",
+    "tags": ["frame", "advance", "phase", "single-step"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "payment-terminal": {
+    "name": "payment-terminal",
+    "category": "money",
+    "tags": ["checkout", "card-reader", "pos", "keypad"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "processor": {
+    "name": "processor",
+    "category": "development",
+    "tags": ["chip", "cpu", "processing", "hardware"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "network": {
+    "name": "network",
+    "category": "development",
+    "tags": ["peers", "topology", "connection", "bus"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "bank": {
+    "name": "bank",
+    "category": "money",
+    "tags": ["issuer", "institution", "columns", "finance"],
+    "aliases": [],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  "store": {
+    "name": "store",
+    "category": "money",
+    "tags": ["shop", "merchant", "retail", "awning"],
+    "aliases": [],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  "credit-card": {
+    "name": "credit-card",
+    "category": "money",
+    "tags": ["payment", "debit", "card", "billing"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "coins": {
+    "name": "coins",
+    "category": "money",
+    "tags": ["money", "balance", "change", "oros"],
+    "aliases": ["oros"],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  "receipt": {
+    "name": "receipt",
+    "category": "money",
+    "tags": ["purchase", "bill", "transaction", "proof"],
+    "aliases": [],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  "success": {
+    "name": "success",
+    "category": "status",
+    "tags": ["complete", "approved", "valid", "check-circle"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "error": {
+    "name": "error",
+    "category": "status",
+    "tags": ["failed", "invalid", "failure", "cross-circle"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "pending": {
+    "name": "pending",
+    "category": "status",
+    "tags": ["waiting", "queued", "processing", "unresolved"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "zoom-in": {
+    "name": "zoom-in",
+    "category": "editing",
+    "tags": ["magnify", "enlarge", "plus", "viewer"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "zoom-out": {
+    "name": "zoom-out",
+    "category": "editing",
+    "tags": ["reduce", "shrink", "minus", "viewer"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "arrow-left": {
+    "name": "arrow-left",
+    "category": "arrow",
+    "tags": ["back", "west", "direction", "previous"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "arrow-right": {
+    "name": "arrow-right",
+    "category": "arrow",
+    "tags": ["forward", "east", "direction", "next"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "arrow-up": {
+    "name": "arrow-up",
+    "category": "arrow",
+    "tags": ["north", "direction", "above", "ascending"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "arrow-down": {
+    "name": "arrow-down",
+    "category": "arrow",
+    "tags": ["south", "direction", "below", "descending"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "rotate-left": {
+    "name": "rotate-left",
+    "category": "editing",
+    "tags": ["counterclockwise", "turn", "rotation", "viewer"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "undo": {
+    "name": "undo",
+    "category": "action",
+    "tags": ["revert", "restore", "back", "history"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  }
+}

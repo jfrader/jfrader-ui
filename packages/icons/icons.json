@@ -1,5 +1,222 @@
 [
   {
+    "name": "align-center",
+    "category": "editing",
+    "tags": [
+      "align",
+      "center",
+      "text",
+      "paragraph"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "align-justify",
+    "category": "editing",
+    "tags": [
+      "align",
+      "justify",
+      "text",
+      "paragraph"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "align-left",
+    "category": "editing",
+    "tags": [
+      "align",
+      "left",
+      "text",
+      "paragraph"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "align-right",
+    "category": "editing",
+    "tags": [
+      "align",
+      "right",
+      "text",
+      "paragraph"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "arrow-down",
+    "category": "arrow",
+    "tags": [
+      "south",
+      "direction",
+      "below",
+      "descending"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "arrow-left",
+    "category": "arrow",
+    "tags": [
+      "back",
+      "west",
+      "direction",
+      "previous"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "arrow-right",
+    "category": "arrow",
+    "tags": [
+      "forward",
+      "east",
+      "direction",
+      "next"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "arrow-up",
+    "category": "arrow",
+    "tags": [
+      "north",
+      "direction",
+      "above",
+      "ascending"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "bank",
+    "category": "money",
+    "tags": [
+      "issuer",
+      "institution",
+      "columns",
+      "finance"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "bold",
+    "category": "editing",
+    "tags": [
+      "bold",
+      "font",
+      "type",
+      "format"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "bookmark",
+    "category": "navigation",
+    "tags": [
+      "bookmark",
+      "ribbon",
+      "favorite",
+      "saved"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "brush",
+    "category": "editing",
+    "tags": [
+      "brush",
+      "paint",
+      "bristles",
+      "art"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "calendar",
+    "category": "navigation",
+    "tags": [
+      "date",
+      "month",
+      "schedule",
+      "event"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "chart-bar",
     "category": "money",
     "tags": [
@@ -18,6 +235,579 @@
     "since": "0.1.0"
   },
   {
+    "name": "check",
+    "category": "action",
+    "tags": [
+      "tick",
+      "done",
+      "complete",
+      "selected"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "chevron-down",
+    "category": "arrow",
+    "tags": [
+      "down",
+      "expand",
+      "dropdown",
+      "caret"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "chevron-left",
+    "category": "arrow",
+    "tags": [
+      "previous",
+      "back",
+      "caret",
+      "left"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "chevron-right",
+    "category": "arrow",
+    "tags": [
+      "next",
+      "forward",
+      "caret",
+      "right"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "chevron-up",
+    "category": "arrow",
+    "tags": [
+      "up",
+      "collapse",
+      "caret"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "circle",
+    "category": "status",
+    "tags": [
+      "marker",
+      "ring",
+      "timeline",
+      "outline"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "clock",
+    "category": "status",
+    "tags": [
+      "time",
+      "hour",
+      "schedule",
+      "dial"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "close",
+    "category": "action",
+    "tags": [
+      "cross",
+      "dismiss",
+      "clear",
+      "cancel"
+    ],
+    "aliases": [
+      "dismiss"
+    ],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "coins",
+    "category": "money",
+    "tags": [
+      "money",
+      "balance",
+      "change",
+      "oros"
+    ],
+    "aliases": [
+      "oros"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "collapse",
+    "category": "media",
+    "tags": [
+      "minimize",
+      "shrink",
+      "exit-fullscreen",
+      "corners"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "command",
+    "category": "development",
+    "tags": [
+      "shortcut",
+      "keyboard",
+      "modifier",
+      "hotkey"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "copy",
+    "category": "action",
+    "tags": [
+      "duplicate",
+      "clipboard",
+      "sheets",
+      "address"
+    ],
+    "aliases": [
+      "copy-address",
+      "copy-link",
+      "copy-code"
+    ],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "credit-card",
+    "category": "money",
+    "tags": [
+      "payment",
+      "debit",
+      "card",
+      "billing"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "crop",
+    "category": "editing",
+    "tags": [
+      "crop",
+      "trim",
+      "resize",
+      "image"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "cursor",
+    "category": "editing",
+    "tags": [
+      "pointer",
+      "select",
+      "arrow",
+      "tool"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "cut",
+    "category": "action",
+    "tags": [
+      "cut",
+      "scissors",
+      "clipboard",
+      "trim"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "dashboard",
+    "category": "navigation",
+    "tags": [
+      "dashboard",
+      "panels",
+      "overview",
+      "widgets"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "download",
+    "category": "action",
+    "tags": [
+      "export",
+      "save",
+      "tray",
+      "down"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "ellipse",
+    "category": "editing",
+    "tags": [
+      "oval",
+      "shape",
+      "drawing"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "eraser",
+    "category": "editing",
+    "tags": [
+      "eraser",
+      "erase",
+      "rubber",
+      "clear"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "error",
+    "category": "status",
+    "tags": [
+      "failed",
+      "invalid",
+      "failure",
+      "cross-circle"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "expand",
+    "category": "media",
+    "tags": [
+      "fullscreen",
+      "maximize",
+      "enlarge",
+      "corners"
+    ],
+    "aliases": [
+      "fullscreen"
+    ],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "eye",
+    "category": "status",
+    "tags": [
+      "reveal",
+      "show",
+      "visibility",
+      "password"
+    ],
+    "aliases": [
+      "reveal"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "eye-off",
+    "category": "status",
+    "tags": [
+      "hide",
+      "hidden",
+      "privacy",
+      "visibility"
+    ],
+    "aliases": [
+      "hide"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "eyedropper",
+    "category": "editing",
+    "tags": [
+      "eyedropper",
+      "pipette",
+      "sample",
+      "color"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "file",
+    "category": "file",
+    "tags": [
+      "document",
+      "sheet",
+      "attachment",
+      "page"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "filter",
+    "category": "action",
+    "tags": [
+      "filter",
+      "funnel",
+      "refine",
+      "query"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "flag",
+    "category": "status",
+    "tags": [
+      "finish",
+      "milestone",
+      "goal",
+      "report"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "flip-horizontal",
+    "category": "editing",
+    "tags": [
+      "flip",
+      "horizontal",
+      "mirror",
+      "reflect"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "flip-vertical",
+    "category": "editing",
+    "tags": [
+      "flip",
+      "vertical",
+      "mirror",
+      "reflect"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "globe",
+    "category": "device",
+    "tags": [
+      "world",
+      "international",
+      "internet",
+      "language"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "grid",
+    "category": "navigation",
+    "tags": [
+      "grid",
+      "tiles",
+      "layout",
+      "gallery"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "group",
+    "category": "editing",
+    "tags": [
+      "group",
+      "combine",
+      "objects",
+      "selection"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "hand",
+    "category": "editing",
+    "tags": [
+      "palm",
+      "pan",
+      "grab",
+      "drag"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "home",
     "category": "navigation",
     "tags": [
@@ -30,6 +820,140 @@
     ],
     "expressive": false,
     "since": "0.1.0"
+  },
+  {
+    "name": "image",
+    "category": "media",
+    "tags": [
+      "photo",
+      "picture",
+      "landscape",
+      "gallery"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "inbox",
+    "category": "communication",
+    "tags": [
+      "tray",
+      "incoming",
+      "mail",
+      "messages"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "indent",
+    "category": "editing",
+    "tags": [
+      "indent",
+      "increase",
+      "text",
+      "paragraph"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "italic",
+    "category": "editing",
+    "tags": [
+      "italic",
+      "font",
+      "slanted",
+      "format"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "layers",
+    "category": "editing",
+    "tags": [
+      "layers",
+      "planes",
+      "stack",
+      "depth"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "line",
+    "category": "editing",
+    "tags": [
+      "diagonal",
+      "stroke",
+      "drawing",
+      "segment"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "link",
+    "category": "action",
+    "tags": [
+      "url",
+      "hyperlink",
+      "chain",
+      "connect"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "list",
+    "category": "navigation",
+    "tags": [
+      "list",
+      "rows",
+      "bullets",
+      "items"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
   },
   {
     "name": "lock",
@@ -47,6 +971,370 @@
     "since": "0.1.0"
   },
   {
+    "name": "menu",
+    "category": "navigation",
+    "tags": [
+      "menu",
+      "navigation",
+      "hamburger",
+      "drawer"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "message",
+    "category": "communication",
+    "tags": [
+      "chat",
+      "comment",
+      "speech",
+      "conversation"
+    ],
+    "aliases": [
+      "chat",
+      "comment"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "microphone",
+    "category": "media",
+    "tags": [
+      "mic",
+      "voice",
+      "audio",
+      "recording"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "minus",
+    "category": "action",
+    "tags": [
+      "subtract",
+      "decrease",
+      "decrement",
+      "negative"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "more",
+    "category": "navigation",
+    "tags": [
+      "ellipsis",
+      "overflow",
+      "dots",
+      "options"
+    ],
+    "aliases": [
+      "ellipsis",
+      "overflow"
+    ],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "music",
+    "category": "media",
+    "tags": [
+      "notes",
+      "song",
+      "audio",
+      "melody"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "network",
+    "category": "development",
+    "tags": [
+      "peers",
+      "topology",
+      "connection",
+      "bus"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "outdent",
+    "category": "editing",
+    "tags": [
+      "outdent",
+      "decrease",
+      "text",
+      "paragraph"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "palette",
+    "category": "editing",
+    "tags": [
+      "palette",
+      "paint",
+      "color",
+      "swatches"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "panels",
+    "category": "navigation",
+    "tags": [
+      "panels",
+      "panes",
+      "split",
+      "columns"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "paperclip",
+    "category": "file",
+    "tags": [
+      "attachment",
+      "attach",
+      "clip",
+      "file"
+    ],
+    "aliases": [
+      "attachment"
+    ],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "paste",
+    "category": "action",
+    "tags": [
+      "paste",
+      "clipboard",
+      "insert",
+      "duplicate"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "pause",
+    "category": "media",
+    "tags": [
+      "playback",
+      "hold",
+      "audio",
+      "video"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "payment-terminal",
+    "category": "money",
+    "tags": [
+      "checkout",
+      "card-reader",
+      "pos",
+      "keypad"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "pen",
+    "category": "editing",
+    "tags": [
+      "pen",
+      "nib",
+      "ink",
+      "fountain"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "pencil",
+    "category": "editing",
+    "tags": [
+      "pencil",
+      "edit",
+      "write",
+      "draw"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "pending",
+    "category": "status",
+    "tags": [
+      "waiting",
+      "queued",
+      "processing",
+      "unresolved"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "people",
+    "category": "people",
+    "tags": [
+      "users",
+      "team",
+      "group",
+      "members"
+    ],
+    "aliases": [
+      "users",
+      "team"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "person",
+    "category": "people",
+    "tags": [
+      "user",
+      "profile",
+      "avatar",
+      "account"
+    ],
+    "aliases": [
+      "user",
+      "profile"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "phone",
+    "category": "communication",
+    "tags": [
+      "call",
+      "telephone",
+      "handset",
+      "contact"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "pin",
+    "category": "action",
+    "tags": [
+      "pin",
+      "pushpin",
+      "attach",
+      "tack"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "play",
     "category": "media",
     "tags": [
@@ -60,6 +1348,203 @@
     ],
     "expressive": false,
     "since": "0.1.0"
+  },
+  {
+    "name": "plus",
+    "category": "action",
+    "tags": [
+      "add",
+      "increase",
+      "increment",
+      "positive"
+    ],
+    "aliases": [
+      "add"
+    ],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "processor",
+    "category": "development",
+    "tags": [
+      "chip",
+      "cpu",
+      "processing",
+      "hardware"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "receipt",
+    "category": "money",
+    "tags": [
+      "purchase",
+      "bill",
+      "transaction",
+      "proof"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "rectangle",
+    "category": "editing",
+    "tags": [
+      "shape",
+      "box",
+      "rounded",
+      "drawing"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "redo",
+    "category": "action",
+    "tags": [
+      "redo",
+      "restore",
+      "history",
+      "forward"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "refresh",
+    "category": "action",
+    "tags": [
+      "refresh",
+      "reload",
+      "sync",
+      "update"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "replay",
+    "category": "media",
+    "tags": [
+      "play-again",
+      "restart",
+      "playback",
+      "loop"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "retry",
+    "category": "action",
+    "tags": [
+      "try-again",
+      "reload",
+      "recover",
+      "restart"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "return",
+    "category": "arrow",
+    "tags": [
+      "enter",
+      "keyboard",
+      "submit",
+      "confirm"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "rotate-left",
+    "category": "editing",
+    "tags": [
+      "counterclockwise",
+      "turn",
+      "rotation",
+      "viewer"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "rotate-right",
+    "category": "editing",
+    "tags": [
+      "rotate",
+      "right",
+      "clockwise",
+      "turn"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "save",
+    "category": "action",
+    "tags": [
+      "save",
+      "disk",
+      "storage",
+      "write"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
   },
   {
     "name": "search",
@@ -109,6 +1594,342 @@
     "since": "0.1.0"
   },
   {
+    "name": "share",
+    "category": "action",
+    "tags": [
+      "branch",
+      "distribute",
+      "send",
+      "social"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "sidebar",
+    "category": "navigation",
+    "tags": [
+      "sidebar",
+      "rail",
+      "window",
+      "layout"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "sliders",
+    "category": "action",
+    "tags": [
+      "sliders",
+      "adjust",
+      "controls",
+      "tune"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "sort",
+    "category": "action",
+    "tags": [
+      "sort",
+      "order",
+      "descending",
+      "rank"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "spinner",
+    "category": "status",
+    "tags": [
+      "loading",
+      "busy",
+      "wait",
+      "progress"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "step-forward",
+    "category": "media",
+    "tags": [
+      "frame",
+      "advance",
+      "phase",
+      "single-step"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "stop",
+    "category": "media",
+    "tags": [
+      "end",
+      "square",
+      "recording",
+      "playback"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "store",
+    "category": "money",
+    "tags": [
+      "shop",
+      "merchant",
+      "retail",
+      "awning"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "strikethrough",
+    "category": "editing",
+    "tags": [
+      "strikethrough",
+      "strike",
+      "text",
+      "format"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "success",
+    "category": "status",
+    "tags": [
+      "complete",
+      "approved",
+      "valid",
+      "check-circle"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "tabs",
+    "category": "navigation",
+    "tags": [
+      "tabs",
+      "sheets",
+      "window",
+      "workspace"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "text",
+    "category": "editing",
+    "tags": [
+      "type",
+      "typography",
+      "font",
+      "letter"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "timer",
+    "category": "status",
+    "tags": [
+      "countdown",
+      "stopwatch",
+      "duration",
+      "deadline"
+    ],
+    "aliases": [
+      "countdown",
+      "stopwatch"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "track-next",
+    "category": "media",
+    "tags": [
+      "next",
+      "skip",
+      "song",
+      "audio"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "track-previous",
+    "category": "media",
+    "tags": [
+      "previous",
+      "skip-back",
+      "song",
+      "audio"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "trash",
+    "category": "action",
+    "tags": [
+      "delete",
+      "bin",
+      "discard",
+      "waste"
+    ],
+    "aliases": [
+      "delete",
+      "bin"
+    ],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "underline",
+    "category": "editing",
+    "tags": [
+      "underline",
+      "baseline",
+      "text",
+      "format"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "undo",
+    "category": "action",
+    "tags": [
+      "revert",
+      "restore",
+      "back",
+      "history"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "ungroup",
+    "category": "editing",
+    "tags": [
+      "ungroup",
+      "separate",
+      "objects",
+      "selection"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "upload",
+    "category": "action",
+    "tags": [
+      "import",
+      "transfer",
+      "tray",
+      "up"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "wallet",
     "category": "money",
     "tags": [
@@ -122,5 +1943,70 @@
     ],
     "expressive": false,
     "since": "0.1.0"
+  },
+  {
+    "name": "warning",
+    "category": "status",
+    "tags": [
+      "alert",
+      "caution",
+      "exclamation",
+      "triangle"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "waveform",
+    "category": "media",
+    "tags": [
+      "audio",
+      "levels",
+      "sound",
+      "recording"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "zoom-in",
+    "category": "editing",
+    "tags": [
+      "magnify",
+      "enlarge",
+      "plus",
+      "viewer"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "zoom-out",
+    "category": "editing",
+    "tags": [
+      "reduce",
+      "shrink",
+      "minus",
+      "viewer"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
   }
 ]
