@@ -23,8 +23,6 @@ const SIZES = ['sm', 'md', 'lg'] as const satisfies readonly PasswordFieldSize[]
 const HEIGHTS = { sm: 32, md: 40, lg: 48 } as const;
 const REVEAL_WIDTHS = { sm: 32, md: 32, lg: 40 } as const;
 const REVEAL_HEIGHTS = { sm: 24, md: 32, lg: 40 } as const;
-// motion.duration.base plus a frame of slack, so the slash is read after its transition.
-const SLASH_SETTLE_MS = 200;
 
 const Stack = styled.div({
   display: 'grid',
@@ -116,8 +114,7 @@ async function assertRevealed(input: HTMLInputElement, button: HTMLButtonElement
   await expect(button).toHaveAttribute('aria-pressed', 'true');
 }
 
-const slashOffset = (button: HTMLButtonElement) =>
-  parseFloat(getComputedStyle(button.querySelector('svg > [data-slash]')!).strokeDashoffset);
+const revealGlyph = (button: HTMLElement) => button.querySelector('[data-ui~="svg-icon"]');
 
 export const Default: Story = {
   name: 'Password entry',
@@ -136,8 +133,9 @@ export const Default: Story = {
     await expect(input).not.toHaveAttribute('aria-labelledby');
     await expect(input).toHaveAttribute('spellcheck', 'false');
     await expect(input).toHaveAttribute('autocomplete', 'current-password');
-    await expect(root.querySelector('[aria-hidden="true"] > svg')).not.toBeNull();
-    await expect(slashOffset(button)).toBeGreaterThan(0.5);
+    await expect(root.querySelector('[aria-hidden="true"] > [data-ui~="svg-icon"]')).not.toBeNull();
+    await expect(revealGlyph(button)).toHaveAttribute('aria-hidden', 'true');
+    await expect(revealGlyph(button)).toHaveAttribute('data-state', 'off');
     const inputRect = input.getBoundingClientRect();
     const buttonRect = button.getBoundingClientRect();
     await expect(buttonRect.left).toBeGreaterThan(inputRect.left + inputRect.width / 2);
@@ -155,8 +153,7 @@ export const Revealed: Story = {
     const { input, button } = parts(canvasElement);
     await assertRevealed(input, button);
     await expect(input).toHaveValue('correct horse battery staple');
-    // Mounting already on: the slash is drawn without a transition.
-    await expect(slashOffset(button)).toBeLessThan(0.5);
+    await expect(revealGlyph(button)).toHaveAttribute('data-state', 'on');
   },
 };
 
@@ -299,7 +296,7 @@ export function Password() {
     await expect(input).toHaveValue('hunter2');
     await expect([input.selectionStart, input.selectionEnd]).toEqual([2, 5]);
     await expect(ref).toHaveBeenCalledTimes(refCalls);
-    await waitFor(() => expect(slashOffset(button)).toBeLessThan(0.5), { timeout: SLASH_SETTLE_MS * 5 });
+    await expect(revealGlyph(button)).toHaveAttribute('data-state', 'on');
     await userEvent.click(button);
     await assertMasked(input, button);
     await expect(args.onRevealedChange).toHaveBeenCalledTimes(2);
@@ -433,7 +430,7 @@ export const RejectedControlled: Story = {
     await assertMasked(input, button);
     await expect(args.onRevealedChange).toHaveBeenCalledTimes(2);
     await expect(args.onRevealedChange).toHaveBeenLastCalledWith(true);
-    await expect(slashOffset(button)).toBeGreaterThan(0.5);
+    await expect(revealGlyph(button)).toHaveAttribute('data-state', 'off');
   },
 };
 
@@ -675,7 +672,7 @@ export const ReducedMotion: Story = {
     docs: {
       description: {
         story:
-          'Enable reduced motion in the browser to check that the slash changes without animation and pressing does not scale the button. State and ARIA update with the click.',
+          'Enable reduced motion in the browser to check that pressing does not scale the button. State and ARIA update with the click.',
       },
     },
   },
@@ -745,9 +742,12 @@ export const MultipleInstances: Story = {
     await expect(first.id).not.toBe(second.id);
     await expect(firstButton).toHaveAttribute('aria-controls', first.id);
     await expect(secondButton).toHaveAttribute('aria-controls', second.id);
-    const masks = [...canvasElement.querySelectorAll('mask')].map((mask) => mask.id);
-    await expect(new Set(masks).size).toBe(2);
+    await expect(revealGlyph(firstButton!)).toHaveAttribute('aria-hidden', 'true');
+    await expect(revealGlyph(secondButton!)).toHaveAttribute('aria-hidden', 'true');
+    await expect(revealGlyph(firstButton!)).not.toBe(revealGlyph(secondButton!));
     await userEvent.click(firstButton!);
+    await expect(revealGlyph(firstButton!)).toHaveAttribute('data-state', 'on');
+    await expect(revealGlyph(secondButton!)).toHaveAttribute('data-state', 'off');
     await expect(first).toHaveAttribute('type', 'text');
     await expect(second).toHaveAttribute('type', 'password');
   },

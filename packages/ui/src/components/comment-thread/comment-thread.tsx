@@ -38,6 +38,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
+import { Check } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type SerializedStyles } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -526,11 +527,7 @@ const resolvedChipStyle = css({
 
 const glyphStyle = css({ display: 'block', inlineSize: '1em', blockSize: '1em' });
 
-const checkGlyph = (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" css={glyphStyle} aria-hidden="true">
-    <path d="M3 8.5l3 3 7-7" strokeLinecap="round" />
-  </svg>
-);
+const checkGlyph = <Check size="inherit" css={glyphStyle} decorative />;
 
 export function CommentThread({
   ref,

@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { animate, motion, MotionConfig, useReducedMotion } from 'motion/react';
 import { base } from '@jfrader/tokens';
+import { Check as CheckIcon } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
@@ -436,9 +437,7 @@ function Check({ pressed, slot, component }: {
         style={{ width: pressed ? vars.space[4] : 0, marginInlineEnd: pressed ? vars.space[2] : 0 }}
         transition={LAYOUT_SPRING}
       >
-        <svg css={checkGlyphStyle} viewBox="0 0 16 16" fill="none">
-          <path d="m3 8 3 3 7-7" stroke="currentColor" strokeWidth="2" />
-        </svg>
+        <CheckIcon size={16} sx={checkGlyphStyle} decorative />
       </motion.span>
     </Component>
   );

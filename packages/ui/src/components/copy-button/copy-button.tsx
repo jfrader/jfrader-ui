@@ -24,6 +24,7 @@ import {
   type ReactNode,
 } from 'react';
 import { flushSync } from 'react-dom';
+import { Check, Close, Copy } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { loadingRing } from '../../styling/loading-ring';
@@ -195,33 +196,11 @@ const ringStyle = css({
   [REDUCED_MOTION]: { animation: 'none' },
 });
 
-const glyphProps = {
-  viewBox: '0 0 16 16',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 1.5,
-  strokeLinecap: 'round',
-  strokeLinejoin: 'round',
-} as const;
-
 const DEFAULT_ICONS: Record<CopyButtonValue, ReactNode> = {
-  idle: (
-    <svg {...glyphProps}>
-      <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" />
-      <path d="M10.5 3.5v-.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h.5" />
-    </svg>
-  ),
+  idle: <Copy size={16} decorative />,
   pending: <span css={ringStyle} />,
-  copied: (
-    <svg {...glyphProps}>
-      <path d="M3 8.5l3.25 3.25L13 5" />
-    </svg>
-  ),
-  error: (
-    <svg {...glyphProps}>
-      <path d="M4.5 4.5l7 7M11.5 4.5l-7 7" />
-    </svg>
-  ),
+  copied: <Check size={16} decorative />,
+  error: <Close size={16} decorative />,
 };
 
 const isResult = (value: CopyButtonValue) => value === 'copied' || value === 'error';

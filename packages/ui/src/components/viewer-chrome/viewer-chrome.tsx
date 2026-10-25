@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { useMergeRefs, type Placement } from '@floating-ui/react';
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, ChevronLeft, ChevronRight, Close, RotateLeft, Star, StarSolid, ZoomIn, ZoomOut } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { IsolatedOverlay } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
@@ -95,69 +96,22 @@ export function Glyph({ children, directional = false }: { children: ReactNode; 
   );
 }
 
-const STAR_PATH = 'M8 2.2 9.8 5.9l4 .6-2.9 2.8.7 4L8 11.4l-3.6 1.9.7-4-2.9-2.8 4-.6Z';
-
 export function StarGlyph({ filled }: { filled: boolean }) {
-  return (
-    <Glyph>
-      <path d={STAR_PATH} fill={filled ? 'currentColor' : 'none'} />
-    </Glyph>
-  );
+  const Icon = filled ? StarSolid : Star;
+  return <Icon size={16} css={glyphStyle} decorative />;
 }
 
 export const chromeIcons = {
-  previous: (
-    <Glyph directional>
-      <path d="M10 3 5 8l5 5" />
-    </Glyph>
-  ),
-  next: (
-    <Glyph directional>
-      <path d="m6 3 5 5-5 5" />
-    </Glyph>
-  ),
-  zoomIn: (
-    <Glyph>
-      <circle cx="7" cy="7" r="4.5" />
-      <path d="m10.5 10.5 3 3M5 7h4M7 5v4" />
-    </Glyph>
-  ),
-  zoomOut: (
-    <Glyph>
-      <circle cx="7" cy="7" r="4.5" />
-      <path d="m10.5 10.5 3 3M5 7h4" />
-    </Glyph>
-  ),
-  reset: (
-    <Glyph>
-      <path d="M3 8a5 5 0 1 0 1.5-3.5L3 6M3 3v3h3" />
-    </Glyph>
-  ),
-  close: (
-    <Glyph>
-      <path d="m4 4 8 8M12 4l-8 8" />
-    </Glyph>
-  ),
-  panLeft: (
-    <Glyph>
-      <path d="M13 8H3m4-4L3 8l4 4" />
-    </Glyph>
-  ),
-  panRight: (
-    <Glyph>
-      <path d="M3 8h10M9 4l4 4-4 4" />
-    </Glyph>
-  ),
-  panUp: (
-    <Glyph>
-      <path d="M8 13V3M4 7l4-4 4 4" />
-    </Glyph>
-  ),
-  panDown: (
-    <Glyph>
-      <path d="M8 3v10m-4-4 4 4 4-4" />
-    </Glyph>
-  ),
+  previous: <ChevronLeft size={16} css={[glyphStyle, directionalGlyphStyle]} decorative />,
+  next: <ChevronRight size={16} css={[glyphStyle, directionalGlyphStyle]} decorative />,
+  zoomIn: <ZoomIn size={16} css={glyphStyle} decorative />,
+  zoomOut: <ZoomOut size={16} css={glyphStyle} decorative />,
+  reset: <RotateLeft size={16} css={glyphStyle} decorative />,
+  close: <Close size={16} css={glyphStyle} decorative />,
+  panLeft: <ArrowLeft size={16} css={glyphStyle} decorative />,
+  panRight: <ArrowRight size={16} css={glyphStyle} decorative />,
+  panUp: <ArrowUp size={16} css={glyphStyle} decorative />,
+  panDown: <ArrowDown size={16} css={glyphStyle} decorative />,
 };
 
 export interface ChromeActionProps

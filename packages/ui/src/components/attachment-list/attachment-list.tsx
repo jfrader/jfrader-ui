@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, type ComponentPropsWithRef, type ComponentType } from 'react';
+import { File, Image } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
@@ -96,17 +97,8 @@ const typographyStyle = css({ fontFamily: vars.font.sans, fontSize: vars.textSiz
 const linkStyle = css({ color: vars.color.accentText, overflowWrap: 'anywhere', '&:focus-visible': focusRingOutset });
 const glyphStyle = css({ inlineSize: '1em', blockSize: '1em', verticalAlign: 'middle', marginInlineEnd: vars.space[2] });
 
-const fileGlyph = (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" css={glyphStyle} aria-hidden="true">
-    <path d="M3 1h6l4 4v10H3V1Z M9 1v4h4" />
-  </svg>
-);
-const imageGlyph = (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" css={glyphStyle} aria-hidden="true">
-    <rect x="2" y="2" width="12" height="12" rx="2" /><circle cx="5.5" cy="5.5" r="1" />
-    <path d="m2 12 4-4 3 3 2-2 3 3" />
-  </svg>
-);
+const fileGlyph = <File size="inherit" css={glyphStyle} decorative />;
+const imageGlyph = <Image size="inherit" css={glyphStyle} decorative />;
 
 export function AttachmentListView({
   attachments, locale, labels: labelProps, previewCount = DEFAULT_PREVIEW_COUNT,

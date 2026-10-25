@@ -38,6 +38,7 @@ import {
   type TextareaHTMLAttributes,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
+import { Check, Close, Pencil } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
@@ -397,30 +398,9 @@ const ringStyle = css({
   [REDUCED_MOTION]: { animation: 'none' },
 });
 
-const glyphProps = {
-  viewBox: '0 0 16 16',
-  fill: 'none',
-  stroke: 'currentColor',
-  strokeWidth: 1.5,
-  strokeLinecap: 'round',
-  strokeLinejoin: 'round',
-} as const;
-
-const pencilGlyph = (
-  <svg {...glyphProps}>
-    <path d="M10.5 3.5l2 2M3 13l.5-2.5 7.25-7.25a1.4 1.4 0 0 1 2 2L5.5 12.5 3 13z" />
-  </svg>
-);
-const checkGlyph = (
-  <svg {...glyphProps}>
-    <path d="M3 8.5l3.25 3.25L13 5" />
-  </svg>
-);
-const crossGlyph = (
-  <svg {...glyphProps}>
-    <path d="M4.5 4.5l7 7M11.5 4.5l-7 7" />
-  </svg>
-);
+const pencilGlyph = <Pencil size="inherit" decorative />;
+const checkGlyph = <Check size="inherit" decorative />;
+const crossGlyph = <Close size="inherit" decorative />;
 
 const statusGlyphs: Record<AnnouncedPhase, ReactNode> = {
   saving: <span css={ringStyle} />,

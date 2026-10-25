@@ -38,6 +38,7 @@ import {
   type SyntheticEvent,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
+import { ChevronLeft, ChevronRight } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
@@ -352,18 +353,8 @@ const emptyStyle = css({
 });
 
 function Chevron({ direction }: { direction: 'previous' | 'next' }) {
-  return (
-    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" css={glyphStyle}>
-      <path
-        d={direction === 'previous' ? 'M10 3 5 8l5 5' : 'm6 3 5 5-5 5'}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+  const Icon = direction === 'previous' ? ChevronLeft : ChevronRight;
+  return <Icon size={16} css={glyphStyle} decorative />;
 }
 
 interface DragSession {

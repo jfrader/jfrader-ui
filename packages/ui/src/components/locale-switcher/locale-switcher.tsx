@@ -28,6 +28,7 @@ import {
   type RefCallback,
 } from 'react';
 import { useMergeRefs, type Placement } from '@floating-ui/react';
+import { Check, ChevronDown, Globe } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
@@ -44,7 +45,7 @@ import { MenuContentPart, MenuController, MenuItemPart, MenuTriggerPart, joinIds
 declare const process: { env: { NODE_ENV?: string } };
 
 const FAMILY = 'LocaleSwitcher';
-const SELECTED_GLYPH = '✓';
+const SELECTED_GLYPH = <Check size="inherit" decorative />;
 
 export type LocaleSwitcherVariant = 'menu' | 'swap' | 'inline' | 'pills';
 export type LocaleSwitcherSize = 'sm' | 'md' | 'lg';
@@ -286,18 +287,8 @@ const pillCurrentStyle = css({
   },
 });
 
-const globe = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" focusable="false">
-    <circle cx="12" cy="12" r="9" />
-    <path d="M3 12h18M12 3c2.5 2.5 3.75 5.5 3.75 9S14.5 18.5 12 21c-2.5-2.5-3.75-5.5-3.75-9S9.5 5.5 12 3Z" />
-  </svg>
-);
-
-const chevron = (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 6l4 4 4-4" />
-  </svg>
-);
+const globe = <Globe size="inherit" decorative />;
+const chevron = <ChevronDown size="inherit" decorative />;
 
 interface OptionElementProps extends HTMLAttributes<HTMLElement> {
   slots?: Pick<LocaleSwitcherSlots, 'option'>;

@@ -14,6 +14,7 @@ import {
 } from 'react';
 import { useMergeRefs, type Placement } from '@floating-ui/react';
 import { MotionConfig, animate, motion, useMotionValue, useReducedMotion } from 'motion/react';
+import { ChevronDown } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type SerializedStyles } from '../../styling/css';
 import { WithSx, type SxProps } from '../../styling/sx';
@@ -374,11 +375,7 @@ const caretStyle = css({
   display: 'inline-flex',
   '& svg': { inlineSize: '1em', blockSize: '1em' },
 });
-const caret = (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-    <path d="m4 6 4 4 4-4" />
-  </svg>
-);
+const caret = <ChevronDown size="inherit" decorative />;
 
 function Labels({
   children,

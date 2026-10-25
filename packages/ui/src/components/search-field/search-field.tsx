@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
+import { Close, Search } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
@@ -169,17 +170,8 @@ const clearStyle = css({
   [FORCED_COLORS]: { borderColor: 'ButtonText', color: 'ButtonText' },
 });
 const defaultMessages: SearchFieldMessages = { clear: 'Clear search' };
-const searchGlyph = (
-  <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <circle cx="10.5" cy="10.5" r="6.5" />
-    <path d="m16 16 5 5" />
-  </svg>
-);
-const clearGlyph = (
-  <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="m6 6 12 12M18 6 6 18" />
-  </svg>
-);
+const searchGlyph = <Search size="inherit" decorative />;
+const clearGlyph = <Close size="inherit" decorative />;
 
 export function SearchField({
   ref,

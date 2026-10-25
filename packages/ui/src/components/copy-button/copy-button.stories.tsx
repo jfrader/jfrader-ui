@@ -251,6 +251,13 @@ export const Default: Story = {
     await expect(button).toHaveAttribute('data-state', 'idle');
     await expect(button.matches(ROOT)).toBe(true);
     await expect(button.matches('[data-ui~="button"]')).toBe(true);
+    const icons = button.querySelectorAll('[data-ui~="svg-icon"]');
+    await expect(icons).toHaveLength(3);
+    for (const icon of icons) {
+      await expect(icon).toHaveAttribute('aria-hidden', 'true');
+      await expect(icon.getBoundingClientRect().width).toBe(16);
+      await expect(icon.getBoundingClientRect().height).toBe(16);
+    }
     await expect(getStatus(canvasElement)).toHaveTextContent('');
   },
 };
