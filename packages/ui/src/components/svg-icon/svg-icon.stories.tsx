@@ -130,7 +130,7 @@ const drawing = <><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.1 15.1 20 2
   },
 };
 export const Factory: Story = {
-  render: (args) => <Row><SearchIcon {...args} tone="accent" size="lg" label="Factory search" /><PlaySolidIcon {...args} tone="accent" size="lg" label="Factory solid" /><SvgIcon {...args} tone="accent" size="lg" label="Base search" /></Row>,
+  render: (args) => <Row><SearchIcon {...args} tone="accent" size="lg" label="Factory search" /><PlaySolidIcon tone="accent" size="lg" label="Factory solid" /><SvgIcon {...args} tone="accent" size="lg" label="Base search" /></Row>,
   parameters: { docs: { description: { story: 'Your own icon in 6 lines: declare a drawing once and pass the same props to the factory icon and base. A third argument bakes in props such as `variant`, `viewBox`, or `inheritViewBox`.' }, source: { code: `import { createSvgIcon, SvgIcon } from '@jfrader/ui';
 const drawing = <><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.1 15.1 20 20" /></>;
 const SearchIcon = createSvgIcon(drawing, 'Icons.Search');
@@ -149,6 +149,8 @@ const baseIcon = <SvgIcon tone="accent" size="lg" label="Base search">{drawing}<
     await expect(factory!.querySelector('path')!.getAttribute('d')).toBe(base!.querySelector('path')!.getAttribute('d'));
     await expect(baked).toHaveAttribute('fill', 'currentColor');
     await expect(baked).not.toHaveAttribute('stroke');
+    await expect(baked!.querySelector('path')!.getAttribute('d')).toBe('M9 5 18 12 9 19Z');
+    await expect(baked!.querySelector('circle')).toBeNull();
   },
 };
 export const ForeignGrid: Story = {
