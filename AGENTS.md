@@ -52,8 +52,9 @@ Packing and publishing are in `docs/releasing.md`.
 - `@emotion/react`, `@emotion/styled` (re-exported as the app-facing `styled`; components never use
   it), and `@floating-ui/react` (Popover, Tooltip, Menu).
 - `motion` (v14.x, imported as `motion/react`).
-- `lucide-react` is approved for consumer apps and examples (for example `apps/pilot`); `@jfrader/ui`
-  must not depend on it.
+- `@jfrader/icons` provides React icons and peers on `@jfrader/ui`, sharing one `SvgIcon` base.
+  `@jfrader/ui` may import it only from stories as a devDependency, never from runtime components.
+- `lucide-react` is approved for consumer apps only; `@jfrader/ui` must not depend on it.
 - `shiki` is an optional peer and a devDependency for stories. Only
   `packages/ui/src/components/code-block/shiki.ts`, published as the `./code-block/shiki` subpath, may
   import it.
@@ -85,4 +86,3 @@ Packing and publishing are in `docs/releasing.md`.
 
 `SKILL.md` owns the component contract, the test requirements, the visual pass, and the review
 checklist. A green test run is not completion; the checklist in `SKILL.md` §7 and §8 is.
-

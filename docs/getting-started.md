@@ -203,15 +203,26 @@ put its `variable` class on `<html>`, and set
 `--ui-font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif` in app CSS.
 [Theming](./theming.md) explains where CSS token overrides apply.
 
-For icons, install `lucide-react` in your app or pass your own SVG:
+For icons, install `@jfrader/icons` next to `@jfrader/ui`:
 
 ```tsx
 import { Button } from '@jfrader/ui';
-import { Inbox } from 'lucide-react';
+import { Inbox } from '@jfrader/icons';
 
 export function InboxButton() {
   return <Button startIcon={<Inbox />}>Inbox</Button>;
 }
+```
+
+Draw your own with the same component every bundled icon uses:
+
+```tsx
+import { createSvgIcon } from '@jfrader/ui';
+
+export const BrandMark = createSvgIcon(
+  <path d="M4 12C4 6 12 4 12 12C12 20 20 18 20 12" />,
+  'BrandMark',
+);
 ```
 
 A `Badge` count is not part of the wrapped control's accessible name. When the control has an

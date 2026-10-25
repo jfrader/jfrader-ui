@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
+    "@jfrader/icons": "workspace:^",
     "@jfrader/tokens": "workspace:*",
     "@jfrader/ui": "workspace:*",
-    "lucide-react": "^1.21.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
