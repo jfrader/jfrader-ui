@@ -241,7 +241,8 @@ const badgeStyle = css({
 });
 const trayStyle = css([{
   display: 'flex', gap: vars.space[2], padding: vars.space[2], boxSizing: 'border-box',
-  maxInlineSize: `calc(100vw - 2 * ${vars.space[2]})`, overflowX: 'auto',
+  inlineSize: 'max-content', maxInlineSize: `calc(100vw - 2 * ${vars.space[2]})`, overflowX: 'auto',
+  zIndex: vars.zIndex.popover,
   border: '1px solid', borderRadius: vars.radius.lg,
   '&[hidden]': { display: 'none' },
 }, translucentControlStyle]);
@@ -490,7 +491,7 @@ function DockWidget({
     requestOpen(false);
   }
   const floating = useOverlayFloating({
-    open: shown, placement: 'top', nodeId, transform: false,
+    open: shown, placement: 'top', nodeId, transform: false, strategy: 'fixed', gap: parseFloat(base.space[4]),
     onOpenChange: (next, _event, reason) => { if (!next) close(reason === 'escape-key'); },
   });
   const dismiss = useLayerDismiss(floating.context, 'container');

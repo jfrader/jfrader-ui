@@ -2,9 +2,11 @@ import { StrictMode, useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { MotionConfig } from 'motion/react';
+import { vars } from '@jfrader/tokens/vars';
 import { motionDurationMs } from '../../styling/motion-timings';
+import { styled } from '../../styling/styled';
 import { withLightTheme } from '../../testing/story-decorators';
-import { expectInside } from '../../testing/geometry-assertions';
+import { expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { settleMotion } from '../../testing/motion-assertions';
 import { Button } from '../button';
 import { Dialog } from '../dialog';
@@ -159,6 +161,12 @@ async function expectPersistentLabels(container: HTMLElement) {
     await expect(label.scrollWidth).toBeLessThanOrEqual(label.clientWidth + 1);
   }
 }
+
+const ScrollingDockPreview = styled('div')({
+  overflow: 'auto', boxSizing: 'border-box', padding: vars.space[4],
+  inlineSize: `calc(${vars.space[12]} * 8)`, maxInlineSize: '100%',
+  blockSize: `calc(${vars.space[12]} * 3)`,
+});
 
 export const Default: Story = {
   name: 'Tool dock',
@@ -440,6 +448,20 @@ const items: readonly DockItem[] = [
   },
   play: async ({ canvas }) => {
     await expectPersistentLabels(canvas.getByRole('toolbar'));
+  },
+};
+export const TrayEscapesClipping: Story = {
+  ...AlwaysLabelsTouch,
+  name: 'Tray in a scrolling container',
+  tags: ['!autodocs'],
+  render: (args) => <ScrollingDockPreview><Dock {...args} /></ScrollingDockPreview>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const toolbar = canvas.getByRole('toolbar');
+    await userEvent.click(canvas.getByRole('button', { name: 'Shapes: Rectangle, R' }));
+    const tray = await page(canvasElement).findByRole('group');
+    await waitFor(async () => { await expectNoOverlap(tray, toolbar); });
+    await expect(tray.scrollWidth).toBeLessThanOrEqual(tray.clientWidth + 1);
+    await expectPersistentLabels(tray);
   },
 };
 export const NarrowOverflow: Story = {

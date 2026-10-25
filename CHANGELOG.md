@@ -5,6 +5,7 @@
 ### Fixed
 
 - `Dock` keeps persistent labels beneath tool icons and wraps long labels inside their buttons.
+- `Dock` group trays escape scrolling previews and use their full width when viewport space allows.
 
 ## 0.17.1 — 2026-10-25
 
