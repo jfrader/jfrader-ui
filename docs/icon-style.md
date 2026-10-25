@@ -20,7 +20,7 @@ components, metadata, the gallery — is generated from them and never edited by
 | Coordinate precision | at most 2 decimals |
 | Minimum feature | 1.5 units |
 | Minimum gap | 2 units |
-| Dots and solid marks | `r="1.25"`, `fill="currentColor"`, `stroke="none"` |
+| Dots and solid marks | `r="1.25"`, `fill="currentColor"`, `stroke="none"`. A status bead may be filled up to `r="3"` |
 
 The stroke never changes per size. One glyph, one weight, at 16 through 32px. If a glyph only reads
 at 32, the glyph is wrong, not the stroke.

@@ -68,6 +68,22 @@
     "since": "0.2.0"
   },
   {
+    "name": "archive",
+    "category": "file",
+    "tags": [
+      "box",
+      "storage",
+      "records"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "arrow-down",
     "category": "arrow",
     "tags": [
@@ -75,6 +91,36 @@
       "direction",
       "below",
       "descending"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "arrow-down-left",
+    "category": "arrow",
+    "tags": [
+      "diagonal",
+      "southwest",
+      "direction"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "arrow-down-right",
+    "category": "arrow",
+    "tags": [
+      "diagonal",
+      "southeast",
+      "direction"
     ],
     "aliases": [],
     "variants": [
@@ -132,6 +178,51 @@
     "since": "0.2.0"
   },
   {
+    "name": "arrow-up-left",
+    "category": "arrow",
+    "tags": [
+      "diagonal",
+      "northwest",
+      "direction"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "arrow-up-right",
+    "category": "arrow",
+    "tags": [
+      "diagonal",
+      "northeast",
+      "direction"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "at-sign",
+    "category": "communication",
+    "tags": [
+      "mention",
+      "email",
+      "address"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "bank",
     "category": "money",
     "tags": [
@@ -149,6 +240,103 @@
     "since": "0.2.0"
   },
   {
+    "name": "banknote",
+    "category": "money",
+    "tags": [
+      "cash",
+      "bill",
+      "note",
+      "payment"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "baton",
+    "category": "gaming",
+    "tags": [
+      "staff",
+      "suit",
+      "stick"
+    ],
+    "aliases": [
+      "bastos"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "battery",
+    "category": "device",
+    "tags": [
+      "charge",
+      "energy",
+      "level"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "battery-charging",
+    "category": "device",
+    "tags": [
+      "battery",
+      "charging",
+      "electricity"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "bell",
+    "category": "communication",
+    "tags": [
+      "notification",
+      "alert",
+      "reminder"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "bell-off",
+    "category": "communication",
+    "tags": [
+      "notifications",
+      "silent",
+      "mute"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "bold",
     "category": "editing",
     "tags": [
@@ -156,6 +344,22 @@
       "font",
       "type",
       "format"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "book",
+    "category": "file",
+    "tags": [
+      "read",
+      "pages",
+      "manual"
     ],
     "aliases": [],
     "variants": [
@@ -183,6 +387,22 @@
     "since": "0.2.0"
   },
   {
+    "name": "broadcast",
+    "category": "communication",
+    "tags": [
+      "transmit",
+      "live",
+      "radio"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "brush",
     "category": "editing",
     "tags": [
@@ -195,6 +415,21 @@
     "variants": [
       "line",
       "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "cable",
+    "category": "device",
+    "tags": [
+      "lead",
+      "wire",
+      "connector"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
     ],
     "expressive": false,
     "since": "0.2.0"
@@ -217,6 +452,155 @@
     "since": "0.2.0"
   },
   {
+    "name": "camera",
+    "category": "media",
+    "tags": [
+      "photo",
+      "capture",
+      "lens"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "card",
+    "category": "gaming",
+    "tags": [
+      "playing",
+      "game",
+      "pip"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "card-back",
+    "category": "gaming",
+    "tags": [
+      "hidden",
+      "deck",
+      "reverse"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "card-hand",
+    "category": "gaming",
+    "tags": [
+      "hand",
+      "fan",
+      "playing"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "cards",
+    "category": "gaming",
+    "tags": [
+      "deck",
+      "stack",
+      "playing"
+    ],
+    "aliases": [
+      "deck",
+      "card-stack"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "cast",
+    "category": "device",
+    "tags": [
+      "stream",
+      "wireless",
+      "receiver"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "certificate",
+    "category": "security",
+    "tags": [
+      "seal",
+      "verified",
+      "document"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "chain",
+    "category": "money",
+    "tags": [
+      "blocks",
+      "blockchain",
+      "onchain"
+    ],
+    "aliases": [
+      "onchain",
+      "blockchain"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "channel",
+    "category": "money",
+    "tags": [
+      "lightning",
+      "peers",
+      "rail"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
     "name": "chart-bar",
     "category": "money",
     "tags": [
@@ -233,6 +617,40 @@
     ],
     "expressive": false,
     "since": "0.1.0"
+  },
+  {
+    "name": "chart-line",
+    "category": "money",
+    "tags": [
+      "analytics",
+      "trend",
+      "graph",
+      "statistics"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "chart-pie",
+    "category": "money",
+    "tags": [
+      "analytics",
+      "proportion",
+      "slice",
+      "statistics"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
   },
   {
     "name": "check",
@@ -314,6 +732,39 @@
     "since": "0.2.0"
   },
   {
+    "name": "chip",
+    "category": "gaming",
+    "tags": [
+      "token",
+      "poker",
+      "bet"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "chips",
+    "category": "gaming",
+    "tags": [
+      "tokens",
+      "stack",
+      "poker",
+      "bet"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
     "name": "circle",
     "category": "status",
     "tags": [
@@ -321,6 +772,37 @@
       "ring",
       "timeline",
       "outline"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "clipboard",
+    "category": "file",
+    "tags": [
+      "board",
+      "clip",
+      "document"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "clipboard-check",
+    "category": "file",
+    "tags": [
+      "checklist",
+      "complete",
+      "task"
     ],
     "aliases": [],
     "variants": [
@@ -359,6 +841,84 @@
     ],
     "variants": [
       "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "cloud",
+    "category": "weather",
+    "tags": [
+      "cloudy",
+      "overcast",
+      "sky"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "cloud-download",
+    "category": "file",
+    "tags": [
+      "cloud",
+      "download",
+      "restore"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "cloud-sun",
+    "category": "weather",
+    "tags": [
+      "partly-cloudy",
+      "sunny",
+      "sky"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "cloud-upload",
+    "category": "file",
+    "tags": [
+      "cloud",
+      "upload",
+      "backup"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "club",
+    "category": "gaming",
+    "tags": [
+      "suit",
+      "pip",
+      "trefoil"
+    ],
+    "aliases": [
+      "clubs"
+    ],
+    "variants": [
+      "line",
+      "solid"
     ],
     "expressive": false,
     "since": "0.2.0"
@@ -412,6 +972,40 @@
       "line"
     ],
     "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "compass",
+    "category": "navigation",
+    "tags": [
+      "direction",
+      "bearing",
+      "explore"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "controller",
+    "category": "gaming",
+    "tags": [
+      "gamepad",
+      "game",
+      "buttons"
+    ],
+    "aliases": [
+      "gamepad"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
     "since": "0.2.0"
   },
   {
@@ -469,6 +1063,40 @@
     "since": "0.2.0"
   },
   {
+    "name": "crown",
+    "category": "gaming",
+    "tags": [
+      "king",
+      "winner",
+      "royal"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "cup",
+    "category": "gaming",
+    "tags": [
+      "goblet",
+      "suit",
+      "chalice"
+    ],
+    "aliases": [
+      "copas"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
     "name": "cursor",
     "category": "editing",
     "tags": [
@@ -519,6 +1147,90 @@
     "since": "0.2.0"
   },
   {
+    "name": "desktop",
+    "category": "device",
+    "tags": [
+      "computer",
+      "monitor",
+      "workstation"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "diamond",
+    "category": "gaming",
+    "tags": [
+      "suit",
+      "pip",
+      "rhombus"
+    ],
+    "aliases": [
+      "diamonds"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "dice",
+    "category": "gaming",
+    "tags": [
+      "cubes",
+      "roll",
+      "random",
+      "pair"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "die",
+    "category": "gaming",
+    "tags": [
+      "cube",
+      "pips",
+      "roll",
+      "random"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "display",
+    "category": "device",
+    "tags": [
+      "screen",
+      "panel",
+      "resolution"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "download",
     "category": "action",
     "tags": [
@@ -526,6 +1238,21 @@
       "save",
       "tray",
       "down"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "droplet",
+    "category": "weather",
+    "tags": [
+      "water",
+      "drop",
+      "humidity"
     ],
     "aliases": [],
     "variants": [
@@ -548,6 +1275,21 @@
       "solid"
     ],
     "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "empty-box",
+    "category": "status",
+    "tags": [
+      "empty",
+      "box",
+      "unpack"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": true,
     "since": "0.2.0"
   },
   {
@@ -584,6 +1326,37 @@
     "since": "0.2.0"
   },
   {
+    "name": "ethernet",
+    "category": "device",
+    "tags": [
+      "wired",
+      "rj45",
+      "lan"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "exchange",
+    "category": "money",
+    "tags": [
+      "swap",
+      "convert",
+      "transfer"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "expand",
     "category": "media",
     "tags": [
@@ -595,6 +1368,21 @@
     "aliases": [
       "fullscreen"
     ],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "external-link",
+    "category": "navigation",
+    "tags": [
+      "outbound",
+      "new-window",
+      "open"
+    ],
+    "aliases": [],
     "variants": [
       "line"
     ],
@@ -657,6 +1445,36 @@
     "since": "0.2.0"
   },
   {
+    "name": "fast-forward",
+    "category": "media",
+    "tags": [
+      "playback",
+      "seek",
+      "speed"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "fee",
+    "category": "money",
+    "tags": [
+      "cost",
+      "charge",
+      "deduction"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "file",
     "category": "file",
     "tags": [
@@ -674,6 +1492,102 @@
     "since": "0.2.0"
   },
   {
+    "name": "file-archive",
+    "category": "file",
+    "tags": [
+      "zip",
+      "compressed",
+      "archive"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "file-audio",
+    "category": "file",
+    "tags": [
+      "audio",
+      "sound",
+      "waveform"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "file-code",
+    "category": "file",
+    "tags": [
+      "source",
+      "code",
+      "script"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "file-image",
+    "category": "file",
+    "tags": [
+      "image",
+      "photo",
+      "picture"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "file-text",
+    "category": "file",
+    "tags": [
+      "document",
+      "text",
+      "page"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "file-video",
+    "category": "file",
+    "tags": [
+      "video",
+      "movie",
+      "play"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "filter",
     "category": "action",
     "tags": [
@@ -681,6 +1595,22 @@
       "funnel",
       "refine",
       "query"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "fingerprint",
+    "category": "security",
+    "tags": [
+      "biometric",
+      "identity",
+      "authenticate"
     ],
     "aliases": [],
     "variants": [
@@ -731,6 +1661,99 @@
       "vertical",
       "mirror",
       "reflect"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "fog",
+    "category": "weather",
+    "tags": [
+      "mist",
+      "haze",
+      "visibility"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "folder",
+    "category": "file",
+    "tags": [
+      "directory",
+      "files",
+      "organize"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "folder-open",
+    "category": "file",
+    "tags": [
+      "directory",
+      "open",
+      "browse"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "folder-plus",
+    "category": "file",
+    "tags": [
+      "directory",
+      "create",
+      "add"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "folder-shared",
+    "category": "file",
+    "tags": [
+      "directory",
+      "shared",
+      "collaboration"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "forward",
+    "category": "communication",
+    "tags": [
+      "resend",
+      "relay",
+      "message"
     ],
     "aliases": [],
     "variants": [
@@ -808,6 +1831,88 @@
     "since": "0.2.0"
   },
   {
+    "name": "hashtag",
+    "category": "communication",
+    "tags": [
+      "tag",
+      "topic",
+      "number-sign"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "headphones",
+    "category": "media",
+    "tags": [
+      "listen",
+      "audio",
+      "headset"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "heart",
+    "category": "status",
+    "tags": [
+      "favorite",
+      "love",
+      "suit"
+    ],
+    "aliases": [
+      "hearts"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "help",
+    "category": "status",
+    "tags": [
+      "question",
+      "support",
+      "assistance"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "history",
+    "category": "navigation",
+    "tags": [
+      "past",
+      "recent",
+      "activity",
+      "transactions"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "home",
     "category": "navigation",
     "tags": [
@@ -820,6 +1925,21 @@
     ],
     "expressive": false,
     "since": "0.1.0"
+  },
+  {
+    "name": "hourglass",
+    "category": "status",
+    "tags": [
+      "wait",
+      "time",
+      "duration"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
   },
   {
     "name": "image",
@@ -872,6 +1992,37 @@
     "since": "0.2.0"
   },
   {
+    "name": "information",
+    "category": "status",
+    "tags": [
+      "info",
+      "details",
+      "notice"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "invoice",
+    "category": "money",
+    "tags": [
+      "bill",
+      "payment",
+      "request"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
     "name": "italic",
     "category": "editing",
     "tags": [
@@ -879,6 +2030,102 @@
       "font",
       "slanted",
       "format"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "joystick",
+    "category": "gaming",
+    "tags": [
+      "arcade",
+      "stick",
+      "game"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "key",
+    "category": "security",
+    "tags": [
+      "access",
+      "credential",
+      "secret"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "keyboard",
+    "category": "device",
+    "tags": [
+      "keys",
+      "typing",
+      "input"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "keyhole",
+    "category": "security",
+    "tags": [
+      "access",
+      "slot",
+      "private"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "language",
+    "category": "communication",
+    "tags": [
+      "translate",
+      "locale",
+      "international"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "laptop",
+    "category": "device",
+    "tags": [
+      "computer",
+      "portable",
+      "clamshell"
     ],
     "aliases": [],
     "variants": [
@@ -903,6 +2150,24 @@
       "solid"
     ],
     "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "lightning",
+    "category": "money",
+    "tags": [
+      "bolt",
+      "instant",
+      "payment"
+    ],
+    "aliases": [
+      "bolt"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
     "since": "0.2.0"
   },
   {
@@ -956,6 +2221,23 @@
     "since": "0.2.0"
   },
   {
+    "name": "location",
+    "category": "navigation",
+    "tags": [
+      "marker",
+      "place",
+      "position",
+      "gps"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "lock",
     "category": "security",
     "tags": [
@@ -969,6 +2251,86 @@
     ],
     "expressive": false,
     "since": "0.1.0"
+  },
+  {
+    "name": "mail",
+    "category": "communication",
+    "tags": [
+      "email",
+      "envelope",
+      "letter"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "mail-open",
+    "category": "communication",
+    "tags": [
+      "email",
+      "envelope",
+      "read"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "map",
+    "category": "navigation",
+    "tags": [
+      "atlas",
+      "fold",
+      "geography"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "medal",
+    "category": "gaming",
+    "tags": [
+      "award",
+      "reward",
+      "ribbon"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "megaphone",
+    "category": "communication",
+    "tags": [
+      "announcement",
+      "loudspeaker",
+      "promote"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
   },
   {
     "name": "menu",
@@ -1007,6 +2369,38 @@
     "since": "0.2.0"
   },
   {
+    "name": "message-dots",
+    "category": "communication",
+    "tags": [
+      "chat",
+      "typing",
+      "conversation"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "messages",
+    "category": "communication",
+    "tags": [
+      "chat",
+      "conversation",
+      "comments"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "microphone",
     "category": "media",
     "tags": [
@@ -1014,6 +2408,23 @@
       "voice",
       "audio",
       "recording"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "microphone-off",
+    "category": "media",
+    "tags": [
+      "mic",
+      "muted",
+      "recording",
+      "voice"
     ],
     "aliases": [],
     "variants": [
@@ -1040,6 +2451,38 @@
     "since": "0.2.0"
   },
   {
+    "name": "mobile",
+    "category": "device",
+    "tags": [
+      "smartphone",
+      "handset",
+      "mobile"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "moon",
+    "category": "weather",
+    "tags": [
+      "night",
+      "dark",
+      "crescent"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "more",
     "category": "navigation",
     "tags": [
@@ -1054,6 +2497,38 @@
     ],
     "variants": [
       "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "mouse",
+    "category": "device",
+    "tags": [
+      "pointer",
+      "click",
+      "input"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "move",
+    "category": "arrow",
+    "tags": [
+      "drag",
+      "position",
+      "pan"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
     ],
     "expressive": false,
     "since": "0.2.0"
@@ -1076,6 +2551,22 @@
     "since": "0.2.0"
   },
   {
+    "name": "mute",
+    "category": "media",
+    "tags": [
+      "silent",
+      "speaker",
+      "sound"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "network",
     "category": "development",
     "tags": [
@@ -1088,6 +2579,68 @@
     "variants": [
       "line",
       "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "node",
+    "category": "money",
+    "tags": [
+      "lightning",
+      "hub",
+      "peer"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "notebook",
+    "category": "file",
+    "tags": [
+      "notes",
+      "journal",
+      "binding"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "offline",
+    "category": "status",
+    "tags": [
+      "presence",
+      "unavailable",
+      "disconnected"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "online",
+    "category": "status",
+    "tags": [
+      "presence",
+      "available",
+      "connected"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
     ],
     "expressive": false,
     "since": "0.2.0"
@@ -1154,6 +2707,36 @@
     "aliases": [
       "attachment"
     ],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "passcode",
+    "category": "security",
+    "tags": [
+      "pin",
+      "keypad",
+      "authentication"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "password",
+    "category": "security",
+    "tags": [
+      "credential",
+      "masked",
+      "field"
+    ],
+    "aliases": [],
     "variants": [
       "line"
     ],
@@ -1281,6 +2864,22 @@
     "since": "0.2.0"
   },
   {
+    "name": "percent",
+    "category": "money",
+    "tags": [
+      "percentage",
+      "ratio",
+      "discount",
+      "rate"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "person",
     "category": "people",
     "tags": [
@@ -1301,6 +2900,51 @@
     "since": "0.2.0"
   },
   {
+    "name": "person-check",
+    "category": "people",
+    "tags": [
+      "user",
+      "verified",
+      "selected"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "person-minus",
+    "category": "people",
+    "tags": [
+      "user",
+      "remove",
+      "member"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "person-plus",
+    "category": "people",
+    "tags": [
+      "user",
+      "add",
+      "invite"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "phone",
     "category": "communication",
     "tags": [
@@ -1315,6 +2959,69 @@
       "solid"
     ],
     "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "phone-incoming",
+    "category": "communication",
+    "tags": [
+      "call",
+      "receive",
+      "telephone"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "phone-off",
+    "category": "communication",
+    "tags": [
+      "call",
+      "disconnected",
+      "telephone"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "phone-outgoing",
+    "category": "communication",
+    "tags": [
+      "call",
+      "dial",
+      "telephone"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "piggy-bank",
+    "category": "money",
+    "tags": [
+      "savings",
+      "save",
+      "deposit",
+      "pig"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
     "since": "0.2.0"
   },
   {
@@ -1350,6 +3057,22 @@
     "since": "0.1.0"
   },
   {
+    "name": "plug",
+    "category": "device",
+    "tags": [
+      "electricity",
+      "connector",
+      "outlet"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "plus",
     "category": "action",
     "tags": [
@@ -1361,6 +3084,53 @@
     "aliases": [
       "add"
     ],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "podium",
+    "category": "gaming",
+    "tags": [
+      "ranking",
+      "winners",
+      "leaderboard"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "power",
+    "category": "device",
+    "tags": [
+      "on",
+      "off",
+      "switch"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "print",
+    "category": "action",
+    "tags": [
+      "printer",
+      "paper",
+      "document"
+    ],
+    "aliases": [],
     "variants": [
       "line"
     ],
@@ -1385,6 +3155,67 @@
     "since": "0.2.0"
   },
   {
+    "name": "puzzle",
+    "category": "gaming",
+    "tags": [
+      "piece",
+      "jigsaw",
+      "interlock"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "qr-code",
+    "category": "money",
+    "tags": [
+      "qr",
+      "payment",
+      "address"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "quote",
+    "category": "communication",
+    "tags": [
+      "quotation",
+      "citation",
+      "text"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "rain",
+    "category": "weather",
+    "tags": [
+      "rainy",
+      "precipitation",
+      "showers"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "receipt",
     "category": "money",
     "tags": [
@@ -1399,6 +3230,40 @@
       "solid"
     ],
     "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "receive",
+    "category": "money",
+    "tags": [
+      "funds",
+      "incoming",
+      "payment"
+    ],
+    "aliases": [
+      "receive-money",
+      "receive-funds"
+    ],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "record",
+    "category": "media",
+    "tags": [
+      "recording",
+      "capture",
+      "audio"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
     "since": "0.2.0"
   },
   {
@@ -1451,6 +3316,22 @@
     "since": "0.2.0"
   },
   {
+    "name": "repeat",
+    "category": "media",
+    "tags": [
+      "loop",
+      "playback",
+      "cycle"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "replay",
     "category": "media",
     "tags": [
@@ -1458,6 +3339,36 @@
       "restart",
       "playback",
       "loop"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "reply",
+    "category": "communication",
+    "tags": [
+      "respond",
+      "answer",
+      "message"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "resize",
+    "category": "arrow",
+    "tags": [
+      "scale",
+      "diagonal",
+      "dimensions"
     ],
     "aliases": [],
     "variants": [
@@ -1499,6 +3410,21 @@
     "since": "0.2.0"
   },
   {
+    "name": "rewind",
+    "category": "media",
+    "tags": [
+      "playback",
+      "seek",
+      "backward"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "rotate-left",
     "category": "editing",
     "tags": [
@@ -1531,6 +3457,23 @@
     "since": "0.2.0"
   },
   {
+    "name": "route",
+    "category": "navigation",
+    "tags": [
+      "directions",
+      "journey",
+      "path",
+      "endpoints"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "save",
     "category": "action",
     "tags": [
@@ -1542,6 +3485,53 @@
     "aliases": [],
     "variants": [
       "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "scan",
+    "category": "security",
+    "tags": [
+      "scanner",
+      "capture",
+      "qr"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "scan-face",
+    "category": "security",
+    "tags": [
+      "biometric",
+      "recognition",
+      "identity"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "screen-share",
+    "category": "device",
+    "tags": [
+      "present",
+      "screen",
+      "share"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
     ],
     "expressive": false,
     "since": "0.2.0"
@@ -1560,6 +3550,38 @@
     ],
     "expressive": false,
     "since": "0.1.0"
+  },
+  {
+    "name": "seat",
+    "category": "gaming",
+    "tags": [
+      "chair",
+      "player",
+      "place"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "security-camera",
+    "category": "security",
+    "tags": [
+      "surveillance",
+      "monitor",
+      "cctv"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
   },
   {
     "name": "send",
@@ -1610,6 +3632,70 @@
     "since": "0.2.0"
   },
   {
+    "name": "shield",
+    "category": "security",
+    "tags": [
+      "protect",
+      "defense",
+      "safe"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "shield-alert",
+    "category": "security",
+    "tags": [
+      "risk",
+      "warning",
+      "protection"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "shield-check",
+    "category": "security",
+    "tags": [
+      "verified",
+      "trusted",
+      "protected"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "shuffle",
+    "category": "media",
+    "tags": [
+      "random",
+      "cards",
+      "playback"
+    ],
+    "aliases": [
+      "shuffle-cards"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "sidebar",
     "category": "navigation",
     "tags": [
@@ -1622,6 +3708,55 @@
     "variants": [
       "line",
       "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "sign-in",
+    "category": "navigation",
+    "tags": [
+      "login",
+      "enter",
+      "session"
+    ],
+    "aliases": [
+      "login"
+    ],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "sign-out",
+    "category": "navigation",
+    "tags": [
+      "logout",
+      "exit",
+      "session"
+    ],
+    "aliases": [
+      "logout"
+    ],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "signal",
+    "category": "device",
+    "tags": [
+      "cellular",
+      "reception",
+      "strength"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
     ],
     "expressive": false,
     "since": "0.2.0"
@@ -1644,6 +3779,21 @@
     "since": "0.2.0"
   },
   {
+    "name": "snow",
+    "category": "weather",
+    "tags": [
+      "snowy",
+      "winter",
+      "flurries"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "sort",
     "category": "action",
     "tags": [
@@ -1653,6 +3803,24 @@
       "rank"
     ],
     "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "spade",
+    "category": "gaming",
+    "tags": [
+      "suit",
+      "pip",
+      "playing"
+    ],
+    "aliases": [
+      "spades"
+    ],
     "variants": [
       "line",
       "solid"
@@ -1710,6 +3878,22 @@
     "since": "0.2.0"
   },
   {
+    "name": "storage",
+    "category": "file",
+    "tags": [
+      "drive",
+      "disk",
+      "trays"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "store",
     "category": "money",
     "tags": [
@@ -1727,6 +3911,21 @@
     "since": "0.2.0"
   },
   {
+    "name": "storm",
+    "category": "weather",
+    "tags": [
+      "thunder",
+      "lightning",
+      "thunderstorm"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "strikethrough",
     "category": "editing",
     "tags": [
@@ -1736,6 +3935,24 @@
       "format"
     ],
     "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "subtitles",
+    "category": "media",
+    "tags": [
+      "captions",
+      "text",
+      "accessibility"
+    ],
+    "aliases": [
+      "captions"
+    ],
     "variants": [
       "line",
       "solid"
@@ -1760,6 +3977,87 @@
     "since": "0.2.0"
   },
   {
+    "name": "sun",
+    "category": "weather",
+    "tags": [
+      "day",
+      "light",
+      "brightness"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "sunrise",
+    "category": "weather",
+    "tags": [
+      "dawn",
+      "morning",
+      "horizon"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "sword",
+    "category": "gaming",
+    "tags": [
+      "blade",
+      "suit",
+      "weapon"
+    ],
+    "aliases": [
+      "espadas"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "table",
+    "category": "gaming",
+    "tags": [
+      "tabletop",
+      "game",
+      "furniture"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "tablet",
+    "category": "device",
+    "tags": [
+      "device",
+      "portable",
+      "touchscreen"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "tabs",
     "category": "navigation",
     "tags": [
@@ -1774,6 +4072,22 @@
       "solid"
     ],
     "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "target",
+    "category": "gaming",
+    "tags": [
+      "aim",
+      "bullseye",
+      "goal"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
     "since": "0.2.0"
   },
   {
@@ -1794,6 +4108,21 @@
     "since": "0.2.0"
   },
   {
+    "name": "thermometer",
+    "category": "weather",
+    "tags": [
+      "temperature",
+      "heat",
+      "cold"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "timer",
     "category": "status",
     "tags": [
@@ -1809,6 +4138,21 @@
     "variants": [
       "line",
       "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "touch",
+    "category": "device",
+    "tags": [
+      "finger",
+      "tap",
+      "gesture"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
     ],
     "expressive": false,
     "since": "0.2.0"
@@ -1865,6 +4209,39 @@
     "since": "0.2.0"
   },
   {
+    "name": "trophy",
+    "category": "gaming",
+    "tags": [
+      "winner",
+      "award",
+      "prize",
+      "cup"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
+    "name": "turn",
+    "category": "gaming",
+    "tags": [
+      "player",
+      "round",
+      "active"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  {
     "name": "underline",
     "category": "editing",
     "tags": [
@@ -1914,6 +4291,53 @@
     "since": "0.2.0"
   },
   {
+    "name": "unlink",
+    "category": "action",
+    "tags": [
+      "link",
+      "disconnect",
+      "break"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "unlock",
+    "category": "security",
+    "tags": [
+      "open",
+      "access",
+      "unlocked"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "unpin",
+    "category": "action",
+    "tags": [
+      "pin",
+      "detach",
+      "release"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "upload",
     "category": "action",
     "tags": [
@@ -1925,6 +4349,54 @@
     "aliases": [],
     "variants": [
       "line"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "vault",
+    "category": "security",
+    "tags": [
+      "safe",
+      "combination",
+      "storage"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "video",
+    "category": "media",
+    "tags": [
+      "film",
+      "capture",
+      "camcorder"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "volume",
+    "category": "media",
+    "tags": [
+      "speaker",
+      "sound",
+      "audio"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
     ],
     "expressive": false,
     "since": "0.2.0"
@@ -1961,6 +4433,22 @@
     "since": "0.2.0"
   },
   {
+    "name": "watch",
+    "category": "device",
+    "tags": [
+      "wearable",
+      "wrist",
+      "time"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
     "name": "waveform",
     "category": "media",
     "tags": [
@@ -1973,6 +4461,37 @@
     "variants": [
       "line",
       "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "wifi",
+    "category": "device",
+    "tags": [
+      "wireless",
+      "internet",
+      "connection"
+    ],
+    "aliases": [],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  {
+    "name": "wind",
+    "category": "weather",
+    "tags": [
+      "windy",
+      "air",
+      "breeze"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
     ],
     "expressive": false,
     "since": "0.2.0"

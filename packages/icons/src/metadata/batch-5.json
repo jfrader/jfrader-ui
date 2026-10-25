@@ -1,0 +1,322 @@
+{
+  "unpin": {
+    "name": "unpin",
+    "category": "action",
+    "tags": ["pin", "detach", "release"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "unlink": {
+    "name": "unlink",
+    "category": "action",
+    "tags": ["link", "disconnect", "break"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "print": {
+    "name": "print",
+    "category": "action",
+    "tags": ["printer", "paper", "document"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "file-text": {
+    "name": "file-text",
+    "category": "file",
+    "tags": ["document", "text", "page"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "file-code": {
+    "name": "file-code",
+    "category": "file",
+    "tags": ["source", "code", "script"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "file-audio": {
+    "name": "file-audio",
+    "category": "file",
+    "tags": ["audio", "sound", "waveform"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "file-video": {
+    "name": "file-video",
+    "category": "file",
+    "tags": ["video", "movie", "play"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "file-image": {
+    "name": "file-image",
+    "category": "file",
+    "tags": ["image", "photo", "picture"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "file-archive": {
+    "name": "file-archive",
+    "category": "file",
+    "tags": ["zip", "compressed", "archive"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "folder": {
+    "name": "folder",
+    "category": "file",
+    "tags": ["directory", "files", "organize"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "folder-open": {
+    "name": "folder-open",
+    "category": "file",
+    "tags": ["directory", "open", "browse"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "folder-plus": {
+    "name": "folder-plus",
+    "category": "file",
+    "tags": ["directory", "create", "add"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "folder-shared": {
+    "name": "folder-shared",
+    "category": "file",
+    "tags": ["directory", "shared", "collaboration"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "archive": {
+    "name": "archive",
+    "category": "file",
+    "tags": ["box", "storage", "records"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "clipboard": {
+    "name": "clipboard",
+    "category": "file",
+    "tags": ["board", "clip", "document"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "clipboard-check": {
+    "name": "clipboard-check",
+    "category": "file",
+    "tags": ["checklist", "complete", "task"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "book": {
+    "name": "book",
+    "category": "file",
+    "tags": ["read", "pages", "manual"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "notebook": {
+    "name": "notebook",
+    "category": "file",
+    "tags": ["notes", "journal", "binding"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "storage": {
+    "name": "storage",
+    "category": "file",
+    "tags": ["drive", "disk", "trays"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "cloud-upload": {
+    "name": "cloud-upload",
+    "category": "file",
+    "tags": ["cloud", "upload", "backup"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "cloud-download": {
+    "name": "cloud-download",
+    "category": "file",
+    "tags": ["cloud", "download", "restore"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "desktop": {
+    "name": "desktop",
+    "category": "device",
+    "tags": ["computer", "monitor", "workstation"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "laptop": {
+    "name": "laptop",
+    "category": "device",
+    "tags": ["computer", "portable", "clamshell"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "mobile": {
+    "name": "mobile",
+    "category": "device",
+    "tags": ["smartphone", "handset", "mobile"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "tablet": {
+    "name": "tablet",
+    "category": "device",
+    "tags": ["device", "portable", "touchscreen"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "watch": {
+    "name": "watch",
+    "category": "device",
+    "tags": ["wearable", "wrist", "time"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "keyboard": {
+    "name": "keyboard",
+    "category": "device",
+    "tags": ["keys", "typing", "input"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "mouse": {
+    "name": "mouse",
+    "category": "device",
+    "tags": ["pointer", "click", "input"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "touch": {
+    "name": "touch",
+    "category": "device",
+    "tags": ["finger", "tap", "gesture"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "battery": {
+    "name": "battery",
+    "category": "device",
+    "tags": ["charge", "energy", "level"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "battery-charging": {
+    "name": "battery-charging",
+    "category": "device",
+    "tags": ["battery", "charging", "electricity"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "plug": {
+    "name": "plug",
+    "category": "device",
+    "tags": ["electricity", "connector", "outlet"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "power": {
+    "name": "power",
+    "category": "device",
+    "tags": ["on", "off", "switch"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "wifi": {
+    "name": "wifi",
+    "category": "device",
+    "tags": ["wireless", "internet", "connection"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "ethernet": {
+    "name": "ethernet",
+    "category": "device",
+    "tags": ["wired", "rj45", "lan"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "signal": {
+    "name": "signal",
+    "category": "device",
+    "tags": ["cellular", "reception", "strength"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "display": {
+    "name": "display",
+    "category": "device",
+    "tags": ["screen", "panel", "resolution"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "cast": {
+    "name": "cast",
+    "category": "device",
+    "tags": ["stream", "wireless", "receiver"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "screen-share": {
+    "name": "screen-share",
+    "category": "device",
+    "tags": ["present", "screen", "share"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "cable": {
+    "name": "cable",
+    "category": "device",
+    "tags": ["lead", "wire", "connector"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  }
+}

@@ -61,12 +61,12 @@ export function parseSvg(svg: string, variant: IconVariant): Element[] {
       if (![...allowed, ...styleAttributes].includes(key)) throw new Error(`forbidden attribute ${key}`);
       if (/&|#|rgba?\(/i.test(value)) throw new Error(`forbidden value for ${key}`);
       if (/[-+]?(?:\d*\.\d{3,})(?:[eE][-+]?\d+)?/.test(value) || /\d[eE][-+]?\d/.test(value)) throw new Error('coordinates must have at most two decimals (no exponents)');
-      if (key === 'fill' && value !== 'none' && !(tag === 'circle' && child.r === '1.25' && value === 'currentColor' && child.stroke === 'none') && variant === 'line') throw new Error('painted fill on line icon');
+      if (key === 'fill' && value !== 'none' && !(tag === 'circle' && Number(child.r) <= 3 && value === 'currentColor' && child.stroke === 'none') && variant === 'line') throw new Error('painted fill on line icon');
       if (['fill', 'stroke'].includes(key) && !['none', 'currentColor'].includes(value)) throw new Error(`forbidden ${key}`);
       if (key === 'fill-rule' && !['evenodd', 'nonzero'].includes(value)) throw new Error('invalid fill-rule');
       if (variant === 'solid' && key.startsWith('stroke')) throw new Error('solid geometry must not carry stroke attributes');
       if (key.startsWith('stroke-') && value !== lineStyle[key as keyof typeof lineStyle]) throw new Error(`invalid ${key}`);
-      if (variant === 'line' && key === 'stroke' && !(tag === 'circle' && child.r === '1.25' && child.fill === 'currentColor' && value === 'none') && value !== 'currentColor') throw new Error('line geometry must retain its stroke');
+      if (variant === 'line' && key === 'stroke' && !(tag === 'circle' && Number(child.r) <= 3 && child.fill === 'currentColor' && value === 'none') && value !== 'currentColor') throw new Error('line geometry must retain its stroke');
     }
     const points = geometryPoints(tag, child);
     if (points.some((point) => point.some((coordinate) => !Number.isFinite(coordinate) || coordinate < 2 - 1e-9 || coordinate > 22 + 1e-9))) throw new Error('geometry outside 2..22');
@@ -101,8 +101,11 @@ export function collect(sources: Source[], metadata: MetadataSource) {
     try {
       const elements = parseSvg(source.svg, source.variant);
       parsed.set(source, elements);
-      const paths = elements.filter(({ tag }) => tag === 'path').map(({ attrs }) => (attrs.d ?? '').match(/[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?\d*)/g)?.join(' ')).join('|');
-      const fingerprint = `${source.variant}:${paths || JSON.stringify(elements)}`;
+      const fingerprint = `${source.variant}:${elements.map(({ tag, attrs }) =>
+        tag === 'path'
+          ? `path:${(attrs.d ?? '').match(/[a-zA-Z]|[-+]?(?:\d*\.\d+|\d+\.?\d*)/g)?.join(' ')}`
+          : `${tag}:${JSON.stringify(attrs)}`,
+      ).join('|')}`;
       const duplicate = fingerprints.get(fingerprint);
       if (duplicate) fail(source.file, `duplicate path data from ${duplicate}`);
       else fingerprints.set(fingerprint, source.file);
