@@ -12,7 +12,7 @@ import { settleMotion } from '../../testing/motion-assertions';
 import { Button } from '../button';
 import { Dialog } from '../dialog';
 import { ThemeRoot } from '../theme-root';
-import { Dock, type DockItem, type DockProps, type DockSlots } from './index';
+import { Dock, type DockItem, type DockProps, type DockSlots, type DockTool } from './index';
 
 const icon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
   <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
@@ -38,6 +38,10 @@ const runningTools: readonly DockItem[] = [
   { id: 'hand', label: 'Hand', icon: dockIcons.hand, shortcut: 'H', running: true },
   { id: 'locked', label: 'Locked', icon: dockIcons.locked, disabled: true },
   { id: 'text', label: 'Text', icon: dockIcons.text, shortcut: 'T' },
+];
+const longLabelTools: readonly DockTool[] = [
+  { id: 'selection', label: 'Select all visible objects on the current drawing canvas', icon },
+  { id: 'comment', label: 'Add a comment for the review team', icon },
 ];
 const meta = {
   title: 'Inputs/Dock',
@@ -355,7 +359,7 @@ export const AlwaysLabelsTouch: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Display persistent text labels beneath tool icons.',
+        story: 'Keep tool names visible in the toolbar and group trays.',
       },
       source: {
         language: 'tsx',
@@ -399,10 +403,7 @@ const items: readonly DockItem[] = [
 };
 export const LongLabels: Story = {
   name: 'Long item labels',
-  args: { labels: 'always', items: [
-    { id: 'selection', label: 'Select all visible objects on the current drawing canvas', icon },
-    { id: 'comment', label: 'Add a comment for the review team', icon },
-  ] },
+  args: { labels: 'always', items: longLabelTools },
   parameters: {
     docs: {
       description: {
@@ -429,6 +430,30 @@ const items: readonly DockItem[] = [
   },
   play: async ({ canvas }) => {
     await expectPersistentLabels(canvas.getByRole('toolbar'));
+  },
+};
+export const MultilineTrayLabels: Story = {
+  name: 'Multiline tray labels',
+  tags: ['!autodocs'],
+  args: {
+    labels: 'always', defaultValue: 'selection', defaultOpen: true, defaultTray: 'review',
+    items: [{ id: 'review', label: 'Review', items: longLabelTools.map((tool) => ({ ...tool, running: true })) }],
+  },
+  play: async ({ canvasElement }) => {
+    const tray = await page(canvasElement).findByRole('group');
+    await expectPersistentLabels(tray, 'beside');
+    for (const button of within(tray).getAllByRole('button')) {
+      await waitFor(async () => {
+        const label = button.querySelector('[data-ui="dock-label"]')!;
+        const selection = button.querySelector('[data-ui="dock-selection"]');
+        const marker = selection ?? button.querySelector('[data-ui="dock-running"]')!;
+        const markerStyle = getComputedStyle(marker, selection ? '::after' : null);
+        const markerTop = selection
+          ? marker.getBoundingClientRect().bottom - parseFloat(markerStyle.bottom) - parseFloat(markerStyle.height)
+          : marker.getBoundingClientRect().top;
+        await expect(label.getBoundingClientRect().bottom).toBeLessThanOrEqual(markerTop + 1);
+      });
+    }
   },
 };
 export const TrayEscapesClipping: Story = {

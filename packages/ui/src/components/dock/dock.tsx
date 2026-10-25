@@ -197,7 +197,8 @@ const controlStyle = css({
   },
 });
 const trayControlStyle = css({
-  borderRadius: vars.radius.sm, paddingInline: vars.space[2], paddingBlock: vars.space[1], alignItems: 'center',
+  borderRadius: vars.radius.sm, paddingInline: vars.space[2],
+  paddingBlockStart: vars.space[1], paddingBlockEnd: vars.space[2], alignItems: 'center',
 });
 const alwaysControlStyle = css({
   inlineSize: 'max-content', minInlineSize: vars.space[12], maxInlineSize: MAX_LABEL_INLINE_SIZE,
