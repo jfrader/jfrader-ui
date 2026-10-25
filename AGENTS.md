@@ -11,6 +11,7 @@ documentation spec, review checklist).
 - `packages/tokens`: typed token source (`src/tokens.ts`) and the generator that emits CSS variables
   and typed `var()` references.
 - `packages/ui`: components, one folder per component under `src/components/`.
+- `packages/icons`: hand-written SVG sources and metadata; generated React icons and `icons.json`.
 - `apps/storybook`: workbench, component docs, and browser tests.
 - `apps/docs`: documentation site published at `ui.jfrader.com`, built from the same Markdown files
   the workbench renders. Its overview page is synced from `README.md` by

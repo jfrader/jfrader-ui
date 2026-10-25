@@ -1,0 +1,32 @@
+{
+  "name": "@jfrader/icons",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./metadata": "./icons.json",
+    "./*": {
+      "types": "./src/generated/*.tsx",
+      "import": "./src/generated/*.tsx"
+    }
+  },
+  "scripts": {
+    "generate": "tsx scripts/generate.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "peerDependencies": {
+    "@jfrader/ui": "workspace:^",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@jfrader/ui": "workspace:^",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "tsx": "^4.23.15"
+  }
+}

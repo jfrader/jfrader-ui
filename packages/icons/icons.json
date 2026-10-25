@@ -1,0 +1,123 @@
+[
+  {
+    "name": "chart",
+    "category": "money",
+    "tags": [
+      "analytics",
+      "bars",
+      "statistics"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.1.0"
+  },
+  {
+    "name": "home",
+    "category": "navigation",
+    "tags": [
+      "house",
+      "start"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.1.0"
+  },
+  {
+    "name": "lock",
+    "category": "security",
+    "tags": [
+      "private",
+      "secure",
+      "password"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.1.0"
+  },
+  {
+    "name": "play",
+    "category": "media",
+    "tags": [
+      "start",
+      "video",
+      "audio"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.1.0"
+  },
+  {
+    "name": "search",
+    "category": "action",
+    "tags": [
+      "find",
+      "magnifier",
+      "lookup"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.1.0"
+  },
+  {
+    "name": "send",
+    "category": "communication",
+    "tags": [
+      "message",
+      "plane",
+      "transfer"
+    ],
+    "aliases": [
+      "send-money"
+    ],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.1.0"
+  },
+  {
+    "name": "settings",
+    "category": "action",
+    "tags": [
+      "gear",
+      "preferences",
+      "configuration"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.1.0"
+  },
+  {
+    "name": "wallet",
+    "category": "money",
+    "tags": [
+      "balance",
+      "payment",
+      "funds"
+    ],
+    "aliases": [],
+    "variants": [
+      "line"
+    ],
+    "expressive": false,
+    "since": "0.1.0"
+  }
+]
