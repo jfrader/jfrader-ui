@@ -43,10 +43,15 @@ const longLabelTools: readonly DockTool[] = [
   { id: 'selection', label: 'Select all visible objects on the current drawing canvas', icon },
   { id: 'comment', label: 'Add a comment for the review team', icon },
 ];
+const StoryFrame = styled('div')({
+  inlineSize: '100%', minInlineSize: 0,
+  display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', justifyItems: 'center',
+});
 const meta = {
   title: 'Inputs/Dock',
   component: Dock,
   tags: ['autodocs'],
+  decorators: [(Story) => <StoryFrame><Story /></StoryFrame>],
   args: {
     items: tools,
     defaultValue: 'select',
@@ -430,6 +435,29 @@ const items: readonly DockItem[] = [
   },
   play: async ({ canvas }) => {
     await expectPersistentLabels(canvas.getByRole('toolbar'));
+  },
+};
+export const NarrowCanvasLabels: Story = {
+  ...LongLabels,
+  name: 'Long labels in a narrow canvas',
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement }) => {
+    const body = canvasElement.ownerDocument.body;
+    const previousBodyStyle = body.style.cssText;
+    const text = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-dock-item], [data-ui="dock-label"]'), (element) => ({
+      element, previousStyle: element.style.cssText, fontSize: parseFloat(getComputedStyle(element).fontSize),
+    }));
+    try {
+      body.style.inlineSize = '320px';
+      body.style.boxSizing = 'border-box';
+      body.style.display = 'flex';
+      for (const { element, fontSize } of text) element.style.fontSize = `${fontSize * 2}px`;
+      await expectPersistentLabels(canvas.getByRole('toolbar'));
+      await waitFor(async () => { await expectInside(canvasElement, body); });
+    } finally {
+      body.style.cssText = previousBodyStyle;
+      for (const { element, previousStyle } of text) element.style.cssText = previousStyle;
+    }
   },
 };
 export const MultilineTrayLabels: Story = {
