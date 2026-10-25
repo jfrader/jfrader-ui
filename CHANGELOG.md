@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.17.1 — 2026-10-25
+
+### Fixed
+
+- `ExpandingSearch` caps its expanded field at the available container width, keeping the clear button reachable in narrow layouts and with enlarged text.
+- `ToastStack` appears above floating app panels, keeping notification actions and dismiss buttons reachable.
+
 ## 0.17.0 — 2026-10-24
 
 ### Breaking pre-1.0
