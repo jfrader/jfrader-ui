@@ -666,6 +666,8 @@ function DockWidget({
   const childStop = groupChildren.find((child) => child.id === childFocusedId)
     ?? (renderedGroup ? shownTool(renderedGroup) : undefined) ?? groupChildren[0];
   const trigger = renderedGroup ? controls.current.get(renderedGroup.id) : null;
+  const labelReference = labelFloating.elements.domReference;
+  const labelInTray = Boolean(labelReference && floating.elements.floating?.contains(labelReference));
 
   return (
     <WithSx className={className} styles={rootStyle} sx={sx}>
@@ -747,7 +749,7 @@ function DockWidget({
               </motion.div>
             </Tray>
         </>}
-        {floatingLabel !== null && labels === 'focus' && <OverlayPortal>
+        {floatingLabel !== null && labels === 'focus' && (!shown || labelInTray) && <OverlayPortal>
           <FloatingLabel {...withoutSx(labelSlot)} ref={labelRef} css={[tooltipContentStyle, labelStyle, labelSlot?.sx]}
             aria-hidden dir={direction} data-ui="dock-floating-label" data-glide={labelReady ? 'true' : 'false'}
             data-reduced-motion={reduced || undefined}

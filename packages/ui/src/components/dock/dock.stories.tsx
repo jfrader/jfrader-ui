@@ -464,6 +464,37 @@ export const TrayEscapesClipping: Story = {
     await expectPersistentLabels(tray);
   },
 };
+export const TrayLabelPriority: Story = {
+  ...Grouped,
+  name: 'Tray controls stay above toolbar labels',
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const document = canvasElement.ownerDocument;
+    const originalFontSize = document.documentElement.style.fontSize;
+    document.documentElement.style.fontSize = '200%';
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: 'Shapes: Rectangle, R, Selected' }));
+      const tray = await page(canvasElement).findByRole('group');
+      const ellipse = within(tray).getByRole('button', { name: 'Ellipse, O' });
+      await waitFor(async () => {
+        const box = ellipse.getBoundingClientRect();
+        const target = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        await expect(ellipse === target || ellipse.contains(target)).toBe(true);
+      });
+      await userEvent.hover(ellipse);
+      await waitFor(async () => {
+        const label = document.querySelector('[data-ui="dock-floating-label"]');
+        await expect(label).toBeVisible();
+        await expect(label).toHaveTextContent('Ellipse, O');
+        await expectNoOverlap(label!, ellipse);
+      });
+      await userEvent.click(ellipse);
+      await expect(canvas.getByRole('button', { name: 'Shapes: Ellipse, O, Selected' })).toHaveAttribute('aria-expanded', 'false');
+    } finally {
+      document.documentElement.style.fontSize = originalFontSize;
+    }
+  },
+};
 export const NarrowOverflow: Story = {
   name: 'Overflow scrolling',
   args: { sx: { inlineSize: 320, maxInlineSize: '100%' }, items: Array.from({ length: 10 }, (_, index) => ({
@@ -1411,11 +1442,12 @@ export const ReplacementSlots: Story = {
     await expect(canvas.getByTestId('replacement-status')).toHaveAttribute('title', 'Reorder announcements');
     await userEvent.tab();
     await assertFocus(canvas.getByTestId('replacement-item'));
-    const label = await page(canvasElement).findByTestId('replacement-label');
-    await expect(label).toHaveTextContent('Group: Tool, 3 items');
-    await expect(getComputedStyle(label).paddingTop).toBe('10px');
+    await expect(page(canvasElement).queryByTestId('replacement-label')).toBeNull();
     await userEvent.keyboard('{ArrowUp}');
     await assertFocus(tool);
+    const label = await page(canvasElement).findByTestId('replacement-label');
+    await expect(label).toHaveTextContent('Tool, 3 items');
+    await expect(getComputedStyle(label).paddingTop).toBe('10px');
     await userEvent.keyboard('{Enter}');
     await expect(args.onValueChange).toHaveBeenLastCalledWith('tool');
     await expect(canvas.getByTestId('replacement-tray')).not.toBeVisible();
