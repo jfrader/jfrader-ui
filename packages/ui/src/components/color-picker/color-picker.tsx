@@ -226,6 +226,17 @@ const savedStyle = css({
   gap: vars.space[2],
   justifyItems: 'start',
 });
+// The color field keeps a square of the committed color, so the panel never leaves the pad as its
+// only sample. Beside the control rather than inside it, so it spans that control's box and both
+// bottoms line up.
+const valueRowStyle = css({
+  display: 'grid',
+  gridTemplateColumns: 'auto minmax(0, 1fr)',
+  alignItems: 'end',
+  gap: vars.space[2],
+  minInlineSize: 0,
+  '--picker-preview-size': controlBlockSize.sm,
+});
 const actionStyle = css({
   minInlineSize: 0,
   maxInlineSize: '100%',
@@ -922,34 +933,43 @@ export function ColorPicker({
           label: value.toUpperCase(),
         }))}
       />
-      <TextField
-        size="sm"
-        label={messages.color}
-        dir="ltr"
-        value={text}
-        ref={inputRef}
-        readOnly={readOnly}
-        required={required}
-        aria-invalid={field.ariaInvalid}
-        aria-describedby={field.describedBy}
-        slots={{ control: slots?.field }}
-        slotProps={{ control: slotProps?.field }}
-        onValueChange={(next) => setDraft({ key, text: next })}
-        onBlur={() => {
-          submitDraft();
-        }}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            event.preventDefault();
+      <div css={valueRowStyle}>
+        <span css={checkerStyle} aria-hidden>
+          <span
+            css={swatchStyle}
+            style={colorStyle(color?.hex)}
+            data-ui="color-picker-preview"
+          />
+        </span>
+        <TextField
+          size="sm"
+          label={messages.color}
+          dir="ltr"
+          value={text}
+          ref={inputRef}
+          readOnly={readOnly}
+          required={required}
+          aria-invalid={field.ariaInvalid}
+          aria-describedby={field.describedBy}
+          slots={{ control: slots?.field }}
+          slotProps={{ control: slotProps?.field }}
+          onValueChange={(next) => setDraft({ key, text: next })}
+          onBlur={() => {
             submitDraft();
-          }
-          if (event.key === 'Escape' && dirty) {
-            event.preventDefault();
-            event.stopPropagation();
-            setDraft(undefined);
-          }
-        }}
-      />
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              submitDraft();
+            }
+            if (event.key === 'Escape' && dirty) {
+              event.preventDefault();
+              event.stopPropagation();
+              setDraft(undefined);
+            }
+          }}
+        />
+      </div>
       <span css={[noteStyle, reservedNoteStyle]} data-hidden={!color?.mapped || undefined}>
         {messages.gamutWarning}
       </span>
