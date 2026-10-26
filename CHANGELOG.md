@@ -4,6 +4,7 @@
 
 ### Changed
 
+- `Timeline` uses separated day headings, a single marker rail, event-first summaries, and inline expanded details. Timestamps move below each event in narrow containers, and disclosure targets stay at least 44px tall.
 - `Dock` uses text-scaled captions, compact group trays, disclosure cues, and underline-only selection markers.
 
 ### Fixed
