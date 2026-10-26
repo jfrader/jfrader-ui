@@ -296,6 +296,36 @@ try {
     }
   }
 
+  for (const viewport of [{ width: 390, height: 844 }, { width: 768, height: 900 }, { width: 1440, height: 900 }]) {
+    for (const theme of ['light', 'dark']) {
+      await page.setViewportSize(viewport);
+      await page.goto(new URL(`iframe.html?id=icons-all-icons--docs&viewMode=docs&globals=theme:${theme}`, baseURL).href);
+      const browser = page.locator('.icon-browser');
+      await browser.waitFor();
+      assert.equal(await browser.getByRole('status').textContent(), '', 'All icons: no copy notice on first load');
+      assert.ok(await page.locator('.foundation-guide').evaluate((guide) =>
+        Boolean(guide.compareDocumentPosition(document.querySelector('.icon-browser')) & Node.DOCUMENT_POSITION_FOLLOWING)),
+      'All icons: the consumer guide precedes the browser');
+      await browser.getByRole('combobox', { name: 'Preview theme', exact: true }).selectOption(theme);
+      await browser.getByRole('combobox', { name: 'Size', exact: true }).selectOption('32');
+      const initialCount = await browser.getByRole('button').count();
+      await browser.getByRole('searchbox', { name: 'Search icons' }).fill('search');
+      assert.ok(await browser.getByRole('button').count() < initialCount, 'All icons: search narrows the grid');
+      await browser.getByRole('button', { name: 'Copy Search import', exact: true }).waitFor();
+      const geometry = await browser.evaluate((element) => ({
+        viewport: document.documentElement.clientWidth,
+        document: document.documentElement.scrollWidth,
+        width: element.clientWidth,
+        scroll: element.scrollWidth,
+        glyph: element.querySelector('svg').getBoundingClientRect().width,
+      }));
+      assert.ok(geometry.document <= geometry.viewport + 1, `All icons at ${viewport.width}px ${theme}: page overflows`);
+      assert.ok(geometry.scroll <= geometry.width + 1, `All icons at ${viewport.width}px ${theme}: browser clips content`);
+      assert.equal(geometry.glyph, 32, 'All icons: 32px preview is not squeezed');
+      console.log(`verify-docs-layout: All icons guide and browser at ${viewport.width}px ${theme} OK`);
+    }
+  }
+
   for (const { id, title, source } of guides) {
     const markdown = readFileSync(new URL(`../../../docs/${source}`, import.meta.url), 'utf8');
     const examples = [...markdown.matchAll(/^```(\w*)[^\n]*\n([\s\S]*?)^```/gm)];

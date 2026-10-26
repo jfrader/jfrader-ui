@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,8 +14,8 @@ const targetPath = path.join(guidanceDir, 'index.md');
  * README.md remains the single source of truth. When copying:
  * 1. Strips the redundant top-level H1 (`# jfrader-ui`) because the overview page shell
  *    already renders `<h1>{site.title}</h1>` and `site.tagline`.
- * 2. Rewrites relative `docs/*.md` links to full GitHub URLs so clicking them from the docs
- *    site navigates to the repository docs instead of 404ing on the docs domain.
+ * 2. Links the icon guide to its docs page and rewrites other relative `docs/*.md` links
+ *    to full GitHub URLs.
  * 3. Rewrites `https://ui.jfrader.com/storybook/` to `/storybook/` so navigation to the
  *    workbench works seamlessly in both local development and production.
  */
@@ -28,6 +28,8 @@ export function syncReadme() {
 
   // Strip leading top-level header (# jfrader-ui)
   content = content.replace(/^#\s+[^\n]+\n+/, '');
+
+  content = content.replace(/\(docs\/icons\.md\)/g, '(#/components/gallery)');
 
   // Rewrite relative docs/*.md links to GitHub
   content = content.replace(/\(docs\/([^)]+)\)/g, '(https://github.com/jfrader/jfrader-ui/blob/master/docs/$1)');
@@ -46,11 +48,7 @@ export function syncReadme() {
   if (!existsSync(flightsTarget) || readFileSync(flightsTarget, 'utf8') !== flightsSource) {
     writeFileSync(flightsTarget, flightsSource, 'utf8');
   }
-  const iconsSource = readFileSync(path.join(repoRoot, 'docs/icons.md'), 'utf8').replace(/^#\s+[^\n]+\n+/, '');
-  const iconsTarget = path.join(guidanceDir, 'gallery.md');
-  if (!existsSync(iconsTarget) || readFileSync(iconsTarget, 'utf8') !== iconsSource) {
-    writeFileSync(iconsTarget, iconsSource, 'utf8');
-  }
+  rmSync(path.join(guidanceDir, 'gallery.md'), { force: true });
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
