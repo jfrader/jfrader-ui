@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.19.1 — 2026-10-26
+
+First published build of the icon system. Same content as 0.19.0, which stayed in the repository.
+
 ## 0.19.0 — 2026-10-26
 
 ### Added
