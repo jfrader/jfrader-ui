@@ -2,9 +2,11 @@
 
 ## Unreleased
 
+## 0.19.0 — 2026-10-26
+
 ### Added
 
-- `Morph` provides an anchored, nonmodal surface with named steps, per-step widths, focus management, and Escape navigation. `ActionMorph` accepts consumer-owned content composers and configurable menu and composer widths while retaining its text composer.
+- `Morph` provides a surface with named steps in two shells: an anchored, nonmodal popover and a modal bottom sheet with per-step detents. It owns open and step state, focus, Escape-back through the step history, and reduced-motion behaviour, and it animates width and height between steps. `ActionMorph` is a preset on top of it: actions can be grouped under labelled headings, and each action keeps its text composer or hosts consumer-owned form content, with configurable menu and composer widths.
 
 ### Changed
 
