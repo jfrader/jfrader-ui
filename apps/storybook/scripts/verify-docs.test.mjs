@@ -166,7 +166,7 @@ test('component re-exports retain documentation checks in the owning package', (
   writeFileSync(path.join(root, 'components/svg-icon/index.ts'), "export { SvgIcon } from '@jfrader/icons/svg-icon';\n");
   assert.deepEqual(checkComponentDocs(path.join(root, 'components')), { checked: 1, errors: [] });
   const source = readFileSync(path.join(icons, 'src/svg-icon/svg-icon.stories.tsx'), 'utf8');
-  assert.match(source, /title: 'Data display\/SvgIcon'/);
+  assert.match(source, /title: 'Icons\/SvgIcon'/);
 });
 
 const titled = (title, tags = "['autodocs']") => `
