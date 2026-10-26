@@ -1,9 +1,9 @@
 // Switches packages' `exports` between the repo layout (`src`, consumed by the workspace) and the
-// publish layout (`dist`). Usage: node scripts/flip-exports.mjs <src|dist> [--package ui|tokens].
-// Defaults to both packages. If packing fails after prepack, restore with node scripts/flip-exports.mjs src.
+// publish layout (`dist`). Usage: node scripts/flip-exports.mjs <src|dist> [--package <name>].
+// Defaults to all packages. If packing fails after prepack, restore with node scripts/flip-exports.mjs src.
 // Idempotent; fails without
 // writing when an entry matches neither layout or a target file of the requested layout is missing.
-import { readFileSync, statSync, writeFileSync } from 'node:fs';
+import { globSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 
@@ -39,6 +39,24 @@ const tokensLayouts = {
 const packages = [
   { dir: 'ui', layoutsOf: uiLayouts },
   { dir: 'tokens', layoutsOf: (subpath) => tokensLayouts[subpath] },
+  { dir: 'styling', layoutsOf: (subpath) => {
+    const name = subpath === '.' ? 'index' : subpath.slice(2);
+    if (!['index', 'css', 'sx', 'native-scrollbar', 'theme', 'media'].includes(name)) return;
+    return {
+      src: `./src/${name}.${name === 'sx' ? 'tsx' : 'ts'}`,
+      dist: { types: `./dist/types/${name}.d.ts`, import: `./dist/${name}.js` },
+    };
+  } },
+  { dir: 'icons', layoutsOf: (subpath) => {
+    if (subpath === './metadata') return { src: './icons.json', dist: './dist/icons.json' };
+    const name = { '.': 'index', './svg-icon': 'svg-icon/index', './*': 'generated/*' }[subpath];
+    if (!name) return;
+    const source = `./src/${name}.${subpath === './*' ? 'tsx' : 'ts'}`;
+    return {
+      src: { types: source, import: source },
+      dist: { types: `./dist/types/${name}.d.ts`, import: `./dist/${name}.js` },
+    };
+  } },
 ];
 
 const targetsOf = (entry) => (typeof entry === 'string' ? [entry] : Object.values(entry));
@@ -67,7 +85,7 @@ const scopedPackage = args.length === 2 && args[0] === '--package'
   ? packages.find(({ dir }) => dir === args[1])
   : undefined;
 if (!LAYOUTS.includes(layout) || (args.length > 0 && !scopedPackage)) {
-  console.error(`usage: node scripts/flip-exports.mjs <${LAYOUTS.join('|')}> [--package ui|tokens] [--dry-run]`);
+  console.error(`usage: node scripts/flip-exports.mjs <${LAYOUTS.join('|')}> [--package ${packages.map(({ dir }) => dir).join('|')}] [--dry-run]`);
   process.exit(1);
 }
 
@@ -91,7 +109,20 @@ for (const { dir, layoutsOf } of scopedPackage ? [scopedPackage] : packages) {
         errors.push(`${manifest.name}: export "${subpath}" matches neither the src nor the dist layout`);
         return [subpath, entry];
       }
-      for (const target of targetsOf(layouts[layout])) {
+      const requestedTargets = targetsOf(layouts[layout]);
+      let targets = requestedTargets;
+      if (subpath.includes('*')) {
+        const source = targetsOf(layouts.src)[0];
+        const [prefix, suffix] = source.split('*');
+        const sources = globSync(source, { cwd: packageDir });
+        if (sources.length === 0) errors.push(`${manifest.name}: export "${subpath}" has no source files`);
+        targets = sources.flatMap((file) => {
+          const relative = `./${file}`;
+          const name = relative.slice(prefix.length, -suffix.length);
+          return requestedTargets.map((target) => target.replace('*', name));
+        });
+      }
+      for (const target of targets) {
         if (!statSync(path.join(packageDir, target), { throwIfNoEntry: false })?.isFile()) {
           errors.push(`${manifest.name}: export "${subpath}" ${layout} target ${target} does not exist`);
         }

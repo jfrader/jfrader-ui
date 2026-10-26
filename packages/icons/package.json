@@ -1,27 +1,26 @@
 {
   "name": "@jfrader/icons",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.18.0",
   "type": "module",
   "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts"
-    },
+    ".": { "types": "./src/index.ts", "import": "./src/index.ts" },
     "./metadata": "./icons.json",
-    "./svg-icon": {
-      "types": "./src/svg-icon/index.ts",
-      "import": "./src/svg-icon/index.ts"
-    },
-    "./*": {
-      "types": "./src/generated/*.tsx",
-      "import": "./src/generated/*.tsx"
-    }
+    "./svg-icon": { "types": "./src/svg-icon/index.ts", "import": "./src/svg-icon/index.ts" },
+    "./*": { "types": "./src/generated/*.tsx", "import": "./src/generated/*.tsx" }
   },
   "scripts": {
     "generate": "tsx scripts/generate.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "pnpm generate && vite build --config vite.lib.config.ts && tsc -p tsconfig.build.json",
+    "prepack": "pnpm build && node ../../scripts/flip-exports.mjs dist --package icons",
+    "postpack": "node ../../scripts/flip-exports.mjs src --package icons"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -32,6 +31,9 @@
     "react": "^19.0.0"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
     "@storybook/react-vite": "^10.6.1",
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
