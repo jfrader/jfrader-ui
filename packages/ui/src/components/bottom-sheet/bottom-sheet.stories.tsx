@@ -5,6 +5,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectPointerTargets } from '../../testing/control-size-assertions';
 import { expectContrastSurface } from '../../testing/theme-assertions';
 import { expectAligned, expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { OverlayPortal } from '../../overlay/overlay-portal';
@@ -1775,3 +1776,19 @@ export const NativeRejectedRepair: Story = {
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
   },
 };
+
+/** Trigger, handle, and close button at fine-pointer density. */
+export const PointerTargets: Story = {
+  name: 'BottomSheet pointer targets',
+  tags: ['!autodocs'],
+  args: { defaultOpen: true },
+  render,
+  play: async ({ canvasElement }) => {
+    await settled(canvasElement, 0.45);
+    const part = (name: string) => canvasElement.querySelector<HTMLElement>(`[data-ui="bottom-sheet-${name}"]`)!;
+    await expectPointerTargets([[part('trigger'), 40], [part('handle'), 32], [part('close'), 34]]);
+  },
+};
+
+/** Trigger, handle, and close button reach the touch target on coarse pointers. */
+export const TouchTargets: Story = { ...PointerTargets, name: 'BottomSheet touch targets' };

@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- On coarse pointers, overlay triggers (Dialog, Drawer, BottomSheet, DialogStack, Popover, Menu, Tooltip, HoverCard, ContextMenu, and CommandPalette) reach the 44px `size.touch` height, and the Dialog, Drawer, BottomSheet, and DialogStack close buttons, the BottomSheet handle, and DialogStack Back reach 44×44px. Fine-pointer sizes are unchanged.
 - `UserMenu.Identity` wraps long names and email addresses, including at enlarged text sizes.
 - Desktop `UserMenu` and `Popover` preserve keyboard entry and exit without hidden, tabbable focus guards.
 - `DateRangePicker` uses viewport-relative positioning and keeps focused controls in its scroll viewport when the panel resizes.

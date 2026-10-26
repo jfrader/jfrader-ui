@@ -47,6 +47,7 @@ import { modalShellReset } from '../../styling/surface';
 import type { DrawerPanelProps } from '../drawer';
 import { SurfaceRoot } from '../surface/surface-root';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
+import { touchTargetStyle } from '../../styling/touch-target';
 import { triggerStyle } from '../../styling/trigger-style';
 import { styledDialogTransition } from '../../overlay/exit-motion';
 import {
@@ -339,7 +340,8 @@ const closeStyle = css({
   appearance: 'none',
   display: 'inline-flex',
   alignItems: 'center',
-  minBlockSize: '32px',
+  justifyContent: 'center',
+  minBlockSize: vars.space[8],
   border: '1px solid transparent',
   borderRadius: vars.radius.md,
   backgroundColor: 'transparent',
@@ -367,7 +369,7 @@ const closeStyle = css({
   [REDUCED_MOTION]: {
     transitionDuration: '0s',
   },
-});
+}, touchTargetStyle);
 
 /** Open a modal dialog with generated content or composed parts. */
 function DialogRoot(props: DialogProps) {
