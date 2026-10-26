@@ -11,9 +11,18 @@
 ### Changed
 
 - `@jfrader/styling` owns the shared Emotion seam (css, sx, theme, media, scrollbar) beneath `@jfrader/icons` and `@jfrader/ui`. Existing imports keep working.
+- `Morph` provides an anchored, nonmodal surface with named steps, per-step widths, focus management, and Escape navigation. `ActionMorph` accepts consumer-owned content composers and configurable menu and composer widths while retaining its text composer.
+
+### Changed
+
+- `Dock` uses text-scaled captions, compact group trays, disclosure cues, and underline-only selection markers.
 
 ### Fixed
 
+- `Dock` places persistent toolbar labels below icons, keeps tray labels beside icons, and wraps long labels inside their buttons.
+- `Dock` group trays escape scrolling previews and use their full width when viewport space allows.
+- `Dock` toolbar labels no longer obstruct an open group tray at enlarged text sizes.
+- `Dock` keeps multiline tray labels above running and selection markers.
 - `ColorPicker` shows the selected color beside the hex field, so the panel no longer leaves the pad as its only sample of the color.
 
 

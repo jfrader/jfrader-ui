@@ -1,41 +1,57 @@
 import { StrictMode, useId, useState } from 'react';
-import { Cursor, Ellipse, Hand, Line, Lock, Message, Pencil, Rectangle, Text } from '@jfrader/icons';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { MotionConfig } from 'motion/react';
+import { vars } from '@jfrader/tokens/vars';
+import { dockIcons } from '../../../../../apps/storybook/src/fixtures/dock-icons';
 import { motionDurationMs } from '../../styling/motion-timings';
+import { styled } from '../../styling/styled';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectAligned, expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
 import { Button } from '../button';
 import { Dialog } from '../dialog';
 import { ThemeRoot } from '../theme-root';
-import { Dock, type DockItem, type DockProps, type DockSlots } from './index';
+import { Dock, type DockItem, type DockProps, type DockSlots, type DockTool } from './index';
 
+const icon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+</svg>;
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: dockIcons.select, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: dockIcons.hand, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: dockIcons.locked, disabled: true },
+  { id: 'text', label: 'Text', icon: dockIcons.text, shortcut: 'T' },
 ];
 const grouped: readonly DockItem[] = [
   tools[0]!,
   { id: 'shapes', label: 'Shapes', items: [
-    { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
-    { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
-    { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
-    { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
+    { id: 'rectangle', label: 'Rectangle', icon: dockIcons.rectangle, shortcut: 'R' },
+    { id: 'unavailable', label: 'Polygon', icon: dockIcons.unavailable, disabled: true },
+    { id: 'ellipse', label: 'Ellipse', icon: dockIcons.ellipse, shortcut: 'O' },
+    { id: 'line', label: 'Line', icon: dockIcons.line },
   ] },
   tools[1]!,
 ];
 const runningTools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V', running: true },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H', running: true },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: dockIcons.select, shortcut: 'V', running: true },
+  { id: 'hand', label: 'Hand', icon: dockIcons.hand, shortcut: 'H', running: true },
+  { id: 'locked', label: 'Locked', icon: dockIcons.locked, disabled: true },
+  { id: 'text', label: 'Text', icon: dockIcons.text, shortcut: 'T' },
 ];
+const longLabelTools: readonly DockTool[] = [
+  { id: 'selection', label: 'Select all visible objects on the current drawing canvas', icon },
+  { id: 'comment', label: 'Add a comment for the review team', icon },
+];
+const StoryFrame = styled('div')({
+  inlineSize: '100%', minInlineSize: 0,
+  display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', justifyItems: 'center',
+});
 const meta = {
   title: 'Inputs/Dock',
   component: Dock,
   tags: ['autodocs'],
+  decorators: [(Story) => <StoryFrame><Story /></StoryFrame>],
   args: {
     items: tools,
     defaultValue: 'select',
@@ -83,14 +99,15 @@ Icons near the pointer grow and rise; the buttons keep their size and position. 
 - When \`reorderable\` is enabled, Alt+Left and Alt+Right shift the focused item, and the item options menu provides non-drag Move Before and Move After actions.`,
       source: {
         language: 'tsx',
-        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
 ];
 
 <Dock items={tools} defaultValue="select" />`,
@@ -105,14 +122,15 @@ export const WorkspaceTools: Story = {
   name: 'Tools in a dialog',
   parameters: { docs: {
     description: { story: 'Open a task dialog containing a named tool dock.' },
-    source: { language: 'tsx', code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
-import { Dialog, Dock, type DockItem } from '@jfrader/ui';
+    source: { language: 'tsx', code: `import { Dialog, Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
 ];
 
 <Dialog triggerLabel="Open drawing tools" title="Drawing tools"
@@ -134,6 +152,32 @@ function ids(toolbar: HTMLElement) {
   return Array.from(toolbar.querySelectorAll<HTMLElement>('[data-dock-item]'), (button) => button.dataset.dockItem);
 }
 
+async function expectPersistentLabels(container: HTMLElement, placement: 'below' | 'beside' = 'below') {
+  await settleMotion(container);
+  const buttons = container.querySelectorAll<HTMLButtonElement>('[data-dock-item]');
+  await expect(buttons.length).toBeGreaterThan(0);
+  for (const button of buttons) {
+    const icon = button.querySelector<HTMLElement>('[data-ui="dock-icon"]')!;
+    const label = button.querySelector<HTMLElement>('[data-ui="dock-label"]')!;
+    await expect(label).toBeVisible();
+    if (placement === 'below') {
+      await expect(label.getBoundingClientRect().top).toBeGreaterThanOrEqual(icon.getBoundingClientRect().bottom - 1);
+    } else {
+      await expectNoOverlap(icon, label);
+      await expectAligned([icon, label], 'center-y');
+    }
+    await expectInside(icon, button);
+    await expectInside(label, button);
+    await expect(label.scrollWidth).toBeLessThanOrEqual(label.clientWidth + 1);
+  }
+}
+
+const ScrollingDockPreview = styled('div')({
+  overflow: 'auto', boxSizing: 'border-box', padding: vars.space[4],
+  inlineSize: `calc(${vars.space[12]} * 8)`, maxInlineSize: '100%',
+  blockSize: `calc(${vars.space[12]} * 3)`,
+});
+
 export const Default: Story = {
   name: 'Tool dock',
   parameters: {
@@ -143,14 +187,15 @@ export const Default: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
 ];
 
 <Dock items={tools} defaultValue="select" />`,
@@ -176,14 +221,15 @@ export const RunningTools: Story = {
       description: { story: 'Mark tools with an active task; the selected tool shows a longer bar.' },
       source: {
         language: 'tsx',
-        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V', running: true },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H', running: true },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V', running: true },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H', running: true },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
 ];
 
 <Dock items={tools} defaultValue="select" />`,
@@ -241,22 +287,23 @@ export const Grouped: Story = {
       description: { story: 'Open a tray to choose a tool from a related group.' },
       source: {
         language: 'tsx',
-        code: `import { Cursor, Ellipse, Hand, Line, Rectangle } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Circle, Hand, Hexagon, Minus, MousePointer2, Square } from 'lucide-react';
 
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
   {
     id: 'shapes',
     label: 'Shapes',
     items: [
-      { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
-      { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
-      { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
-      { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
+      { id: 'rectangle', label: 'Rectangle', icon: <Square size={base.space[5]} />, shortcut: 'R' },
+      { id: 'unavailable', label: 'Polygon', icon: <Hexagon size={base.space[5]} />, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon: <Circle size={base.space[5]} />, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon: <Minus size={base.space[5]} /> },
     ],
   },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
 ];
 
 <Dock items={items} defaultValue="rectangle" />`,
@@ -266,29 +313,49 @@ const items: readonly DockItem[] = [
 };
 export const NoSelection: Story = {
   name: 'No selected tool',
-  args: { value: null },
+  args: { defaultValue: null },
   parameters: {
     docs: {
-      description: { story: 'Keep tools available without marking a current selection.' },
+      description: { story: 'Start without a selected tool, then choose one.' },
       source: {
         language: 'tsx',
-        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
 ];
 
-<Dock items={tools} value={null} />`,
+<Dock items={tools} defaultValue={null} />`,
       },
     },
   },
-  play: async ({ canvas }) => {
+};
+export const NoSelectionInteraction: Story = {
+  ...NoSelection,
+  name: 'Select an initially unselected tool',
+  tags: ['!autodocs'],
+  play: async ({ canvas, userEvent, args }) => {
     for (const button of canvas.getAllByRole('button')) await expect(button).toHaveAttribute('aria-pressed', 'false');
-    await expect(canvas.getByRole('button', { name: 'Select, V' }).tabIndex).toBe(0);
+    const select = canvas.getByRole('button', { name: 'Select, V' });
+    const hand = canvas.getByRole('button', { name: 'Hand, H' });
+    const text = canvas.getByRole('button', { name: 'Text, T' });
+    await expect(select.tabIndex).toBe(0);
+    await userEvent.tab();
+    await assertFocus(select);
+    await userEvent.keyboard('{ArrowRight}{Enter}');
+    await expect(hand).toHaveAttribute('aria-pressed', 'true');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('hand');
+    await userEvent.click(text);
+    await expect(text).toHaveAttribute('aria-pressed', 'true');
+    await expect(hand).toHaveAttribute('aria-pressed', 'false');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith('text');
   },
 };
 export const AlwaysLabelsTouch: Story = {
@@ -297,39 +364,51 @@ export const AlwaysLabelsTouch: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Display persistent text labels beneath tool icons.',
+        story: 'Keep tool names visible in the toolbar and group trays.',
       },
       source: {
         language: 'tsx',
-        code: `import { Cursor, Ellipse, Hand, Line, Rectangle } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Circle, Hand, Hexagon, Minus, MousePointer2, Square } from 'lucide-react';
 
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
   {
     id: 'shapes',
     label: 'Shapes',
     items: [
-      { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
-      { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
-      { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
-      { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
+      { id: 'rectangle', label: 'Rectangle', icon: <Square size={base.space[5]} />, shortcut: 'R' },
+      { id: 'unavailable', label: 'Polygon', icon: <Hexagon size={base.space[5]} />, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon: <Circle size={base.space[5]} />, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon: <Minus size={base.space[5]} /> },
     ],
   },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
 ];
 
 <Dock items={items} defaultValue="select" labels="always" />`,
       },
     },
   },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expectPersistentLabels(canvas.getByRole('toolbar'));
+    const group = canvas.getByRole('button', { name: 'Shapes: Rectangle, R' });
+    await userEvent.click(group);
+    const tray = await page(canvasElement).findByRole('group');
+    await expectPersistentLabels(tray, 'beside');
+    await userEvent.click(within(tray).getByRole('button', { name: 'Ellipse, O' }));
+    await expect(group).toHaveAccessibleName('Shapes: Ellipse, O, Selected');
+    await expect(group).toHaveAttribute('aria-expanded', 'false');
+    const hand = canvas.getByRole('button', { name: 'Hand, H' });
+    await userEvent.click(hand);
+    await expect(hand).toHaveAttribute('aria-pressed', 'true');
+    await expectPersistentLabels(canvas.getByRole('toolbar'));
+  },
 };
 export const LongLabels: Story = {
   name: 'Long item labels',
-  args: { labels: 'always', items: [
-    { id: 'selection', label: 'Select all visible objects on the current drawing canvas', icon: <Cursor size={20} decorative /> },
-    { id: 'comment', label: 'Add a comment for the review team', icon: <Message size={20} decorative /> },
-  ] },
+  args: { labels: 'always', items: longLabelTools },
   parameters: {
     docs: {
       description: {
@@ -337,23 +416,123 @@ export const LongLabels: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { Cursor, Message } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
 
 const items: readonly DockItem[] = [
-  { id: 'selection', label: 'Select all visible objects on the current drawing canvas', icon: <Cursor size={20} decorative /> },
-  { id: 'comment', label: 'Add a comment for the review team', icon: <Message size={20} decorative /> },
+  { id: 'selection', label: 'Select all visible objects on the current drawing canvas', icon },
+  { id: 'comment', label: 'Add a comment for the review team', icon },
 ];
 
 <Dock items={items} labels="always" />`,
       },
     },
   },
+  play: async ({ canvas }) => {
+    await expectPersistentLabels(canvas.getByRole('toolbar'));
+  },
+};
+export const NarrowCanvasLabels: Story = {
+  ...LongLabels,
+  name: 'Long labels in a narrow canvas',
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement }) => {
+    const body = canvasElement.ownerDocument.body;
+    const previousBodyStyle = body.style.cssText;
+    const text = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-dock-item], [data-ui="dock-label"]'), (element) => ({
+      element, previousStyle: element.style.cssText, fontSize: parseFloat(getComputedStyle(element).fontSize),
+    }));
+    try {
+      body.style.inlineSize = '320px';
+      body.style.boxSizing = 'border-box';
+      body.style.display = 'flex';
+      for (const { element, fontSize } of text) element.style.fontSize = `${fontSize * 2}px`;
+      await expectPersistentLabels(canvas.getByRole('toolbar'));
+      await waitFor(async () => { await expectInside(canvasElement, body); });
+    } finally {
+      body.style.cssText = previousBodyStyle;
+      for (const { element, previousStyle } of text) element.style.cssText = previousStyle;
+    }
+  },
+};
+export const MultilineTrayLabels: Story = {
+  name: 'Multiline tray labels',
+  tags: ['!autodocs'],
+  args: {
+    labels: 'always', defaultValue: 'selection', defaultOpen: true, defaultTray: 'review',
+    items: [{ id: 'review', label: 'Review', items: longLabelTools.map((tool) => ({ ...tool, running: true })) }],
+  },
+  play: async ({ canvasElement }) => {
+    const tray = await page(canvasElement).findByRole('group');
+    await expectPersistentLabels(tray, 'beside');
+    for (const button of within(tray).getAllByRole('button')) {
+      await waitFor(async () => {
+        const label = button.querySelector('[data-ui="dock-label"]')!;
+        const selection = button.querySelector('[data-ui="dock-selection"]');
+        const marker = selection ?? button.querySelector('[data-ui="dock-running"]')!;
+        const markerStyle = getComputedStyle(marker, selection ? '::after' : null);
+        const markerTop = selection
+          ? marker.getBoundingClientRect().bottom - parseFloat(markerStyle.bottom) - parseFloat(markerStyle.height)
+          : marker.getBoundingClientRect().top;
+        await expect(label.getBoundingClientRect().bottom).toBeLessThanOrEqual(markerTop + 1);
+      });
+    }
+  },
+};
+export const TrayEscapesClipping: Story = {
+  ...AlwaysLabelsTouch,
+  name: 'Tray in a scrolling container',
+  tags: ['!autodocs'],
+  render: (args) => <ScrollingDockPreview><Dock {...args} /></ScrollingDockPreview>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const toolbar = canvas.getByRole('toolbar');
+    await userEvent.click(canvas.getByRole('button', { name: 'Shapes: Rectangle, R' }));
+    const tray = await page(canvasElement).findByRole('group');
+    await waitFor(async () => { await expectNoOverlap(tray, toolbar); });
+    await expect(tray.scrollWidth).toBeLessThanOrEqual(tray.clientWidth + 1);
+    await expectPersistentLabels(tray, 'beside');
+  },
+};
+export const TrayLabelPriority: Story = {
+  ...Grouped,
+  name: 'Tray controls stay above toolbar labels',
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const document = canvasElement.ownerDocument;
+    const originalFontSize = document.documentElement.style.fontSize;
+    document.documentElement.style.fontSize = '200%';
+    try {
+      await userEvent.click(canvas.getByRole('button', { name: 'Shapes: Rectangle, R, Selected' }));
+      const tray = await page(canvasElement).findByRole('group');
+      const ellipse = within(tray).getByRole('button', { name: 'Ellipse, O' });
+      await waitFor(async () => {
+        const box = ellipse.getBoundingClientRect();
+        const target = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+        await expect(ellipse === target || ellipse.contains(target)).toBe(true);
+      });
+      await userEvent.hover(ellipse);
+      await waitFor(async () => {
+        const label = document.querySelector('[data-ui="dock-floating-label"]');
+        await expect(label).toBeVisible();
+        await expect(label).toHaveTextContent('Ellipse, O');
+        await expectNoOverlap(label!, ellipse);
+      });
+      await userEvent.click(ellipse);
+      await expect(canvas.getByRole('button', { name: 'Shapes: Ellipse, O, Selected' })).toHaveAttribute('aria-expanded', 'false');
+    } finally {
+      document.documentElement.style.fontSize = originalFontSize;
+    }
+  },
 };
 export const NarrowOverflow: Story = {
   name: 'Overflow scrolling',
   args: { sx: { inlineSize: 320, maxInlineSize: '100%' }, items: Array.from({ length: 10 }, (_, index) => ({
-    id: `tool-${index}`, label: `Tool ${new Intl.NumberFormat('en').format(index + 1)}`, icon: <Cursor size={20} decorative />,
+    id: `tool-${index}`, label: `Tool ${new Intl.NumberFormat('en').format(index + 1)}`, icon,
   })) },
   parameters: {
     docs: {
@@ -362,13 +541,18 @@ export const NarrowOverflow: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { Cursor } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
 
 const items: readonly DockItem[] = Array.from({ length: 10 }, (_, index) => ({
   id: \`tool-\${index}\`,
   label: \`Tool \${new Intl.NumberFormat('en').format(index + 1)}\`,
-  icon: <Cursor size={20} decorative />,
+  icon,
 }));
 
 <Dock items={items} sx={{ inlineSize: 320, maxInlineSize: '100%' }} />`,
@@ -389,7 +573,7 @@ const items: readonly DockItem[] = Array.from({ length: 10 }, (_, index) => ({
 };
 export const BadgesZero: Story = {
   name: 'Zero badge count',
-  args: { items: [{ id: 'zero', label: 'Comments', icon: <Message size={20} decorative />, badge: 0 }] },
+  args: { items: [{ id: 'zero', label: 'Comments', icon, badge: 0 }] },
   parameters: {
     docs: {
       description: {
@@ -397,11 +581,16 @@ export const BadgesZero: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { Message } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
 
 const items: readonly DockItem[] = [
-  { id: 'zero', label: 'Comments', icon: <Message size={20} decorative />, badge: 0 },
+  { id: 'zero', label: 'Comments', icon, badge: 0 },
 ];
 
 <Dock items={items} defaultValue="zero" />`,
@@ -415,7 +604,7 @@ const items: readonly DockItem[] = [
 };
 export const BadgesLarge: Story = {
   name: 'Formatted badge count',
-  args: { locale: 'de-DE', items: [{ id: 'large', label: 'Comments', icon: <Message size={20} decorative />, badge: 1234567890, badgeLabel: 'comments' }] },
+  args: { locale: 'de-DE', items: [{ id: 'large', label: 'Comments', icon, badge: 1234567890, badgeLabel: 'comments' }] },
   parameters: {
     docs: {
       description: {
@@ -423,11 +612,16 @@ export const BadgesLarge: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { Message } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
 
 const items: readonly DockItem[] = [
-  { id: 'large', label: 'Comments', icon: <Message size={20} decorative />, badge: 1234567890, badgeLabel: 'comments' },
+  { id: 'large', label: 'Comments', icon, badge: 1234567890, badgeLabel: 'comments' },
 ];
 
 <Dock items={items} defaultValue="large" locale="de-DE" />`,
@@ -451,7 +645,7 @@ export const DisabledEmptyGroups: Story = {
   name: 'Disabled and empty groups',
   args: { items: [...tools,
     { id: 'empty', label: 'Empty shapes', items: [] },
-    { id: 'disabled-group', label: 'Disabled shapes', disabled: true, items: [{ id: 'shape', label: 'Shape', icon: <Rectangle size={20} decorative /> }] },
+    { id: 'disabled-group', label: 'Disabled shapes', disabled: true, items: [{ id: 'shape', label: 'Shape', icon }] },
   ] },
   parameters: {
     docs: {
@@ -460,16 +654,23 @@ export const DisabledEmptyGroups: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { Cursor, Hand, Lock, Rectangle, Text } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
+
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
 
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
   { id: 'empty', label: 'Empty shapes', items: [] },
-  { id: 'disabled-group', label: 'Disabled shapes', disabled: true, items: [{ id: 'shape', label: 'Shape', icon: <Rectangle size={20} decorative /> }] },
+  { id: 'disabled-group', label: 'Disabled shapes', disabled: true, items: [{ id: 'shape', label: 'Shape', icon }] },
 ];
 
 <Dock items={items} defaultValue="select" />`,
@@ -510,14 +711,15 @@ export const RemovedOrDisabledSelection: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
 ];
 
 <Dock items={tools} value="locked" />`,
@@ -566,22 +768,23 @@ export const TraySelection: Story = {
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
-import { Cursor, Ellipse, Hand, Line, Rectangle } from '@jfrader/icons';
 import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Circle, Hand, Hexagon, Minus, MousePointer2, Square } from 'lucide-react';
 
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
   {
     id: 'shapes',
     label: 'Shapes',
     items: [
-      { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
-      { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
-      { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
-      { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
+      { id: 'rectangle', label: 'Rectangle', icon: <Square size={base.space[5]} />, shortcut: 'R' },
+      { id: 'unavailable', label: 'Polygon', icon: <Hexagon size={base.space[5]} />, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon: <Circle size={base.space[5]} />, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon: <Minus size={base.space[5]} /> },
     ],
   },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
 ];
 
 function TraySelectionDock() {
@@ -629,22 +832,23 @@ export const GroupActivation: Story = {
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
-import { Cursor, Ellipse, Hand, Line, Rectangle } from '@jfrader/icons';
 import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Circle, Hand, Hexagon, Minus, MousePointer2, Square } from 'lucide-react';
 
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
   {
     id: 'shapes',
     label: 'Shapes',
     items: [
-      { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
-      { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
-      { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
-      { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
+      { id: 'rectangle', label: 'Rectangle', icon: <Square size={base.space[5]} />, shortcut: 'R' },
+      { id: 'unavailable', label: 'Polygon', icon: <Hexagon size={base.space[5]} />, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon: <Circle size={base.space[5]} />, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon: <Minus size={base.space[5]} /> },
     ],
   },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
 ];
 
 function GroupActivationDock() {
@@ -692,22 +896,23 @@ export const ControlledRejectValue: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Cursor, Ellipse, Hand, Line, Rectangle } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Circle, Hand, Hexagon, Minus, MousePointer2, Square } from 'lucide-react';
 
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
   {
     id: 'shapes',
     label: 'Shapes',
     items: [
-      { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
-      { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
-      { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
-      { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
+      { id: 'rectangle', label: 'Rectangle', icon: <Square size={base.space[5]} />, shortcut: 'R' },
+      { id: 'unavailable', label: 'Polygon', icon: <Hexagon size={base.space[5]} />, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon: <Circle size={base.space[5]} />, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon: <Minus size={base.space[5]} /> },
     ],
   },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
 ];
 
 <Dock
@@ -759,14 +964,15 @@ export const Reorderable: Story = {
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
-import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
 import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
 ];
 
 function ReorderableDock() {
@@ -800,14 +1006,15 @@ export const ControlledRejectOrder: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
 ];
 
 <Dock
@@ -836,14 +1043,15 @@ export const NormalizedOrder: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
 ];
 
 <Dock items={tools} defaultValue="select" order={['text', 'unknown', 'text', 'hand']} />`,
@@ -864,14 +1072,15 @@ export const MoveOptions: Story = {
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
-import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
 import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
 ];
 
 function MoveOptionsDock() {
@@ -898,14 +1107,15 @@ export const PointerReorder: Story = {
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
-import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
 import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
 ];
 
 function PointerReorderDock() {
@@ -939,14 +1149,15 @@ export const PointerRejectOrder: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
 ];
 
 <Dock
@@ -981,14 +1192,15 @@ export const VerticalGesture: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
 ];
 
 <Dock items={tools} defaultValue="select" reorderable />`,
@@ -1013,14 +1225,15 @@ export const PointerCancel: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
 ];
 
 <Dock items={tools} defaultValue={null} reorderable />`,
@@ -1048,22 +1261,23 @@ export const RTL: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Cursor, Ellipse, Hand, Line, Rectangle } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Circle, Hand, Hexagon, Minus, MousePointer2, Square } from 'lucide-react';
 
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
   {
     id: 'shapes',
     label: 'Shapes',
     items: [
-      { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
-      { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
-      { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
-      { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
+      { id: 'rectangle', label: 'Rectangle', icon: <Square size={base.space[5]} />, shortcut: 'R' },
+      { id: 'unavailable', label: 'Polygon', icon: <Hexagon size={base.space[5]} />, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon: <Circle size={base.space[5]} />, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon: <Minus size={base.space[5]} /> },
     ],
   },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
 ];
 
 <Dock items={items} defaultValue="select" dir="rtl" reorderable />`,
@@ -1106,14 +1320,15 @@ export const ReducedMotion: Story = {
       description: { story: 'Change selection, order and trays without movement; icons do not magnify.' },
       source: {
         language: 'tsx',
-        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
-import { Dock, type DockItem } from '@jfrader/ui';
+        code: `import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Hand, Lock, MousePointer2, Type } from 'lucide-react';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
-  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={base.space[5]} />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Type size={base.space[5]} />, shortcut: 'T' },
 ];
 
 <Dock items={tools} defaultValue="select" reorderable />`,
@@ -1179,7 +1394,7 @@ const replacementSlots: DockSlots = {
 export const ReplacementSlots: Story = {
   tags: ['!autodocs'],
   args: {
-    items: [{ id: 'group', label: 'Group', items: [{ id: 'tool', label: 'Tool', icon: <Cursor size={20} decorative />, badge: 3 }] }],
+    items: [{ id: 'group', label: 'Group', items: [{ id: 'tool', label: 'Tool', icon, badge: 3 }] }],
     defaultValue: null, defaultOpen: true, defaultTray: 'group', reorderable: true,
     slots: replacementSlots,
     slotProps: {
@@ -1207,11 +1422,12 @@ export const ReplacementSlots: Story = {
     await expect(canvas.getByTestId('replacement-status')).toHaveAttribute('title', 'Reorder announcements');
     await userEvent.tab();
     await assertFocus(canvas.getByTestId('replacement-item'));
-    const label = await page(canvasElement).findByTestId('replacement-label');
-    await expect(label).toHaveTextContent('Group: Tool, 3 items');
-    await expect(getComputedStyle(label).paddingTop).toBe('10px');
+    await expect(page(canvasElement).queryByTestId('replacement-label')).toBeNull();
     await userEvent.keyboard('{ArrowUp}');
     await assertFocus(tool);
+    const label = await page(canvasElement).findByTestId('replacement-label');
+    await expect(label).toHaveTextContent('Tool, 3 items');
+    await expect(getComputedStyle(label).paddingTop).toBe('10px');
     await userEvent.keyboard('{Enter}');
     await expect(args.onValueChange).toHaveBeenLastCalledWith('tool');
     await expect(canvas.getByTestId('replacement-tray')).not.toBeVisible();
@@ -1261,18 +1477,19 @@ export const Controlled: Story = {
   parameters: { docs: {
     description: { story: 'Own selection, order and tray state in the surrounding application.' },
     source: { language: 'tsx', code: `import { useState } from 'react';
-import { Cursor, Ellipse, Hand, Line, Rectangle } from '@jfrader/icons';
 import { Dock, type DockItem } from '@jfrader/ui';
+import { base } from '@jfrader/tokens';
+import { Circle, Hand, Hexagon, Minus, MousePointer2, Square } from 'lucide-react';
 
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'select', label: 'Select', icon: <MousePointer2 size={base.space[5]} />, shortcut: 'V' },
   { id: 'shapes', label: 'Shapes', items: [
-    { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
-    { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
-    { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
-    { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
+    { id: 'rectangle', label: 'Rectangle', icon: <Square size={base.space[5]} />, shortcut: 'R' },
+    { id: 'unavailable', label: 'Polygon', icon: <Hexagon size={base.space[5]} />, disabled: true },
+    { id: 'ellipse', label: 'Ellipse', icon: <Circle size={base.space[5]} />, shortcut: 'O' },
+    { id: 'line', label: 'Line', icon: <Minus size={base.space[5]} /> },
   ] },
-  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={base.space[5]} />, shortcut: 'H' },
 ];
 
 export function DrawingTools() {
@@ -1314,7 +1531,7 @@ export const ControlledNullTray: Story = {
 export const ControlledRejectTray: Story = {
   tags: ['!autodocs'],
   args: { defaultOpen: true, tray: 'shapes', items: [...grouped,
-    { id: 'brushes', label: 'Brushes', items: [{ id: 'pencil', label: 'Pencil', icon: <Pencil size={20} decorative /> }] },
+    { id: 'brushes', label: 'Brushes', items: [{ id: 'pencil', label: 'Pencil', icon }] },
   ] },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.tab(); await userEvent.keyboard('{End}{ArrowUp}');
@@ -1328,18 +1545,23 @@ export const ControlledRejectTray: Story = {
   },
 };
 export const EmptyStringValue: Story = {
-  args: { value: '', items: [{ id: '', label: 'Selection', icon: <Cursor size={20} decorative /> }, { id: 'other', label: 'Other', icon: <Hand size={20} decorative /> }] },
+  args: { value: '', items: [{ id: '', label: 'Selection', icon }, { id: 'other', label: 'Other', icon }] },
   parameters: {
     docs: {
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
-import { Cursor, Hand } from '@jfrader/icons';
 import { Dock, type DockItem } from '@jfrader/ui';
 
+const icon = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
+  </svg>
+);
+
 const items: readonly DockItem[] = [
-  { id: '', label: 'Selection', icon: <Cursor size={20} decorative /> },
-  { id: 'other', label: 'Other', icon: <Hand size={20} decorative /> },
+  { id: '', label: 'Selection', icon },
+  { id: 'other', label: 'Other', icon },
 ];
 
 function EmptyStringDock() {
