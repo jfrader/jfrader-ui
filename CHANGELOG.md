@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Changed
+
+- `Timeline` uses separated day headings, a single marker rail, event-first summaries, and inline expanded details. Timestamps move below each event in narrow containers, and disclosure targets stay at least 44px tall. Details unfold when opened, and new-event markers pulse once; both honor reduced motion.
+
+### Fixed
+
+- `Timeline` keeps keyboard-focused events inside bounded histories, clear of sticky day headings.
+- `Timeline` completes the detail reveal when focus enters it, so keyboard users never land in clipped content.
+
 ## 0.19.4 — 2026-10-26
 
 ### Fixed
