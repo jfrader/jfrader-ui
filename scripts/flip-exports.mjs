@@ -48,7 +48,8 @@ const packages = [
     };
   } },
   { dir: 'icons', layoutsOf: (subpath) => {
-    if (subpath === './metadata') return { src: './icons.json', dist: './dist/icons.json' };
+    const asset = { './metadata': 'icons.json', './sprite.svg': 'sprite.svg', './paths.json': 'paths.json' }[subpath];
+    if (asset) return { src: `./${asset}`, dist: `./dist/${asset}` };
     const name = { '.': 'index', './svg-icon': 'svg-icon/index', './*': 'generated/*' }[subpath];
     if (!name) return;
     const source = `./src/${name}.${subpath === './*' ? 'tsx' : 'ts'}`;
