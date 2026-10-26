@@ -29,8 +29,14 @@ jobs:
       - run: pnpm test
       - run: pnpm verify:exports
       - run: pnpm verify:slots
+      - run: pnpm verify:icons
+      - run: pnpm verify:api
+      - run: pnpm verify:docs
+      - run: node scripts/release-tooling.test.mjs
       - run: pnpm build
       - run: pnpm --filter @jfrader/storybook test:browser
       - run: pnpm --filter @jfrader/tokens build
+      - run: pnpm --filter @jfrader/styling build
+      - run: pnpm --filter @jfrader/icons build
       - run: pnpm --filter @jfrader/ui build
       - run: pnpm --filter @jfrader/storybook verify:docs:layout
