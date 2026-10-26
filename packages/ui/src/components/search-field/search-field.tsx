@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
+import { controlBlockSize, controlFixedSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { css, type SerializedStyles } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { inputControlStyle } from '../../styling/input-control';
@@ -89,23 +90,17 @@ const shellStyle = css({
   [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
 const sizeStyles: Record<SearchFieldSize, SerializedStyles> = {
-  sm: css({
-    blockSize: vars.space[8],
-    fontSize: vars.textSize.sm,
+  sm: css(controlFixedSizeStyles.sm, controlTouchTargetStyles.sm, {
     '--search-action-size': vars.space[8],
-    '--search-control-size': vars.space[8],
+    '--search-control-size': controlBlockSize.sm,
   }),
-  md: css({
-    blockSize: vars.space[10],
-    fontSize: vars.textSize.sm,
+  md: css(controlFixedSizeStyles.md, controlTouchTargetStyles.md, {
     '--search-action-size': vars.space[8],
-    '--search-control-size': vars.space[10],
+    '--search-control-size': controlBlockSize.md,
   }),
-  lg: css({
-    blockSize: vars.space[12],
-    fontSize: vars.textSize.md,
+  lg: css(controlFixedSizeStyles.lg, controlTouchTargetStyles.lg, {
     '--search-action-size': vars.space[8],
-    '--search-control-size': vars.space[12],
+    '--search-control-size': controlBlockSize.lg,
   }),
 };
 const iconStyle = css({

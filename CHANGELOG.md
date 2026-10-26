@@ -13,6 +13,13 @@
 - `Dock` toolbar labels no longer obstruct an open group tray at enlarged text sizes.
 - `Dock` keeps multiline tray labels above running and selection markers.
 
+## 0.18.0 — 2026-10-25
+
+### Changed
+
+- Button, TextField, Select, NumberField, MoneyInput, and SegmentedControl share 2rem, 2.5rem, and 3rem control heights. SegmentedControl now includes its track padding in that height, Select's small trigger is shorter, and MoneyInput uses the same text sizes as other controls. Remove consumer height overrides so controls retain their responsive sizing and touch targets. Multiline textareas and prominent amount editors keep their taller layouts.
+- Single-line control heights now follow the root font size, including PasswordField, SearchField, PhoneInput, MultiSelect, TagInput, DateRangePicker, ColorPicker, LocaleSwitcher, TimePicker, CopyButton, ButtonGroup, ChipGroup, and SplitButton. Coarse-pointer minimums align text and numeric fields with the other controls. MoneyInput `md` text drops to `0.875rem`, and `lg` text drops to `1rem`. ColorPicker's color preview now fits its trigger at each size.
+
 ## 0.17.1 — 2026-10-25
 
 ### Fixed

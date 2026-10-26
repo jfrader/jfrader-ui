@@ -78,6 +78,18 @@ export const Default: Story = {
   },
 };
 
+export const TouchSizes: Story = {
+  name: 'NumberField touch sizes',
+  render: (args, context) => Sizes.render!(args, context),
+  play: async ({ canvasElement }) => {
+    const inputs = within(canvasElement).getAllByRole('spinbutton');
+    await expect(inputs).toHaveLength(3);
+    for (const [index, input] of inputs.entries()) {
+      await expect(input.parentElement!.getBoundingClientRect().height).toBe([44, 44, 48][index]);
+    }
+  },
+};
+
 export const Sizes: Story = {
   render: (args) => <IntrinsicFrame>{(['sm', 'md', 'lg'] as const).map((size) => <NumberField {...args} key={size} size={size} label={size} />)}</IntrinsicFrame>,
   play: async ({ canvasElement }) => {

@@ -29,11 +29,12 @@ import {
 } from 'react';
 import { useMergeRefs, type Placement } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
+import { controlBlockSize, controlSizeStyles, controlTextSize, controlTouchTargetStyles } from '../../styling/control-size';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { listboxOptionCheckStyle, listboxScrollStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
-import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { COARSE_POINTER, FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
@@ -130,12 +131,14 @@ const rootStyle = css({
 });
 
 const rootSizeStyles: Record<LocaleSwitcherSize, SerializedStyles> = {
-  sm: css({ fontSize: vars.textSize.sm }),
-  md: css({ fontSize: vars.textSize.sm }),
-  lg: css({ fontSize: vars.textSize.md }),
+  sm: css({ fontSize: controlTextSize.sm }),
+  md: css({ fontSize: controlTextSize.md }),
+  lg: css({ fontSize: controlTextSize.lg }),
 };
 
 const triggerLayoutStyle = css({
+  paddingBlock: 0,
+  lineHeight: vars.lineHeight.tight,
   gap: vars.space[2],
   minInlineSize: 0,
   maxInlineSize: '100%',
@@ -145,9 +148,9 @@ const triggerLayoutStyle = css({
 });
 
 const triggerSizeStyles: Record<LocaleSwitcherSize, SerializedStyles> = {
-  sm: css({ minBlockSize: vars.space[8], paddingInline: vars.space[3] }),
-  md: css({ minBlockSize: vars.space[10], paddingInline: vars.space[4] }),
-  lg: css({ minBlockSize: vars.space[12], paddingInline: vars.space[5] }),
+  sm: css(controlSizeStyles.sm, controlTouchTargetStyles.sm, { paddingInline: vars.space[3] }),
+  md: css(controlSizeStyles.md, controlTouchTargetStyles.md, { paddingInline: vars.space[4] }),
+  lg: css(controlSizeStyles.lg, controlTouchTargetStyles.lg, { paddingInline: vars.space[5] }),
 };
 
 const chevronStyle = css({
@@ -248,11 +251,16 @@ const pillStyle = css({
 });
 
 // Outer pill heights match the menu trigger: pill + padding + border = 32 / 40 / 48px.
+function pillBlockSize(size: LocaleSwitcherSize) {
+  return css({
+    minBlockSize: `calc(${controlBlockSize[size]} - ${vars.space[2]})`,
+    [COARSE_POINTER]: { minBlockSize: `calc(max(${controlBlockSize[size]}, ${vars.size.touch}) - ${vars.space[2]})` },
+  });
+}
 const pillSizeStyles: Record<LocaleSwitcherSize, SerializedStyles> = {
-  sm: css({ minBlockSize: vars.space[6], minInlineSize: vars.space[10], paddingInline: vars.space[2] }),
-  md: css({ minBlockSize: vars.space[8], minInlineSize: vars.space[12], paddingInline: vars.space[3] }),
-  lg: css({
-    minBlockSize: vars.space[10],
+  sm: css(pillBlockSize('sm'), { minInlineSize: vars.space[10], paddingInline: vars.space[2] }),
+  md: css(pillBlockSize('md'), { minInlineSize: vars.space[12], paddingInline: vars.space[3] }),
+  lg: css(pillBlockSize('lg'), {
     minInlineSize: `calc(${vars.space[12]} + ${vars.space[2]})`,
     paddingInline: vars.space[3],
   }),

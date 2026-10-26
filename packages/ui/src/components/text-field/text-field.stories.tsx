@@ -9,6 +9,7 @@ import { StrictMode, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlHeights } from '../../testing/control-size-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
 import { TextField, type TextFieldProps, type TextFieldSize } from './index';
@@ -238,6 +239,19 @@ export const Sizes: Story = {
       expect(height).toBe(HEIGHTS[size]);
     });
   },
+};
+
+export const RootRelativeSizes: Story = {
+  ...Sizes,
+  name: 'Root-relative control sizes',
+  beforeEach: doubleRootText,
+  play: async ({ canvas }) => { await expectControlHeights(canvas.getAllByRole('textbox'), [64, 80, 96]); },
+};
+
+export const ControlSizeContract: Story = {
+  ...Sizes,
+  name: 'Control size contract',
+  play: async ({ canvas }) => { await expectControlHeights(canvas.getAllByRole('textbox')); },
 };
 
 export const Disabled: Story = {

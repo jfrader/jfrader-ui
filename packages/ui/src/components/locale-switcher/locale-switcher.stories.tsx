@@ -2,6 +2,7 @@ import type { ComponentPropsWithRef, CSSProperties, MouseEvent } from 'react';
 import type { Decorator, Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, userEvent, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlMinimums } from '../../testing/control-size-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectInside } from '../../testing/geometry-assertions';
 import { Popover } from '../popover';
@@ -517,6 +518,12 @@ export const Pills: Story = {
 
 export const PillsLightTheme: Story = { ...Pills, decorators: [withLightTheme] };
 
+export const RootRelativePillsSizes: Story = {
+  name: 'Root-relative pill sizes', beforeEach: doubleRootText,
+  args: { variant: 'pills' },
+  render: (args, context) => PillsSizes.render!(args, context),
+  play: async ({ canvas }) => { await expectControlMinimums(canvas.getAllByRole('list')); },
+};
 export const PillsSizes: Story = {
   args: { variant: 'pills', options: SHORT_PAIR },
   render: (args) => (
@@ -613,6 +620,11 @@ export const Rtl: Story = {
   },
 };
 
+export const RootRelativeSizes: Story = {
+  name: 'Root-relative control sizes', beforeEach: doubleRootText,
+  render: (args, context) => Sizes.render!(args, context),
+  play: async ({ canvas }) => { await expectControlMinimums(canvas.getAllByRole('button')); },
+};
 export const Sizes: Story = {
   render: (args) => (
     <div style={stackStyle}>

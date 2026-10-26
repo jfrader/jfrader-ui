@@ -42,7 +42,8 @@ import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
-import { Button, buttonBlockSizes } from '../button/button';
+import { Button } from '../button/button';
+import { controlBlockSize } from '../../styling/control-size';
 import { FieldError } from '../field/field-anatomy';
 import { InlineEdit, type InlineEditProps } from '../inline-edit';
 
@@ -343,7 +344,7 @@ const rowGap = vars.space[2];
 const rowInsetVar = 'var(--editable-details-row-inset)';
 const rowGapVar = 'var(--editable-details-row-gap)';
 // Every value sits on one line of the editor's small block, editable or not, so rows keep one rhythm.
-const valueLine = buttonBlockSizes.sm;
+const valueLine = controlBlockSize.sm;
 
 const rootStyle = css({
   label: 'editable-details', display: 'grid', gap: vars.space[8], minInlineSize: 0,

@@ -3,6 +3,7 @@ import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, mocked, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlHeights } from '../../testing/control-size-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { settleMotion } from '../../testing/motion-assertions';
@@ -23,6 +24,17 @@ import {
 import { styled } from '../../index';
 
 const NarrowFrame = styled.div({ inlineSize: 240 });
+export const ControlSizeContract: Story = {
+  name: 'Control size contract',
+  render: () => <>{(['sm', 'md', 'lg'] as const).map(size => <Select key={size} size={size} options={[{ value: 'draft', label: 'Draft' }]} defaultValue="draft" slotProps={{ trigger: { 'aria-label': `${size} status` } }} />)}</>,
+  play: async ({ canvas }) => { await expectControlHeights(canvas.getAllByRole('combobox')); },
+};
+export const RootRelativeSizes: Story = {
+  ...ControlSizeContract,
+  name: 'Root-relative control sizes',
+  beforeEach: doubleRootText,
+  play: async ({ canvas }) => { await expectControlHeights(canvas.getAllByRole('combobox'), [64, 80, 96]); },
+};
 const VisualGrid = styled.div({
   display: 'grid',
   gap: vars.space[6],

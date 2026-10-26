@@ -3,6 +3,7 @@ import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlHeights } from '../../testing/control-size-assertions';
 import { styled } from '../../styling/styled';
 import { ThemeRoot } from '../theme-root';
 import { Button } from '../button';
@@ -252,8 +253,25 @@ export const Sizes: Story = {
 };
 /** Use the standard single-line editor. */
 export const Standard: Story = { args: { variant: 'standard' } };
+export const ControlSizeContract: Story = {
+  ...Sizes,
+  name: 'Control size contract',
+  play: async ({ canvas }) => { await expectControlHeights(canvas.getAllByRole('spinbutton').map(input => input.parentElement!)); },
+};
+export const RootRelativeSizes: Story = {
+  ...ControlSizeContract,
+  name: 'Root-relative control sizes',
+  beforeEach: doubleRootText,
+  play: async ({ canvas }) => { await expectControlHeights(canvas.getAllByRole('spinbutton').map(input => input.parentElement!), [64, 80, 96]); },
+};
+export const TouchSizes: Story = {
+  ...ControlSizeContract,
+  name: 'MoneyInput touch sizes',
+  play: async ({ canvas }) => { await expectControlHeights(canvas.getAllByRole('spinbutton').map(input => input.parentElement!), [44, 44, 48]); },
+};
 /** Give a checkout total a taller editor. */
 export const Prominent: Story = {
+  parameters: { docs: { description: { story: 'The prominent amount editor uses an 80px height and larger text instead of the single-line size scale. Use the standard variant in a row with other controls.' } } },
   args: { variant: 'prominent', currencies: ['USD', 'JPY'] },
   play: async ({ canvas, userEvent }) => {
     const input = canvas.getByRole('spinbutton');

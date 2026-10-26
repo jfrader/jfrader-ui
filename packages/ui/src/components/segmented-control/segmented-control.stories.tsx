@@ -2,10 +2,14 @@ import { useId, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor } from 'storybook/test';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectAligned } from '../../testing/geometry-assertions';
 import { vars } from '@jfrader/tokens/vars';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { ThemeRoot } from '../theme-root';
+import { Button } from '../button';
+import { TextField } from '../text-field';
+import { Select } from '../select';
 import { SegmentedControl, type SegmentedControlComposedProps as SegmentedControlProps, type SegmentedControlOption, type SegmentedControlShorthandProps } from './index';
 
 function ReplacementSegmentTrack(props: ComponentPropsWithRef<'div'>) {
@@ -52,6 +56,104 @@ function LayoutSelection(props: ComponentPropsWithRef<'span'>) {
 };
 
 const Stack = styled.div({ display: 'grid', gap: vars.space[4], justifyItems: 'start' });
+const ControlRows = styled.div({ display: 'grid', gap: vars.space[4], maxInlineSize: '100%' });
+const ControlRow = styled.div({ display: 'flex', alignItems: 'baseline', gap: vars.space[3], '& > *': { flexShrink: 0 } });
+const SingleLineField = styled(TextField)({ inlineSize: `calc(${vars.space[10]} * 4)`, flexShrink: 0 });
+
+export const SharedControlSizes: Story = {
+  name: 'Shared control sizes and baseline',
+  parameters: {
+    layout: 'padded',
+    docs: { description: { story: 'Single-line controls use 2rem, 2.5rem, and 3rem outer heights. Button, Select, and SegmentedControl keep a 44px minimum on coarse pointers. Remove fixed-height overrides when placing controls in a row.' } },
+  },
+  render: () => (
+    <ControlRows>
+      {(['sm', 'md', 'lg'] as const).map((size) => (
+        <ControlRow key={size} data-control-size={size}>
+          <Button size={size}>Save</Button>
+          <SingleLineField size={size} aria-label={`${size} name`} defaultValue="Name" />
+          <SegmentedControl size={size} label={`${size} view`} defaultValue="list" options={VIEW_OPTIONS} />
+          <Select size={size} slotProps={{ trigger: { 'aria-label': `${size} status` } }} defaultValue="draft" options={[{ value: 'draft', label: 'Draft' }]} />
+        </ControlRow>
+      ))}
+    </ControlRows>
+  ),
+  play: async ({ canvasElement }) => {
+    const document = canvasElement.ownerDocument.documentElement;
+    await expect(document.scrollWidth).toBeLessThanOrEqual(document.clientWidth);
+    for (const [size, height] of [['sm', 32], ['md', 40], ['lg', 48]] as const) {
+      const row = canvasElement.querySelector<HTMLElement>(`[data-control-size="${size}"]`)!;
+      await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth);
+      const controls = [
+        row.querySelector<HTMLElement>('[data-ui="button"]')!,
+        row.querySelector<HTMLElement>('input:not([type="hidden"])')!,
+        row.querySelector<HTMLElement>('[data-ui="segmented-control"]')!,
+        row.querySelector<HTMLElement>('[role="combobox"]')!,
+      ];
+      const bounds = controls.map((control) => control.getBoundingClientRect());
+      for (const [index, control] of controls.entries()) {
+        await expect(bounds[index]!.height, `${size} ${control.dataset.ui} height`).toBe(height);
+        await expect(getComputedStyle(control).boxSizing).toBe('border-box');
+      }
+      await expectAligned(controls, 'bottom');
+      const segment = row.querySelector<HTMLElement>('[role="radio"]')!;
+      await expect(segment.getBoundingClientRect().height).toBeLessThan(height);
+      await expect(getComputedStyle(segment).fontSize).toBe(getComputedStyle(controls[0]!).fontSize);
+    }
+  },
+};
+
+export const SharedControlSizes200PercentText: Story = {
+  ...SharedControlSizes,
+  name: 'Shared controls at 200% text size',
+  beforeEach: ({ canvasElement }) => {
+    const root = canvasElement.ownerDocument.documentElement;
+    const previous = root.style.fontSize;
+    root.style.fontSize = '200%';
+    return () => { root.style.fontSize = previous; };
+  },
+  play: async ({ canvasElement }) => {
+    const document = canvasElement.ownerDocument.documentElement;
+    await expect(document.scrollWidth).toBeLessThanOrEqual(document.clientWidth);
+    for (const [size, height] of [['sm', 64], ['md', 80], ['lg', 96]] as const) {
+      const row = canvasElement.querySelector<HTMLElement>(`[data-control-size="${size}"]`)!;
+      const controls = row.querySelectorAll<HTMLElement>('[data-ui="button"], [data-ui="text-field"] input, [data-ui="segmented-control"], [data-ui="select-trigger"]');
+      await expect(controls).toHaveLength(4);
+      await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth);
+      for (const control of controls) {
+        await expect(control.getBoundingClientRect().height).toBe(height);
+        await expect(control.scrollHeight).toBeLessThanOrEqual(control.clientHeight + 1);
+      }
+      const track = row.querySelector<HTMLElement>('[data-ui="segmented-control-track"]')!;
+      await expect(track.scrollHeight).toBeLessThanOrEqual(track.clientHeight + 1);
+    }
+  },
+};
+
+export const SharedControlSizesTouch: Story = {
+  ...SharedControlSizes,
+  name: 'Touch control sizes',
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.ownerDocument.defaultView!.matchMedia('(pointer: coarse)').matches).toBe(true);
+    for (const [size, height] of [['sm', 44], ['md', 44], ['lg', 48]] as const) {
+      const row = canvasElement.querySelector<HTMLElement>(`[data-control-size="${size}"]`)!;
+      const controls = row.querySelectorAll<HTMLElement>('[data-ui="button"], [data-ui="text-field"] input, [data-ui="segmented-control"], [data-ui="select-trigger"]');
+      await expect(controls).toHaveLength(4);
+      await expect(row.scrollWidth).toBeLessThanOrEqual(row.clientWidth);
+      await expectAligned(controls, 'bottom');
+      await expect(row.querySelector<HTMLElement>('[data-ui="select-trigger"]')!.getBoundingClientRect().width).toBeGreaterThanOrEqual(180);
+      for (const control of controls) {
+        await expect(control.getBoundingClientRect().height).toBe(height);
+      }
+      const segments = row.querySelectorAll<HTMLElement>('[role="radio"]');
+      await expect(segments).toHaveLength(2);
+      for (const segment of segments) {
+        await expect(segment.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+      }
+    }
+  },
+};
+
 const OPTIONS = ['List', 'Grid', 'Board', 'Table'];
 const LONG_OPTIONS = ['Recent projects', 'Assigned to me', 'Shared with the team', 'Archived projects'];
 const usage = `import { SegmentedControl } from '@jfrader/ui';
@@ -340,7 +442,7 @@ const layouts = [
   ),
   play: async ({ canvas }) => {
     for (const [index, group] of canvas.getAllByRole('radiogroup').entries()) {
-      await expect(group.querySelector('button')!.getBoundingClientRect().height).toBeGreaterThanOrEqual(
+      await expect(group.getBoundingClientRect().height).toBe(
         [32, 40, 48][index]!,
       );
     }
@@ -810,7 +912,10 @@ export const CompactChoices: Story = {
   play: async ({ canvas }) => {
     for (const item of canvas.getAllByRole('radio')) {
       await expect(item.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
-      await expect(item.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
+      const group = item.closest<HTMLElement>('[role="radiogroup"]')!;
+      await expect(group.getBoundingClientRect().height).toBe(32);
+      const bounds = item.getBoundingClientRect();
+      await expect(item.ownerDocument.elementFromPoint(bounds.x + bounds.width / 2, bounds.top - 2)).toBe(item);
     }
   },
 };

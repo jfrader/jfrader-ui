@@ -21,6 +21,7 @@ import { LayoutGroup, MotionConfig, motion, useReducedMotion } from 'motion/reac
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
+import { controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
@@ -54,7 +55,7 @@ export interface SegmentedControlComposedProps
     SegmentedControlValueProps<string> {
   /** Disables every segment. Defaults to `false`. */
   disabled?: boolean;
-  /** Sets segment height and text size. Defaults to `md`. */
+  /** Sets the outer control height and text size. Defaults to `md`. */
   size?: SegmentedControlSize;
   /** Sets the selected segment's background treatment. Defaults to `soft`. */
   variant?: SegmentedControlVariant;
@@ -132,7 +133,6 @@ interface ControlContext {
   setFocused: (value: string) => void;
   tabStop: string | undefined;
   disabled: boolean;
-  size: SegmentedControlSize;
   variant: SegmentedControlVariant;
   onOptionIntent: SegmentedControlProps['onOptionIntent'];
   selection: SlotProps<'span'> | undefined;
@@ -149,6 +149,7 @@ const ALL_ITEMS_QUERY = { ...ITEM_QUERY, itemSelector: '[data-ui="segmented-cont
 const SELECTION_SPRING = { type: 'spring', stiffness: 500, damping: 40 } as const;
 
 const rootStyle = css({
+  boxSizing: 'border-box',
   display: 'inline-flex',
   minInlineSize: 0,
   maxInlineSize: '100%',
@@ -159,6 +160,8 @@ const rootStyle = css({
   [FORCED_COLORS]: { borderColor: 'CanvasText' },
 });
 const trackStyle = css({
+  boxSizing: 'border-box',
+  flex: 1,
   display: 'flex',
   position: 'relative',
   minInlineSize: 0,
@@ -188,15 +191,22 @@ const itemStyle = css({
   boxSizing: 'border-box',
   border: '1px solid transparent',
   borderRadius: vars.radius.sm,
-  paddingBlock: vars.space[1],
+  paddingBlock: 0,
   paddingInline: vars.space[3],
   background: 'transparent',
   color: vars.color.textMuted,
   fontFamily: 'inherit',
+  fontSize: 'inherit',
   fontWeight: vars.fontWeight.medium,
-  lineHeight: vars.lineHeight.base,
+  lineHeight: vars.lineHeight.tight,
   whiteSpace: 'nowrap',
   cursor: 'pointer',
+  '&::after': {
+    content: '""',
+    position: 'absolute',
+    insetInline: 0,
+    insetBlock: `calc(-1 * ${vars.space[1]})`,
+  },
   transitionProperty: 'color, background-color, border-color',
   transitionDuration: vars.motion.duration.fast,
   transitionTimingFunction: vars.motion.easeStandard,
@@ -216,11 +226,6 @@ const itemStyle = css({
     },
   },
 });
-const sizeStyles: Record<SegmentedControlSize, SerializedStyles> = {
-  sm: css({ minBlockSize: vars.space[8], fontSize: vars.textSize.sm }),
-  md: css({ minBlockSize: vars.space[10], fontSize: vars.textSize.sm }),
-  lg: css({ minBlockSize: vars.space[12], fontSize: vars.textSize.md }),
-};
 const solidItemStyle = css({
   '&[aria-checked="true"]': { color: vars.color.accentContrast, borderColor: vars.color.accentContrast },
   [FORCED_COLORS]: { '&[aria-checked="true"]': { color: 'CanvasText', borderColor: 'Highlight' } },
@@ -397,7 +402,6 @@ function SegmentedControlRoot<V extends string = string>({
       setFocused,
       tabStop,
       disabled,
-      size,
       variant,
       onOptionIntent,
       selection: slotProps?.selection,
@@ -409,7 +413,6 @@ function SegmentedControlRoot<V extends string = string>({
       requestChange,
       tabStop,
       disabled,
-      size,
       variant,
       onOptionIntent,
       slotProps?.selection,
@@ -439,7 +442,7 @@ function SegmentedControlRoot<V extends string = string>({
     <Context.Provider value={context}>
       <MotionConfig reducedMotion="user">
         <LayoutGroup id={instanceId}>
-          <WithSx className={className} styles={[rootStyle, slotStyles]} sx={sx}>
+          <WithSx className={className} styles={[rootStyle, controlSizeStyles[size], controlTouchTargetStyles[size], slotStyles]} sx={sx}>
             {(className) => (
               <Root
                 {...rest}
@@ -499,7 +502,7 @@ function SegmentedControlItem({
   return (
     <WithSx
       className={className}
-      styles={[itemStyle, sizeStyles[context.size], context.variant === 'solid' && solidItemStyle]}
+      styles={[itemStyle, context.variant === 'solid' && solidItemStyle]}
       sx={sx}
     >
       {(className) => (

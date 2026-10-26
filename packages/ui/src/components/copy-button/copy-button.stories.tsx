@@ -2,6 +2,7 @@ import { useState, type ComponentPropsWithRef, type CSSProperties, type MouseEve
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlMinimums } from '../../testing/control-size-assertions';
 import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
@@ -265,6 +266,11 @@ export const Variants: Story = {
   ),
 };
 
+export const RootRelativeSizes: Story = {
+  name: 'Root-relative control sizes', beforeEach: doubleRootText,
+  render: (args, context) => Sizes.render!(args, context),
+  play: async ({ canvas }) => { await expectControlMinimums(canvas.getAllByRole('button'), [64, 80, 96, 64, 80, 96]); },
+};
 export const Sizes: Story = {
   render: (args) => (
     <div style={rowStyle}>

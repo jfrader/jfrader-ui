@@ -4,6 +4,7 @@ import { hydrateRoot } from 'react-dom/client';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlMinimums } from '../../testing/control-size-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectInside } from '../../testing/geometry-assertions';
 import { settleMotion } from '../../testing/motion-assertions';
@@ -322,6 +323,11 @@ export const LocaleDefault: Story = {
       }),
     ).toHaveAttribute('data-time', '23:45');
   },
+};
+export const RootRelativeSizes: Story = {
+  name: 'Root-relative control sizes', beforeEach: doubleRootText,
+  render: (args, context) => Sizes.render!(args, context),
+  play: async ({ canvas }) => { await expectControlMinimums(canvas.getAllByRole('combobox')); },
 };
 export const Sizes: Story = {
   render: (args) => (

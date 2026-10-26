@@ -9,6 +9,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlMinimums } from '../../testing/control-size-assertions';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled, TextField, Textarea } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -171,6 +172,11 @@ export const Required: Story = {
 <SearchField label="Search members" placeholder="Name or email" required />` } } },
   args: { required: true },
   play: async ({ canvas }) => { await expect(canvas.getByRole('searchbox')).toBeRequired(); },
+};
+export const RootRelativeSizes: Story = {
+  name: 'Root-relative control sizes', beforeEach: doubleRootText,
+  render: (args, context) => Sizes.render!(args, context),
+  play: async ({ canvas }) => { await expectControlMinimums(canvas.getAllByRole('searchbox').map(input => input.parentElement!)); },
 };
 export const Sizes: Story = {
   parameters: { docs: { description: { story: 'Compare search inputs and clear buttons at each size.' }, source: { language: 'tsx', code: `import { SearchField } from '@jfrader/ui';

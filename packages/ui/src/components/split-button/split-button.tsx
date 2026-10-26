@@ -26,7 +26,8 @@ import {
 } from 'react';
 import { useMergeRefs, type Placement } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, keyframes, type SerializedStyles } from '../../styling/css';
+import { controlBlockSize, controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
+import { css, keyframes } from '../../styling/css';
 import { listboxSurfaceStyle } from '../../styling/listbox-style';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
@@ -221,8 +222,6 @@ const TRIGGER_VARIANT: Record<ButtonVariant, ButtonVariant> = {
   ghost: 'ghost',
 };
 
-const SIZE_PX: Record<ButtonSize, string> = { sm: '32px', md: '40px', lg: '48px' };
-
 const rootStyle = css({
   label: 'split-button',
   display: 'inline-flex',
@@ -266,13 +265,17 @@ const triggerStyle = css({
   },
 });
 
-const actionSizeStyles = Object.fromEntries(
-  Object.entries(SIZE_PX).map(([size, px]) => [size, css({ minBlockSize: px })]),
-) as Record<ButtonSize, SerializedStyles>;
+const actionSizeStyles = {
+  sm: css(controlSizeStyles.sm, controlTouchTargetStyles.sm),
+  md: css(controlSizeStyles.md, controlTouchTargetStyles.md),
+  lg: css(controlSizeStyles.lg, controlTouchTargetStyles.lg),
+};
 
-const triggerSizeStyles = Object.fromEntries(
-  Object.entries(SIZE_PX).map(([size, px]) => [size, css({ minBlockSize: px, inlineSize: px })]),
-) as Record<ButtonSize, SerializedStyles>;
+const triggerSizeStyles = {
+  sm: css(actionSizeStyles.sm, { inlineSize: controlBlockSize.sm }),
+  md: css(actionSizeStyles.md, { inlineSize: controlBlockSize.md }),
+  lg: css(actionSizeStyles.lg, { inlineSize: controlBlockSize.lg }),
+};
 
 const chevronStyle = css({
   display: 'inline-flex',

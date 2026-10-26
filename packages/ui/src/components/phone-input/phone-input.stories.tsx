@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlMinimums } from '../../testing/control-size-assertions';
 import { styled } from '../../styling/styled';
 import { ThemeRoot } from '../theme-root';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -178,6 +179,11 @@ export const MouseSelectsCountry: Story = {
   },
 };
 /** All three control heights share the same country picker. */
+export const RootRelativeSizes: Story = {
+  name: 'Root-relative control sizes', beforeEach: doubleRootText,
+  render: (args, context) => Sizes.render!(args, context),
+  play: async ({ canvasElement }) => { await expectControlMinimums(canvasElement.querySelectorAll('[data-ui="phone-input-control"]')); },
+};
 export const Sizes: Story = {
   render: (args) => <>{(['sm', 'md', 'lg'] as const).map((size) => <PhoneInput {...args} key={size} size={size} label={`Phone ${size}`} />)}</>,
   play: async ({ canvas }) => {

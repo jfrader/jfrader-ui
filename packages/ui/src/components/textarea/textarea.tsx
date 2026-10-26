@@ -7,6 +7,7 @@ import type { ChangeEvent, ComponentPropsWithRef, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { inputControlStyle } from '../../styling/input-control';
+import { controlBlockSize, controlTextSize } from '../../styling/control-size';
 import type { SxProps } from '../../styling/sx';
 import {
   FieldDescription,
@@ -72,9 +73,9 @@ const controlStyle = css({
 // Size minimums are floors: rows or autoResize can make the control taller.
 // With autoResize, engines supporting field-sizing: content ignore rows.
 const sizeStyles: Record<TextareaSize, SerializedStyles> = {
-  sm: css({ minBlockSize: '64px', paddingInline: vars.space[3], fontSize: vars.textSize.sm }),
-  md: css({ minBlockSize: '80px', paddingInline: vars.space[4], fontSize: vars.textSize.sm }),
-  lg: css({ minBlockSize: '96px', paddingInline: vars.space[4], fontSize: vars.textSize.md }),
+  sm: css({ minBlockSize: `calc(${controlBlockSize.sm} * 2)`, paddingInline: vars.space[3], fontSize: controlTextSize.sm }),
+  md: css({ minBlockSize: `calc(${controlBlockSize.md} * 2)`, paddingInline: vars.space[4], fontSize: controlTextSize.md }),
+  lg: css({ minBlockSize: `calc(${controlBlockSize.lg} * 2)`, paddingInline: vars.space[4], fontSize: controlTextSize.lg }),
 };
 
 const resizeStyles: Record<TextareaResize, SerializedStyles> = {

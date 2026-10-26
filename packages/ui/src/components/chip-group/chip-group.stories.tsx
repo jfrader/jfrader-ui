@@ -3,6 +3,7 @@ import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, within, waitFor } from 'storybook/test';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlMinimums } from '../../testing/control-size-assertions';
 import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -157,6 +158,11 @@ const options = ['Design', 'Code', 'Research', 'Writing', 'Testing', 'Delivery']
     await expect(args.onValueChange).toHaveBeenNthCalledWith(3, ['design', 'delivery']);
     await expect(args.onValueChange).toHaveBeenCalledTimes(3);
   },
+};
+export const RootRelativeSizes: Story = {
+  name: 'Root-relative control sizes', beforeEach: doubleRootText,
+  render: (args) => Sizes.render!(args),
+  play: async ({ canvas }) => { await expectControlMinimums(canvas.getAllByRole('group').map(group => within(group).getAllByRole('button')[0]!), [64, 80]); },
 };
 export const Sizes: Story = {
   render: (args) => (

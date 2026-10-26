@@ -2,6 +2,7 @@ import { useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, mocked, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { doubleRootText, expectControlHeights, expectControlMinimums } from '../../testing/control-size-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
 import { Button } from '../button';
@@ -534,6 +535,11 @@ export const ControlledOpen: Story = {
     await expect(triggerOf(canvasElement)).toHaveAttribute('aria-expanded', 'true');
   },
 };
+export const RootRelativeSizes: Story = {
+  name: 'Root-relative control sizes', beforeEach: doubleRootText,
+  render: (args, context) => Sizes.render!(args, context),
+  play: async ({ canvas }) => { await expectControlMinimums(canvas.getAllByRole('combobox')); },
+};
 export const Sizes: Story = {
   name: 'Field sizes',
   parameters: { docs: { description: { story: 'Compare small, medium, and large label pickers.' }, source: { language: 'tsx', code: `import { MultiSelect } from '@jfrader/ui';
@@ -562,8 +568,7 @@ export const Sizes: Story = {
   ),
   play: async ({ canvas }) => {
     const controls = canvas.getAllByRole('combobox');
-    for (const [index, control] of controls.entries())
-      await expect(control.getBoundingClientRect().height).toBeGreaterThanOrEqual([32, 40, 48][index]! - 1);
+    await expectControlHeights(controls);
   },
 };
 export const Empty: Story = {
