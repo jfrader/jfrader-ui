@@ -2,7 +2,14 @@
 
 ## Unreleased
 
-- `@jfrader/icons` and `@jfrader/styling` now carry the metadata npm shows on the package page.
+## 0.19.2 — 2026-10-26
+
+### Fixed
+
+- `@jfrader/icons` carries its license, description, keywords, repository and homepage on npm.
+- `@jfrader/styling` carries its keywords, repository and homepage.
+- A release now publishes to both registries independently, so a failure on one no longer leaves the other empty.
+
 
 ## 0.19.1 — 2026-10-26
 
