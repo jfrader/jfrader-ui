@@ -53,15 +53,18 @@ export function Project() {
 | [Getting started](docs/getting-started.md) | Install, first component, Vite and Next.js setup, fonts, icons |
 | [Theming](docs/theming.md) | Light and dark, saved preference, brand accents, scoped themes, overlays |
 | [Styling](docs/styling.md) | Props, `sx`, `styled`, parts, and slots |
+| [Icons](docs/icons.md) | Install, import, size, label, and create icons |
 | [QA gates](docs/qa-gates.md) | Keyboard, screen reader, forced colors, reduced motion, RTL |
 
-Storybook renders the same guides under **Foundations**, straight from these files.
+Storybook renders the setup, theming, styling, and QA guides under **Foundations**, straight from these files.
 
 ## Packages
 
 | Path | Package | Contents |
 | --- | --- | --- |
 | `packages/tokens` | `@jfrader/tokens` | Token source, generated `tokens.css`, typed `var()` references |
+| `packages/styling` | `@jfrader/styling` | Shared Emotion seam, `sx`, theme typing, and media queries |
+| `packages/icons` | `@jfrader/icons` | `SvgIcon`, `createSvgIcon`, generated icons, and metadata |
 | `packages/ui` | `@jfrader/ui` | Components |
 | `apps/storybook` | `@jfrader/storybook` | Workbench, component docs, browser tests |
 | `apps/docs` | `@jfrader/docs` | Documentation site published at `ui.jfrader.com` |

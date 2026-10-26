@@ -27,6 +27,7 @@ function StateFixture({ controlled = false, onChange }: { controlled?: boolean; 
 
 const meta = {
   title: 'Internal/Controlled State',
+  tags: ['!autodocs'],
   component: StateFixture,
   args: { onChange: fn() },
   decorators: [(Story) => <StrictMode><Story /></StrictMode>],

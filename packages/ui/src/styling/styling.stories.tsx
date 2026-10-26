@@ -24,7 +24,7 @@ const scrollContentStyle = css({ blockSize: '12rem' });
 const inheritedScrollStyle = css({ display: 'grid', gap: vars.space[4] });
 const scrollbarOverride = `${vars.color.text} transparent`;
 
-const meta = { title: 'Internal/Styling' } satisfies Meta;
+const meta = { title: 'Internal/Styling', tags: ['!autodocs'] } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
