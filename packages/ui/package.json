@@ -22,170 +22,662 @@
     "dist"
   ],
   "exports": {
-    "./flights": { "types": "./src/components/flights/index.ts", "import": "./src/components/flights/index.ts" },
-    "./article": { "types": "./src/components/article/index.ts", "import": "./src/components/article/index.ts" },
-    "./article-section": { "types": "./src/components/article-section/index.ts", "import": "./src/components/article-section/index.ts" },
-    "./article-list": { "types": "./src/components/article-list/index.ts", "import": "./src/components/article-list/index.ts" },
-    "./person-avatar": { "types": "./src/components/person-avatar/index.ts", "import": "./src/components/person-avatar/index.ts" },
-    "./person-avatar/appearance": { "types": "./src/components/person-avatar/appearance.ts", "import": "./src/components/person-avatar/appearance.ts" },
-    "./person-avatar/kit": { "types": "./src/components/person-avatar/kit.ts", "import": "./src/components/person-avatar/kit.ts" },
-    "./number-field": { "types": "./src/components/number-field/index.ts", "import": "./src/components/number-field/index.ts" },
-    "./money-input": { "types": "./src/components/money-input/index.ts", "import": "./src/components/money-input/index.ts" },
-    "./phone-input": { "types": "./src/components/phone-input/index.ts", "import": "./src/components/phone-input/index.ts" },
-    "./color-picker": { "types": "./src/components/color-picker/index.ts", "import": "./src/components/color-picker/index.ts" },
-    "./input-group": { "types": "./src/components/input-group/index.ts", "import": "./src/components/input-group/index.ts" },
-    "./streaming-caret": { "types": "./src/components/streaming-caret/index.ts", "import": "./src/components/streaming-caret/index.ts" },
-    "./prose": { "types": "./src/components/prose/index.ts", "import": "./src/components/prose/index.ts" },
-    "./control-center": { "types": "./src/components/control-center/index.ts", "import": "./src/components/control-center/index.ts" },
-    "./date-reel": { "types": "./src/components/date-reel/index.ts", "import": "./src/components/date-reel/index.ts" },
-    "./page-curl": { "types": "./src/components/page-curl/index.ts", "import": "./src/components/page-curl/index.ts" },
-    "./payment-flow": { "types": "./src/components/payment-flow/index.ts", "import": "./src/components/payment-flow/index.ts" },
-    "./share-access": { "types": "./src/components/share-access/index.ts", "import": "./src/components/share-access/index.ts" },
-    "./voice-recorder": { "types": "./src/components/voice-recorder/index.ts", "import": "./src/components/voice-recorder/index.ts" },
-    "./booking-pill": { "types": "./src/components/booking-pill/index.ts", "import": "./src/components/booking-pill/index.ts" },
-    "./multi-region-failover": { "types": "./src/components/multi-region-failover/index.ts", "import": "./src/components/multi-region-failover/index.ts" },
-    "./password-strength": { "types": "./src/components/password-strength/index.ts", "import": "./src/components/password-strength/index.ts" },
-    ".": { "types": "./src/index.ts", "import": "./src/index.ts" },
-    "./accordion": { "types": "./src/components/accordion/index.ts", "import": "./src/components/accordion/index.ts" },
-    "./action-button": { "types": "./src/components/action-button/index.ts", "import": "./src/components/action-button/index.ts" },
-    "./action-morph": { "types": "./src/components/action-morph/index.ts", "import": "./src/components/action-morph/index.ts" },
-    "./morph": { "types": "./src/components/morph/index.ts", "import": "./src/components/morph/index.ts" },
-    "./activity-rings": { "types": "./src/components/activity-rings/index.ts", "import": "./src/components/activity-rings/index.ts" },
-    "./alert": { "types": "./src/components/alert/index.ts", "import": "./src/components/alert/index.ts" },
-    "./announcement-bar": { "types": "./src/components/announcement-bar/index.ts", "import": "./src/components/announcement-bar/index.ts" },
-    "./api-table": { "types": "./src/components/api-table/index.ts", "import": "./src/components/api-table/index.ts" },
-    "./attachment-list": { "types": "./src/components/attachment-list/index.ts", "import": "./src/components/attachment-list/index.ts" },
-    "./avatar": { "types": "./src/components/avatar/index.ts", "import": "./src/components/avatar/index.ts" },
-    "./avatar-group": { "types": "./src/components/avatar-group/index.ts", "import": "./src/components/avatar-group/index.ts" },
-    "./badge": { "types": "./src/components/badge/index.ts", "import": "./src/components/badge/index.ts" },
-    "./bottom-sheet": { "types": "./src/components/bottom-sheet/index.ts", "import": "./src/components/bottom-sheet/index.ts" },
-    "./breadcrumbs": { "types": "./src/components/breadcrumbs/index.ts", "import": "./src/components/breadcrumbs/index.ts" },
-    "./button": { "types": "./src/components/button/index.ts", "import": "./src/components/button/index.ts" },
-    "./button-group": { "types": "./src/components/button-group/index.ts", "import": "./src/components/button-group/index.ts" },
-    "./calendar": { "types": "./src/components/calendar/index.ts", "import": "./src/components/calendar/index.ts" },
-    "./card": { "types": "./src/components/card/index.ts", "import": "./src/components/card/index.ts" },
-    "./card-flights": { "types": "./src/components/card-flights/index.ts", "import": "./src/components/card-flights/index.ts" },
-    "./card-stack": { "types": "./src/components/card-stack/index.ts", "import": "./src/components/card-stack/index.ts" },
-    "./carousel": { "types": "./src/components/carousel/index.ts", "import": "./src/components/carousel/index.ts" },
-    "./chat-message": { "types": "./src/components/chat-message/index.ts", "import": "./src/components/chat-message/index.ts" },
-    "./chat-thread": { "types": "./src/components/chat-thread/index.ts", "import": "./src/components/chat-thread/index.ts" },
-    "./checkbox": { "types": "./src/components/checkbox/index.ts", "import": "./src/components/checkbox/index.ts" },
-    "./chip-group": { "types": "./src/components/chip-group/index.ts", "import": "./src/components/chip-group/index.ts" },
-    "./code-block": { "types": "./src/components/code-block/index.ts", "import": "./src/components/code-block/index.ts" },
-    "./code-block/shiki": { "types": "./src/components/code-block/shiki.ts", "import": "./src/components/code-block/shiki.ts" },
-    "./combobox": { "types": "./src/components/combobox/index.ts", "import": "./src/components/combobox/index.ts" },
-    "./command-palette": { "types": "./src/components/command-palette/index.ts", "import": "./src/components/command-palette/index.ts" },
-    "./comment-thread": { "types": "./src/components/comment-thread/index.ts", "import": "./src/components/comment-thread/index.ts" },
-    "./container": { "types": "./src/components/container/index.ts", "import": "./src/components/container/index.ts" },
-    "./context-menu": { "types": "./src/components/context-menu/index.ts", "import": "./src/components/context-menu/index.ts" },
-    "./copy-button": { "types": "./src/components/copy-button/index.ts", "import": "./src/components/copy-button/index.ts" },
-    "./countdown": { "types": "./src/components/countdown/index.ts", "import": "./src/components/countdown/index.ts" },
-    "./data-flow": { "types": "./src/components/data-flow/index.ts", "import": "./src/components/data-flow/index.ts" },
-    "./data-table": { "types": "./src/components/data-table/index.ts", "import": "./src/components/data-table/index.ts" },
-    "./date-picker": { "types": "./src/components/date-picker/index.ts", "import": "./src/components/date-picker/index.ts" },
-    "./date-range-picker": { "types": "./src/components/date-range-picker/index.ts", "import": "./src/components/date-range-picker/index.ts" },
-    "./deck": { "types": "./src/components/deck/index.ts", "import": "./src/components/deck/index.ts" },
-    "./dialog": { "types": "./src/components/dialog/index.ts", "import": "./src/components/dialog/index.ts" },
-    "./dialog-stack": { "types": "./src/components/dialog-stack/index.ts", "import": "./src/components/dialog-stack/index.ts" },
-    "./divider": { "types": "./src/components/divider/index.ts", "import": "./src/components/divider/index.ts" },
-    "./dock": { "types": "./src/components/dock/index.ts", "import": "./src/components/dock/index.ts" },
-    "./drawer": { "types": "./src/components/drawer/index.ts", "import": "./src/components/drawer/index.ts" },
-    "./editable-details": { "types": "./src/components/editable-details/index.ts", "import": "./src/components/editable-details/index.ts" },
-    "./emblem": { "types": "./src/components/emblem/index.ts", "import": "./src/components/emblem/index.ts" },
-    "./empty-state": { "types": "./src/components/empty-state/index.ts", "import": "./src/components/empty-state/index.ts" },
-    "./expandable-card": { "types": "./src/components/expandable-card/index.ts", "import": "./src/components/expandable-card/index.ts" },
-    "./expanding-search": { "types": "./src/components/expanding-search/index.ts", "import": "./src/components/expanding-search/index.ts" },
-    "./file-dropzone": { "types": "./src/components/file-dropzone/index.ts", "import": "./src/components/file-dropzone/index.ts" },
-    "./filter-toolbar": { "types": "./src/components/filter-toolbar/index.ts", "import": "./src/components/filter-toolbar/index.ts" },
-    "./flex": { "types": "./src/components/flex/index.ts", "import": "./src/components/flex/index.ts" },
-    "./flip-game-card": { "types": "./src/components/flip-game-card/index.ts", "import": "./src/components/flip-game-card/index.ts" },
-    "./game-actions": { "types": "./src/components/game-actions/index.ts", "import": "./src/components/game-actions/index.ts" },
-    "./call-overlay": { "types": "./src/components/call-overlay/index.ts", "import": "./src/components/call-overlay/index.ts" },
-    "./game-card": { "types": "./src/components/game-card/index.ts", "import": "./src/components/game-card/index.ts" },
-    "./game-card-stack": { "types": "./src/components/game-card-stack/index.ts", "import": "./src/components/game-card-stack/index.ts" },
-    "./game-chip": { "types": "./src/components/game-chip/index.ts", "import": "./src/components/game-chip/index.ts" },
-    "./game-chip-stack": { "types": "./src/components/game-chip-stack/index.ts", "import": "./src/components/game-chip-stack/index.ts" },
-    "./game-seat": { "types": "./src/components/game-seat/index.ts", "import": "./src/components/game-seat/index.ts" },
-    "./game-score": { "types": "./src/components/game-score/index.ts", "import": "./src/components/game-score/index.ts" },
-    "./game-marks": { "types": "./src/components/game-marks/index.ts", "import": "./src/components/game-marks/index.ts" },
-    "./game-rounds": { "types": "./src/components/game-rounds/index.ts", "import": "./src/components/game-rounds/index.ts" },
-    "./game-hand": { "types": "./src/components/game-hand/index.ts", "import": "./src/components/game-hand/index.ts" },
-    "./game-result": { "types": "./src/components/game-result/index.ts", "import": "./src/components/game-result/index.ts" },
-    "./game-table": { "types": "./src/components/game-table/index.ts", "import": "./src/components/game-table/index.ts" },
-    "./poker-table": { "types": "./src/components/poker-table/index.ts", "import": "./src/components/poker-table/index.ts" },
-    "./truco-table": { "types": "./src/components/truco-table/index.ts", "import": "./src/components/truco-table/index.ts" },
-    "./gravity-well": { "types": "./src/components/gravity-well/index.ts", "import": "./src/components/gravity-well/index.ts" },
-    "./hold-to-confirm": { "types": "./src/components/hold-to-confirm/index.ts", "import": "./src/components/hold-to-confirm/index.ts" },
-    "./image-compare": { "types": "./src/components/image-compare/index.ts", "import": "./src/components/image-compare/index.ts" },
-    "./inline-edit": { "types": "./src/components/inline-edit/index.ts", "import": "./src/components/inline-edit/index.ts" },
-    "./hover-card": { "types": "./src/components/hover-card/index.ts", "import": "./src/components/hover-card/index.ts" },
-    "./json-viewer": { "types": "./src/components/json-viewer/index.ts", "import": "./src/components/json-viewer/index.ts" },
-    "./kbd": { "types": "./src/components/kbd/index.ts", "import": "./src/components/kbd/index.ts" },
-    "./keycap-keyboard": { "types": "./src/components/keycap-keyboard/index.ts", "import": "./src/components/keycap-keyboard/index.ts" },
-    "./lightbox-gallery": { "types": "./src/components/lightbox-gallery/index.ts", "import": "./src/components/lightbox-gallery/index.ts" },
-    "./link-unfurl": { "types": "./src/components/link-unfurl/index.ts", "import": "./src/components/link-unfurl/index.ts" },
-    "./link-preview": { "types": "./src/components/link-preview/index.ts", "import": "./src/components/link-preview/index.ts" },
-    "./locale-switcher": { "types": "./src/components/locale-switcher/index.ts", "import": "./src/components/locale-switcher/index.ts" },
-    "./logo-orbit": { "types": "./src/components/logo-orbit/index.ts", "import": "./src/components/logo-orbit/index.ts" },
-    "./mention-input": { "types": "./src/components/mention-input/index.ts", "import": "./src/components/mention-input/index.ts" },
-    "./menu": { "types": "./src/components/menu/index.ts", "import": "./src/components/menu/index.ts" },
-    "./metric-card": { "types": "./src/components/metric-card/index.ts", "import": "./src/components/metric-card/index.ts" },
-    "./multi-select": { "types": "./src/components/multi-select/index.ts", "import": "./src/components/multi-select/index.ts" },
-    "./navigation": { "types": "./src/components/navigation/index.ts", "import": "./src/components/navigation/index.ts" },
-    "./next": { "types": "./src/components/next/index.ts", "import": "./src/components/next/index.ts" },
-    "./now-playing": { "types": "./src/components/now-playing/index.ts", "import": "./src/components/now-playing/index.ts" },
-    "./pagination": { "types": "./src/components/pagination/index.ts", "import": "./src/components/pagination/index.ts" },
-    "./password-field": { "types": "./src/components/password-field/index.ts", "import": "./src/components/password-field/index.ts" },
-    "./pattern": { "types": "./src/components/pattern/index.ts", "import": "./src/components/pattern/index.ts" },
-    "./photo-grid": { "types": "./src/components/photo-grid/index.ts", "import": "./src/components/photo-grid/index.ts" },
-    "./pill": { "types": "./src/components/pill/index.ts", "import": "./src/components/pill/index.ts" },
-    "./plan-selector": { "types": "./src/components/plan-selector/index.ts", "import": "./src/components/plan-selector/index.ts" },
-    "./popover": { "types": "./src/components/popover/index.ts", "import": "./src/components/popover/index.ts" },
-    "./progress": { "types": "./src/components/progress/index.ts", "import": "./src/components/progress/index.ts" },
-    "./radial-menu": { "types": "./src/components/radial-menu/index.ts", "import": "./src/components/radial-menu/index.ts" },
-    "./radio-cards": { "types": "./src/components/radio-cards/index.ts", "import": "./src/components/radio-cards/index.ts" },
-    "./radio-group": { "types": "./src/components/radio-group/index.ts", "import": "./src/components/radio-group/index.ts" },
-    "./reaction-group": { "types": "./src/components/reaction-group/index.ts", "import": "./src/components/reaction-group/index.ts" },
-    "./resizable-panels": { "types": "./src/components/resizable-panels/index.ts", "import": "./src/components/resizable-panels/index.ts" },
-    "./scene": { "types": "./src/components/scene/index.ts", "import": "./src/components/scene/index.ts" },
-    "./scroll-area": { "types": "./src/components/scroll-area/index.ts", "import": "./src/components/scroll-area/index.ts" },
-    "./search-field": { "types": "./src/components/search-field/index.ts", "import": "./src/components/search-field/index.ts" },
-    "./segmented-control": { "types": "./src/components/segmented-control/index.ts", "import": "./src/components/segmented-control/index.ts" },
-    "./select": { "types": "./src/components/select/index.ts", "import": "./src/components/select/index.ts" },
-    "./share-sheet": { "types": "./src/components/share-sheet/index.ts", "import": "./src/components/share-sheet/index.ts" },
-    "./signature-pad": { "types": "./src/components/signature-pad/index.ts", "import": "./src/components/signature-pad/index.ts" },
-    "./skeleton": { "types": "./src/components/skeleton/index.ts", "import": "./src/components/skeleton/index.ts" },
-    "./slider": { "types": "./src/components/slider/index.ts", "import": "./src/components/slider/index.ts" },
-    "./spinner": { "types": "./src/components/spinner/index.ts", "import": "./src/components/spinner/index.ts" },
-    "./svg-icon": { "types": "./src/components/svg-icon/index.ts", "import": "./src/components/svg-icon/index.ts" },
-    "./split-button": { "types": "./src/components/split-button/index.ts", "import": "./src/components/split-button/index.ts" },
-    "./stack": { "types": "./src/components/stack/index.ts", "import": "./src/components/stack/index.ts" },
-    "./status-dot": { "types": "./src/components/status-dot/index.ts", "import": "./src/components/status-dot/index.ts" },
-    "./stepper": { "types": "./src/components/stepper/index.ts", "import": "./src/components/stepper/index.ts" },
-    "./stretch-refresh": { "types": "./src/components/stretch-refresh/index.ts", "import": "./src/components/stretch-refresh/index.ts" },
-    "./surface": { "types": "./src/components/surface/index.ts", "import": "./src/components/surface/index.ts" },
-    "./swipe-actions": { "types": "./src/components/swipe-actions/index.ts", "import": "./src/components/swipe-actions/index.ts" },
-    "./switch": { "types": "./src/components/switch/index.ts", "import": "./src/components/switch/index.ts" },
-    "./tabs": { "types": "./src/components/tabs/index.ts", "import": "./src/components/tabs/index.ts" },
-    "./tag-input": { "types": "./src/components/tag-input/index.ts", "import": "./src/components/tag-input/index.ts" },
-    "./text-field": { "types": "./src/components/text-field/index.ts", "import": "./src/components/text-field/index.ts" },
-    "./text-morph": { "types": "./src/components/text-morph/index.ts", "import": "./src/components/text-morph/index.ts" },
-    "./text-reveal": { "types": "./src/components/text-reveal/index.ts", "import": "./src/components/text-reveal/index.ts" },
-    "./text-shimmer": { "types": "./src/components/text-shimmer/index.ts", "import": "./src/components/text-shimmer/index.ts" },
-    "./textarea": { "types": "./src/components/textarea/index.ts", "import": "./src/components/textarea/index.ts" },
-    "./theme-root": { "types": "./src/components/theme-root/index.ts", "import": "./src/components/theme-root/index.ts" },
-    "./theme-switch": { "types": "./src/components/theme-switch/index.ts", "import": "./src/components/theme-switch/index.ts" },
-    "./time-picker": { "types": "./src/components/time-picker/index.ts", "import": "./src/components/time-picker/index.ts" },
-    "./timeline": { "types": "./src/components/timeline/index.ts", "import": "./src/components/timeline/index.ts" },
-    "./toast": { "types": "./src/components/toast/index.ts", "import": "./src/components/toast/index.ts" },
-    "./toast-stack": { "types": "./src/components/toast-stack/index.ts", "import": "./src/components/toast-stack/index.ts" },
-    "./toggle-group": { "types": "./src/components/toggle-group/index.ts", "import": "./src/components/toggle-group/index.ts" },
-    "./tooltip": { "types": "./src/components/tooltip/index.ts", "import": "./src/components/tooltip/index.ts" },
-    "./tree-view": { "types": "./src/components/tree-view/index.ts", "import": "./src/components/tree-view/index.ts" },
-    "./typewriter-terminal": { "types": "./src/components/typewriter-terminal/index.ts", "import": "./src/components/typewriter-terminal/index.ts" },
-    "./usage-meter": { "types": "./src/components/usage-meter/index.ts", "import": "./src/components/usage-meter/index.ts" },
-    "./user-menu": { "types": "./src/components/user-menu/index.ts", "import": "./src/components/user-menu/index.ts" },
-    "./voice-orb": { "types": "./src/components/voice-orb/index.ts", "import": "./src/components/voice-orb/index.ts" }
+    "./flights": {
+      "types": "./src/components/flights/index.ts",
+      "import": "./src/components/flights/index.ts"
+    },
+    "./article": {
+      "types": "./src/components/article/index.ts",
+      "import": "./src/components/article/index.ts"
+    },
+    "./article-section": {
+      "types": "./src/components/article-section/index.ts",
+      "import": "./src/components/article-section/index.ts"
+    },
+    "./article-list": {
+      "types": "./src/components/article-list/index.ts",
+      "import": "./src/components/article-list/index.ts"
+    },
+    "./person-avatar": {
+      "types": "./src/components/person-avatar/index.ts",
+      "import": "./src/components/person-avatar/index.ts"
+    },
+    "./person-avatar/appearance": {
+      "types": "./src/components/person-avatar/appearance.ts",
+      "import": "./src/components/person-avatar/appearance.ts"
+    },
+    "./person-avatar/kit": {
+      "types": "./src/components/person-avatar/kit.ts",
+      "import": "./src/components/person-avatar/kit.ts"
+    },
+    "./number-field": {
+      "types": "./src/components/number-field/index.ts",
+      "import": "./src/components/number-field/index.ts"
+    },
+    "./money-input": {
+      "types": "./src/components/money-input/index.ts",
+      "import": "./src/components/money-input/index.ts"
+    },
+    "./phone-input": {
+      "types": "./src/components/phone-input/index.ts",
+      "import": "./src/components/phone-input/index.ts"
+    },
+    "./color-picker": {
+      "types": "./src/components/color-picker/index.ts",
+      "import": "./src/components/color-picker/index.ts"
+    },
+    "./input-group": {
+      "types": "./src/components/input-group/index.ts",
+      "import": "./src/components/input-group/index.ts"
+    },
+    "./streaming-caret": {
+      "types": "./src/components/streaming-caret/index.ts",
+      "import": "./src/components/streaming-caret/index.ts"
+    },
+    "./prose": {
+      "types": "./src/components/prose/index.ts",
+      "import": "./src/components/prose/index.ts"
+    },
+    "./control-center": {
+      "types": "./src/components/control-center/index.ts",
+      "import": "./src/components/control-center/index.ts"
+    },
+    "./date-reel": {
+      "types": "./src/components/date-reel/index.ts",
+      "import": "./src/components/date-reel/index.ts"
+    },
+    "./page-curl": {
+      "types": "./src/components/page-curl/index.ts",
+      "import": "./src/components/page-curl/index.ts"
+    },
+    "./payment-flow": {
+      "types": "./src/components/payment-flow/index.ts",
+      "import": "./src/components/payment-flow/index.ts"
+    },
+    "./share-access": {
+      "types": "./src/components/share-access/index.ts",
+      "import": "./src/components/share-access/index.ts"
+    },
+    "./voice-recorder": {
+      "types": "./src/components/voice-recorder/index.ts",
+      "import": "./src/components/voice-recorder/index.ts"
+    },
+    "./booking-pill": {
+      "types": "./src/components/booking-pill/index.ts",
+      "import": "./src/components/booking-pill/index.ts"
+    },
+    "./multi-region-failover": {
+      "types": "./src/components/multi-region-failover/index.ts",
+      "import": "./src/components/multi-region-failover/index.ts"
+    },
+    "./password-strength": {
+      "types": "./src/components/password-strength/index.ts",
+      "import": "./src/components/password-strength/index.ts"
+    },
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./accordion": {
+      "types": "./src/components/accordion/index.ts",
+      "import": "./src/components/accordion/index.ts"
+    },
+    "./action-button": {
+      "types": "./src/components/action-button/index.ts",
+      "import": "./src/components/action-button/index.ts"
+    },
+    "./action-morph": {
+      "types": "./src/components/action-morph/index.ts",
+      "import": "./src/components/action-morph/index.ts"
+    },
+    "./morph": {
+      "types": "./src/components/morph/index.ts",
+      "import": "./src/components/morph/index.ts"
+    },
+    "./activity-rings": {
+      "types": "./src/components/activity-rings/index.ts",
+      "import": "./src/components/activity-rings/index.ts"
+    },
+    "./alert": {
+      "types": "./src/components/alert/index.ts",
+      "import": "./src/components/alert/index.ts"
+    },
+    "./announcement-bar": {
+      "types": "./src/components/announcement-bar/index.ts",
+      "import": "./src/components/announcement-bar/index.ts"
+    },
+    "./api-table": {
+      "types": "./src/components/api-table/index.ts",
+      "import": "./src/components/api-table/index.ts"
+    },
+    "./attachment-list": {
+      "types": "./src/components/attachment-list/index.ts",
+      "import": "./src/components/attachment-list/index.ts"
+    },
+    "./avatar": {
+      "types": "./src/components/avatar/index.ts",
+      "import": "./src/components/avatar/index.ts"
+    },
+    "./avatar-group": {
+      "types": "./src/components/avatar-group/index.ts",
+      "import": "./src/components/avatar-group/index.ts"
+    },
+    "./badge": {
+      "types": "./src/components/badge/index.ts",
+      "import": "./src/components/badge/index.ts"
+    },
+    "./bottom-sheet": {
+      "types": "./src/components/bottom-sheet/index.ts",
+      "import": "./src/components/bottom-sheet/index.ts"
+    },
+    "./breadcrumbs": {
+      "types": "./src/components/breadcrumbs/index.ts",
+      "import": "./src/components/breadcrumbs/index.ts"
+    },
+    "./button": {
+      "types": "./src/components/button/index.ts",
+      "import": "./src/components/button/index.ts"
+    },
+    "./button-group": {
+      "types": "./src/components/button-group/index.ts",
+      "import": "./src/components/button-group/index.ts"
+    },
+    "./calendar": {
+      "types": "./src/components/calendar/index.ts",
+      "import": "./src/components/calendar/index.ts"
+    },
+    "./card": {
+      "types": "./src/components/card/index.ts",
+      "import": "./src/components/card/index.ts"
+    },
+    "./card-flights": {
+      "types": "./src/components/card-flights/index.ts",
+      "import": "./src/components/card-flights/index.ts"
+    },
+    "./card-stack": {
+      "types": "./src/components/card-stack/index.ts",
+      "import": "./src/components/card-stack/index.ts"
+    },
+    "./carousel": {
+      "types": "./src/components/carousel/index.ts",
+      "import": "./src/components/carousel/index.ts"
+    },
+    "./chat-message": {
+      "types": "./src/components/chat-message/index.ts",
+      "import": "./src/components/chat-message/index.ts"
+    },
+    "./chat-thread": {
+      "types": "./src/components/chat-thread/index.ts",
+      "import": "./src/components/chat-thread/index.ts"
+    },
+    "./checkbox": {
+      "types": "./src/components/checkbox/index.ts",
+      "import": "./src/components/checkbox/index.ts"
+    },
+    "./chip-group": {
+      "types": "./src/components/chip-group/index.ts",
+      "import": "./src/components/chip-group/index.ts"
+    },
+    "./code-block": {
+      "types": "./src/components/code-block/index.ts",
+      "import": "./src/components/code-block/index.ts"
+    },
+    "./code-block/shiki": {
+      "types": "./src/components/code-block/shiki.ts",
+      "import": "./src/components/code-block/shiki.ts"
+    },
+    "./combobox": {
+      "types": "./src/components/combobox/index.ts",
+      "import": "./src/components/combobox/index.ts"
+    },
+    "./command-palette": {
+      "types": "./src/components/command-palette/index.ts",
+      "import": "./src/components/command-palette/index.ts"
+    },
+    "./comment-thread": {
+      "types": "./src/components/comment-thread/index.ts",
+      "import": "./src/components/comment-thread/index.ts"
+    },
+    "./container": {
+      "types": "./src/components/container/index.ts",
+      "import": "./src/components/container/index.ts"
+    },
+    "./context-menu": {
+      "types": "./src/components/context-menu/index.ts",
+      "import": "./src/components/context-menu/index.ts"
+    },
+    "./copy-button": {
+      "types": "./src/components/copy-button/index.ts",
+      "import": "./src/components/copy-button/index.ts"
+    },
+    "./countdown": {
+      "types": "./src/components/countdown/index.ts",
+      "import": "./src/components/countdown/index.ts"
+    },
+    "./data-flow": {
+      "types": "./src/components/data-flow/index.ts",
+      "import": "./src/components/data-flow/index.ts"
+    },
+    "./data-table": {
+      "types": "./src/components/data-table/index.ts",
+      "import": "./src/components/data-table/index.ts"
+    },
+    "./date-picker": {
+      "types": "./src/components/date-picker/index.ts",
+      "import": "./src/components/date-picker/index.ts"
+    },
+    "./date-range-picker": {
+      "types": "./src/components/date-range-picker/index.ts",
+      "import": "./src/components/date-range-picker/index.ts"
+    },
+    "./deck": {
+      "types": "./src/components/deck/index.ts",
+      "import": "./src/components/deck/index.ts"
+    },
+    "./dialog": {
+      "types": "./src/components/dialog/index.ts",
+      "import": "./src/components/dialog/index.ts"
+    },
+    "./dialog-stack": {
+      "types": "./src/components/dialog-stack/index.ts",
+      "import": "./src/components/dialog-stack/index.ts"
+    },
+    "./divider": {
+      "types": "./src/components/divider/index.ts",
+      "import": "./src/components/divider/index.ts"
+    },
+    "./dock": {
+      "types": "./src/components/dock/index.ts",
+      "import": "./src/components/dock/index.ts"
+    },
+    "./drawer": {
+      "types": "./src/components/drawer/index.ts",
+      "import": "./src/components/drawer/index.ts"
+    },
+    "./editable-details": {
+      "types": "./src/components/editable-details/index.ts",
+      "import": "./src/components/editable-details/index.ts"
+    },
+    "./emblem": {
+      "types": "./src/components/emblem/index.ts",
+      "import": "./src/components/emblem/index.ts"
+    },
+    "./empty-state": {
+      "types": "./src/components/empty-state/index.ts",
+      "import": "./src/components/empty-state/index.ts"
+    },
+    "./expandable-card": {
+      "types": "./src/components/expandable-card/index.ts",
+      "import": "./src/components/expandable-card/index.ts"
+    },
+    "./expanding-search": {
+      "types": "./src/components/expanding-search/index.ts",
+      "import": "./src/components/expanding-search/index.ts"
+    },
+    "./file-dropzone": {
+      "types": "./src/components/file-dropzone/index.ts",
+      "import": "./src/components/file-dropzone/index.ts"
+    },
+    "./filter-toolbar": {
+      "types": "./src/components/filter-toolbar/index.ts",
+      "import": "./src/components/filter-toolbar/index.ts"
+    },
+    "./flex": {
+      "types": "./src/components/flex/index.ts",
+      "import": "./src/components/flex/index.ts"
+    },
+    "./flip-game-card": {
+      "types": "./src/components/flip-game-card/index.ts",
+      "import": "./src/components/flip-game-card/index.ts"
+    },
+    "./game-actions": {
+      "types": "./src/components/game-actions/index.ts",
+      "import": "./src/components/game-actions/index.ts"
+    },
+    "./call-overlay": {
+      "types": "./src/components/call-overlay/index.ts",
+      "import": "./src/components/call-overlay/index.ts"
+    },
+    "./game-card": {
+      "types": "./src/components/game-card/index.ts",
+      "import": "./src/components/game-card/index.ts"
+    },
+    "./game-card-stack": {
+      "types": "./src/components/game-card-stack/index.ts",
+      "import": "./src/components/game-card-stack/index.ts"
+    },
+    "./game-chip": {
+      "types": "./src/components/game-chip/index.ts",
+      "import": "./src/components/game-chip/index.ts"
+    },
+    "./game-chip-stack": {
+      "types": "./src/components/game-chip-stack/index.ts",
+      "import": "./src/components/game-chip-stack/index.ts"
+    },
+    "./game-seat": {
+      "types": "./src/components/game-seat/index.ts",
+      "import": "./src/components/game-seat/index.ts"
+    },
+    "./game-score": {
+      "types": "./src/components/game-score/index.ts",
+      "import": "./src/components/game-score/index.ts"
+    },
+    "./game-marks": {
+      "types": "./src/components/game-marks/index.ts",
+      "import": "./src/components/game-marks/index.ts"
+    },
+    "./game-rounds": {
+      "types": "./src/components/game-rounds/index.ts",
+      "import": "./src/components/game-rounds/index.ts"
+    },
+    "./game-hand": {
+      "types": "./src/components/game-hand/index.ts",
+      "import": "./src/components/game-hand/index.ts"
+    },
+    "./game-result": {
+      "types": "./src/components/game-result/index.ts",
+      "import": "./src/components/game-result/index.ts"
+    },
+    "./game-table": {
+      "types": "./src/components/game-table/index.ts",
+      "import": "./src/components/game-table/index.ts"
+    },
+    "./poker-table": {
+      "types": "./src/components/poker-table/index.ts",
+      "import": "./src/components/poker-table/index.ts"
+    },
+    "./truco-table": {
+      "types": "./src/components/truco-table/index.ts",
+      "import": "./src/components/truco-table/index.ts"
+    },
+    "./gravity-well": {
+      "types": "./src/components/gravity-well/index.ts",
+      "import": "./src/components/gravity-well/index.ts"
+    },
+    "./hold-to-confirm": {
+      "types": "./src/components/hold-to-confirm/index.ts",
+      "import": "./src/components/hold-to-confirm/index.ts"
+    },
+    "./image-compare": {
+      "types": "./src/components/image-compare/index.ts",
+      "import": "./src/components/image-compare/index.ts"
+    },
+    "./inline-edit": {
+      "types": "./src/components/inline-edit/index.ts",
+      "import": "./src/components/inline-edit/index.ts"
+    },
+    "./hover-card": {
+      "types": "./src/components/hover-card/index.ts",
+      "import": "./src/components/hover-card/index.ts"
+    },
+    "./json-viewer": {
+      "types": "./src/components/json-viewer/index.ts",
+      "import": "./src/components/json-viewer/index.ts"
+    },
+    "./kbd": {
+      "types": "./src/components/kbd/index.ts",
+      "import": "./src/components/kbd/index.ts"
+    },
+    "./keycap-keyboard": {
+      "types": "./src/components/keycap-keyboard/index.ts",
+      "import": "./src/components/keycap-keyboard/index.ts"
+    },
+    "./lightbox-gallery": {
+      "types": "./src/components/lightbox-gallery/index.ts",
+      "import": "./src/components/lightbox-gallery/index.ts"
+    },
+    "./link-unfurl": {
+      "types": "./src/components/link-unfurl/index.ts",
+      "import": "./src/components/link-unfurl/index.ts"
+    },
+    "./link-preview": {
+      "types": "./src/components/link-preview/index.ts",
+      "import": "./src/components/link-preview/index.ts"
+    },
+    "./locale-switcher": {
+      "types": "./src/components/locale-switcher/index.ts",
+      "import": "./src/components/locale-switcher/index.ts"
+    },
+    "./logo-orbit": {
+      "types": "./src/components/logo-orbit/index.ts",
+      "import": "./src/components/logo-orbit/index.ts"
+    },
+    "./mention-input": {
+      "types": "./src/components/mention-input/index.ts",
+      "import": "./src/components/mention-input/index.ts"
+    },
+    "./menu": {
+      "types": "./src/components/menu/index.ts",
+      "import": "./src/components/menu/index.ts"
+    },
+    "./metric-card": {
+      "types": "./src/components/metric-card/index.ts",
+      "import": "./src/components/metric-card/index.ts"
+    },
+    "./multi-select": {
+      "types": "./src/components/multi-select/index.ts",
+      "import": "./src/components/multi-select/index.ts"
+    },
+    "./navigation": {
+      "types": "./src/components/navigation/index.ts",
+      "import": "./src/components/navigation/index.ts"
+    },
+    "./next": {
+      "types": "./src/components/next/index.ts",
+      "import": "./src/components/next/index.ts"
+    },
+    "./now-playing": {
+      "types": "./src/components/now-playing/index.ts",
+      "import": "./src/components/now-playing/index.ts"
+    },
+    "./pagination": {
+      "types": "./src/components/pagination/index.ts",
+      "import": "./src/components/pagination/index.ts"
+    },
+    "./password-field": {
+      "types": "./src/components/password-field/index.ts",
+      "import": "./src/components/password-field/index.ts"
+    },
+    "./pattern": {
+      "types": "./src/components/pattern/index.ts",
+      "import": "./src/components/pattern/index.ts"
+    },
+    "./photo-grid": {
+      "types": "./src/components/photo-grid/index.ts",
+      "import": "./src/components/photo-grid/index.ts"
+    },
+    "./pill": {
+      "types": "./src/components/pill/index.ts",
+      "import": "./src/components/pill/index.ts"
+    },
+    "./plan-selector": {
+      "types": "./src/components/plan-selector/index.ts",
+      "import": "./src/components/plan-selector/index.ts"
+    },
+    "./popover": {
+      "types": "./src/components/popover/index.ts",
+      "import": "./src/components/popover/index.ts"
+    },
+    "./progress": {
+      "types": "./src/components/progress/index.ts",
+      "import": "./src/components/progress/index.ts"
+    },
+    "./radial-menu": {
+      "types": "./src/components/radial-menu/index.ts",
+      "import": "./src/components/radial-menu/index.ts"
+    },
+    "./radio-cards": {
+      "types": "./src/components/radio-cards/index.ts",
+      "import": "./src/components/radio-cards/index.ts"
+    },
+    "./radio-group": {
+      "types": "./src/components/radio-group/index.ts",
+      "import": "./src/components/radio-group/index.ts"
+    },
+    "./reaction-group": {
+      "types": "./src/components/reaction-group/index.ts",
+      "import": "./src/components/reaction-group/index.ts"
+    },
+    "./resizable-panels": {
+      "types": "./src/components/resizable-panels/index.ts",
+      "import": "./src/components/resizable-panels/index.ts"
+    },
+    "./scene": {
+      "types": "./src/components/scene/index.ts",
+      "import": "./src/components/scene/index.ts"
+    },
+    "./scroll-area": {
+      "types": "./src/components/scroll-area/index.ts",
+      "import": "./src/components/scroll-area/index.ts"
+    },
+    "./search-field": {
+      "types": "./src/components/search-field/index.ts",
+      "import": "./src/components/search-field/index.ts"
+    },
+    "./segmented-control": {
+      "types": "./src/components/segmented-control/index.ts",
+      "import": "./src/components/segmented-control/index.ts"
+    },
+    "./select": {
+      "types": "./src/components/select/index.ts",
+      "import": "./src/components/select/index.ts"
+    },
+    "./share-sheet": {
+      "types": "./src/components/share-sheet/index.ts",
+      "import": "./src/components/share-sheet/index.ts"
+    },
+    "./signature-pad": {
+      "types": "./src/components/signature-pad/index.ts",
+      "import": "./src/components/signature-pad/index.ts"
+    },
+    "./skeleton": {
+      "types": "./src/components/skeleton/index.ts",
+      "import": "./src/components/skeleton/index.ts"
+    },
+    "./slider": {
+      "types": "./src/components/slider/index.ts",
+      "import": "./src/components/slider/index.ts"
+    },
+    "./spinner": {
+      "types": "./src/components/spinner/index.ts",
+      "import": "./src/components/spinner/index.ts"
+    },
+    "./svg-icon": {
+      "types": "./src/components/svg-icon/index.ts",
+      "import": "./src/components/svg-icon/index.ts"
+    },
+    "./split-button": {
+      "types": "./src/components/split-button/index.ts",
+      "import": "./src/components/split-button/index.ts"
+    },
+    "./stack": {
+      "types": "./src/components/stack/index.ts",
+      "import": "./src/components/stack/index.ts"
+    },
+    "./status-dot": {
+      "types": "./src/components/status-dot/index.ts",
+      "import": "./src/components/status-dot/index.ts"
+    },
+    "./stepper": {
+      "types": "./src/components/stepper/index.ts",
+      "import": "./src/components/stepper/index.ts"
+    },
+    "./stretch-refresh": {
+      "types": "./src/components/stretch-refresh/index.ts",
+      "import": "./src/components/stretch-refresh/index.ts"
+    },
+    "./surface": {
+      "types": "./src/components/surface/index.ts",
+      "import": "./src/components/surface/index.ts"
+    },
+    "./swipe-actions": {
+      "types": "./src/components/swipe-actions/index.ts",
+      "import": "./src/components/swipe-actions/index.ts"
+    },
+    "./switch": {
+      "types": "./src/components/switch/index.ts",
+      "import": "./src/components/switch/index.ts"
+    },
+    "./tabs": {
+      "types": "./src/components/tabs/index.ts",
+      "import": "./src/components/tabs/index.ts"
+    },
+    "./tag-input": {
+      "types": "./src/components/tag-input/index.ts",
+      "import": "./src/components/tag-input/index.ts"
+    },
+    "./text-field": {
+      "types": "./src/components/text-field/index.ts",
+      "import": "./src/components/text-field/index.ts"
+    },
+    "./text-morph": {
+      "types": "./src/components/text-morph/index.ts",
+      "import": "./src/components/text-morph/index.ts"
+    },
+    "./text-reveal": {
+      "types": "./src/components/text-reveal/index.ts",
+      "import": "./src/components/text-reveal/index.ts"
+    },
+    "./text-shimmer": {
+      "types": "./src/components/text-shimmer/index.ts",
+      "import": "./src/components/text-shimmer/index.ts"
+    },
+    "./textarea": {
+      "types": "./src/components/textarea/index.ts",
+      "import": "./src/components/textarea/index.ts"
+    },
+    "./theme-root": {
+      "types": "./src/components/theme-root/index.ts",
+      "import": "./src/components/theme-root/index.ts"
+    },
+    "./theme-switch": {
+      "types": "./src/components/theme-switch/index.ts",
+      "import": "./src/components/theme-switch/index.ts"
+    },
+    "./time-picker": {
+      "types": "./src/components/time-picker/index.ts",
+      "import": "./src/components/time-picker/index.ts"
+    },
+    "./timeline": {
+      "types": "./src/components/timeline/index.ts",
+      "import": "./src/components/timeline/index.ts"
+    },
+    "./toast": {
+      "types": "./src/components/toast/index.ts",
+      "import": "./src/components/toast/index.ts"
+    },
+    "./toast-stack": {
+      "types": "./src/components/toast-stack/index.ts",
+      "import": "./src/components/toast-stack/index.ts"
+    },
+    "./toggle-group": {
+      "types": "./src/components/toggle-group/index.ts",
+      "import": "./src/components/toggle-group/index.ts"
+    },
+    "./tooltip": {
+      "types": "./src/components/tooltip/index.ts",
+      "import": "./src/components/tooltip/index.ts"
+    },
+    "./tree-view": {
+      "types": "./src/components/tree-view/index.ts",
+      "import": "./src/components/tree-view/index.ts"
+    },
+    "./typewriter-terminal": {
+      "types": "./src/components/typewriter-terminal/index.ts",
+      "import": "./src/components/typewriter-terminal/index.ts"
+    },
+    "./usage-meter": {
+      "types": "./src/components/usage-meter/index.ts",
+      "import": "./src/components/usage-meter/index.ts"
+    },
+    "./user-menu": {
+      "types": "./src/components/user-menu/index.ts",
+      "import": "./src/components/user-menu/index.ts"
+    },
+    "./voice-orb": {
+      "types": "./src/components/voice-orb/index.ts",
+      "import": "./src/components/voice-orb/index.ts"
+    }
   },
   "publishConfig": {
     "access": "public"

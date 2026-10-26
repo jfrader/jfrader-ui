@@ -37,9 +37,30 @@ gh workflow run publish.yml --repo jfrader/jfrader-ui --ref v0.18.0
 ## Authentication
 
 npmjs authenticates through each package's trusted publisher for `jfrader/jfrader-ui` →
-`.github/workflows/publish.yml`. Publish the first version of each package by hand, then add its
-trusted publisher in the npmjs settings; npmjs requires the package to exist first. GitHub Packages
-uses the workflow's scoped `GITHUB_TOKEN`.
+`.github/workflows/publish.yml`. `@jfrader/tokens` and `@jfrader/ui` are already configured.
+
+`@jfrader/styling` and `@jfrader/icons` are newer than that setup, so their **first** version has to
+be published by hand: npmjs only lets you attach a trusted publisher to a package that already exists.
+Until that is done, the workflow's publish step fails for those two names, and because `@jfrader/ui`
+depends on both, a release cannot complete without them.
+
+Bootstrap, once per new package, from a clean `master` at the release commit:
+
+```sh
+pnpm install && pnpm generate
+pnpm --filter @jfrader/styling build && pnpm --filter @jfrader/icons build
+
+cd packages/styling && npm publish --access=public --ignore-scripts
+cd ../icons     && npm publish --access=public --ignore-scripts
+```
+
+Then, on npmjs, add the trusted publisher to both packages (repository `jfrader/jfrader-ui`, workflow
+`publish.yml`). From that point the workflow owns them: re-running the release accepts an artifact that
+already exists at the same version, so the hand-published tarballs and the workflow's tarballs are the
+same release as long as the commit and the build are the same.
+
+GitHub Packages needs no bootstrap; it uses the workflow's scoped `GITHUB_TOKEN`, and the first
+publication of each package is private until it is switched to public in the package settings.
 
 GitHub creates a personal package as private on its first publication. After the first successful
 run, make each package public once from **Package settings → Danger Zone → Change visibility**. Later
