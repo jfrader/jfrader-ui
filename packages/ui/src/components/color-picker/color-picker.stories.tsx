@@ -20,6 +20,7 @@ import {
   serializeColor,
 } from './color-adapter';
 import { EyeDropperCapability } from './eye-dropper-capability';
+import { settleMotion } from '../../testing/motion-assertions';
 
 const messages: ColorPickerMessages = {
   dialog: 'Choose a color',
@@ -632,6 +633,18 @@ export const PanelLayout: Story = {
       await expect(space.getBoundingClientRect().right).toBeLessThan(saved.getBoundingClientRect().left);
     }
 
+    // The color field carries the committed color as a square level with its control.
+    const colorField = page.getByRole('textbox', { name: messages.color });
+    const preview = dialog.querySelector<HTMLElement>('[data-ui="color-picker-preview"]')!;
+    await settleMotion(dialog);
+    await expect(preview.offsetHeight).toBe(colorField.offsetHeight);
+    await expect(preview.offsetWidth).toBe(preview.offsetHeight);
+    await expect(Math.abs(preview.getBoundingClientRect().bottom - colorField.getBoundingClientRect().bottom)).toBeLessThan(1);
+    await expect(preview).toHaveStyle({ backgroundColor: 'rgb(255, 0, 0)' });
+    await userEvent.clear(colorField);
+    await userEvent.type(colorField, '#00FF00{Enter}');
+    await expect(preview).toHaveStyle({ backgroundColor: 'rgb(0, 255, 0)' });
+
     page.getByRole('slider', { name: messages.opacity }).focus();
     await userEvent.tab();
     await expect(doc.activeElement).toBe(sample);
@@ -701,6 +714,8 @@ export const ColorSurfaces: Story = {
     const pad = dialog.querySelector('[data-ui="color-picker-pad"]')!;
     await expect(getComputedStyle(pad).forcedColorAdjust).toBe('none');
     await expect(getComputedStyle(pad).backgroundImage).not.toBe('none');
+    const preview = dialog.querySelector('[data-ui="color-picker-preview"]')!;
+    await expect(getComputedStyle(preview).forcedColorAdjust).toBe('none');
     const swatches = within(dialog).getAllByRole('option').map(option => option.querySelector('span')!);
     for (const swatch of swatches) await expect(getComputedStyle(swatch).forcedColorAdjust).toBe('none');
     await expect(new Set(swatches.map(swatch => getComputedStyle(swatch).backgroundColor)).size).toBe(palette.length);
