@@ -2,18 +2,18 @@
 
 ## Unreleased
 
+## 0.19.0 — 2026-10-26
+
 ### Added
 
 - `SvgIcon` and `createSvgIcon`: one drawing component for library icons and your own marks, with `line` and `solid` paint, size presets plus exact pixels and `size="inherit"`, semantic tones, accessible naming, and replaceable root and title. Both are importable from `@jfrader/ui` and from `@jfrader/icons`, where the component now lives.
 - `@jfrader/icons`: 300 icons on a 24-unit grid, each with a solid twin where a selected state needs one, including Bitcoin and Satoshi marks. Generated from SVG sources with a geometry lint, exported per icon.
 - Components take their glyphs from the set: VoiceRecorder, InlineEdit, CopyButton, Stepper, SearchField, AttachmentList, PasswordField, TagInput, NumberField, ExpandingSearch, ViewerChrome, Toast, UserMenu, DataTable, ContextMenu, CommentThread, Carousel, SplitButton, DialogStack, LocaleSwitcher, ButtonGroup and ChipGroup.
+- `Morph` provides a surface with named steps in two shells: an anchored, nonmodal popover and a modal bottom sheet with per-step detents. It owns open and step state, focus, Escape-back through the step history, and reduced-motion behaviour, and it projects width and height between steps so the card's contents move with it. `ActionMorph` is a preset on top of it: actions can be grouped under labelled headings, and each action keeps its text composer or hosts consumer-owned form content, with configurable menu and composer widths.
 
 ### Changed
 
 - `@jfrader/styling` owns the shared Emotion seam (css, sx, theme, media, scrollbar) beneath `@jfrader/icons` and `@jfrader/ui`. Existing imports keep working.
-- `Morph` provides an anchored, nonmodal surface with named steps, per-step widths, focus management, and Escape navigation. `ActionMorph` accepts consumer-owned content composers and configurable menu and composer widths while retaining its text composer.
-
-### Changed
 
 - `Dock` uses text-scaled captions, compact group trays, disclosure cues, and underline-only selection markers.
 
