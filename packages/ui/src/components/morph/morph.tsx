@@ -4,6 +4,7 @@ import {
   Children,
   Fragment,
   createContext,
+  cloneElement,
   isValidElement,
   useContext,
   useLayoutEffect,
@@ -25,6 +26,7 @@ import {
 } from '@floating-ui/react';
 import { getDeepestNode } from '@floating-ui/react/utils';
 import { vars } from '@jfrader/tokens/vars';
+import { MotionConfig, motion } from 'motion/react';
 import { LayerContent, MenuLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useExitPresence } from '../../overlay/exit-motion';
@@ -37,6 +39,7 @@ import { enterTransition, exitTransition } from '../../styling/overlay-motion';
 import { listboxSurfaceStyle } from '../../styling/listbox-style';
 import { focusRingInset } from '../../styling/focus-ring';
 import { useControlledState } from '../../utils/use-controlled-state';
+import { useReducedMotion } from '../../utils/use-reduced-motion';
 import { Button, type ButtonProps } from '../button';
 import { BottomSheet, type BottomSheetContentProps } from '../bottom-sheet';
 import { consumerHandlersFirst, restoreTriggerFocus } from '../menu/menu';
@@ -92,8 +95,9 @@ export interface MorphStepProps extends ComponentPropsWithRef<'div'>, SxProps {
 
 const DEFAULT_WIDTH = '16rem';
 const COLLAPSED_SCALE = '0.2';
+const SHAPE_SPRING = { type: 'spring', stiffness: 380, damping: 36 } as const;
 const surfaceStyle = css({
-  transitionProperty: 'opacity, scale, inline-size, block-size',
+  transitionProperty: 'opacity, scale',
   ...enterTransition,
   '@starting-style': { opacity: 0, scale: COLLAPSED_SCALE },
   '&[data-state="closing"]': {
@@ -114,6 +118,18 @@ const surfaceStyle = css({
 });
 const stepStyle = css({ minInlineSize: 0, '&:focus-visible': focusRingInset });
 const sheetSurfaceStyle = css({ minBlockSize: 0, overflowY: 'auto', padding: vars.space[3] });
+
+function MorphElement({
+  component: Component = 'div',
+  nativeProps,
+  ...props
+}: ComponentPropsWithRef<'div'> & {
+  component?: MorphSurfaceProps['component'] | 'div';
+  nativeProps: ComponentPropsWithRef<'div'>;
+}) {
+  return <Component {...nativeProps} {...props} style={{ ...nativeProps.style, ...props.style }} />;
+}
+const MotionElement = motion.create(MorphElement);
 
 function stepsIn(children: ReactNode): ReactElement<MorphStepProps>[] {
   return Children.toArray(children).flatMap((child) => {
@@ -241,7 +257,11 @@ function MorphControl({
     }),
     [open, variant, step, requestStep, floating, nodeId, getReferenceProps, getFloatingProps, presence],
   );
-  return <MorphContext.Provider value={value}>{children}</MorphContext.Provider>;
+  return (
+    <MorphContext.Provider value={value}>
+      <MotionConfig reducedMotion="user">{children}</MotionConfig>
+    </MorphContext.Provider>
+  );
 }
 
 function MorphRoot(props: MorphRootProps) {
@@ -292,7 +312,7 @@ function MorphSurface({
   style,
   ...props
 }: MorphSurfaceProps) {
-  const Surface = component ?? 'div';
+  const reduce = useReducedMotion();
   const { open, step, floating, nodeId, getFloatingProps, backEnabled, presence, variant } =
     useMorphContext();
   const mergedRef = useMergeRefs([ref, floating.refs.setFloating, presence.ref]);
@@ -303,26 +323,6 @@ function MorphSurface({
     (typeof width === 'string' ? width : width?.[active?.props.id ?? '']) ??
     DEFAULT_WIDTH;
   const [direction, setDirection] = useState<'ltr' | 'rtl'>('ltr');
-  const [blockSize, setBlockSize] = useState<number>();
-  useLayoutEffect(() => {
-    if (variant !== 'popover' || !open) return;
-    const surface = floating.refs.floating.current;
-    const panel = surface?.querySelector<HTMLElement>('[data-step]');
-    const win = surface?.ownerDocument.defaultView;
-    if (!surface || !panel || !win) return;
-    const measure = () => {
-      const styles = win.getComputedStyle(surface);
-      const chrome = ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth'] as const;
-      setBlockSize(
-        panel.offsetHeight +
-          chrome.reduce((sum, key) => sum + (Number.parseFloat(styles[key]) || 0), 0),
-      );
-    };
-    measure();
-    const observer = new win.ResizeObserver(measure);
-    observer.observe(panel);
-    return () => observer.disconnect();
-  }, [variant, open, presence.present, active?.props.id, floating.elements.floating, floating.refs]);
   useLayoutEffect(() => {
     backEnabled.current = active?.props.back ?? false;
   }, [active?.props.back, backEnabled]);
@@ -336,10 +336,9 @@ function MorphSurface({
   const [side, alignment] = floating.placement.split('-');
   const edge = alignment === 'start' ? 0 : alignment === 'end' ? 1 : 0.5;
   const inline = direction === 'rtl' ? 1 - edge : edge;
-  const transformOrigin =
-    side === 'top' || side === 'bottom'
-      ? `${inline * 100}% ${side === 'top' ? 100 : 0}%`
-      : `${side === 'left' ? 100 : 0}% ${edge * 100}%`;
+  const vertical = side === 'top' || side === 'bottom';
+  const originX = vertical ? inline : side === 'left' ? 1 : 0;
+  const originY = vertical ? (side === 'top' ? 1 : 0) : edge;
   if (variant === 'sheet')
     return (
       <MorphSheetSurface
@@ -368,11 +367,15 @@ function MorphSurface({
       >
         <WithSx className={className} styles={[listboxSurfaceStyle, surfaceStyle]} sx={sx}>
           {(resolved) => (
-            <Surface
-              {...getFloatingProps(props)}
+            <MotionElement
+              component={component}
+              nativeProps={getFloatingProps(props)}
+              layout={!reduce}
+              initial={false}
+              transition={SHAPE_SPRING}
               ref={mergedRef}
               className={resolved}
-              style={{ ...style, ...floating.floatingStyles, inlineSize, blockSize, transformOrigin }}
+              style={{ ...style, ...floating.floatingStyles, inlineSize, originX, originY }}
               role={props.role ?? 'dialog'}
               aria-label={props['aria-label'] ?? label}
               dir={direction}
@@ -382,8 +385,10 @@ function MorphSurface({
               inert={presence.closing || undefined}
               aria-hidden={presence.closing || undefined}
             >
-              <LayerContent nodeId={nodeId}>{active}</LayerContent>
-            </Surface>
+              <LayerContent nodeId={nodeId}>
+                {active && cloneElement(active, { key: 'active' })}
+              </LayerContent>
+            </MotionElement>
           )}
         </WithSx>
       </FloatingFocusManager>
@@ -488,9 +493,11 @@ function MorphStep({
   ref,
   className,
   sx,
+  children,
   ...props
 }: MorphStepProps) {
   const { open, step, variant } = useMorphContext();
+  const reduce = useReducedMotion();
   const localRef = useRef<HTMLDivElement>(null);
   const mergedRef = useMergeRefs([ref, localRef]);
   useLayoutEffect(() => {
@@ -530,13 +537,17 @@ function MorphStep({
   return (
     <WithSx className={className} styles={[stepStyle]} sx={sx}>
       {(resolved) => (
-        <div
-          {...props}
+        <MotionElement
+          nativeProps={props}
+          layout={variant === 'popover' && !reduce}
+          transition={SHAPE_SPRING}
           ref={mergedRef}
           className={resolved}
           data-step={id}
           data-ui={props['data-ui'] ?? 'morph-step'}
-        />
+        >
+          <Fragment key={id}>{children}</Fragment>
+        </MotionElement>
       )}
     </WithSx>
   );

@@ -59,13 +59,13 @@ export async function expectLayoutMorph(
       const distinct = new Set(intermediate.map((sample) =>
         `${sample[part].width.toFixed(2)},${sample[part].height.toFixed(2)}`,
       ));
-      await expect(Math.abs(end[part].height - start[part].height)).toBeGreaterThan(1);
-      if (reduced) await expect(distinct.size).toBe(0);
+      await expect(Math.abs(end[part].height - start[part].height), `${part} changes height`).toBeGreaterThan(1);
+      if (reduced) await expect(distinct.size, `${part} skips intermediate sizes`).toBe(0);
       else {
-        await expect(distinct.size).toBeGreaterThanOrEqual(2);
+        await expect(distinct.size, `${part} projects through distinct sizes`).toBeGreaterThanOrEqual(2);
         await expect(intermediate.some((sample) =>
           between(sample[part].height, start[part].height, end[part].height),
-        )).toBe(true);
+        ), `${part} projects its height`).toBe(true);
       }
     }
   } finally {
