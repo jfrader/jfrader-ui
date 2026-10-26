@@ -4,7 +4,6 @@ import {
   useEffect,
   useId,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
   type DOMAttributes,
@@ -16,38 +15,30 @@ import {
   type ReactNode,
 } from 'react';
 import {
-  FloatingFocusManager,
-  useClick,
   useInteractions,
   useListNavigation,
   useMergeRefs,
   useRole,
   useTypeahead,
-  type Placement,
 } from '@floating-ui/react';
-import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';
-import { LayerContent, MenuLayer, useLayerDismiss } from '../../overlay/overlay-layer';
-import { OverlayPortal } from '../../overlay/overlay-portal';
-import { useExitPresence } from '../../overlay/exit-motion';
-import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
-import { REDUCED_MOTION } from '../../styling/media';
-import { enterTransition, exitTransition } from '../../styling/overlay-motion';
-import { listboxItemStateStyle, listboxSurfaceStyle } from '../../styling/listbox-style';
+import { listboxItemStateStyle } from '../../styling/listbox-style';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
-import { useControlledState } from '../../utils/use-controlled-state';
 import { Button, type ButtonProps } from '../button';
 import { TextField, type TextFieldProps } from '../text-field';
 import { Textarea } from '../textarea';
 import { Spinner } from '../spinner';
 import { RadioGroup } from '../radio-group';
 import type { RadioGroupComposedProps } from '../radio-group/radio-group';
-import { consumerHandlersFirst, restoreTriggerFocus } from '../menu/menu';
+import { consumerHandlersFirst } from '../menu/menu';
+import { Morph, useMorphContext } from '../morph/morph';
 
-export interface ActionMorphComposer {
+export interface ActionMorphTextComposer {
+  /** Selects the built-in text composer. Defaults to `"text"`. */
+  kind?: 'text';
   title: string;
   label?: string;
   placeholder?: string;
@@ -60,6 +51,15 @@ export interface ActionMorphComposer {
   successLabel: string;
   emptyHint?: string;
 }
+export interface ActionMorphContentComposer {
+  /** Selects consumer-owned content instead of the built-in text form. */
+  kind: 'content';
+  /** Names the composer surface and its heading. */
+  title: string;
+  /** Renders content with close and back actions. The consumer owns form submission. */
+  content: ReactNode | ((api: { close: () => void; back: () => void }) => ReactNode);
+}
+export type ActionMorphComposer = ActionMorphTextComposer | ActionMorphContentComposer;
 export interface ActionMorphAction {
   id: string;
   label: string;
@@ -91,7 +91,13 @@ export interface ActionMorphFieldProps
   extends
     Omit<
       TextFieldProps,
-      keyof DOMAttributes<HTMLInputElement> | 'ref' | 'sx' | 'slots' | 'slotProps' | 'component' | 'render'
+      | keyof DOMAttributes<HTMLInputElement>
+      | 'ref'
+      | 'sx'
+      | 'slots'
+      | 'slotProps'
+      | 'component'
+      | 'render'
     >,
     Omit<DOMAttributes<HTMLInputElement | HTMLTextAreaElement>, 'onChange'> {
   ref?: Ref<HTMLInputElement | HTMLTextAreaElement>;
@@ -135,6 +141,8 @@ export interface ActionMorphProps extends Omit<ComponentPropsWithRef<'div'>, 'on
   onSubmit?: (submission: ActionMorphSubmission) => void | Promise<unknown>;
   /** Aligns the popup above the trigger's logical edge. Defaults to `"end"`. */
   corner?: 'start' | 'end';
+  /** Sets the menu and composer widths. Defaults to `"16rem"` and `"20rem"`. */
+  width?: { menu?: string; composer?: string };
   /** Success feedback in milliseconds, default 1600; 0 resets immediately. */
   resetAfter?: number;
   /** Overrides navigation, validation, empty-state, and announcement text. */
@@ -161,36 +169,14 @@ const RESET_MS = 1600;
 const TRIGGER_DIMENSION = 56;
 const MENU_INLINE_SIZE = '16rem';
 const COMPOSER_INLINE_SIZE = '20rem';
-const SHAPE_SPRING = { type: 'spring', stiffness: 380, damping: 36 } as const;
-const COLLAPSED_SCALE = '0.2';
+const MENU_STEP = 'menu';
+const ACTION_STEP_PREFIX = 'action:';
 const rootStyle = css({ display: 'inline-flex', position: 'relative' });
 const triggerStyle = css({
   inlineSize: TRIGGER_DIMENSION,
   blockSize: TRIGGER_DIMENSION,
   borderRadius: vars.radius.full,
   padding: vars.space[3],
-});
-const surfaceStyle = css({
-  transitionProperty: 'opacity, scale',
-  ...enterTransition,
-  '@starting-style': { opacity: 0, scale: COLLAPSED_SCALE },
-  '&[data-state="closing"]': {
-    opacity: 0,
-    scale: COLLAPSED_SCALE,
-    pointerEvents: 'none',
-    ...exitTransition,
-  },
-  [REDUCED_MOTION]: {
-    '&, &[data-state="closing"]': { transitionDuration: '0s', scale: 'none' },
-    '@starting-style': { scale: 'none' },
-  },
-  maxInlineSize: `calc(100vw - 2 * ${vars.space[4]})`,
-  inlineSize: MENU_INLINE_SIZE,
-  '&[data-face="composer"]': { inlineSize: COMPOSER_INLINE_SIZE },
-  padding: vars.space[3],
-  borderRadius: vars.radius.lg,
-  maxBlockSize: 'var(--action-morph-available-height)',
-  overflowY: 'auto',
 });
 const titleStyle = css({
   margin: 0,
@@ -229,21 +215,13 @@ const iconStyle = css({
 });
 type Draft = { text: string; choice?: string };
 
-function surfaceOrigin(placement: Placement, direction: 'ltr' | 'rtl') {
-  const [side, alignment] = placement.split('-');
-  const aligned = alignment === 'start' ? 0 : alignment === 'end' ? 1 : 0.5;
-  const inline = direction === 'rtl' ? 1 - aligned : aligned;
-  return {
-    top: { originX: inline, originY: 1 },
-    bottom: { originX: inline, originY: 0 },
-    left: { originX: 1, originY: aligned },
-    right: { originX: 0, originY: aligned },
-  }[side as 'top' | 'bottom' | 'left' | 'right'];
-}
-
 function ComposerField({ multiline, ref, ...props }: ActionMorphFieldProps) {
   const mergedRef = useMergeRefs<HTMLInputElement | HTMLTextAreaElement>([ref]);
-  return multiline ? <Textarea {...props} ref={mergedRef} /> : <TextField {...props} ref={mergedRef} />;
+  return multiline ? (
+    <Textarea {...props} ref={mergedRef} />
+  ) : (
+    <TextField {...props} ref={mergedRef} />
+  );
 }
 
 function ActionControlButton(props: ButtonProps) {
@@ -271,14 +249,10 @@ function ActionMenuItem({
 }
 
 function ActionMorphControl({
-  nodeId,
   actions,
   label = 'Create',
-  open: openProp,
-  defaultOpen = false,
-  onOpenChange,
   onSubmit,
-  corner = 'end',
+  width,
   resetAfter = RESET_MS,
   messages: messageOverrides,
   component,
@@ -289,11 +263,18 @@ function ActionMorphControl({
   sx,
   style,
   ...props
-}: ActionMorphProps & { nodeId: string | undefined }) {
+}: Omit<ActionMorphProps, 'open' | 'defaultOpen' | 'onOpenChange' | 'corner'>) {
   const messages = { ...DEFAULT_MESSAGES, ...messageOverrides };
-  const [open = false, requestOpen] = useControlledState(openProp, defaultOpen, onOpenChange);
-  const [actionId, setActionId] = useState<string>();
+  const { open, requestOpen, step, requestStep, floating, presence } = useMorphContext();
+  const { context } = floating;
+  const actionId = step?.startsWith(ACTION_STEP_PREFIX)
+    ? step.slice(ACTION_STEP_PREFIX.length)
+    : undefined;
+  function setActionId(id: string | undefined) {
+    requestStep(id === undefined ? MENU_STEP : `${ACTION_STEP_PREFIX}${id}`);
+  }
   const action = actions.find((item) => item.id === actionId);
+  const previousAction = useRef(action?.id);
   const [drafts, setDrafts] = useState(() => new Map<string, Draft>());
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
@@ -302,42 +283,13 @@ function ActionMorphControl({
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const operation = useRef<object | null>(null);
   const succeeded = useRef<string | null>(null);
-  const returnFocus = useRef(false);
-  const menuFocus = useRef<number | null>(null);
-  const previousOpen = useRef(open);
-  const initialOpenFocus = useRef(open);
   const fieldRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const confirmationRef = useRef<HTMLButtonElement>(null);
-  const [direction, setDirection] = useState<'ltr' | 'rtl'>('ltr');
   const items = useRef<Array<HTMLElement | null>>([]);
   const names = useRef<Array<string | null>>([]);
   names.current = actions.map((item) => (item.disabled ? null : item.label));
   const id = useId();
-  const reduce = useReducedMotion();
-  const presence = useExitPresence<HTMLDivElement>(open);
-  const { refs, context, floatingStyles, placement } = useOverlayFloating({
-    open,
-    nodeId,
-    transform: false,
-    onAvailableSize: ({ height }) => {
-      refs.floating.current?.style.setProperty(
-        '--action-morph-available-height',
-        `${Math.max(0, height)}px`,
-      );
-    },
-    placement: corner === 'start' ? 'top-start' : 'top-end',
-    onOpenChange(next, _event, reason) {
-      if (!next && reason === 'escape-key' && action && !succeeded.current) {
-        back();
-        return;
-      }
-      returnFocus.current = !next && reason === 'escape-key';
-      requestOpen(next);
-    },
-  });
-  const click = useClick(context);
   const role = useRole(context, { role: action ? 'dialog' : 'menu' });
-  const dismiss = useLayerDismiss(context, 'container');
   const navigation = useListNavigation(context, {
     listRef: items,
     activeIndex,
@@ -356,9 +308,7 @@ function ActionMorphControl({
     resetMs: 500,
   });
   const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([
-    click,
     role,
-    ...dismiss,
     navigation,
     typeahead,
   ]);
@@ -378,9 +328,7 @@ function ActionMorphControl({
     variant: triggerVariant,
     ...triggerProps
   } = slotProps?.trigger ?? {};
-  const mergedTriggerRef = useMergeRefs([refs.setReference, triggerRef]);
   const { ref: surfaceRef, sx: surfaceCss, ...surfaceProps } = slotProps?.surface ?? {};
-  const mergedSurfaceRef = useMergeRefs([refs.setFloating, surfaceRef, presence.ref]);
   const mergedBackRef = useMergeRefs([confirmationRef, slotProps?.backButton?.ref]);
   const { sx: titleCss, ...titleProps } = slotProps?.title ?? {};
   const { sx: listCss, ...listProps } = slotProps?.menuList ?? {};
@@ -393,7 +341,6 @@ function ActionMorphControl({
   const { sx: statusCss, ...statusProps } = slotProps?.status ?? {};
   const Root = slots?.root ?? component ?? 'div';
   const Trigger = slots?.trigger ?? ActionControlButton;
-  const Surface = useMemo(() => motion.create(slots?.surface ?? 'div'), [slots?.surface]);
   const Title = slots?.title ?? 'h3';
   const List = slots?.menuList ?? 'div';
   const Item = slots?.item ?? 'button';
@@ -418,54 +365,31 @@ function ActionMorphControl({
     setStatus('');
     setActionId(undefined);
     const index = actions.findIndex((item) => item.id === actionId);
-    menuFocus.current = index >= 0 ? index : 0;
     setActiveIndex(index >= 0 ? index : null);
   }
-  useLayoutEffect(() => {
-    if (!open) return;
-    if (action) fieldRef.current?.focus();
-    else if (menuFocus.current !== null) {
-      items.current[menuFocus.current]?.focus();
-      menuFocus.current = null;
-    } else if (initialOpenFocus.current) {
-      initialOpenFocus.current = false;
-      const index = actions.findIndex((item) => !item.disabled);
-      if (index >= 0) {
-        setActiveIndex(index);
-        items.current[index]?.focus();
-      }
-    }
-  }, [open, action?.id]);
   useLayoutEffect(() => {
     if (open && action && error && !pending) fieldRef.current?.focus();
   }, [open, action?.id, error, pending]);
   useLayoutEffect(() => {
     if (open && action && succeeded.current === action.id) confirmationRef.current?.focus();
   }, [open, action?.id, pending, success]);
-  useLayoutEffect(() => {
-    const node = refs.domReference.current;
-    if (node)
-      setDirection(
-        node.ownerDocument.defaultView?.getComputedStyle(node).direction === 'rtl' ? 'rtl' : 'ltr',
-      );
-  }, [open, props.dir, rootProps.dir, refs]);
   useEffect(() => {
     if (!action && actionId !== undefined) {
       operation.current = null;
       setPending(false);
       setError('');
       setActionId(undefined);
-      menuFocus.current = actions.findIndex((item) => !item.disabled);
     }
   }, [action, actionId]);
   useEffect(() => {
-    if (!open && previousOpen.current) {
+    if (!open || !action) {
       operation.current = null;
-      if (returnFocus.current) restoreTriggerFocus(refs.domReference.current);
-      returnFocus.current = false;
+      setPending(false);
+      setError('');
     }
-    previousOpen.current = open;
-  }, [open, refs]);
+    if (open && !action && previousAction.current !== undefined) setStatus('');
+    previousAction.current = action?.id;
+  }, [open, action?.id]);
   useEffect(() => {
     if (!presence.present) {
       setPending(false);
@@ -525,298 +449,293 @@ function ActionMorphControl({
           style={{ ...style, ...rootInline }}
           data-ui={marker}
           data-state={
-            open ? (action ? (pending ? 'sending' : 'composer') : 'menu') : success ? 'success' : 'closed'
+            open
+              ? action
+                ? pending
+                  ? 'sending'
+                  : 'composer'
+                : 'menu'
+              : success
+                ? 'success'
+                : 'closed'
           }
         >
-          <Trigger
+          <Morph.Trigger
+            component={Trigger}
             {...consumerHandlersFirst(triggerProps, getReferenceProps)}
             size={triggerSize}
             tone={triggerTone}
             variant={triggerVariant}
-            ref={mergedTriggerRef}
+            ref={triggerRef}
             disabled={actions.length === 0 || triggerProps.disabled}
             css={[triggerStyle, triggerCss]}
             aria-label={success ? `${label}: ${success}` : label}
             data-ui="action-morph-trigger"
           >
             {success ? '✓' : '+'}
-          </Trigger>
-          {presence.present && (
-            <OverlayPortal>
-              <FloatingFocusManager
-                context={context}
-                disabled={!open}
-                modal={false}
-                initialFocus={-1}
-                returnFocus={false}
-                restoreFocus
+          </Morph.Trigger>
+          <Morph.Surface
+            component={slots?.surface}
+            label={action?.composer.title ?? label}
+            width={
+              action ? (width?.composer ?? COMPOSER_INLINE_SIZE) : (width?.menu ?? MENU_INLINE_SIZE)
+            }
+            data-face={action ? 'composer' : 'menu'}
+            dir={rootProps.dir ?? props.dir}
+            {...getFloatingProps(surfaceProps)}
+            ref={surfaceRef}
+            sx={surfaceCss}
+            data-ui="action-morph-surface"
+            aria-labelledby={
+              surfaceProps['aria-label']
+                ? undefined
+                : [surfaceProps['aria-labelledby'], `${id}-title`].filter(Boolean).join(' ')
+            }
+          >
+            <Morph.Step id={step ?? MENU_STEP} back={!!action && succeeded.current !== action.id}>
+              <Title
+                {...titleProps}
+                id={`${id}-title`}
+                role={action ? undefined : 'presentation'}
+                css={[titleStyle, titleCss]}
+                data-ui="action-morph-title"
               >
-                <Surface
-                  layout={reduce ? false : true}
-                  initial={false}
-                  transition={reduce ? { duration: 0 } : SHAPE_SPRING}
-                  data-face={action ? 'composer' : 'menu'}
-                  data-state={presence.closing ? 'closing' : 'open'}
-                  data-placement={placement}
-                  dir={direction}
-                  {...getFloatingProps(surfaceProps)}
-                  ref={mergedSurfaceRef}
-                  style={{ ...surfaceProps.style, ...floatingStyles, ...surfaceOrigin(placement, direction) }}
-                  css={[listboxSurfaceStyle, surfaceStyle, surfaceCss]}
-                  data-ui="action-morph-surface"
-                  inert={presence.closing || undefined}
-                  aria-hidden={presence.closing || undefined}
-                  aria-labelledby={
-                    surfaceProps['aria-label']
-                      ? undefined
-                      : [surfaceProps['aria-labelledby'], `${id}-title`].filter(Boolean).join(' ')
-                  }
+                {action?.composer.title ?? label}
+              </Title>
+              {!action ? (
+                <List
+                  {...listProps}
+                  css={listCss}
+                  data-ui="action-morph-menu-list"
+                  onKeyDown={(event) => {
+                    listProps.onKeyDown?.(event);
+                    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey)
+                      return;
+                    const match = actions.find(
+                      (item) =>
+                        !item.disabled &&
+                        item.shortcut?.toLocaleLowerCase() === event.key.toLocaleLowerCase(),
+                    );
+                    if (match && event.key.length === 1) {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setActionId(match.id);
+                      setError('');
+                    }
+                  }}
                 >
-                  <LayerContent nodeId={nodeId}>
-                    <motion.div
-                      layout={reduce ? false : true}
-                      transition={reduce ? { duration: 0 } : SHAPE_SPRING}
+                  {actions.map((item, index) => (
+                    <ActionMenuItem
+                      component={Item}
+                      slotRef={itemRef}
+                      {...consumerHandlersFirst(itemProps, getItemProps)}
+                      onClick={(event) => {
+                        itemProps.onClick?.(event);
+                        if (event.defaultPrevented || item.disabled) return;
+                        setActionId(item.id);
+                        setError('');
+                        setActiveIndex(index);
+                      }}
+                      key={item.id}
+                      ref={(node) => {
+                        items.current[index] = node;
+                      }}
+                      type="button"
+                      role="menuitem"
+                      data-autofocus={activeIndex === index || undefined}
+                      tabIndex={activeIndex === index ? 0 : -1}
+                      aria-disabled={item.disabled || undefined}
+                      aria-keyshortcuts={item.shortcut}
+                      css={[itemStyle, listboxItemStateStyle, itemCss]}
+                      data-ui="action-morph-item"
                     >
-                      <Title
-                        {...titleProps}
-                        id={`${id}-title`}
-                        role={action ? undefined : 'presentation'}
-                        css={[titleStyle, titleCss]}
-                        data-ui="action-morph-title"
-                      >
-                        {action?.composer.title ?? label}
-                      </Title>
-                      {!action ? (
-                        <List
-                          {...listProps}
-                          css={listCss}
-                          data-ui="action-morph-menu-list"
-                          onKeyDown={(event) => {
-                            listProps.onKeyDown?.(event);
-                            if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey)
-                              return;
-                            const match = actions.find(
-                              (item) =>
-                                !item.disabled &&
-                                item.shortcut?.toLocaleLowerCase() === event.key.toLocaleLowerCase(),
-                            );
-                            if (match && event.key.length === 1) {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              setActionId(match.id);
-                              setError('');
-                            }
-                          }}
-                        >
-                          {actions.map((item, index) => (
-                            <ActionMenuItem
-                              component={Item}
-                              slotRef={itemRef}
-                              {...consumerHandlersFirst(itemProps, getItemProps)}
-                              onClick={(event) => {
-                                itemProps.onClick?.(event);
-                                if (event.defaultPrevented || item.disabled) return;
-                                setActionId(item.id);
-                                setError('');
-                                setActiveIndex(index);
-                              }}
-                              key={item.id}
-                              ref={(node) => {
-                                items.current[index] = node;
-                              }}
-                              type="button"
-                              role="menuitem"
-                              tabIndex={activeIndex === index ? 0 : -1}
-                              aria-disabled={item.disabled || undefined}
-                              aria-keyshortcuts={item.shortcut}
-                              css={[itemStyle, listboxItemStateStyle, itemCss]}
-                              data-ui="action-morph-item"
-                            >
-                              <span css={iconStyle} aria-hidden="true">
-                                {item.icon}
-                              </span>
-                              <span>
-                                {item.label}
-                                {item.description != null && <span>{item.description}</span>}
-                              </span>
-                            </ActionMenuItem>
-                          ))}
-                          {actions.length === 0 && messages.menuEmpty}
-                        </List>
-                      ) : succeeded.current === action.id ? (
-                        <>
-                          <span data-ui="action-morph-confirmation">{action.composer.successLabel}</span>
-                          <Back
-                            {...slotProps?.backButton}
-                            ref={mergedBackRef}
-                            data-ui="action-morph-back"
-                            onClick={(event) => {
-                              slotProps?.backButton?.onClick?.(event);
-                              if (!event.defaultPrevented) {
-                                returnFocus.current = true;
-                                requestOpen(false);
-                              }
-                            }}
-                          >
-                            {messages.close}
-                          </Back>
-                        </>
+                      <span css={iconStyle} aria-hidden="true">
+                        {item.icon}
+                      </span>
+                      <span>
+                        {item.label}
+                        {item.description != null && <span>{item.description}</span>}
+                      </span>
+                    </ActionMenuItem>
+                  ))}
+                  {actions.length === 0 && messages.menuEmpty}
+                </List>
+              ) : action.composer.kind === 'content' ? (
+                typeof action.composer.content === 'function' ? (
+                  action.composer.content({ close: () => requestOpen(false), back })
+                ) : (
+                  action.composer.content
+                )
+              ) : succeeded.current === action.id ? (
+                <>
+                  <span data-ui="action-morph-confirmation">{action.composer.successLabel}</span>
+                  <Back
+                    {...slotProps?.backButton}
+                    ref={mergedBackRef}
+                    data-ui="action-morph-back"
+                    onClick={(event) => {
+                      slotProps?.backButton?.onClick?.(event);
+                      if (!event.defaultPrevented) {
+                        requestOpen(false);
+                      }
+                    }}
+                  >
+                    {messages.close}
+                  </Back>
+                </>
+              ) : (
+                <Form
+                  {...formProps}
+                  css={[formStyle, formCss]}
+                  data-ui="action-morph-form"
+                  aria-busy={pending || undefined}
+                  onSubmit={async (event) => {
+                    if (action.composer.kind === 'content') return;
+                    formProps.onSubmit?.(event);
+                    const canceled = event.defaultPrevented;
+                    event.preventDefault();
+                    if (canceled || operation.current || !onSubmit) return;
+                    if (!draft.text.trim()) {
+                      setError(action.composer.emptyHint ?? messages.emptyFallback);
+                      fieldRef.current?.focus();
+                      return;
+                    }
+                    const token = {};
+                    const successLabel = action.composer.successLabel;
+                    const captured = action;
+                    operation.current = token;
+                    setPending(true);
+                    setError('');
+                    setStatus(messages.announcePending(action.label));
+                    try {
+                      await onSubmit({
+                        action: action.id,
+                        text: draft.text,
+                        choice: draft.choice,
+                      });
+                      if (operation.current !== token) return;
+                      operation.current = null;
+                      setPending(false);
+                      succeeded.current = captured.id;
+                      setSuccess(successLabel);
+                      setStatus(latest.current.messages.announceSuccess(successLabel));
+                      latest.current.requestOpen(false);
+                    } catch {
+                      if (operation.current !== token) return;
+                      operation.current = null;
+                      setPending(false);
+                      setError(latest.current.messages.failure);
+                      setStatus(latest.current.messages.failure);
+                      fieldRef.current?.focus();
+                    }
+                  }}
+                >
+                  <Field
+                    {...fieldProps}
+                    css={fieldCss}
+                    ref={mergedFieldRef}
+                    data-autofocus
+                    multiline={action.composer.multiline}
+                    label={action.composer.label ?? action.composer.title}
+                    placeholder={action.composer.placeholder}
+                    value={draft.text}
+                    disabled={pending}
+                    aria-invalid={error ? true : fieldProps['aria-invalid']}
+                    aria-describedby={
+                      [fieldProps['aria-describedby'], error ? `${id}-error` : undefined]
+                        .filter(Boolean)
+                        .join(' ') || undefined
+                    }
+                    onChange={(event) => {
+                      fieldProps.onChange?.(event);
+                      if (!event.defaultPrevented)
+                        updateDraft({
+                          text: event.currentTarget.value,
+                        });
+                    }}
+                    onKeyDown={(event) => {
+                      fieldProps.onKeyDown?.(event);
+                      if (event.defaultPrevented) return;
+                      if (event.key === 'Enter' && event.nativeEvent.isComposing) {
+                        event.preventDefault();
+                        return;
+                      }
+                      if (
+                        event.key === 'Enter' &&
+                        action.composer.kind !== 'content' &&
+                        action.composer.multiline &&
+                        (event.metaKey || event.ctrlKey)
+                      ) {
+                        event.preventDefault();
+                        event.currentTarget.form?.requestSubmit();
+                      }
+                    }}
+                  />
+                  {action.composer.choices && (
+                    <Choices
+                      {...choicesProps}
+                      css={choicesCss}
+                      value={draft.choice ?? ''}
+                      aria-label={action.composer.choices.label}
+                      onValueChange={(next) => {
+                        choicesProps.onValueChange?.(next);
+                        updateDraft({ choice: next });
+                      }}
+                    >
+                      {action.composer.choices.options.map((option) => (
+                        <RadioGroup.Radio
+                          key={option.value}
+                          value={option.value}
+                          disabled={pending || option.disabled}
+                          label={option.label}
+                        />
+                      ))}
+                    </Choices>
+                  )}
+                  {error && (
+                    <ErrorPart
+                      {...errorProps}
+                      id={`${id}-error`}
+                      css={[errorStyle, errorCss]}
+                      data-ui="action-morph-error"
+                    >
+                      {error}
+                    </ErrorPart>
+                  )}
+                  <Back
+                    {...slotProps?.backButton}
+                    ref={mergedBackRef}
+                    type="button"
+                    variant="ghost"
+                    data-ui="action-morph-back"
+                    onClick={(event) => {
+                      slotProps?.backButton?.onClick?.(event);
+                      if (!event.defaultPrevented) back();
+                    }}
+                  >
+                    {messages.back}
+                  </Back>
+                  <Submit
+                    {...slotProps?.submitButton}
+                    type="submit"
+                    aria-busy={pending || undefined}
+                    aria-disabled={pending || undefined}
+                    startIcon={
+                      pending ? (
+                        <Spinner value="loading" decorative />
                       ) : (
-                        <Form
-                          {...formProps}
-                          css={[formStyle, formCss]}
-                          data-ui="action-morph-form"
-                          aria-busy={pending || undefined}
-                          onSubmit={async (event) => {
-                            formProps.onSubmit?.(event);
-                            const canceled = event.defaultPrevented;
-                            event.preventDefault();
-                            if (canceled || operation.current || !onSubmit) return;
-                            if (!draft.text.trim()) {
-                              setError(action.composer.emptyHint ?? messages.emptyFallback);
-                              fieldRef.current?.focus();
-                              return;
-                            }
-                            const token = {};
-                            const captured = action;
-                            operation.current = token;
-                            setPending(true);
-                            setError('');
-                            setStatus(messages.announcePending(action.label));
-                            try {
-                              await onSubmit({
-                                action: action.id,
-                                text: draft.text,
-                                choice: draft.choice,
-                              });
-                              if (operation.current !== token) return;
-                              operation.current = null;
-                              setPending(false);
-                              succeeded.current = captured.id;
-                              setSuccess(captured.composer.successLabel);
-                              setStatus(
-                                latest.current.messages.announceSuccess(captured.composer.successLabel),
-                              );
-                              returnFocus.current = true;
-                              latest.current.requestOpen(false);
-                            } catch {
-                              if (operation.current !== token) return;
-                              operation.current = null;
-                              setPending(false);
-                              setError(latest.current.messages.failure);
-                              setStatus(latest.current.messages.failure);
-                              fieldRef.current?.focus();
-                            }
-                          }}
-                        >
-                          <Field
-                            {...fieldProps}
-                            css={fieldCss}
-                            ref={mergedFieldRef}
-                            multiline={action.composer.multiline}
-                            label={action.composer.label ?? action.composer.title}
-                            placeholder={action.composer.placeholder}
-                            value={draft.text}
-                            disabled={pending}
-                            aria-invalid={error ? true : fieldProps['aria-invalid']}
-                            aria-describedby={
-                              [fieldProps['aria-describedby'], error ? `${id}-error` : undefined]
-                                .filter(Boolean)
-                                .join(' ') || undefined
-                            }
-                            onChange={(event) => {
-                              fieldProps.onChange?.(event);
-                              if (!event.defaultPrevented)
-                                updateDraft({
-                                  text: event.currentTarget.value,
-                                });
-                            }}
-                            onKeyDown={(event) => {
-                              fieldProps.onKeyDown?.(event);
-                              if (event.defaultPrevented) return;
-                              if (event.key === 'Enter' && event.nativeEvent.isComposing) {
-                                event.preventDefault();
-                                return;
-                              }
-                              if (
-                                event.key === 'Enter' &&
-                                action.composer.multiline &&
-                                (event.metaKey || event.ctrlKey)
-                              ) {
-                                event.preventDefault();
-                                event.currentTarget.form?.requestSubmit();
-                              }
-                            }}
-                          />
-                          {action.composer.choices && (
-                            <Choices
-                              {...choicesProps}
-                              css={choicesCss}
-                              value={draft.choice ?? ''}
-                              aria-label={action.composer.choices.label}
-                              onValueChange={(next) => {
-                                choicesProps.onValueChange?.(next);
-                                updateDraft({ choice: next });
-                              }}
-                            >
-                              {action.composer.choices.options.map((option) => (
-                                <RadioGroup.Radio
-                                  key={option.value}
-                                  value={option.value}
-                                  disabled={pending || option.disabled}
-                                  label={option.label}
-                                />
-                              ))}
-                            </Choices>
-                          )}
-                          {error && (
-                            <ErrorPart
-                              {...errorProps}
-                              id={`${id}-error`}
-                              css={[errorStyle, errorCss]}
-                              data-ui="action-morph-error"
-                            >
-                              {error}
-                            </ErrorPart>
-                          )}
-                          <Back
-                            {...slotProps?.backButton}
-                            ref={mergedBackRef}
-                            type="button"
-                            variant="ghost"
-                            data-ui="action-morph-back"
-                            onClick={(event) => {
-                              slotProps?.backButton?.onClick?.(event);
-                              if (!event.defaultPrevented) back();
-                            }}
-                          >
-                            {messages.back}
-                          </Back>
-                          <Submit
-                            {...slotProps?.submitButton}
-                            type="submit"
-                            aria-busy={pending || undefined}
-                            aria-disabled={pending || undefined}
-                            startIcon={
-                              pending ? (
-                                <Spinner value="loading" decorative />
-                              ) : (
-                                slotProps?.submitButton?.startIcon
-                              )
-                            }
-                            disabled={!onSubmit}
-                            data-ui="action-morph-submit"
-                          >
-                            {action.composer.submitLabel}
-                          </Submit>
-                        </Form>
-                      )}
-                    </motion.div>
-                  </LayerContent>
-                </Surface>
-              </FloatingFocusManager>
-            </OverlayPortal>
-          )}
+                        slotProps?.submitButton?.startIcon
+                      )
+                    }
+                    disabled={!onSubmit}
+                    data-ui="action-morph-submit"
+                  >
+                    {action.composer.submitLabel}
+                  </Submit>
+                </Form>
+              )}
+            </Morph.Step>
+          </Morph.Surface>
           <Status
             {...statusProps}
             css={[visuallyHiddenStyle, statusCss]}
@@ -833,11 +752,23 @@ function ActionMorphControl({
   );
 }
 
-export function ActionMorph(props: ActionMorphProps) {
+export function ActionMorph({
+  open,
+  defaultOpen,
+  onOpenChange,
+  corner,
+  ...props
+}: ActionMorphProps) {
   return (
-    <MotionConfig reducedMotion="user">
-      <MenuLayer>{(nodeId) => <ActionMorphControl {...props} nodeId={nodeId} />}</MenuLayer>
-    </MotionConfig>
+    <Morph.Root
+      open={open}
+      defaultOpen={defaultOpen}
+      onOpenChange={onOpenChange}
+      corner={corner}
+      defaultStep={MENU_STEP}
+    >
+      <ActionMorphControl {...props} />
+    </Morph.Root>
   );
 }
 ActionMorph.displayName = 'ActionMorph';

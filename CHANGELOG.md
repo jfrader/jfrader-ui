@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- `Morph` provides an anchored, nonmodal surface with named steps, per-step widths, focus management, and Escape navigation. `ActionMorph` accepts consumer-owned content composers and configurable menu and composer widths while retaining its text composer.
+
 ### Changed
 
 - `Dock` uses text-scaled captions, compact group trays, disclosure cues, and underline-only selection markers.
