@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.19.3 — 2026-10-26
+
+### Fixed
+
+- A release packs once and publishes to each registry in its own job, so a slow or failing registry can no longer time out the other one.
+
+
 ## 0.19.2 — 2026-10-26
 
 ### Fixed
