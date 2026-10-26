@@ -1,0 +1,42 @@
+{
+  "name": "@jfrader/icons",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./metadata": "./icons.json",
+    "./svg-icon": {
+      "types": "./src/svg-icon/index.ts",
+      "import": "./src/svg-icon/index.ts"
+    },
+    "./*": {
+      "types": "./src/generated/*.tsx",
+      "import": "./src/generated/*.tsx"
+    }
+  },
+  "scripts": {
+    "generate": "tsx scripts/generate.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@floating-ui/react": "^0.27.20",
+    "@jfrader/styling": "workspace:*",
+    "@jfrader/tokens": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@storybook/react-vite": "^10.6.1",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "tsx": "^4.23.15",
+    "storybook": "^10.6.1"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "bitcoin": {
+    "name": "bitcoin",
+    "category": "money",
+    "tags": [
+      "btc",
+      "coin",
+      "crypto",
+      "chain"
+    ],
+    "aliases": [],
+    "expressive": true,
+    "since": "0.2.0"
+  },
+  "satoshi": {
+    "name": "satoshi",
+    "category": "money",
+    "tags": [
+      "sats",
+      "subunit",
+      "lightning",
+      "fraction"
+    ],
+    "aliases": [
+      "sats"
+    ],
+    "expressive": true,
+    "since": "0.2.0"
+  }
+}

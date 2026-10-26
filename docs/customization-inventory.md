@@ -8,9 +8,9 @@ composed modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **172**; public callable parts: **188**.
-- Families exposing `slots.root`: **119**; remaining without a family-level root slot: **53** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **131**; remaining without family-level interior slots: **41** (includes components without generated anatomy).
+- Public callable families: **173**; public callable parts: **188**.
+- Families exposing `slots.root`: **120**; remaining without a family-level root slot: **53** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **132**; remaining without family-level interior slots: **41** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -350,6 +350,7 @@ panel material. The section has no background, border or radius to migrate.
 | [StreamingCaret](../packages/ui/src/components/streaming-caret/streaming-caret.tsx) | — | — | — | — | — | — |
 | [StretchRefresh](../packages/ui/src/components/stretch-refresh/stretch-refresh.tsx) | — | `empty`, `feed`, `header`, `indicator`, `item`, `list`, `refreshButton`, `status`, `subtitle`, `title` | `empty`, `feed`, `header`, `indicator`, `item`, `list`, `refreshButton`, `status`, `subtitle`, `title` | — | — | — |
 | [Surface](../packages/ui/src/components/surface/surface.tsx) | yes | `root` | `root` | — | — | — |
+| [SvgIcon](../packages/icons/src/svg-icon/svg-icon.tsx) | yes | `root`, `title` | `root`, `title` | — | — | — |
 | [SwipeActions](../packages/ui/src/components/swipe-actions/swipe-actions.tsx) | — | `root`, `row` | `root`, `row` | — | — | `Row` |
 | [SwipeActions.Row](../packages/ui/src/components/swipe-actions/swipe-actions.tsx) | — | `action`, `actionIcon`, `actionLabel`, `body`, `content`, `menu`, `menuItem`, `trigger` | `action`, `actionIcon`, `actionLabel`, `body`, `content`, `menu`, `menuItem`, `trigger` | — | — | — |
 | [Switch](../packages/ui/src/components/switch/switch.tsx) | — | `control`, `description`, `label`, `root` | `control`, `description`, `label`, `root` | — | — | — |

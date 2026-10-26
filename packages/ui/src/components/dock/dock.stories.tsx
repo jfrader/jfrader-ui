@@ -1,4 +1,5 @@
 import { StrictMode, useId, useState } from 'react';
+import { Cursor, Ellipse, Hand, Line, Lock, Message, Pencil, Rectangle, Text } from '@jfrader/icons';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { MotionConfig } from 'motion/react';
@@ -9,30 +10,27 @@ import { Dialog } from '../dialog';
 import { ThemeRoot } from '../theme-root';
 import { Dock, type DockItem, type DockProps, type DockSlots } from './index';
 
-const icon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-  <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-</svg>;
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 const grouped: readonly DockItem[] = [
   tools[0]!,
   { id: 'shapes', label: 'Shapes', items: [
-    { id: 'rectangle', label: 'Rectangle', icon, shortcut: 'R' },
-    { id: 'unavailable', label: 'Unavailable shape', icon, disabled: true },
-    { id: 'ellipse', label: 'Ellipse', icon, shortcut: 'O' },
-    { id: 'line', label: 'Line', icon },
+    { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
+    { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
+    { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
+    { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
   ] },
   tools[1]!,
 ];
 const runningTools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V', running: true },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H', running: true },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V', running: true },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H', running: true },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 const meta = {
   title: 'Inputs/Dock',
@@ -85,19 +83,14 @@ Icons near the pointer grow and rise; the buttons keep their size and position. 
 - When \`reorderable\` is enabled, Alt+Left and Alt+Right shift the focused item, and the item options menu provides non-drag Move Before and Move After actions.`,
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 
 <Dock items={tools} defaultValue="select" />`,
@@ -112,16 +105,14 @@ export const WorkspaceTools: Story = {
   name: 'Tools in a dialog',
   parameters: { docs: {
     description: { story: 'Open a task dialog containing a named tool dock.' },
-    source: { language: 'tsx', code: `import { Dialog, Dock, type DockItem } from '@jfrader/ui';
+    source: { language: 'tsx', code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
+import { Dialog, Dock, type DockItem } from '@jfrader/ui';
 
-const icon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-  <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-</svg>;
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 
 <Dialog triggerLabel="Open drawing tools" title="Drawing tools"
@@ -152,19 +143,14 @@ export const Default: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 
 <Dock items={tools} defaultValue="select" />`,
@@ -190,19 +176,14 @@ export const RunningTools: Story = {
       description: { story: 'Mark tools with an active task; the selected tool shows a longer bar.' },
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V', running: true },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H', running: true },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V', running: true },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H', running: true },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 
 <Dock items={tools} defaultValue="select" />`,
@@ -260,27 +241,22 @@ export const Grouped: Story = {
       description: { story: 'Open a tray to choose a tool from a related group.' },
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Ellipse, Hand, Line, Rectangle } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
   {
     id: 'shapes',
     label: 'Shapes',
     items: [
-      { id: 'rectangle', label: 'Rectangle', icon, shortcut: 'R' },
-      { id: 'unavailable', label: 'Unavailable shape', icon, disabled: true },
-      { id: 'ellipse', label: 'Ellipse', icon, shortcut: 'O' },
-      { id: 'line', label: 'Line', icon },
+      { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
+      { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
     ],
   },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
 ];
 
 <Dock items={items} defaultValue="rectangle" />`,
@@ -296,19 +272,14 @@ export const NoSelection: Story = {
       description: { story: 'Keep tools available without marking a current selection.' },
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 
 <Dock items={tools} value={null} />`,
@@ -330,27 +301,22 @@ export const AlwaysLabelsTouch: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Ellipse, Hand, Line, Rectangle } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
   {
     id: 'shapes',
     label: 'Shapes',
     items: [
-      { id: 'rectangle', label: 'Rectangle', icon, shortcut: 'R' },
-      { id: 'unavailable', label: 'Unavailable shape', icon, disabled: true },
-      { id: 'ellipse', label: 'Ellipse', icon, shortcut: 'O' },
-      { id: 'line', label: 'Line', icon },
+      { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
+      { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
     ],
   },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
 ];
 
 <Dock items={items} defaultValue="select" labels="always" />`,
@@ -361,8 +327,8 @@ const items: readonly DockItem[] = [
 export const LongLabels: Story = {
   name: 'Long item labels',
   args: { labels: 'always', items: [
-    { id: 'selection', label: 'Select all visible objects on the current drawing canvas', icon },
-    { id: 'comment', label: 'Add a comment for the review team', icon },
+    { id: 'selection', label: 'Select all visible objects on the current drawing canvas', icon: <Cursor size={20} decorative /> },
+    { id: 'comment', label: 'Add a comment for the review team', icon: <Message size={20} decorative /> },
   ] },
   parameters: {
     docs: {
@@ -371,17 +337,12 @@ export const LongLabels: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Message } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const items: readonly DockItem[] = [
-  { id: 'selection', label: 'Select all visible objects on the current drawing canvas', icon },
-  { id: 'comment', label: 'Add a comment for the review team', icon },
+  { id: 'selection', label: 'Select all visible objects on the current drawing canvas', icon: <Cursor size={20} decorative /> },
+  { id: 'comment', label: 'Add a comment for the review team', icon: <Message size={20} decorative /> },
 ];
 
 <Dock items={items} labels="always" />`,
@@ -392,7 +353,7 @@ const items: readonly DockItem[] = [
 export const NarrowOverflow: Story = {
   name: 'Overflow scrolling',
   args: { sx: { inlineSize: 320, maxInlineSize: '100%' }, items: Array.from({ length: 10 }, (_, index) => ({
-    id: `tool-${index}`, label: `Tool ${new Intl.NumberFormat('en').format(index + 1)}`, icon,
+    id: `tool-${index}`, label: `Tool ${new Intl.NumberFormat('en').format(index + 1)}`, icon: <Cursor size={20} decorative />,
   })) },
   parameters: {
     docs: {
@@ -401,18 +362,13 @@ export const NarrowOverflow: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const items: readonly DockItem[] = Array.from({ length: 10 }, (_, index) => ({
   id: \`tool-\${index}\`,
   label: \`Tool \${new Intl.NumberFormat('en').format(index + 1)}\`,
-  icon,
+  icon: <Cursor size={20} decorative />,
 }));
 
 <Dock items={items} sx={{ inlineSize: 320, maxInlineSize: '100%' }} />`,
@@ -433,7 +389,7 @@ const items: readonly DockItem[] = Array.from({ length: 10 }, (_, index) => ({
 };
 export const BadgesZero: Story = {
   name: 'Zero badge count',
-  args: { items: [{ id: 'zero', label: 'Comments', icon, badge: 0 }] },
+  args: { items: [{ id: 'zero', label: 'Comments', icon: <Message size={20} decorative />, badge: 0 }] },
   parameters: {
     docs: {
       description: {
@@ -441,16 +397,11 @@ export const BadgesZero: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Message } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const items: readonly DockItem[] = [
-  { id: 'zero', label: 'Comments', icon, badge: 0 },
+  { id: 'zero', label: 'Comments', icon: <Message size={20} decorative />, badge: 0 },
 ];
 
 <Dock items={items} defaultValue="zero" />`,
@@ -464,7 +415,7 @@ const items: readonly DockItem[] = [
 };
 export const BadgesLarge: Story = {
   name: 'Formatted badge count',
-  args: { locale: 'de-DE', items: [{ id: 'large', label: 'Comments', icon, badge: 1234567890, badgeLabel: 'comments' }] },
+  args: { locale: 'de-DE', items: [{ id: 'large', label: 'Comments', icon: <Message size={20} decorative />, badge: 1234567890, badgeLabel: 'comments' }] },
   parameters: {
     docs: {
       description: {
@@ -472,16 +423,11 @@ export const BadgesLarge: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Message } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const items: readonly DockItem[] = [
-  { id: 'large', label: 'Comments', icon, badge: 1234567890, badgeLabel: 'comments' },
+  { id: 'large', label: 'Comments', icon: <Message size={20} decorative />, badge: 1234567890, badgeLabel: 'comments' },
 ];
 
 <Dock items={items} defaultValue="large" locale="de-DE" />`,
@@ -505,7 +451,7 @@ export const DisabledEmptyGroups: Story = {
   name: 'Disabled and empty groups',
   args: { items: [...tools,
     { id: 'empty', label: 'Empty shapes', items: [] },
-    { id: 'disabled-group', label: 'Disabled shapes', disabled: true, items: [{ id: 'shape', label: 'Shape', icon }] },
+    { id: 'disabled-group', label: 'Disabled shapes', disabled: true, items: [{ id: 'shape', label: 'Shape', icon: <Rectangle size={20} decorative /> }] },
   ] },
   parameters: {
     docs: {
@@ -514,21 +460,16 @@ export const DisabledEmptyGroups: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Hand, Lock, Rectangle, Text } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
   { id: 'empty', label: 'Empty shapes', items: [] },
-  { id: 'disabled-group', label: 'Disabled shapes', disabled: true, items: [{ id: 'shape', label: 'Shape', icon }] },
+  { id: 'disabled-group', label: 'Disabled shapes', disabled: true, items: [{ id: 'shape', label: 'Shape', icon: <Rectangle size={20} decorative /> }] },
 ];
 
 <Dock items={items} defaultValue="select" />`,
@@ -569,19 +510,14 @@ export const RemovedOrDisabledSelection: Story = {
       },
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 
 <Dock items={tools} value="locked" />`,
@@ -630,27 +566,22 @@ export const TraySelection: Story = {
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
+import { Cursor, Ellipse, Hand, Line, Rectangle } from '@jfrader/icons';
 import { Dock, type DockItem } from '@jfrader/ui';
 
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
-
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
   {
     id: 'shapes',
     label: 'Shapes',
     items: [
-      { id: 'rectangle', label: 'Rectangle', icon, shortcut: 'R' },
-      { id: 'unavailable', label: 'Unavailable shape', icon, disabled: true },
-      { id: 'ellipse', label: 'Ellipse', icon, shortcut: 'O' },
-      { id: 'line', label: 'Line', icon },
+      { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
+      { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
     ],
   },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
 ];
 
 function TraySelectionDock() {
@@ -698,27 +629,22 @@ export const GroupActivation: Story = {
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
+import { Cursor, Ellipse, Hand, Line, Rectangle } from '@jfrader/icons';
 import { Dock, type DockItem } from '@jfrader/ui';
 
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
-
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
   {
     id: 'shapes',
     label: 'Shapes',
     items: [
-      { id: 'rectangle', label: 'Rectangle', icon, shortcut: 'R' },
-      { id: 'unavailable', label: 'Unavailable shape', icon, disabled: true },
-      { id: 'ellipse', label: 'Ellipse', icon, shortcut: 'O' },
-      { id: 'line', label: 'Line', icon },
+      { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
+      { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
     ],
   },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
 ];
 
 function GroupActivationDock() {
@@ -766,27 +692,22 @@ export const ControlledRejectValue: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Ellipse, Hand, Line, Rectangle } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
   {
     id: 'shapes',
     label: 'Shapes',
     items: [
-      { id: 'rectangle', label: 'Rectangle', icon, shortcut: 'R' },
-      { id: 'unavailable', label: 'Unavailable shape', icon, disabled: true },
-      { id: 'ellipse', label: 'Ellipse', icon, shortcut: 'O' },
-      { id: 'line', label: 'Line', icon },
+      { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
+      { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
     ],
   },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
 ];
 
 <Dock
@@ -838,19 +759,14 @@ export const Reorderable: Story = {
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
+import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
 import { Dock, type DockItem } from '@jfrader/ui';
 
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
-
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 
 function ReorderableDock() {
@@ -884,19 +800,14 @@ export const ControlledRejectOrder: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 
 <Dock
@@ -925,19 +836,14 @@ export const NormalizedOrder: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 
 <Dock items={tools} defaultValue="select" order={['text', 'unknown', 'text', 'hand']} />`,
@@ -958,19 +864,14 @@ export const MoveOptions: Story = {
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
+import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
 import { Dock, type DockItem } from '@jfrader/ui';
 
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
-
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 
 function MoveOptionsDock() {
@@ -997,19 +898,14 @@ export const PointerReorder: Story = {
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
+import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
 import { Dock, type DockItem } from '@jfrader/ui';
 
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
-
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 
 function PointerReorderDock() {
@@ -1043,19 +939,14 @@ export const PointerRejectOrder: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 
 <Dock
@@ -1090,19 +981,14 @@ export const VerticalGesture: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 
 <Dock items={tools} defaultValue="select" reorderable />`,
@@ -1127,19 +1013,14 @@ export const PointerCancel: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 
 <Dock items={tools} defaultValue={null} reorderable />`,
@@ -1167,27 +1048,22 @@ export const RTL: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Ellipse, Hand, Line, Rectangle } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
   {
     id: 'shapes',
     label: 'Shapes',
     items: [
-      { id: 'rectangle', label: 'Rectangle', icon, shortcut: 'R' },
-      { id: 'unavailable', label: 'Unavailable shape', icon, disabled: true },
-      { id: 'ellipse', label: 'Ellipse', icon, shortcut: 'O' },
-      { id: 'line', label: 'Line', icon },
+      { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
+      { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
+      { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
+      { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
     ],
   },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
 ];
 
 <Dock items={items} defaultValue="select" dir="rtl" reorderable />`,
@@ -1230,19 +1106,14 @@ export const ReducedMotion: Story = {
       description: { story: 'Change selection, order and trays without movement; icons do not magnify.' },
       source: {
         language: 'tsx',
-        code: `import { Dock, type DockItem } from '@jfrader/ui';
-
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
+        code: `import { Cursor, Hand, Lock, Text } from '@jfrader/icons';
+import { Dock, type DockItem } from '@jfrader/ui';
 
 const tools: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
-  { id: 'locked', label: 'Locked', icon, disabled: true },
-  { id: 'text', label: 'Text', icon, shortcut: 'T' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
+  { id: 'locked', label: 'Locked', icon: <Lock size={20} decorative />, disabled: true },
+  { id: 'text', label: 'Text', icon: <Text size={20} decorative />, shortcut: 'T' },
 ];
 
 <Dock items={tools} defaultValue="select" reorderable />`,
@@ -1308,7 +1179,7 @@ const replacementSlots: DockSlots = {
 export const ReplacementSlots: Story = {
   tags: ['!autodocs'],
   args: {
-    items: [{ id: 'group', label: 'Group', items: [{ id: 'tool', label: 'Tool', icon, badge: 3 }] }],
+    items: [{ id: 'group', label: 'Group', items: [{ id: 'tool', label: 'Tool', icon: <Cursor size={20} decorative />, badge: 3 }] }],
     defaultValue: null, defaultOpen: true, defaultTray: 'group', reorderable: true,
     slots: replacementSlots,
     slotProps: {
@@ -1390,20 +1261,18 @@ export const Controlled: Story = {
   parameters: { docs: {
     description: { story: 'Own selection, order and tray state in the surrounding application.' },
     source: { language: 'tsx', code: `import { useState } from 'react';
+import { Cursor, Ellipse, Hand, Line, Rectangle } from '@jfrader/icons';
 import { Dock, type DockItem } from '@jfrader/ui';
 
-const icon = <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-  <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-</svg>;
 const items: readonly DockItem[] = [
-  { id: 'select', label: 'Select', icon, shortcut: 'V' },
+  { id: 'select', label: 'Select', icon: <Cursor size={20} decorative />, shortcut: 'V' },
   { id: 'shapes', label: 'Shapes', items: [
-    { id: 'rectangle', label: 'Rectangle', icon, shortcut: 'R' },
-    { id: 'unavailable', label: 'Unavailable shape', icon, disabled: true },
-    { id: 'ellipse', label: 'Ellipse', icon, shortcut: 'O' },
-    { id: 'line', label: 'Line', icon },
+    { id: 'rectangle', label: 'Rectangle', icon: <Rectangle size={20} decorative />, shortcut: 'R' },
+    { id: 'unavailable', label: 'Unavailable shape', icon: <Rectangle size={20} decorative />, disabled: true },
+    { id: 'ellipse', label: 'Ellipse', icon: <Ellipse size={20} decorative />, shortcut: 'O' },
+    { id: 'line', label: 'Line', icon: <Line size={20} decorative /> },
   ] },
-  { id: 'hand', label: 'Hand', icon, shortcut: 'H' },
+  { id: 'hand', label: 'Hand', icon: <Hand size={20} decorative />, shortcut: 'H' },
 ];
 
 export function DrawingTools() {
@@ -1445,7 +1314,7 @@ export const ControlledNullTray: Story = {
 export const ControlledRejectTray: Story = {
   tags: ['!autodocs'],
   args: { defaultOpen: true, tray: 'shapes', items: [...grouped,
-    { id: 'brushes', label: 'Brushes', items: [{ id: 'pencil', label: 'Pencil', icon }] },
+    { id: 'brushes', label: 'Brushes', items: [{ id: 'pencil', label: 'Pencil', icon: <Pencil size={20} decorative /> }] },
   ] },
   play: async ({ canvas, canvasElement, userEvent, args }) => {
     await userEvent.tab(); await userEvent.keyboard('{End}{ArrowUp}');
@@ -1459,23 +1328,18 @@ export const ControlledRejectTray: Story = {
   },
 };
 export const EmptyStringValue: Story = {
-  args: { value: '', items: [{ id: '', label: 'Selection', icon }, { id: 'other', label: 'Other', icon }] },
+  args: { value: '', items: [{ id: '', label: 'Selection', icon: <Cursor size={20} decorative /> }, { id: 'other', label: 'Other', icon: <Hand size={20} decorative /> }] },
   parameters: {
     docs: {
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
+import { Cursor, Hand } from '@jfrader/icons';
 import { Dock, type DockItem } from '@jfrader/ui';
 
-const icon = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
-
 const items: readonly DockItem[] = [
-  { id: '', label: 'Selection', icon },
-  { id: 'other', label: 'Other', icon },
+  { id: '', label: 'Selection', icon: <Cursor size={20} decorative /> },
+  { id: 'other', label: 'Other', icon: <Hand size={20} decorative /> },
 ];
 
 function EmptyStringDock() {

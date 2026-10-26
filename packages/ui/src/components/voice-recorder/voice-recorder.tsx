@@ -15,6 +15,7 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { MotionConfig } from 'motion/react';
+import { MicrophoneSolid, PauseSolid, Play, Send, StopSolid, Trash } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -252,71 +253,37 @@ function renderReviewBars(
 
 function MicGlyph() {
   return (
-    <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16" aria-hidden="true">
-      <path d="M8 1a2.5 2.5 0 0 0-2.5 2.5v5a2.5 2.5 0 0 0 5 0v-5A2.5 2.5 0 0 0 8 1z" />
-      <path d="M4 7.5a.75.75 0 0 0-1.5 0 5.5 5.5 0 0 0 5 5.47V14.5H6a.75.75 0 0 0 0 1.5h4a.75.75 0 0 0 0-1.5H8.5v-1.53A5.5 5.5 0 0 0 13.5 7.5a.75.75 0 0 0-1.5 0 4 4 0 1 1-8 0z" />
-    </svg>
+    <MicrophoneSolid size={16} decorative />
   );
 }
 
 function StopGlyph() {
   return (
-    <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16" aria-hidden="true">
-      <rect x="3.5" y="3.5" width="9" height="9" rx="1.5" />
-    </svg>
+    <StopSolid size={16} decorative />
   );
 }
 
 function PlayGlyph() {
   return (
-    <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16" aria-hidden="true">
-      <path d="M4.5 3.2v9.6l7.8-4.8z" />
-    </svg>
+    <Play size={16} variant="solid" decorative />
   );
 }
 
 function PauseGlyph() {
   return (
-    <svg viewBox="0 0 16 16" fill="currentColor" width="16" height="16" aria-hidden="true">
-      <rect x="3.5" y="3" width="3" height="10" rx="1" />
-      <rect x="9.5" y="3" width="3" height="10" rx="1" />
-    </svg>
+    <PauseSolid size={16} decorative />
   );
 }
 
 function DiscardGlyph() {
   return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      width="16"
-      height="16"
-      aria-hidden="true"
-    >
-      <path d="M3 4.5h10M6 4.5V3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5m2 0V13a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 3 13V4.5m3 3v4.5m4-4.5v4.5" />
-    </svg>
+    <Trash size={16} decorative />
   );
 }
 
 function SendGlyph() {
   return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      width="16"
-      height="16"
-      aria-hidden="true"
-    >
-      <path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" />
-    </svg>
+    <Send size={16} decorative />
   );
 }
 

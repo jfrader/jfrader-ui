@@ -25,6 +25,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useMergeRefs, type Placement } from '@floating-ui/react';
+import { ChevronDown } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { controlBlockSize, controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { css, keyframes } from '../../styling/css';
@@ -321,11 +322,7 @@ const liveLabelStyle = css({
   },
 });
 
-const chevron = (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 6l4 4 4-4" />
-  </svg>
-);
+const chevron = <ChevronDown size="inherit" decorative />;
 
 function SplitButtonRoot({
   ref,

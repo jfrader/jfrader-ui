@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadCsf, metaObjectPath } from 'storybook/internal/csf-tools';
+import { componentDirectory } from '../../../scripts/component-directory.mjs';
 
 function property(node, name) {
   return node?.properties?.find((entry) =>
@@ -52,7 +53,7 @@ export function checkUsageFiles(componentsDir) {
   let checked = 0;
   for (const dir of readdirSync(componentsDir, { withFileTypes: true })) {
     if (!dir.isDirectory()) continue;
-    const folder = path.join(componentsDir, dir.name);
+    const folder = componentDirectory(path.join(componentsDir, dir.name));
     for (const story of readdirSync(folder).filter((name) => /\.stories\.tsx?$/.test(name))) {
       const file = path.join(folder, story);
       try {

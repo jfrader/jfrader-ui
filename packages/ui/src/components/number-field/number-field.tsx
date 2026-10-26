@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ComponentPropsWithRef, type PointerEvent, type ReactNode } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
+import { Minus, Plus } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { inputControlStyle } from '../../styling/input-control';
@@ -138,7 +139,8 @@ const statusStyle = css({ fontSize: vars.textSize.sm, lineHeight: vars.lineHeigh
 const glyphStyle = css({ inlineSize: vars.space[4], blockSize: vars.space[4] });
 
 function StepIcon({ increment }: { increment: boolean }) {
-  return <svg css={glyphStyle} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M3 8h10" />{increment && <path d="M8 3v10" />}</svg>;
+  const Icon = increment ? Plus : Minus;
+  return <Icon size={16} css={glyphStyle} decorative />;
 }
 
 /** Enter an exact quantity, or change it with the arrow keys and stepper buttons. */

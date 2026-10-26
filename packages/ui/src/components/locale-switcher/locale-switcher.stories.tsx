@@ -272,7 +272,8 @@ export const Menu: Story = {
     const menu = await bodyOf(canvasElement).findByRole('menu', { name: TRIGGER_LABEL });
     await expect(menu).toHaveAttribute('data-ui', 'locale-switcher-menu');
     const items = within(menu).getAllByRole('menuitem');
-    await expect(items.map((item) => item.textContent?.replace('✓', ''))).toEqual(OPTIONS.map((option) => option.label));
+    await expect(items.map((item) => item.textContent)).toEqual(OPTIONS.map((option) => option.label));
+    await expect(items[0]?.querySelector('[data-ui~="svg-icon"]')).toHaveAttribute('aria-hidden', 'true');
     for (const [index, item] of items.entries()) await expectOptionLink(item, OPTIONS[index]!, index === 0);
     await expect(menu.querySelectorAll('button, select')).toHaveLength(0);
     // Pointer open focuses the first item.

@@ -57,6 +57,7 @@ import { createPortal } from 'react-dom';
 import { FloatingFocusManager, useFloating, useMergeRefs } from '@floating-ui/react';
 import { animate, type AnimationPlaybackControls } from 'motion/react';
 import { base } from '@jfrader/tokens';
+import { ChevronLeft, Close } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type SerializedStyles } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
@@ -1417,17 +1418,13 @@ DialogStackFooter.displayName = 'DialogStack.Footer';
 
 function BackIcon() {
   return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true" css={backIconStyle}>
-      <path d="M10 3 5 8l5 5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <ChevronLeft size="inherit" css={backIconStyle} decorative />
   );
 }
 
 function CloseIcon() {
   return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <path d="m4 4 8 8M12 4l-8 8" strokeLinecap="round" />
-    </svg>
+    <Close size="inherit" decorative />
   );
 }
 

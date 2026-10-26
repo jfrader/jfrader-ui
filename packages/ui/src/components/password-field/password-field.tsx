@@ -7,8 +7,9 @@
 // moves input → reveal → page; Enter/Space on the reveal toggle once and never submit.
 // Password and reveal are independent controlled/uncontrolled axes; a native form reset
 // restores the uncontrolled ones without callbacks.
-import { useEffect, useId, useRef, type ChangeEvent, type ComponentPropsWithRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ChangeEvent, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
+import { Eye, EyeOff } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { controlFixedSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { css, type SerializedStyles } from '../../styling/css';
@@ -167,48 +168,9 @@ const revealSizeStyles: Record<PasswordFieldSize, SerializedStyles> = {
   lg: css({ inlineSize: vars.space[10], blockSize: vars.space[10], fontSize: vars.textSize.xl }),
 };
 
-// `pathLength="1"` normalizes the slash, so a 1-unit dash draws it from its start as the offset
-// falls from 1 to 0. The mask copy cuts the eye outline under the slash.
-const eyeStyle = css({
-  '& [data-slash]': {
-    strokeDasharray: '1 2',
-    strokeDashoffset: 1,
-    transitionProperty: 'stroke-dashoffset',
-    transitionDuration: vars.motion.duration.base,
-    transitionTimingFunction: vars.motion.easeStandard,
-  },
-  '&[data-state="on"] [data-slash]': { strokeDashoffset: 0 },
-  [REDUCED_MOTION]: {
-    '& [data-slash]': { transitionDuration: '0s' },
-  },
-});
-
-const SLASH_PATH = 'M3 3l18 18';
-
 function EyeIcon({ revealed }: { revealed: boolean }) {
-  const maskId = `password-field-mask-${useId().replace(/[^\w-]/g, '_')}`;
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      data-state={revealed ? 'on' : 'off'}
-      css={eyeStyle}
-    >
-      <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
-        <rect width="24" height="24" fill="white" stroke="none" />
-        <path d={SLASH_PATH} pathLength={1} stroke="black" strokeWidth={5} data-slash="" />
-      </mask>
-      <g mask={`url(#${maskId})`}>
-        <path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0" />
-        <circle cx="12" cy="12" r="3" />
-      </g>
-      <path d={SLASH_PATH} pathLength={1} data-slash="" />
-    </svg>
-  );
+  const Icon = revealed ? EyeOff : Eye;
+  return <Icon size="inherit" data-state={revealed ? 'on' : 'off'} decorative />;
 }
 
 export function PasswordField({
