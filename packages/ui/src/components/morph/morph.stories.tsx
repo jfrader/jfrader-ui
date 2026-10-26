@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
-import { settleMotion } from '../../testing/motion-assertions';
+import { expectLayoutMorph, settleMotion } from '../../testing/motion-assertions';
 import { Morph, type MorphRootProps } from './index';
 import { Button } from '../button';
 import { TextField } from '../text-field';
@@ -124,7 +124,7 @@ export const Default: Story = {
     await expect(getComputedStyle(trigger).outlineStyle).not.toBe('none');
     await userEvent.keyboard('{Enter}');
     const surface = await doc.findByRole('dialog', { name: 'Visit' });
-    await expect(getComputedStyle(surface).transitionProperty).toContain('inline-size');
+    await expect(getComputedStyle(surface).transitionProperty).toContain('scale');
     await expect(Number.parseFloat(getComputedStyle(surface).transitionDuration)).toBeGreaterThan(0);
     const next = doc.getByRole('button', { name: 'Continue' });
     await waitFor(() => expect(next.ownerDocument.activeElement).toBe(next));
@@ -137,7 +137,7 @@ export const Default: Story = {
     await waitFor(() => expect(name.ownerDocument.activeElement).toBe(name));
     await expect(doc.queryByRole('button', { name: 'Continue' })).toBeNull();
     await settleMotion(surface);
-    await expect(surface.getBoundingClientRect().width).toBeCloseTo(320, 0);
+    await waitFor(() => expect(surface.getBoundingClientRect().width).toBeCloseTo(320, 0));
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(doc.getByRole('button', { name: 'Continue' })).toHaveFocus());
     await expect(doc.queryByRole('textbox')).toBeNull();
@@ -225,20 +225,14 @@ export const HeightTransition: Story = {
     const surface = await doc.findByRole('dialog', { name: 'Visit' });
     await settleMotion(surface);
     const before = surface.getBoundingClientRect().height;
-    const heights: number[] = [];
-    const win = surface.ownerDocument.defaultView!;
-    let frame = 0;
-    const sample = () => { heights.push(surface.getBoundingClientRect().height); frame = win.requestAnimationFrame(sample); };
-    frame = win.requestAnimationFrame(sample);
-    try {
-      await userEvent.click(doc.getByRole('button', { name: 'Continue' }));
-      await doc.findByRole('textbox', { name: 'Name' });
-      await settleMotion(surface);
-      const after = surface.getBoundingClientRect().height;
-      await expect(after).toBeGreaterThan(before);
-      await expect(heights.some((height) => height > before + 1 && height < after - 1)).toBe(true);
-      await expect(surface.getBoundingClientRect().width).toBeCloseTo(320, 0);
-    } finally { win.cancelAnimationFrame(frame); }
+    await expectLayoutMorph(
+      surface,
+      () => userEvent.click(doc.getByRole('button', { name: 'Continue' })),
+      () => surface.querySelector<HTMLElement>('[data-step]')!,
+    );
+    await expect(doc.getByRole('textbox', { name: 'Name' })).toHaveFocus();
+    await expect(surface.getBoundingClientRect().height).toBeGreaterThan(before);
+    await expect(surface.getBoundingClientRect().width).toBeCloseTo(320, 0);
   },
 };
 export const Light: Story = { globals: { theme: 'light' } };
@@ -259,10 +253,10 @@ export const RTL: Story = {
     await waitFor(() => expect(getComputedStyle(surface).direction).toBe('rtl'));
     await settleMotion(surface);
     const trigger = canvas.getByRole('button', { name: 'Book a visit' });
-    await expect(surface.getBoundingClientRect().right).toBeCloseTo(
+    await waitFor(() => expect(surface.getBoundingClientRect().right).toBeCloseTo(
       trigger.getBoundingClientRect().right,
       0,
-    );
+    ));
   },
 };
 export const ReducedMotion: Story = {
@@ -272,7 +266,12 @@ export const ReducedMotion: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Book a visit' }));
     const surface = await doc.findByRole('dialog', { name: 'Visit' });
     await expect(getComputedStyle(surface).transitionDuration).toBe('0s');
-    await userEvent.click(doc.getByRole('button', { name: 'Continue' }));
+    await expectLayoutMorph(
+      surface,
+      () => userEvent.click(doc.getByRole('button', { name: 'Continue' })),
+      () => surface.querySelector<HTMLElement>('[data-step]')!,
+      true,
+    );
     await expect(surface.getBoundingClientRect().width).toBeCloseTo(320, 0);
     await expect(doc.getByRole('textbox', { name: 'Name' })).toHaveFocus();
     await userEvent.keyboard('{Escape}{Escape}');
