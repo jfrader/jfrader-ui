@@ -4,7 +4,7 @@ import { expect, fn, mocked, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { expectNativeScrollbar } from '../../testing/theme-assertions';
-import { settleMotion } from '../../testing/motion-assertions';
+import { expectLayoutMorph, settleMotion } from '../../testing/motion-assertions';
 import { ActionMorph, type ActionMorphAction } from './index';
 import { Button } from '../button';
 import { TextField } from '../text-field';
@@ -259,7 +259,7 @@ export function CreateContact() {
     const surface = doc.getByRole('dialog', { name: 'New contact' });
     await expect(surface.querySelectorAll('form')).toHaveLength(1);
     await settleMotion(surface);
-    await expect(surface.getBoundingClientRect().width).toBeCloseTo(384, 0);
+    await waitFor(() => expect(surface.getBoundingClientRect().width).toBeCloseTo(384, 0));
     await userEvent.type(name, 'Sam Rivera');
     await userEvent.type(doc.getByRole('textbox', { name: 'Email' }), 'sam@example.com');
     await userEvent.type(doc.getByRole('textbox', { name: 'Company' }), 'Northline');
@@ -349,7 +349,13 @@ export const Composer: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     const document = within(canvasElement.ownerDocument.body);
     await userEvent.click(canvas.getByRole('button', { name: 'Create' }));
-    await userEvent.click(await document.findByRole('menuitem', { name: 'Note' }));
+    const menu = await document.findByRole('menu');
+    await settleMotion(menu);
+    await expectLayoutMorph(
+      menu,
+      () => userEvent.click(document.getByRole('menuitem', { name: 'Note' })),
+      () => menu.querySelector<HTMLElement>('[data-step]')!,
+    );
     await expect(await document.findByRole('textbox', { name: 'Note text' })).toHaveFocus();
   },
 };
@@ -602,7 +608,12 @@ export const ReducedMotion: Story = {
     await expectOrigin(menu, 'top', 'right');
     await expect(getComputedStyle(menu).scale).toBe('none');
     await expect(getComputedStyle(menu).transitionDuration).toBe('0s');
-    await userEvent.click(document.getByRole('menuitem', { name: 'Note' }));
+    await expectLayoutMorph(
+      menu,
+      () => userEvent.click(document.getByRole('menuitem', { name: 'Note' })),
+      () => menu.querySelector<HTMLElement>('[data-step]')!,
+      true,
+    );
     const composer = await document.findByRole('dialog');
     await expect(getComputedStyle(composer).scale).toBe('none');
     await expect(getComputedStyle(composer).transitionDuration).toBe('0s');
