@@ -1,5 +1,4 @@
-import type { ComponentPropsWithRef, ComponentType, ReactNode } from 'react';
-import { useMergeRefs } from '@floating-ui/react';
+import { useCallback, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, WithSx, type SerializedStyles, type SxProps } from '@jfrader/styling';
 
@@ -102,7 +101,15 @@ export function SvgIcon({
     ...rootProps
   } = slotProps?.root ?? {};
   const { sx: titleSx, className: titleClassName, ...titleProps } = slotProps?.title ?? {};
-  const mergedRef = useMergeRefs([ref, rootRef]);
+  const mergedRef = useCallback(
+    (node: SVGSVGElement | null) => {
+      for (const target of [ref, rootRef]) {
+        if (typeof target === 'function') target(node);
+        else if (target) target.current = node;
+      }
+    },
+    [ref, rootRef],
+  );
   const Root = slots?.root ?? component ?? 'svg';
   const Title = slots?.title ?? 'title';
   const named = !decorative && label !== undefined;

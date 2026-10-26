@@ -98,20 +98,20 @@ export function Glyph({ children, directional = false }: { children: ReactNode; 
 
 export function StarGlyph({ filled }: { filled: boolean }) {
   const Icon = filled ? StarSolid : Star;
-  return <Icon size={16} css={glyphStyle} decorative />;
+  return <Icon size={16} strokeWidth={2.25} sx={glyphStyle} decorative />;
 }
 
 export const chromeIcons = {
-  previous: <ChevronLeft size={16} css={[glyphStyle, directionalGlyphStyle]} decorative />,
-  next: <ChevronRight size={16} css={[glyphStyle, directionalGlyphStyle]} decorative />,
-  zoomIn: <ZoomIn size={16} css={glyphStyle} decorative />,
-  zoomOut: <ZoomOut size={16} css={glyphStyle} decorative />,
-  reset: <RotateLeft size={16} css={glyphStyle} decorative />,
-  close: <Close size={16} css={glyphStyle} decorative />,
-  panLeft: <ArrowLeft size={16} css={glyphStyle} decorative />,
-  panRight: <ArrowRight size={16} css={glyphStyle} decorative />,
-  panUp: <ArrowUp size={16} css={glyphStyle} decorative />,
-  panDown: <ArrowDown size={16} css={glyphStyle} decorative />,
+  previous: <ChevronLeft size={16} strokeWidth={2.25} sx={[glyphStyle, directionalGlyphStyle]} decorative />,
+  next: <ChevronRight size={16} strokeWidth={2.25} sx={[glyphStyle, directionalGlyphStyle]} decorative />,
+  zoomIn: <ZoomIn size={16} strokeWidth={2.25} sx={glyphStyle} decorative />,
+  zoomOut: <ZoomOut size={16} strokeWidth={2.25} sx={glyphStyle} decorative />,
+  reset: <RotateLeft size={16} strokeWidth={2.25} sx={glyphStyle} decorative />,
+  close: <Close size={16} strokeWidth={2.25} sx={glyphStyle} decorative />,
+  panLeft: <ArrowLeft size={16} strokeWidth={2.25} sx={glyphStyle} decorative />,
+  panRight: <ArrowRight size={16} strokeWidth={2.25} sx={glyphStyle} decorative />,
+  panUp: <ArrowUp size={16} strokeWidth={2.25} sx={glyphStyle} decorative />,
+  panDown: <ArrowDown size={16} strokeWidth={2.25} sx={glyphStyle} decorative />,
 };
 
 export interface ChromeActionProps

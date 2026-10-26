@@ -70,7 +70,9 @@ jobs:
           pnpm typecheck
           pnpm test
           pnpm verify:exports
+          pnpm verify:icons
           git diff --exit-code -- packages/tokens/src/generated
+          git diff --exit-code -- packages/icons/src/generated packages/icons/icons.json
 
       - name: Build packages
         run: |

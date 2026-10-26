@@ -100,7 +100,7 @@ Categories: `navigation`, `action`, `editing`, `media`, `file`, `communication`,
 
 ## Sizes
 
-The component takes `size` (number, default `24`) and renders `width`/`height`; the viewBox does the
+The component takes `size` (`'sm'`, `'md'`, `'lg'`, `'inherit'`, or pixels; default `'md'` = 24) and renders `width`/`height`; the viewBox does the
 scaling. Sizes in use are 16, 20, 24, 32. Nothing in the glyph changes between them.
 
 ## Accessibility and API
@@ -109,7 +109,8 @@ scaling. Sizes in use are 16, 20, 24, 32. Nothing in the glyph changes between t
 - `title` renders `<title>` and switches to `role="img"` with an accessible name.
 - Colour inherits through `currentColor`. There is no `color` prop.
 - `ref` forwards to the `<svg>`.
-- Zero runtime dependencies. No `@jfrader/ui` import, no Lucide.
+- No `@jfrader/ui` import and no third-party icon set. The package does depend on `@jfrader/styling`
+  and `@jfrader/tokens`, because `SvgIcon` resolves `sx` and colours from them.
 
 ## Verification
 
@@ -124,6 +125,11 @@ scaling. Sizes in use are 16, 20, 24, 32. Nothing in the glyph changes between t
 - every source has a metadata entry and a generated component, and no entry is orphaned;
 - no two files share identical path data;
 - every generated component is present in the package index and its subpath export resolves.
+
+The lint checks structure, not taste. Corner radii, the 0/45/90 angle grid, the minimum feature and
+gap, optical centring and symmetry, and the signature-twist limit are this document's rules, enforced
+by review, not by the script. When a glyph breaks one, say so in its metadata or fix the drawing; do
+not assume the build would have caught it.
 
 ## Drawing a new icon
 
@@ -210,6 +216,21 @@ a line at 16px.
 
 `settings` — six curved teeth on a hub of `r 3`. The teeth are cubic shoulders rather than straight
 runs: straight teeth read as a flower or a cross at 16px.
+
+## Where the set does not reach
+
+The set is the language for icons. Three things are deliberately outside it, and should not be
+"fixed" by pulling them in:
+
+- **Bespoke artwork** in components: `scene`, `pattern`, `data-flow`, `activity-rings`, `signature-pad`,
+  `image-compare`, `game-chip-stack`, `radial-menu`, `multi-region-failover`, `color-picker`,
+  `json-viewer`, `code-block`, `booking-pill`, `reaction-group`, `announcement-bar` and `theme-switch`
+  draw their own illustration. They are pictures, not vocabulary.
+- **Marks below the optical range**: `Checkbox` at roughly 10.5px and `DataTable`'s 12px sort
+  chevrons keep their purpose-drawn marks. A 24-grid glyph with a 1.5 stroke turns into a smudge at
+  that size; the drawing is the correct answer, not a workaround.
+- **Text glyphs**: `TypewriterTerminal` and `UsageMeter` print `✓` and `×` as characters, where the
+  monospace rhythm and the 12px status line matter more than the pictogram.
 
 ## Bitcoin and Satoshi
 
