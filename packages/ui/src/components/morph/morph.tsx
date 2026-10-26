@@ -539,7 +539,7 @@ function MorphStep({
       {(resolved) => (
         <MotionElement
           nativeProps={props}
-          layout={variant === 'popover' && !reduce}
+          layout={variant === 'popover' && !reduce ? 'size' : false}
           transition={SHAPE_SPRING}
           ref={mergedRef}
           className={resolved}
