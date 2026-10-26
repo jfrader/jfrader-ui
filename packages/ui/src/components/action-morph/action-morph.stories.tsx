@@ -126,13 +126,14 @@ const meta = {
         { title: 'Create and compose', stories: ['Default'] },
         { title: 'Placement', stories: ['CornerStart'] },
         { title: 'Consumer forms', stories: ['ContentComposer'] },
+        { title: 'Action groups', stories: ['GroupedActions'] },
       ],
       usage: `### Drafts and submission
 Use this for short drafts, Menu for immediate commands, and Dialog for longer forms. Drafts and choices stay in memory while mounted, including after Back or a failed request. Return the real promise from \`onSubmit\`; omitting it disables submission. Empty trimmed text is rejected, but the original text is submitted. Closing or going Back invalidates UI updates, not the app's request; cancellation belongs to the consumer. Give actions unique ids and shortcuts.
 
 ### Consumer forms
 
-Content composers host your form without wrapping it in another form. Handle validation and submission in the consumer, then call \`close()\` when done or \`back()\` to return to the menu. Keep form values outside the content when they must survive navigation. Use Morph for steps without an action menu. A bottom-sheet presentation is a follow-up.
+Content composers host your form without wrapping it in another form. Handle validation and submission in the consumer, then call \`close()\` when done or \`back()\` to return to the menu. Keep form values outside the content when they must survive navigation. Use Morph for steps without an action menu or for a bottom sheet.
 
 ### Keyboard and accessibility
 
@@ -162,6 +163,31 @@ export const Default: Story = {
   } },
 };
 export const Light: Story = { globals: { theme: 'light' } };
+export const GroupedActions: Story = {
+  args: { label: 'Transfer', actions: [
+    { id: 'send-money', label: 'Send money', group: 'Send', composer: { title: 'Send money', submitLabel: 'Send', successLabel: 'Sent' } },
+    { id: 'send-request', label: 'Send request', group: 'Send', composer: { title: 'Send request', submitLabel: 'Send', successLabel: 'Sent' } },
+    { id: 'receive-bank', label: 'Bank transfer', group: 'Receive', composer: { title: 'Bank transfer', submitLabel: 'Save', successLabel: 'Saved' } },
+    { id: 'receive-link', label: 'Payment link', group: 'Receive', composer: { title: 'Payment link', submitLabel: 'Save', successLabel: 'Saved' } },
+  ] },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const doc = within(canvasElement.ownerDocument.body);
+    await userEvent.click(canvas.getByRole('button', { name: 'Transfer' }));
+    const menu = await doc.findByRole('menu', { name: 'Transfer' });
+    await settleMotion(menu);
+    const send = within(menu).getByRole('group', { name: 'Send' });
+    const receive = within(menu).getByRole('group', { name: 'Receive' });
+    await expect(within(send).getByText('Send', { exact: true })).toBeVisible();
+    await expect(within(receive).getByText('Receive', { exact: true })).toBeVisible();
+    await expect(within(send).getAllByRole('menuitem')).toHaveLength(2);
+    await expect(within(receive).getAllByRole('menuitem')).toHaveLength(2);
+    await waitFor(() => expect(within(send).getByRole('menuitem', { name: 'Send money' })).toHaveFocus());
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+    await expect(within(receive).getByRole('menuitem', { name: 'Bank transfer' })).toHaveFocus();
+    await userEvent.keyboard('{ArrowUp}');
+    await expect(within(send).getByRole('menuitem', { name: 'Send request' })).toHaveFocus();
+  },
+};
 export const CornerStart: Story = {
   name: 'Grow from the start corner',
   args: { corner: 'start' },

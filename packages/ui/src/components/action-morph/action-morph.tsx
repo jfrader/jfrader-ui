@@ -63,6 +63,8 @@ export type ActionMorphComposer = ActionMorphTextComposer | ActionMorphContentCo
 export interface ActionMorphAction {
   id: string;
   label: string;
+  /** Labels an action group. Groups follow first appearance; actions retain order within each group. */
+  group?: string;
   description?: ReactNode;
   icon?: ReactNode;
   shortcut?: string;
@@ -186,6 +188,14 @@ const titleStyle = css({
   fontWeight: vars.fontWeight.semibold,
   color: vars.color.text,
 });
+const groupHeadingStyle = css({
+  margin: 0,
+  padding: vars.space[2],
+  fontFamily: vars.font.sans,
+  fontSize: vars.textSize.sm,
+  fontWeight: vars.fontWeight.semibold,
+  color: vars.color.textMuted,
+});
 const itemStyle = css({
   appearance: 'none',
   inlineSize: '100%',
@@ -249,7 +259,7 @@ function ActionMenuItem({
 }
 
 function ActionMorphControl({
-  actions,
+  actions: suppliedActions,
   label = 'Create',
   onSubmit,
   width,
@@ -264,6 +274,14 @@ function ActionMorphControl({
   style,
   ...props
 }: Omit<ActionMorphProps, 'open' | 'defaultOpen' | 'onOpenChange' | 'corner'>) {
+  const groups = new Map<string | undefined, ActionMorphAction[]>();
+  for (const item of suppliedActions) {
+    const group = groups.get(item.group);
+    if (group) group.push(item);
+    else groups.set(item.group, [item]);
+  }
+  const actions = [...groups.values()].flat();
+  const actionIndexes = new Map(actions.map((item, index) => [item.id, index]));
   const messages = { ...DEFAULT_MESSAGES, ...messageOverrides };
   const { open, requestOpen, step, requestStep, floating, presence } = useMorphContext();
   const { context } = floating;
@@ -524,40 +542,53 @@ function ActionMorphControl({
                     }
                   }}
                 >
-                  {actions.map((item, index) => (
-                    <ActionMenuItem
-                      component={Item}
-                      slotRef={itemRef}
-                      {...consumerHandlersFirst(itemProps, getItemProps)}
-                      onClick={(event) => {
-                        itemProps.onClick?.(event);
-                        if (event.defaultPrevented || item.disabled) return;
-                        setActionId(item.id);
-                        setError('');
-                        setActiveIndex(index);
-                      }}
-                      key={item.id}
-                      ref={(node) => {
-                        items.current[index] = node;
-                      }}
-                      type="button"
-                      role="menuitem"
-                      data-autofocus={activeIndex === index || undefined}
-                      tabIndex={activeIndex === index ? 0 : -1}
-                      aria-disabled={item.disabled || undefined}
-                      aria-keyshortcuts={item.shortcut}
-                      css={[itemStyle, listboxItemStateStyle, itemCss]}
-                      data-ui="action-morph-item"
-                    >
-                      <span css={iconStyle} aria-hidden="true">
-                        {item.icon}
-                      </span>
-                      <span>
-                        {item.label}
-                        {item.description != null && <span>{item.description}</span>}
-                      </span>
-                    </ActionMenuItem>
-                  ))}
+                  {[...groups].map(([group, entries], groupIndex) => {
+                    const content = entries.map((item) => {
+                      const index = actionIndexes.get(item.id)!;
+                      return (
+                        <ActionMenuItem
+                          component={Item}
+                          slotRef={itemRef}
+                          {...consumerHandlersFirst(itemProps, getItemProps)}
+                          onClick={(event) => {
+                            itemProps.onClick?.(event);
+                            if (event.defaultPrevented || item.disabled) return;
+                            setActionId(item.id);
+                            setError('');
+                            setActiveIndex(index);
+                          }}
+                          key={item.id}
+                          ref={(node) => {
+                            items.current[index] = node;
+                          }}
+                          type="button"
+                          role="menuitem"
+                          data-autofocus={activeIndex === index || undefined}
+                          tabIndex={activeIndex === index ? 0 : -1}
+                          aria-disabled={item.disabled || undefined}
+                          aria-keyshortcuts={item.shortcut}
+                          css={[itemStyle, listboxItemStateStyle, itemCss]}
+                          data-ui="action-morph-item"
+                        >
+                          <span css={iconStyle} aria-hidden="true">
+                            {item.icon}
+                          </span>
+                          <span>
+                            {item.label}
+                            {item.description != null && <span>{item.description}</span>}
+                          </span>
+                        </ActionMenuItem>
+                      );
+                    });
+                    return group === undefined ? content : (
+                      <div key={group} role="group" aria-labelledby={`${id}-group-${groupIndex}`}>
+                        <h3 role="presentation" id={`${id}-group-${groupIndex}`} css={groupHeadingStyle}>
+                          {group}
+                        </h3>
+                        {content}
+                      </div>
+                    );
+                  })}
                   {actions.length === 0 && messages.menuEmpty}
                 </List>
               ) : action.composer.kind === 'content' ? (

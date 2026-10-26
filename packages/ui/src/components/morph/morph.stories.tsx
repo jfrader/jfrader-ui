@@ -9,6 +9,7 @@ import { Button } from '../button';
 import { TextField } from '../text-field';
 import { Stack } from '../stack';
 import { Popover } from '../popover';
+import { Dialog } from '../dialog';
 
 const Stage = styled.div({
   minBlockSize: '30rem',
@@ -32,7 +33,7 @@ function Example(props: Omit<MorphRootProps, 'children'>) {
     >
       <Morph.Trigger>Book a visit</Morph.Trigger>
       <Morph.Surface label="Visit" width={{ summary: '16rem', details: '18rem' }}>
-        <Morph.Step id="summary">
+        <Morph.Step id="summary" detent={0.38}>
           <Stack gap="sm">
             <Button
               onClick={() => {
@@ -44,7 +45,7 @@ function Example(props: Omit<MorphRootProps, 'children'>) {
             </Button>
           </Stack>
         </Morph.Step>
-        <Morph.Step id="details" width="20rem" back>
+        <Morph.Step id="details" width="20rem" detent={0.68} back>
           <Stack gap="sm">
             <Button variant="ghost" onClick={() => setStep('summary')}>
               Back
@@ -74,9 +75,9 @@ const meta = {
   parameters: {
     docs: {
       description: {
-        component: 'Move between steps in a floating surface without leaving the page.',
+        component: 'Move between steps in a popover or bottom sheet without leaving the page.',
       },
-      sections: [{ title: 'Steps and widths', stories: ['Default'] }],
+      sections: [{ title: 'Steps and widths', stories: ['Default'] }, { title: 'Phone sheet', stories: ['Sheet'] }],
       source: {
         language: 'tsx',
         code: `import { useState } from 'react';
@@ -107,7 +108,7 @@ export function Visit() {
 Enter or Space opens the surface. Focus moves to the active step's \`[data-autofocus]\` element, first enabled focusable element, or step container. Escape returns to the previous step when back navigation is enabled; otherwise it closes. Accepted explicit closes return focus to the trigger. Clicking or tabbing outside closes without moving focus back.
 
 ### Values and constraints
-Only the active step mounts. Keep drafts in the consumer when they must survive navigation. Give each step a unique id. Width changes honor reduced motion. Use Dialog for a modal flow. A bottom-sheet presentation is a follow-up, not a variant of this surface.`,
+Only the active step mounts. Keep drafts in the consumer when they must survive navigation. Give each step a unique id. Width and height changes honor reduced motion. Sheet mode is modal; each step selects its detent when it becomes active. Omitted detents use the full visual viewport height.`,
     },
   },
 } satisfies Meta<typeof Morph.Root>;
@@ -148,6 +149,98 @@ export const Default: Story = {
   },
 };
 export const Persistent: Story = { args: { defaultOpen: true }, tags: ['!autodocs'] };
+export const Sheet: Story = {
+  args: { variant: 'sheet' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Morph, Button, Stack, TextField } from '@jfrader/ui';
+
+export function VisitSheet() {
+  const [step, setStep] = useState('actions');
+  return <Morph.Root variant="sheet" step={step} onStepChange={setStep}>
+    <Morph.Trigger>Book a visit</Morph.Trigger>
+    <Morph.Surface label="Visit">
+      <Morph.Step id="actions" detent={0.38}>
+        <Stack gap="sm">
+          <Button onClick={() => setStep('details')}>Continue</Button>
+        </Stack>
+      </Morph.Step>
+      <Morph.Step id="details" detent={0.68} back>
+        <Stack gap="sm">
+          <Button variant="ghost" onClick={() => setStep('actions')}>Back</Button>
+          <TextField label="Name" data-autofocus />
+          <TextField label="Email" type="email" />
+        </Stack>
+      </Morph.Step>
+    </Morph.Surface>
+  </Morph.Root>;
+}` } } },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const doc = within(canvasElement.ownerDocument.body);
+    const trigger = canvas.getByRole('button', { name: 'Book a visit' });
+    await userEvent.click(trigger);
+    const dialog = await doc.findByRole('dialog', { name: 'Visit' });
+    const panel = dialog.querySelector<HTMLElement>('[data-ui~="bottom-sheet-panel"]')!;
+    const viewport = dialog.ownerDocument.defaultView!.visualViewport!.height;
+    await waitFor(() => expect(panel.getBoundingClientRect().height).toBeCloseTo(viewport * 0.38, 0));
+    const next = doc.getByRole('button', { name: 'Continue' });
+    await waitFor(() => expect(next.ownerDocument.activeElement).toBe(next));
+    await expect(doc.getAllByRole('dialog')).toHaveLength(1);
+    await expect(dialog).toHaveAttribute('aria-modal', 'true');
+    const handle = within(dialog).getByRole('button', { name: 'Visit' });
+    await expect(handle).toHaveAttribute('aria-expanded', 'false');
+    handle.focus();
+    await userEvent.keyboard('{ArrowUp}');
+    await waitFor(() => expect(panel.getBoundingClientRect().height).toBeCloseTo(viewport * 0.68, 0));
+    await expect(doc.getByRole('button', { name: 'Continue' })).toBe(next);
+    await userEvent.click(next);
+    const field = await doc.findByRole('textbox', { name: 'Name' });
+    await waitFor(() => expect(field.ownerDocument.activeElement).toBe(field));
+    if (dialog.ownerDocument.defaultView!.matchMedia('(prefers-reduced-motion: reduce)').matches)
+      await expect(panel.getBoundingClientRect().height).toBeCloseTo(viewport * 0.68, 0);
+    await waitFor(() => expect(panel.getBoundingClientRect().height).toBeCloseTo(viewport * 0.68, 0));
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(doc.getByRole('button', { name: 'Continue' })).toHaveFocus());
+    await waitFor(() => expect(panel.getBoundingClientRect().height).toBeCloseTo(viewport * 0.38, 0));
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(dialog).not.toHaveAttribute('open'));
+    await waitFor(() => expect(trigger.ownerDocument.activeElement).toBe(trigger));
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+  },
+};
+export const SheetPersistent: Story = { args: { variant: 'sheet', defaultOpen: true }, tags: ['!autodocs'] };
+export const SheetReducedMotion: Story = {
+  name: 'Sheet Reduced Motion',
+  args: { variant: 'sheet' },
+  play: async (context) => {
+    await expect(context.canvasElement.ownerDocument.defaultView!.matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(true);
+    await Sheet.play!(context);
+  },
+};
+export const HeightTransition: Story = {
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const doc = within(canvasElement.ownerDocument.body);
+    await userEvent.click(canvas.getByRole('button', { name: 'Book a visit' }));
+    const surface = await doc.findByRole('dialog', { name: 'Visit' });
+    await settleMotion(surface);
+    const before = surface.getBoundingClientRect().height;
+    const heights: number[] = [];
+    const win = surface.ownerDocument.defaultView!;
+    let frame = 0;
+    const sample = () => { heights.push(surface.getBoundingClientRect().height); frame = win.requestAnimationFrame(sample); };
+    frame = win.requestAnimationFrame(sample);
+    try {
+      await userEvent.click(doc.getByRole('button', { name: 'Continue' }));
+      await doc.findByRole('textbox', { name: 'Name' });
+      await settleMotion(surface);
+      const after = surface.getBoundingClientRect().height;
+      await expect(after).toBeGreaterThan(before);
+      await expect(heights.some((height) => height > before + 1 && height < after - 1)).toBe(true);
+      await expect(surface.getBoundingClientRect().width).toBeCloseTo(320, 0);
+    } finally { win.cancelAnimationFrame(frame); }
+  },
+};
 export const Light: Story = { globals: { theme: 'light' } };
 export const RTL: Story = {
   decorators: [
@@ -260,6 +353,56 @@ export const RejectedBack: Story = {
     await expect(field.ownerDocument.activeElement).toBe(field);
     await expect(doc.queryByRole('button', { name: 'Next' })).toBeNull();
     await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const SheetRejectedBack: Story = {
+  ...RejectedBack,
+  args: { variant: 'sheet' },
+};
+export const SheetRejectedClose: Story = {
+  ...RejectedClose,
+  args: { variant: 'sheet', open: true },
+};
+export const SheetEmptyStep: Story = {
+  ...EmptyStep,
+  args: { variant: 'sheet' },
+};
+
+export const SheetNestedDialog: Story = {
+  tags: ['!autodocs'],
+  render: function NestedSheet(args) {
+    const [step, setStep] = useState('actions');
+    return (
+      <Morph.Root {...args} variant="sheet" step={step} onStepChange={setStep}>
+        <Morph.Trigger>Open sheet</Morph.Trigger>
+        <Morph.Surface label="Sheet flow">
+          <Morph.Step id="actions" detent={0.38}>
+            <Button onClick={() => setStep('details')}>Continue</Button>
+          </Morph.Step>
+          <Morph.Step id="details" detent={0.68} back>
+            <Dialog triggerLabel="Open child" title="Child" closeLabel="Close"
+              content={<Button>Child action</Button>} />
+          </Morph.Step>
+        </Morph.Surface>
+      </Morph.Root>
+    );
+  },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const doc = within(canvasElement.ownerDocument.body);
+    await userEvent.click(canvas.getByRole('button', { name: 'Open sheet' }));
+    await userEvent.click(await doc.findByRole('button', { name: 'Continue' }));
+    await userEvent.click(await doc.findByRole('button', { name: 'Open child' }));
+    await doc.findByRole('dialog', { name: 'Child' });
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(doc.queryByRole('dialog', { name: 'Child' })).toBeNull());
+    await expect(doc.getByRole('button', { name: 'Open child' })).toHaveFocus();
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(doc.getByRole('button', { name: 'Continue' })).toHaveFocus());
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(doc.queryByRole('dialog')).toBeNull());
+    await expect(canvas.getByRole('button', { name: 'Open sheet' })).toHaveFocus();
   },
 };
 
