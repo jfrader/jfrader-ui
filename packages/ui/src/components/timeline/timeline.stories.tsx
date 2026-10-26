@@ -1256,6 +1256,7 @@ const events: TimelineEvent[] = [
   },
   args: { maxHeight: '14rem', 'aria-label': undefined },
   play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvasElement.ownerDocument.fonts.ready;
     const scroller = part(canvasElement, 'scroller');
     await expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight);
     // Without an external name, the region and its focusable scroller share the labels.region fallback.
@@ -1263,13 +1264,12 @@ const events: TimelineEvent[] = [
     await expect(canvas.getByRole('group', { name: 'Activity' })).toBe(scroller);
     await userEvent.tab();
     await expectFocusRing(scroller);
-    scroller.scrollTop = scroller.scrollHeight;
+    const group = parts(canvasElement, 'group')[1]!;
+    const heading = part(group, 'heading');
+    scroller.scrollTop +=
+      group.getBoundingClientRect().top - scroller.getBoundingClientRect().top + heading.getBoundingClientRect().height;
     await waitFor(() => expect(scroller.scrollTop).toBeGreaterThan(0));
-    const top = scroller.getBoundingClientRect().top;
-    const stuck = parts(canvasElement, 'heading').filter(
-      (heading) => Math.abs(heading.getBoundingClientRect().top - top) < GEOMETRY_TOLERANCE,
-    );
-    await expect(stuck.length).toBeGreaterThan(0);
+    await waitFor(() => expectAligned([heading, scroller], 'top', { tolerancePx: GEOMETRY_TOLERANCE }));
   },
 };
 
