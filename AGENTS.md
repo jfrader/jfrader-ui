@@ -24,18 +24,19 @@ documentation spec, review checklist).
 
 | Command | What it does |
 | --- | --- |
-| `pnpm generate` | Generate `packages/tokens/dist/tokens.css` and `packages/tokens/src/generated/vars.ts` |
-| `pnpm dev` | Generate tokens and start Storybook on port 6006 |
-| `pnpm build` | Generate tokens and build static Storybook; with `DOCS_BUILD=1` it also builds the docs site into the same publish directory |
-| `pnpm og:image` | Generate tokens and regenerate the Open Graph share card (`apps/storybook/public/og-image.png`) |
-| `pnpm test` | Generate tokens and run Storybook Vitest browser tests |
-| `pnpm typecheck` | Generate tokens and typecheck every package |
+| `pnpm generate` | Generate token CSS and typed vars with `packages/tokens/scripts/generate.ts`, and React icons and metadata with `packages/icons/scripts/generate.ts` |
+| `pnpm dev` | Generate tokens and icons, then start Storybook on port 6006 |
+| `pnpm build` | Generate tokens and icons, then build static Storybook; with `DOCS_BUILD=1` it also builds the docs site into the same publish directory |
+| `pnpm og:image` | Generate tokens and icons, then regenerate the Open Graph share card (`apps/storybook/public/og-image.png`) |
+| `pnpm test` | Generate tokens and icons, then run Storybook's test suites |
+| `pnpm typecheck` | Generate tokens and icons, then typecheck every package |
 | `pnpm verify:docs` | Check component documentation coverage; also runs before the Storybook build |
 | `pnpm verify:api` | Check sx-only public styling types, slot props, and authored examples |
 | `pnpm verify:slots` | Check that every replacement key a family declares is rendered |
 | `pnpm verify:exports` | Check that every component's subpath export resolves and matches the index |
+| `pnpm verify:icons` | Check icon sources, geometry, metadata, generated components, and exports |
 | `pnpm --filter @jfrader/storybook audit:docs` | Crawl the docs site and report examples without code and API coverage (`DOCS_URL`, `--only`, `--check`) |
-| `pnpm --filter @jfrader/storybook exec vitest run --project=storybook --maxWorkers=2 packages/ui/src/components/<name>/<name>.stories.tsx` | Run one story file from the repo root (fast loop; tokens must already be generated) |
+| `pnpm --filter @jfrader/storybook exec vitest run --project=storybook --maxWorkers=2 packages/ui/src/components/<name>/<name>.stories.tsx` | Run one story file from the repo root (fast loop; tokens and icons must already be generated) |
 
 Packing and publishing are in `docs/releasing.md`.
 
