@@ -46,6 +46,11 @@ export function syncReadme() {
   if (!existsSync(flightsTarget) || readFileSync(flightsTarget, 'utf8') !== flightsSource) {
     writeFileSync(flightsTarget, flightsSource, 'utf8');
   }
+  const iconsSource = readFileSync(path.join(repoRoot, 'docs/icons.md'), 'utf8').replace(/^#\s+[^\n]+\n+/, '');
+  const iconsTarget = path.join(guidanceDir, 'gallery.md');
+  if (!existsSync(iconsTarget) || readFileSync(iconsTarget, 'utf8') !== iconsSource) {
+    writeFileSync(iconsTarget, iconsSource, 'utf8');
+  }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

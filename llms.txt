@@ -22,6 +22,8 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 - Component inventory: packages/ui/src/index.ts
 - Components: packages/ui/src/components/<name>/
 - Styling seam: packages/styling/src/css.ts (packages/ui/src/styling/ keeps compatibility re-exports)
+- Icon sources: packages/icons/src/icons
+- Icon metadata: packages/icons/icons.json
 - Storybook config: apps/storybook/.storybook/
 - Game components and procedural scene: opt-in subpaths (@jfrader/ui/game-table, @jfrader/ui/scene, and so on), not re-exported by the root barrel
 
@@ -30,6 +32,8 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 - Consumer setup: docs/getting-started.md
 - Theming: docs/theming.md
 - Styling: docs/styling.md
+- Consumer icons: docs/icons.md
+- Icon drawing spec: docs/icon-style.md
 - Manual QA gates: docs/qa-gates.md
 - Releasing: docs/releasing.md
 - Generated API inventory: docs/customization-inventory.md
@@ -38,12 +42,13 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 
 ## Commands
 
-- pnpm generate: generate tokens.css and vars.ts
+- pnpm generate: generate tokens.css, vars.ts, React icons, and icons.json
 - pnpm dev: generate tokens and start Storybook on port 6006
 - pnpm build: generate tokens and build static Storybook
 - pnpm test: generate tokens and run Storybook browser tests
 - pnpm typecheck: generate tokens and typecheck every package
 - pnpm verify:docs: check component documentation coverage
+- pnpm verify:icons: check icon sources, generated output, and metadata
 - pnpm verify:api: check sx-only public styling types, slot props and authored examples
 - pnpm verify:slots: check that every declared replacement key is rendered
 - pnpm verify:exports: validate UI source subpath exports and their target files
