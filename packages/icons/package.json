@@ -1,6 +1,6 @@
 {
   "name": "@jfrader/icons",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -10,10 +10,19 @@
     "access": "public"
   },
   "exports": {
-    ".": { "types": "./src/index.ts", "import": "./src/index.ts" },
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
     "./metadata": "./icons.json",
-    "./svg-icon": { "types": "./src/svg-icon/index.ts", "import": "./src/svg-icon/index.ts" },
-    "./*": { "types": "./src/generated/*.tsx", "import": "./src/generated/*.tsx" }
+    "./svg-icon": {
+      "types": "./src/svg-icon/index.ts",
+      "import": "./src/svg-icon/index.ts"
+    },
+    "./*": {
+      "types": "./src/generated/*.tsx",
+      "import": "./src/generated/*.tsx"
+    }
   },
   "scripts": {
     "generate": "tsx scripts/generate.ts",

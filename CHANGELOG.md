@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.19.0 — 2026-10-26
+
 ### Added
 
 - `SvgIcon` and `createSvgIcon`: one drawing component for library icons and your own marks, with `line` and `solid` paint, size presets plus exact pixels and `size="inherit"`, semantic tones, accessible naming, and replaceable root and title. Both are importable from `@jfrader/ui` and from `@jfrader/icons`, where the component now lives.
