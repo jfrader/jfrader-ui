@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { promisify } from "node:util";
 import { setTimeout as delay } from "node:timers/promises";
+import { matchesGlob } from "node:path";
 
 const execFileAsync = promisify(execFile);
 const [artifact, registry, manifestPath] = process.argv.slice(2);
@@ -40,7 +41,9 @@ const targetsOf = (entry) => {
 const targets = targetsOf(packedManifest.exports);
 if (targets.length === 0 || targets.some((target) =>
   !target.startsWith("./") || target.split("/").includes("..") ||
-  !files.has(`package/${target.slice(2)}`))) {
+  !(target.includes('*')
+    ? [...files].some((file) => matchesGlob(file, `package/${target.slice(2)}`))
+    : files.has(`package/${target.slice(2)}`)))) {
   throw new Error("Artifact has missing or invalid export targets");
 }
 const packageSpec = `${manifest.name}@${manifest.version}`;

@@ -1,0 +1,162 @@
+{
+  "person-circle": {
+    "name": "person-circle",
+    "category": "people",
+    "tags": ["avatar", "profile", "account", "user"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "contact": {
+    "name": "contact",
+    "category": "people",
+    "tags": ["address", "card", "portrait", "directory"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "badge": {
+    "name": "badge",
+    "category": "people",
+    "tags": ["identity", "portrait", "lanyard", "identification"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "accessibility": {
+    "name": "accessibility",
+    "category": "people",
+    "tags": ["wheelchair", "access", "mobility", "disability"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "smile": {
+    "name": "smile",
+    "category": "people",
+    "tags": ["face", "happy", "emotion", "positive"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "frown": {
+    "name": "frown",
+    "category": "people",
+    "tags": ["face", "sad", "emotion", "negative"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "handshake": {
+    "name": "handshake",
+    "category": "people",
+    "tags": ["agreement", "partnership", "hands", "collaboration"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "code": {
+    "name": "code",
+    "category": "development",
+    "tags": ["source", "programming", "brackets", "syntax"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "terminal": {
+    "name": "terminal",
+    "category": "development",
+    "tags": ["console", "shell", "prompt", "cli"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "braces": {
+    "name": "braces",
+    "category": "development",
+    "tags": ["curly", "syntax", "object", "programming"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "branch": {
+    "name": "branch",
+    "category": "development",
+    "tags": ["git", "fork", "revision", "graph"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "merge": {
+    "name": "merge",
+    "category": "development",
+    "tags": ["git", "combine", "join", "graph"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "commit": {
+    "name": "commit",
+    "category": "development",
+    "tags": ["git", "revision", "history", "checkpoint"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "pull-request": {
+    "name": "pull-request",
+    "category": "development",
+    "tags": ["git", "review", "contribution", "changes"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "bug": {
+    "name": "bug",
+    "category": "development",
+    "tags": ["insect", "defect", "debug", "issue"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "database": {
+    "name": "database",
+    "category": "development",
+    "tags": ["data", "storage", "cylinder", "records"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "server": {
+    "name": "server",
+    "category": "development",
+    "tags": ["rack", "host", "infrastructure", "slots"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "package": {
+    "name": "package",
+    "category": "development",
+    "tags": ["parcel", "box", "dependency", "module"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "progress": {
+    "name": "progress",
+    "category": "status",
+    "tags": ["loading", "rail", "completion", "track"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "star": {
+    "name": "star",
+    "category": "status",
+    "tags": ["favorite", "rating", "saved", "point"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  }
+}

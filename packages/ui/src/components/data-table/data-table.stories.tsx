@@ -1557,17 +1557,18 @@ export const KeyboardSortingAndSelection: Story = {
     await expect(args.onSortChange).toHaveBeenCalledTimes(1);
     await expect(args.onSortChange).toHaveBeenNthCalledWith(1, [{ columnId: 'name', direction: 'asc' }]);
     await expect(sort.closest('th')).toHaveAttribute('aria-sort', 'ascending');
-    const indicator = sort.querySelector('svg')!;
-    await expect(indicator).toHaveAttribute('data-direction', 'asc');
-    await expect(getComputedStyle(indicator.querySelector('[data-chevron="up"]')!).visibility).toBe('visible');
-    await expect(getComputedStyle(indicator.querySelector('[data-chevron="down"]')!).visibility).toBe('hidden');
+    const indicator = () => sort.querySelector('svg')!;
+    await expect(indicator()).toHaveAttribute('data-direction', 'asc');
+    await expect(indicator()).toHaveAttribute('data-sort-glyph', 'asc');
+    await expect(indicator().querySelectorAll('path')).toHaveLength(1);
     await userEvent.keyboard(' ');
     await expect(args.onSortChange).toHaveBeenCalledTimes(2);
     await expect(args.onSortChange).toHaveBeenNthCalledWith(2, [{ columnId: 'name', direction: 'desc' }]);
     await expect(sort.closest('th')).toHaveAttribute('aria-sort', 'descending');
-    await expect(indicator).toHaveAttribute('data-direction', 'desc');
-    await expect(getComputedStyle(indicator.querySelector('[data-chevron="up"]')!).visibility).toBe('hidden');
-    await expect(getComputedStyle(indicator.querySelector('[data-chevron="down"]')!).visibility).toBe('visible');
+    // The indicator swaps its glyph, so the element is new after each change: re-query it.
+    await expect(indicator()).toHaveAttribute('data-direction', 'desc');
+    await expect(indicator()).toHaveAttribute('data-sort-glyph', 'desc');
+    await expect(indicator().querySelectorAll('path')).toHaveLength(1);
     await expect(sort.ownerDocument.activeElement).toBe(sort);
     await expect(canvas.getByRole('status')).toHaveTextContent('Name, descending');
     await userEvent.tab({ shift: true });

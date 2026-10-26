@@ -60,15 +60,15 @@ importers:
       '@emotion/react':
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.3.0)(react@19.3.0)
+      '@jfrader/icons':
+        specifier: workspace:^
+        version: link:../../packages/icons
       '@jfrader/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
       '@jfrader/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      lucide-react:
-        specifier: ^1.21.0
-        version: 1.55.0(@types/react@19.3.0)(react@19.3.0)
       react:
         specifier: ^19.3.0
         version: 19.3.0
@@ -110,6 +110,9 @@ importers:
         specifier: ^19.3.0
         version: 19.3.0(react@19.3.0)
     devDependencies:
+      '@jfrader/icons':
+        specifier: workspace:^
+        version: link:../../packages/icons
       '@storybook/addon-a11y':
         specifier: ^10.6.1
         version: 10.6.1(storybook@10.6.1(@types/react@19.3.0)(react@19.3.0))
@@ -146,9 +149,6 @@ importers:
       '@vitest/coverage-v8':
         specifier: 5.0.3
         version: 5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3)
-      lucide-react:
-        specifier: ^1.21.0
-        version: 1.55.0(@types/react@19.3.0)(react@19.3.0)
       playwright:
         specifier: ^1.64.0
         version: 1.64.0
@@ -167,6 +167,74 @@ importers:
       vitest:
         specifier: ^5.0.3
         version: 5.0.3(@types/node@26.6.5)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
+
+  packages/icons:
+    dependencies:
+      '@emotion/react':
+        specifier: ^11.14.0
+        version: 11.14.0(@types/react@19.3.0)(react@19.3.0)
+      '@jfrader/styling':
+        specifier: workspace:*
+        version: link:../styling
+      '@jfrader/tokens':
+        specifier: workspace:*
+        version: link:../tokens
+      react:
+        specifier: ^19.0.0
+        version: 19.3.0
+    devDependencies:
+      '@storybook/react-vite':
+        specifier: ^10.6.1
+        version: 10.6.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(storybook@10.6.1(@types/react@19.3.0)(react@19.3.0))(typescript@7.0.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
+      '@types/node':
+        specifier: ^26.6.5
+        version: 26.6.5
+      '@types/react':
+        specifier: ^19.3.0
+        version: 19.3.0
+      '@vitejs/plugin-react':
+        specifier: ^6.1.2
+        version: 6.1.2(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
+      storybook:
+        specifier: ^10.6.1
+        version: 10.6.1(@types/react@19.3.0)(react@19.3.0)
+      tsx:
+        specifier: ^4.23.15
+        version: 4.23.15
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^8.3.4
+        version: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15)
+
+  packages/styling:
+    dependencies:
+      '@emotion/react':
+        specifier: ^11.14.0
+        version: 11.14.0(@types/react@19.3.0)(react@19.3.0)
+      '@jfrader/tokens':
+        specifier: workspace:*
+        version: link:../tokens
+      react:
+        specifier: ^19.0.0
+        version: 19.3.0
+    devDependencies:
+      '@types/node':
+        specifier: ^26.6.5
+        version: 26.6.5
+      '@types/react':
+        specifier: ^19.3.0
+        version: 19.3.0
+      '@vitejs/plugin-react':
+        specifier: ^6.1.2
+        version: 6.1.2(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15))
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vite:
+        specifier: ^8.3.4
+        version: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15)
 
   packages/tokens:
     devDependencies:
@@ -197,6 +265,12 @@ importers:
       '@internationalized/number':
         specifier: ^3.6.9
         version: 3.6.9
+      '@jfrader/icons':
+        specifier: workspace:^
+        version: link:../icons
+      '@jfrader/styling':
+        specifier: workspace:*
+        version: link:../styling
       '@jfrader/tokens':
         specifier: workspace:*
         version: link:../tokens
@@ -1974,15 +2048,6 @@ packages:
 
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
-
-  lucide-react@1.55.0:
-    resolution: {integrity: sha512-bSozQHiI3/8q7JvgoqVRGOYUi7fYT3siAZwmZsljjsOH2Husp/2ODdFf/leD+ZC/2yKfn7r8oh6yeoR3ITR5vA==}
-    peerDependencies:
-      '@types/react': '*'
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
 
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
@@ -4012,12 +4077,6 @@ snapshots:
   lru-cache@5.1.1:
     dependencies:
       yallist: 3.1.1
-
-  lucide-react@1.55.0(@types/react@19.3.0)(react@19.3.0):
-    dependencies:
-      react: 19.3.0
-    optionalDependencies:
-      '@types/react': 19.3.0
 
   lz-string@1.5.0: {}
 

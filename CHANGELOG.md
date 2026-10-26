@@ -4,6 +4,13 @@
 
 ### Added
 
+- `SvgIcon` and `createSvgIcon`: one drawing component for library icons and your own marks, with `line` and `solid` paint, size presets plus exact pixels and `size="inherit"`, semantic tones, accessible naming, and replaceable root and title. Both are importable from `@jfrader/ui` and from `@jfrader/icons`, where the component now lives.
+- `@jfrader/icons`: 300 icons on a 24-unit grid, each with a solid twin where a selected state needs one, including Bitcoin and Satoshi marks. Generated from SVG sources with a geometry lint, exported per icon.
+- Components take their glyphs from the set: VoiceRecorder, InlineEdit, CopyButton, Stepper, SearchField, AttachmentList, PasswordField, TagInput, NumberField, ExpandingSearch, ViewerChrome, Toast, UserMenu, DataTable, ContextMenu, CommentThread, Carousel, SplitButton, DialogStack, LocaleSwitcher, ButtonGroup and ChipGroup.
+
+### Changed
+
+- `@jfrader/styling` owns the shared Emotion seam (css, sx, theme, media, scrollbar) beneath `@jfrader/icons` and `@jfrader/ui`. Existing imports keep working.
 - `Morph` provides an anchored, nonmodal surface with named steps, per-step widths, focus management, and Escape navigation. `ActionMorph` accepts consumer-owned content composers and configurable menu and composer widths while retaining its text composer.
 
 ### Changed
@@ -18,12 +25,6 @@
 - `Dock` keeps multiline tray labels above running and selection markers.
 - `ColorPicker` shows the selected color beside the hex field, so the panel no longer leaves the pad as its only sample of the color.
 
-## 0.18.0 — 2026-10-25
-
-### Changed
-
-- Button, TextField, Select, NumberField, MoneyInput, and SegmentedControl share 2rem, 2.5rem, and 3rem control heights. SegmentedControl now includes its track padding in that height, Select's small trigger is shorter, and MoneyInput uses the same text sizes as other controls. Remove consumer height overrides so controls retain their responsive sizing and touch targets. Multiline textareas and prominent amount editors keep their taller layouts.
-- Single-line control heights now follow the root font size, including PasswordField, SearchField, PhoneInput, MultiSelect, TagInput, DateRangePicker, ColorPicker, LocaleSwitcher, TimePicker, CopyButton, ButtonGroup, ChipGroup, and SplitButton. Coarse-pointer minimums align text and numeric fields with the other controls. MoneyInput `md` text drops to `0.875rem`, and `lg` text drops to `1rem`. ColorPicker's color preview now fits its trigger at each size.
 
 ## 0.17.1 — 2026-10-25
 

@@ -14,6 +14,7 @@ import {
 import { useMergeRefs } from '@floating-ui/react';
 import { animate, useMotionValue } from 'motion/react';
 import { base } from '@jfrader/tokens';
+import { Search } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type SerializedStyles } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
@@ -180,12 +181,7 @@ const iconStyle = css({
   '& > svg': { inlineSize: '100%', blockSize: '100%' },
 });
 // Not mirrored under :dir(rtl): the magnifier is not directional, and SearchField keeps the same glyph unmirrored.
-const searchGlyph = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <circle cx="10.5" cy="10.5" r="6.5" />
-    <path d="m16 16 5 5" />
-  </svg>
-);
+const searchGlyph = <Search size="inherit" decorative />;
 
 const sameGeometry = (a: Geometry | undefined, b: Geometry) =>
   a?.expanded === b.expanded && a.size === b.size && a.radius === b.radius;

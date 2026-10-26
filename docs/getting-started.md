@@ -203,16 +203,37 @@ put its `variable` class on `<html>`, and set
 `--ui-font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif` in app CSS.
 [Theming](./theming.md) explains where CSS token overrides apply.
 
-For icons, install `lucide-react` in your app or pass your own SVG:
+For icons, install `@jfrader/icons` next to `@jfrader/ui`:
 
 ```tsx
 import { Button } from '@jfrader/ui';
-import { Inbox } from 'lucide-react';
+import { Inbox } from '@jfrader/icons';
 
 export function InboxButton() {
   return <Button startIcon={<Inbox />}>Inbox</Button>;
 }
 ```
+
+Import one icon by name, or a single icon on its own subpath when you want the smallest import:
+
+```tsx
+import { Inbox } from '@jfrader/icons';
+import { Search } from '@jfrader/icons/search';
+```
+
+Draw your own with the same component every bundled icon uses:
+
+```tsx
+import { createSvgIcon } from '@jfrader/ui';
+
+export const BrandMark = createSvgIcon(
+  <path d="M4 12C4 6 12 4 12 12C12 20 20 18 20 12" />,
+  'BrandMark',
+);
+```
+
+Ours is the default, not a requirement. Every place that takes an icon takes a `ReactNode`, so
+`lucide-react`, another set, or a component of your own drops into the same props with no wrapper.
 
 A `Badge` count is not part of the wrapped control's accessible name. When the control has an
 `aria-label`, include the count there, as in `aria-label="Inbox, 3 unread"`. With a visible text

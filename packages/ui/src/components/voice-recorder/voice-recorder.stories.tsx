@@ -115,6 +115,10 @@ export function VoiceNote({ onRecordRequest, onStopRequest, onSend }: AudioActio
 
     const recordButton = canvas.getByRole('button', { name: 'Record voice note' });
     await expect(recordButton).toBeVisible();
+    const icon = recordButton.querySelector('[data-ui~="svg-icon"]');
+    await expect(icon).toHaveAttribute('aria-hidden', 'true');
+    await expect(icon!.getBoundingClientRect().width).toBe(16);
+    await expect(icon!.getBoundingClientRect().height).toBe(16);
 
     await userEvent.click(recordButton);
     await expect(args.onRecordRequest).toHaveBeenCalledTimes(1);
