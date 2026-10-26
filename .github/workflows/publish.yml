@@ -108,7 +108,8 @@ jobs:
 
       # Publish dependencies first: tokens → styling → icons → ui.
       # npmjs authenticates through each package's trusted publisher (OIDC) for this workflow; no token.
-      - name: Publish to npmjs
+      - name: Publish to npmjs (registry.npmjs.org)
+        id: npmjs
         run: |
           node scripts/publish-registry.mjs "${{ steps.pack.outputs.tokens }}" https://registry.npmjs.org packages/tokens/package.json
           node scripts/publish-registry.mjs "${{ steps.pack.outputs.styling }}" https://registry.npmjs.org packages/styling/package.json
@@ -116,6 +117,7 @@ jobs:
           node scripts/publish-registry.mjs "${{ steps.pack.outputs.ui }}" https://registry.npmjs.org packages/ui/package.json
 
       - name: Set up GitHub Packages
+        if: always()
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: 24
@@ -123,7 +125,9 @@ jobs:
           scope: "@jfrader"
           package-manager-cache: false
 
-      - name: Publish to GitHub Packages
+      - name: Publish to GitHub Packages (npm.pkg.github.com)
+        id: github_packages
+        if: always()
         run: |
           node scripts/publish-registry.mjs "${{ steps.pack.outputs.tokens }}" https://npm.pkg.github.com packages/tokens/package.json
           node scripts/publish-registry.mjs "${{ steps.pack.outputs.styling }}" https://npm.pkg.github.com packages/styling/package.json
@@ -131,3 +135,11 @@ jobs:
           node scripts/publish-registry.mjs "${{ steps.pack.outputs.ui }}" https://npm.pkg.github.com packages/ui/package.json
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Report release visibility at both registries
+        if: always()
+        env:
+          NPMJS_OUTCOME: ${{ steps.npmjs.outcome }}
+          GITHUB_PACKAGES_OUTCOME: ${{ steps.github_packages.outcome }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/report-release-visibility.mjs

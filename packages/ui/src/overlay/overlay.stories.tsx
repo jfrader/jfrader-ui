@@ -11,7 +11,7 @@ import { Tooltip } from '../components/tooltip/tooltip';
 import { useOverlayFloating } from './use-overlay-floating';
 import { useScrollLock } from './use-scroll-lock';
 
-const meta = { title: 'Internals/Overlay' } satisfies Meta;
+const meta = { title: 'Internals/Overlay', tags: ['!autodocs'] } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 

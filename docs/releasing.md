@@ -22,8 +22,15 @@ The workflow refuses the release unless the tag matches all four manifest versio
 are correct, and the commit is on `master`. It then runs typecheck, tests, `verify:exports`, and
 `verify:icons`, checks generated tokens and icons, builds all four packages in dependency order, and
 packs each one once with `pnpm pack`, so `workspace:*` becomes the released version. It verifies or
-publishes those exact four tarballs to npmjs, then to GitHub Packages, in the same dependency order.
+publishes those exact four tarballs to two registries: npmjs, then GitHub Packages, in the same
+dependency order. The registries are attempted independently within the same job: an npmjs failure
+still fails the release, but does not skip GitHub Packages. A failed package stops later packages
+within that registry.
 Workspace dependencies remain separate packages, not bundled copies inside UI or icons.
+
+Open the workflow run's final **Report release visibility at both registries** step to see which
+package versions are visible at each registry, which registry was skipped, or which visibility checks
+could not be completed. This report runs even after a failure.
 
 A matching artifact that already exists at that version is accepted. A different artifact at the same
 version fails the release.
@@ -75,17 +82,24 @@ pnpm --filter @jfrader/tokens build
 pnpm --filter @jfrader/styling build
 pnpm --filter @jfrader/icons build
 pnpm --filter @jfrader/ui build
-pnpm --filter @jfrader/ui exec npm pack --dry-run --json
 ```
 
 Write a tarball somewhere disposable, then inspect it:
 
 ```sh
-pnpm --filter @jfrader/tokens pack --pack-destination /tmp/opencode/jfrader-ui-release
+pack_dir="$(mktemp -d /tmp/opencode/jfrader-ui-release.XXXXXX)"
+pnpm --filter @jfrader/ui pack --pack-destination "$pack_dir"
+tar -tzf "$pack_dir"/*.tgz
+tar -xOzf "$pack_dir"/*.tgz package/package.json
+rm -r "$pack_dir"
 ```
 
 Build in dependency order before packing. Each package's `prepack` builds and validates only its own
 exports, and its `postpack` restores only its own source exports.
+
+Do not use `npm pack --dry-run`: it runs `prepack`, which flips the manifest exports to `dist`, but
+does not run `postpack`, leaving a dirty tree. A real `pnpm pack` runs both hooks. If packing fails
+after the flip, restore source exports with `node scripts/flip-exports.mjs src`.
 
 Each tarball includes its manifest and `dist/**`, plus npm's automatically included README and license
 files when present. Tokens also ships `base.css` and generated `dist/tokens.css`. Styling ships its
