@@ -1,6 +1,21 @@
 {
   "name": "@jfrader/icons",
   "version": "0.19.1",
+  "description": "React icons and SVG icon components for @jfrader/ui.",
+  "keywords": [
+    "react",
+    "icons",
+    "svg",
+    "design-system",
+    "accessibility"
+  ],
+  "homepage": "https://github.com/jfrader/jfrader-ui/tree/master/packages/icons#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jfrader/jfrader-ui.git",
+    "directory": "packages/icons"
+  },
+  "license": "MIT",
   "type": "module",
   "sideEffects": false,
   "files": [

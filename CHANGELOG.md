@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `@jfrader/icons` and `@jfrader/styling` now carry the metadata npm shows on the package page.
+
 ### Changed
 
 - `Timeline` uses separated day headings, a single marker rail, event-first summaries, and inline expanded details. Timestamps move below each event in narrow containers, and disclosure targets stay at least 44px tall. Details unfold when opened, and new-event markers pulse once; both honor reduced motion.
