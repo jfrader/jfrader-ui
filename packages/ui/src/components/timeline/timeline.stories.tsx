@@ -615,8 +615,8 @@ const events: TimelineEvent[] = [
 
 export const DetailUnfold: Story = {
   tags: ['!autodocs'],
-  args: { defaultValue: ['deploy'] },
-  play: async ({ canvasElement, userEvent }) => {
+  args: { defaultValue: ['deploy'], slotProps: { detail: { onFocus: fn() } } },
+  play: async ({ canvasElement, userEvent, args }) => {
     const deployDetail = controlled(triggerOf(canvasElement, 'deploy'));
     const build = triggerOf(canvasElement, 'build');
     const detail = controlled(build);
@@ -637,6 +637,18 @@ export const DetailUnfold: Story = {
     await expect(detail).not.toHaveAttribute('data-enter');
     await userEvent.click(build);
     await expect(detail).toHaveAttribute('data-enter');
+    const keys = triggerOf(canvasElement, 'keys');
+    await userEvent.click(keys);
+    const editableDetail = controlled(keys);
+    const input = within(editableDetail).getByRole('textbox');
+    const [reveal] = editableDetail.getAnimations();
+    await expect(reveal).toBeDefined();
+    reveal!.pause();
+    reveal!.currentTime = 0;
+    await userEvent.tab();
+    await expectFocusRing(input);
+    await expect(args.slotProps?.detail?.onFocus).toHaveBeenCalledTimes(1);
+    await expect(getComputedStyle(editableDetail).clipPath).toBe('none');
   },
 };
 

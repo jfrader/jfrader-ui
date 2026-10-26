@@ -10,6 +10,7 @@
 ### Fixed
 
 - `Timeline` keeps keyboard-focused events inside bounded histories, clear of sticky day headings.
+- `Timeline` completes the detail reveal when focus enters it, so keyboard users never land in clipped content.
 - `Dock` places persistent toolbar labels below icons, keeps tray labels beside icons, and wraps long labels inside their buttons.
 - `Dock` group trays escape scrolling previews and use their full width when viewport space allows.
 - `Dock` toolbar labels no longer obstruct an open group tray at enlarged text sizes.

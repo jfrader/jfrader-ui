@@ -251,6 +251,12 @@ export function TimelineRow({
           data-ui="timeline-detail"
           data-state={state}
           data-enter={opening ? '' : undefined}
+          onFocus={(focus) => {
+            slotProps?.detail?.onFocus?.(focus);
+            for (const animation of focus.currentTarget.getAnimations()) {
+              if ('animationName' in animation && animation.animationName === unfold.name) animation.finish();
+            }
+          }}
           className={slotProps?.detail?.className}
           css={[detailStyle, slotProps?.detail?.sx]}
         >
