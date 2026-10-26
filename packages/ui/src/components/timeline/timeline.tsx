@@ -1,4 +1,3 @@
-import { withoutSx } from '../../styling/sx';
 'use client';
 
 // Semantics: a named `region` holding one group per local calendar day, labelled by a real day
@@ -17,6 +16,8 @@ import { withoutSx } from '../../styling/sx';
 // Updates: new rows never take focus; while the reader is in history (scrolled or focused inside the
 // bounded scroller) the visible row keeps its position. `scrollToNew` opts into scrolling to a newer
 // event. Genuinely new ids are announced through a text-only status region.
+// Motion: a newly opened detail unfolds and a new row fades in while its marker rings once. Neither
+// moves layout boxes, so anchoring and focus never wait on them; reduced motion turns both off.
 import {
   type ComponentType,
   type ComponentProps,
@@ -34,12 +35,9 @@ import {
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, keyframes, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
-import { disclosureCaret } from '../../styling/disclosure-caret';
+import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
-import { iconWrapperStyle } from '../../styling/icon-wrapper';
-import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import type { SxProps } from '../../styling/sx';
+import { withoutSx, type SxProps } from '../../styling/sx';
 import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import {
@@ -52,10 +50,9 @@ import {
   validEpoch,
 } from '../../utils/intl';
 import { partId } from '../../utils/part-id';
-import { isRenderable } from '../../utils/renderable';
 import { queryOwnedItems, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
-import { Avatar } from '../avatar';
+import { TimelineRow } from './timeline-row';
 
 export type TimelineTone = 'neutral' | 'success' | 'danger';
 export type TimelineSize = 'sm' | 'md';
@@ -155,7 +152,7 @@ export interface TimelineProps
   maxHeight?: CSSProperties['maxHeight'];
   /** Scroll to an event newer than any shown before. Never moves focus. */
   scrollToNew?: boolean;
-  /** Set event spacing and heading/trigger padding. Defaults to `md`. */
+  /** Set marker size and spacing between events and days. Defaults to `md`. */
   size?: TimelineSize;
   /** Override the region name, empty/invalid-time messages, and event-count labels. */
   labels?: Partial<TimelineLabels>;
@@ -222,9 +219,6 @@ const KEY_TARGETS: Partial<Record<string, (index: number, count: number) => numb
   Home: () => 0,
   End: (_index, count) => count - 1,
 };
-
-/** Empty strings render nothing, so they count as absent like false/null; 0 is content. */
-const hasContent = (node: ReactNode) => isRenderable(node) && node !== '';
 
 function createFormatters(locale: Intl.LocalesArgument, timeZone: string): Formatters {
   return {
@@ -326,41 +320,32 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const isReducedMotion = (element: Element) =>
   element.ownerDocument.defaultView?.matchMedia(REDUCED_MOTION_QUERY).matches ?? false;
 
-const fadeIn = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
-
 const rootStyle = css({
   position: 'relative',
   minInlineSize: 0,
+  containerType: 'inline-size',
+  containerName: 'timeline',
+  '--timeline-head-size': `max(${vars.size.touch}, ${vars.size.controlMd})`,
   fontFamily: vars.font.sans,
   fontSize: vars.textSize.sm,
   lineHeight: vars.lineHeight.base,
   color: vars.color.text,
 });
 
-// Per-size spacing as custom properties read by the parts. A heading sits closer to its own events
-// than the events sit to each other, and days sit further apart than both.
 const sizeStyles: Record<TimelineSize, SerializedStyles> = {
   sm: css({
-    '--timeline-row-gap': vars.space[2],
-    '--timeline-day-gap': vars.space[3],
-    '--timeline-heading-pad': vars.space[1],
-    '--timeline-trigger-pad': vars.space[1],
-  }),
-  md: css({
+    '--timeline-marker-size': `calc(${vars.size.controlSm} * 0.75)`,
+    '--timeline-column-gap': vars.space[3],
     '--timeline-row-gap': vars.space[4],
     '--timeline-day-gap': vars.space[6],
-    '--timeline-heading-pad': vars.space[2],
-    '--timeline-trigger-pad': vars.space[2],
+  }),
+  md: css({
+    '--timeline-marker-size': vars.size.controlSm,
+    '--timeline-column-gap': vars.space[4],
+    '--timeline-row-gap': vars.space[6],
+    '--timeline-day-gap': vars.space[8],
   }),
 };
-
-// Every row's first line is one disclosure tall, so the marker, the rail and the title share one
-// centre line whether or not the row has a disclosure.
-const MARKER_SIZE = vars.space[6];
-const MARKER_GAP = vars.space[3];
-const ROW_HEAD = vars.space[8];
-const RAIL_WIDTH = '2px';
-const TRIGGER_BORDER = '1px';
 
 const scrollerStyle = css({
   '&[data-bounded]': {
@@ -368,8 +353,8 @@ const scrollerStyle = css({
     overscrollBehavior: 'contain',
     // Anchoring is done by the component, so the browser's own adjustment must not add to it.
     overflowAnchor: 'none',
-    // Keeps a focused or scrolled-to row clear of the sticky day heading.
-    scrollPaddingBlockStart: vars.space[10],
+    // The only clearance for a focused or scrolled-to row: the sticky day heading wrapped to two lines.
+    scrollPaddingBlockStart: `calc(2lh + 3 * ${vars.space[3]})`,
   },
   '&:focus-visible': { ...focusRingInset },
 });
@@ -379,25 +364,31 @@ const groupStyle = css({
 });
 
 const headingStyle = css({
-  position: 'sticky',
-  insetBlockStart: 0,
-  zIndex: 1,
   display: 'flex',
   flexWrap: 'wrap',
-  alignItems: 'baseline',
-  columnGap: vars.space[2],
+  alignItems: 'center',
+  gap: vars.space[3],
   margin: 0,
-  paddingBlock: 'var(--timeline-heading-pad)',
-  paddingInlineStart: `calc(${MARKER_SIZE} + ${MARKER_GAP})`,
-  backgroundColor: vars.color.surface,
+  marginBlockEnd: vars.space[3],
+  paddingBlock: vars.space[3],
   fontSize: vars.textSize.sm,
   fontWeight: vars.fontWeight.semibold,
   color: vars.color.text,
+  overflowWrap: 'anywhere',
+  '&::after': { content: '""', flex: '1 1 0', order: 1, borderBlockStart: `1px solid ${vars.color.border}` },
+  '&[data-sticky]': {
+    position: 'sticky',
+    insetBlockStart: 0,
+    zIndex: 1,
+    backgroundColor: vars.color.surface,
+  },
 });
 
 const dayCountStyle = css({
+  order: 2,
   fontSize: vars.textSize.xs,
   fontWeight: vars.fontWeight.regular,
+  fontVariantNumeric: 'tabular-nums',
   color: vars.color.textMuted,
 });
 
@@ -407,194 +398,11 @@ const listStyle = css({
   padding: 0,
 });
 
-const itemStyle = css({
-  position: 'relative',
-  display: 'grid',
-  gridTemplateColumns: `${MARKER_SIZE} minmax(0, 1fr)`,
-  columnGap: MARKER_GAP,
-  paddingBlockEnd: 'var(--timeline-row-gap)',
-  '&:last-child': { paddingBlockEnd: 0 },
-  // Rail from this marker's centre to the next one's, painted under both markers; drawn with a
-  // border so forced colors keep it.
-  '&::before': {
-    content: '""',
-    position: 'absolute',
-    insetBlockStart: `calc(${ROW_HEAD} / 2)`,
-    insetBlockEnd: `calc(${ROW_HEAD} / -2)`,
-    insetInlineStart: `calc((${MARKER_SIZE} - ${RAIL_WIDTH}) / 2)`,
-    borderInlineStart: `${RAIL_WIDTH} solid ${vars.color.border}`,
-  },
-  '&:last-child::before': { content: 'none' },
-  '&[data-new]': {
-    animationName: fadeIn,
-    animationDuration: vars.motion.duration.base,
-    animationTimingFunction: vars.motion.easeStandard,
-  },
-  [REDUCED_MOTION]: { '&[data-new]': { animation: 'none' } },
-  [FORCED_COLORS]: { '&::before': { borderInlineStartColor: 'GrayText' } },
-});
-
-const markerStyle = css({
-  position: 'relative',
-  boxSizing: 'border-box',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  inlineSize: MARKER_SIZE,
-  blockSize: MARKER_SIZE,
-  marginBlock: `calc((${ROW_HEAD} - ${MARKER_SIZE}) / 2)`,
-  borderRadius: vars.radius.full,
-  border: `1px solid ${vars.color.borderStrong}`,
-  backgroundColor: vars.color.surface,
-  color: vars.color.textMuted,
-  overflow: 'hidden',
-  fontSize: vars.textSize.xs,
-  '&[data-kind="avatar"]': { border: 0 },
-  [FORCED_COLORS]: { borderColor: 'CanvasText', color: 'CanvasText' },
-});
-
-const markerToneStyles: Record<TimelineTone, SerializedStyles> = {
-  neutral: css({}),
-  success: css({ borderColor: vars.color.success, color: vars.color.success }),
-  danger: css({ borderColor: vars.color.dangerText, color: vars.color.dangerText }),
-};
-
-const markerDotStyle = css({
-  inlineSize: vars.space[2],
-  blockSize: vars.space[2],
-  borderRadius: vars.radius.full,
-  backgroundColor: 'currentColor',
-  [FORCED_COLORS]: { backgroundColor: 'CanvasText', forcedColorAdjust: 'none' },
-});
-
-const bodyStyle = css({
-  minInlineSize: 0,
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'baseline',
-  columnGap: vars.space[3],
-  rowGap: vars.space[1],
-});
-
-// Short content leaves room for the time on the same line; long content takes the whole line and
-// the time wraps below it instead of squeezing the disclosure target.
-const contentStyle = css({
-  flex: '1 1 0',
-  minInlineSize: 'fit-content',
-  maxInlineSize: '100%',
-  display: 'grid',
-  rowGap: vars.space[1],
-  overflowWrap: 'anywhere',
-});
-
-const titleLineStyle = css({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  columnGap: vars.space[2],
-  minBlockSize: ROW_HEAD,
-});
-
-const actorStyle = css({ fontWeight: vars.fontWeight.semibold });
-
-const titleStyle = css({ fontWeight: vars.fontWeight.medium });
-
-const triggerStyle = css({
-  appearance: 'none',
-  boxSizing: 'border-box',
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: vars.space[2],
-  maxInlineSize: '100%',
-  minBlockSize: vars.space[8],
-  margin: 0,
-  paddingBlock: vars.space[1],
-  paddingInline: 'var(--timeline-trigger-pad)',
-  // Transparent border becomes the button boundary in forced colors.
-  border: `${TRIGGER_BORDER} solid transparent`,
-  borderRadius: vars.radius.sm,
-  background: 'transparent',
-  font: 'inherit',
-  fontWeight: vars.fontWeight.medium,
-  color: vars.color.text,
-  textAlign: 'start',
-  overflowWrap: 'anywhere',
-  cursor: 'pointer',
-  transitionProperty: 'background-color',
-  transitionDuration: vars.motion.duration.fast,
-  transitionTimingFunction: vars.motion.easeStandard,
-  '&::after': { ...disclosureCaret, transitionDuration: vars.motion.duration.fast },
-  '&[aria-expanded="true"]::after': { transform: 'rotate(90deg)' },
-  // The caret points toward inline-end, so under RTL it turns the other way to point down.
-  '&[aria-expanded="true"]:dir(rtl)::after': { transform: 'rotate(-90deg)' },
-  // The disclosure moves its border and padding into the space before it (the marker gap, or the gap
-  // after the actor), so its text starts where a plain title's would.
-  marginInlineStart: `calc(-1 * (var(--timeline-trigger-pad) + ${TRIGGER_BORDER}))`,
-  '&:hover': { backgroundColor: vars.color.surfaceHover },
-  '&:focus-visible': { ...focusRingInset },
-  [REDUCED_MOTION]: { transitionDuration: '0s', '&::after': { transitionDuration: '0s' } },
-  [FORCED_COLORS]: {
-    '&:focus-visible': { outlineColor: 'Highlight' },
-    '&::after': { forcedColorAdjust: 'none', color: 'ButtonText' },
-  },
-});
-
-const metaStyle = css({
-  fontSize: vars.textSize.xs,
-  color: vars.color.textMuted,
-});
-
-const timeStyle = css({
-  flexShrink: 0,
-  fontSize: vars.textSize.xs,
-  color: vars.color.textMuted,
-  fontVariantNumeric: 'tabular-nums',
-  whiteSpace: 'nowrap',
-});
-
-const detailStyle = css({
-  gridColumn: 2,
-  marginBlockStart: vars.space[2],
-  paddingBlock: vars.space[3],
-  paddingInline: vars.space[3],
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.md,
-  backgroundColor: vars.color.surface,
-  color: vars.color.text,
-  lineHeight: vars.lineHeight.relaxed,
-  overflowWrap: 'anywhere',
-  '&[hidden]': { display: 'none' },
-});
-
 const emptyStyle = css({
   margin: 0,
   paddingBlock: vars.space[4],
   color: vars.color.textMuted,
 });
-
-function TimelineMarker({ event, part, component: Marker = 'span' }: { event: TimelineEvent; part?: TimelineSlotProps['marker']; component?: TimelineSlots['marker'] | 'span' }) {
-  const tone = event.tone ?? 'neutral';
-  const kind = event.avatar ? 'avatar' : hasContent(event.icon) ? 'icon' : event.actor ? 'avatar' : 'dot';
-  const content = {
-    avatar: <Avatar name={event.actor ?? ''} src={event.avatar} size="sm" />,
-    icon: <span css={iconWrapperStyle}>{event.icon}</span>,
-    dot: <span css={markerDotStyle} />,
-  }[kind];
-  // The adjacent actor and title text identify the event; the marker only decorates it.
-  return (
-    <Marker
-      {...withoutSx(part)}
-      aria-hidden="true"
-      data-ui="timeline-marker"
-      data-kind={kind}
-      data-tone={tone}
-      className={part?.className}
-      css={[markerStyle, markerToneStyles[tone], part?.sx]}
-    >
-      {content}
-    </Marker>
-  );
-}
 
 export function Timeline({
   ref,
@@ -627,11 +435,6 @@ export function Timeline({
   const Group = slots?.group ?? 'section';
   const Heading = slots?.heading ?? `h${headingLevel}`;
   const List = slots?.list ?? 'ol';
-  const Item = slots?.item ?? 'li';
-  const Marker = slots?.marker ?? 'span';
-  const Trigger = slots?.trigger ?? 'button';
-  const Time = slots?.time ?? 'time';
-  const Detail = slots?.detail ?? 'div';
   const Status = slots?.status ?? 'div';
   const baseId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -654,8 +457,15 @@ export function Timeline({
   const openKey = idSetKey(open);
   // The id set last requested from the current open set; a request repeating it is not re-sent.
   const lastRequest = useRef<string | null>(null);
+  // Details opened since the previous commit unfold; nothing unfolds on first render.
+  const committedOpen = useRef<ReadonlySet<string> | null>(null);
+  const opening = useMemo(() => {
+    const previous = committedOpen.current;
+    return new Set(previous ? open.filter((id) => !previous.has(id)) : []);
+  }, [openKey]);
   useLayoutEffect(() => {
     lastRequest.current = null;
+    committedOpen.current = new Set(open);
   }, [openKey]);
   const toggle = (id: string) => {
     const next = openIds.has(id) ? open.filter((openId) => openId !== id) : [...open, id];
@@ -802,181 +612,124 @@ export function Timeline({
   const describedBy = [ariaDescribedBy, empty ? emptyId : undefined].filter(Boolean).join(' ') || undefined;
 
   return (
-        <PresentationSlot
-          element="div"
-          component={slots?.root ?? component}
-          slotProps={{ ...slotProps?.root, role: 'region', 'data-size': size, onKeyDown: handleKeyDown, onFocus: handleFocus, onBlur: handleBlur }}
-          styles={[rootStyle, sizeStyles[size]]}
-          sx={sx}
-          {...rest}
-          ref={mergedRef}
-          role="region"
-          {...name}
-          aria-describedby={describedBy}
-          marker="timeline"
-          className={className}
-        >
-          <Scroller
-            {...withoutSx(slotProps?.scroller)}
-            ref={mergedScrollerRef}
-            data-ui="timeline-scroller"
-            data-bounded={bounded ? '' : undefined}
-            // A bounded scroller must be scrollable from the keyboard even without disclosures, so it
-            // is a tab stop and carries the timeline's name.
-            {...(bounded ? { tabIndex: 0, role: 'group', ...name } : undefined)}
-            style={bounded ? { ...slotProps?.scroller?.style, maxBlockSize: maxHeight } : slotProps?.scroller?.style}
-            onScroll={(event) => {
-              slotProps?.scroller?.onScroll?.(event);
-              captureAnchor();
-            }}
-            className={slotProps?.scroller?.className}
-            css={[scrollerStyle, slotProps?.scroller?.sx]}
-          >
-            {empty ? (
-              <p id={emptyId} data-ui="timeline-empty" css={emptyStyle}>
-                {labels.empty}
-              </p>
-            ) : (
-              groups.map((group) => {
-                const headingId = partId(baseId, 'day', group.key);
-                return (
-                  // A group, not a named section: one region landmark per day would flood landmark navigation.
-                  <Group
-                    {...withoutSx(slotProps?.group)}
-                    key={group.key}
-                    role="group"
-                    aria-labelledby={headingId}
-                    data-ui="timeline-group"
-                    data-day={group.key}
-                    className={slotProps?.group?.className}
-                    css={[groupStyle, slotProps?.group?.sx]}
-                  >
-                    <Heading
-                      {...withoutSx(slotProps?.heading)}
-                      id={headingId}
-                      data-ui="timeline-heading"
-                      className={slotProps?.heading?.className}
-                      css={[headingStyle, slotProps?.heading?.sx]}
-                    >
-                      {group.epoch === null ? (
-                        <span>{dayHeading(group, formatters, labels)}</span>
-                      ) : (
-                        <time dateTime={group.key}>{dayHeading(group, formatters, labels)}</time>
-                      )}
-                      <span css={dayCountStyle}>{labels.dayCount(group.rows.length)}</span>
-                    </Heading>
-                    <List
-                      {...withoutSx(slotProps?.list)}
-                      data-ui="timeline-list"
-                      className={slotProps?.list?.className}
-                      css={[listStyle, slotProps?.list?.sx]}
-                    >
-                      {group.rows.map(({ event, epoch, order }) => {
-                        const expandable = hasContent(event.detail);
-                        const expanded = expandable && openIds.has(event.id);
-                        const detailId = partId(baseId, 'detail', event.id);
-                        const fullDateId = partId(baseId, 'when', event.id);
-                        const title = expandable ? (
-                          <Trigger
-                            {...withoutSx(slotProps?.trigger)}
-                            type="button"
-                            data-ui="timeline-trigger"
-                            aria-expanded={expanded}
-                            aria-controls={detailId}
-                            aria-describedby={epoch === null ? undefined : fullDateId}
-                            onClick={(click) => {
-                              slotProps?.trigger?.onClick?.(click);
-                              if (!click.defaultPrevented) toggle(event.id);
-                            }}
-                            className={slotProps?.trigger?.className}
-                            css={[triggerStyle, slotProps?.trigger?.sx]}
-                          >
-                            {event.title}
-                          </Trigger>
-                        ) : (
-                          <span data-ui="timeline-title" css={titleStyle}>
-                            {event.title}
-                          </span>
-                        );
-                        return (
-                          <Item
-                            {...withoutSx(slotProps?.item)}
-                            key={JSON.stringify([event.id, duplicateIds.includes(event.id) ? order : null])}
-                            data-ui="timeline-item"
-                            data-event-id={event.id}
-                            data-tone={event.tone ?? 'neutral'}
-                            data-state={expandable ? (expanded ? 'open' : 'closed') : undefined}
-                            data-new={entering.has(event.id) ? '' : undefined}
-                            className={slotProps?.item?.className}
-                            css={[itemStyle, slotProps?.item?.sx]}
-                          >
-                            <TimelineMarker event={event} part={slotProps?.marker} component={Marker} />
-                            <div css={bodyStyle}>
-                              <div css={contentStyle}>
-                                <div css={titleLineStyle}>
-                                  {event.actor ? (
-                                    <span data-ui="timeline-actor" css={actorStyle}>
-                                      {event.actor}
-                                    </span>
-                                  ) : null}
-                                  {title}
-                                </div>
-                                {hasContent(event.meta) ? (
-                                  <div data-ui="timeline-meta" css={metaStyle}>
-                                    {event.meta}
-                                  </div>
-                                ) : null}
-                              </div>
-                              {epoch === null ? null : (
-                                <Time
-                                  {...withoutSx(slotProps?.time)}
-                                  dateTime={new Date(epoch).toISOString()}
-                                  data-ui="timeline-time"
-                                  className={slotProps?.time?.className}
-                                  css={[timeStyle, slotProps?.time?.sx]}
-                                >
-                                  {validNow === null
-                                    ? formatters.clock.format(epoch)
-                                    : relativeTime(epoch, validNow, group.distance ?? 0, formatters)}
-                                  <span id={fullDateId} css={visuallyHiddenStyle}>
-                                    {formatters.full.format(epoch)}
-                                  </span>
-                                </Time>
-                              )}
-                            </div>
-                            {expandable ? (
-                              <Detail
-                                {...withoutSx(slotProps?.detail)}
-                                id={detailId}
-                                hidden={!expanded}
-                                data-ui="timeline-detail"
-                                data-state={expanded ? 'open' : 'closed'}
-                                className={slotProps?.detail?.className}
-                                css={[detailStyle, slotProps?.detail?.sx]}
-                              >
-                                {event.detail}
-                              </Detail>
-                            ) : null}
-                          </Item>
-                        );
-                      })}
-                    </List>
-                  </Group>
-                );
-              })
-            )}
-          </Scroller>
-          <Status
-            {...withoutSx(slotProps?.status)}
-            role="status"
-            aria-atomic="true"
-            data-ui="timeline-status"
-            className={slotProps?.status?.className}
-            css={[visuallyHiddenStyle, slotProps?.status?.sx]}
-          >
-            {announcement.text ? <span key={announcement.key}>{announcement.text}</span> : null}
-          </Status>
-        </PresentationSlot>
+    <PresentationSlot
+      element="div"
+      component={slots?.root ?? component}
+      slotProps={{
+        ...slotProps?.root,
+        role: 'region',
+        'data-size': size,
+        onKeyDown: handleKeyDown,
+        onFocus: handleFocus,
+        onBlur: handleBlur,
+      }}
+      styles={[rootStyle, sizeStyles[size]]}
+      sx={sx}
+      {...rest}
+      ref={mergedRef}
+      role="region"
+      {...name}
+      aria-describedby={describedBy}
+      marker="timeline"
+      className={className}
+    >
+      <Scroller
+        {...withoutSx(slotProps?.scroller)}
+        ref={mergedScrollerRef}
+        data-ui="timeline-scroller"
+        data-bounded={bounded ? '' : undefined}
+        // A bounded scroller must be scrollable from the keyboard even without disclosures, so it
+        // is a tab stop and carries the timeline's name.
+        {...(bounded ? { tabIndex: 0, role: 'group', ...name } : undefined)}
+        style={bounded ? { ...slotProps?.scroller?.style, maxBlockSize: maxHeight } : slotProps?.scroller?.style}
+        onScroll={(event) => {
+          slotProps?.scroller?.onScroll?.(event);
+          captureAnchor();
+        }}
+        className={slotProps?.scroller?.className}
+        css={[scrollerStyle, slotProps?.scroller?.sx]}
+      >
+        {empty ? (
+          <p id={emptyId} data-ui="timeline-empty" css={emptyStyle}>
+            {labels.empty}
+          </p>
+        ) : (
+          groups.map((group) => {
+            const headingId = partId(baseId, 'day', group.key);
+            return (
+              // A group, not a named section: one region landmark per day would flood landmark navigation.
+              <Group
+                {...withoutSx(slotProps?.group)}
+                key={group.key}
+                role="group"
+                aria-labelledby={headingId}
+                data-ui="timeline-group"
+                data-day={group.key}
+                className={slotProps?.group?.className}
+                css={[groupStyle, slotProps?.group?.sx]}
+              >
+                <Heading
+                  {...withoutSx(slotProps?.heading)}
+                  id={headingId}
+                  data-ui="timeline-heading"
+                  data-sticky={bounded ? '' : undefined}
+                  className={slotProps?.heading?.className}
+                  css={[headingStyle, slotProps?.heading?.sx]}
+                >
+                  {group.epoch === null ? (
+                    <span>{dayHeading(group, formatters, labels)}</span>
+                  ) : (
+                    <time dateTime={group.key}>{dayHeading(group, formatters, labels)}</time>
+                  )}
+                  <span css={dayCountStyle}>{labels.dayCount(group.rows.length)}</span>
+                </Heading>
+                <List
+                  {...withoutSx(slotProps?.list)}
+                  data-ui="timeline-list"
+                  className={slotProps?.list?.className}
+                  css={[listStyle, slotProps?.list?.sx]}
+                >
+                  {group.rows.map(({ event, epoch, order }) => {
+                    let timeLabel = '';
+                    if (epoch !== null) {
+                      timeLabel = validNow === null
+                        ? formatters.clock.format(epoch)
+                        : relativeTime(epoch, validNow, group.distance ?? 0, formatters);
+                    }
+                    return (
+                      <TimelineRow
+                        key={JSON.stringify([event.id, duplicateIds.includes(event.id) ? order : null])}
+                        event={event}
+                        epoch={epoch}
+                        timeLabel={timeLabel}
+                        fullDate={epoch === null ? '' : formatters.full.format(epoch)}
+                        baseId={baseId}
+                        expanded={openIds.has(event.id)}
+                        opening={opening.has(event.id)}
+                        entering={entering.has(event.id)}
+                        onToggle={toggle}
+                        slotProps={slotProps}
+                        slots={slots}
+                      />
+                    );
+                  })}
+                </List>
+              </Group>
+            );
+          })
+        )}
+      </Scroller>
+      <Status
+        {...withoutSx(slotProps?.status)}
+        role="status"
+        aria-atomic="true"
+        data-ui="timeline-status"
+        className={slotProps?.status?.className}
+        css={[visuallyHiddenStyle, slotProps?.status?.sx]}
+      >
+        {announcement.text ? <span key={announcement.key}>{announcement.text}</span> : null}
+      </Status>
+    </PresentationSlot>
   );
 }
 

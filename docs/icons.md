@@ -27,7 +27,7 @@ Or import from the per-icon subpath:
 import { Search } from '@jfrader/icons/search';
 ```
 
-Browse every icon in the [Storybook gallery](https://ui.jfrader.com/storybook/?path=/docs/icons-gallery--docs).
+Browse every icon in [All icons](https://ui.jfrader.com/storybook/?path=/docs/icons-all-icons--docs).
 Filled twins use the `Solid` suffix and share the base icon's subpath, such as `HeartSolid`
 from `@jfrader/icons/heart`.
 

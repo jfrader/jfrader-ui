@@ -1,0 +1,116 @@
+.icon-browser {
+  min-inline-size: 0;
+  font-family: var(--ui-font-sans);
+  color: var(--ui-color-text);
+  background: var(--ui-color-bg);
+}
+
+.icon-browser-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9em), 1fr));
+  gap: var(--ui-space-3);
+  padding: var(--ui-space-4);
+  border-block-end: 1px solid var(--ui-color-border);
+}
+
+.icon-browser-controls label {
+  display: grid;
+  gap: var(--ui-space-2);
+  min-inline-size: 0;
+  font-size: var(--ui-text-size-sm);
+}
+
+.icon-browser-controls input,
+.icon-browser-controls select {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 44px;
+  padding: var(--ui-space-2);
+  border: 1px solid var(--ui-color-border);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-color-text);
+  background: var(--ui-color-surface);
+  font: inherit;
+}
+
+.icon-browser-summary {
+  padding: var(--ui-space-3) var(--ui-space-4);
+  font-size: var(--ui-text-size-sm);
+  overflow-wrap: anywhere;
+}
+
+.icon-browser-summary p {
+  margin: 0;
+}
+
+.icon-browser-summary [role="status"] {
+  margin-block-start: var(--ui-space-2);
+  color: var(--ui-color-text-muted);
+}
+
+.icon-browser-preview {
+  padding: var(--ui-space-4);
+  color: var(--ui-color-text);
+  background: var(--ui-color-bg);
+}
+
+.icon-browser-preview section + section {
+  margin-block-start: var(--ui-space-6);
+}
+
+.icon-browser-preview h3 {
+  margin-block: 0 var(--ui-space-3);
+  text-transform: capitalize;
+  font-size: var(--ui-text-size-md);
+}
+
+.icon-browser-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 7rem), 1fr));
+  gap: var(--ui-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.icon-browser-grid li {
+  min-inline-size: 0;
+}
+
+.icon-browser-grid button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ui-space-3);
+  inline-size: 100%;
+  block-size: 100%;
+  padding: var(--ui-space-3) var(--ui-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-md);
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.icon-browser-grid button:hover {
+  border-color: var(--ui-color-border);
+  background: var(--ui-color-surface-hover);
+}
+
+.icon-browser :is(button, input, select):focus-visible {
+  outline: 2px solid var(--ui-color-focus-ring);
+  outline-offset: 2px;
+}
+
+.icon-browser-glyph {
+  display: grid;
+  place-items: center;
+  min-block-size: 44px;
+}
+
+.icon-browser-name {
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+  font-size: var(--ui-text-size-xs);
+}
