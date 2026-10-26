@@ -31,6 +31,25 @@ Browse every icon in the [Storybook gallery](https://ui.jfrader.com/storybook/?p
 Filled twins use the `Solid` suffix and share the base icon's subpath, such as `HeartSolid`
 from `@jfrader/icons/heart`.
 
+## Use without React
+
+React components are the default. For HTML, Vue, webviews, and PDF pipelines, the package also
+exports `@jfrader/icons/sprite.svg` and `@jfrader/icons/paths.json`, generated from the same drawings.
+Copy the sprite to your public assets and reference an icon:
+
+```html
+<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true">
+  <use href="/sprite.svg#search"></use>
+</svg>
+```
+
+Solid twins append `-solid` to the symbol ID. Both variants inherit `currentColor`.
+For an inline sprite, hide its root SVG and use `href="#search"`.
+The JSON catalogue contains a shared `viewBox` and an `icons` array with each icon's name,
+category, tags, aliases, variants, and per-variant geometry (`attrs` and `elements`).
+See the [package README](https://github.com/jfrader/jfrader-ui/blob/master/packages/icons/README.md#use-without-react)
+for the JSON shape and rendering instructions.
+
 ## Set size, color, and paint
 
 Generated icons accept `SvgIcon` props. You can also import `SvgIcon` from `@jfrader/ui`
