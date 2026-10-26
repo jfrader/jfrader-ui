@@ -370,7 +370,7 @@ function MorphSurface({
             <MotionElement
               component={component}
               nativeProps={getFloatingProps(props)}
-              layout={!reduce}
+              layout={reduce ? false : 'size'}
               initial={false}
               transition={SHAPE_SPRING}
               ref={mergedRef}
