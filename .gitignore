@@ -2,6 +2,7 @@ node_modules/
 dist/
 storybook-static/
 coverage/
+.vitest/
 *.tsbuildinfo
 .DS_Store
 .env*

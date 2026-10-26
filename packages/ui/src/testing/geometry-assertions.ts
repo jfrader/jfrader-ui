@@ -2,6 +2,13 @@ import { expect } from 'storybook/test';
 import { settleMotion } from './motion-assertions';
 
 type Options = { tolerancePx?: number };
+export type InsideMeasurement = Readonly<{
+  box: DOMRectReadOnly;
+  frame: DOMRectReadOnly;
+  distances: Readonly<Record<'left' | 'right' | 'top' | 'bottom', number>>;
+  insetPercent: number;
+  tolerancePx: number;
+}>;
 type Edge = 'left' | 'right' | 'top' | 'bottom' | 'center-x' | 'center-y';
 type Axis = 'horizontal' | 'vertical';
 const DEFAULT_TOLERANCE_PX = 1;
@@ -31,7 +38,10 @@ async function withinTolerance(label: string, deltas: Record<string, number>, to
  * Each element edge must lie inside the surface border box, inset by insetPercent (0–50) of
  * its corresponding dimension. Defaults: insetPercent=0, tolerancePx=1. Settle motion first.
  */
-export async function expectInside(element: Element, surface: Element, options: Options & { insetPercent?: number } = {}) {
+export async function expectInside(element: Element, surface: Element, options: Options & {
+  insetPercent?: number;
+  onMeasure?: (measurement: InsideMeasurement) => void;
+} = {}) {
   const tolerance = toleranceOf(options);
   const { insetPercent = 0 } = options;
   if (!Number.isFinite(insetPercent) || insetPercent < 0 || insetPercent > 50) {
@@ -45,6 +55,7 @@ export async function expectInside(element: Element, surface: Element, options: 
     left: box.left - frame.left - x, right: frame.right - box.right - x,
     top: box.top - frame.top - y, bottom: frame.bottom - box.bottom - y,
   };
+  options.onMeasure?.({ box, frame, distances, insetPercent, tolerancePx: tolerance });
   for (const [edge, distance] of Object.entries(distances)) {
     await expect(distance, `Inside ${edge}: clearance=${distance.toFixed(3)}px after ${insetPercent}% inset; tolerance=${tolerance}px`)
       .toBeGreaterThanOrEqual(-tolerance);

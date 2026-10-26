@@ -22,6 +22,7 @@ export default defineConfig({
     ]
   },
   test: {
+    reporters: process.env.VITE_DATE_REEL_DIAGNOSTICS === '1' ? ['default', 'blob'] : ['default'],
     projects: [{
       extends: true,
       plugins: [
@@ -37,6 +38,7 @@ export default defineConfig({
         browser: {
           enabled: true,
           headless: true,
+          screenshotFailures: true,
           provider: playwright({}),
           instances: [{
             browser: 'chromium'
