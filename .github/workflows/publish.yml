@@ -16,10 +16,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
+  pack:
     if: github.repository == 'jfrader/jfrader-ui'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    # Checks and the full monorepo build took ~19 minutes; leave room for install and packing.
+    timeout-minutes: 45
+    outputs:
+      tokens: ${{ steps.pack.outputs.tokens }}
+      styling: ${{ steps.pack.outputs.styling }}
+      icons: ${{ steps.pack.outputs.icons }}
+      ui: ${{ steps.pack.outputs.ui }}
 
     steps:
       - name: Check out release
@@ -102,22 +108,69 @@ jobs:
             if (packed.name !== manifest.name || packed.version !== manifest.version) {
               throw new Error(`Packed artifact identity mismatch for ${manifest.name}`);
             }
-            appendFileSync(process.env.GITHUB_OUTPUT, `${dir}=${path.resolve(process.env.RUNNER_TEMP, 'release', packed.filename)}\n`);
+            appendFileSync(process.env.GITHUB_OUTPUT, `${dir}=${path.basename(packed.filename)}\n`);
           }
           NODE
+
+      - name: Upload release tarballs
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-tarballs
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/release/${{ steps.pack.outputs.tokens }}
+            ${{ runner.temp }}/release/${{ steps.pack.outputs.styling }}
+            ${{ runner.temp }}/release/${{ steps.pack.outputs.icons }}
+            ${{ runner.temp }}/release/${{ steps.pack.outputs.ui }}
+
+  publish-npmjs:
+    needs: pack
+    runs-on: ubuntu-24.04
+    # Four npm publish calls plus integrity polling (up to 7.5 minutes per package) against one registry.
+    timeout-minutes: 40
+    steps:
+      - name: Check out release
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+
+      - name: Set up npmjs
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Install release npm
+        run: npm install --global npm@11.18.0
+
+      - name: Download release tarballs
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-tarballs
+          path: ${{ runner.temp }}/release
 
       # Publish dependencies first: tokens → styling → icons → ui.
       # npmjs authenticates through each package's trusted publisher (OIDC) for this workflow; no token.
       - name: Publish to npmjs (registry.npmjs.org)
-        id: npmjs
         run: |
-          node scripts/publish-registry.mjs "${{ steps.pack.outputs.tokens }}" https://registry.npmjs.org packages/tokens/package.json
-          node scripts/publish-registry.mjs "${{ steps.pack.outputs.styling }}" https://registry.npmjs.org packages/styling/package.json
-          node scripts/publish-registry.mjs "${{ steps.pack.outputs.icons }}" https://registry.npmjs.org packages/icons/package.json
-          node scripts/publish-registry.mjs "${{ steps.pack.outputs.ui }}" https://registry.npmjs.org packages/ui/package.json
+          node scripts/publish-registry.mjs "$RUNNER_TEMP/release/${{ needs.pack.outputs.tokens }}" https://registry.npmjs.org packages/tokens/package.json
+          node scripts/publish-registry.mjs "$RUNNER_TEMP/release/${{ needs.pack.outputs.styling }}" https://registry.npmjs.org packages/styling/package.json
+          node scripts/publish-registry.mjs "$RUNNER_TEMP/release/${{ needs.pack.outputs.icons }}" https://registry.npmjs.org packages/icons/package.json
+          node scripts/publish-registry.mjs "$RUNNER_TEMP/release/${{ needs.pack.outputs.ui }}" https://registry.npmjs.org packages/ui/package.json
+
+  publish-github-packages:
+    needs: pack
+    runs-on: ubuntu-24.04
+    # Four npm publish calls plus integrity polling (up to 7.5 minutes per package) against one registry.
+    timeout-minutes: 40
+    steps:
+      - name: Check out release
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
 
       - name: Set up GitHub Packages
-        if: always()
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: 24
@@ -125,21 +178,47 @@ jobs:
           scope: "@jfrader"
           package-manager-cache: false
 
+      - name: Install release npm
+        run: npm install --global npm@11.18.0
+
+      - name: Download release tarballs
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-tarballs
+          path: ${{ runner.temp }}/release
+
+      # Publish dependencies first: tokens → styling → icons → ui.
       - name: Publish to GitHub Packages (npm.pkg.github.com)
-        id: github_packages
-        if: always()
         run: |
-          node scripts/publish-registry.mjs "${{ steps.pack.outputs.tokens }}" https://npm.pkg.github.com packages/tokens/package.json
-          node scripts/publish-registry.mjs "${{ steps.pack.outputs.styling }}" https://npm.pkg.github.com packages/styling/package.json
-          node scripts/publish-registry.mjs "${{ steps.pack.outputs.icons }}" https://npm.pkg.github.com packages/icons/package.json
-          node scripts/publish-registry.mjs "${{ steps.pack.outputs.ui }}" https://npm.pkg.github.com packages/ui/package.json
+          node scripts/publish-registry.mjs "$RUNNER_TEMP/release/${{ needs.pack.outputs.tokens }}" https://npm.pkg.github.com packages/tokens/package.json
+          node scripts/publish-registry.mjs "$RUNNER_TEMP/release/${{ needs.pack.outputs.styling }}" https://npm.pkg.github.com packages/styling/package.json
+          node scripts/publish-registry.mjs "$RUNNER_TEMP/release/${{ needs.pack.outputs.icons }}" https://npm.pkg.github.com packages/icons/package.json
+          node scripts/publish-registry.mjs "$RUNNER_TEMP/release/${{ needs.pack.outputs.ui }}" https://npm.pkg.github.com packages/ui/package.json
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  report-release-visibility:
+    needs: [publish-npmjs, publish-github-packages]
+    if: always() && github.repository == 'jfrader/jfrader-ui'
+    runs-on: ubuntu-24.04
+    # Only checkout, Node setup, and eight bounded registry visibility requests; no install or build.
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - name: Check out release
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: 24
+          package-manager-cache: false
+
       - name: Report release visibility at both registries
-        if: always()
         env:
-          NPMJS_OUTCOME: ${{ steps.npmjs.outcome }}
-          GITHUB_PACKAGES_OUTCOME: ${{ steps.github_packages.outcome }}
+          NPMJS_OUTCOME: ${{ needs.publish-npmjs.result }}
+          GITHUB_PACKAGES_OUTCOME: ${{ needs.publish-github-packages.result }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/report-release-visibility.mjs
