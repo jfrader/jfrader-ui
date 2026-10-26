@@ -2,8 +2,16 @@
 
 ## Unreleased
 
+### Changed
+
+- `Dock` uses text-scaled captions, compact group trays, disclosure cues, and underline-only selection markers.
+
 ### Fixed
 
+- `Dock` places persistent toolbar labels below icons, keeps tray labels beside icons, and wraps long labels inside their buttons.
+- `Dock` group trays escape scrolling previews and use their full width when viewport space allows.
+- `Dock` toolbar labels no longer obstruct an open group tray at enlarged text sizes.
+- `Dock` keeps multiline tray labels above running and selection markers.
 - `ColorPicker` shows the selected color beside the hex field, so the panel no longer leaves the pad as its only sample of the color.
 
 ## 0.18.0 — 2026-10-25
