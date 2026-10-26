@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- On coarse pointers, overlay triggers (Dialog, Drawer, BottomSheet, DialogStack, Popover, Menu, Tooltip, HoverCard, ContextMenu, and CommandPalette) reach the 44px `size.touch` height, and the Dialog, Drawer, BottomSheet, and DialogStack close buttons, the BottomSheet handle, and DialogStack Back reach 44×44px. Fine-pointer sizes are unchanged.
+
 ## 0.19.4 — 2026-10-26
 
 ### Fixed

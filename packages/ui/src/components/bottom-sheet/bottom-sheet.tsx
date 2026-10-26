@@ -42,6 +42,7 @@ import type { DrawerPanelProps } from '../drawer';
 import { SurfaceRoot } from '../surface/surface-root';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { touchTargetStyle } from '../../styling/touch-target';
 import { triggerStyle } from '../../styling/trigger-style';
 import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import {
@@ -315,7 +316,7 @@ const controlStyle = css({
   '&:disabled': { cursor: 'not-allowed' },
   [FORCED_COLORS]: { borderColor: 'ButtonText' },
   [REDUCED_MOTION]: { transition: 'none' },
-});
+}, touchTargetStyle);
 const closeStyle = css({ color: vars.color.text });
 const handleStyle = css({
   '&::after': {

@@ -67,6 +67,7 @@ import { ThemeBoundary } from '../../styling/theme-scope';
 import type { DrawerPanelProps } from '../drawer';
 import { SurfaceRoot } from '../surface/surface-root';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { touchTargetStyle } from '../../styling/touch-target';
 import { triggerStyle } from '../../styling/trigger-style';
 import { useNativeDialog, useNativeDialogRoot } from '../../overlay/use-native-dialog';
 import { isRenderable } from '../../utils/renderable';
@@ -540,7 +541,7 @@ const actionStyle = css({
     borderColor: 'ButtonBorder',
     '&:focus-visible': { outlineColor: 'Highlight' },
   },
-});
+}, touchTargetStyle);
 
 // Back and Close share one top bar: Back at the inline start, Close at the end. Rendering them as
 // scroller children would stack them in the content column.

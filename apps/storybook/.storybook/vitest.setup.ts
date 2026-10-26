@@ -85,11 +85,21 @@ const storyMediaPreferences: Readonly<Record<string, string | undefined>> = {
   'Gravity Well Reduced Motion': 'prefers-reduced-motion',
 };
 
+// Touch emulation makes `(pointer: coarse)` match, so these stories measure the touch target sizes.
+const touchStories = new Set([
+  'Touch control sizes',
+  'MoneyInput touch sizes',
+  'NumberField touch sizes',
+  'Dialog touch targets',
+  'Drawer touch targets',
+  'BottomSheet touch targets',
+  'DialogStack touch targets',
+]);
+const isTouchStory = (name: string) => touchStories.has(name) || /^Touch table (320|390|768)$/.test(name);
+
 beforeEach(async ({ task }) => {
-  const touchWidth = /^Touch table (320|390|768)$/.exec(task.name)?.[1];
-  const touchControls = task.name === 'Touch control sizes' || task.name === 'MoneyInput touch sizes' || task.name === 'NumberField touch sizes';
-  if (touchWidth || touchControls || task.name === 'Desktop table controls') {
-    await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: Boolean(touchWidth || touchControls) });
+  if (isTouchStory(task.name) || task.name === 'Desktop table controls') {
+    await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: isTouchStory(task.name) });
   }
   const preference = storyMediaPreferences[task.name];
   if (!preference) return;
@@ -99,7 +109,7 @@ beforeEach(async ({ task }) => {
 });
 
 afterEach(async ({ task }) => {
-  if (/^Touch table (320|390|768)$/.test(task.name) || task.name === 'Touch control sizes' || task.name === 'MoneyInput touch sizes' || task.name === 'NumberField touch sizes' || task.name === 'Desktop table controls') {
+  if (isTouchStory(task.name) || task.name === 'Desktop table controls') {
     await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: false });
   }
   if (!storyMediaPreferences[task.name]) return;

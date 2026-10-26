@@ -49,6 +49,7 @@ import { modalShellReset, type SurfaceAppearance } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
 import type { SurfacePartProps, SurfaceRootCustomization } from '../surface';
 import { SurfaceRoot } from '../surface/surface-root';
+import { touchTargetStyle } from '../../styling/touch-target';
 import { triggerStyle } from '../../styling/trigger-style';
 import {
   omitNativeOpen,
@@ -450,7 +451,7 @@ const closeStyle = css({
     borderColor: 'ButtonText',
     '&:focus-visible': { outlineColor: 'Highlight' },
   },
-});
+}, touchTargetStyle);
 
 /** Title/Description only exist (and name/describe the drawer) with content: `0` counts, `''` does not. */
 function hasText(children: ReactNode) {
