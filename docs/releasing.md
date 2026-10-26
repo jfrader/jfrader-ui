@@ -18,19 +18,24 @@ release and is marked "Breaking pre-1.0" in the changelog. Fixes are patches.
    git tag -a vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z
    ```
 
-The workflow refuses the release unless the tag matches all four manifest versions, all package names
+The `pack` job refuses the release unless the tag matches all four manifest versions, all package names
 are correct, and the commit is on `master`. It then runs typecheck, tests, `verify:exports`, and
 `verify:icons`, checks generated tokens and icons, builds all four packages in dependency order, and
-packs each one once with `pnpm pack`, so `workspace:*` becomes the released version. It verifies or
-publishes those exact four tarballs to two registries: npmjs, then GitHub Packages, in the same
-dependency order. The registries are attempted independently within the same job: an npmjs failure
-still fails the release, but does not skip GitHub Packages. A failed package stops later packages
-within that registry.
+packs each one once with `pnpm pack`, so `workspace:*` becomes the released version. It uploads those
+exact four tarballs as the `release-tarballs` workflow artifact.
+
+After `pack` succeeds, `publish-npmjs` and `publish-github-packages` independently download that artifact
+and verify or publish it to their registry in dependency order: tokens → styling → icons → ui. Neither
+publish job builds or packs again, and neither depends on the other. A failure or timeout in one still
+fails the release, but does not skip or cancel the other. A failed package stops later packages within
+that registry.
 Workspace dependencies remain separate packages, not bundled copies inside UI or icons.
 
-Open the workflow run's final **Report release visibility at both registries** step to see which
+Open the `report-release-visibility` job's **Report release visibility at both registries** step to see which
 package versions are visible at each registry, which registry was skipped, or which visibility checks
-could not be completed. This report runs even after a failure.
+could not be completed. This job waits for both publish jobs and runs even after a failure or timeout,
+using each job's result. It does not install dependencies or build packages, and cannot fail the release
+by itself.
 
 A matching artifact that already exists at that version is accepted. A different artifact at the same
 version fails the release.
