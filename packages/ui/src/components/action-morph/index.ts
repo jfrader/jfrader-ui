@@ -3,6 +3,8 @@ export type {
   ActionMorphProps,
   ActionMorphAction,
   ActionMorphComposer,
+  ActionMorphTextComposer,
+  ActionMorphContentComposer,
   ActionMorphSubmission,
   ActionMorphMessages,
   ActionMorphSlotProps,

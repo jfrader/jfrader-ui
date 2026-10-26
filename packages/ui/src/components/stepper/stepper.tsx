@@ -29,6 +29,7 @@ import {
   type Ref,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
+import { Check, Error } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
@@ -214,18 +215,13 @@ const joinIds = (...ids: (string | false | undefined)[]) => ids.filter(Boolean).
 
 function CheckGlyph() {
   return (
-    <svg viewBox="0 0 16 16" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3.5 8.5l3 3 6-6.5" />
-    </svg>
+    <Check size="inherit" decorative />
   );
 }
 
 function ErrorGlyph() {
   return (
-    <svg viewBox="0 0 16 16" width="1em" height="1em" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <path d="M8 3.5v5.5" />
-      <circle cx="8" cy="12.5" r="1" fill="currentColor" stroke="none" />
-    </svg>
+    <Error size="inherit" decorative />
   );
 }
 

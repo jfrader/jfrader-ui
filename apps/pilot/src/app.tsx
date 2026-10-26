@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Inbox, Trash } from 'lucide-react';
+import { Inbox, Trash } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import {
   Badge,
@@ -160,7 +160,7 @@ export function App() {
               <Badge badgeContent={unread} tone="danger">
                 <Button
                   variant="ghost"
-                  startIcon={<Inbox />}
+                  startIcon={<Inbox decorative />}
                   aria-label={`Inbox, ${unread} unread`}
                   onClick={() => setUnread(0)}
                 >
@@ -251,7 +251,7 @@ export function App() {
                       {...props}
                       variant="outline"
                       tone="danger"
-                      startIcon={<Trash />}
+                      startIcon={<Trash decorative />}
                       disabled={deletionScheduled}
                     >
                       Delete account

@@ -47,6 +47,7 @@ import { GeneratedRoot, type GeneratedRootProps, type GeneratedRootSlotProps } f
 import { createPortal } from 'react-dom';
 import { FloatingFocusManager, useMergeRefs, type Placement } from '@floating-ui/react';
 import { animate } from 'motion/react';
+import { Close } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
@@ -738,11 +739,7 @@ const optionStyle = css({
   },
 });
 
-const closeGlyph = (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
-    <path d="M4 4l8 8M12 4l-8 8" />
-  </svg>
-);
+const closeGlyph = <Close size="inherit" decorative />;
 
 /** Inside the controller: compact detection, Content registration, sign-out state, sheet focus return. */
 function UserMenuScope({

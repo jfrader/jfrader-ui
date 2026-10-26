@@ -1,0 +1,322 @@
+{
+  "mail-open": {
+    "name": "mail-open",
+    "category": "communication",
+    "tags": ["email", "envelope", "read"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "messages": {
+    "name": "messages",
+    "category": "communication",
+    "tags": ["chat", "conversation", "comments"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "message-dots": {
+    "name": "message-dots",
+    "category": "communication",
+    "tags": ["chat", "typing", "conversation"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "phone-incoming": {
+    "name": "phone-incoming",
+    "category": "communication",
+    "tags": ["call", "receive", "telephone"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "phone-outgoing": {
+    "name": "phone-outgoing",
+    "category": "communication",
+    "tags": ["call", "dial", "telephone"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "phone-off": {
+    "name": "phone-off",
+    "category": "communication",
+    "tags": ["call", "disconnected", "telephone"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "bell-off": {
+    "name": "bell-off",
+    "category": "communication",
+    "tags": ["notifications", "silent", "mute"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "megaphone": {
+    "name": "megaphone",
+    "category": "communication",
+    "tags": ["announcement", "loudspeaker", "promote"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "at-sign": {
+    "name": "at-sign",
+    "category": "communication",
+    "tags": ["mention", "email", "address"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "hashtag": {
+    "name": "hashtag",
+    "category": "communication",
+    "tags": ["tag", "topic", "number-sign"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "quote": {
+    "name": "quote",
+    "category": "communication",
+    "tags": ["quotation", "citation", "text"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "reply": {
+    "name": "reply",
+    "category": "communication",
+    "tags": ["respond", "answer", "message"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "forward": {
+    "name": "forward",
+    "category": "communication",
+    "tags": ["resend", "relay", "message"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "broadcast": {
+    "name": "broadcast",
+    "category": "communication",
+    "tags": ["transmit", "live", "radio"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "language": {
+    "name": "language",
+    "category": "communication",
+    "tags": ["translate", "locale", "international"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "unlock": {
+    "name": "unlock",
+    "category": "security",
+    "tags": ["open", "access", "unlocked"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "key": {
+    "name": "key",
+    "category": "security",
+    "tags": ["access", "credential", "secret"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "keyhole": {
+    "name": "keyhole",
+    "category": "security",
+    "tags": ["access", "slot", "private"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "shield": {
+    "name": "shield",
+    "category": "security",
+    "tags": ["protect", "defense", "safe"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "shield-check": {
+    "name": "shield-check",
+    "category": "security",
+    "tags": ["verified", "trusted", "protected"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "shield-alert": {
+    "name": "shield-alert",
+    "category": "security",
+    "tags": ["risk", "warning", "protection"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "fingerprint": {
+    "name": "fingerprint",
+    "category": "security",
+    "tags": ["biometric", "identity", "authenticate"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "scan-face": {
+    "name": "scan-face",
+    "category": "security",
+    "tags": ["biometric", "recognition", "identity"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "password": {
+    "name": "password",
+    "category": "security",
+    "tags": ["credential", "masked", "field"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "passcode": {
+    "name": "passcode",
+    "category": "security",
+    "tags": ["pin", "keypad", "authentication"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "vault": {
+    "name": "vault",
+    "category": "security",
+    "tags": ["safe", "combination", "storage"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "certificate": {
+    "name": "certificate",
+    "category": "security",
+    "tags": ["seal", "verified", "document"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "security-camera": {
+    "name": "security-camera",
+    "category": "security",
+    "tags": ["surveillance", "monitor", "cctv"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "information": {
+    "name": "information",
+    "category": "status",
+    "tags": ["info", "details", "notice"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "help": {
+    "name": "help",
+    "category": "status",
+    "tags": ["question", "support", "assistance"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "online": {
+    "name": "online",
+    "category": "status",
+    "tags": ["presence", "available", "connected"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "offline": {
+    "name": "offline",
+    "category": "status",
+    "tags": ["presence", "unavailable", "disconnected"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "hourglass": {
+    "name": "hourglass",
+    "category": "status",
+    "tags": ["wait", "time", "duration"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "arrow-up-left": {
+    "name": "arrow-up-left",
+    "category": "arrow",
+    "tags": ["diagonal", "northwest", "direction"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "arrow-up-right": {
+    "name": "arrow-up-right",
+    "category": "arrow",
+    "tags": ["diagonal", "northeast", "direction"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "arrow-down-left": {
+    "name": "arrow-down-left",
+    "category": "arrow",
+    "tags": ["diagonal", "southwest", "direction"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "arrow-down-right": {
+    "name": "arrow-down-right",
+    "category": "arrow",
+    "tags": ["diagonal", "southeast", "direction"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "move": {
+    "name": "move",
+    "category": "arrow",
+    "tags": ["drag", "position", "pan"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "resize": {
+    "name": "resize",
+    "category": "arrow",
+    "tags": ["scale", "diagonal", "dimensions"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  },
+  "external-link": {
+    "name": "external-link",
+    "category": "navigation",
+    "tags": ["outbound", "new-window", "open"],
+    "aliases": [],
+    "expressive": false,
+    "since": "0.2.0"
+  }
+}

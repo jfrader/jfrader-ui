@@ -22,6 +22,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
+import { Close } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { css, type SerializedStyles } from '../../styling/css';
@@ -316,11 +317,7 @@ const statusStyle = css({
   color: vars.color.textMuted,
 });
 
-const removeGlyph = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
-    <path d="m7 7 10 10M17 7 7 17" />
-  </svg>
-);
+const removeGlyph = <Close size="inherit" decorative />;
 
 type Notice = { text: string; rejection: boolean };
 type PendingNotice = { kind: 'added' | 'removed'; token: string };

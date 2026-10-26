@@ -1,13 +1,14 @@
-import { base } from '@jfrader/tokens';
-import { Circle, Hand, Hexagon, Lock, Minus, MousePointer2, Square, Type } from 'lucide-react';
+import { Cursor, Ellipse, Hand, Line, Lock, Rectangle, Text } from '@jfrader/icons';
+
+const SIZE = 20;
 
 export const dockIcons = {
-  select: <MousePointer2 size={base.space[5]} />,
-  hand: <Hand size={base.space[5]} />,
-  locked: <Lock size={base.space[5]} />,
-  text: <Type size={base.space[5]} />,
-  rectangle: <Square size={base.space[5]} />,
-  unavailable: <Hexagon size={base.space[5]} />,
-  ellipse: <Circle size={base.space[5]} />,
-  line: <Minus size={base.space[5]} />,
+  select: <Cursor size={SIZE} decorative />,
+  hand: <Hand size={SIZE} decorative />,
+  locked: <Lock size={SIZE} decorative />,
+  text: <Text size={SIZE} decorative />,
+  rectangle: <Rectangle size={SIZE} decorative />,
+  unavailable: <Rectangle size={SIZE} decorative />,
+  ellipse: <Ellipse size={SIZE} decorative />,
+  line: <Line size={SIZE} decorative />,
 };

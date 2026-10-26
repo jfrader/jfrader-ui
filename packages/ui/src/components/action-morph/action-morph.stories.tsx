@@ -4,9 +4,11 @@ import { expect, fn, mocked, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { expectNativeScrollbar } from '../../testing/theme-assertions';
-import { settleMotion } from '../../testing/motion-assertions';
+import { expectLayoutMorph, settleMotion } from '../../testing/motion-assertions';
 import { ActionMorph, type ActionMorphAction } from './index';
 import { Button } from '../button';
+import { TextField } from '../text-field';
+import { Stack } from '../stack';
 
 const Stage = styled.div({
   minBlockSize: '30rem',
@@ -123,9 +125,15 @@ const meta = {
       sections: [
         { title: 'Create and compose', stories: ['Default'] },
         { title: 'Placement', stories: ['CornerStart'] },
+        { title: 'Consumer forms', stories: ['ContentComposer'] },
+        { title: 'Action groups', stories: ['GroupedActions'] },
       ],
       usage: `### Drafts and submission
 Use this for short drafts, Menu for immediate commands, and Dialog for longer forms. Drafts and choices stay in memory while mounted, including after Back or a failed request. Return the real promise from \`onSubmit\`; omitting it disables submission. Empty trimmed text is rejected, but the original text is submitted. Closing or going Back invalidates UI updates, not the app's request; cancellation belongs to the consumer. Give actions unique ids and shortcuts.
+
+### Consumer forms
+
+Content composers host your form without wrapping it in another form. Handle validation and submission in the consumer, then call \`close()\` when done or \`back()\` to return to the menu. Keep form values outside the content when they must survive navigation. Use Morph for steps without an action menu or for a bottom sheet.
 
 ### Keyboard and accessibility
 
@@ -155,6 +163,31 @@ export const Default: Story = {
   } },
 };
 export const Light: Story = { globals: { theme: 'light' } };
+export const GroupedActions: Story = {
+  args: { label: 'Transfer', actions: [
+    { id: 'send-money', label: 'Send money', group: 'Send', composer: { title: 'Send money', submitLabel: 'Send', successLabel: 'Sent' } },
+    { id: 'send-request', label: 'Send request', group: 'Send', composer: { title: 'Send request', submitLabel: 'Send', successLabel: 'Sent' } },
+    { id: 'receive-bank', label: 'Bank transfer', group: 'Receive', composer: { title: 'Bank transfer', submitLabel: 'Save', successLabel: 'Saved' } },
+    { id: 'receive-link', label: 'Payment link', group: 'Receive', composer: { title: 'Payment link', submitLabel: 'Save', successLabel: 'Saved' } },
+  ] },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const doc = within(canvasElement.ownerDocument.body);
+    await userEvent.click(canvas.getByRole('button', { name: 'Transfer' }));
+    const menu = await doc.findByRole('menu', { name: 'Transfer' });
+    await settleMotion(menu);
+    const send = within(menu).getByRole('group', { name: 'Send' });
+    const receive = within(menu).getByRole('group', { name: 'Receive' });
+    await expect(within(send).getByText('Send', { exact: true })).toBeVisible();
+    await expect(within(receive).getByText('Receive', { exact: true })).toBeVisible();
+    await expect(within(send).getAllByRole('menuitem')).toHaveLength(2);
+    await expect(within(receive).getAllByRole('menuitem')).toHaveLength(2);
+    await waitFor(() => expect(within(send).getByRole('menuitem', { name: 'Send money' })).toHaveFocus());
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+    await expect(within(receive).getByRole('menuitem', { name: 'Bank transfer' })).toHaveFocus();
+    await userEvent.keyboard('{ArrowUp}');
+    await expect(within(send).getByRole('menuitem', { name: 'Send request' })).toHaveFocus();
+  },
+};
 export const CornerStart: Story = {
   name: 'Grow from the start corner',
   args: { corner: 'start' },
@@ -164,6 +197,78 @@ export const CornerStart: Story = {
   } },
 };
 export const EmptyActions: Story = { args: { actions: [] } };
+export const MenuNamedAction: Story = {
+  args: { actions: actions.slice(0, 1).map((action) => ({ ...action, id: 'menu' })) },
+  tags: ['!autodocs'],
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    const doc = within(canvasElement.ownerDocument.body);
+    await userEvent.click(canvas.getByRole('button', { name: 'Create' }));
+    await userEvent.click(await doc.findByRole('menuitem', { name: 'Note' }));
+    const field = await doc.findByRole('textbox', { name: 'Note text' });
+    await userEvent.type(field, 'Menu is a valid action id');
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() => expect(args.onSubmit).toHaveBeenCalledWith({ action: 'menu', text: 'Menu is a valid action id', choice: undefined }));
+  },
+};
+export const ContentComposer: Story = {
+  name: 'Create a contact',
+  args: {
+    width: { menu: '16rem', composer: '24rem' },
+    actions: [{ id: 'contact', label: 'Contact', composer: {
+      kind: 'content', title: 'New contact',
+      content: ({ close, back }) => <form onSubmit={(event) => { event.preventDefault(); close(); }}>
+        <Stack gap="sm">
+          <TextField label="Full name" name="name" required data-autofocus />
+          <TextField label="Email" name="email" type="email" required />
+          <TextField label="Company" name="company" required />
+          <Button type="button" variant="ghost" onClick={back}>Back</Button>
+          <Button type="submit">Create contact</Button>
+        </Stack>
+      </form>,
+    } }],
+  },
+  parameters: { docs: {
+    description: { story: 'Enter a name, email, and company, then create the contact.' },
+    source: { language: 'tsx', code: `import { ActionMorph, Button, Stack, TextField } from '@jfrader/ui';
+
+export function CreateContact() {
+  return <ActionMorph label="Create" width={{ menu: '16rem', composer: '24rem' }} actions={[{
+    id: 'contact', label: 'Contact', composer: {
+      kind: 'content', title: 'New contact',
+      content: ({ close, back }) => <form onSubmit={(event) => { event.preventDefault(); close(); }}>
+        <Stack gap="sm">
+          <TextField label="Full name" name="name" required data-autofocus />
+          <TextField label="Email" name="email" type="email" required />
+          <TextField label="Company" name="company" required />
+          <Button type="button" variant="ghost" onClick={back}>Back</Button>
+          <Button type="submit">Create contact</Button>
+        </Stack>
+      </form>,
+    },
+  }]} />;
+}` },
+  } },
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    const doc = within(canvasElement.ownerDocument.body);
+    const trigger = canvas.getByRole('button', { name: 'Create' });
+    await userEvent.click(trigger);
+    await userEvent.click(await doc.findByRole('menuitem', { name: 'Contact' }));
+    const name = await doc.findByRole('textbox', { name: 'Full name' });
+    await waitFor(() => expect(name.ownerDocument.activeElement).toBe(name));
+    await expect(doc.getAllByRole('textbox')).toHaveLength(3);
+    const surface = doc.getByRole('dialog', { name: 'New contact' });
+    await expect(surface.querySelectorAll('form')).toHaveLength(1);
+    await settleMotion(surface);
+    await waitFor(() => expect(surface.getBoundingClientRect().width).toBeCloseTo(384, 0));
+    await userEvent.type(name, 'Sam Rivera');
+    await userEvent.type(doc.getByRole('textbox', { name: 'Email' }), 'sam@example.com');
+    await userEvent.type(doc.getByRole('textbox', { name: 'Company' }), 'Northline');
+    await userEvent.click(doc.getByRole('button', { name: 'Create contact' }));
+    await waitFor(() => expect(doc.queryByRole('dialog')).toBeNull());
+    await expect(trigger.ownerDocument.activeElement).toBe(trigger);
+    await expect(args.onSubmit).not.toHaveBeenCalled();
+  },
+};
 export const PersistentMenu: Story = {
   args: { defaultOpen: true },
   tags: ['!autodocs'],
@@ -244,7 +349,13 @@ export const Composer: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     const document = within(canvasElement.ownerDocument.body);
     await userEvent.click(canvas.getByRole('button', { name: 'Create' }));
-    await userEvent.click(await document.findByRole('menuitem', { name: 'Note' }));
+    const menu = await document.findByRole('menu');
+    await settleMotion(menu);
+    await expectLayoutMorph(
+      menu,
+      () => userEvent.click(document.getByRole('menuitem', { name: 'Note' })),
+      () => menu.querySelector<HTMLElement>('[data-step]')!,
+    );
     await expect(await document.findByRole('textbox', { name: 'Note text' })).toHaveFocus();
   },
 };
@@ -497,7 +608,12 @@ export const ReducedMotion: Story = {
     await expectOrigin(menu, 'top', 'right');
     await expect(getComputedStyle(menu).scale).toBe('none');
     await expect(getComputedStyle(menu).transitionDuration).toBe('0s');
-    await userEvent.click(document.getByRole('menuitem', { name: 'Note' }));
+    await expectLayoutMorph(
+      menu,
+      () => userEvent.click(document.getByRole('menuitem', { name: 'Note' })),
+      () => menu.querySelector<HTMLElement>('[data-step]')!,
+      true,
+    );
     const composer = await document.findByRole('dialog');
     await expect(getComputedStyle(composer).scale).toBe('none');
     await expect(getComputedStyle(composer).transitionDuration).toBe('0s');

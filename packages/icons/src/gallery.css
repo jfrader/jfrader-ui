@@ -1,0 +1,32 @@
+.icon-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  font-family: var(--ui-font-sans);
+}
+
+.icon-gallery-theme {
+  padding: var(--ui-space-6);
+  color: var(--ui-color-text);
+  background: var(--ui-color-bg);
+}
+
+.icon-gallery-theme h2 {
+  font-size: var(--ui-text-size-lg);
+  margin-block: 0 var(--ui-space-4);
+}
+
+.icon-gallery-theme table {
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+
+.icon-gallery-theme th,
+.icon-gallery-theme td {
+  padding: var(--ui-space-3);
+  text-align: start;
+  border-block-end: 1px solid var(--ui-color-border);
+}
+
+.icon-gallery-theme td {
+  text-align: center;
+}

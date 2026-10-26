@@ -45,6 +45,7 @@ import {
 import { GeneratedRoot, type GeneratedRootProps, type GeneratedRootSlotProps } from '../../utils/generated-root';
 import { useMergeRefs } from '@floating-ui/react';
 import { isEventTargetWithin } from '@floating-ui/react/utils';
+import { Check } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes } from '../../styling/css';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
@@ -342,11 +343,7 @@ const checkStyle = css({
   },
 });
 
-const checkGlyph = (
-  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3.5 8.5l3 3 6-7" />
-  </svg>
-);
+const checkGlyph = <Check size="inherit" decorative />;
 
 function ContextMenuScope({
   available,

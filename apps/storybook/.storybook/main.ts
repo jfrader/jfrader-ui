@@ -7,6 +7,7 @@ const config = {
   title: 'jfrader ui',
   stories: [
     '../../../packages/ui/src/**/*.stories.@(ts|tsx)',
+    '../../../packages/icons/src/**/*.stories.@(ts|tsx)',
     '../home/**/*.@(mdx|stories.@(ts|tsx))',
     '../showcase/**/*.stories.@(ts|tsx)',
   ],

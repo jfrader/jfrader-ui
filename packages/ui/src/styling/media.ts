@@ -1,4 +1,2 @@
-export const REDUCED_MOTION = '@media (prefers-reduced-motion: reduce)';
-export const FORCED_COLORS = '@media (forced-colors: active)';
-export const COARSE_POINTER = '@media (pointer: coarse)';
-export const REDUCED_TRANSPARENCY = '@media (prefers-reduced-transparency: reduce)';
+// The styling seam lives one layer down so icons can use it.
+export * from '@jfrader/styling/media';

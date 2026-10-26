@@ -9,7 +9,7 @@
   },
   "scripts": {
     "postinstall": "pnpm generate",
-    "generate": "pnpm --filter @jfrader/tokens generate",
+    "generate": "pnpm --filter @jfrader/tokens generate && pnpm --filter @jfrader/icons generate",
     "dev": "pnpm generate && pnpm --filter @jfrader/storybook dev",
     "build": "pnpm generate && pnpm docs:build",
     "og:image": "pnpm generate && pnpm --filter @jfrader/storybook og:image",
@@ -17,6 +17,7 @@
     "typecheck": "pnpm generate && pnpm -r typecheck",
     "verify:exports": "node scripts/verify-exports.mjs",
     "verify:slots": "node --test scripts/verify-slot-wiring.test.mjs && node scripts/verify-slot-wiring.mjs",
+    "verify:icons": "pnpm --filter @jfrader/icons exec tsx --test scripts/verify.test.ts && pnpm --filter @jfrader/icons exec tsx scripts/verify.ts",
     "verify:docs": "pnpm --filter @jfrader/storybook verify:docs",
     "verify:api": "pnpm --filter @jfrader/storybook verify:api",
     "docs:build": "node scripts/build-docs.mjs"

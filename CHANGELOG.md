@@ -5,24 +5,39 @@
 ### Changed
 
 - `Timeline` uses separated day headings, a single marker rail, event-first summaries, and inline expanded details. Timestamps move below each event in narrow containers, and disclosure targets stay at least 44px tall. Details unfold when opened, and new-event markers pulse once; both honor reduced motion.
-- `Dock` uses text-scaled captions, compact group trays, disclosure cues, and underline-only selection markers.
 
 ### Fixed
 
 - `Timeline` keeps keyboard-focused events inside bounded histories, clear of sticky day headings.
 - `Timeline` completes the detail reveal when focus enters it, so keyboard users never land in clipped content.
+
+## 0.19.1 — 2026-10-26
+
+First published build of the icon system. Same content as 0.19.0, which stayed in the repository.
+
+## 0.19.0 — 2026-10-26
+
+### Added
+
+- `SvgIcon` and `createSvgIcon`: one drawing component for library icons and your own marks, with `line` and `solid` paint, size presets plus exact pixels and `size="inherit"`, semantic tones, accessible naming, and replaceable root and title. Both are importable from `@jfrader/ui` and from `@jfrader/icons`, where the component now lives.
+- `@jfrader/icons`: 300 icons on a 24-unit grid, each with a solid twin where a selected state needs one, including Bitcoin and Satoshi marks. Generated from SVG sources with a geometry lint, exported per icon.
+- Components take their glyphs from the set: VoiceRecorder, InlineEdit, CopyButton, Stepper, SearchField, AttachmentList, PasswordField, TagInput, NumberField, ExpandingSearch, ViewerChrome, Toast, UserMenu, DataTable, ContextMenu, CommentThread, Carousel, SplitButton, DialogStack, LocaleSwitcher, ButtonGroup and ChipGroup.
+- `Morph` provides a surface with named steps in two shells: an anchored, nonmodal popover and a modal bottom sheet with per-step detents. It owns open and step state, focus, Escape-back through the step history, and reduced-motion behaviour, and it projects width and height between steps so the card's contents move with it. `ActionMorph` is a preset on top of it: actions can be grouped under labelled headings, and each action keeps its text composer or hosts consumer-owned form content, with configurable menu and composer widths.
+
+### Changed
+
+- `@jfrader/styling` owns the shared Emotion seam (css, sx, theme, media, scrollbar) beneath `@jfrader/icons` and `@jfrader/ui`. Existing imports keep working.
+
+- `Dock` uses text-scaled captions, compact group trays, disclosure cues, and underline-only selection markers.
+
+### Fixed
+
 - `Dock` places persistent toolbar labels below icons, keeps tray labels beside icons, and wraps long labels inside their buttons.
 - `Dock` group trays escape scrolling previews and use their full width when viewport space allows.
 - `Dock` toolbar labels no longer obstruct an open group tray at enlarged text sizes.
 - `Dock` keeps multiline tray labels above running and selection markers.
 - `ColorPicker` shows the selected color beside the hex field, so the panel no longer leaves the pad as its only sample of the color.
 
-## 0.18.0 — 2026-10-25
-
-### Changed
-
-- Button, TextField, Select, NumberField, MoneyInput, and SegmentedControl share 2rem, 2.5rem, and 3rem control heights. SegmentedControl now includes its track padding in that height, Select's small trigger is shorter, and MoneyInput uses the same text sizes as other controls. Remove consumer height overrides so controls retain their responsive sizing and touch targets. Multiline textareas and prominent amount editors keep their taller layouts.
-- Single-line control heights now follow the root font size, including PasswordField, SearchField, PhoneInput, MultiSelect, TagInput, DateRangePicker, ColorPicker, LocaleSwitcher, TimePicker, CopyButton, ButtonGroup, ChipGroup, and SplitButton. Coarse-pointer minimums align text and numeric fields with the other controls. MoneyInput `md` text drops to `0.875rem`, and `lg` text drops to `1rem`. ColorPicker's color preview now fits its trigger at each size.
 
 ## 0.17.1 — 2026-10-25
 

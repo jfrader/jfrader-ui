@@ -16,6 +16,7 @@ import {
   type Ref,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
+import { ChevronDown, ChevronUp, Sort } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
@@ -353,15 +354,16 @@ const sortStyle = css({
 }, touchTargetStyle);
 const sortIndicatorStyle = css({
   flexShrink: 0,
-  inlineSize: vars.space[3],
-  blockSize: vars.space[3],
   color: vars.color.textMuted,
   '&[data-direction]': { color: vars.color.accentText },
-  '&[data-direction="asc"] > [data-chevron="down"], &[data-direction="desc"] > [data-chevron="up"]': {
-    visibility: 'hidden',
-  },
   [FORCED_COLORS]: { color: 'ButtonText', '&[data-direction]': { color: 'ButtonText' } },
 });
+// One glyph per state, at a size that reads: the old 12px pair put two chevrons in a 5.5px slot.
+function SortIndicator({ direction }: { direction?: 'asc' | 'desc' }) {
+  const Icon = direction === 'asc' ? ChevronUp : direction === 'desc' ? ChevronDown : Sort;
+  return <Icon size={16} decorative data-direction={direction} data-sort-glyph={direction ?? 'unsorted'} sx={sortIndicatorStyle} />;
+}
+
 const sortPriorityStyle = css({
   display: 'inline-flex',
   alignItems: 'center',
@@ -803,20 +805,7 @@ export function DataTable<T, const Id extends string = string, Key extends strin
                             }}
                           >
                             {isRenderable(column.header) && column.header}
-                            <svg
-                              aria-hidden="true"
-                              viewBox="0 0 12 12"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              data-direction={direction ?? undefined}
-                              css={sortIndicatorStyle}
-                            >
-                              <path data-chevron="up" d="m3 4 3-3 3 3" />
-                              <path data-chevron="down" d="m3 8 3 3 3-3" />
-                            </svg>
+                            <SortIndicator direction={direction ?? undefined} />
                           </SortButton>
                         ) : (
                           isRenderable(column.header) && column.header

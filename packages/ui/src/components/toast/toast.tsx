@@ -37,6 +37,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useMergeRefs } from '@floating-ui/react';
+import { Close } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
@@ -750,19 +751,7 @@ export function ToastItem({
 
 function DismissGlyph() {
   return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 16 16"
-      width="16"
-      height="16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    >
-      <line x1="4" y1="4" x2="12" y2="12" />
-      <line x1="12" y1="4" x2="4" y2="12" />
-    </svg>
+    <Close size={16} decorative />
   );
 }
 
