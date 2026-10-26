@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `@jfrader/icons` and `@jfrader/styling` now carry the metadata npm shows on the package page.
+
 ## 0.19.1 — 2026-10-26
 
 First published build of the icon system. Same content as 0.19.0, which stayed in the repository.

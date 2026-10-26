@@ -2,6 +2,19 @@
   "name": "@jfrader/styling",
   "version": "0.19.1",
   "description": "Shared Emotion styling seam for @jfrader/icons and @jfrader/ui.",
+  "keywords": [
+    "react",
+    "emotion",
+    "styling",
+    "theming",
+    "design-system"
+  ],
+  "homepage": "https://github.com/jfrader/jfrader-ui/tree/master/packages/styling#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jfrader/jfrader-ui.git",
+    "directory": "packages/styling"
+  },
   "license": "MIT",
   "type": "module",
   "files": [
