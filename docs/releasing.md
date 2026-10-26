@@ -92,7 +92,7 @@ pnpm --filter @jfrader/ui build
 Write a tarball somewhere disposable, then inspect it:
 
 ```sh
-pack_dir="$(mktemp -d /tmp/opencode/jfrader-ui-release.XXXXXX)"
+pack_dir="$(mktemp -d "${TMPDIR:-/tmp}/jfrader-ui-release.XXXXXX")"
 pnpm --filter @jfrader/ui pack --pack-destination "$pack_dir"
 tar -tzf "$pack_dir"/*.tgz
 tar -xOzf "$pack_dir"/*.tgz package/package.json
