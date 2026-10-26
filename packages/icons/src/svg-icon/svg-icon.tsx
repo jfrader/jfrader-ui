@@ -101,12 +101,20 @@ export function SvgIcon({
     ...rootProps
   } = slotProps?.root ?? {};
   const { sx: titleSx, className: titleClassName, ...titleProps } = slotProps?.title ?? {};
+  // React 19 refs may return their own cleanup; carry those through instead of dropping them, or an
+  // unmount never runs the consumer's detach logic.
   const mergedRef = useCallback(
     (node: SVGSVGElement | null) => {
+      const cleanups: Array<() => void> = [];
       for (const target of [ref, rootRef]) {
-        if (typeof target === 'function') target(node);
-        else if (target) target.current = node;
+        if (typeof target === 'function') {
+          const cleanup = target(node);
+          if (typeof cleanup === 'function') cleanups.push(cleanup);
+        } else if (target) {
+          target.current = node;
+        }
       }
+      return cleanups.length ? () => cleanups.forEach((cleanup) => cleanup()) : undefined;
     },
     [ref, rootRef],
   );
