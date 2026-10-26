@@ -2,8 +2,6 @@
 
 ## Unreleased
 
-- `@jfrader/icons` and `@jfrader/styling` now carry the metadata npm shows on the package page.
-
 ### Changed
 
 - `Timeline` uses separated day headings, a single marker rail, event-first summaries, and inline expanded details. Timestamps move below each event in narrow containers, and disclosure targets stay at least 44px tall. Details unfold when opened, and new-event markers pulse once; both honor reduced motion.
@@ -12,6 +10,15 @@
 
 - `Timeline` keeps keyboard-focused events inside bounded histories, clear of sticky day headings.
 - `Timeline` completes the detail reveal when focus enters it, so keyboard users never land in clipped content.
+
+## 0.19.2 — 2026-10-26
+
+### Fixed
+
+- `@jfrader/icons` carries its license, description, keywords, repository and homepage on npm.
+- `@jfrader/styling` carries its keywords, repository and homepage.
+- A release now publishes to both registries independently, so a failure on one no longer leaves the other empty.
+
 
 ## 0.19.1 — 2026-10-26
 
