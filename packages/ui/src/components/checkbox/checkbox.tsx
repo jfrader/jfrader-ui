@@ -12,6 +12,7 @@ import {
   type ComponentType,
   type ReactNode,
 } from 'react';
+import { Check, Minus } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { choiceInputStyle, choiceRootStateStyle, choiceRootStyle, choiceRowStyle } from '../../styling/choice-control';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
@@ -110,12 +111,13 @@ const descriptionSizeStyles: Record<CheckboxSize, SerializedStyles> = {
   md: css({ marginInlineStart: `calc(${BOX_SIZE.md} + ${vars.space[2]})` }),
 };
 
-function CheckGlyph({ indeterminate }: { indeterminate: boolean }) {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      {indeterminate ? <line x1="4" y1="8" x2="12" y2="8" /> : <polyline points="3.5 8.5 6.5 11.5 12.5 4.5" />}
-    </svg>
-  );
+// The mark is drawn on the set's 24 grid at 2.25 units, which lands near the 2-unit weight of the
+// 16-unit drawing it replaced. It stays inside the box rather than filling it.
+const MARK_SIZE: Record<CheckboxSize, number> = { sm: 12, md: 14 };
+
+function CheckGlyph({ indeterminate, size }: { indeterminate: boolean; size: CheckboxSize }) {
+  const Mark = indeterminate ? Minus : Check;
+  return <Mark size={MARK_SIZE[size]} strokeWidth={2.25} decorative />;
 }
 
 export function Checkbox({
@@ -188,7 +190,7 @@ export function Checkbox({
               className={slotProps?.control?.className}
               css={[boxStyle, boxSizeStyles[size], slotProps?.control?.sx]}
             >
-              <CheckGlyph indeterminate={indeterminate} />
+              <CheckGlyph indeterminate={indeterminate} size={size} />
             </Control>
             {hasLabel && (
               <Label
