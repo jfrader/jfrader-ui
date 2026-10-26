@@ -18,8 +18,8 @@ Use a component's props for built-in variants. Use tokens for changes shared acr
 ## Build your own components
 
 Use component props and `sx` first. When you build something the components do not cover, use
-[`@jfrader/styling`](https://github.com/jfrader/jfrader-ui/blob/master/packages/styling/README.md) for
-the same `sx` contract, theme typing, and media queries.
+`@jfrader/styling` for the same `sx` contract, theme typing, and media queries. See
+`packages/styling/README.md` for its exports and API contract.
 
 ## Token references
 
