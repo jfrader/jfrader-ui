@@ -59,7 +59,9 @@ Packing and publishing are in `docs/releasing.md`.
   `@floating-ui/react` for ref composition. It has no runtime dependency on `@jfrader/ui`.
 - `@jfrader/ui` depends on `@jfrader/icons` and `@jfrader/styling`; runtime components may import glyphs.
   Keep the dependency direction tokens → styling → icons → ui, with no cycle.
-- `lucide-react` is approved for consumer apps only; `@jfrader/ui` must not depend on it.
+- `@jfrader/icons` is the default set for consumer apps. `lucide-react` stays approved for consumer
+  apps as the documented alternative — any icon component works in the same slots, and nothing in
+  the system requires ours. `@jfrader/ui` must not depend on either.
 - `shiki` is an optional peer and a devDependency for stories. Only
   `packages/ui/src/components/code-block/shiki.ts`, published as the `./code-block/shiki` subpath, may
   import it.

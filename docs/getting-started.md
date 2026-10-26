@@ -232,6 +232,9 @@ export const BrandMark = createSvgIcon(
 );
 ```
 
+Ours is the default, not a requirement. Every place that takes an icon takes a `ReactNode`, so
+`lucide-react`, another set, or a component of your own drops into the same props with no wrapper.
+
 A `Badge` count is not part of the wrapped control's accessible name. When the control has an
 `aria-label`, include the count there, as in `aria-label="Inbox, 3 unread"`. With a visible text
 label, the count is read after that text.
