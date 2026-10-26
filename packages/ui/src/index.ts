@@ -2,6 +2,7 @@ export type { CivilDate, CivilMonth, CivilDateRange } from './utils/civil-date';
 export * from './components/accordion';
 export * from './components/action-button';
 export * from './components/action-morph';
+export * from './components/morph';
 export * from './components/activity-rings';
 export * from './components/alert';
 export * from './components/announcement-bar';

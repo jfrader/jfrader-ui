@@ -68,6 +68,7 @@ const storyMediaPreferences: Readonly<Record<string, string | undefined>> = {
   'Reduced Transparency': 'prefers-reduced-transparency',
   'Dial Reduced Motion': 'prefers-reduced-motion',
   'Morph Reduced Motion': 'prefers-reduced-motion',
+  'Sheet Reduced Motion': 'prefers-reduced-motion',
   'Semantic Reduced Motion': 'prefers-reduced-motion',
   'Action Reduced Motion': 'prefers-reduced-motion',
   'Action Button Reduced Motion': 'prefers-reduced-motion',
