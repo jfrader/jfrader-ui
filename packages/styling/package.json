@@ -1,9 +1,12 @@
 {
   "name": "@jfrader/styling",
-  "version": "0.17.1",
+  "version": "0.18.0",
   "description": "Shared Emotion styling seam for @jfrader/icons and @jfrader/ui.",
   "license": "MIT",
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./css": "./src/css.ts",
@@ -12,15 +15,27 @@
     "./theme": "./src/theme.ts",
     "./media": "./src/media.ts"
   },
-  "publishConfig": { "access": "public" },
-  "scripts": { "typecheck": "tsc -p tsconfig.json --noEmit" },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "vite build --config vite.lib.config.ts && tsc -p tsconfig.build.json",
+    "prepack": "pnpm build && node ../../scripts/flip-exports.mjs dist --package styling",
+    "postpack": "node ../../scripts/flip-exports.mjs src --package styling"
+  },
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@jfrader/tokens": "workspace:*"
   },
-  "peerDependencies": { "react": "^19.0.0" },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
   "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@vitejs/plugin-react": "^6.1.2",
     "@types/react": "^19.3.0",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
   }
 }
