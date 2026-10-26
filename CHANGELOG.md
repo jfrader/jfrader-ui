@@ -4,11 +4,12 @@
 
 ### Changed
 
-- `Timeline` uses separated day headings, a single marker rail, event-first summaries, and inline expanded details. Timestamps move below each event in narrow containers, and disclosure targets stay at least 44px tall.
+- `Timeline` uses separated day headings, a single marker rail, event-first summaries, and inline expanded details. Timestamps move below each event in narrow containers, and disclosure targets stay at least 44px tall. Details unfold when opened, and new-event markers pulse once; both honor reduced motion.
 - `Dock` uses text-scaled captions, compact group trays, disclosure cues, and underline-only selection markers.
 
 ### Fixed
 
+- `Timeline` keeps keyboard-focused events inside bounded histories, clear of sticky day headings.
 - `Dock` places persistent toolbar labels below icons, keeps tray labels beside icons, and wraps long labels inside their buttons.
 - `Dock` group trays escape scrolling previews and use their full width when viewport space allows.
 - `Dock` toolbar labels no longer obstruct an open group tray at enlarged text sizes.

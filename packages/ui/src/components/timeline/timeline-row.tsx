@@ -12,6 +12,8 @@ import { TimelineMarker } from './timeline-marker';
 
 const WIDE_LAYOUT = '@container timeline (min-width: 32rem)';
 const fadeIn = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
+// Clips from the title downward; the clip ends with the animation, so open content can overflow.
+const unfold = keyframes({ from: { clipPath: 'inset(0 0 100% 0)' }, to: { clipPath: 'inset(0)' } });
 
 const itemStyle = css({
   position: 'relative',
@@ -64,8 +66,7 @@ const triggerStyle = css({
   boxSizing: 'border-box',
   display: 'flex',
   alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: vars.space[3],
+  gap: vars.space[2],
   inlineSize: `calc(100% + ${vars.space[2]} + 1px)`,
   minBlockSize: 'var(--timeline-head-size)',
   margin: 0,
@@ -82,11 +83,12 @@ const triggerStyle = css({
   lineHeight: vars.lineHeight.base,
   overflowWrap: 'anywhere',
   cursor: 'pointer',
-  scrollMarginBlockStart: `calc(${vars.space[12]} + 2lh)`,
   transitionProperty: 'background-color',
   transitionDuration: vars.motion.duration.fast,
   transitionTimingFunction: vars.motion.easeStandard,
-  '&::after': { ...disclosureCaret, color: vars.color.textMuted },
+  '--timeline-caret-color': vars.color.textMuted,
+  '&:hover, &[aria-expanded="true"]': { '--timeline-caret-color': vars.color.text },
+  '&::after': { ...disclosureCaret, transitionProperty: 'transform, color', color: 'var(--timeline-caret-color)' },
   '&[aria-expanded="true"]::after': { transform: 'rotate(90deg)' },
   '&[aria-expanded="true"]:dir(rtl)::after': { transform: 'rotate(-90deg)' },
   '&:hover': { backgroundColor: vars.color.surfaceHover },
@@ -132,16 +134,19 @@ const timeStyle = css({
 const detailStyle = css({
   gridColumn: 2,
   minInlineSize: 0,
-  marginBlockStart: vars.space[3],
-  paddingBlock: vars.space[1],
-  paddingInlineStart: vars.space[4],
-  borderInlineStart: `1px solid ${vars.color.borderStrong}`,
-  color: vars.color.text,
+  marginBlockStart: vars.space[2],
+  color: vars.color.textMuted,
   lineHeight: vars.lineHeight.relaxed,
   overflowWrap: 'anywhere',
   '& > :first-child': { marginBlockStart: 0 },
   '& > :last-child': { marginBlockEnd: 0 },
   '&[hidden]': { display: 'none' },
+  '&[data-enter]': {
+    animationName: unfold,
+    animationDuration: vars.motion.duration.slow,
+    animationTimingFunction: vars.motion.easeStandard,
+  },
+  [REDUCED_MOTION]: { '&[data-enter]': { animation: 'none' } },
 });
 
 interface TimelineRowProps {
@@ -151,13 +156,27 @@ interface TimelineRowProps {
   fullDate: string;
   baseId: string;
   expanded: boolean;
+  /** Opened since the previous commit, so the detail unfolds. */
+  opening: boolean;
   entering: boolean;
   onToggle: (id: string) => void;
   slotProps?: TimelineSlotProps;
   slots?: TimelineSlots;
 }
 
-export function TimelineRow({ event, epoch, timeLabel, fullDate, baseId, expanded, entering, onToggle, slotProps, slots }: TimelineRowProps) {
+export function TimelineRow({
+  event,
+  epoch,
+  timeLabel,
+  fullDate,
+  baseId,
+  expanded,
+  opening,
+  entering,
+  onToggle,
+  slotProps,
+  slots,
+}: TimelineRowProps) {
   const Item = slots?.item ?? 'li';
   const Trigger = slots?.trigger ?? 'button';
   const Time = slots?.time ?? 'time';
@@ -230,7 +249,8 @@ export function TimelineRow({ event, epoch, timeLabel, fullDate, baseId, expande
           id={detailId}
           hidden={!expanded}
           data-ui="timeline-detail"
-          data-state={expanded ? 'open' : 'closed'}
+          data-state={state}
+          data-enter={opening ? '' : undefined}
           className={slotProps?.detail?.className}
           css={[detailStyle, slotProps?.detail?.sx]}
         >

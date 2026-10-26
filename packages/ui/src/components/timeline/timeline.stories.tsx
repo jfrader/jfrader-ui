@@ -5,6 +5,7 @@ import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storyb
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectAligned, expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
 import { dateTimeFormatter, numberFormatter, relativeTime, relativeTimeFormatter, resolveTimeOptions, toEpoch, validEpoch } from '../../utils/intl';
 import { Timeline, type TimelineEvent, type TimelineProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -74,7 +75,8 @@ const headingCase = (day: string, locale = LOCALE) => day.charAt(0).toLocaleUppe
 
 const Frame = styled.div({ inlineSize: '34rem', maxInlineSize: '100%', marginInline: 'auto' });
 const Narrow = styled.div({ inlineSize: '16rem', maxInlineSize: '100%' });
-const StackFrame = styled.div({ display: 'grid', gap: vars.space[6] });
+// One bounded track: an `auto` track would grow to a child's intrinsic width and overflow the page.
+const StackFrame = styled.div({ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: vars.space[6] });
 const Toolbar = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], marginBlockEnd: vars.space[4] });
 
 const checkIcon = (
@@ -604,8 +606,37 @@ const events: TimelineEvent[] = [
       await expect(trigger).toHaveAttribute('aria-expanded', 'true');
       await expect(controlled(trigger)).toBeVisible();
       await expect(item(canvasElement, id)).toHaveAttribute('data-state', 'open');
+      // Initially open details are already there; only a reader's toggle unfolds.
+      await expect(controlled(trigger)).not.toHaveAttribute('data-enter');
     }
     await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+export const DetailUnfold: Story = {
+  tags: ['!autodocs'],
+  args: { defaultValue: ['deploy'] },
+  play: async ({ canvasElement, userEvent }) => {
+    const deployDetail = controlled(triggerOf(canvasElement, 'deploy'));
+    const build = triggerOf(canvasElement, 'build');
+    const detail = controlled(build);
+    await userEvent.click(build);
+    await expect(detail).toBeVisible();
+    await expect(detail).toHaveAttribute('data-enter');
+    await expect(deployDetail).not.toHaveAttribute('data-enter');
+    await expect(getComputedStyle(detail).animationName).not.toBe('none');
+    // The unfold clips paint only: the panel's box is final from the first frame and nothing stays clipped.
+    const opened = detail.getBoundingClientRect();
+    await settleMotion(detail);
+    await expectNear(detail.getBoundingClientRect().top, opened.top, 'unfold keeps the detail box');
+    await expectNear(detail.getBoundingClientRect().height, opened.height, 'unfold keeps the detail height');
+    await expect(getComputedStyle(detail).clipPath).toBe('none');
+    // Closing is immediate, and reopening unfolds again.
+    await userEvent.click(build);
+    await expect(detail).not.toBeVisible();
+    await expect(detail).not.toHaveAttribute('data-enter');
+    await userEvent.click(build);
+    await expect(detail).toHaveAttribute('data-enter');
   },
 };
 
@@ -776,6 +807,7 @@ const events: TimelineEvent[] = [
     await expect(args.onValueChange).toHaveBeenLastCalledWith(['deploy']);
     await expect(deploy).toHaveAttribute('aria-expanded', 'false');
     await expect(controlled(deploy)).not.toBeVisible();
+    await expect(controlled(deploy)).not.toHaveAttribute('data-enter');
     await expect(deploy.ownerDocument.activeElement).toBe(deploy);
     // The same id set again is not a new request.
     await userEvent.keyboard('{Enter}');
@@ -858,7 +890,7 @@ export const AriaMerge: Story = {
       <Timeline {...args} maxHeight="10rem" aria-label="Fallback history" aria-labelledby="missing-reference" />
     </StackFrame>
   ),
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, userEvent }) => {
     const [labelled, fallback] = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="timeline"]')) as [
       HTMLElement,
       HTMLElement,
@@ -876,6 +908,24 @@ export const AriaMerge: Story = {
     await expect(part(labelled, 'scroller')).toHaveAccessibleName('Recent changes');
     await expect(part(fallback, 'scroller')).toHaveAttribute('aria-labelledby', 'missing-reference');
     await expect(part(fallback, 'scroller')).toHaveAccessibleName('Fallback history');
+
+    // Keyboard focus in a short bounded history lands wholly inside it and clear of the sticky heading.
+    const scroller = part(labelled, 'scroller');
+    await userEvent.tab();
+    await expect(scroller.ownerDocument.activeElement).toBe(scroller);
+    const expectReadable = async (id: string) => {
+      const trigger = triggerOf(labelled, id);
+      await expectFocusRing(trigger);
+      await waitFor(() => expectInside(trigger, scroller, { tolerancePx: GEOMETRY_TOLERANCE }));
+      for (const heading of parts(labelled, 'heading')) await expectNoOverlap(heading, trigger, { tolerancePx: GEOMETRY_TOLERANCE });
+    };
+    await userEvent.tab();
+    await expectReadable('deploy');
+    await userEvent.tab();
+    await expectReadable('build');
+    await expect(scroller.scrollTop).toBeGreaterThan(0);
+    await userEvent.tab({ shift: true });
+    await expectReadable('deploy');
   },
 };
 
@@ -1227,6 +1277,11 @@ export const LiveUpdates: Story = {
     await expect(Math.abs(input.getBoundingClientRect().top - before)).toBeLessThan(GEOMETRY_TOLERANCE);
     await expect(parts(canvasElement, 'item')[0]).toHaveAttribute('data-new');
     await expect(parts(canvasElement, 'item')[1]).not.toHaveAttribute('data-new');
+    // Only the new row's marker rings, once.
+    const [freshMarker, olderMarker] = parts(canvasElement, 'marker').map((marker) => getComputedStyle(marker));
+    await expect(freshMarker!.animationName).not.toBe('none');
+    await expect(freshMarker!.animationIterationCount).toBe('1');
+    await expect(olderMarker!.animationName).toBe('none');
 
     // A clock tick relabels times without a new announcement.
     const announced = status.firstElementChild;
@@ -1764,10 +1819,18 @@ const events: TimelineEvent[] = [
     );
     const row = item(canvasElement, 'deploy');
     row.setAttribute('data-new', '');
-    await expect(mediaDeclarations(row, 'prefers-reduced-motion')).toContainEqual(
+    for (const element of [row, part(row, 'marker')]) {
+      await expect(mediaDeclarations(element, 'prefers-reduced-motion')).toContainEqual(
+        expect.objectContaining({ animationName: 'none' }),
+      );
+    }
+    row.removeAttribute('data-new');
+    const detail = part(row, 'detail');
+    detail.setAttribute('data-enter', '');
+    await expect(mediaDeclarations(detail, 'prefers-reduced-motion')).toContainEqual(
       expect.objectContaining({ animationName: 'none' }),
     );
-    row.removeAttribute('data-new');
+    detail.removeAttribute('data-enter');
   },
 };
 
@@ -1858,7 +1921,7 @@ const rhythmCases = [
 export const DayRhythm: Story = {
   tags: ['!autodocs'],
   render: (args) => (
-    <StackFrame>
+    <StackFrame data-testid="rhythm-stack">
       {rhythmCases.map(({ name, size, dir, narrow }) => {
         const history = <Timeline {...args} size={size} dir={dir} aria-label={name} defaultValue={['deploy', 'keys']} />;
         return narrow ? <Narrow key={name}>{history}</Narrow> : <div key={name}>{history}</div>;
@@ -1939,6 +2002,39 @@ export const DayRhythm: Story = {
         }
       }
       await expect(groups.map((group) => parts(group, 'item').length)).toEqual([2, 2, 1]);
+    }
+  },
+};
+
+export const DayRhythmLargeText: Story = {
+  ...DayRhythm,
+  name: 'Day rhythm at 200% text size',
+  parameters: {
+    viewport: {
+      options: { tiny: { name: 'Tiny', styles: { width: '320px', height: '844px' }, type: 'mobile' } },
+    },
+  },
+  globals: { viewport: { value: 'tiny', isRotated: false } },
+  beforeEach: ({ canvasElement }) => {
+    const root = canvasElement.ownerDocument.documentElement;
+    const previous = root.style.fontSize;
+    root.style.fontSize = '200%';
+    return () => {
+      root.style.fontSize = previous;
+    };
+  },
+  play: async ({ canvas, canvasElement }) => {
+    const document = canvasElement.ownerDocument.documentElement;
+    await expect(document.scrollWidth).toBeLessThanOrEqual(document.clientWidth + 1);
+    const frame = canvas.getByTestId('rhythm-stack');
+    for (const { name } of rhythmCases) {
+      const root = canvas.getByRole('region', { name });
+      await expectInside(root, frame, { tolerancePx: GEOMETRY_TOLERANCE });
+      await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+      for (const trigger of parts(root, 'trigger')) {
+        await expectInside(trigger, root, { tolerancePx: GEOMETRY_TOLERANCE });
+        await expect(trigger.getBoundingClientRect().height).toBeGreaterThanOrEqual(MIN_TRIGGER - 0.5);
+      }
     }
   },
 };

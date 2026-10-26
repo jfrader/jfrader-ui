@@ -1,11 +1,17 @@
 import { vars } from '@jfrader/tokens/vars';
-import { css, type SerializedStyles } from '../../styling/css';
+import { css, keyframes, type SerializedStyles } from '../../styling/css';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
-import { FORCED_COLORS } from '../../styling/media';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { withoutSx } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { Avatar } from '../avatar';
 import type { TimelineEvent, TimelineSlotProps, TimelineSlots, TimelineTone } from './timeline';
+
+// One ring in the marker's tone spreads out and fades; a shadow, so it never moves the marker's box.
+const halo = keyframes({
+  from: { boxShadow: '0 0 0 0 currentColor' },
+  to: { boxShadow: `0 0 0 ${vars.space[2]} transparent` },
+});
 
 const markerStyle = css({
   position: 'relative',
@@ -22,6 +28,12 @@ const markerStyle = css({
   color: vars.color.textMuted,
   fontSize: vars.textSize.xs,
   '&[data-kind="avatar"], &[data-kind="dot"]': { borderWidth: 0, backgroundColor: 'transparent' },
+  '[data-new] > &': {
+    animationName: halo,
+    animationDuration: vars.motion.duration.presence,
+    animationTimingFunction: vars.motion.easeStandard,
+  },
+  [REDUCED_MOTION]: { '[data-new] > &': { animation: 'none' } },
   [FORCED_COLORS]: { borderColor: 'CanvasText', color: 'CanvasText' },
 });
 

@@ -16,6 +16,8 @@
 // Updates: new rows never take focus; while the reader is in history (scrolled or focused inside the
 // bounded scroller) the visible row keeps its position. `scrollToNew` opts into scrolling to a newer
 // event. Genuinely new ids are announced through a text-only status region.
+// Motion: a newly opened detail unfolds and a new row fades in while its marker rings once. Neither
+// moves layout boxes, so anchoring and focus never wait on them; reduced motion turns both off.
 import {
   type ComponentType,
   type ComponentProps,
@@ -351,8 +353,8 @@ const scrollerStyle = css({
     overscrollBehavior: 'contain',
     // Anchoring is done by the component, so the browser's own adjustment must not add to it.
     overflowAnchor: 'none',
-    // Keeps a focused or scrolled-to row clear of the sticky day heading.
-    scrollPaddingBlockStart: `calc(${vars.space[12]} + 2lh)`,
+    // The only clearance for a focused or scrolled-to row: the sticky day heading wrapped to two lines.
+    scrollPaddingBlockStart: `calc(2lh + 3 * ${vars.space[3]})`,
   },
   '&:focus-visible': { ...focusRingInset },
 });
@@ -386,6 +388,7 @@ const dayCountStyle = css({
   order: 2,
   fontSize: vars.textSize.xs,
   fontWeight: vars.fontWeight.regular,
+  fontVariantNumeric: 'tabular-nums',
   color: vars.color.textMuted,
 });
 
@@ -454,8 +457,15 @@ export function Timeline({
   const openKey = idSetKey(open);
   // The id set last requested from the current open set; a request repeating it is not re-sent.
   const lastRequest = useRef<string | null>(null);
+  // Details opened since the previous commit unfold; nothing unfolds on first render.
+  const committedOpen = useRef<ReadonlySet<string> | null>(null);
+  const opening = useMemo(() => {
+    const previous = committedOpen.current;
+    return new Set(previous ? open.filter((id) => !previous.has(id)) : []);
+  }, [openKey]);
   useLayoutEffect(() => {
     lastRequest.current = null;
+    committedOpen.current = new Set(open);
   }, [openKey]);
   const toggle = (id: string) => {
     const next = openIds.has(id) ? open.filter((openId) => openId !== id) : [...open, id];
@@ -695,6 +705,7 @@ export function Timeline({
                         fullDate={epoch === null ? '' : formatters.full.format(epoch)}
                         baseId={baseId}
                         expanded={openIds.has(event.id)}
+                        opening={opening.has(event.id)}
                         entering={entering.has(event.id)}
                         onToggle={toggle}
                         slotProps={slotProps}
