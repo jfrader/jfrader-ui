@@ -214,6 +214,13 @@ export function InboxButton() {
 }
 ```
 
+Import one icon by name, or a single icon on its own subpath when you want the smallest import:
+
+```tsx
+import { Inbox } from '@jfrader/icons';
+import { Search } from '@jfrader/icons/search';
+```
+
 Draw your own with the same component every bundled icon uses:
 
 ```tsx
