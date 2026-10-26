@@ -15,6 +15,12 @@ Use a component's props for built-in variants. Use tokens for changes shared acr
 | Several Emotion styles composed for `styled` | The [`css()`](#compose-styles-with-css) function. |
 | An existing stylesheet | `className`, with normal CSS cascade rules. |
 
+## Build your own components
+
+Use component props and `sx` first. When you build something the components do not cover, use
+[`@jfrader/styling`](https://github.com/jfrader/jfrader-ui/blob/master/packages/styling/README.md) for
+the same `sx` contract, theme typing, and media queries.
+
 ## Token references
 
 `theme` from `@jfrader/ui` and `vars` from `@jfrader/tokens/vars` are the same object. Its values are

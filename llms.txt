@@ -6,7 +6,7 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 ## Packages
 
 - @jfrader/tokens (packages/tokens): typed token source, generated CSS vars and typed var() references
-- @jfrader/styling (packages/styling): shared Emotion seam, sx, theme typing, and media queries over tokens
+- @jfrader/styling (packages/styling): public Emotion seam, sx, theme typing, and media queries over tokens; API reference: packages/styling/README.md
 - @jfrader/icons (packages/icons): SvgIcon, createSvgIcon, SVG sources, generated React icons, and searchable metadata; depends on styling and tokens, below ui
 - @jfrader/ui (packages/ui): React components over icons and styling; re-exports SvgIcon and createSvgIcon
 - @jfrader/storybook (apps/storybook): workbench, component docs, browser tests
@@ -21,6 +21,7 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 - Generated typed vars: packages/tokens/src/generated/vars.ts (import as @jfrader/tokens/vars)
 - Component inventory: packages/ui/src/index.ts
 - Components: packages/ui/src/components/<name>/
+- Styling exports: packages/styling/src/index.ts (root), css.ts, sx.tsx, theme.ts, media.ts, and native-scrollbar.ts in packages/styling/src/; import as @jfrader/styling or its /css, /sx, /theme, /media, and /native-scrollbar subpaths
 - Styling seam: packages/styling/src/css.ts (packages/ui/src/styling/ keeps compatibility re-exports)
 - Icon sources: packages/icons/src/icons
 - Icon metadata: packages/icons/icons.json

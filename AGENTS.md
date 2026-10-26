@@ -55,7 +55,8 @@ Packing and publishing are in `docs/releasing.md`.
 - `@emotion/react`, `@emotion/styled` (re-exported as the app-facing `styled`; components never use
   it), and `@floating-ui/react` (Popover, Tooltip, Menu).
 - `motion` (v14.x, imported as `motion/react`).
-- `@jfrader/styling` depends on `@jfrader/tokens` and owns the shared Emotion seam.
+- `@jfrader/styling` is public API, depends on `@jfrader/tokens`, and owns the shared Emotion seam.
+  Its exports and `sx` contract are documented in `packages/styling/README.md`.
 - `@jfrader/icons` owns `SvgIcon` and `createSvgIcon`, depends on styling and tokens, and uses
   `@floating-ui/react` for ref composition. It has no runtime dependency on `@jfrader/ui`.
 - `@jfrader/ui` depends on `@jfrader/icons` and `@jfrader/styling`; runtime components may import glyphs.
