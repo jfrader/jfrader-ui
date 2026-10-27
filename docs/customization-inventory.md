@@ -8,9 +8,9 @@ composed modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **173**; public callable parts: **188**.
-- Families exposing `slots.root`: **120**; remaining without a family-level root slot: **53** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **132**; remaining without family-level interior slots: **41** (includes components without generated anatomy).
+- Public callable families: **174**; public callable parts: **188**.
+- Families exposing `slots.root`: **121**; remaining without a family-level root slot: **53** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **133**; remaining without family-level interior slots: **41** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -204,6 +204,7 @@ panel material. The section has no background, border or radius to migrate.
 | [Flex](../packages/ui/src/components/flex/flex.tsx) | — | — | — | — | — | — |
 | [FlightProvider](../packages/ui/src/components/flights/flight-provider.tsx) | — | — | — | — | — | — |
 | [FlipGameCard](../packages/ui/src/components/flip-game-card/flip-game-card.tsx) | yes | `back`, `front`, `root`, `rotator` | `back`, `front`, `root`, `rotator` | — | — | — |
+| [GalleryEditor](../packages/ui/src/components/gallery-editor/gallery-editor.tsx) | yes | `empty`, `header`, `list`, `root`, `tile`, `tileActions`, `toolbar` | `empty`, `header`, `list`, `root`, `tile`, `tileActions`, `toolbar` | — | — | — |
 | [GameActions](../packages/ui/src/components/game-actions/game-actions.tsx) | yes | `action`, `root` | `action`, `root` | — | — | — |
 | [GameCard](../packages/ui/src/components/game-card/game-card.tsx) | yes | `back`, `face`, `root` | `back`, `face`, `root` | — | — | — |
 | [GameCardStack](../packages/ui/src/components/game-card-stack/game-card-stack.tsx) | yes | `card`, `pile`, `root`, `trigger` | `card`, `pile`, `root`, `trigger` | — | — | `Pile` |

@@ -177,7 +177,7 @@ const DOUBLE_TAP_MS = motionDurationMs.slow * 1.5;
 const DRAG_SLOP = 8;
 const WHEEL_ZOOM_RATE = 0.002;
 const FLIGHT_SPRING = { type: 'spring', stiffness: 360, damping: 36 } as const;
-const defaults: LightboxGalleryLabels = {
+export const lightboxLabelDefaults: LightboxGalleryLabels = {
   open: 'Open image',
   close: 'Close viewer',
   previous: 'Previous image',
@@ -357,6 +357,10 @@ function clamp(value: number, min: number, max: number) {
 function validPositive(value: number, fallback: number) {
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
+/** The viewer's magnification cap: `maxZoom` when positive and finite, else the default, never below 1. */
+export function lightboxZoomLimit(maxZoom = MAX_ZOOM) {
+  return Math.max(1, validPositive(maxZoom, MAX_ZOOM));
+}
 
 function GalleryImage({
   image,
@@ -427,22 +431,27 @@ function Tile({
   return <Root {...props} ref={merged} />;
 }
 
-interface ViewerProps {
+export interface LightboxViewerProps {
   images: readonly LightboxGalleryImage[];
   selected: string | null | undefined;
   label: string;
   controller: NativeDialogController;
   select: (id: string | null) => void;
   restore: () => void;
-  launch: React.RefObject<HTMLButtonElement | null>;
-  home: () => HTMLButtonElement | undefined;
+  /** The element that opened the viewer; its `data-image-id` names the image it launched. */
+  launch: React.RefObject<HTMLElement | null>;
+  /** The element the current image returns to when the viewer closes. */
+  home: () => HTMLElement | undefined;
   labels: LightboxGalleryLabels;
   locale?: Intl.LocalesArgument;
   maxZoom: number;
   slotProps?: LightboxGallerySlotProps;
   slots?: LightboxGallerySlots;
-  returnFlight: (flight: ReturnFlight) => void;
   reduced: boolean;
+}
+
+interface ViewerProps extends LightboxViewerProps {
+  returnFlight: (flight: ReturnFlight) => void;
 }
 
 function Viewer({
@@ -1005,6 +1014,63 @@ function Viewer({
   );
 }
 
+/** Tracks `prefers-reduced-motion` in the document that owns `ref`. */
+export function useReducedMotionPreference(ref: React.RefObject<HTMLElement | null>) {
+  const initialReduced = useReducedMotion();
+  const [reduced, setReduced] = useState(initialReduced ?? false);
+  useEffect(() => {
+    const query = ref.current?.ownerDocument.defaultView?.matchMedia(REDUCED_MOTION.replace('@media ', ''));
+    if (!query) return;
+    const update = () => setReduced(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, [ref]);
+  return reduced;
+}
+
+/** The viewer dialog and the flight back to the launching element; LightboxGallery and GalleryEditor render it. */
+export function LightboxViewer(props: LightboxViewerProps) {
+  const [returnFlight, setReturnFlight] = useState<ReturnFlight | null>(null);
+  return (
+    <>
+      <Viewer {...props} returnFlight={setReturnFlight} />
+      {returnFlight && !props.reduced && !props.controller.open && (
+        <motion.div
+          key={returnFlight.image.id}
+          aria-hidden="true"
+          inert
+          css={returnFlightStyle}
+          style={{
+            left: returnFlight.from.left,
+            top: returnFlight.from.top,
+            width: returnFlight.from.width,
+            height: returnFlight.from.height,
+          }}
+          initial={{ x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1 }}
+          animate={{
+            x: returnFlight.to.left - returnFlight.from.left,
+            y: returnFlight.to.top - returnFlight.from.top,
+            scaleX: returnFlight.to.width / returnFlight.from.width,
+            scaleY: returnFlight.to.height / returnFlight.from.height,
+            opacity: 0,
+          }}
+          transition={FLIGHT_SPRING}
+          onAnimationComplete={() => setReturnFlight(null)}
+        >
+          <img
+            src={returnFlight.image.src}
+            srcSet={returnFlight.image.srcSet}
+            sizes={returnFlight.image.sizes}
+            alt=""
+            css={imageStyle}
+          />
+        </motion.div>
+      )}
+    </>
+  );
+}
+
 export function LightboxGallery({
   ref,
   images,
@@ -1034,34 +1100,21 @@ export function LightboxGallery({
   );
   const [open, requestOpen] = useControlledState(openProp, defaultOpen, onOpenChange);
   const [pendingLaunch, setPendingLaunch] = useState<string | null>(null);
-  const [returnFlight, setReturnFlight] = useState<ReturnFlight | null>(null);
-  const initialReduced = useReducedMotion();
-  const [reduced, setReduced] = useState(initialReduced ?? false);
   const validSelection = images.some((image) => image.id === selected);
   const effectiveOpen = !!open && validSelection && (pendingLaunch === null || pendingLaunch === selected);
   const lifecycle = useNativeDialogRoot(effectiveOpen, requestOpen);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLUListElement | null>(null);
   const mergedRoot = useMergeRefs([ref, rootRef]);
+  const reduced = useReducedMotionPreference(rootRef);
   const mergedGrid = useMergeRefs([slotProps?.grid?.ref, gridRef]);
   const tiles = useRef(new Map<string, HTMLButtonElement>());
   const invoker = useRef<HTMLButtonElement | null>(null);
-  const labels = { ...defaults, ...labelOverrides };
+  const labels = { ...lightboxLabelDefaults, ...labelOverrides };
   const [geometry, setGeometry] = useState({ columns: 2, width: MIN_COLUMN_WIDTH, gap: 0 });
   const width = validPositive(minColumnWidth, MIN_COLUMN_WIDTH);
-  const zoomLimit = Math.max(1, validPositive(maxZoom, MAX_ZOOM));
+  const zoomLimit = lightboxZoomLimit(maxZoom);
   const format = useMemo(() => numberFormatter(locale), [locale]);
-
-  useEffect(() => {
-    const query = rootRef.current?.ownerDocument.defaultView?.matchMedia(
-      REDUCED_MOTION.replace('@media ', ''),
-    );
-    if (!query) return;
-    const update = () => setReduced(query.matches);
-    update();
-    query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
-  }, []);
 
   useEffect(() => {
     if (pendingLaunch === selected) setPendingLaunch(null);
@@ -1177,7 +1230,7 @@ export function LightboxGallery({
                 {labels.unavailable}
               </p>
             )}
-            <Viewer
+            <LightboxViewer
               images={images}
               selected={selected}
               label={label}
@@ -1191,41 +1244,8 @@ export function LightboxGallery({
               maxZoom={zoomLimit}
               slotProps={slotProps}
               slots={slots}
-              returnFlight={setReturnFlight}
               reduced={reduced}
             />
-            {returnFlight && !reduced && !effectiveOpen && (
-              <motion.div
-                key={returnFlight.image.id}
-                aria-hidden="true"
-                inert
-                css={returnFlightStyle}
-                style={{
-                  left: returnFlight.from.left,
-                  top: returnFlight.from.top,
-                  width: returnFlight.from.width,
-                  height: returnFlight.from.height,
-                }}
-                initial={{ x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1 }}
-                animate={{
-                  x: returnFlight.to.left - returnFlight.from.left,
-                  y: returnFlight.to.top - returnFlight.from.top,
-                  scaleX: returnFlight.to.width / returnFlight.from.width,
-                  scaleY: returnFlight.to.height / returnFlight.from.height,
-                  opacity: 0,
-                }}
-                transition={FLIGHT_SPRING}
-                onAnimationComplete={() => setReturnFlight(null)}
-              >
-                <img
-                  src={returnFlight.image.src}
-                  srcSet={returnFlight.image.srcSet}
-                  sizes={returnFlight.image.sizes}
-                  alt=""
-                  css={imageStyle}
-                />
-              </motion.div>
-            )}
           </div>
         )}
       </WithSx>

@@ -326,6 +326,10 @@
       "types": "./src/components/flex/index.ts",
       "import": "./src/components/flex/index.ts"
     },
+    "./gallery-editor": {
+      "types": "./src/components/gallery-editor/index.ts",
+      "import": "./src/components/gallery-editor/index.ts"
+    },
     "./flip-game-card": {
       "types": "./src/components/flip-game-card/index.ts",
       "import": "./src/components/flip-game-card/index.ts"
