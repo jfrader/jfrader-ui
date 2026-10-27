@@ -200,6 +200,7 @@ export const Default: Story = {
     await expect(canvas.getByRole('region', { name: 'Listing photos' })).toBeInTheDocument();
     await expect(canvas.getByText('6 photos')).toBeInTheDocument();
     await expect(tiles(canvasElement)).toHaveLength(photos.length);
+    await expect(list(canvasElement).firstElementChild).toHaveAttribute('data-ui', 'gallery-editor-upload');
     const [cover] = tiles(canvasElement);
     await expect(within(cover!).getByText('Cover')).toBeVisible();
     await expect(within(cover!).getByRole('button', { name: 'Layered hills beneath a low sun, cover' })).toBeInTheDocument();
@@ -487,12 +488,14 @@ export const Keyboard: Story = {
   name: 'Keyboard',
   parameters: {
     docs: {
-      description: { story: 'Tab into the grid, move with the arrow keys, and press Enter to preview.' },
+      description: { story: 'Tab past the upload control into the grid, move with the arrow keys, and press Enter to preview.' },
       source: { language: 'tsx', code: editorSource },
     },
   },
   play: async ({ args, canvasElement, userEvent }) => {
     const buttons = photoButtons(canvasElement);
+    await userEvent.tab();
+    await expect(canvasElement.ownerDocument.activeElement).toBe(fileInput(canvasElement));
     await userEvent.tab();
     await focusVisible(buttons[0]!);
     await userEvent.keyboard('{ArrowRight}');

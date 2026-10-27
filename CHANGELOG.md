@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- `GalleryEditor` places the upload tile first in the grid, so it stays reachable in a long gallery.
+
 ## 0.21.1 — 2026-10-27
 
 ### Fixed
