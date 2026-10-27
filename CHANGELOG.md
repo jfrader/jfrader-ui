@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.21.1 — 2026-10-27
+
+### Fixed
+
+- `GalleryEditor` keeps the photo visible under the selection wash when a theme's `accentSoft` token is opaque.
+
 ## 0.21.0 — 2026-10-27
 
 ### Added
