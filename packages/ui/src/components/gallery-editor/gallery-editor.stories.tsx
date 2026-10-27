@@ -248,10 +248,14 @@ export const HiddenOverlayClick: Story = {
   tags: ['!autodocs'],
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     const button = photoButtons(canvasElement)[1]!;
-    const box = canvas.getByRole('checkbox', { name: 'Select Sun above warm sand dunes' }).getBoundingClientRect();
-    const hit = canvasElement.ownerDocument.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)!;
-    await expect(button.contains(hit)).toBe(true);
-    await userEvent.click(hit);
+    (canvasElement.ownerDocument.activeElement as HTMLElement | null)?.blur();
+    await userEvent.hover(canvas.getByRole('heading'));
+    const overlay = canvas.getByRole('checkbox', { name: 'Select Sun above warm sand dunes' }).closest('[data-ui="checkbox"]')!.parentElement!;
+    // Computed style, not an elementFromPoint hit test: viewport coordinates depend on scroll position.
+    // Pointerless environments (headless CI, touch) keep the overlay interactive by design; hover-capable ones keep it inert until hover or focus.
+    const hoverCapable = canvasElement.ownerDocument.defaultView!.matchMedia('(hover: hover)').matches;
+    await expect(getComputedStyle(overlay).pointerEvents).toBe(hoverCapable ? 'none' : 'auto');
+    await userEvent.click(button);
     await waitFor(() => expect(viewer(canvasElement).open).toBe(true));
     await expect(args.onValueChange).toHaveBeenLastCalledWith('dunes');
     await expect(args.onSelectionChange).not.toHaveBeenCalled();
