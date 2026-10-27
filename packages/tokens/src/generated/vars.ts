@@ -209,6 +209,9 @@ export const vars = {
     "gameCardLg": "var(--ui-size-game-card-lg)",
     "gameCardXl": "var(--ui-size-game-card-xl)",
     "gameCardPerspective": "var(--ui-size-game-card-perspective)",
+    "galleryEditorTile": "var(--ui-size-gallery-editor-tile)",
+    "galleryEditorTileCompact": "var(--ui-size-gallery-editor-tile-compact)",
+    "galleryEditorEmptyUpload": "var(--ui-size-gallery-editor-empty-upload)",
     "dialogStackBreakpoint": "var(--ui-size-dialog-stack-breakpoint)",
     "dialogStackSheetPeek": "var(--ui-size-dialog-stack-sheet-peek)",
     "dialogStackDialogPeek": "var(--ui-size-dialog-stack-dialog-peek)"

@@ -53,7 +53,7 @@ bottom-sheet, breadcrumbs, button, button-group, calendar, card, carousel, chat-
 chip-group, code-block, combobox, command-palette, comment-thread, container, context-menu,
 copy-button, countdown, data-table, date-picker, date-range-picker, dialog, divider, dock, drawer,
 elastic-slider, empty-state, expandable-card, expanding-search, field, file-dropzone, filter-toolbar,
-flex, hold-to-confirm, hover-card, image-compare, inline-edit, json-viewer, kbd, keycap-keyboard,
+flex, gallery-editor, hold-to-confirm, hover-card, image-compare, inline-edit, json-viewer, kbd, keycap-keyboard,
 lightbox-gallery, mention-input, menu, metric-card, multi-select, navigation, now-playing, pagination,
 password-field, photo-grid, pill, popover, progress, radio-cards, radio-group, resizable-panels,
 scroll-area, search-field, segmented-control, select, shortcut-recorder, signature-pad, skeleton,

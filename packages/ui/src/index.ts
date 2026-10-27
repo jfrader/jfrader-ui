@@ -53,6 +53,7 @@ export * from './components/expanding-search';
 export * from './components/file-dropzone';
 export * from './components/filter-toolbar';
 export * from './components/flex';
+export * from './components/gallery-editor';
 export * from './components/gravity-well';
 export * from './components/hold-to-confirm';
 export * from './components/image-compare';
