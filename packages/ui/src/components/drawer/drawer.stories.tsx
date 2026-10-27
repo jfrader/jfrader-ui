@@ -5,7 +5,9 @@ import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
+import { Close as CloseIcon } from '@jfrader/icons';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectPointerTargets } from '../../testing/control-size-assertions';
 import { findConditionalStyle } from '../../testing/conditional-style';
 import { expectContrastSurface, expectThemedSurface } from '../../testing/theme-assertions';
 import { Button as FixtureButton } from '../button';
@@ -2872,3 +2874,37 @@ const FilterPanel = styled(Surface)({ border: '1px dashed ' + vars.color.border 
 </Drawer>` } } },
   render: (args) => <DrawerExample {...args} panelProps={{ component: DrawerPaper }} />,
 };
+
+/** Trigger and close buttons at fine-pointer density. */
+export const PointerTargets: Story = {
+  name: 'Drawer pointer targets',
+  tags: ['!autodocs'],
+  args: { defaultOpen: true },
+  render: (args) => (
+    <Drawer {...args}>
+      <Drawer.Trigger>{TRIGGER}</Drawer.Trigger>
+      <Drawer.Content>
+        <Drawer.Panel>
+          <Drawer.Header>
+            <Drawer.Title>{TITLE}</Drawer.Title>
+            <Drawer.Close aria-label="Close filters"><CloseIcon /></Drawer.Close>
+          </Drawer.Header>
+          <Drawer.Body><FilterFields /></Drawer.Body>
+          <Drawer.Footer>
+            <Drawer.Close>Done</Drawer.Close>
+          </Drawer.Footer>
+        </Drawer.Panel>
+      </Drawer.Content>
+    </Drawer>
+  ),
+  play: async ({ canvasElement }) => {
+    const dialog = await within(canvasElement).findByRole('dialog');
+    await settle(dialog);
+    const trigger = canvasElement.querySelector<HTMLElement>('[data-ui="drawer-trigger"]')!;
+    const [iconClose, textClose] = dialog.querySelectorAll<HTMLElement>('[data-ui="drawer-close"]');
+    await expectPointerTargets([[trigger, 40], [iconClose!, 34], [textClose!, 32]]);
+  },
+};
+
+/** Trigger and close buttons reach the touch target on coarse pointers. */
+export const TouchTargets: Story = { ...PointerTargets, name: 'Drawer touch targets', tags: ['!autodocs', 'touch'] };

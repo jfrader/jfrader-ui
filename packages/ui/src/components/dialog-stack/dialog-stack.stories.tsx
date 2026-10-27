@@ -7,6 +7,8 @@ import type { Mock } from 'storybook/test';
 import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectPointerTargets } from '../../testing/control-size-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
 import { findConditionalStyle } from '../../testing/conditional-style';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button as FixtureButton } from '../button';
@@ -2540,3 +2542,23 @@ export const ControlledRejectDrag: Story = {
 export const AdapterDrag: Story = { ...Drag, render: (args) => <Levels {...args} contentProps={{ settings: { component: StackPaper }, account: { component: StackPaper } }} /> };
 export const AdapterRejectedDrag: Story = { ...ControlledRejectDrag, render: (args) => <Levels {...args} contentProps={{ settings: { component: StackPaper }, account: { component: StackPaper } }} /> };
 export const AdapterReducedMotion: Story = { ...ReducedMotion, render: (args) => <Levels {...args} contentProps={{ settings: { component: StackPaper }, account: { component: StackPaper } }} /> };
+
+/** Trigger, Back, and Close at fine-pointer density. */
+export const PointerTargets: StoryObj<(props: DialogStackShorthandProps) => ReactNode> = {
+  name: 'DialogStack pointer targets',
+  tags: ['!autodocs'],
+  args: { triggerLabel: 'Open settings', pages: SHORTHAND_PAGES, defaultValue: ['settings', 'account'] },
+  render: (args) => <DialogStack {...args} />,
+  play: async ({ canvas }) => {
+    const shell = await canvas.findByRole('dialog');
+    await waitFor(() => expect(within(shell).getByRole('heading', { name: 'Account' })).toBeVisible());
+    await settleMotion(shell);
+    const trigger = canvas.getByRole('button', { name: 'Open settings', hidden: true });
+    const back = within(shell).getByRole('button', { name: 'Back to Settings' });
+    const close = within(shell).getByRole('button', { name: 'Close all' });
+    await expectPointerTargets([[trigger, 40], [back, 32], [close, 32]]);
+  },
+};
+
+/** Trigger, Back, and Close reach the touch target on coarse pointers. */
+export const TouchTargets: typeof PointerTargets = { ...PointerTargets, name: 'DialogStack touch targets', tags: ['!autodocs', 'touch'] };

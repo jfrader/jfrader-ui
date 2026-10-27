@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Overlay triggers (Drawer, Dialog, BottomSheet, DialogStack, Popover, Menu, Tooltip, HoverCard, CommandPalette, ContextMenu) and the modal dismiss buttons reach 44px under coarse pointers, matching the control size scale.
+
 ## 0.20.0 — 2026-10-26
 
 ### Added
@@ -13,7 +17,6 @@
 
 - The Satoshi mark is a dot, three increasing bars and a dot, tilted 10 degrees.
 - `SvgIcon` documentation lives under Icons with the rest of the set.
-
 
 ### Changed
 
@@ -36,7 +39,6 @@
 
 - A release packs once and publishes to each registry in its own job, so a slow or failing registry can no longer time out the other one.
 
-
 ## 0.19.2 — 2026-10-26
 
 ### Fixed
@@ -44,7 +46,6 @@
 - `@jfrader/icons` carries its license, description, keywords, repository and homepage on npm.
 - `@jfrader/styling` carries its keywords, repository and homepage.
 - A release now publishes to both registries independently, so a failure on one no longer leaves the other empty.
-
 
 ## 0.19.1 — 2026-10-26
 
@@ -72,7 +73,6 @@ First published build of the icon system. Same content as 0.19.0, which stayed i
 - `Dock` toolbar labels no longer obstruct an open group tray at enlarged text sizes.
 - `Dock` keeps multiline tray labels above running and selection markers.
 - `ColorPicker` shows the selected color beside the hex field, so the panel no longer leaves the pad as its only sample of the color.
-
 
 ## 0.17.1 — 2026-10-25
 
@@ -136,6 +136,7 @@ First published build of the icon system. Same content as 0.19.0, which stayed i
 - `RadialMenu`'s satellites use icons instead of text characters.
 - `BottomSheet`, `Dialog`, `Drawer`, `DialogStack` and `UserMenu` no longer shift the page while they are open. The scroll lock hid the scrollbar before measuring it, so the width came out as zero and no compensating padding was applied.
 - `BottomSheet`'s entrance no longer jumps straight to its resting position. The resize that follows the scroll lock is width-only, and it used to cancel the animation; the sheet now re-measures only when a value it reads changes.
+
 ## 0.14.0 — 2026-10-24
 
 ### Added
@@ -411,7 +412,6 @@ First published build of the icon system. Same content as 0.19.0, which stayed i
 ### Changed
 
 - `SortableDataTable` sort headers drop the pill-style chip chrome: borderless, text-forward labels with paired chevrons (shape and accent color mark the active direction), quiet surface hover, and the existing focus ring. API and behavior unchanged; 32px targets, forced-colors and reduced-motion preserved.
-
 
 ### Added
 

@@ -7,7 +7,9 @@ import { expect, fireEvent, fn, spyOn, userEvent, waitFor, within } from 'storyb
 import { renderToString } from 'react-dom/server';
 import { vars } from '@jfrader/tokens/vars';
 import { expectEntranceMotion, expectRetainedExit, settleMotion } from '../../testing/motion-assertions';
+import { Close as CloseIcon } from '@jfrader/icons';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectPointerTargets } from '../../testing/control-size-assertions';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { expectInside } from '../../testing/geometry-assertions';
 import { Button } from '../button';
@@ -1980,3 +1982,29 @@ export const ContrastPanel: Story = {
     </Dialog>
   ),
 };
+
+/** Trigger and close buttons at fine-pointer density. */
+export const PointerTargets: Story = {
+  name: 'Dialog pointer targets',
+  tags: ['!autodocs'],
+  render: (args) => (
+    <Dialog {...args} defaultOpen>
+      <Dialog.Trigger>Open profile</Dialog.Trigger>
+      <Dialog.Content>
+        <Dialog.Title>{TITLE}</Dialog.Title>
+        <Dialog.Close aria-label="Close profile"><CloseIcon /></Dialog.Close>
+        <Dialog.Close>Close</Dialog.Close>
+      </Dialog.Content>
+    </Dialog>
+  ),
+  play: async ({ canvas, canvasElement }) => {
+    const dialog = await canvas.findByRole('dialog');
+    await settleMotion(dialog);
+    const trigger = canvasElement.querySelector<HTMLElement>('[data-ui="dialog-trigger"]')!;
+    const [iconClose, textClose] = dialog.querySelectorAll<HTMLElement>('[data-ui="dialog-close"]');
+    await expectPointerTargets([[trigger, 40], [iconClose!, 34], [textClose!, 32]]);
+  },
+};
+
+/** Trigger and close buttons reach the touch target on coarse pointers. */
+export const TouchTargets: Story = { ...PointerTargets, name: 'Dialog touch targets', tags: ['!autodocs', 'touch'] };

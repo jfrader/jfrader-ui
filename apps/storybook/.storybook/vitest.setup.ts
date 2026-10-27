@@ -86,11 +86,6 @@ const storyMediaPreferences: Readonly<Record<string, string | undefined>> = {
 };
 
 beforeEach(async ({ task }) => {
-  const touchWidth = /^Touch table (320|390|768)$/.exec(task.name)?.[1];
-  const touchControls = task.name === 'Touch control sizes' || task.name === 'MoneyInput touch sizes' || task.name === 'NumberField touch sizes';
-  if (touchWidth || touchControls || task.name === 'Desktop table controls') {
-    await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: Boolean(touchWidth || touchControls) });
-  }
   const preference = storyMediaPreferences[task.name];
   if (!preference) return;
   await cdp().send('Emulation.setEmulatedMedia', {
@@ -99,9 +94,6 @@ beforeEach(async ({ task }) => {
 });
 
 afterEach(async ({ task }) => {
-  if (/^Touch table (320|390|768)$/.test(task.name) || task.name === 'Touch control sizes' || task.name === 'MoneyInput touch sizes' || task.name === 'NumberField touch sizes' || task.name === 'Desktop table controls') {
-    await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: false });
-  }
   if (!storyMediaPreferences[task.name]) return;
   await cdp().send('Emulation.setEmulatedMedia', { features: [] });
 });

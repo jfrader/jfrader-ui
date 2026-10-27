@@ -80,6 +80,7 @@ export const Default: Story = {
 
 export const TouchSizes: Story = {
   name: 'NumberField touch sizes',
+  tags: ['touch'],
   render: (args, context) => Sizes.render!(args, context),
   play: async ({ canvasElement }) => {
     const inputs = within(canvasElement).getAllByRole('spinbutton');

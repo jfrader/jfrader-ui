@@ -5,6 +5,31 @@ import path from 'node:path';
 import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
 
+const configDir = path.join(import.meta.dirname, '.storybook');
+
+/**
+ * Stories tagged `touch` assert `(pointer: coarse)` sizes. They run in their own browser context
+ * with touch enabled, because touch emulation applies to the whole page and would leak into story
+ * files running beside them.
+ */
+const storybookProject = (name: string, tags: { include?: string[]; exclude?: string[] }, hasTouch = false) => ({
+  extends: true,
+  plugins: [storybookTest({ configDir, tags })],
+  test: {
+    name,
+    setupFiles: path.join(configDir, 'vitest.setup.ts'),
+    testTimeout: 30000,
+    browser: {
+      enabled: true,
+      headless: true,
+      provider: playwright({ contextOptions: { hasTouch } }),
+      instances: [{
+        browser: 'chromium' as const
+      }]
+    }
+  }
+});
+
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
   // Compile JSX through Emotion's runtime so the `css` prop works in stories and components.
@@ -22,39 +47,23 @@ export default defineConfig({
     ]
   },
   test: {
-    projects: [{
-      extends: true,
-      plugins: [
-      // The plugin will run tests for the stories defined in your Storybook config
-      // See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
-      storybookTest({
-        configDir: path.join(import.meta.dirname, '.storybook')
-      })],
-      test: {
-        name: 'storybook',
-        setupFiles: path.join(import.meta.dirname, '.storybook/vitest.setup.ts'),
-        testTimeout: 30000,
-        browser: {
-          enabled: true,
-          headless: true,
-          provider: playwright({}),
-          instances: [{
-            browser: 'chromium'
-          }]
-        }
-      }
-    }, {
-      extends: true,
-      test: {
-        name: 'design',
-        include: ['src/design-assertions.test.ts'],
-        browser: {
-          enabled: true,
-          headless: true,
-          provider: playwright({}),
-          instances: [{ browser: 'chromium' }],
+    projects: [
+      // See plugin options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
+      storybookProject('storybook', { exclude: ['touch'] }),
+      storybookProject('storybook-touch', { include: ['touch'] }, true),
+      {
+        extends: true,
+        test: {
+          name: 'design',
+          include: ['src/design-assertions.test.ts'],
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright({}),
+            instances: [{ browser: 'chromium' }],
+          },
         },
       },
-    }]
+    ]
   }
 });

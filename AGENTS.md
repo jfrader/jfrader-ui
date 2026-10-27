@@ -36,7 +36,7 @@ documentation spec, review checklist).
 | `pnpm verify:exports` | Check that every component's subpath export resolves and matches the index |
 | `pnpm verify:icons` | Check icon sources, geometry, metadata, generated components, and exports |
 | `pnpm --filter @jfrader/storybook audit:docs` | Crawl the docs site and report examples without code and API coverage (`DOCS_URL`, `--only`, `--check`) |
-| `pnpm --filter @jfrader/storybook exec vitest run --project=storybook --maxWorkers=2 packages/ui/src/components/<name>/<name>.stories.tsx` | Run one story file from the repo root (fast loop; tokens and icons must already be generated) |
+| `pnpm --filter @jfrader/storybook exec vitest run --project=storybook --project=storybook-touch --maxWorkers=2 packages/ui/src/components/<name>/<name>.stories.tsx` | Run one story file from the repo root (fast loop; tokens and icons must already be generated) |
 
 Packing and publishing are in `docs/releasing.md`.
 
