@@ -335,6 +335,26 @@ export const BulkDelete: Story = {
   },
 };
 
+export const SelectedWash: Story = {
+  tags: ['!autodocs'],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(reveal(canvas.getByRole('checkbox', { name: 'Select Sun above warm sand dunes' })));
+    const button = photoButtons(canvasElement)[1]!;
+    await expect(button).toHaveAttribute('data-selected');
+    const wash = getComputedStyle(button, '::after');
+    await expect(Number(wash.opacity)).toBeGreaterThanOrEqual(0.14);
+    await expect(Number(wash.opacity)).toBeLessThanOrEqual(0.22);
+    const probe = canvasElement.appendChild(document.createElement('div'));
+    probe.style.backgroundColor = vars.color.accent;
+    const accent = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    await expect(wash.backgroundColor).toBe(accent);
+    const img = button.querySelector('img')!;
+    await waitFor(() => expect(img.complete).toBe(true));
+    await expect(img.naturalWidth).toBeGreaterThan(0);
+  },
+};
+
 export const ModifierSelection: Story = {
   tags: ['!autodocs'],
   play: async ({ args, canvas, canvasElement, userEvent }) => {
