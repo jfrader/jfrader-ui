@@ -74,6 +74,7 @@ Packing and publishing are in `docs/releasing.md`.
   minor-unit arithmetic (NumberField, MoneyInput).
 - `libphonenumber-js` (the `/max` build) for PhoneInput country metadata, AsYouType formatting, and
   E.164 validation.
+- `markdown-to-jsx` is development-only, for authored guides shared by Storybook and the docs site.
 - `culori` for ColorPicker color-space conversion and contrast math.
 - `next` and `@emotion/cache` are optional peers and devDependencies. Runtime imports stay in
   `packages/ui/src/components/next/`, published as the `./next` subpath. Iframe stories may use

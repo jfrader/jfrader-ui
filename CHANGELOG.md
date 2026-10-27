@@ -4,7 +4,29 @@
 
 ### Fixed
 
-- On coarse pointers, overlay triggers (Dialog, Drawer, BottomSheet, DialogStack, Popover, Menu, Tooltip, HoverCard, ContextMenu, and CommandPalette) reach the 44px `size.touch` height, and the Dialog, Drawer, BottomSheet, and DialogStack close buttons, the BottomSheet handle, and DialogStack Back reach 44×44px. Fine-pointer sizes are unchanged.
+- Overlay triggers (Drawer, Dialog, BottomSheet, DialogStack, Popover, Menu, Tooltip, HoverCard, CommandPalette, ContextMenu) and the modal dismiss buttons reach 44px under coarse pointers, matching the control size scale.
+
+## 0.20.0 — 2026-10-26
+
+### Added
+
+- `@jfrader/icons` ships a generated sprite (`sprite.svg`, 478 symbols) and a path catalogue (`paths.json`, 300 icons) for consumers outside React.
+- The icon docs are an icon browser: search over names, tags and aliases, category filter, line and solid, sizes 16 to 32, light and dark, and a click that copies the import.
+
+### Fixed
+
+- The Satoshi mark is a dot, three increasing bars and a dot, tilted 10 degrees.
+- `SvgIcon` documentation lives under Icons with the rest of the set.
+
+
+### Changed
+
+- `Timeline` uses separated day headings, a single marker rail, event-first summaries, and inline expanded details. Timestamps move below each event in narrow containers, and disclosure targets stay at least 44px tall. Details unfold when opened, and new-event markers pulse once; both honor reduced motion.
+
+### Fixed
+
+- `Timeline` keeps keyboard-focused events inside bounded histories, clear of sticky day headings.
+- `Timeline` completes the detail reveal when focus enters it, so keyboard users never land in clipped content.
 
 ## 0.19.4 — 2026-10-26
 

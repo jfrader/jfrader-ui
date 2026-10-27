@@ -1,6 +1,6 @@
 {
   "name": "@jfrader/icons",
-  "version": "0.19.4",
+  "version": "0.20.0",
   "description": "React icons and SVG icon components for @jfrader/ui.",
   "keywords": [
     "react",
@@ -30,6 +30,8 @@
       "import": "./src/index.ts"
     },
     "./metadata": "./icons.json",
+    "./sprite.svg": "./sprite.svg",
+    "./paths.json": "./paths.json",
     "./svg-icon": {
       "types": "./src/svg-icon/index.ts",
       "import": "./src/svg-icon/index.ts"

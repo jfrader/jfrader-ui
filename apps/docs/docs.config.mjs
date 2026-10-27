@@ -8,7 +8,7 @@ export default {
     title: 'jfrader/ui',
     mark: 'j',
     tagline:
-      'React component library based on Emotion and CSS custom properties. Navigation and examples come from the library’s Storybook stories; the API comes from the component sources.',
+      'React components and icons.',
     links: [
       { label: 'Storybook', href: '/storybook/' },
       { label: 'GitHub', href: 'https://github.com/jfrader/jfrader-ui' },

@@ -16,13 +16,15 @@ export default defineConfig({
   plugins: [
     react({ jsxImportSource: '@emotion/react' }),
     {
-      name: 'icon-metadata',
+      name: 'icon-assets',
       generateBundle() {
-        this.emitFile({
-          type: 'asset',
-          fileName: 'icons.json',
-          source: readFileSync(path.join(import.meta.dirname, 'icons.json')),
-        });
+        for (const fileName of ['icons.json', 'sprite.svg', 'paths.json']) {
+          this.emitFile({
+            type: 'asset',
+            fileName,
+            source: readFileSync(path.join(import.meta.dirname, fileName)),
+          });
+        }
       },
     },
   ],

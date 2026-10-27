@@ -2,6 +2,6 @@
 import { createElement as h, Fragment } from 'react';
 import { createSvgIcon } from '../svg-icon';
 
-export const Satoshi = createSvgIcon(h(Fragment, null, h('path', { d: 'M16 8.5C14.5 7 8 7 8 10.25C8 13.5 16 11.5 16 15C16 18.5 9.5 18.5 8 17M6 12.5H18' })), 'Icons.Satoshi');
+export const Satoshi = createSvgIcon(h(Fragment, null, h('path', { d: 'M7.54 9.74 15.42 8.35 M6.18 13.53 18 11.45 M5.8 17.15 19.59 14.72' }), h('circle', { cx: '10.85', cy: '5.5', r: '1.6', fill: 'currentColor', stroke: 'none' }), h('circle', { cx: '13.32', cy: '19.48', r: '1.6', fill: 'currentColor', stroke: 'none' })), 'Icons.Satoshi');
 
-export const SatoshiSolid = createSvgIcon(h(Fragment, null, h('path', { d: 'M16.75 7.75C14.5 5.5 7 6 7 10.25C7 15 15 12.75 15 15C15 17.5 10.5 18 8.75 16.25A1 1 0 0 0 7.25 17.75C9.5 20 17 20 17 15C17 10.25 9 12.5 9 10.25C9 8 13.5 7.5 15.25 9.25A1 1 0 0 0 16.75 7.75Z' }), h('path', { d: 'M6 11.5H18A1 1 0 0 1 18 13.5H6A1 1 0 0 1 6 11.5Z' })), 'Icons.SatoshiSolid', { variant: 'solid' });
+export const SatoshiSolid = createSvgIcon(h(Fragment, null, h('path', { d: 'M7.35 8.66 15.23 7.27 15.61 9.43 7.73 10.82Z M5.99 12.45 17.8 10.37 18.19 12.53 6.37 14.62Z M5.61 16.07 19.4 13.64 19.78 15.81 5.99 18.24Z' }), h('circle', { cx: '10.85', cy: '5.5', r: '1.6' }), h('circle', { cx: '13.32', cy: '19.48', r: '1.6' })), 'Icons.SatoshiSolid', { variant: 'solid' });

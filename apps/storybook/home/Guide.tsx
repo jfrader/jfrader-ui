@@ -1,5 +1,5 @@
 import { isValidElement, useMemo, type ComponentPropsWithoutRef } from 'react';
-import { Markdown, Unstyled } from '@storybook/addon-docs/blocks';
+import Markdown from 'markdown-to-jsx';
 import { CodeBlock, TypewriterTerminal } from '@jfrader/ui';
 import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
 import { css } from '../../../packages/ui/src/styling/css';
@@ -10,6 +10,7 @@ const guidePaths: Record<string, string> = {
   './theming.md': 'foundations-theming',
   './flights.md': 'foundations-flights',
   './styling.md': 'foundations-styling',
+  './icons.md': 'icons-all-icons',
 };
 
 /** A workbench link (`./?path=/docs/…`, `./?path=/story/…`) belongs to the manager, not the preview. */
@@ -48,13 +49,13 @@ function GuideCode({ children, ...props }: ComponentPropsWithoutRef<'pre'>) {
   const code = children.props.children;
   const language = children.props.className?.match(/\blang(?:uage)?-(\S+)/)?.[1];
   return (
-    <Unstyled data-guide-example="">
+    <div className="sb-unstyled" data-guide-example="">
       {language && shellLanguages.has(language.toLowerCase()) ? (
         <GuideTerminal code={code} />
       ) : (
         <CodeBlock role="group" code={code} filename={children.props.filename} language={language} highlight={loadShikiHighlight} />
       )}
-    </Unstyled>
+    </div>
   );
 }
 

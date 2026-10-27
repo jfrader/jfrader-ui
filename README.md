@@ -13,7 +13,7 @@ listed in the [changelog](CHANGELOG.md).
 ## Install
 
 ```sh
-pnpm add @jfrader/ui @jfrader/tokens
+pnpm add @jfrader/ui @jfrader/tokens @jfrader/icons
 ```
 
 Requires React 19. Import the token stylesheet once, in your app entry:
@@ -57,6 +57,8 @@ export function Project() {
 | [QA gates](docs/qa-gates.md) | Keyboard, screen reader, forced colors, reduced motion, RTL |
 
 Storybook renders the setup, theming, styling, and QA guides under **Foundations**, straight from these files.
+
+Find the icon guide and searchable browser under [Icons / All icons](https://ui.jfrader.com/#/components/gallery).
 
 ## Packages
 

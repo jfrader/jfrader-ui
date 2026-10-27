@@ -20,7 +20,7 @@ function ComponentAdapter(props: ComponentPropsWithRef<'svg'>) { return <svg {..
 function TitleAdapter(props: ComponentPropsWithRef<'title'>) { return <title {...props} data-replacement="title" />; }
 
 const meta = {
-  title: 'Data display/SvgIcon',
+  title: 'Icons/SvgIcon',
   component: SvgIcon,
   tags: ['autodocs'],
   args: { children: drawing },
