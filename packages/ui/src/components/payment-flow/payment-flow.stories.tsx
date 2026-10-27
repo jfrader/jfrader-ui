@@ -134,8 +134,12 @@ const meta = {
           'Explain how a card payment moves from authorization to merchant payout.',
       },
       sections: [
-        { title: 'Layout', stories: ['Default', 'Vertical'] },
-        { title: 'Playback', stories: ['Paused'] },
+        { title: 'Layout', stories: ['Default', 'Horizontal', 'Vertical', 'Light', 'RTL'] },
+        { title: 'Playback', stories: ['Paused', 'LongAuthorization', 'KeyboardReplay', 'SpeedZero', 'ControlledPauseRejects'] },
+        { title: 'Currency and locale', stories: ['JPY', 'KWD', 'LocaleDe', 'IntlAndMinorUnits'] },
+        { title: 'Amounts and fees', stories: ['ZeroAmountFee', 'FeeEqualsAmount'] },
+        { title: 'Accessible narrative and caption', stories: ['SummarySrOnly', 'CaptionZero'] },
+        { title: 'Invalid and missing values', stories: ['InvalidCurrency', 'UnsafeAmount', 'MissingNode'] },
       ],
       usage:
         '### Values\nThis is an illustration, not checkout, a payment API, a ledger or actual settlement status. Supply at least five narrative steps covering actors, gross amount, fee, net, balance and timing. Keep the narrative synchronized with the numbers and labels, including when it is visually hidden.\n\nCurrency precision comes from Intl. Amount, fee and balance round independently to minor units; net is rounded amount minus rounded fee. Values must be finite, nonnegative safe integers after conversion; fee cannot exceed amount. Invalid currency or unsafe totals show the invalid fallback; missing actors show the empty fallback. Use the same explicit locale for server and client rendering.\n\n### Playback\nReplay resets the illustration and initial balance, never pause state. Reduced motion starts at payout; Next phase and Replay select static snapshots. Hidden, offscreen and zero-size figures stop scheduling and resume without catch-up. Each equal phase takes one fifth of a 15-second cycle at speed 1. Stage changes are discrete; no animated money transfer or continuous balance counter is shown.\n\n### Keyboard\nTab and Shift+Tab reach Pause, Next phase and Replay. Enter and Space activate once. Next phase is disabled while running. There are no scene shortcuts or automatic focus changes.',
@@ -162,7 +166,16 @@ export const Default: Story = {
     await expect(figure.getBoundingClientRect().width).toBeGreaterThan(600);
     const journey = figure.querySelector('[data-ui~="stepper"]')!;
     await expect(journey.getBoundingClientRect().width).toBeGreaterThan(600);
-    await expect(journey).toHaveAttribute('data-orientation', 'vertical');
+    const nodes = figure.querySelectorAll('[data-ui="payment-flow-node"]');
+    const first = nodes[0]!.getBoundingClientRect();
+    const last = nodes[nodes.length - 1]!.getBoundingClientRect();
+    if (figure.getBoundingClientRect().width <= 700) {
+      await expect(last.x).toBe(first.x);
+      await expect(last.y).toBeGreaterThan(first.y);
+    } else {
+      await expect(last.y).toBe(first.y);
+      await expect(last.x).toBeGreaterThan(first.x);
+    }
   },
 };
 export const Paused: Story = {

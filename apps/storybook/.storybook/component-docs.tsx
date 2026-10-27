@@ -33,6 +33,7 @@ export function ComponentDocs() {
   })) : undefined;
   const curatedStories = curatedSections?.flatMap(({ stories }) => stories);
   const featured = curatedStories?.[0];
+  const remainingStories = [...storyExports].filter((story) => !curatedStories?.includes(story) && story !== featured);
   const remainingSections = curatedSections?.map(({ title, stories }) => ({
     title,
     stories: stories.filter((story) => story !== featured),
@@ -58,12 +59,19 @@ export function ComponentDocs() {
       <div className="component-props" role="region" aria-label="Component props" tabIndex={0}>
         <Controls />
       </div>
-      {remainingSections ? remainingSections.map(({ title, stories }, index) => (
-        <StoryScope key={index} stories={stories}>
-          <Heading>{title}</Heading>
-          <Stories title={<></>} />
-        </StoryScope>
-      )) : !isSingleStory && <Stories />}
+      {remainingSections ? <>
+        {remainingSections.map(({ title, stories }, index) => (
+          <StoryScope key={index} stories={stories}>
+            <Heading>{title}</Heading>
+            <Stories title={<></>} />
+          </StoryScope>
+        ))}
+        {remainingStories.length > 0 && (
+          <StoryScope stories={remainingStories}>
+            <Stories title={<></>} />
+          </StoryScope>
+        )}
+      </> : !isSingleStory && <Stories />}
     </>
   );
 }

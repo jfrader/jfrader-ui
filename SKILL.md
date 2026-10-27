@@ -645,8 +645,9 @@ One house style covers every Markdown file in the repo: `README.md`, `docs/`, `S
 - `usage` carries behavior, constraints, and accessibility only. Props, slots, anatomy and
   root-replacement mechanics belong in the API, sourced from TSDoc, never restated here.
 - Curate the examples with `parameters.docs.sections`: ordered `{ title, stories }` using story
-  export names. The first listed story is the featured example above Usage; stories not listed
-  stay in Storybook as QA. Group by capability, not by fixture name.
+  export names. Sections group and order examples; the first listed story is the featured example
+  above Usage. Stories not listed render after the curated groups because `!dev` keeps them out of
+  the sidebar. Group by capability, not by fixture name.
 - Every listed example needs a usable code sample. Author `source.code` when the derived snippet
   cannot reproduce a compound, a custom render or non-serializable data. The code must match the
   canvas, read like a consumer wrote it, and include the import.
