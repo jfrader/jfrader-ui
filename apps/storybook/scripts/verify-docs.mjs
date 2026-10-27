@@ -141,6 +141,52 @@ export function checkSnippets(source, fileName = 'component.stories.tsx') {
   return errors;
 }
 
+export function checkSections(source, fileName) {
+  const csf = loadCsf(source, { fileName, makeTitle: (title) => title ?? fileName ?? 'Component' }).parse();
+  const property = (node, name) => node?.properties?.find((entry) =>
+    entry.type === 'ObjectProperty' && !entry.computed &&
+    (entry.key?.name ?? entry.key?.value) === name)?.value;
+  const errors = [];
+  walk(csf._ast, (node) => {
+    if (node.type !== 'ObjectExpression') return;
+    const sections = property(property(property(node, 'parameters'), 'docs'), 'sections');
+    if (sections && sections.type !== 'ArrayExpression') {
+      errors.push('parameters.docs.sections: expected a literal array of sections.');
+    }
+    for (const section of sections?.elements ?? []) {
+      const stories = property(section, 'stories');
+      if (stories?.type !== 'ArrayExpression') {
+        errors.push('parameters.docs.sections: expected a literal stories array.');
+      }
+      for (const story of stories?.elements ?? []) {
+        if (story?.type !== 'StringLiteral') {
+          errors.push('parameters.docs.sections: expected a literal story export name.');
+        } else if (!Object.hasOwn(csf._storyExports, story.value)) {
+          errors.push(`parameters.docs.sections: unknown story export "${story.value}".`);
+        }
+      }
+    }
+  });
+  return errors;
+}
+
+export function checkSectionFiles(storiesDir) {
+  const errors = [];
+  for (const entry of readdirSync(storiesDir, { withFileTypes: true })) {
+    const fileName = path.join(storiesDir, entry.name);
+    if (entry.isDirectory()) errors.push(...checkSectionFiles(fileName));
+    else if (/\.stories\.tsx?$/.test(entry.name)) {
+      try {
+        errors.push(...checkSections(readFileSync(fileName, 'utf8'), fileName)
+          .map((error) => `${fileName}: ${error}`));
+      } catch (error) {
+        errors.push(`${fileName}: ${error.message}`);
+      }
+    }
+  }
+  return errors;
+}
+
 export function checkIntroduction(source, fileName) {
   const csf = loadCsf(source, { fileName, makeTitle: (title) => title ?? fileName ?? 'Component' }).parse();
   let node = metaObjectPath(csf)?.node;
@@ -209,6 +255,8 @@ export function checkComponentDocs(componentsDir) {
       try {
         errors.push(...checkIntroduction(readFileSync(fileName, 'utf8'), fileName)
           .map((error) => `${dir.name}/${story}: ${error}`));
+        errors.push(...checkSections(readFileSync(fileName, 'utf8'), fileName)
+          .map((error) => `${dir.name}/${story}: ${error}`));
         if (GAME_COMPONENTS.has(dir.name)) {
           errors.push(...checkSnippets(readFileSync(fileName, 'utf8'), fileName)
             .map((error) => `${dir.name}/${story}: ${error}`));
@@ -229,6 +277,9 @@ export function checkComponentDocs(componentsDir) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const componentsDir = path.resolve(import.meta.dirname, '../../../packages/ui/src/components');
   const { errors, checked } = checkComponentDocs(componentsDir);
+  for (const directory of ['../../../packages/icons/src', '../showcase', '../home']) {
+    errors.push(...checkSectionFiles(path.resolve(import.meta.dirname, directory)));
+  }
   if (errors.length) {
     console.error(`verify-docs: ${errors.length} problem(s)\n${errors.map((error) => `  - ${error}`).join('\n')}`);
     process.exitCode = 1;

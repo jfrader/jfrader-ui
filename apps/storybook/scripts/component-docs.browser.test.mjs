@@ -6,6 +6,72 @@ let workbench;
 before(async () => { workbench = await createBrowserWorkbench(); });
 after(async () => workbench?.close());
 
+async function openDocsWithSections(page, id, sections) {
+  await page.goto(`${workbench.baseURL}/iframe.html?id=${id}--default&viewMode=story`);
+  await page.waitForFunction(() => window.__STORYBOOK_PREVIEW__?.currentRender?.phase === 'finished');
+  await page.evaluate(async ({ id, sections }) => {
+    const preview = window.__STORYBOOK_PREVIEW__;
+    const store = preview.storyStoreValue;
+    const prepareMeta = store.preparedMetaFromCSFFile.bind(store);
+    store.preparedMetaFromCSFFile = (options) => {
+      const meta = prepareMeta(options);
+      const docs = { ...meta.parameters.docs };
+      if (sections === null) delete docs.sections;
+      else docs.sections = sections;
+      return { ...meta, parameters: { ...meta.parameters, docs } };
+    };
+    await preview.onSetCurrentStory({ storyId: `${id}--docs`, viewMode: 'docs' });
+  }, { id, sections });
+  await page.locator('.docs-story').first().waitFor();
+}
+
+test('a featured-only first section has no empty heading', async () => {
+  const page = await workbench.browser.newPage();
+  try {
+    await page.goto(`${workbench.baseURL}/iframe.html?id=data-filtertoolbar--docs&viewMode=docs`);
+    await page.locator('.docs-story').first().waitFor();
+    assert.ok(!(await page.locator('h2').allTextContents()).includes('Basic'));
+    assert.ok(await page.locator('.docs-story').count() > 1);
+  } finally {
+    await page.close();
+  }
+});
+
+test('unknown story names do not break the docs page', async () => {
+  const page = await workbench.browser.newPage();
+  try {
+    await openDocsWithSections(page, 'data-filtertoolbar', [
+      { title: 'Featured', stories: ['Default'] },
+      { title: 'Missing', stories: ['MisspelledStory'] },
+      { title: 'Filters', stories: ['Composed'] },
+    ]);
+    await page.waitForFunction(() => document.querySelectorAll('.docs-story').length === 2);
+    assert.deepEqual(await page.locator('h2').allTextContents(), ['Filters']);
+    assert.deepEqual(await page.locator('.docs-story').evaluateAll((elements) => elements.map((element) => element.querySelector('[id^="story--"]')?.id)), [
+      'story--data-filtertoolbar--default--primary',
+      'story--data-filtertoolbar--composed',
+    ]);
+  } finally {
+    await page.close();
+  }
+});
+
+test('empty sections use the same fallback as absent sections', async () => {
+  const examples = [];
+  for (const sections of [null, []]) {
+    const page = await workbench.browser.newPage();
+    try {
+      await openDocsWithSections(page, 'showcase-paymentflow', sections);
+      await page.locator('h2').filter({ hasText: /^Stories$/ }).waitFor();
+      examples.push(await page.locator('.docs-story').evaluateAll((elements) => elements.map((element) => element.querySelector('[id^="story--"]')?.id)));
+    } finally {
+      await page.close();
+    }
+  }
+  assert.ok(examples[0].length > 1);
+  assert.deepEqual(examples[1], examples[0]);
+});
+
 test('curated PaymentFlow docs render each listed example once and keep QA stories reachable', async () => {
   const page = await workbench.browser.newPage();
   try {

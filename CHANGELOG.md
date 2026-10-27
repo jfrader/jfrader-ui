@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Component docs show one featured example and group the remaining examples into curated sections. `PaymentFlow` examples stack in narrow containers and keep playback controls inside the viewport.
+
 ## 0.21.2 — 2026-10-27
 
 ### Fixed
