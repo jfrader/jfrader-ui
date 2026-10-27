@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { reactStorydocs } from '@jfrader/react-storydocs/vite';
@@ -9,6 +10,10 @@ export default defineConfig({
   base: process.env.DOCS_BASE ?? '/',
   plugins: [reactStorydocs({ config }), react({ jsxImportSource: '@emotion/react' })],
   resolve: {
+    alias: [{
+      find: /^@storybook\/addon-docs\/blocks$/,
+      replacement: fileURLToPath(new URL('./src/storybook-blocks.ts', import.meta.url)),
+    }],
     // Stories are rendered from the linked design system's own files, so anything it imports
     // resolves to its copy rather than this app's: two instances of the styling runtime means a
     // story that provides a cache (Next.js registry) or reads a context sees a different one
