@@ -183,6 +183,18 @@ export const Default: Story = {
         await expect(last.x).toBeGreaterThan(first.x);
       }
     }
+    const sceneBox = scene.getBoundingClientRect();
+    const journeyBox = journey.getBoundingClientRect();
+    const readoutBox = journey.nextElementSibling!.getBoundingClientRect();
+    const stageBox = scene.closest('[data-ui~="card"]')!.getBoundingClientRect();
+    const summaryBox = figure.querySelector('[data-ui="payment-flow-summary"]')!.getBoundingClientRect();
+    const controlsBox = figure.querySelector('[data-ui="payment-flow-controls"]')!.getBoundingClientRect();
+    const innerGap = journeyBox.top - sceneBox.bottom;
+    const groupGap = summaryBox.top - stageBox.bottom;
+    await expect(innerGap).toBeGreaterThan(0);
+    await expect(readoutBox.top - journeyBox.bottom).toBeCloseTo(innerGap);
+    await expect(controlsBox.top - summaryBox.bottom).toBeCloseTo(groupGap);
+    await expect(groupGap).toBeGreaterThan(innerGap);
     for (const control of figure.querySelectorAll('button')) {
       const rect = control.getBoundingClientRect();
       await expect(rect.left).toBeGreaterThanOrEqual(bounds.left);

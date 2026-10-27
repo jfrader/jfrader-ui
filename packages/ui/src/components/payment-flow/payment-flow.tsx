@@ -128,11 +128,14 @@ export interface PaymentFlowProps
 const rootStyle = css({
   margin: 0,
   display: 'grid',
-  gap: vars.space[4],
+  gap: vars.space[6],
   color: vars.color.text,
   fontFamily: vars.font.sans,
   minInlineSize: 0,
 });
+const stageSlotProps = {
+  content: { sx: css({ display: 'grid', gap: vars.space[4], minInlineSize: 0 }) },
+};
 const sceneStyle = css({
   '--payment-flow-accent': vars.color.accent,
   display: 'grid',
@@ -332,6 +335,7 @@ export function PaymentFlow({
       ) : (
         <>
           <Card
+            slotProps={stageSlotProps}
             content={
               <>
                 <FieldSlot
