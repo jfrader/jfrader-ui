@@ -205,6 +205,8 @@ const UNLIMITED_FILES = Number.MAX_SAFE_INTEGER;
 /** Tile shape, and the preview shape for photos without intrinsic dimensions. */
 const PHOTO_ASPECT = { width: 4, height: 3 };
 const PHOTO_ASPECT_RATIO = `${PHOTO_ASPECT.width} / ${PHOTO_ASPECT.height}`;
+/** Accent wash over a selected photo; translucent whatever surface the theme gives accentSoft. */
+const SELECTION_WASH_OPACITY = 0.18;
 const NO_FILES: FileDropzoneItem[] = [];
 const EMPTY_IDS: readonly never[] = [];
 const englishPlural = new Intl.PluralRules('en');
@@ -321,7 +323,8 @@ const photoStyle = css({
     content: '""',
     position: 'absolute',
     inset: 0,
-    background: vars.color.accentSoft,
+    backgroundColor: vars.color.accent,
+    opacity: SELECTION_WASH_OPACITY,
     pointerEvents: 'none',
   },
   [FORCED_COLORS]: {
