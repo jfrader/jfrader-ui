@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- `TypewriterTerminal` accepts `playback={false}` to show a completed, content-sized session without playback controls. Guide shell commands use this static terminal with a copy action, and the icons guide has its own usage page.
+
 ### Changed
 
 - Component docs show one featured example and group the remaining examples into curated sections. `PaymentFlow` keeps participants and steps horizontal in wide containers, stacks both in narrow containers, and keeps playback controls inside the viewport.

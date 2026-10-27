@@ -702,7 +702,8 @@ MentionInput's introduction: "Write a message and mention people with @ or chann
   style objects. A snippet is a pattern a reader copies.
 - Keep foundation-guide content in Markdown and render it through `apps/storybook/home/Guide.tsx`.
   Use the library's `CodeBlock` with syntax highlighting for source examples and
-  `TypewriterTerminal` for shell commands. Commands start fully visible; playback is opt-in.
+  `TypewriterTerminal` with `playback={false}` for shell commands: a static terminal with a copy
+  action. Reserve animation for stories that demonstrate playback.
   Isolate these components from Storybook's prose styles with `Unstyled`. Add other components
   only when they help a reader use the API, and keep example text in the Markdown source.
   For a named file, add `filename="path/to/file.tsx"` after the fence language.

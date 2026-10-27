@@ -134,6 +134,15 @@ export interface TypewriterTerminalProps
   cwd?: string;
   /** Sets the prompt symbol. Defaults to `$`. */
   symbol?: string;
+  /**
+   * Enables session playback. Defaults to `true`.
+   * When `false`, shows the completed session at its content height without playback controls or
+   * the playback live region. `value`, `defaultValue`, `onValueChange`, `paused`, `defaultPaused`,
+   * `onPausedChange`, `speed`, and `loop` are inert.
+   * The `controls` slot and its replacements, including `playButton`, `replayButton`, and `scrubber`,
+   * are not rendered in this mode.
+   */
+  playback?: boolean;
   /** Controls playback position in milliseconds, clamped to the session duration. */
   value?: number;
   /** Sets initial playback position in milliseconds. Defaults to 0. */
@@ -242,6 +251,7 @@ const screenStyle = css({
   fontSize: vars.textSize.sm,
   lineHeight: vars.lineHeight.base,
   scrollbarWidth: 'thin',
+  '&[data-playback="false"]': { blockSize: 'auto' },
 });
 const lineStyle = css({
   margin: 0,
@@ -453,6 +463,7 @@ export function TypewriterTerminal({
   title = 'Terminal',
   cwd = '~',
   symbol = '$',
+  playback = true,
   value,
   defaultValue = 0,
   onValueChange,
@@ -542,7 +553,7 @@ export function TypewriterTerminal({
   const active = session.commands[activeIndex];
   const valueText = `${active ? labels.step(activeIndex + 1, active.step.command) : labels.completed}; ${seconds.format(current / 1000)} / ${seconds.format(session.duration / 1000)} s`;
   const snapshotActive = snapshot.active || snapshot.target === current;
-  const displayPosition = reduced
+  const displayPosition = !playback ? session.duration : reduced
     ? !snapshotActive
       ? session.duration
       : (session.commands[
@@ -594,7 +605,7 @@ export function TypewriterTerminal({
   }, []);
 
   useEffect(() => {
-    if (isPaused || reduced || !visible || !foreground || session.duration === 0) return;
+    if (!playback || isPaused || reduced || !visible || !foreground || session.duration === 0) return;
     const next = session.ticks.find((tick) => tick > current);
     if (next === undefined && completionPending.current !== session) return;
     const timer = setTimeout(
@@ -612,6 +623,7 @@ export function TypewriterTerminal({
     );
     return () => clearTimeout(timer);
   }, [
+    playback,
     current,
     isPaused,
     reduced,
@@ -635,7 +647,7 @@ export function TypewriterTerminal({
 
   useLayoutEffect(() => {
     const element = screen.current;
-    if (!element || isPaused || !visible || !foreground) return;
+    if (!playback || !element || isPaused || !visible || !foreground) return;
     const target = Math.max(0, element.scrollHeight - element.clientHeight);
     if (reduced) {
       element.scrollTop = target;
@@ -651,7 +663,7 @@ export function TypewriterTerminal({
       animation.stop();
       unsubscribe();
     };
-  }, [displayPosition, isPaused, reduced, visible, foreground, scroll]);
+  }, [playback, displayPosition, isPaused, reduced, visible, foreground, scroll]);
 
   function seek(next: number) {
     const accepted = clamp(next, session.duration);
@@ -771,6 +783,7 @@ export function TypewriterTerminal({
               ref={mergedScreenRef}
               css={[screenStyle, slotProps?.screen?.sx]}
               data-ui="typewriter-terminal-screen"
+              data-playback={playback}
               aria-hidden="true"
               inert
             >
@@ -778,7 +791,7 @@ export function TypewriterTerminal({
                 .filter(
                   (command, index) =>
                     command.start <= displayPosition &&
-                    (!reduced || !snapshotActive || index <= activeIndex),
+                    (!playback || !reduced || !snapshotActive || index <= activeIndex),
                 )
                 .map((command, index) => {
                   const count = reduced
@@ -820,7 +833,7 @@ export function TypewriterTerminal({
                   );
                 })}
             </Screen>
-            <Controls {...withoutSx(slotProps?.controls)} css={[controlsStyle, slotProps?.controls?.sx]}>
+            {playback && <Controls {...withoutSx(slotProps?.controls)} css={[controlsStyle, slotProps?.controls?.sx]}>
               <PlayButton
                 {...withoutSx(slotProps?.playButton)}
                 css={[buttonStyle, slotProps?.playButton?.sx]}
@@ -903,7 +916,7 @@ export function TypewriterTerminal({
               <span css={timeStyle}>
                 {seconds.format(current / 1000)} / {seconds.format(session.duration / 1000)} s
               </span>
-            </Controls>
+            </Controls>}
             <Transcript
               {...withoutSx(slotProps?.transcript)}
               css={[transcriptStyle, slotProps?.transcript?.sx]}
@@ -943,7 +956,7 @@ export function TypewriterTerminal({
                 </li>
               ))}
             </Transcript>
-            <Status
+            {playback && <Status
               {...withoutSx(slotProps?.status)}
               css={[statusStyle, slotProps?.status?.sx]}
               role="status"
@@ -951,7 +964,7 @@ export function TypewriterTerminal({
               aria-atomic="true"
             >
               {status}
-            </Status>
+            </Status>}
             {captionPresent && (
               <Caption
                 {...withoutSx(slotProps?.caption)}
