@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Component docs pages with curated sections no longer render stories tagged `!autodocs` after the curated groups.
+
 ## 0.22.0 — 2026-10-27
 
 ### Added
