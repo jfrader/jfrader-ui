@@ -7,7 +7,6 @@ import { componentName } from '../name';
 import './gallery.css';
 
 const SIZES = [16, 20, 24, 32] as const;
-const THEMES = ['light', 'dark'] as const;
 const COPY_NOTICE_DURATION = 2000;
 const categories = [...new Set(metadata.map((entry) => entry.category))].sort();
 const components = new Map(Object.entries(icons));
@@ -18,7 +17,6 @@ function IconBrowser() {
   const [category, setCategory] = useState('');
   const [variant, setVariant] = useState('line');
   const [size, setSize] = useState<number>(24);
-  const [theme, setTheme] = useState('light');
   const [announcement, setAnnouncement] = useState({ text: '', sequence: 0 });
   useEffect(() => {
     if (!announcement.text) return;
@@ -75,18 +73,12 @@ function IconBrowser() {
             {SIZES.map((value) => <option key={value} value={value}>{value}px</option>)}
           </select>
         </label>
-        <label htmlFor={`${id}-theme`}>
-          Preview theme
-          <select id={`${id}-theme`} value={theme} onChange={(event) => setTheme(event.target.value)}>
-            {THEMES.map((value) => <option key={value} value={value}>{value === 'light' ? 'Light' : 'Dark'}</option>)}
-          </select>
-        </label>
       </div>
       <div className="icon-browser-summary">
         <p>{filtered.length} icons · {variant === 'line' ? 'Line' : 'Solid'} · {size}px</p>
         <p role="status" aria-live="polite" aria-atomic="true"><span key={announcement.sequence}>{announcement.text}</span></p>
       </div>
-      <div className="icon-browser-preview" data-theme={theme}>
+      <div className="icon-browser-preview">
         {filtered.length === 0 ? <p>No icons found.</p> : groups.map(({ name, entries }) => entries.length > 0 && (
           <section key={name} aria-label={name}>
             <h3>{name}</h3>
@@ -131,6 +123,11 @@ export const Gallery: Story = {
   render: () => <IconBrowser />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const browser = canvasElement.querySelector<HTMLElement>('.icon-browser')!;
+    const preview = canvasElement.querySelector<HTMLElement>('.icon-browser-preview')!;
+    await expect(getComputedStyle(preview).backgroundColor).toBe(getComputedStyle(browser).backgroundColor);
+    await expect(getComputedStyle(preview.querySelector('.icon-browser-name')!).color).toBe(getComputedStyle(browser).color);
+    await expect(getComputedStyle(preview.querySelector('svg')!).color).toBe(getComputedStyle(browser).color);
     const notice = canvas.getByRole('status');
     await expect(notice.textContent).toBe('');
     await expect(notice).toHaveAttribute('aria-live', 'polite');
