@@ -26,6 +26,10 @@ function walk(node, visit, seen = new WeakSet()) {
 
 export function checkGameStories(source, fileName, component) {
   const csf = loadCsf(source, { fileName, makeTitle: (title) => title ?? fileName }).parse();
+  return checkGameStoriesCsf(csf, component);
+}
+
+function checkGameStoriesCsf(csf, component) {
   const bindings = new Map();
   for (const statement of csf._ast.program.body) {
     const node = statement.type === 'ExportNamedDeclaration' ? statement.declaration : statement;
@@ -107,6 +111,10 @@ export function checkGameStories(source, fileName, component) {
 
 export function checkSnippets(source, fileName = 'component.stories.tsx') {
   const csf = loadCsf(source, { fileName, makeTitle: () => fileName });
+  return checkSnippetsCsf(csf);
+}
+
+function checkSnippetsCsf(csf) {
   const errors = [];
   const visited = new WeakSet();
   const property = (node, name) => node?.properties?.find((entry) =>
@@ -143,6 +151,10 @@ export function checkSnippets(source, fileName = 'component.stories.tsx') {
 
 export function checkSections(source, fileName) {
   const csf = loadCsf(source, { fileName, makeTitle: (title) => title ?? fileName ?? 'Component' }).parse();
+  return checkSectionsCsf(csf);
+}
+
+function checkSectionsCsf(csf) {
   const property = (node, name) => node?.properties?.find((entry) =>
     entry.type === 'ObjectProperty' && !entry.computed &&
     (entry.key?.name ?? entry.key?.value) === name)?.value;
@@ -170,14 +182,34 @@ export function checkSections(source, fileName) {
   return errors;
 }
 
-export function checkSectionFiles(storiesDir) {
+function createCsfReader() {
+  const files = new Map();
+  return (fileName) => {
+    const key = path.resolve(fileName);
+    if (!files.has(key)) {
+      try {
+        const csf = loadCsf(readFileSync(fileName, 'utf8'), {
+          fileName, makeTitle: (title) => title ?? fileName,
+        }).parse();
+        files.set(key, { csf });
+      } catch (error) {
+        files.set(key, { error });
+      }
+    }
+    const result = files.get(key);
+    if (result.error) throw result.error;
+    return result.csf;
+  };
+}
+
+export function checkSectionFiles(storiesDir, readCsf = createCsfReader()) {
   const errors = [];
   for (const entry of readdirSync(storiesDir, { withFileTypes: true })) {
     const fileName = path.join(storiesDir, entry.name);
-    if (entry.isDirectory()) errors.push(...checkSectionFiles(fileName));
+    if (entry.isDirectory()) errors.push(...checkSectionFiles(fileName, readCsf));
     else if (/\.stories\.tsx?$/.test(entry.name)) {
       try {
-        errors.push(...checkSections(readFileSync(fileName, 'utf8'), fileName)
+        errors.push(...checkSectionsCsf(readCsf(fileName))
           .map((error) => `${fileName}: ${error}`));
       } catch (error) {
         errors.push(`${fileName}: ${error.message}`);
@@ -189,6 +221,10 @@ export function checkSectionFiles(storiesDir) {
 
 export function checkIntroduction(source, fileName) {
   const csf = loadCsf(source, { fileName, makeTitle: (title) => title ?? fileName ?? 'Component' }).parse();
+  return checkIntroductionCsf(csf);
+}
+
+function checkIntroductionCsf(csf) {
   let node = metaObjectPath(csf)?.node;
   for (const name of DESCRIPTION_PATH) {
     const properties = node?.type === 'ObjectExpression' ? node.properties : [];
@@ -214,7 +250,7 @@ export function checkIntroduction(source, fileName) {
   return [];
 }
 
-export function checkDuplicateDocsTitles(componentsDir) {
+export function checkDuplicateDocsTitles(componentsDir, readCsf = createCsfReader()) {
   const filesByTitle = new Map();
   const errors = [];
   for (const dir of readdirSync(componentsDir, { withFileTypes: true })) {
@@ -223,7 +259,7 @@ export function checkDuplicateDocsTitles(componentsDir) {
     for (const story of readdirSync(folder).filter((file) => /\.stories\.tsx?$/.test(file))) {
       const fileName = path.join(folder, story);
       try {
-        const csf = loadCsf(readFileSync(fileName, 'utf8'), { fileName, makeTitle: (title) => title ?? fileName }).parse();
+        const csf = readCsf(fileName);
         if (!csf.meta.title || csf.meta.tags?.includes('!autodocs')) continue;
         if (!Object.values(csf._stories).some((entry) => !entry.tags?.includes('!autodocs'))) continue;
         const files = filesByTitle.get(csf.meta.title) ?? [];
@@ -242,7 +278,7 @@ export function checkDuplicateDocsTitles(componentsDir) {
   return errors;
 }
 
-export function checkComponentDocs(componentsDir) {
+export function checkComponentDocs(componentsDir, readCsf = createCsfReader()) {
   const errors = [];
   let checked = 0;
   for (const dir of readdirSync(componentsDir, { withFileTypes: true })) {
@@ -253,14 +289,15 @@ export function checkComponentDocs(componentsDir) {
     for (const story of stories) {
       const fileName = path.join(folder, story);
       try {
-        errors.push(...checkIntroduction(readFileSync(fileName, 'utf8'), fileName)
+        const csf = readCsf(fileName);
+        errors.push(...checkIntroductionCsf(csf)
           .map((error) => `${dir.name}/${story}: ${error}`));
-        errors.push(...checkSections(readFileSync(fileName, 'utf8'), fileName)
+        errors.push(...checkSectionsCsf(csf)
           .map((error) => `${dir.name}/${story}: ${error}`));
         if (GAME_COMPONENTS.has(dir.name)) {
-          errors.push(...checkSnippets(readFileSync(fileName, 'utf8'), fileName)
+          errors.push(...checkSnippetsCsf(csf)
             .map((error) => `${dir.name}/${story}: ${error}`));
-          errors.push(...checkGameStories(readFileSync(fileName, 'utf8'), fileName, dir.name)
+          errors.push(...checkGameStoriesCsf(csf, dir.name)
             .map((error) => `${dir.name}/${story}: ${error}`));
         }
       } catch (error) {
@@ -270,15 +307,16 @@ export function checkComponentDocs(componentsDir) {
     }
   }
   if (checked === 0) errors.push('No component stories found.');
-  errors.push(...checkDuplicateDocsTitles(componentsDir));
+  errors.push(...checkDuplicateDocsTitles(componentsDir, readCsf));
   return { errors, checked };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const componentsDir = path.resolve(import.meta.dirname, '../../../packages/ui/src/components');
-  const { errors, checked } = checkComponentDocs(componentsDir);
+  const readCsf = createCsfReader();
+  const { errors, checked } = checkComponentDocs(componentsDir, readCsf);
   for (const directory of ['../../../packages/icons/src', '../showcase', '../home']) {
-    errors.push(...checkSectionFiles(path.resolve(import.meta.dirname, directory)));
+    errors.push(...checkSectionFiles(path.resolve(import.meta.dirname, directory), readCsf));
   }
   if (errors.length) {
     console.error(`verify-docs: ${errors.length} problem(s)\n${errors.map((error) => `  - ${error}`).join('\n')}`);

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { syncBuiltinESMExports } from 'node:module';
 import path from 'node:path';
 import { test } from 'node:test';
 import { loadCsf } from 'storybook/internal/csf-tools';
@@ -163,6 +165,37 @@ test('checks every public component and reports missing stories', (t) => {
   assert.deepEqual(checkComponentDocs(root).errors, [
     'missing/missing.stories.tsx: parameters.docs.sections: unknown story export "Defualt".',
   ]);
+});
+
+test('reads each component story once across coverage and duplicate-title checks without caching between runs', (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), 'jfrader-docs-read-once-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  mkdirSync(path.join(root, 'button'));
+  writeFileSync(path.join(root, 'button/index.ts'), '');
+  const fileName = path.join(root, 'button/button.stories.tsx');
+  writeFileSync(fileName, story('"Run an action."'));
+  const originalReadFileSync = fs.readFileSync;
+  let reads = 0;
+  t.mock.method(fs, 'readFileSync', (file, ...args) => {
+    if (file === fileName) reads += 1;
+    return originalReadFileSync(file, ...args);
+  });
+  syncBuiltinESMExports();
+  t.after(() => {
+    t.mock.restoreAll();
+    syncBuiltinESMExports();
+  });
+  assert.deepEqual(checkComponentDocs(root), { checked: 1, errors: [] });
+  assert.equal(reads, 1);
+  writeFileSync(fileName, story('undefined'));
+  assert.match(checkComponentDocs(root).errors[0], /string literal/);
+  assert.equal(reads, 2);
+  writeFileSync(fileName, 'export default {');
+  const { errors } = checkComponentDocs(root);
+  assert.equal(errors.length, 2);
+  assert.match(errors[0], /button\/button.stories.tsx: .*Unexpected token/s);
+  assert.match(errors[1], /button\/button.stories.tsx: cannot check docs title: .*Unexpected token/s);
+  assert.equal(reads, 3);
 });
 
 test('checks curated sections in nested story files without a component index', (t) => {
