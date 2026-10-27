@@ -162,6 +162,16 @@ export const Gallery: Story = {
       await expect(write).toHaveBeenLastCalledWith("import { HeartSolid } from '@jfrader/icons'");
       await expect(notice).toHaveTextContent('Copied HeartSolid import.');
       await waitFor(() => expect(notice.textContent).toBe(''), { timeout: COPY_NOTICE_DURATION + 1000 });
+      for (const style of ['line', 'solid']) {
+        await userEvent.selectOptions(canvas.getByLabelText('Style'), style);
+        for (const name of ['Cart', 'Bag', 'Basket']) {
+          await userEvent.clear(search);
+          await userEvent.type(search, `shopping-${name.toLowerCase()}`);
+          const component = `${name}${style === 'solid' ? 'Solid' : ''}`;
+          await userEvent.click(canvas.getByRole('button', { name: `Copy ${component} import` }));
+          await expect(write).toHaveBeenLastCalledWith(`import { ${component} } from '@jfrader/icons'`);
+        }
+      }
       await userEvent.clear(search);
       await userEvent.type(search, 'no-such-icon-123');
       await expect(canvas.getByText('No icons found.')).toBeVisible();

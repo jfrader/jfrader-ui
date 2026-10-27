@@ -1,0 +1,26 @@
+{
+  "cart": {
+    "name": "cart",
+    "category": "money",
+    "tags": ["shopping", "checkout", "commerce", "trolley"],
+    "aliases": ["shopping-cart"],
+    "expressive": false,
+    "since": "0.22.0"
+  },
+  "bag": {
+    "name": "bag",
+    "category": "money",
+    "tags": ["shopping", "checkout", "commerce", "purchase"],
+    "aliases": ["shopping-bag"],
+    "expressive": false,
+    "since": "0.22.0"
+  },
+  "basket": {
+    "name": "basket",
+    "category": "money",
+    "tags": ["shopping", "checkout", "commerce", "groceries"],
+    "aliases": ["shopping-basket"],
+    "expressive": false,
+    "since": "0.22.0"
+  }
+}

@@ -854,6 +854,69 @@
       }
     },
     {
+      "name": "bag",
+      "category": "money",
+      "tags": [
+        "shopping",
+        "checkout",
+        "commerce",
+        "purchase"
+      ],
+      "aliases": [
+        "shopping-bag"
+      ],
+      "variants": [
+        "line",
+        "solid"
+      ],
+      "expressive": false,
+      "since": "0.22.0",
+      "geometry": {
+        "line": {
+          "attrs": {
+            "fill": "none",
+            "stroke": "currentColor",
+            "stroke-width": "1.5",
+            "stroke-linecap": "round",
+            "stroke-linejoin": "round"
+          },
+          "elements": [
+            {
+              "tag": "path",
+              "attrs": {
+                "d": "M8 9V7A4 4 0 0 1 16 7V9"
+              }
+            },
+            {
+              "tag": "rect",
+              "attrs": {
+                "x": "4",
+                "y": "9",
+                "width": "16",
+                "height": "12",
+                "rx": "4"
+              }
+            }
+          ]
+        },
+        "solid": {
+          "attrs": {
+            "fill": "currentColor",
+            "stroke": "none"
+          },
+          "elements": [
+            {
+              "tag": "path",
+              "attrs": {
+                "fill-rule": "evenodd",
+                "d": "M7.25 8.5V7A4.75 4.75 0 0 1 16.75 7V8.5A4 4 0 0 1 20.5 12.5V17.5A4 4 0 0 1 16.5 21.5H7.5A4 4 0 0 1 3.5 17.5V12.5A4 4 0 0 1 7.25 8.5ZM8.75 7V8.5H15.25V7A3.25 3.25 0 0 0 8.75 7Z"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
       "name": "bank",
       "category": "money",
       "tags": [
@@ -998,6 +1061,59 @@
               "attrs": {
                 "fill-rule": "evenodd",
                 "d": "M5.5 6.5H18.5A2 2 0 0 1 20.5 8.5V15.5A2 2 0 0 1 18.5 17.5H5.5A2 2 0 0 1 3.5 15.5V8.5A2 2 0 0 1 5.5 6.5ZM14.5 12C14.5 14 13.5 15 12 15S9.5 14 9.5 12S10.5 9 12 9S14.5 10 14.5 12ZM5 11V13H7V11ZM17 11V13H19V11Z"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "basket",
+      "category": "money",
+      "tags": [
+        "shopping",
+        "checkout",
+        "commerce",
+        "groceries"
+      ],
+      "aliases": [
+        "shopping-basket"
+      ],
+      "variants": [
+        "line",
+        "solid"
+      ],
+      "expressive": false,
+      "since": "0.22.0",
+      "geometry": {
+        "line": {
+          "attrs": {
+            "fill": "none",
+            "stroke": "currentColor",
+            "stroke-width": "1.5",
+            "stroke-linecap": "round",
+            "stroke-linejoin": "round"
+          },
+          "elements": [
+            {
+              "tag": "path",
+              "attrs": {
+                "d": "M6 9 10 5M18 9 14 5M3 9H21M4 9V16A4 4 0 0 0 8 20H16A4 4 0 0 0 20 16V9M9 13V16M15 13V16"
+              }
+            }
+          ]
+        },
+        "solid": {
+          "attrs": {
+            "fill": "currentColor",
+            "stroke": "none"
+          },
+          "elements": [
+            {
+              "tag": "path",
+              "attrs": {
+                "fill-rule": "evenodd",
+                "d": "M5.69 8.25 9.47 4.47A.75.75 0 0 1 10.53 5.53L7.81 8.25H16.19L13.47 5.53A.75.75 0 0 1 14.53 4.47L18.31 8.25H21A.75.75 0 0 1 21 9.75H20.75V16A4.75 4.75 0 0 1 16 20.75H8A4.75 4.75 0 0 1 3.25 16V9.75H3A.75.75 0 0 1 3 8.25ZM8.25 13V16A.75.75 0 0 0 9.75 16V13A.75.75 0 0 0 8.25 13ZM14.25 13V16A.75.75 0 0 0 15.75 16V13A.75.75 0 0 0 14.25 13Z"
               }
             }
           ]
@@ -2190,6 +2306,94 @@
               "tag": "path",
               "attrs": {
                 "d": "M3.5 16.5V5A2 2 0 0 1 5.5 3H16V4.5H5V16.5Z"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "cart",
+      "category": "money",
+      "tags": [
+        "shopping",
+        "checkout",
+        "commerce",
+        "trolley"
+      ],
+      "aliases": [
+        "shopping-cart"
+      ],
+      "variants": [
+        "line",
+        "solid"
+      ],
+      "expressive": false,
+      "since": "0.22.0",
+      "geometry": {
+        "line": {
+          "attrs": {
+            "fill": "none",
+            "stroke": "currentColor",
+            "stroke-width": "1.5",
+            "stroke-linecap": "round",
+            "stroke-linejoin": "round"
+          },
+          "elements": [
+            {
+              "tag": "path",
+              "attrs": {
+                "d": "M3 3H5L7 5V13A2 2 0 0 0 9 15H17A4 4 0 0 0 21 11V7H7"
+              }
+            },
+            {
+              "tag": "circle",
+              "attrs": {
+                "cx": "9",
+                "cy": "20",
+                "r": "1.25",
+                "fill": "currentColor",
+                "stroke": "none"
+              }
+            },
+            {
+              "tag": "circle",
+              "attrs": {
+                "cx": "18",
+                "cy": "20",
+                "r": "1.25",
+                "fill": "currentColor",
+                "stroke": "none"
+              }
+            }
+          ]
+        },
+        "solid": {
+          "attrs": {
+            "fill": "currentColor",
+            "stroke": "none"
+          },
+          "elements": [
+            {
+              "tag": "path",
+              "attrs": {
+                "d": "M3 2.25H5A.75.75 0 0 1 5.53 2.47L7.53 4.47A.75.75 0 0 1 7.75 5V6.25H21A.75.75 0 0 1 21.75 7V11A4.75 4.75 0 0 1 17 15.75H9A2.75 2.75 0 0 1 6.25 13V5.31L4.69 3.75H3A.75.75 0 0 1 3 2.25Z"
+              }
+            },
+            {
+              "tag": "circle",
+              "attrs": {
+                "cx": "9",
+                "cy": "20",
+                "r": "1.25"
+              }
+            },
+            {
+              "tag": "circle",
+              "attrs": {
+                "cx": "18",
+                "cy": "20",
+                "r": "1.25"
               }
             }
           ]
