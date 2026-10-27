@@ -113,6 +113,27 @@ try {
   const page = await browser.newPage();
   page.setDefaultTimeout(30_000);
 
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+    for (const theme of ['dark', 'light']) {
+      await page.setViewportSize(viewport);
+      await page.goto(new URL(`iframe.html?id=icons-all-icons--docs&viewMode=docs&globals=theme:${theme}`, baseURL).href);
+      await page.getByRole('searchbox', { name: 'Search icons' }).waitFor();
+      await page.evaluate(() => document.fonts.ready);
+      const nestedScrollers = await page.locator('.icon-browser-controls').evaluate((controls) => {
+        const scrollers = [];
+        for (let element = controls; element && element !== document.scrollingElement; element = element.parentElement) {
+          const initial = element.scrollTop;
+          element.scrollTop = element.scrollHeight;
+          if (element.scrollTop > 0) scrollers.push({ tag: element.tagName, scrollTop: element.scrollTop });
+          element.scrollTop = initial;
+        }
+        return scrollers;
+      });
+      assert.deepEqual(nestedScrollers, [], `Icon browser ${viewport.width}px ${theme}: only the document scrolls`);
+    }
+  }
+  console.log('verify-docs-layout: Icon browser natural height OK');
+
   for (const { id, primary, containPreview, verifyPreviewOverflow, fontFamily, viewports: caseViewports = viewports } of layoutCases) {
     for (const viewport of caseViewports) {
       await page.setViewportSize(viewport);

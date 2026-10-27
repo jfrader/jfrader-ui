@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { Description, Source, Story, Title } from '@storybook/addon-docs/blocks';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import * as icons from '../generated/index';
 import metadata from '../../icons.json';
@@ -110,6 +111,14 @@ const meta = {
   parameters: {
     layout: 'fullscreen',
     docs: {
+      page: () => (
+        <>
+          <Title />
+          <Description />
+          <Story of={Gallery} />
+          <Source of={Gallery} />
+        </>
+      ),
       description: { component: 'Find an icon and copy its import.' },
     },
   },

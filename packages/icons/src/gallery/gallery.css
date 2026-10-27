@@ -60,6 +60,7 @@
 
 .icon-browser-preview h3 {
   margin-block: 0 var(--ui-space-3);
+  overflow-wrap: anywhere;
   text-transform: capitalize;
   font-size: var(--ui-text-size-md);
 }
