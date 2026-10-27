@@ -8,8 +8,9 @@ import { Surface } from '../surface';
 
 const PaymentPanel = styled(Surface)({
   boxSizing: 'border-box',
-  inlineSize: `calc(${vars.space[8]} * 30)`,
-  maxInlineSize: '100%',
+  inlineSize: '100%',
+  maxInlineSize: `calc(${vars.space[8]} * 30)`,
+  marginInline: 'auto',
   padding: vars.space[6],
 });
 
@@ -42,8 +43,8 @@ const paymentExample = `import { PaymentFlow, Surface, styled } from '@jfrader/u
 import { vars } from '@jfrader/tokens/vars';
 
 const PaymentPanel = styled(Surface)({
-  boxSizing: 'border-box', inlineSize: \`calc(\${vars.space[8]} * 30)\`,
-  maxInlineSize: '100%', padding: vars.space[6],
+  boxSizing: 'border-box', inlineSize: '100%',
+  maxInlineSize: \`calc(\${vars.space[8]} * 30)\`, marginInline: 'auto', padding: vars.space[6],
 });
 const nodes = {
   terminal: { label: 'Terminal' }, processor: { label: 'Processor' },
@@ -73,7 +74,7 @@ const meta = {
     </PaymentPanel>
   ),
   args: {
-    orientation: 'horizontal',
+    orientation: 'auto',
     label: 'Illustrative card payment',
     nodes: {
       terminal: { label: 'Terminal' },
@@ -126,13 +127,14 @@ const meta = {
     onPausedChange: fn(),
   },
   parameters: {
+    layout: 'padded',
     docs: {
       description: {
         component:
           'Explain how a card payment moves from authorization to merchant payout.',
       },
       sections: [
-        { title: 'Payment journey', stories: ['Default', 'Vertical'] },
+        { title: 'Layout', stories: ['Default', 'Vertical'] },
         { title: 'Playback', stories: ['Paused'] },
       ],
       usage:
@@ -141,7 +143,7 @@ const meta = {
         language: 'tsx',
         code: `${paymentExample}
 <PaymentPanel>
-  <PaymentFlow orientation="horizontal" nodes={nodes} amount={100} fee={3} balance={20}
+  <PaymentFlow orientation="auto" nodes={nodes} amount={100} fee={3} balance={20}
     currency="USD" locale="en-US" authorizationMs={240} labels={labels} summary={summary}
     label="Illustrative card payment" controlLabels={controlLabels}
     emptyContent="Add all five actors." invalidContent="Check amounts, currency and steps." />
@@ -160,7 +162,7 @@ export const Default: Story = {
     await expect(figure.getBoundingClientRect().width).toBeGreaterThan(600);
     const journey = figure.querySelector('[data-ui~="stepper"]')!;
     await expect(journey.getBoundingClientRect().width).toBeGreaterThan(600);
-    await expect(journey).toHaveAttribute('data-orientation', 'horizontal');
+    await expect(journey).toHaveAttribute('data-orientation', 'vertical');
   },
 };
 export const Paused: Story = {
@@ -169,7 +171,7 @@ export const Paused: Story = {
     description: { story: 'Start paused and advance one payment phase at a time.' },
     source: { language: 'tsx', code: `${paymentExample}
 <PaymentPanel>
-  <PaymentFlow orientation="horizontal" defaultPaused nodes={nodes} amount={100} fee={3} balance={20}
+  <PaymentFlow orientation="auto" defaultPaused nodes={nodes} amount={100} fee={3} balance={20}
     currency="USD" locale="en-US" authorizationMs={240} labels={labels} summary={summary}
     label="Illustrative card payment" controlLabels={controlLabels}
     emptyContent="Add all five actors." invalidContent="Check amounts, currency and steps." />
