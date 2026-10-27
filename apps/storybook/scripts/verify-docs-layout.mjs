@@ -320,14 +320,26 @@ try {
   for (const viewport of [{ width: 390, height: 844 }, { width: 768, height: 900 }, { width: 1440, height: 900 }]) {
     for (const theme of ['light', 'dark']) {
       await page.setViewportSize(viewport);
+      await page.goto(new URL(`iframe.html?id=icons-usage--docs&viewMode=docs&globals=theme:${theme}`, baseURL).href);
+      await page.locator('.foundation-guide').getByRole('heading', { name: 'Icons', exact: true }).waitFor();
       await page.goto(new URL(`iframe.html?id=icons-all-icons--docs&viewMode=docs&globals=theme:${theme}`, baseURL).href);
       const browser = page.locator('.icon-browser');
       await browser.waitFor();
       assert.equal(await browser.getByRole('status').textContent(), '', 'All icons: no copy notice on first load');
-      assert.ok(await page.locator('.foundation-guide').evaluate((guide) =>
-        Boolean(guide.compareDocumentPosition(document.querySelector('.icon-browser')) & Node.DOCUMENT_POSITION_FOLLOWING)),
-      'All icons: the consumer guide precedes the browser');
-      await browser.getByRole('combobox', { name: 'Preview theme', exact: true }).selectOption(theme);
+      const colors = await browser.evaluate((element) => {
+        const page = getComputedStyle(document.body);
+        const browser = getComputedStyle(element);
+        const preview = getComputedStyle(element.querySelector('.icon-browser-preview'));
+        return {
+          theme: document.documentElement.dataset.theme,
+          page: { color: page.color, background: page.backgroundColor },
+          browser: { color: browser.color, background: browser.backgroundColor },
+          preview: { color: preview.color, background: preview.backgroundColor },
+        };
+      });
+      assert.equal(colors.theme, theme, 'All icons: the page uses the selected theme');
+      assert.deepEqual(colors.browser, colors.page, 'All icons: the browser inherits the page theme');
+      assert.deepEqual(colors.preview, colors.page, 'All icons: the preview inherits the page theme');
       await browser.getByRole('combobox', { name: 'Size', exact: true }).selectOption('32');
       const initialCount = await browser.getByRole('button').count();
       await browser.getByRole('searchbox', { name: 'Search icons' }).fill('search');
@@ -343,7 +355,7 @@ try {
       assert.ok(geometry.document <= geometry.viewport + 1, `All icons at ${viewport.width}px ${theme}: page overflows`);
       assert.ok(geometry.scroll <= geometry.width + 1, `All icons at ${viewport.width}px ${theme}: browser clips content`);
       assert.equal(geometry.glyph, 32, 'All icons: 32px preview is not squeezed');
-      console.log(`verify-docs-layout: All icons guide and browser at ${viewport.width}px ${theme} OK`);
+      console.log(`verify-docs-layout: All icons browser at ${viewport.width}px ${theme} OK`);
     }
   }
 
@@ -356,7 +368,7 @@ try {
       ['dark', 'light'].map((theme) => ({ viewport, theme })))) {
       await page.setViewportSize(viewport);
       await page.goto(new URL(`iframe.html?id=${id}&viewMode=docs&globals=theme:${theme}`, baseURL).href);
-      await page.getByRole('heading', { name: title, exact: true }).waitFor();
+      await page.locator('.foundation-guide').getByRole('heading', { name: title, exact: true }).waitFor();
       await page.evaluate(() => document.fonts.ready);
       const rendered = page.locator('.foundation-guide [data-guide-example]');
       assert.equal(await rendered.count(), examples.length, `${id}: every Markdown fence uses a component`);
@@ -366,8 +378,10 @@ try {
           const terminal = example.locator('[data-ui="typewriter-terminal"]');
           assert.ok((await terminal.locator('[data-ui="typewriter-terminal-screen"]').textContent()).endsWith(code),
             `${id}: command ${index} is immediately readable`);
-          const seek = terminal.getByRole('slider');
-          assert.equal(await seek.inputValue(), await seek.getAttribute('max'), `${id}: command ${index} starts at the end`);
+          await terminal.getByRole('button', { name: 'Copy commands', exact: true }).waitFor();
+          assert.equal(await terminal.getByRole('slider').count(), 0, `${id}: command ${index} has no playback timeline`);
+          assert.equal(await terminal.getByRole('button', { name: /^(Play|Pause|Replay)$/ }).count(), 0,
+            `${id}: command ${index} has no playback controls`);
         } else {
           const block = example.locator('[data-ui="code-block"]');
           if (language !== 'ini') await example.locator('[data-ui="code-block"][data-highlighted]').waitFor();
