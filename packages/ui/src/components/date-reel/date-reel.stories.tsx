@@ -5,6 +5,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { DateReel, type DateReelProps, type DateReelValue } from './index';
 import { styled } from '../../styling/styled';
 import { expectAligned, expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
+import { beginDateReelDiagnosticClick, recordDateReelPhase, withDateReelDiagnostics } from '../../testing/date-reel-diagnostics';
 
 const Frame = styled.div({
   inlineSize: `min(420px, calc(100vw - ${vars.space[4]} * 2))`,
@@ -70,6 +71,7 @@ type Story = StoryObj<typeof meta>;
 
 async function expectCenteredRow(reel: HTMLElement, label: string) {
   await waitFor(() => {
+    recordDateReelPhase(reel, 'predicate-attempt');
     const selected = reel.querySelector<HTMLElement>('[data-selected="true"]')!;
     expect(selected).toHaveTextContent(label);
     const matrix = new DOMMatrix(getComputedStyle(selected).transform);
@@ -77,7 +79,11 @@ async function expectCenteredRow(reel: HTMLElement, label: string) {
     expect(matrix.m43).toBeCloseTo(0, 2);
     expect(matrix.m22).toBeCloseTo(1, 3);
   }, { timeout: 3000 });
-  await expectInside(reel.querySelector('[data-selected="true"]')!, reel);
+  recordDateReelPhase(reel, 'after-wait');
+  const selected = reel.querySelector('[data-selected="true"]')!;
+  await expectInside(selected, reel, {
+    onMeasure: (measurement) => recordDateReelPhase(reel, 'containment-measurement', { element: selected, measurement }),
+  });
 }
 
 export const ClickRowRegression: Story = {
@@ -86,17 +92,21 @@ export const ClickRowRegression: Story = {
     mode: 'time', hourCycle: 'h23', defaultValue: '12:00',
     min: '08:00', max: '18:00', intro: false, onValueChange: fn(),
   },
-  play: async ({ canvas, args, userEvent }) => {
-    const reel = canvas.getByRole('spinbutton', { name: 'Hour' });
-    const target = within(reel).getByText('14');
-    await userEvent.click(target);
-    await expect(reel).toHaveAttribute('aria-valuenow', '14');
-    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expect(args.onValueChange).toHaveBeenLastCalledWith('14:00');
-    await expectCenteredRow(reel, '14');
-    await userEvent.click(target);
-    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
-    await expectCenteredRow(reel, '14');
+  play: async ({ canvas, canvasElement, args, userEvent }) => {
+    await withDateReelDiagnostics(canvasElement.ownerDocument, async () => {
+      const reel = canvas.getByRole('spinbutton', { name: 'Hour' });
+      const target = within(reel).getByText('14');
+      beginDateReelDiagnosticClick(reel, 1);
+      await userEvent.click(target);
+      await expect(reel).toHaveAttribute('aria-valuenow', '14');
+      await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+      await expect(args.onValueChange).toHaveBeenLastCalledWith('14:00');
+      await expectCenteredRow(reel, '14');
+      beginDateReelDiagnosticClick(reel, 2);
+      await userEvent.click(target);
+      await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+      await expectCenteredRow(reel, '14');
+    });
   },
 };
 

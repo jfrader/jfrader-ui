@@ -2,6 +2,7 @@ import { configure, getConfig } from 'storybook/test';
 import { beforeAll, beforeEach, afterEach } from 'vitest';
 import { cdp } from 'vitest/browser';
 import { auditDesign } from '../../../packages/ui/src/testing/design-assertions';
+import { finishDateReelDiagnostics, startDateReelDiagnostics } from '../../../packages/ui/src/testing/date-reel-diagnostics';
 
 type EventWrapper = ReturnType<typeof getConfig>['eventWrapper'];
 
@@ -55,11 +56,25 @@ function guardEventWrapperReentrancy() {
 
 beforeAll(guardEventWrapperReentrancy);
 
+beforeEach(({ task, annotate }) => {
+  if (import.meta.env.VITE_DATE_REEL_DIAGNOSTICS === '1' && task.name === 'Click Row Regression') {
+    startDateReelDiagnostics(document, (diagnostic) => annotate('DateReel click row geometry diagnostics', {
+      contentType: 'application/json',
+      body: JSON.stringify(diagnostic),
+      bodyEncoding: 'utf-8',
+    }));
+  }
+});
+
 afterEach(() => {
-  const leakedSx = document.querySelector('[sx]');
-  if (leakedSx) throw new Error(`Unconsumed sx attribute on ${leakedSx.outerHTML}`);
-  const failures = auditDesign(document);
-  if (failures.length) throw new Error(`Design audit:\n${failures.join('\n')}`);
+  try {
+    const leakedSx = document.querySelector('[sx]');
+    if (leakedSx) throw new Error(`Unconsumed sx attribute on ${leakedSx.outerHTML}`);
+    const failures = auditDesign(document);
+    if (failures.length) throw new Error(`Design audit:\n${failures.join('\n')}`);
+  } finally {
+    finishDateReelDiagnostics(document);
+  }
 });
 
 // Emulate the browser preference itself: mocking matchMedia does not activate CSS media rules.

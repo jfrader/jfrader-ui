@@ -33,6 +33,18 @@ jobs:
       - run: node --test scripts/verify-ci-playwright.test.mjs && node scripts/verify-ci-playwright.mjs
       - run: pnpm typecheck
       - run: pnpm test
+        id: tests
+        env:
+          VITE_DATE_REEL_DIAGNOSTICS: '1'
+      - name: Retain browser test diagnostics
+        if: ${{ !cancelled() && (steps.tests.outcome == 'success' || steps.tests.outcome == 'failure') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-diagnostics-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/storybook/.vitest/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
       - run: pnpm verify:exports
       - run: pnpm verify:slots
       - run: pnpm verify:icons
