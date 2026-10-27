@@ -1,10 +1,29 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { syncBuiltinESMExports } from 'node:module';
 import path from 'node:path';
 import { test } from 'node:test';
 import { loadCsf } from 'storybook/internal/csf-tools';
-import { checkComponentDocs, checkIntroduction, checkSnippets, checkGameStories } from './verify-docs.mjs';
+import { checkComponentDocs, checkIntroduction, checkSections, checkSectionFiles, checkSnippets, checkGameStories } from './verify-docs.mjs';
+
+test('checks curated section names against story exports, not display names or other exports', () => {
+  const source = (names) => `
+    export default { excludeStories: ['helper'], parameters: { docs: { sections: [{ title: 'Examples', stories: ${JSON.stringify(names)} }] } } };
+    export const Default = { name: 'Basic example' };
+    export const Other = {};
+    export const helper = 1;
+  `;
+  assert.deepEqual(checkSections(source(['Default', 'Other'])), []);
+  assert.deepEqual(checkSections(source([])), []);
+  assert.deepEqual(checkSections('export default {}; export const Default = {};'), []);
+  for (const name of ['Defualt', 'Basic example', 'helper']) {
+    assert.deepEqual(checkSections(source([name])), [`parameters.docs.sections: unknown story export "${name}".`]);
+  }
+  assert.match(checkSections(source(['Default']).replace('["Default"]', '[storyName]'))[0], /literal story export name/);
+  assert.match(checkSections(source(['Default']).replace('["Default"]', 'storyNames'))[0], /literal stories array/);
+});
 
 const gameStory = (meta = '', story = '') => `
   export default { title: 'Games/GameCard', tags: ['autodocs'], ${meta} };
@@ -141,6 +160,54 @@ test('checks every public component and reports missing stories', (t) => {
   assert.deepEqual(checkComponentDocs(root), { checked: 2, errors: [] });
   writeFileSync(path.join(root, 'missing/missing.stories.tsx'), story('undefined'));
   assert.match(checkComponentDocs(root).errors[0], /missing\/missing.stories.tsx: Add a string literal/);
+  writeFileSync(path.join(root, 'missing/missing.stories.tsx'), story('"Show a message."')
+    .replace('docs: {', 'docs: { sections: [{ title: "Examples", stories: ["Defualt"] }],'));
+  assert.deepEqual(checkComponentDocs(root).errors, [
+    'missing/missing.stories.tsx: parameters.docs.sections: unknown story export "Defualt".',
+  ]);
+});
+
+test('reads each component story once across coverage and duplicate-title checks without caching between runs', (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), 'jfrader-docs-read-once-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  mkdirSync(path.join(root, 'button'));
+  writeFileSync(path.join(root, 'button/index.ts'), '');
+  const fileName = path.join(root, 'button/button.stories.tsx');
+  writeFileSync(fileName, story('"Run an action."'));
+  const originalReadFileSync = fs.readFileSync;
+  let reads = 0;
+  t.mock.method(fs, 'readFileSync', (file, ...args) => {
+    if (file === fileName) reads += 1;
+    return originalReadFileSync(file, ...args);
+  });
+  syncBuiltinESMExports();
+  t.after(() => {
+    t.mock.restoreAll();
+    syncBuiltinESMExports();
+  });
+  assert.deepEqual(checkComponentDocs(root), { checked: 1, errors: [] });
+  assert.equal(reads, 1);
+  writeFileSync(fileName, story('undefined'));
+  assert.match(checkComponentDocs(root).errors[0], /string literal/);
+  assert.equal(reads, 2);
+  writeFileSync(fileName, 'export default {');
+  const { errors } = checkComponentDocs(root);
+  assert.equal(errors.length, 2);
+  assert.match(errors[0], /button\/button.stories.tsx: .*Unexpected token/s);
+  assert.match(errors[1], /button\/button.stories.tsx: cannot check docs title: .*Unexpected token/s);
+  assert.equal(reads, 3);
+});
+
+test('checks curated sections in nested story files without a component index', (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), 'jfrader-docs-sections-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  mkdirSync(path.join(root, 'gallery'));
+  const fileName = path.join(root, 'gallery/gallery.stories.tsx');
+  writeFileSync(fileName, story('"Browse icons."')
+    .replace('docs: {', 'docs: { sections: [{ title: "Examples", stories: ["Defualt"] }],'));
+  assert.deepEqual(checkSectionFiles(root), [
+    `${fileName}: parameters.docs.sections: unknown story export "Defualt".`,
+  ]);
 });
 
 test('Article and ArticleSection each publish one documentation page', () => {

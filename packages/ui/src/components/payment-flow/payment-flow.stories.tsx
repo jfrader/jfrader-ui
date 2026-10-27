@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn } from 'storybook/test';
+import { expect, fn, waitFor } from 'storybook/test';
 import { PaymentFlow, type PaymentFlowProps } from './payment-flow';
 import { paymentAmounts } from './payment-flow-model';
 import { vars } from '@jfrader/tokens/vars';
@@ -8,8 +8,9 @@ import { Surface } from '../surface';
 
 const PaymentPanel = styled(Surface)({
   boxSizing: 'border-box',
-  inlineSize: `calc(${vars.space[8]} * 30)`,
-  maxInlineSize: '100%',
+  inlineSize: '100%',
+  maxInlineSize: `calc(${vars.space[8]} * 30)`,
+  marginInline: 'auto',
   padding: vars.space[6],
 });
 
@@ -42,8 +43,8 @@ const paymentExample = `import { PaymentFlow, Surface, styled } from '@jfrader/u
 import { vars } from '@jfrader/tokens/vars';
 
 const PaymentPanel = styled(Surface)({
-  boxSizing: 'border-box', inlineSize: \`calc(\${vars.space[8]} * 30)\`,
-  maxInlineSize: '100%', padding: vars.space[6],
+  boxSizing: 'border-box', inlineSize: '100%',
+  maxInlineSize: \`calc(\${vars.space[8]} * 30)\`, marginInline: 'auto', padding: vars.space[6],
 });
 const nodes = {
   terminal: { label: 'Terminal' }, processor: { label: 'Processor' },
@@ -73,7 +74,7 @@ const meta = {
     </PaymentPanel>
   ),
   args: {
-    orientation: 'horizontal',
+    orientation: 'auto',
     label: 'Illustrative card payment',
     nodes: {
       terminal: { label: 'Terminal' },
@@ -126,14 +127,19 @@ const meta = {
     onPausedChange: fn(),
   },
   parameters: {
+    layout: 'padded',
     docs: {
       description: {
         component:
           'Explain how a card payment moves from authorization to merchant payout.',
       },
       sections: [
-        { title: 'Payment journey', stories: ['Default', 'Vertical'] },
-        { title: 'Playback', stories: ['Paused'] },
+        { title: 'Layout', stories: ['Default', 'Horizontal', 'Vertical', 'Light', 'RTL'] },
+        { title: 'Playback', stories: ['Paused', 'LongAuthorization', 'KeyboardReplay', 'SpeedZero', 'ControlledPauseRejects'] },
+        { title: 'Currency and locale', stories: ['JPY', 'KWD', 'LocaleDe', 'IntlAndMinorUnits'] },
+        { title: 'Amounts and fees', stories: ['ZeroAmountFee', 'FeeEqualsAmount'] },
+        { title: 'Accessible narrative and caption', stories: ['SummarySrOnly', 'CaptionZero'] },
+        { title: 'Invalid and missing values', stories: ['InvalidCurrency', 'UnsafeAmount', 'MissingNode'] },
       ],
       usage:
         '### Values\nThis is an illustration, not checkout, a payment API, a ledger or actual settlement status. Supply at least five narrative steps covering actors, gross amount, fee, net, balance and timing. Keep the narrative synchronized with the numbers and labels, including when it is visually hidden.\n\nCurrency precision comes from Intl. Amount, fee and balance round independently to minor units; net is rounded amount minus rounded fee. Values must be finite, nonnegative safe integers after conversion; fee cannot exceed amount. Invalid currency or unsafe totals show the invalid fallback; missing actors show the empty fallback. Use the same explicit locale for server and client rendering.\n\n### Playback\nReplay resets the illustration and initial balance, never pause state. Reduced motion starts at payout; Next phase and Replay select static snapshots. Hidden, offscreen and zero-size figures stop scheduling and resume without catch-up. Each equal phase takes one fifth of a 15-second cycle at speed 1. Stage changes are discrete; no animated money transfer or continuous balance counter is shown.\n\n### Keyboard\nTab and Shift+Tab reach Pause, Next phase and Replay. Enter and Space activate once. Next phase is disabled while running. There are no scene shortcuts or automatic focus changes.',
@@ -141,7 +147,7 @@ const meta = {
         language: 'tsx',
         code: `${paymentExample}
 <PaymentPanel>
-  <PaymentFlow orientation="horizontal" nodes={nodes} amount={100} fee={3} balance={20}
+  <PaymentFlow orientation="auto" nodes={nodes} amount={100} fee={3} balance={20}
     currency="USD" locale="en-US" authorizationMs={240} labels={labels} summary={summary}
     label="Illustrative card payment" controlLabels={controlLabels}
     emptyContent="Add all five actors." invalidContent="Check amounts, currency and steps." />
@@ -157,10 +163,43 @@ export const Default: Story = {
   parameters: { docs: { description: { story: 'Follow authorization, approval, clearing, fees and payout with a readable narrative.' } } },
   play: async ({ canvasElement }) => {
     const figure = canvasElement.querySelector('figure')!;
-    await expect(figure.getBoundingClientRect().width).toBeGreaterThan(600);
+    const scene = figure.querySelector('[data-ui="payment-flow-scene"]')!;
     const journey = figure.querySelector('[data-ui~="stepper"]')!;
-    await expect(journey.getBoundingClientRect().width).toBeGreaterThan(600);
-    await expect(journey).toHaveAttribute('data-orientation', 'horizontal');
+    const bounds = figure.getBoundingClientRect();
+    const expected = bounds.width <= 700 ? 'vertical' : 'horizontal';
+    await waitFor(async () => {
+      await expect(scene).toHaveAttribute('data-orientation', expected);
+      await expect(journey).toHaveAttribute('data-orientation', expected);
+    });
+    for (const selector of ['[data-ui="payment-flow-node"]', '[data-ui="stepper-item"]']) {
+      const items = figure.querySelectorAll(selector);
+      const first = items[0]!.getBoundingClientRect();
+      const last = items[items.length - 1]!.getBoundingClientRect();
+      if (expected === 'vertical') {
+        await expect(last.x).toBe(first.x);
+        await expect(last.y).toBeGreaterThan(first.y);
+      } else {
+        await expect(last.y).toBe(first.y);
+        await expect(last.x).toBeGreaterThan(first.x);
+      }
+    }
+    const sceneBox = scene.getBoundingClientRect();
+    const journeyBox = journey.getBoundingClientRect();
+    const readoutBox = journey.nextElementSibling!.getBoundingClientRect();
+    const stageBox = scene.closest('[data-ui~="card"]')!.getBoundingClientRect();
+    const summaryBox = figure.querySelector('[data-ui="payment-flow-summary"]')!.getBoundingClientRect();
+    const controlsBox = figure.querySelector('[data-ui="payment-flow-controls"]')!.getBoundingClientRect();
+    const innerGap = journeyBox.top - sceneBox.bottom;
+    const groupGap = summaryBox.top - stageBox.bottom;
+    await expect(innerGap).toBeGreaterThan(0);
+    await expect(readoutBox.top - journeyBox.bottom).toBeCloseTo(innerGap);
+    await expect(controlsBox.top - summaryBox.bottom).toBeCloseTo(groupGap);
+    await expect(groupGap).toBeGreaterThan(innerGap);
+    for (const control of figure.querySelectorAll('button')) {
+      const rect = control.getBoundingClientRect();
+      await expect(rect.left).toBeGreaterThanOrEqual(bounds.left);
+      await expect(rect.right).toBeLessThanOrEqual(bounds.right);
+    }
   },
 };
 export const Paused: Story = {
@@ -169,7 +208,7 @@ export const Paused: Story = {
     description: { story: 'Start paused and advance one payment phase at a time.' },
     source: { language: 'tsx', code: `${paymentExample}
 <PaymentPanel>
-  <PaymentFlow orientation="horizontal" defaultPaused nodes={nodes} amount={100} fee={3} balance={20}
+  <PaymentFlow orientation="auto" defaultPaused nodes={nodes} amount={100} fee={3} balance={20}
     currency="USD" locale="en-US" authorizationMs={240} labels={labels} summary={summary}
     label="Illustrative card payment" controlLabels={controlLabels}
     emptyContent="Add all five actors." invalidContent="Check amounts, currency and steps." />
