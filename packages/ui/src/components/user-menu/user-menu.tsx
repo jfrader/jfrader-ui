@@ -51,6 +51,7 @@ import { Close } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
+import { touchTargetStyle } from '../../styling/touch-target';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { listboxSurfaceStyle } from '../../styling/listbox-style';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -444,7 +445,7 @@ const scrimEnter = keyframes({
   to: { opacity: 1 },
 });
 
-const triggerStyle = css({
+const triggerStyle = css(touchTargetStyle, {
   label: 'user-menu-trigger',
   appearance: 'none',
   boxSizing: 'border-box',

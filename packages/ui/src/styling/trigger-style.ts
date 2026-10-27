@@ -1,6 +1,7 @@
 import { vars } from '@jfrader/tokens/vars';
 import { css } from './css';
 import { REDUCED_MOTION } from './media';
+import { touchTargetStyle } from './touch-target';
 
 // Shared button style for overlay triggers (Dialog, Popover, Menu).
 export const triggerStyle = css({
@@ -36,4 +37,4 @@ export const triggerStyle = css({
   [REDUCED_MOTION]: {
     transitionDuration: '0s',
   },
-});
+}, touchTargetStyle);
