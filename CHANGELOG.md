@@ -4,7 +4,7 @@
 
 ### Changed
 
-- Component docs show one featured example and group the remaining examples into curated sections. `PaymentFlow` examples stack in narrow containers and keep playback controls inside the viewport.
+- Component docs show one featured example and group the remaining examples into curated sections. `PaymentFlow` keeps participants and steps horizontal in wide containers, stacks both in narrow containers, and keeps playback controls inside the viewport.
 
 ## 0.21.2 — 2026-10-27
 

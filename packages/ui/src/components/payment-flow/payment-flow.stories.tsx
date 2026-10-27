@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fn } from 'storybook/test';
+import { expect, fn, waitFor } from 'storybook/test';
 import { PaymentFlow, type PaymentFlowProps } from './payment-flow';
 import { paymentAmounts } from './payment-flow-model';
 import { vars } from '@jfrader/tokens/vars';
@@ -163,18 +163,30 @@ export const Default: Story = {
   parameters: { docs: { description: { story: 'Follow authorization, approval, clearing, fees and payout with a readable narrative.' } } },
   play: async ({ canvasElement }) => {
     const figure = canvasElement.querySelector('figure')!;
-    await expect(figure.getBoundingClientRect().width).toBeGreaterThan(600);
+    const scene = figure.querySelector('[data-ui="payment-flow-scene"]')!;
     const journey = figure.querySelector('[data-ui~="stepper"]')!;
-    await expect(journey.getBoundingClientRect().width).toBeGreaterThan(600);
-    const nodes = figure.querySelectorAll('[data-ui="payment-flow-node"]');
-    const first = nodes[0]!.getBoundingClientRect();
-    const last = nodes[nodes.length - 1]!.getBoundingClientRect();
-    if (figure.getBoundingClientRect().width <= 700) {
-      await expect(last.x).toBe(first.x);
-      await expect(last.y).toBeGreaterThan(first.y);
-    } else {
-      await expect(last.y).toBe(first.y);
-      await expect(last.x).toBeGreaterThan(first.x);
+    const bounds = figure.getBoundingClientRect();
+    const expected = bounds.width <= 700 ? 'vertical' : 'horizontal';
+    await waitFor(async () => {
+      await expect(scene).toHaveAttribute('data-orientation', expected);
+      await expect(journey).toHaveAttribute('data-orientation', expected);
+    });
+    for (const selector of ['[data-ui="payment-flow-node"]', '[data-ui="stepper-item"]']) {
+      const items = figure.querySelectorAll(selector);
+      const first = items[0]!.getBoundingClientRect();
+      const last = items[items.length - 1]!.getBoundingClientRect();
+      if (expected === 'vertical') {
+        await expect(last.x).toBe(first.x);
+        await expect(last.y).toBeGreaterThan(first.y);
+      } else {
+        await expect(last.y).toBe(first.y);
+        await expect(last.x).toBeGreaterThan(first.x);
+      }
+    }
+    for (const control of figure.querySelectorAll('button')) {
+      const rect = control.getBoundingClientRect();
+      await expect(rect.left).toBeGreaterThanOrEqual(bounds.left);
+      await expect(rect.right).toBeLessThanOrEqual(bounds.right);
     }
   },
 };

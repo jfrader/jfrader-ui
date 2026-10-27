@@ -35,7 +35,7 @@ import {
 
 export type { PaymentFlowNodeKey } from './payment-flow-model';
 const MAX_PLAYBACK_SPEED = 3;
-const AUTO_VERTICAL_QUERY = '@container payment-flow (max-width: 700px)';
+const AUTO_VERTICAL_MAX_INLINE_SIZE = 700;
 
 export interface PaymentFlowNode {
   label: string;
@@ -102,7 +102,7 @@ export interface PaymentFlowProps
   label: string;
   /** Adds a caption associated with the illustration. */
   caption?: ReactNode;
-  /** Sets the participant layout. Defaults to `auto`, which stacks participants at container widths of 700px or less. */
+  /** Sets the participant and stepper layout. Defaults to `auto`, which stacks both at figure inline sizes of 700px or less. */
   orientation?: 'auto' | 'horizontal' | 'vertical';
   /** Playback multiplier from 0 (static) to 3. Defaults to 1. */
   speed?: number;
@@ -132,8 +132,6 @@ const rootStyle = css({
   color: vars.color.text,
   fontFamily: vars.font.sans,
   minInlineSize: 0,
-  containerType: 'inline-size',
-  containerName: 'payment-flow',
 });
 const sceneStyle = css({
   '--payment-flow-accent': vars.color.accent,
@@ -142,9 +140,6 @@ const sceneStyle = css({
   gap: vars.space[2],
   minInlineSize: 0,
   '&[data-orientation="vertical"]': { gridTemplateColumns: 'minmax(0, 1fr)' },
-  [AUTO_VERTICAL_QUERY]: {
-    '&[data-orientation="auto"]': { gridTemplateColumns: 'minmax(0, 1fr)' },
-  },
 });
 const nodeStyle = css({
   padding: vars.space[3],
@@ -203,6 +198,8 @@ export function PaymentFlow({
   const reduced = useReducedMotion();
   const [paused, setPaused] = useControlledState(pausedProp, defaultPaused, onPausedChange);
   const [phase, setPhase] = useState(0);
+  const [autoOrientation, setAutoOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
+  const resolvedOrientation = orientation === 'auto' ? autoOrientation : orientation;
   const elapsed = useRef(0);
   const amounts = useMemo(
     () => paymentAmounts(amount, fee, balance, currency, locale),
@@ -220,6 +217,18 @@ export function PaymentFlow({
   const frozen = paused || speed === 0 || !!reduced;
   const [stepped, setStepped] = useState(false);
   const shownPhase = reduced && !stepped ? paymentPhases.length - 1 : phase;
+  useEffect(() => {
+    if (orientation !== 'auto') return;
+    const element = rootRef.current;
+    if (!element) return;
+    const resize = new ResizeObserver(([entry]) => {
+      if (!entry) return;
+      const inlineSize = entry.contentBoxSize[0]?.inlineSize ?? entry.contentRect.width;
+      setAutoOrientation(inlineSize <= AUTO_VERTICAL_MAX_INLINE_SIZE ? 'vertical' : 'horizontal');
+    });
+    resize.observe(element);
+    return () => resize.disconnect();
+  }, [orientation]);
   useEffect(() => {
     elapsed.current = 0;
     setPhase(0);
@@ -332,7 +341,7 @@ export function PaymentFlow({
                   styles={sceneStyle}
                   aria-hidden="true"
                   data-ui="payment-flow-scene"
-                  data-orientation={orientation}
+                  data-orientation={resolvedOrientation}
                 >
                   {paymentNodeKeys.map((key) => (
                     <FieldSlot
@@ -364,7 +373,7 @@ export function PaymentFlow({
                   steps={paymentPhases.map((key) => ({ id: key, label: labels[key] }))}
                   value={shownPhase}
                   label={label}
-                  orientation={orientation === 'horizontal' ? 'horizontal' : 'vertical'}
+                  orientation={resolvedOrientation}
                   interactive={false}
                   announceChanges={false}
                   getStepLabel={(step) => step.label}
