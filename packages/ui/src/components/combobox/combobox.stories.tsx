@@ -27,7 +27,7 @@ const TouchFields = styled.div({ display: 'grid', gap: vars.space[4] });
 
 export const TouchTargets: StoryObj = {
   name: 'Combobox touch targets',
-  tags: ['!autodocs'],
+  tags: ['!autodocs', 'touch'],
   render: () => (
     <TouchFields>
       {(['sm', 'md', 'lg'] as const).map((size) => (

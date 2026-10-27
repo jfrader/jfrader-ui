@@ -120,7 +120,7 @@ const viewport = (width: number) => ({ viewport: {
   defaultViewport: 'table',
   options: { table: { name: 'Table', styles: { width: `${width}px`, height: '900px' } } },
 } });
-export const TouchTable320: Story = { name: 'Touch table 320', parameters: viewport(320), play };
-export const TouchTable390: Story = { name: 'Touch table 390', parameters: viewport(390), play };
-export const TouchTable768: Story = { name: 'Touch table 768', parameters: viewport(768), play };
+export const TouchTable320: Story = { name: 'Touch table 320', tags: ['touch'], parameters: viewport(320), play };
+export const TouchTable390: Story = { name: 'Touch table 390', tags: ['touch'], parameters: viewport(390), play };
+export const TouchTable768: Story = { name: 'Touch table 768', tags: ['touch'], parameters: viewport(768), play };
 export const DesktopTableControls: Story = { name: 'Desktop table controls', parameters: viewport(1440), play };

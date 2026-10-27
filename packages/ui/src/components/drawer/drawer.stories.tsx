@@ -2958,4 +2958,4 @@ export const PointerTargets: Story = {
 };
 
 /** Trigger and close buttons reach the touch target on coarse pointers. */
-export const TouchTargets: Story = { ...PointerTargets, name: 'Drawer touch targets' };
+export const TouchTargets: Story = { ...PointerTargets, name: 'Drawer touch targets', tags: ['!autodocs', 'touch'] };
