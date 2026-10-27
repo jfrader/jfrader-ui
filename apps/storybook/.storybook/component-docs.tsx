@@ -12,6 +12,7 @@ function StoryScope({ stories, children }: PropsWithChildren<{ stories: unknown[
 }
 
 export function ComponentDocs() {
+  const context = useContext(DocsContext);
   const { preparedMeta, csfFile } = useOf('meta', ['meta']);
   const isSingleStory = Object.keys(csfFile.stories).length === 1;
   const usage: unknown = preparedMeta.parameters.docs?.usage;
@@ -33,7 +34,9 @@ export function ComponentDocs() {
   })) : undefined;
   const curatedStories = curatedSections?.flatMap(({ stories }) => stories);
   const featured = curatedStories?.[0];
-  const remainingStories = [...storyExports].filter((story) => !curatedStories?.includes(story) && story !== featured);
+  // `Stories` only drops `!autodocs` stories when the list also holds a published one.
+  const remainingStories = [...storyExports].filter((story) => !curatedStories?.includes(story) && story !== featured
+    && context.resolveOf(story, ['story']).story.tags.includes('autodocs'));
   const remainingSections = curatedSections?.map(({ title, stories }) => ({
     title,
     stories: stories.filter((story) => story !== featured),
