@@ -2561,4 +2561,4 @@ export const PointerTargets: StoryObj<(props: DialogStackShorthandProps) => Reac
 };
 
 /** Trigger, Back, and Close reach the touch target on coarse pointers. */
-export const TouchTargets: typeof PointerTargets = { ...PointerTargets, name: 'DialogStack touch targets' };
+export const TouchTargets: typeof PointerTargets = { ...PointerTargets, name: 'DialogStack touch targets', tags: ['!autodocs', 'touch'] };

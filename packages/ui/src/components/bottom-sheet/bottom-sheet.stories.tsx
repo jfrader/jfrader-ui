@@ -1791,4 +1791,4 @@ export const PointerTargets: Story = {
 };
 
 /** Trigger, handle, and close button reach the touch target on coarse pointers. */
-export const TouchTargets: Story = { ...PointerTargets, name: 'BottomSheet touch targets' };
+export const TouchTargets: Story = { ...PointerTargets, name: 'BottomSheet touch targets', tags: ['!autodocs', 'touch'] };

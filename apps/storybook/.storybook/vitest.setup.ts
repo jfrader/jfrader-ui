@@ -85,22 +85,7 @@ const storyMediaPreferences: Readonly<Record<string, string | undefined>> = {
   'Gravity Well Reduced Motion': 'prefers-reduced-motion',
 };
 
-// Touch emulation makes `(pointer: coarse)` match, so these stories measure the touch target sizes.
-const touchStories = new Set([
-  'Touch control sizes',
-  'MoneyInput touch sizes',
-  'NumberField touch sizes',
-  'Dialog touch targets',
-  'Drawer touch targets',
-  'BottomSheet touch targets',
-  'DialogStack touch targets',
-]);
-const isTouchStory = (name: string) => touchStories.has(name) || /^Touch table (320|390|768)$/.test(name);
-
 beforeEach(async ({ task }) => {
-  if (isTouchStory(task.name) || task.name === 'Desktop table controls') {
-    await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: isTouchStory(task.name) });
-  }
   const preference = storyMediaPreferences[task.name];
   if (!preference) return;
   await cdp().send('Emulation.setEmulatedMedia', {
@@ -109,9 +94,6 @@ beforeEach(async ({ task }) => {
 });
 
 afterEach(async ({ task }) => {
-  if (isTouchStory(task.name) || task.name === 'Desktop table controls') {
-    await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: false });
-  }
   if (!storyMediaPreferences[task.name]) return;
   await cdp().send('Emulation.setEmulatedMedia', { features: [] });
 });

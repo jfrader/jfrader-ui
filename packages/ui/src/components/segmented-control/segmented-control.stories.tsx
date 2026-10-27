@@ -133,6 +133,7 @@ export const SharedControlSizes200PercentText: Story = {
 export const SharedControlSizesTouch: Story = {
   ...SharedControlSizes,
   name: 'Touch control sizes',
+  tags: ['touch'],
   play: async ({ canvasElement }) => {
     await expect(canvasElement.ownerDocument.defaultView!.matchMedia('(pointer: coarse)').matches).toBe(true);
     for (const [size, height] of [['sm', 44], ['md', 44], ['lg', 48]] as const) {
