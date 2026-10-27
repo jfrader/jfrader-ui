@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.22.0 — 2026-10-27
+
 ### Added
 
 - `TypewriterTerminal` accepts `playback={false}` to show a completed, content-sized session without playback controls. Guide shell commands use this static terminal with a copy action, and the icons guide has its own usage page.
