@@ -10,6 +10,10 @@
 
 - Component docs show one featured example and group the remaining examples into curated sections. `PaymentFlow` keeps participants and steps horizontal in wide containers, stacks both in narrow containers, and keeps playback controls inside the viewport.
 
+### Fixed
+
+- The Satoshi icon's three stacked strokes share one length in both line and solid variants.
+
 ## 0.21.2 — 2026-10-27
 
 ### Fixed
