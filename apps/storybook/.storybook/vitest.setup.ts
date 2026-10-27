@@ -85,11 +85,18 @@ const storyMediaPreferences: Readonly<Record<string, string | undefined>> = {
   'Gravity Well Reduced Motion': 'prefers-reduced-motion',
 };
 
+function needsTouchPointer(name: string) {
+  return /^Touch table (320|390|768)$/.test(name)
+    || name === 'Touch control sizes'
+    || name === 'MoneyInput touch sizes'
+    || name === 'NumberField touch sizes'
+    || name.endsWith(' touch targets');
+}
+
 beforeEach(async ({ task }) => {
-  const touchWidth = /^Touch table (320|390|768)$/.exec(task.name)?.[1];
-  const touchControls = task.name === 'Touch control sizes' || task.name === 'MoneyInput touch sizes' || task.name === 'NumberField touch sizes';
-  if (touchWidth || touchControls || task.name === 'Desktop table controls') {
-    await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: Boolean(touchWidth || touchControls) });
+  const touchPointer = needsTouchPointer(task.name);
+  if (touchPointer || task.name === 'Desktop table controls') {
+    await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: touchPointer });
   }
   const preference = storyMediaPreferences[task.name];
   if (!preference) return;
@@ -99,7 +106,7 @@ beforeEach(async ({ task }) => {
 });
 
 afterEach(async ({ task }) => {
-  if (/^Touch table (320|390|768)$/.test(task.name) || task.name === 'Touch control sizes' || task.name === 'MoneyInput touch sizes' || task.name === 'NumberField touch sizes' || task.name === 'Desktop table controls') {
+  if (needsTouchPointer(task.name) || task.name === 'Desktop table controls') {
     await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: false });
   }
   if (!storyMediaPreferences[task.name]) return;
