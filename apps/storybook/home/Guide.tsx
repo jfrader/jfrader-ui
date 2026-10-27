@@ -9,7 +9,6 @@ const guidePaths: Record<string, string> = {
   './theming.md': 'foundations-theming',
   './flights.md': 'foundations-flights',
   './styling.md': 'foundations-styling',
-  './icons.md': 'icons-usage',
 };
 
 /** A workbench link (`./?path=/docs/…`, `./?path=/story/…`) belongs to the manager, not the preview. */

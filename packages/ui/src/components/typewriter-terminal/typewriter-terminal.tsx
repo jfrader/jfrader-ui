@@ -577,7 +577,7 @@ export function TypewriterTerminal({
 
   useEffect(() => {
     const element = screen.current;
-    if (!element) return;
+    if (!playback || !element) return;
     const document = element.ownerDocument;
     const media = document.defaultView?.matchMedia('(prefers-reduced-motion: reduce)');
     const updateMotion = () => {
@@ -602,7 +602,7 @@ export function TypewriterTerminal({
       media?.removeEventListener('change', updateMotion);
       observer?.disconnect();
     };
-  }, []);
+  }, [playback]);
 
   useEffect(() => {
     if (!playback || isPaused || reduced || !visible || !foreground || session.duration === 0) return;
