@@ -39,6 +39,13 @@ import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { partId } from '../../utils/part-id';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+import {
+  CONNECTOR_THICKNESS,
+  STEP_MARKER_FONT,
+  STEP_MARKER_SIZE,
+  stepMarker,
+  stepMarkerStyle,
+} from './step-marker';
 
 export type StepperOrientation = 'horizontal' | 'vertical';
 export type StepperSize = 'sm' | 'md';
@@ -186,11 +193,7 @@ const defaultStepLabel =
     `${step.label}, step ${format.format(index + 1)} of ${format.format(count)}, ${DEFAULT_STATUS_TEXT[status]}`;
 const defaultChangeLabel = (format: Intl.NumberFormat) => (step: StepperStep | null, index: number, count: number) =>
   step ? `Step ${format.format(index + 1)} of ${format.format(count)}: ${step.label}` : DEFAULT_COMPLETE_LABEL;
-const CONNECTOR_THICKNESS = '2px';
-const MARKER_SIZE = '--stepper-marker-size';
-const MARKER_FONT = '--stepper-marker-font';
 const DETAIL_FONT = '--stepper-detail-font';
-const marker = `var(${MARKER_SIZE})`;
 const NARROW_LAYOUT_QUERY = '@container stepper (max-width: 30rem)';
 
 /** Styles for a part while the stepper is compact, manually or by the responsive container query. */
@@ -239,14 +242,14 @@ const rootStyle = css({
 
 const rootSizeStyles: Record<StepperSize, SerializedStyles> = {
   sm: css({
-    [MARKER_SIZE]: vars.space[6],
-    [MARKER_FONT]: vars.textSize.xs,
+    [STEP_MARKER_SIZE]: vars.space[6],
+    [STEP_MARKER_FONT]: vars.textSize.xs,
     [DETAIL_FONT]: vars.textSize.xs,
     fontSize: vars.textSize.sm,
   }),
   md: css({
-    [MARKER_SIZE]: vars.space[8],
-    [MARKER_FONT]: vars.textSize.sm,
+    [STEP_MARKER_SIZE]: vars.space[8],
+    [STEP_MARKER_FONT]: vars.textSize.sm,
     [DETAIL_FONT]: vars.textSize.sm,
     fontSize: vars.textSize.md,
   }),
@@ -268,13 +271,13 @@ const itemStyles: Record<StepperOrientation, SerializedStyles> = {
     minInlineSize: 0,
     '&:last-of-type': { gridTemplateColumns: 'minmax(0, max-content)', flex: '0 1 auto' },
     [NARROW_LAYOUT_QUERY]: {
-      gridTemplateColumns: `calc(${marker} + 2 * ${vars.space[1]}) minmax(0, 1fr)`,
+      gridTemplateColumns: `calc(${stepMarker} + 2 * ${vars.space[1]}) minmax(0, 1fr)`,
       '&:last-of-type': { gridTemplateColumns: 'minmax(0, 1fr)', flex: '1 1 0' },
     },
   }),
   vertical: css({
     display: 'grid',
-    gridTemplateColumns: `calc(${marker} + 2 * ${vars.space[1]}) minmax(0, 1fr)`,
+    gridTemplateColumns: `calc(${stepMarker} + 2 * ${vars.space[1]}) minmax(0, 1fr)`,
     minInlineSize: 0,
   }),
 };
@@ -320,68 +323,10 @@ const buttonHeadStyle = css({
   [REDUCED_MOTION]: { '&:not([aria-disabled="true"]):active': { transform: 'none' } },
 });
 
-const markerStyle = css({
-  boxSizing: 'border-box',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  flexShrink: 0,
-  // Content-sized: long Intl numerals grow the pill instead of overflowing it.
-  minInlineSize: marker,
-  blockSize: marker,
-  paddingInline: vars.space[1],
-  border: `${CONNECTOR_THICKNESS} solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.full,
-  backgroundColor: 'transparent',
-  color: vars.color.textMuted,
-  fontSize: `var(${MARKER_FONT})`,
-  fontWeight: vars.fontWeight.medium,
-  fontVariantNumeric: 'tabular-nums',
-  lineHeight: 1,
-  whiteSpace: 'nowrap',
-  transitionProperty: 'background-color, border-color, color',
-  transitionDuration: vars.motion.duration.base,
-  transitionTimingFunction: vars.motion.easeStandard,
-  '& svg': { inlineSize: '1em', blockSize: '1em' },
-  // Generated content keeps the decorative numeral out of the button's visible-text name check.
-  '&[data-numeral]::before': { content: 'attr(data-numeral)' },
-  '&[data-state="complete"]': {
-    borderColor: vars.color.accent,
-    backgroundColor: vars.color.accent,
-    color: vars.color.accentContrast,
-  },
-  // Beyond color, the current marker gains a detached halo ring and a heavier numeral. The halo
-  // sits inside the head's padding, so the head's focus ring still draws outside it.
-  '&[data-state="current"]': {
-    borderColor: vars.color.accent,
-    backgroundColor: vars.color.accentSoft,
-    color: vars.color.text,
-    fontWeight: vars.fontWeight.semibold,
-    outline: `${CONNECTOR_THICKNESS} solid ${vars.color.accent}`,
-    outlineOffset: CONNECTOR_THICKNESS,
-  },
-  '&[data-state="error"]': {
-    borderColor: vars.color.dangerText,
-    backgroundColor: vars.color.dangerSoft,
-    color: vars.color.dangerText,
-  },
-  [REDUCED_MOTION]: { transitionDuration: '0s' },
-  [FORCED_COLORS]: {
-    borderColor: 'CanvasText',
-    '&[data-state="current"], &[data-state="error"]': { borderColor: 'Highlight', outlineColor: 'Highlight' },
-    '&[data-state="complete"]': {
-      forcedColorAdjust: 'none',
-      borderColor: 'Highlight',
-      backgroundColor: 'Highlight',
-      color: 'HighlightText',
-    },
-  },
-});
-
 const labelStyle = css({
   display: 'flex',
   alignItems: 'center',
-  minBlockSize: marker,
+  minBlockSize: stepMarker,
   minInlineSize: 0,
   fontWeight: vars.fontWeight.medium,
   overflowWrap: 'anywhere',
@@ -407,7 +352,7 @@ const descriptionStyle = css({
 const descriptionOrientationStyles: Record<StepperOrientation, SerializedStyles> = {
   horizontal: css({
     gridColumn: '1 / -1',
-    paddingInlineStart: `calc(${vars.space[1]} + ${marker} + ${vars.space[3]})`,
+    paddingInlineStart: `calc(${vars.space[1]} + ${stepMarker} + ${vars.space[3]})`,
     [NARROW_LAYOUT_QUERY]: { paddingInlineStart: vars.space[1] },
   }),
   vertical: css({ gridColumn: 2, paddingInlineStart: vars.space[2], paddingBlockEnd: vars.space[2] }),
@@ -442,7 +387,7 @@ const connectorOrientationStyles: Record<StepperOrientation, SerializedStyles> =
     gridRow: 1,
     blockSize: CONNECTOR_THICKNESS,
     marginInline: vars.space[2],
-    marginBlockStart: `calc(${vars.space[1]} + ${marker} / 2 - ${CONNECTOR_THICKNESS} / 2)`,
+    marginBlockStart: `calc(${vars.space[1]} + ${stepMarker} / 2 - ${CONNECTOR_THICKNESS} / 2)`,
     '&:not([data-state="complete"])::after': { transform: 'scaleX(0)' },
     '&::after': { transformOrigin: 'left' },
     '&:dir(rtl)::after': { transformOrigin: 'right' },
@@ -623,7 +568,7 @@ export function Stepper(props: StepperProps) {
               data-state={status}
               data-numeral={numeral}
               className={slotProps?.marker?.className}
-              css={[markerStyle, slotProps?.marker?.sx]}
+              css={[stepMarkerStyle, slotProps?.marker?.sx]}
             >
               {hasIcon ? step.icon : glyph}
             </Marker>
