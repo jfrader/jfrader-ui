@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.21.0 — 2026-10-27
+
+### Added
+
+- `GalleryEditor` edits a photo gallery: upload through `FileDropzone` or by dropping files on the grid, preview in the lightbox viewer, pick a cover, select several photos with checkboxes, and confirm deletes in a dialog. It ships two densities, replaceable slots, and the `@jfrader/ui/gallery-editor` subpath.
+- Size tokens `galleryEditorTile`, `galleryEditorTileCompact`, and `galleryEditorEmptyUpload` set the default minimum tile width per density and the empty gallery's drop target height.
+
+### Changed
+
+- `LightboxGallery` renders its viewer dialog and return flight through an internal `LightboxViewer` shared with `GalleryEditor`. Its public API is unchanged.
+
 ## 0.20.0 — 2026-10-26
 
 ### Added
