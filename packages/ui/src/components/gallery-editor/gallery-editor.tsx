@@ -956,12 +956,12 @@ export function GalleryEditor<P extends GalleryEditorPhoto = GalleryEditorPhoto>
           aria-label={hasHeading ? undefined : label}
           aria-labelledby={hasHeading ? titleId : undefined}
         >
-          {tiles}
           {canUpload && (
             <li data-ui="gallery-editor-upload" css={tileStyle}>
               {uploader()}
             </li>
           )}
+          {tiles}
         </PresentationSlot>
       ) : (
         <>
