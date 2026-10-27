@@ -47,6 +47,7 @@ export const Examples: Story = {
 
     const terminal = canvas.getByRole('figure', { name: 'Setup commands' });
     const screen = terminal.querySelector('[data-ui="typewriter-terminal-screen"]')!;
+    await expect(screen).toBeVisible();
     await expect(screen.textContent).toContain(command);
     const screenStyle = canvasElement.ownerDocument.defaultView!.getComputedStyle(screen);
     const contentHeight = screen.firstElementChild!.getBoundingClientRect().height;
@@ -54,9 +55,10 @@ export const Examples: Story = {
       contentHeight + parseFloat(screenStyle.paddingTop) + parseFloat(screenStyle.paddingBottom),
     );
     await expect(terminal.querySelectorAll('[data-ui="typewriter-terminal-transcript"] > li')).toHaveLength(1);
-    const seek = within(terminal).getByRole('slider');
-    await expect(seek).toHaveValue(seek.getAttribute('max'));
-    await expect(within(terminal).getByRole('button', { name: 'Play' })).toBeVisible();
+    await expect(within(terminal).getByRole('button', { name: 'Copy commands' })).toBeVisible();
+    await expect(within(terminal).queryByRole('button', { name: /^(Play|Pause|Replay)$/ })).not.toBeInTheDocument();
+    await expect(within(terminal).queryByRole('slider')).not.toBeInTheDocument();
+    await expect(within(terminal).queryByRole('status')).not.toBeInTheDocument();
 
     const clipboard = canvasElement.ownerDocument.defaultView!.navigator.clipboard;
     const original = Object.getOwnPropertyDescriptor(clipboard, 'writeText');
@@ -75,13 +77,6 @@ export const Examples: Story = {
       else Reflect.deleteProperty(clipboard, 'writeText');
     }
 
-    const replay = within(terminal).getByRole('button', { name: 'Replay' });
-    replay.focus();
-    await userEvent.keyboard('{Enter}');
-    await expect(within(terminal).getByRole('button', { name: 'Pause' })).toBeVisible();
-    await userEvent.keyboard('{Tab}{End}');
-    await expect(seek).toHaveFocus();
-    await expect(seek).toHaveValue(seek.getAttribute('max'));
     await expect(screen.textContent).toContain(command);
     await expect(canvas.getByRole('link', { name: 'Setup' })).toHaveAttribute('target', '_top');
     await expect(canvas.getByRole('link', { name: 'Setup' })).toHaveAttribute('href', './?path=/docs/foundations-getting-started--docs');

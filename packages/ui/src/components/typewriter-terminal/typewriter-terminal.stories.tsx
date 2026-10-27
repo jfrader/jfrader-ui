@@ -100,7 +100,7 @@ const meta = {
   parameters: {
     docs: {
       sections: [
-        { title: 'Scripted sessions', stories: ['Default', 'PlainOutput'] },
+        { title: 'Scripted sessions', stories: ['Default', 'StaticSession', 'PlainOutput'] },
         { title: 'Output content', stories: ['EveryTone', 'ProgressAndTasks', 'CwdChanges'] },
         { title: 'Playback control', stories: ['ControlledTimeline'] },
       ],
@@ -228,6 +228,67 @@ export const PlainOutput: Story = {
     steps: [{ command: 'example list', output: ['alpha', 'beta'] }],
     defaultValue: FINISHED,
     defaultPaused: true,
+  },
+};
+/** Show completed commands and output with a copy action. */
+export const StaticSession: Story = {
+  name: 'Static terminal',
+  parameters: { docs: { source: { language: 'tsx', code: `import { TypewriterTerminal } from '@jfrader/ui';
+
+<TypewriterTerminal
+  playback={false}
+  steps={[{ command: 'pnpm add @jfrader/ui @jfrader/icons' }]}
+/>` } } },
+  args: {
+    playback: false,
+    steps: [{ command: 'pnpm add @jfrader/ui @jfrader/icons' }],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expect(canvas.queryByRole('button', { name: 'Play' })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole('button', { name: 'Replay' })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole('slider')).not.toBeInTheDocument();
+    await expect(canvas.queryByRole('status')).not.toBeInTheDocument();
+    await expect(screen(canvasElement)).toHaveTextContent('pnpm add @jfrader/ui @jfrader/icons');
+    await expect(transcript(canvasElement)).toHaveTextContent('pnpm add @jfrader/ui @jfrader/icons');
+    const copy = canvas.getByRole('button', { name: 'Copy commands' });
+    await expect(copy).toBeVisible();
+    await userEvent.tab();
+    await focused(copy);
+    const viewport = screen(canvasElement);
+    const line = viewport.querySelector('pre')!;
+    const styles = getComputedStyle(viewport);
+    await expect(viewport.getBoundingClientRect().height).toBeCloseTo(
+      line.getBoundingClientRect().height + parseFloat(styles.paddingBlockStart) + parseFloat(styles.paddingBlockEnd),
+      0,
+    );
+    const write = fn(async () => {});
+    await clipboard(canvasElement, write, async () => {
+      await userEvent.click(copy);
+      await expect(write).toHaveBeenCalledWith('pnpm add @jfrader/ui @jfrader/icons');
+    });
+  },
+};
+
+export const StaticPlaybackInert: Story = {
+  tags: ['!autodocs'],
+  args: {
+    playback: false,
+    value: 0,
+    defaultValue: 0,
+    paused: false,
+    defaultPaused: false,
+    speed: 100,
+    loop: true,
+    steps: SCRIPT,
+  },
+  beforeEach: controlledClock,
+  play: async ({ canvas, canvasElement, args }) => {
+    await expect(screen(canvasElement)).toHaveTextContent('example --help');
+    await expect(screen(canvasElement)).toHaveTextContent('Documentation');
+    await expect(clock.size).toBe(0);
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+    await expect(args.onPausedChange).not.toHaveBeenCalled();
+    await expect(canvas.queryByRole('slider')).not.toBeInTheDocument();
   },
 };
 export const EveryTone: Story = {

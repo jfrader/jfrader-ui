@@ -2,7 +2,6 @@ import { isValidElement, useMemo, type ComponentPropsWithoutRef } from 'react';
 import Markdown from 'markdown-to-jsx';
 import { CodeBlock, TypewriterTerminal } from '@jfrader/ui';
 import { loadShikiHighlight } from '@jfrader/ui/code-block/shiki';
-import { css } from '../../../packages/ui/src/styling/css';
 import './guide.css';
 
 const guidePaths: Record<string, string> = {
@@ -10,7 +9,6 @@ const guidePaths: Record<string, string> = {
   './theming.md': 'foundations-theming',
   './flights.md': 'foundations-flights',
   './styling.md': 'foundations-styling',
-  './icons.md': 'icons-all-icons',
 };
 
 /** A workbench link (`./?path=/docs/…`, `./?path=/story/…`) belongs to the manager, not the preview. */
@@ -23,9 +21,6 @@ function GuideLink({ href, ...props }: ComponentPropsWithoutRef<'a'>) {
 }
 
 const shellLanguages = new Set(['sh', 'shell', 'bash', 'shellscript']);
-const terminalScreenStyle = css({ blockSize: 'auto' });
-const terminalSlots = { screen: { sx: terminalScreenStyle } };
-const completedPosition = Number.MAX_SAFE_INTEGER;
 
 function GuideTerminal({ code }: { code: string }) {
   const steps = useMemo(() => [{ command: code }], [code]);
@@ -35,9 +30,7 @@ function GuideTerminal({ code }: { code: string }) {
       title="Terminal"
       label="Setup commands"
       cwd=""
-      defaultValue={completedPosition}
-      defaultPaused
-      slotProps={terminalSlots}
+      playback={false}
     />
   );
 }
