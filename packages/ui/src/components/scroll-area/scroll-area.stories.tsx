@@ -1,5 +1,6 @@
 import { StrictMode, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { requireNonEmpty } from '../../testing/assertion-preconditions';
 import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -902,7 +903,7 @@ export const FalsyContent: Story = {
   ),
   play: async ({ canvasElement }) => {
     await expect(canvasElement.querySelectorAll('[data-ui="scroll-area-viewport"]')).toHaveLength(4);
-    for (const node of canvasElement.querySelectorAll('[data-ui="scroll-area-track"]'))
+    for (const node of requireNonEmpty(canvasElement.querySelectorAll('[data-ui="scroll-area-track"]'), 'Empty viewport tracks'))
       await expect(node).toHaveAttribute('hidden');
     await expect(canvasElement).toHaveTextContent('0');
   },

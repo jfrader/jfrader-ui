@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { requireNonEmpty } from '../../testing/assertion-preconditions';
 import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { settleMotion } from '../../testing/motion-assertions';
@@ -404,7 +405,9 @@ export const EmptyUpload: Story = {
     await expect(args.onUpload).toHaveBeenCalledTimes(1);
     await expect(args.onUpload).toHaveBeenCalledWith(files);
     await waitFor(() => expect(tiles(canvasElement)).toHaveLength(2));
-    for (const img of canvasElement.querySelectorAll<HTMLImageElement>('[data-ui="gallery-editor-photo"] img')) {
+    const images = requireNonEmpty(canvasElement.querySelectorAll<HTMLImageElement>('[data-ui="gallery-editor-photo"] img'), 'Uploaded images');
+    await expect(images).toHaveLength(files.length);
+    for (const img of images) {
       await waitFor(() => expect(img.complete && img.naturalWidth > 0).toBe(true));
     }
   },

@@ -503,7 +503,7 @@ export const FalsySlots: Story = {
       {[false, null, 0, ''].map((content, index) => (
         <MetricCard
           {...args}
-           key={index}
+          key={index}
           data-testid={`falsy-${index}`}
           label={content}
           description={content}

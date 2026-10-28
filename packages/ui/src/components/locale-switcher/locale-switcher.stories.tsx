@@ -1,5 +1,6 @@
 import type { ComponentPropsWithRef, CSSProperties, MouseEvent } from 'react';
 import type { Decorator, Meta, StoryObj } from '@storybook/react-vite';
+import { requireNonEmpty } from '../../testing/assertion-preconditions';
 import { expect, fn, spyOn, userEvent, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { doubleRootText, expectControlMinimums } from '../../testing/control-size-assertions';
@@ -364,9 +365,11 @@ export const LongLabels: Story = {
     </div>
   ),
   play: async ({ canvasElement }) => {
-    for (const root of canvasElement.querySelectorAll<HTMLElement>('[data-ui="locale-switcher"]')) {
+    const roots = requireNonEmpty(canvasElement.querySelectorAll<HTMLElement>('[data-ui="locale-switcher"]'), 'Locale variants');
+    await expect(roots).toHaveLength(4);
+    for (const root of roots) {
       await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
-      for (const option of root.querySelectorAll('[data-ui="locale-switcher-option"], [data-ui="locale-switcher-trigger"]')) {
+      for (const option of requireNonEmpty(root.querySelectorAll('[data-ui="locale-switcher-option"], [data-ui="locale-switcher-trigger"]'), 'Locale controls')) {
         await expectInside(option, root);
       }
     }

@@ -489,10 +489,10 @@ export const LongLabels: Story = {
     await expect(controls).toHaveLength(12);
     const scope = within(toolbar);
     for (const action of ['undo', 'redo', 'clear', 'replay', 'png', 'svg'] as const) {
-      await expect(scope.getByRole('button', { name: args.messages!.actions[action], exact: true })).toBeVisible();
+      await expect(scope.getByRole('button', { name: args.messages!.actions[action] })).toBeVisible();
     }
     for (const name of [...Object.values(args.messages!.colors), ...Object.values(args.messages!.widths)]) {
-      await expect(scope.getByRole('radio', { name, exact: true })).toBeInTheDocument();
+      await expect(scope.getByRole('radio', { name })).toBeInTheDocument();
     }
     for (const control of controls) {
       await expectInside(control, toolbar);
