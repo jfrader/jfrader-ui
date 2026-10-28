@@ -323,6 +323,10 @@ Shared styling modules in `src/styling/`, reused before writing a local copy:
   get one default Dialog.Panel; explicit composition accepts one direct Panel through fragments,
   without substantive siblings. DialogStack keeps its stage-directed portal inside a declaration-site
   ThemeBoundary. Host motion/measurement inline styles are reserved from ordinary root props.
+- `components/stepper/step-marker`: the step marker pill (numeral, check, current halo) shared by
+  Stepper and PaymentFlow; the host sets its size and font variables.
+- `components/data-flow/flow-node`: the node card (material, header row, icon box, and muted
+  detail) shared by DataFlow and PaymentFlow; the host may set its inset and detail font variables.
 - `components/viewer-chrome/viewer-chrome`: private media-viewer chrome shared by LightboxGallery and
   PhotoGrid: `ChromeAction` (ghost icon Button with a `focusVisibleOnly` tooltip, optional
   `aria-pressed`; unportaled inside a modal dialog, `portaled` elsewhere), the stroke glyphs and the
@@ -375,6 +379,9 @@ Shared assertions in `src/testing/`, reused before writing a local copy:
 - `interior-slot-assertions.tsx`: `expectRootPrecedence`, `expectMergedClasses`,
   `expectSameDomIdentity`, `createRefCleanupTracker` for replacement-slot contracts.
 - `story-decorators.tsx`: `withLightTheme` for the light-theme story variant.
+- `text-wrap-assertions.ts`: `findWordBreaks`, `expectNoWordBreaks`. Reads each glyph's line box, so
+  it reports text wrapped inside a word, not character counts.
+- `reduced-motion.ts`: `mockReducedMotion` for a meta `beforeEach`; mocks the JS preference only.
 - `field-slot-fixtures.tsx`: `expectFieldSlotCustomization` and the field replacement fixtures shared by
   the form-field families.
 

@@ -3,6 +3,7 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -10,19 +11,45 @@ import {
   type ComponentType,
   type ReactNode,
 } from 'react';
-import { vars } from '@jfrader/tokens/vars';
 import { useMergeRefs } from '@floating-ui/react';
+import { Check } from '@jfrader/icons';
+import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
+import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
-import { FORCED_COLORS } from '../../styling/media';
+import { numberFormatter } from '../../utils/intl';
+import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useReducedMotion } from '../../utils/use-reduced-motion';
-import { isRenderable } from '../../utils/renderable';
-import { Card } from '../card';
-import { Stepper, type StepperProps, type StepperStaticProps } from '../stepper';
 import { Button, type ButtonProps } from '../button';
+import { Card } from '../card';
+import {
+  FLOW_NODE_BORDER,
+  FLOW_NODE_DETAIL_FONT,
+  FLOW_NODE_INSET,
+  flowNodeDetailStyle,
+  flowNodeHeaderStyle,
+  flowNodeIconStyle,
+  flowNodeStyle,
+} from '../data-flow/flow-node';
 import { FieldSlot, type FieldParts, type FieldSlots } from '../field/field-slot';
+import {
+  CONNECTOR_THICKNESS,
+  STEP_MARKER_FONT,
+  STEP_MARKER_SIZE,
+  stepMarker,
+  stepMarkerStyle,
+} from '../stepper/step-marker';
+import {
+  densitiesWithLayout,
+  densityCandidates,
+  densityOrientation,
+  fitDensity,
+  paymentFlowDensityScale,
+  type PaymentFlowDensity,
+  type PaymentFlowLayout,
+} from './payment-flow-density';
 import {
   PAYMENT_CYCLE_MS,
   PAYMENT_PHASE_MS,
@@ -34,8 +61,10 @@ import {
 } from './payment-flow-model';
 
 export type { PaymentFlowNodeKey } from './payment-flow-model';
+export type { PaymentFlowDensity } from './payment-flow-density';
 const MAX_PLAYBACK_SPEED = 3;
-const AUTO_VERTICAL_MAX_INLINE_SIZE = 700;
+// Server markup and the first client render use the density that fits any width.
+const INITIAL_DENSITY: PaymentFlowDensity = 'stacked';
 
 export interface PaymentFlowNode {
   label: string;
@@ -56,6 +85,7 @@ type Anatomy = {
   root: 'figure';
   scene: 'div';
   node: 'div';
+  phase: 'div';
   summary: 'ol';
   summaryItem: 'li';
   controls: 'div';
@@ -63,14 +93,12 @@ type Anatomy = {
   caption: 'figcaption';
 };
 export interface PaymentFlowSlots extends FieldSlots<Anatomy> {
-  journey?: ComponentType<StepperProps>;
   pauseButton?: ComponentType<ButtonProps>;
   stepButton?: ComponentType<ButtonProps>;
   replayButton?: ComponentType<ButtonProps>;
 }
 type ButtonSlotProps = Omit<ButtonProps, 'sx'> & { sx?: Interpolation<Theme> };
 export interface PaymentFlowSlotProps extends FieldParts<Anatomy> {
-  journey?: Partial<Omit<StepperStaticProps, 'sx'>> & { sx?: Interpolation<Theme> };
   pauseButton?: ButtonSlotProps;
   stepButton?: ButtonSlotProps;
   replayButton?: ButtonSlotProps;
@@ -94,7 +122,7 @@ export interface PaymentFlowProps
   authorizationMs: number;
   /** Supplies phase names and labels for fees, approval and settlement time. */
   labels: PaymentFlowLabels;
-  /** Supplies the ordered text summary. Fewer than five entries shows `invalidContent`. */
+  /** Supplies the ordered text summary, one entry per phase. Fewer than five entries shows `invalidContent`. */
   summary: readonly { id: string; content: ReactNode }[];
   /** Shows the text summary or limits it to assistive technology. Defaults to `visible`. */
   summaryVisibility?: 'visible' | 'sr-only';
@@ -102,7 +130,12 @@ export interface PaymentFlowProps
   label: string;
   /** Adds a caption associated with the illustration. */
   caption?: ReactNode;
-  /** Sets the participant and stepper layout. Defaults to `auto`, which stacks both at figure inline sizes of 700px or less. */
+  /**
+   * Limits the layout. Defaults to `auto`, which uses the roomiest density whose labels fit the
+   * figure: actors over phases, then the same rows tighter, then actors beside phases, then
+   * stacked. `vertical` keeps the two side-by-side or stacked layouts. `horizontal` is deprecated
+   * and behaves as `auto`; it will be removed in the next minor release.
+   */
   orientation?: 'auto' | 'horizontal' | 'vertical';
   /** Playback multiplier from 0 (static) to 3. Defaults to 1. */
   speed?: number;
@@ -125,6 +158,24 @@ export interface PaymentFlowProps
   /** Replaces the root figure. Shorthand for `slots.root`. */
   component?: PaymentFlowSlots['root'];
 }
+
+const TRACK = '--payment-flow-track';
+const GROUP = '--payment-flow-group';
+const AMOUNT_FONT = '--payment-flow-amount-font';
+const track = `var(${TRACK})`;
+const group = `var(${GROUP})`;
+const LABEL_GAP = vars.space[2];
+
+/**
+ * Styles for a scene descendant while one of the layout's densities is applied. The selector names
+ * the scene, because the root also reports `data-density` and keeps the committed value while a
+ * fit tries the others.
+ */
+const inLayout = (layout: PaymentFlowLayout, styles: object) => ({
+  [densitiesWithLayout(layout).map((density) => `[data-ui~="payment-flow-scene"][data-density="${density}"] &`).join(', ')]: styles,
+});
+const vertical = (styles: object) => ({ ...inLayout('split', styles), ...inLayout('stack', styles) });
+
 const rootStyle = css({
   margin: 0,
   display: 'grid',
@@ -136,35 +187,152 @@ const rootStyle = css({
 const stageSlotProps = {
   content: { sx: css({ display: 'grid', gap: vars.space[4], minInlineSize: 0 }) },
 };
+// Both groups are subgrids of one scene grid, so the actor row and the phase row share their
+// tracks and always read the same `data-density`.
+const sceneLayouts: Record<PaymentFlowLayout, object> = {
+  row: {
+    gridTemplateColumns: `repeat(${paymentNodeKeys.length}, minmax(min-content, 1fr))`,
+    columnGap: track,
+    rowGap: group,
+  },
+  split: {
+    gridTemplateColumns: 'repeat(2, minmax(min-content, 1fr))',
+    gridTemplateRows: `repeat(${paymentNodeKeys.length}, auto)`,
+    columnGap: group,
+    rowGap: track,
+  },
+  stack: { gridTemplateColumns: 'minmax(0, 1fr)', rowGap: group },
+};
 const sceneStyle = css({
-  '--payment-flow-accent': vars.color.accent,
   display: 'grid',
-  gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
-  gap: vars.space[2],
   minInlineSize: 0,
-  '&[data-orientation="vertical"]': { gridTemplateColumns: 'minmax(0, 1fr)' },
-});
-const nodeStyle = css({
-  padding: vars.space[3],
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.md,
-  minInlineSize: 0,
-  overflowWrap: 'anywhere',
   fontSize: vars.textSize.sm,
+  ...Object.fromEntries(
+    Object.entries(paymentFlowDensityScale).map(([density, step]) => [
+      `&[data-density="${density}"]`,
+      {
+        [TRACK]: step.track,
+        [GROUP]: step.group,
+        [FLOW_NODE_INSET]: step.inset,
+        [FLOW_NODE_DETAIL_FONT]: step.detailFont,
+        [AMOUNT_FONT]: step.amountFont,
+        [STEP_MARKER_SIZE]: step.markerSize,
+        [STEP_MARKER_FONT]: step.markerFont,
+        ...sceneLayouts[step.layout],
+      },
+    ]),
+  ),
+});
+const groupStyle = css({
+  display: 'grid',
+  ...inLayout('row', { gridColumn: '1 / -1', gridTemplateColumns: 'subgrid' }),
+  ...inLayout('split', { gridRow: '1 / -1', gridTemplateRows: 'subgrid' }),
+  ...inLayout('stack', { rowGap: track }),
+});
+// One connector look for both groups: a line across the track gap to the next item.
+const connector = {
+  content: '""',
+  backgroundColor: vars.color.borderControl,
+  transitionProperty: 'background-color',
+  transitionDuration: vars.motion.duration.base,
+  transitionTimingFunction: vars.motion.easeStandard,
+  [REDUCED_MOTION]: { transitionDuration: '0s' },
+  [FORCED_COLORS]: { backgroundColor: 'CanvasText' },
+};
+// Labels and amounts keep one line until the stacked fallback; the density fit relies on it.
+const singleLine = { whiteSpace: 'nowrap', ...inLayout('stack', { whiteSpace: 'normal' }) };
+const nodeStyle = css(flowNodeStyle, {
   fontVariantNumeric: 'tabular-nums',
   '&[data-active="true"]': {
-    outline: `2px solid var(--payment-flow-accent)`,
-    outlineOffset: '-2px',
+    outline: `${CONNECTOR_THICKNESS} solid ${vars.color.accent}`,
+    outlineOffset: `-${CONNECTOR_THICKNESS}`,
+  },
+  '&:not(:last-child)::after': {
+    ...connector,
+    position: 'absolute',
+    ...inLayout('row', {
+      insetInlineStart: `calc(100% + ${FLOW_NODE_BORDER})`,
+      insetBlockStart: `calc(50% - ${CONNECTOR_THICKNESS} / 2)`,
+      inlineSize: track,
+      blockSize: CONNECTOR_THICKNESS,
+    }),
+    ...vertical({
+      insetBlockStart: `calc(100% + ${FLOW_NODE_BORDER})`,
+      insetInlineStart: `calc(50% - ${CONNECTOR_THICKNESS} / 2)`,
+      blockSize: track,
+      inlineSize: CONNECTOR_THICKNESS,
+    }),
   },
   [FORCED_COLORS]: { '&[data-active="true"]': { outlineColor: 'Highlight' } },
 });
+const nodeLabelStyle = css({ fontWeight: vars.fontWeight.semibold, ...singleLine });
+// Every value an amount can show shares one cell, so a node keeps its width across phases.
+const amountStyle = css({
+  display: 'grid',
+  fontSize: `var(${AMOUNT_FONT})`,
+  ...singleLine,
+  '& > *': { gridArea: '1 / 1' },
+  '& > [data-shown="false"]': { visibility: 'hidden' },
+});
+const phaseStyle = css({
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  gap: LABEL_GAP,
+  color: vars.color.textMuted,
+  '&[data-state="current"], &[data-state="complete"]': { color: vars.color.text },
+  ...vertical({ alignItems: 'flex-start' }),
+  // In a row the line is a filler after the label plus a bridge across the track gap, so it
+  // reaches the next marker without lowering the phase's min-content width.
+  '&::after': {
+    ...connector,
+    ...inLayout('row', { flex: '1 0 0', blockSize: CONNECTOR_THICKNESS }),
+    ...vertical({
+      position: 'absolute',
+      insetInlineStart: `calc(${stepMarker} / 2 - ${CONNECTOR_THICKNESS} / 2)`,
+      insetBlockStart: `calc(${stepMarker} + ${vars.space[1]})`,
+      blockSize: `calc(100% - ${stepMarker} - 2 * ${vars.space[1]} + ${track})`,
+      inlineSize: CONNECTOR_THICKNESS,
+    }),
+  },
+  '&::before': { ...connector, content: 'none' },
+  ...inLayout('row', {
+    '&:not(:last-child)::before': {
+      content: '""',
+      position: 'absolute',
+      insetInlineStart: '100%',
+      insetBlockStart: `calc(50% - ${CONNECTOR_THICKNESS} / 2)`,
+      inlineSize: `calc(${track} - ${LABEL_GAP})`,
+      blockSize: CONNECTOR_THICKNESS,
+    },
+  }),
+  '&:last-child::after': { content: 'none' },
+  '&[data-state="complete"]::before, &[data-state="complete"]::after': {
+    backgroundColor: vars.color.accent,
+    [FORCED_COLORS]: { backgroundColor: 'Highlight' },
+  },
+});
+const phaseLabelStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  minBlockSize: stepMarker,
+  fontWeight: vars.fontWeight.medium,
+  ...singleLine,
+});
+const readoutStyle = css({ margin: 0, fontSize: vars.textSize.sm, fontVariantNumeric: 'tabular-nums' });
+const mutedStyle = css({ color: vars.color.textMuted });
 const controlsStyle = css({ display: 'flex', gap: vars.space[2], flexWrap: 'wrap' });
 const summaryStyle = css({
   margin: 0,
   paddingInlineStart: vars.space[6],
   lineHeight: vars.lineHeight.base,
 });
-const captionStyle = css({ fontSize: vars.textSize.sm, overflowWrap: 'anywhere' });
+const captionStyle = css({ fontSize: vars.textSize.sm });
+
+function phaseState(index: number, current: number) {
+  if (index < current) return 'complete';
+  return index === current ? 'current' : 'upcoming';
+}
 
 /** Explain a payment journey with illustrative values, not actual transaction status. */
 export function PaymentFlow({
@@ -197,12 +365,15 @@ export function PaymentFlow({
   const summaryId = useId();
   const captionId = useId();
   const rootRef = useRef<HTMLElement | null>(null);
+  const sceneRef = useRef<HTMLDivElement | null>(null);
   const mergedRef = useMergeRefs([rootRef, native.ref]);
   const reduced = useReducedMotion();
   const [paused, setPaused] = useControlledState(pausedProp, defaultPaused, onPausedChange);
   const [phase, setPhase] = useState(0);
-  const [autoOrientation, setAutoOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
-  const resolvedOrientation = orientation === 'auto' ? autoOrientation : orientation;
+  const [stepped, setStepped] = useState(false);
+  const [announced, setAnnounced] = useState<number | null>(null);
+  const [density, setDensity] = useState<PaymentFlowDensity>(INITIAL_DENSITY);
+  const candidates = densityCandidates[orientation] ?? densityCandidates.auto;
   const elapsed = useRef(0);
   const amounts = useMemo(
     () => paymentAmounts(amount, fee, balance, currency, locale),
@@ -217,28 +388,51 @@ export function PaymentFlow({
     speed < 0 ||
     speed > MAX_PLAYBACK_SPEED ||
     summary.length < paymentPhases.length;
+  const showScene = !missing && !invalid;
   const frozen = paused || speed === 0 || !!reduced;
-  const [stepped, setStepped] = useState(false);
   const shownPhase = reduced && !stepped ? paymentPhases.length - 1 : phase;
+  const phaseKey = paymentPhases[shownPhase]!;
+  const resetKey = [...paymentNodeKeys.map((key) => nodes?.[key]?.label), amount, fee, balance, currency, authorizationMs].join('\u0000');
+
+  // Every commit re-fits before paint: labels, amounts and locale all change the content width.
+  useLayoutEffect(() => {
+    const scene = sceneRef.current;
+    if (scene) setDensity(fitDensity(scene, candidates));
+  });
+  // Width and font changes re-fit on the next frame, outside the observer's delivery.
   useEffect(() => {
-    if (orientation !== 'auto') return;
-    const element = rootRef.current;
-    if (!element) return;
+    const scene = sceneRef.current;
+    const view = scene?.ownerDocument.defaultView;
+    if (!scene || !view) return;
+    let frame = 0;
+    let width: number | undefined;
+    const refit = () => {
+      view.cancelAnimationFrame(frame);
+      frame = view.requestAnimationFrame(() => setDensity(fitDensity(scene, candidates)));
+    };
     const resize = new ResizeObserver(([entry]) => {
-      if (!entry) return;
-      const inlineSize = entry.contentBoxSize[0]?.inlineSize ?? entry.contentRect.width;
-      setAutoOrientation(inlineSize <= AUTO_VERTICAL_MAX_INLINE_SIZE ? 'vertical' : 'horizontal');
+      const next = entry?.contentRect.width;
+      if (next === width) return;
+      width = next;
+      refit();
     });
-    resize.observe(element);
-    return () => resize.disconnect();
-  }, [orientation]);
+    resize.observe(scene);
+    const fonts = scene.ownerDocument.fonts;
+    fonts?.addEventListener('loadingdone', refit);
+    return () => {
+      view.cancelAnimationFrame(frame);
+      resize.disconnect();
+      fonts?.removeEventListener('loadingdone', refit);
+    };
+  }, [candidates, showScene]);
   useEffect(() => {
     elapsed.current = 0;
     setPhase(0);
     setStepped(false);
-  }, [nodes, amount, fee, balance, currency, authorizationMs]);
+    setAnnounced(null);
+  }, [resetKey]);
   useEffect(() => {
-    if (missing || invalid || frozen) return;
+    if (!showScene || frozen) return;
     const element = rootRef.current;
     if (!element) return;
     const doc = element.ownerDocument;
@@ -248,10 +442,7 @@ export function PaymentFlow({
     let sized = false;
     let frame = 0;
     let previous: number | undefined;
-    let lastPhase = Math.min(
-      paymentPhases.length - 1,
-      Math.floor(elapsed.current / PAYMENT_PHASE_MS),
-    );
+    let lastPhase = Math.min(paymentPhases.length - 1, Math.floor(elapsed.current / PAYMENT_PHASE_MS));
     function stop() {
       view!.cancelAnimationFrame(frame);
       frame = 0;
@@ -262,10 +453,7 @@ export function PaymentFlow({
       if (previous !== undefined)
         elapsed.current = (elapsed.current + (time - previous) * speed) % PAYMENT_CYCLE_MS;
       previous = time;
-      const next = Math.min(
-        paymentPhases.length - 1,
-        Math.floor(elapsed.current / PAYMENT_PHASE_MS),
-      );
+      const next = Math.min(paymentPhases.length - 1, Math.floor(elapsed.current / PAYMENT_PHASE_MS));
       if (next !== lastPhase) {
         lastPhase = next;
         setPhase(next);
@@ -293,18 +481,35 @@ export function PaymentFlow({
       resize.disconnect();
       doc.removeEventListener('visibilitychange', gate);
     };
-  }, [frozen, invalid, missing, speed]);
+  }, [frozen, showScene, speed]);
+
+  const selectPhase = (next: number) => {
+    elapsed.current = next * PAYMENT_PHASE_MS;
+    setStepped(true);
+    setPhase(next);
+    setAnnounced(next);
+  };
   const Pause = slots?.pauseButton ?? Button;
   const Step = slots?.stepButton ?? Button;
   const Replay = slots?.replayButton ?? Button;
-  const Journey = slots?.journey ?? Stepper;
   const hasCaption = isRenderable(caption);
-  const phaseKey = paymentPhases[shownPhase]!;
+  const numerals = numberFormatter(locale);
   const elapsedLabel = invalid
     ? ''
-    : new Intl.NumberFormat(locale, { style: 'unit', unit: 'millisecond' }).format(
-        authorizationMs,
-      );
+    : numberFormatter(locale, { style: 'unit', unit: 'millisecond' }).format(authorizationMs);
+  const nodeAmounts = (key: PaymentFlowNodeKey) => {
+    if (key === 'merchant') return [amounts!.initial, amounts!.final];
+    if (key === 'processor') return [amounts!.gross, amounts!.net];
+    return [amounts!.gross];
+  };
+  const shownAmount = (key: PaymentFlowNodeKey) => {
+    if (key === 'merchant') return shownPhase === paymentPhases.indexOf('payout') ? 1 : 0;
+    if (key === 'processor') return shownPhase >= paymentPhases.indexOf('fee') ? 1 : 0;
+    return 0;
+  };
+  const readoutAmount =
+    phaseKey === 'fee' ? amounts?.fee : phaseKey === 'payout' ? amounts?.final : amounts?.gross;
+
   return (
     <FieldSlot
       element="figure"
@@ -317,16 +522,13 @@ export function PaymentFlow({
       sx={sx}
       aria-label={native['aria-label'] ?? label}
       aria-describedby={
-        [
-          native['aria-describedby'],
-          !missing && !invalid ? summaryId : null,
-          hasCaption ? captionId : null,
-        ]
+        [native['aria-describedby'], showScene ? summaryId : null, hasCaption ? captionId : null]
           .filter(Boolean)
           .join(' ') || undefined
       }
       data-ui={['payment-flow', Reflect.get(native, 'data-ui')].filter(Boolean).join(' ')}
       data-phase={phaseKey}
+      data-density={showScene ? density : undefined}
     >
       {missing ? (
         emptyContent
@@ -342,62 +544,89 @@ export function PaymentFlow({
                   element="div"
                   component={slots?.scene}
                   slotProps={slotProps?.scene}
+                  ref={sceneRef}
                   styles={sceneStyle}
                   aria-hidden="true"
                   data-ui="payment-flow-scene"
-                  data-orientation={resolvedOrientation}
+                  data-density={density}
+                  data-orientation={densityOrientation(density)}
                 >
-                  {paymentNodeKeys.map((key) => (
-                    <FieldSlot
-                      key={key}
-                      element="div"
-                      component={slots?.node}
-                      slotProps={slotProps?.node}
-                      styles={nodeStyle}
-                      data-ui="payment-flow-node"
-                      data-active={paymentPhaseActor[phaseKey] === key}
-                    >
-                      {nodes[key].icon}
-                      <div>{nodes[key].label}</div>
-                      <div>{nodes[key].detail}</div>
-                      <bdi>
-                        {key === 'merchant'
-                          ? shownPhase === 4
-                            ? amounts!.final
-                            : amounts!.initial
-                          : key === 'processor' && shownPhase >= 3
-                            ? amounts!.net
-                            : amounts!.gross}
-                      </bdi>
-                    </FieldSlot>
-                  ))}
+                  <div css={groupStyle} data-ui="payment-flow-actors">
+                    {paymentNodeKeys.map((key) => (
+                      <FieldSlot
+                        key={key}
+                        element="div"
+                        component={slots?.node}
+                        slotProps={slotProps?.node}
+                        styles={nodeStyle}
+                        data-ui="payment-flow-node"
+                        data-node={key}
+                        data-active={paymentPhaseActor[phaseKey] === key}
+                      >
+                        <span css={flowNodeHeaderStyle}>
+                          {isRenderable(nodes[key].icon) ? <span css={flowNodeIconStyle}>{nodes[key].icon}</span> : null}
+                          <span css={nodeLabelStyle} data-ui="payment-flow-node-label">
+                            {nodes[key].label}
+                          </span>
+                        </span>
+                        {isRenderable(nodes[key].detail) ? (
+                          <span css={flowNodeDetailStyle}>{nodes[key].detail}</span>
+                        ) : null}
+                        <span css={amountStyle} data-ui="payment-flow-amount">
+                          {nodeAmounts(key).map((value, index) => (
+                            <bdi key={index} data-shown={index === shownAmount(key)}>
+                              {value}
+                            </bdi>
+                          ))}
+                        </span>
+                      </FieldSlot>
+                    ))}
+                  </div>
+                  <div css={groupStyle} data-ui="payment-flow-phases">
+                    {paymentPhases.map((key, index) => {
+                      const state = phaseState(index, shownPhase);
+                      return (
+                        <FieldSlot
+                          key={key}
+                          element="div"
+                          component={slots?.phase}
+                          slotProps={slotProps?.phase}
+                          styles={phaseStyle}
+                          data-ui="payment-flow-phase"
+                          data-state={state}
+                        >
+                          <span
+                            css={stepMarkerStyle}
+                            data-state={state}
+                            data-numeral={state === 'complete' ? undefined : numerals.format(index + 1)}
+                          >
+                            {state === 'complete' ? <Check size="inherit" decorative /> : null}
+                          </span>
+                          <span css={phaseLabelStyle} data-ui="payment-flow-phase-label">
+                            {labels[key]}
+                          </span>
+                        </FieldSlot>
+                      );
+                    })}
+                  </div>
                 </FieldSlot>
-                <Journey
-                  {...slotProps?.journey}
-                  steps={paymentPhases.map((key) => ({ id: key, label: labels[key] }))}
-                  value={shownPhase}
-                  label={label}
-                  orientation={resolvedOrientation}
-                  interactive={false}
-                  announceChanges={false}
-                  getStepLabel={(step) => step.label}
-                  data-ui="payment-flow-journey"
-                  aria-hidden="true"
-                />
-                <div aria-hidden="true">
-                  {labels[phaseKey]} {phaseKey === 'approve' ? labels.approval : null}{' '}
-                  <bdi>
-                    {phaseKey === 'fee'
-                      ? amounts!.fee
-                      : phaseKey === 'payout'
-                        ? amounts!.final
-                        : amounts!.gross}
-                  </bdi>{' '}
-                  {elapsedLabel} {labels.settlementTime}
-                </div>
+                <p css={readoutStyle} aria-hidden="true" data-ui="payment-flow-readout">
+                  <strong>{labels[phaseKey]}</strong>
+                  {phaseKey === 'approve' ? <> {labels.approval}</> : null} <bdi>{readoutAmount}</bdi>{' '}
+                  <span css={mutedStyle}>
+                    {elapsedLabel} {labels.settlementTime}
+                  </span>
+                </p>
               </>
             }
           />
+          <p css={visuallyHiddenStyle} aria-live="polite" aria-atomic="true" data-ui="payment-flow-live">
+            {announced === null ? null : (
+              <>
+                {labels[paymentPhases[announced]!]}: {summary[announced]?.content}
+              </>
+            )}
+          </p>
           <FieldSlot
             element="ol"
             component={slots?.summary}
@@ -445,11 +674,7 @@ export function PaymentFlow({
               data-ui="payment-flow-step-button"
               onClick={(event) => {
                 slotProps?.stepButton?.onClick?.(event);
-                if (event.defaultPrevented || !frozen) return;
-                const next = (shownPhase + 1) % paymentPhases.length;
-                elapsed.current = next * PAYMENT_PHASE_MS;
-                setStepped(true);
-                setPhase(next);
+                if (!event.defaultPrevented && frozen) selectPhase((shownPhase + 1) % paymentPhases.length);
               }}
             >
               {controlLabels.step}
@@ -460,10 +685,7 @@ export function PaymentFlow({
               data-ui="payment-flow-replay-button"
               onClick={(event) => {
                 slotProps?.replayButton?.onClick?.(event);
-                if (event.defaultPrevented) return;
-                elapsed.current = 0;
-                setStepped(true);
-                setPhase(0);
+                if (!event.defaultPrevented) selectPhase(0);
               }}
             >
               {controlLabels.replay}

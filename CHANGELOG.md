@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+### Breaking pre-1.0
+
+- `PaymentFlow` draws its phase row itself instead of rendering a `Stepper`, so `slots.journey` and `slotProps.journey` are removed. Use the new `phase` slot to replace or style each phase.
+
+### Changed
+
+- `PaymentFlow` picks one of four densities from its own width and its labels: actors above phases, the same rows tighter, actors beside phases, then one column. Actors and phases always share one orientation, labels and amounts never break inside a word, connectors keep at least 16px, and playback controls stay inside the viewport. The root and scene report the choice in `data-density`.
+- Next phase and Replay in `PaymentFlow` announce the selected phase and its narrative entry in a polite live region.
+
+### Deprecated
+
+- `PaymentFlow`'s `orientation="horizontal"` behaves as `auto` and will be removed in the next minor release.
+
+### Fixed
+
+- Component docs pages with curated sections no longer render stories tagged `!autodocs` after the curated groups.
+
+## 0.22.0 — 2026-10-27
+
 ### Added
 
 - `TypewriterTerminal` accepts `playback={false}` to show a completed, content-sized session without playback controls. Guide shell commands use this static terminal with a copy action, and the icons guide has its own usage page.
@@ -9,6 +28,10 @@
 ### Changed
 
 - Component docs show one featured example and group the remaining examples into curated sections. `PaymentFlow` keeps participants and steps horizontal in wide containers, stacks both in narrow containers, and keeps playback controls inside the viewport.
+
+### Fixed
+
+- The Satoshi icon's three stacked strokes share one length in both line and solid variants.
 
 ## 0.21.2 — 2026-10-27
 

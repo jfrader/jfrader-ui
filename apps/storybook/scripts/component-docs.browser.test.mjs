@@ -109,7 +109,7 @@ test('curated PaymentFlow docs render every example once in capability order', a
         element.querySelector('[id^="story--"]')?.id));
       assert.deepEqual(ids, [
         'story--showcase-paymentflow--default--primary',
-        'story--showcase-paymentflow--horizontal',
+        'story--showcase-paymentflow--container-widths',
         'story--showcase-paymentflow--vertical',
         'story--showcase-paymentflow--light',
         'story--showcase-paymentflow--rtl',
@@ -136,25 +136,30 @@ test('curated PaymentFlow docs render every example once in capability order', a
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth === document.documentElement.clientWidth));
       for (const example of await examples.all()) {
         await example.scrollIntoViewIfNeeded();
-        const figure = example.locator('figure');
-        await figure.waitFor();
+        await example.locator('figure').first().waitFor();
         assert.ok(await example.evaluate((element) => element.scrollWidth <= element.clientWidth));
-        if (await example.getByRole('button').count() === 0) continue;
-        const nodes = figure.locator('[data-ui="payment-flow-node"]');
-        const first = await nodes.first().boundingBox();
-        const last = await nodes.last().boundingBox();
-        if (width === 390 && await figure.locator('[data-ui="payment-flow-scene"]').getAttribute('data-orientation') !== 'horizontal') assert.equal(first.x, last.x, 'auto orientation stacks in a narrow container');
-        const toggle = example.getByRole('button', { name: /^(Pause|Resume)$/ });
-        if (await toggle.textContent() === 'Pause') await toggle.click();
-        if (await example.getByRole('button', { name: 'Next phase', exact: true }).isDisabled()) continue;
-        const phase = await figure.getAttribute('data-phase');
-        await example.getByRole('button', { name: 'Next phase', exact: true }).click();
-        assert.notEqual(await figure.getAttribute('data-phase'), phase);
-        await example.getByRole('button', { name: 'Replay', exact: true }).click();
-        assert.equal(await figure.getAttribute('data-phase'), 'authorize');
-        for (const button of await example.getByRole('button', { name: /^(Resume|Next phase|Replay)$/ }).all()) {
-          const box = await button.boundingBox();
-          assert.ok(box.x >= 0 && box.x + box.width <= width, 'playback controls stay inside the viewport');
+        for (const figure of await example.locator('figure').all()) {
+          if (await figure.locator('[data-ui~="payment-flow-controls"]').count() === 0) continue;
+          const axes = await figure.evaluate((element) => ['payment-flow-node', 'payment-flow-phase'].map((part) => {
+            const items = [...element.querySelectorAll(`[data-ui~="${part}"]`)].map((item) => item.getBoundingClientRect());
+            return Math.abs(items[0].top - items.at(-1).top) < 1 ? 'horizontal' : 'vertical';
+          }));
+          const orientation = await figure.locator('[data-ui="payment-flow-scene"]').getAttribute('data-orientation');
+          assert.deepEqual(axes, [orientation, orientation], 'actors and phases share the scene orientation');
+          // Pause, Next phase, and Replay in order; translated examples rename them.
+          const [toggle, step, replay] = [0, 1, 2].map((index) =>
+            figure.locator('[data-ui~="payment-flow-controls"] button').nth(index));
+          if (await step.isDisabled()) await toggle.click();
+          if (await step.isDisabled()) continue;
+          const phase = await figure.getAttribute('data-phase');
+          await step.click();
+          assert.notEqual(await figure.getAttribute('data-phase'), phase);
+          await replay.click();
+          assert.equal(await figure.getAttribute('data-phase'), 'authorize');
+          for (const button of [toggle, step, replay]) {
+            const box = await button.boundingBox();
+            assert.ok(box.x >= 0 && box.x + box.width <= width, 'playback controls stay inside the viewport');
+          }
         }
       }
     }
