@@ -388,6 +388,9 @@ export function TableDensities() {
     // Content height from the space scale plus the 1px row divider.
     for (const [caption, content] of [['Compact projects', 32], ['Standard projects', 40], ['Comfortable projects', 48]] as const) {
       const table = canvas.getByRole('table', { name: caption });
+      await expect(table.querySelectorAll('thead tr')).toHaveLength(1);
+      const bodyRows = table.querySelectorAll('tbody tr');
+      await expect(bodyRows).toHaveLength(rows.length);
       for (const row of table.querySelectorAll('tr')) await expect(row.getBoundingClientRect().height).toBe(content + 1);
     }
     for (const button of canvas.getAllByRole('button')) {

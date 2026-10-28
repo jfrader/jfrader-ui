@@ -8,6 +8,7 @@ import { css } from '../../styling/css';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { withLightTheme } from '../../testing/story-decorators';
+import { requireNonEmpty } from '../../testing/assertion-preconditions';
 import { FlipGameCard } from '../flip-game-card';
 import { GameCard } from '../game-card';
 import { Pattern, type PatternVariant, type PatternSize } from './index';
@@ -185,7 +186,9 @@ const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[
   render: (args) => <Row>{[0.5, 1, 2, 0, -1, Infinity].map((scale) =>
     <Sample {...args} key={scale} scale={scale} />)}</Row>,
   play: async ({ canvasElement }) => {
-    for (const root of canvasElement.querySelectorAll('[data-ui="pattern"]')) {
+    const roots = requireNonEmpty(canvasElement.querySelectorAll('[data-ui="pattern"]'), 'Tile scale samples');
+    await expect(roots).toHaveLength(6);
+    for (const root of roots) {
       const scale = Number(root.getAttribute('data-scale'));
       const size = sizes.find((size) => size === root.getAttribute('data-size'));
       if (!size) throw new Error('Missing pattern size');
@@ -219,7 +222,9 @@ const Row = styled.div({ display: 'flex', alignItems: 'center', gap: vars.space[
     <Sample {...args} variant={variant} dir="rtl" />
   </Row>)}</Gallery>,
   play: async ({ canvasElement }) => {
-    for (const root of canvasElement.querySelectorAll('[data-ui="pattern"]')) {
+    const roots = requireNonEmpty(canvasElement.querySelectorAll('[data-ui="pattern"]'), 'Direction samples');
+    await expect(roots).toHaveLength(variants.length * 3);
+    for (const root of roots) {
       const direction = root.getAttribute('dir') ?? root.parentElement?.closest('[dir]')?.getAttribute('dir');
       const mirrored = direction === 'rtl' && ['diagonal', 'chevron'].includes(root.getAttribute('data-variant') ?? '');
       await expect(getComputedStyle(root).transform).toBe(mirrored ? 'matrix(-1, 0, 0, 1, 0, 0)' : 'none');
@@ -346,7 +351,9 @@ export const SeamContinuity: Story = {
   </SeamStack>,
   parameters: { docs: { description: { story: 'Repeated surfaces at all three tile sizes.' } } },
   play: async ({ canvasElement }) => {
-    for (const root of canvasElement.querySelectorAll<SVGSVGElement>('[data-ui="pattern"]')) {
+    const roots = requireNonEmpty(canvasElement.querySelectorAll<SVGSVGElement>('[data-ui="pattern"]'), 'Seam samples');
+    await expect(roots).toHaveLength(seamVariants.length * sizes.length);
+    for (const root of roots) {
       const variant = seamVariants.find((variant) => variant === root.getAttribute('data-variant'));
       const path = root.querySelector<SVGPathElement>('pattern path');
       const size = sizes.find((size) => size === root.getAttribute('data-size'));

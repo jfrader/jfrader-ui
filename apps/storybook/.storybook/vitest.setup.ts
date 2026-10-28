@@ -64,6 +64,7 @@ afterEach(() => {
 
 // Emulate the browser preference itself: mocking matchMedia does not activate CSS media rules.
 const storyMediaPreferences: Readonly<Record<string, string | undefined>> = {
+  'Calendar range forced colors': 'forced-colors',
   'Caret Reduced Motion': 'prefers-reduced-motion',
   'Reduced Transparency': 'prefers-reduced-transparency',
   'Dial Reduced Motion': 'prefers-reduced-motion',
@@ -85,6 +86,13 @@ const storyMediaPreferences: Readonly<Record<string, string | undefined>> = {
   'Gravity Well Reduced Motion': 'prefers-reduced-motion',
 };
 
+async function emulateStoryMedia(features: { name: string; value: string }[]) {
+  await cdp().send('Emulation.setEmulatedMedia', { features });
+  // MediaQueryList change events run at the next rendering opportunity. Motion caches
+  // that event's value when mounting, so deliver it before the next story renders.
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+}
+
 function needsTouchPointer(name: string) {
   return /^Touch table (320|390|768)$/.test(name)
     || name === 'Touch control sizes'
@@ -101,12 +109,10 @@ beforeEach(async (context) => {
   expect(window.matchMedia('(hover: hover)').matches).toBe(!touchInput);
   const preference = storyMediaPreferences[task.name];
   if (!preference) return;
-  await cdp().send('Emulation.setEmulatedMedia', {
-    features: [{ name: preference, value: preference === 'forced-colors' ? 'active' : 'reduce' }],
-  });
+  await emulateStoryMedia([{ name: preference, value: preference === 'forced-colors' ? 'active' : 'reduce' }]);
 });
 
 afterEach(async ({ task }) => {
   if (!storyMediaPreferences[task.name]) return;
-  await cdp().send('Emulation.setEmulatedMedia', { features: [] });
+  await emulateStoryMedia([]);
 });

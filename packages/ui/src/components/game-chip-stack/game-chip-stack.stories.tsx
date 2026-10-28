@@ -6,6 +6,7 @@ import { GameChipStack, ChipFlights, useChipFlights } from '@jfrader/ui/game-chi
 import { Flex } from '@jfrader/ui/flex';
 import { expectInside } from '../../testing/geometry-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
+import { requireNonEmpty } from '../../testing/assertion-preconditions';
 import { withChipStage } from '../game-chip/chip-showcase';
 import { Button } from '@jfrader/ui/button';
 
@@ -22,9 +23,9 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 async function geometryCheck(root: Element) {
-  for (const tower of root.querySelectorAll('[data-ui="game-chip-stack-stack"]')) {
+  for (const tower of requireNonEmpty(root.querySelectorAll('[data-ui="game-chip-stack-stack"]'), 'Chip towers')) {
     await expectInside(tower, root);
-    for (const chip of tower.querySelectorAll('[data-ui="game-chip"]')) await expectInside(chip, tower);
+    for (const chip of requireNonEmpty(tower.querySelectorAll('[data-ui="game-chip"]'), 'Tower chips')) await expectInside(chip, tower);
     const bands = tower.querySelectorAll<HTMLElement>('[data-ui="game-chip-stack-band"]');
     if (tower.getAttribute('data-flat') !== 'true') {
       await expect(bands).toHaveLength(Number(tower.getAttribute('data-visible')));
@@ -84,7 +85,7 @@ const size: GameChipSize = 'xl';
   play: async ({ canvasElement }) => {
     const root = canvasElement.querySelector('[data-ui="game-chip-stack"]')!;
     await geometryCheck(root);
-    for (const position of root.querySelectorAll('[data-ui="game-chip-stack-position"]')) {
+    for (const position of requireNonEmpty(root.querySelectorAll('[data-ui="game-chip-stack-position"]'), 'Flat chip positions')) {
       await expect(getComputedStyle(position).transform).toMatch(/^matrix\(/);
     }
   },
@@ -100,7 +101,9 @@ const sizes: GameChipSize[] = ['sm', 'md', 'lg', 'xl'];
   {sizes.map(size => <GameChipStack key={size} chips={[{ value: 5, count: 5 }]} size={size} locale="en-US" />)}
 </Flex>` } } },
   play: async ({ canvasElement }) => {
-    for (const root of canvasElement.querySelectorAll('[data-ui="game-chip-stack"]')) await geometryCheck(root);
+    const roots = requireNonEmpty(canvasElement.querySelectorAll('[data-ui="game-chip-stack"]'), 'Chip sizes');
+    await expect(roots).toHaveLength(4);
+    for (const root of roots) await geometryCheck(root);
   },
 };
 export const Light: Story = {
@@ -127,7 +130,9 @@ import { Flex } from '@jfrader/ui/flex';
 </Flex>` } } },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getAllByRole('img')).toHaveLength(3);
-    for (const root of canvasElement.querySelectorAll('[data-ui="game-chip-stack"]')) await geometryCheck(root);
+    const roots = requireNonEmpty(canvasElement.querySelectorAll('[data-ui="game-chip-stack"]'), 'Bet stacks');
+    await expect(roots).toHaveLength(3);
+    for (const root of roots) await geometryCheck(root);
   },
 };
 export const StackHeights: Story = {
@@ -143,7 +148,9 @@ import { Flex } from '@jfrader/ui/flex';
   ))}
 </Flex>` } } },
   play: async ({ canvasElement }) => {
-    for (const root of canvasElement.querySelectorAll('[data-ui="game-chip-stack"]')) await geometryCheck(root);
+    const roots = requireNonEmpty(canvasElement.querySelectorAll('[data-ui="game-chip-stack"]'), 'Stack heights');
+    await expect(roots).toHaveLength(5);
+    for (const root of roots) await geometryCheck(root);
   },
 };
 export const Empty: Story = {
@@ -191,7 +198,9 @@ export const ThickStacks: Story = {
       chips={[{ value: 100, count }]} size={size} data-chip-demo={`${size}-${count}`} />))}
   </Flex>,
   play: async ({ canvasElement }) => {
-    for (const root of canvasElement.querySelectorAll('[data-ui="game-chip-stack"]')) await geometryCheck(root);
+    const roots = requireNonEmpty(canvasElement.querySelectorAll('[data-ui="game-chip-stack"]'), 'Thick stacks');
+    await expect(roots).toHaveLength(4);
+    for (const root of roots) await geometryCheck(root);
   },
 };
 

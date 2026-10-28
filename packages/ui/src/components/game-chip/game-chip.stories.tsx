@@ -1,5 +1,6 @@
 import type { ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { requireNonEmpty } from '../../testing/assertion-preconditions';
 import { expect } from 'storybook/test';
 import { GameChip } from '@jfrader/ui/game-chip';
 import { GameChipStack } from '@jfrader/ui/game-chip-stack';
@@ -185,7 +186,9 @@ export const TextZoom: Story = {
   </Flex>,
   play: async ({ canvasElement }) => {
     await canvasElement.ownerDocument.fonts.ready;
-    for (const chip of canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-chip"]')) {
+    const chips = requireNonEmpty(canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-chip"]'), 'Text zoom chips');
+    await expect(chips).toHaveLength(2);
+    for (const chip of chips) {
       const face = chip.querySelector<HTMLElement>('[data-ui="game-chip-face"]')!;
       const range = chip.ownerDocument.createRange();
       range.selectNodeContents(face);

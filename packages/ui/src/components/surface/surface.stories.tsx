@@ -2,6 +2,7 @@ import { createElement, StrictMode, useCallback, useId, useRef, useState, type R
 import { hydrateRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { requireNonEmpty } from '../../testing/assertion-preconditions';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { ClassNames, css } from '../../styling/css';
@@ -576,7 +577,9 @@ export const ForcedColors: Story = {
   ...Variants,
   name: 'Forced colors',
   play: async ({ canvasElement }) => {
-    for (const root of canvasElement.querySelectorAll('[data-ui="surface"]')) {
+    const roots = requireNonEmpty(canvasElement.querySelectorAll('[data-ui="surface"]'), 'Surface variants');
+    await expect(roots).toHaveLength(3);
+    for (const root of roots) {
       await expect(getComputedStyle(root).borderTopStyle).toBe('solid');
       await expect(parseFloat(getComputedStyle(root).borderTopWidth)).toBeGreaterThan(0);
     }
