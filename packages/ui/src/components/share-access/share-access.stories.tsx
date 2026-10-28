@@ -594,15 +594,18 @@ async function expectRowsSettled(canvasElement: HTMLElement) {
       const separated = current.every(
         (box, index) => index === 0 || box.top >= current[index - 1]!.bottom - 1,
       );
-      if (!separated || !targetsClear()) return false;
+      await expect(separated, 'member rows do not overlap').toBe(true);
+      await expect(targetsClear(), 'row controls meet target size and hit-test bounds').toBe(true);
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       );
       const next = boxes();
-      return (
-        targetsClear() &&
-        next.every((box, index) => Math.abs(box.top - current[index]!.top) <= 0.5)
-      );
+      await expect(targetsClear(), 'row controls remain usable after layout').toBe(true);
+      await expect(next, 'row count remains stable').toHaveLength(current.length);
+      await expect(
+        next.every((box, index) => Math.abs(box.top - current[index]!.top) <= 0.5),
+        'member rows stop moving',
+      ).toBe(true);
     },
     { timeout: 3000 },
   );
