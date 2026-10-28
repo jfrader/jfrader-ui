@@ -10,6 +10,23 @@ listed in the [changelog](CHANGELOG.md).
 - Storybook: [ui.jfrader.com/storybook/](https://ui.jfrader.com/storybook/)
 - Changelog: [CHANGELOG.md](CHANGELOG.md)
 
+## Showcase
+
+Recorded from the component examples on [ui.jfrader.com](https://ui.jfrader.com).
+
+| | |
+| --- | --- |
+| ![TrucoTable with four seats; a hand of three cards is dealt and Truco is called](docs/showcase/truco-table.gif) | ![Chips fly from the source stack to the pot on a green felt table](docs/showcase/game-chip-stack.gif) |
+| `TrucoTable`: four seats, a dealt hand, and a Truco call. | `GameChipStack`: chips fly from the source stack to the pot. |
+| ![PokerTable with six seats, posted blinds, stacks, and a dealt hand](docs/showcase/poker-table.webp) | ![Share access panel with an invite field, people with roles, and general access](docs/showcase/share-access.webp) |
+| `PokerTable`: blinds posted and a hand dealt. | `ShareAccess`: people, roles, and general access. |
+| ![Date reel picker showing day, month, year, and time reels](docs/showcase/date-reel.webp) | ![A photo opened over a thumbnail strip with zoom and rotate controls](docs/showcase/lightbox-gallery.webp) |
+| `DateReel`: day, month, year, and time on reels. | `LightboxGallery`: a photo opened over its thumbnail strip. |
+| ![Data flow diagram from client events, database CDC, and partner webhooks through a transform engine](docs/showcase/data-flow.webp) | ![Activity rings at 83 percent with distance, exercise, and stand rows](docs/showcase/activity-rings.webp) |
+| `DataFlow`: sources through a transform engine. | `ActivityRings`: three goals, exercise past its target. |
+| ![A landscape split by a draggable divider, labeled Before and After](docs/showcase/image-compare.webp) | ![Four cards from a custom deck, each face a painted landscape](docs/showcase/deck.webp) |
+| `ImageCompare`: drag the divider or use the arrow keys. | `defineDeck`: a deck built from painted scenes. |
+
 ## Install
 
 ```sh
