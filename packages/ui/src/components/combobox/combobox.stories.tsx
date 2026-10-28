@@ -5,6 +5,8 @@ import { expect, fireEvent, fn, mocked, userEvent, waitFor, within } from 'story
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
+import { expectTouchTargets } from '../../testing/touch-target-assertions';
+import { styled } from '../../styling/styled';
 import { Button } from '../button';
 import { Popover } from '../popover';
 import {
@@ -20,6 +22,33 @@ import {
 const LABEL = 'Fruit';
 const DESCRIPTION = 'Type to search';
 const EMPTY_LABEL = 'No results';
+
+const TouchFields = styled.div({ display: 'grid', gap: vars.space[4] });
+
+export const TouchTargets: StoryObj = {
+  name: 'Combobox touch targets',
+  tags: ['!autodocs'],
+  render: () => (
+    <TouchFields>
+      {(['sm', 'md', 'lg'] as const).map((size) => (
+        <TouchFields key={size}>
+          <Combobox size={size} label={`${size} shorthand fruit`} options={FRUITS} />
+          <Combobox>
+            <Combobox.Input size={size} label={`${size} composed fruit`} />
+            <Combobox.List>
+              <Combobox.Item value="apple">Apple</Combobox.Item>
+            </Combobox.List>
+          </Combobox>
+        </TouchFields>
+      ))}
+    </TouchFields>
+  ),
+  play: async ({ canvasElement }) => {
+    const inputs = within(canvasElement).getAllByRole<HTMLElement>('combobox');
+    await expect(inputs).toHaveLength(6);
+    await expectTouchTargets(inputs);
+  },
+};
 
 export const NestedDismissal: StoryObj = {
   tags: ['!autodocs'],
