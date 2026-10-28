@@ -17,6 +17,7 @@
 
 ### Fixed
 
+- `TrucoTable` and `PokerTable` keep the felt the same size when the hand is dealt or the actions change. The default dock reserves a hand above one action row (TrucoTable) or one action row (PokerTable) from the first render.
 - Component docs pages with curated sections no longer render stories tagged `!autodocs` after the curated groups.
 
 ## 0.22.0 — 2026-10-27

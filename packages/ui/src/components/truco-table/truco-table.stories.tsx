@@ -162,7 +162,7 @@ See the [Flights guide](https://ui.jfrader.com/#/components/flights) for deal co
 
 ### Values and constraints
 
-Give the parent container an explicit inline and block size, exactly as for GameTable. \`players\` needs at least two seats with unique keys; teams alternate by seat order unless you set \`teamIdx\`. The local player is rotated to the front. The local hand is optional: omit it before the deal or when the consumer owns the hand surface.
+Give the parent container an explicit inline and block size, exactly as for GameTable. \`players\` needs at least two seats with unique keys; teams alternate by seat order unless you set \`teamIdx\`. The local player is rotated to the front. The local hand is optional: omit it before the deal or when the consumer owns the hand surface. The dock keeps room for a hand above one action row from the first render, so the felt holds its size across deals and turns. Pass \`dock\` to size it yourself.
 
 ### Keyboard and accessibility
 
@@ -413,6 +413,47 @@ export function Truco() {
   },
 };
 
+function StableSurfaceExample() {
+  const [dealt, setDealt] = useState(false);
+  return <>
+    {[640, 320].map((width) => (
+      <DocsStage key={width} style={{ maxInlineSize: width }}>
+        <TrucoTable players={SEATS} title="Truco" hand={dealt ? HAND : undefined} onPlayIntent={() => undefined}
+          actions={dealt ? [{ key: 'pass', label: 'Pass' }, { key: 'truco', label: 'Truco' }] : undefined} />
+      </DocsStage>
+    ))}
+    <Controls><Button onClick={() => setDealt((current) => !current)}>{dealt ? 'Clear hand' : 'Deal hand'}</Button></Controls>
+  </>;
+}
+
+const surfaceBoxes = async (canvasElement: HTMLElement) => {
+  for (let frame = 0; frame < 12; frame++) await new Promise(requestAnimationFrame);
+  return Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="truco-table"]'), (table) => {
+    const origin = table.getBoundingClientRect();
+    const { x, y, width, height } = table.querySelector('[data-game-surface]')!.getBoundingClientRect();
+    return { x: x - origin.x, y: y - origin.y, width, height };
+  });
+};
+const handCards = (canvasElement: HTMLElement) => canvasElement.querySelectorAll('[data-ui="game-hand"] [data-ui~="game-card"]');
+
+export const StableSurface: Story = {
+  name: 'Stable surface',
+  tags: ['!autodocs'],
+  render: () => <StableSurfaceExample />,
+  play: async ({ canvas, canvasElement }) => {
+    await waitFor(() => expect(canvasElement.querySelectorAll('[data-game-surface]:not([data-layout-fit="measuring"])')).toHaveLength(2));
+    const empty = await surfaceBoxes(canvasElement);
+    await userEvent.click(canvas.getByRole('button', { name: 'Deal hand' }));
+    await expect(handCards(canvasElement)).toHaveLength(6);
+    await expect(await surfaceBoxes(canvasElement)).toEqual(empty);
+    const narrow = canvasElement.querySelectorAll<HTMLElement>('[data-ui="truco-table"]')[1]!;
+    await expect(narrow.querySelector('[data-ui~="game-actions"]')!.getBoundingClientRect().top)
+      .toBeGreaterThanOrEqual(narrow.querySelector('[data-ui~="game-hand"]')!.getBoundingClientRect().bottom);
+    await userEvent.click(canvas.getByRole('button', { name: 'Clear hand' }));
+    await expect(handCards(canvasElement)).toHaveLength(0);
+    await expect(await surfaceBoxes(canvasElement)).toEqual(empty);
+  },
+};
 
 export const EmptyCommands: Story = {
   name: 'Empty commands',
