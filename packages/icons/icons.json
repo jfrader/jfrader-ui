@@ -257,6 +257,25 @@
     "since": "0.2.0"
   },
   {
+    "name": "bag",
+    "category": "money",
+    "tags": [
+      "shopping",
+      "checkout",
+      "commerce",
+      "purchase"
+    ],
+    "aliases": [
+      "shopping-bag"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.22.0"
+  },
+  {
     "name": "bank",
     "category": "money",
     "tags": [
@@ -289,6 +308,25 @@
     ],
     "expressive": true,
     "since": "0.2.0"
+  },
+  {
+    "name": "basket",
+    "category": "money",
+    "tags": [
+      "shopping",
+      "checkout",
+      "commerce",
+      "groceries"
+    ],
+    "aliases": [
+      "shopping-basket"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.22.0"
   },
   {
     "name": "baton",
@@ -634,6 +672,25 @@
     ],
     "expressive": true,
     "since": "0.2.0"
+  },
+  {
+    "name": "cart",
+    "category": "money",
+    "tags": [
+      "shopping",
+      "checkout",
+      "commerce",
+      "trolley"
+    ],
+    "aliases": [
+      "shopping-cart"
+    ],
+    "variants": [
+      "line",
+      "solid"
+    ],
+    "expressive": false,
+    "since": "0.22.0"
   },
   {
     "name": "cast",

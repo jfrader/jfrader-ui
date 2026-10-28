@@ -1,5 +1,5 @@
 import { configure, getConfig } from 'storybook/test';
-import { beforeAll, beforeEach, afterEach } from 'vitest';
+import { beforeAll, beforeEach, afterEach, expect, inject } from 'vitest';
 import { cdp } from 'vitest/browser';
 import { auditDesign } from '../../../packages/ui/src/testing/design-assertions';
 
@@ -93,11 +93,12 @@ function needsTouchPointer(name: string) {
     || name.endsWith(' touch targets');
 }
 
-beforeEach(async ({ task }) => {
-  const touchPointer = needsTouchPointer(task.name);
-  if (touchPointer || task.name === 'Desktop table controls') {
-    await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: touchPointer });
-  }
+beforeEach(async (context) => {
+  const { task } = context;
+  const touchInput = inject('touchInput');
+  if (needsTouchPointer(task.name) !== touchInput) context.skip();
+  expect(window.matchMedia('(pointer: coarse)').matches).toBe(touchInput);
+  expect(window.matchMedia('(hover: hover)').matches).toBe(!touchInput);
   const preference = storyMediaPreferences[task.name];
   if (!preference) return;
   await cdp().send('Emulation.setEmulatedMedia', {
@@ -106,9 +107,6 @@ beforeEach(async ({ task }) => {
 });
 
 afterEach(async ({ task }) => {
-  if (needsTouchPointer(task.name) || task.name === 'Desktop table controls') {
-    await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: false });
-  }
   if (!storyMediaPreferences[task.name]) return;
   await cdp().send('Emulation.setEmulatedMedia', { features: [] });
 });

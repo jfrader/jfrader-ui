@@ -25,6 +25,7 @@
 
 - `Combobox` stories cover coarse-pointer targets for shorthand and composed fields in all three sizes.
 - `TypewriterTerminal` accepts `playback={false}` to show a completed, content-sized session without playback controls. Guide shell commands use this static terminal with a copy action, and the icons guide has its own usage page.
+- `@jfrader/icons` includes `Cart`, `Bag`, and `Basket`, their solid companions, and shopping aliases in the icon browser, sprite, and path catalogue.
 
 ### Changed
 
