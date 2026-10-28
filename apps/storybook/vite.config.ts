@@ -46,6 +46,7 @@ export default defineConfig({
             name: 'storybook (touch chromium)',
             provider: playwright({ contextOptions: { hasTouch: true } }),
             provide: { touchInput: true },
+            include: ['../../packages/ui/src/components/{combobox,data-table,money-input,number-field,popover,segmented-control}/**/*.stories.tsx'],
           }]
         }
       }
