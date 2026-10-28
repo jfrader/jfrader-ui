@@ -13,6 +13,7 @@ import { useLatestCallback } from '../../utils/use-latest-callback';
 import { CardFlights } from '../card-flights';
 import { DeckProvider } from '../deck';
 import { GameActions, type GameActionItem, type GameActionsProps } from '../game-actions';
+import { gameActionsRowBlockSize } from '../game-actions/game-actions';
 import { GameCard, type GameCardValue } from '../game-card';
 import { ChipFlights, GameChipStack, useChipFlights, type GameChipStackChip } from '../game-chip-stack';
 import { CARD_FRAME } from '../game-card/card-frame';
@@ -299,6 +300,11 @@ const dockStyle = css({
   inlineSize: '100%',
 });
 
+/** Reserves one action row so the felt keeps its size when the actions come and go between turns. */
+function dockReserve(actionSize: GameActionsProps['size']) {
+  return css({ minBlockSize: gameActionsRowBlockSize(actionSize ?? 'md') });
+}
+
 function mergeIdentity(...values: (string | number | boolean | undefined)[]) {
   return [...new Set(values.flatMap((value) => typeof value === 'string' ? value.split(/\s+/).filter(Boolean) : []))].join(' ');
 }
@@ -523,19 +529,19 @@ function PokerTableContent({
                     <div role="status" css={announcementStyle}>{announcement}</div>
                   </GameTable.Footer>
                 )}
-                {(hasDock || showActions) && (
-                  <GameTable.Dock>
-                    {hasDock ? dock : (
-                      <div css={dockStyle}>
+                <GameTable.Dock>
+                  {hasDock ? dock : (
+                    <div css={[dockStyle, dockReserve(slotProps?.actions?.size)]}>
+                      {showActions && (
                         <Actions
                           {...slotProps?.actions}
                           actions={actions ?? []}
                           label={actionsLabel ?? labels.actions}
                         />
-                      </div>
-                    )}
-                  </GameTable.Dock>
-                )}
+                      )}
+                    </div>
+                  )}
+                </GameTable.Dock>
                 {isRenderable(floating) && <GameTable.Floating>{floating}</GameTable.Floating>}
               </GameTable>
             </CardFlights>

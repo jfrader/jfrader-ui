@@ -3,13 +3,14 @@
 import { createContext, useContext, useId, useMemo, type ComponentPropsWithRef, type ComponentType, type CSSProperties, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
+import { controlBlockSize } from '../../styling/control-size';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button, type ButtonProps } from '../button';
 import { useDeckArt } from '../deck/art-context';
 import { GameCard, type GameCardPartProps, type GameCardSize, type GameCardValue } from '../game-card';
-import { gameCardSizeStyles } from '../game-card/game-card';
+import { gameCardSizeStyles, gameCardWidth } from '../game-card/game-card';
 import { CARD_FRAME } from '../game-card/card-frame';
 import { cardPartIdentity, useCardRegistrationRefs } from '../game-card/card-parts';
 import { CardRoot, type GameCardRootProps, type GameCardRootSlotProps } from '../game-card/game-card-root';
@@ -91,12 +92,21 @@ export interface GameHandProps extends Omit<ComponentPropsWithRef<'div'>, 'child
   };
 }
 
+const ROOT_GAP = vars.space[4];
+const FAN_PADDING_BLOCK = vars.space[4];
+
+/** Layout block size of a hand of `size` cards, with or without the default confirmation button below it. */
+export function gameHandBlockSize(size: GameCardSize, confirm: boolean) {
+  const fan = `${gameCardWidth[size]} * ${CARD_FRAME.ratio} + 2 * ${FAN_PADDING_BLOCK}`;
+  return `calc(${fan}${confirm ? ` + ${ROOT_GAP} + ${controlBlockSize.md}` : ''})`;
+}
+
 const rootStyle = css({
   label: 'game-hand',
   display: 'inline-flex',
   flexDirection: 'column',
   alignItems: 'center',
-  gap: vars.space[4],
+  gap: ROOT_GAP,
 });
 const fanInlineReserveRatio = CARD_FRAME.ratio * Math.sin(HAND_FAN_MAX_ROTATION_DEG * Math.PI / 180);
 const fanStyle = css({
@@ -104,7 +114,7 @@ const fanStyle = css({
   alignItems: 'center',
   inlineSize: 'max-content',
   isolation: 'isolate',
-  paddingBlock: vars.space[4],
+  paddingBlock: FAN_PADDING_BLOCK,
   paddingInline: `calc(var(--game-card-width) * ${fanInlineReserveRatio} + ${vars.space[2]})`,
   '--hand-direction': 1,
   '&:dir(rtl)': { '--hand-direction': -1 },
