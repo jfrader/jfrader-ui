@@ -1,5 +1,5 @@
 import { configure, getConfig } from 'storybook/test';
-import { beforeAll, beforeEach, afterEach, inject } from 'vitest';
+import { beforeAll, beforeEach, afterEach, expect, inject } from 'vitest';
 import { cdp } from 'vitest/browser';
 import { auditDesign } from '../../../packages/ui/src/testing/design-assertions';
 
@@ -95,7 +95,10 @@ function needsTouchPointer(name: string) {
 
 beforeEach(async (context) => {
   const { task } = context;
-  if (needsTouchPointer(task.name) !== inject('touchInput')) context.skip();
+  const touchInput = inject('touchInput');
+  if (needsTouchPointer(task.name) !== touchInput) context.skip();
+  expect(window.matchMedia('(pointer: coarse)').matches).toBe(touchInput);
+  expect(window.matchMedia('(hover: hover)').matches).toBe(!touchInput);
   const preference = storyMediaPreferences[task.name];
   if (!preference) return;
   await cdp().send('Emulation.setEmulatedMedia', {
