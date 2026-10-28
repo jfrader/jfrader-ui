@@ -39,7 +39,13 @@ export default defineConfig({
           headless: true,
           provider: playwright({}),
           instances: [{
-            browser: 'chromium'
+            browser: 'chromium',
+            provide: { touchInput: false },
+          }, {
+            browser: 'chromium',
+            name: 'storybook (touch chromium)',
+            provider: playwright({ contextOptions: { hasTouch: true } }),
+            provide: { touchInput: true },
           }]
         }
       }
