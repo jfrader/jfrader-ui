@@ -198,21 +198,21 @@ function pointerOn(separator: HTMLElement) {
   const originX = rect.left + rect.width / 2;
   return {
     captured: (id = 1) => captured.has(id),
-    fire: (type: string, dx: number, init: PointerEventInit = {}) =>
-      fireEvent(
-        separator,
-        new PointerEvent(type, {
-          bubbles: true,
-          cancelable: true,
-          pointerId: 1,
-          isPrimary: true,
-          button: 0,
-          pointerType: 'mouse',
-          clientX: originX + dx,
-          clientY: rect.top + rect.height / 2,
-          ...init,
-        }),
-      ),
+    fire: (type: string, dx: number, init: PointerEventInit = {}, timeStamp?: number) => {
+      const event = new PointerEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        pointerId: 1,
+        isPrimary: true,
+        button: 0,
+        pointerType: 'mouse',
+        clientX: originX + dx,
+        clientY: rect.top + rect.height / 2,
+        ...init,
+      });
+      if (timeStamp !== undefined) Object.defineProperty(event, 'timeStamp', { value: timeStamp });
+      return fireEvent(separator, event);
+    },
   };
 }
 
@@ -1334,20 +1334,25 @@ export function Mail() {
     const folders = panelsOf(root)[0]!;
     const separator = canvas.getByRole('separator', { name: 'Folders' });
     const pointer = pointerOn(separator);
-    pointer.fire('pointerdown', 0);
-    pointer.fire('pointermove', -20);
-    await pause(16);
-    pointer.fire('pointerup', -20);
+    pointer.fire('pointerdown', 0, {}, 0);
+    pointer.fire('pointermove', -20, {}, 200);
+    pointer.fire('pointerup', -20, {}, 400);
+    await expect(valueOf(separator)).toBeGreaterThan(0);
+    await expect(args.onValueCommit).toHaveBeenCalledTimes(1);
+    await userEvent.dblClick(separator);
+    await expect(separator).toHaveAttribute('aria-valuenow', '40');
+    pointer.fire('pointerdown', 0, {}, 1000);
+    pointer.fire('pointermove', -20, {}, 1010);
+    pointer.fire('pointerup', -20, {}, 1016);
     await expect(separator).toHaveAttribute('aria-valuenow', '0');
     await expect(args.onValueCommit).toHaveBeenLastCalledWith([0, 100]);
     await userEvent.keyboard('{Enter}');
     await expect(separator).toHaveAttribute('aria-valuenow', '40');
-    pointer.fire('pointerdown', 0);
-    pointer.fire('pointermove', -20);
-    await pause(16);
-    pointer.fire('pointercancel', -20);
+    pointer.fire('pointerdown', 0, {}, 2000);
+    pointer.fire('pointermove', -20, {}, 2010);
+    pointer.fire('pointercancel', -20, {}, 2016);
     await expect(separator).toHaveAttribute('aria-valuenow', '40');
-    await expect(args.onValueCommit).toHaveBeenCalledTimes(2);
+    await expect(args.onValueCommit).toHaveBeenCalledTimes(4);
     await waitFor(() => near(widthOf(folders), usableOf(root) * 0.4));
   },
 };
