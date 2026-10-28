@@ -1,7 +1,10 @@
-import { expect } from 'storybook/test';
+import { expect, spyOn } from 'storybook/test';
 
 /** Frames sampled at most per entrance or exit (about two seconds at 60 Hz). */
 const MAX_FRAMES = 120;
+const FRAME_DURATION_MS = 1000 / 60;
+const LAYOUT_DEADLINE_MS = 10_000;
+const SETTLED_FRAMES = 3;
 
 const nextFrame = (element: Element) =>
   new Promise<void>((resolve) => (element.ownerDocument.defaultView ?? window).requestAnimationFrame(() => resolve()));
@@ -27,23 +30,44 @@ export async function expectLayoutMorph(
   const win = surface.ownerDocument.defaultView!;
   const size = (element: HTMLElement) => {
     const { width, height } = element.getBoundingClientRect();
-    return { width, height };
+    const scaleY = new win.DOMMatrixReadOnly(win.getComputedStyle(element).transform).m22;
+    return { width, height, scaleY };
   };
   const read = () => ({ surface: size(surface), content: size(content()) });
   const samples = [read()];
-  const started = win.performance.now();
+  const realNow = win.performance.now.bind(win.performance);
+  const started = realNow();
+  let animationTime = started;
+  // Layout projection runs in JavaScript, so getAnimations() cannot seek it. Advance its
+  // clock per rendered frame instead of letting a delayed frame consume the whole spring.
+  const clock = spyOn(win.performance, 'now').mockImplementation(() => animationTime);
   let frame = 0;
+  let changed = false;
+  let settledFrames = 0;
   const sampling = new Promise<void>((resolve) => {
     const sample = () => {
+      animationTime += FRAME_DURATION_MS;
       samples.push(read());
-      if (win.performance.now() - started >= 700) resolve();
+      const current = samples.at(-1)!;
+      const previous = samples.at(-2)!;
+      const settled = changed && (['surface', 'content'] as const).every((part) => {
+        const element = part === 'surface' ? surface : content();
+        return Math.abs(current[part].width - element.offsetWidth) < 0.5 &&
+          Math.abs(current[part].height - element.offsetHeight) < 0.5 &&
+          Math.abs(current[part].width - previous[part].width) < 0.01 &&
+          Math.abs(current[part].height - previous[part].height) < 0.01;
+      });
+      settledFrames = settled ? settledFrames + 1 : 0;
+      if (settledFrames >= SETTLED_FRAMES || realNow() - started >= LAYOUT_DEADLINE_MS) resolve();
       else frame = win.requestAnimationFrame(sample);
     };
     frame = win.requestAnimationFrame(sample);
   });
   try {
     await change();
+    changed = true;
     await sampling;
+    await expect(settledFrames, 'layout settles before the deadline').toBeGreaterThanOrEqual(SETTLED_FRAMES);
     const start = samples[0]!;
     const end = samples.at(-1)!;
     await expect(end.surface.width).toBeCloseTo(surface.offsetWidth, 0);
@@ -62,6 +86,8 @@ export async function expectLayoutMorph(
       await expect(Math.abs(end[part].height - start[part].height), `${part} changes height`).toBeGreaterThan(1);
       if (reduced) await expect(distinct.size, `${part} skips intermediate sizes`).toBe(0);
       else {
+        await expect(samples.some((sample) => Math.abs(sample[part].scaleY - 1) > 0.01),
+          `${part} animates its own height projection`).toBe(true);
         await expect(distinct.size, `${part} projects through distinct sizes`).toBeGreaterThanOrEqual(2);
         await expect(intermediate.some((sample) =>
           between(sample[part].height, start[part].height, end[part].height),
@@ -70,6 +96,7 @@ export async function expectLayoutMorph(
     }
   } finally {
     win.cancelAnimationFrame(frame);
+    clock.mockRestore();
   }
 }
 
