@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { requireNonEmpty } from '../../testing/assertion-preconditions';
 import { useState } from 'react';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { expectAligned } from '../../testing/geometry-assertions';
@@ -336,7 +337,7 @@ export const Narrow: Story = {
     const root = canvasElement.querySelector<HTMLElement>('[data-ui="share-access"]')!;
     const bounds = root.getBoundingClientRect();
     await expect(bounds.width).toBeLessThanOrEqual(320);
-    for (const control of root.querySelectorAll<HTMLElement>('button, input')) {
+    for (const control of requireNonEmpty(root.querySelectorAll<HTMLElement>('button, input'), 'Share controls')) {
       const rect = control.getBoundingClientRect();
       await expect(rect.left).toBeGreaterThanOrEqual(bounds.left - 1);
       await expect(rect.right).toBeLessThanOrEqual(bounds.right + 1);
@@ -416,7 +417,7 @@ export const InviteWithoutRandomUUID: Story = {
     await new Promise<void>((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
     );
-    for (const row of canvasElement.querySelectorAll<HTMLElement>('[data-ui="share-access-member"]')) {
+    for (const row of requireNonEmpty(canvasElement.querySelectorAll<HTMLElement>('[data-ui="share-access-member"]'), 'Share members')) {
       await expect(getComputedStyle(row).transform).toBe('none');
     }
     await expectRowsSettled(canvasElement);
@@ -572,11 +573,11 @@ function ConcurrentFixture() {
 }
 async function expectRowsSettled(canvasElement: HTMLElement) {
   const boxes = () =>
-    [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="share-access-member-list"] > li')].map(
+    requireNonEmpty(canvasElement.querySelectorAll<HTMLElement>('[data-ui="share-access-member-list"] > li'), 'Member rows').map(
       (row) => row.getBoundingClientRect(),
     );
   const targetsClear = () =>
-    [...canvasElement.querySelectorAll<HTMLElement>('[data-ui="select-trigger"], button[aria-label^="Remove "]')].every(
+    requireNonEmpty(canvasElement.querySelectorAll<HTMLElement>('[data-ui="select-trigger"], button[aria-label^="Remove "]'), 'Member controls').every(
       (target) => {
         const box = target.getBoundingClientRect();
         // A row mid-layout can scale the control below the 24px target-size floor while the
