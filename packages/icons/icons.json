@@ -273,7 +273,7 @@
       "solid"
     ],
     "expressive": false,
-    "since": "0.22.0"
+    "since": "0.23.0"
   },
   {
     "name": "bank",
@@ -326,7 +326,7 @@
       "solid"
     ],
     "expressive": false,
-    "since": "0.22.0"
+    "since": "0.23.0"
   },
   {
     "name": "baton",
@@ -690,7 +690,7 @@
       "solid"
     ],
     "expressive": false,
-    "since": "0.22.0"
+    "since": "0.23.0"
   },
   {
     "name": "cast",

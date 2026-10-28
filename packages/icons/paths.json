@@ -870,7 +870,7 @@
         "solid"
       ],
       "expressive": false,
-      "since": "0.22.0",
+      "since": "0.23.0",
       "geometry": {
         "line": {
           "attrs": {
@@ -1084,7 +1084,7 @@
         "solid"
       ],
       "expressive": false,
-      "since": "0.22.0",
+      "since": "0.23.0",
       "geometry": {
         "line": {
           "attrs": {
@@ -2329,7 +2329,7 @@
         "solid"
       ],
       "expressive": false,
-      "since": "0.22.0",
+      "since": "0.23.0",
       "geometry": {
         "line": {
           "attrs": {
