@@ -26,7 +26,7 @@
 
 - `TrucoTable` and `PokerTable` keep the felt the same size when the hand is dealt or the actions change. The default dock reserves a hand above one action row (TrucoTable) or one action row (PokerTable) from the first render.
 - Component docs pages with curated sections no longer render stories tagged `!autodocs` after the curated groups.
-- `Popover`, `Menu`, `Dialog`, and `UserMenu` keep their default trigger targets at least 44×44px on coarse pointers.
+- `Popover`, `Menu`, `Dialog`, and `UserMenu` keep their default trigger targets at least 44×44px on coarse pointers. The shared rule also widens `SplitButton`'s icon trigger from 40px to 44px and raises `SwipeActions` targets from 37px to 44px tall. `ColorPicker`, `ActionMorph`, and `BookingPill` are unaffected.
 
 ## 0.22.0 — 2026-10-27
 
