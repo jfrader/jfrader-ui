@@ -33,6 +33,7 @@
 ### Fixed
 
 - The Satoshi icon's three stacked strokes share one length in both line and solid variants.
+- `Popover`, `Menu`, `Dialog`, and `UserMenu` keep their default trigger targets at least 44×44px on coarse pointers.
 
 ## 0.21.2 — 2026-10-27
 

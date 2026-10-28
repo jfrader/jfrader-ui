@@ -63,7 +63,7 @@ import {
 } from '../../styling/listbox-style';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
-import { touchTargetStyle } from '../../styling/touch-target';
+import { touchTargetMinInlineSize, touchTargetStyle } from '../../styling/touch-target';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
@@ -315,7 +315,8 @@ const selectTriggerStyle = css({
   lineHeight: vars.lineHeight.tight,
   justifyContent: 'flex-start',
   gap: vars.space[2],
-  minInlineSize: '180px',
+  [touchTargetMinInlineSize]: '180px',
+  minInlineSize: `var(${touchTargetMinInlineSize})`,
   maxInlineSize: '100%',
   '&[aria-expanded="true"]': {
     backgroundColor: vars.color.surfaceHover,
