@@ -5,7 +5,7 @@
     "tags": ["shopping", "checkout", "commerce", "trolley"],
     "aliases": ["shopping-cart"],
     "expressive": false,
-    "since": "0.22.0"
+    "since": "0.23.0"
   },
   "bag": {
     "name": "bag",
@@ -13,7 +13,7 @@
     "tags": ["shopping", "checkout", "commerce", "purchase"],
     "aliases": ["shopping-bag"],
     "expressive": false,
-    "since": "0.22.0"
+    "since": "0.23.0"
   },
   "basket": {
     "name": "basket",
@@ -21,6 +21,6 @@
     "tags": ["shopping", "checkout", "commerce", "groceries"],
     "aliases": ["shopping-basket"],
     "expressive": false,
-    "since": "0.22.0"
+    "since": "0.23.0"
   }
 }

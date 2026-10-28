@@ -2,9 +2,16 @@
 
 ## Unreleased
 
+## 0.23.0 — 2026-10-28
+
 ### Breaking pre-1.0
 
 - `PaymentFlow` draws its phase row itself instead of rendering a `Stepper`, so `slots.journey` and `slotProps.journey` are removed. Use the new `phase` slot to replace or style each phase.
+
+### Added
+
+- `Combobox` stories cover coarse-pointer targets for shorthand and composed fields in all three sizes.
+- `@jfrader/icons` includes `Cart`, `Bag`, and `Basket`, their solid companions, and shopping aliases in the icon browser, sprite, and path catalogue.
 
 ### Changed
 
@@ -19,14 +26,13 @@
 
 - `TrucoTable` and `PokerTable` keep the felt the same size when the hand is dealt or the actions change. The default dock reserves a hand above one action row (TrucoTable) or one action row (PokerTable) from the first render.
 - Component docs pages with curated sections no longer render stories tagged `!autodocs` after the curated groups.
+- `Popover`, `Menu`, `Dialog`, and `UserMenu` keep their default trigger targets at least 44×44px on coarse pointers. The shared rule also widens `SplitButton`'s icon trigger from 40px to 44px and raises `SwipeActions` targets from 37px to 44px tall. `ColorPicker`, `ActionMorph`, and `BookingPill` are unaffected.
 
 ## 0.22.0 — 2026-10-27
 
 ### Added
 
-- `Combobox` stories cover coarse-pointer targets for shorthand and composed fields in all three sizes.
 - `TypewriterTerminal` accepts `playback={false}` to show a completed, content-sized session without playback controls. Guide shell commands use this static terminal with a copy action, and the icons guide has its own usage page.
-- `@jfrader/icons` includes `Cart`, `Bag`, and `Basket`, their solid companions, and shopping aliases in the icon browser, sprite, and path catalogue.
 
 ### Changed
 
@@ -35,7 +41,6 @@
 ### Fixed
 
 - The Satoshi icon's three stacked strokes share one length in both line and solid variants.
-- `Popover`, `Menu`, `Dialog`, and `UserMenu` keep their default trigger targets at least 44×44px on coarse pointers.
 
 ## 0.21.2 — 2026-10-27
 
