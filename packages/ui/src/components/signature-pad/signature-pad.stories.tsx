@@ -1,5 +1,6 @@
 import { act, createRef, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { requireElement } from '../../testing/assertion-preconditions';
 import { expect, fn, spyOn, within, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
@@ -408,7 +409,6 @@ ${signatureDrawingSource}
     await assertInkContrast(pad(canvasElement));
   },
 };
-export const SeededSignature: Story = { ...Signed };
 export const Signer: Story = { args: { defaultValue: seeded, signer: 'Ada' } };
 export const EachInk: Story = {
   render: (args) => (
@@ -474,7 +474,7 @@ export const LongLabels: Story = {
     description: 'Use a pointer to sign, or type your full name in the alternative field.',
     error: 'Please sign the document before continuing.',
   },
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, args }) => {
     const canvas = pad(canvasElement);
     const guide = canvasElement.querySelector<HTMLElement>('[data-ui="signature-pad-guide"]')!;
     const [hint, signer] = Array.from(guide.children);
@@ -484,8 +484,17 @@ export const LongLabels: Story = {
     await expectNoOverlap(hint!, signer!);
     await expectAligned([hint!, signer!], 'bottom');
     await expect(guide.scrollWidth).toBeLessThanOrEqual(guide.clientWidth);
-    const toolbar = canvasElement.querySelector<HTMLElement>('[data-ui="signature-pad-toolbar"]')!;
-    for (const control of toolbar.querySelectorAll('button, label')) {
+    const toolbar = requireElement(canvasElement.querySelector<HTMLElement>('[data-ui="signature-pad-toolbar"]'), 'Signature toolbar');
+    const controls = toolbar.querySelectorAll('button, label');
+    await expect(controls).toHaveLength(12);
+    const scope = within(toolbar);
+    for (const action of ['undo', 'redo', 'clear', 'replay', 'png', 'svg'] as const) {
+      await expect(scope.getByRole('button', { name: args.messages!.actions[action], exact: true })).toBeVisible();
+    }
+    for (const name of [...Object.values(args.messages!.colors), ...Object.values(args.messages!.widths)]) {
+      await expect(scope.getByRole('radio', { name, exact: true })).toBeInTheDocument();
+    }
+    for (const control of controls) {
       await expectInside(control, toolbar);
       await expect(control.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
     }
@@ -547,7 +556,9 @@ export const NoPressure: Story = {
   play: async ({ canvasElement, args }) => {
     await gesture(pad(canvasElement), strokeEvents);
     const value = (args.onValueChange as ReturnType<typeof fn>).mock.calls[0]![0] as SignatureStroke[];
-    await expect(value[0]!.points.every((p) => p.pressure === null)).toBe(true);
+    await expect(value).toHaveLength(1);
+    await expect(value[0]!.points).toHaveLength(3);
+    for (const point of value[0]!.points) await expect(point.pressure).toBeNull();
   },
 };
 export const CancelledGestures: Story = {

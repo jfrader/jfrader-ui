@@ -4,6 +4,7 @@ import { expect, fn, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+import { requireElement, requireNonEmpty } from '../../testing/assertion-preconditions';
 import { Button } from '../button';
 import { MetricCard, type MetricCardProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -119,19 +120,18 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 function roots(element: HTMLElement) {
-  return Array.from(element.querySelectorAll<HTMLElement>('[data-ui="metric-card"]'));
+  return requireNonEmpty(element.querySelectorAll<HTMLElement>('[data-ui="metric-card"]'), 'Metric cards');
 }
 function part(root: HTMLElement, name: string) {
-  const element = root.querySelector<HTMLElement>(`[data-ui="metric-card-${name}"]`);
-  if (!element) throw new Error(`Missing metric ${name}`);
-  return element;
+  return requireElement(root.querySelector<HTMLElement>(`[data-ui="metric-card-${name}"]`), `Metric ${name}`);
 }
 const formattingPlay: Story['play'] = async ({ canvasElement, args }) => {
   await expect(part(roots(canvasElement)[0]!, 'value').textContent).toBe(
     new Intl.NumberFormat(args.locale, args.formatOptions).format(args.value!),
   );
 };
-async function expectFits(root: HTMLElement) {
+async function expectFits(root: HTMLElement, expectedText: string) {
+  await expect(part(root, 'value').textContent).toBe(expectedText);
   for (const element of [
     root,
     part(root, 'value'),
@@ -142,7 +142,7 @@ async function expectFits(root: HTMLElement) {
   const range = root.ownerDocument.createRange();
   range.selectNodeContents(part(root, 'value'));
   const bounds = root.getBoundingClientRect();
-  for (const rect of Array.from(range.getClientRects())) {
+  for (const rect of requireNonEmpty(range.getClientRects(), 'Metric value text rectangles')) {
     await expect(rect.left).toBeGreaterThanOrEqual(bounds.left - 1);
     await expect(rect.right).toBeLessThanOrEqual(bounds.right + 1);
   }
@@ -442,12 +442,15 @@ export const Nonfinite: Story = {
   render: (args) => (
     <>
       {[NaN, Infinity, -Infinity].map((value, index) => (
-        <MetricCard {...args} key={index} value={value} delta={value} />
+        <MetricCard {...args} key={index} data-testid={`nonfinite-${index}`} value={value} delta={value} />
       ))}
     </>
   ),
   play: async ({ canvasElement }) => {
-    for (const root of roots(canvasElement)) {
+    const cards = roots(canvasElement);
+    await expect(cards).toHaveLength(3);
+    for (const [index, root] of cards.entries()) {
+      await expect(root).toHaveAttribute('data-testid', `nonfinite-${index}`);
       await expect(part(root, 'value')).toHaveTextContent('Unavailable');
       await expect(root.querySelector('[data-ui="pill"]')).toBeNull();
     }
@@ -466,8 +469,8 @@ export const LongCopy: Story = {
       <MetricCard {...args} />
     </NarrowFrame>
   ),
-  play: async ({ canvasElement }) => {
-    await expectFits(roots(canvasElement)[0]!);
+  play: async ({ canvasElement, args }) => {
+    await expectFits(roots(canvasElement)[0]!, new Intl.NumberFormat(args.locale, args.formatOptions).format(args.value!));
   },
 };
 export const HugeAndNegativeValues: Story = {
@@ -477,14 +480,21 @@ export const HugeAndNegativeValues: Story = {
         <MetricCard
           {...args}
           key={value}
+          data-testid={`huge-${value}`}
           value={value}
           formatOptions={{ style: 'currency', currency: 'EUR' }}
         />
       ))}
     </>
   ),
-  play: async ({ canvasElement }) => {
-    for (const root of roots(canvasElement)) await expectFits(root);
+  play: async ({ canvasElement, args }) => {
+    const cards = roots(canvasElement);
+    const values = [1e30, -123456789012345];
+    await expect(cards).toHaveLength(values.length);
+    for (const [index, root] of cards.entries()) {
+      await expect(root).toHaveAttribute('data-testid', `huge-${values[index]}`);
+      await expectFits(root, new Intl.NumberFormat(args.locale, { style: 'currency', currency: 'EUR' }).format(values[index]!));
+    }
   },
 };
 export const FalsySlots: Story = {
@@ -493,7 +503,8 @@ export const FalsySlots: Story = {
       {[false, null, 0, ''].map((content, index) => (
         <MetricCard
           {...args}
-          key={index}
+           key={index}
+          data-testid={`falsy-${index}`}
           label={content}
           description={content}
           role={content === 0 ? 'region' : undefined}
@@ -504,7 +515,10 @@ export const FalsySlots: Story = {
     </>
   ),
   play: async ({ canvasElement }) => {
-    for (const [index, root] of roots(canvasElement).entries()) {
+    const cards = roots(canvasElement);
+    await expect(cards).toHaveLength(4);
+    for (const [index, root] of cards.entries()) {
+      await expect(root).toHaveAttribute('data-testid', `falsy-${index}`);
       await expect(root.querySelector('[data-ui="metric-card-label"]') !== null).toBe(index === 2);
       await expect(root.querySelector('[data-ui="metric-card-description"]') !== null).toBe(index === 2);
       await expect(root.getAttribute('aria-describedby')?.split(' ')).toEqual(
@@ -649,7 +663,7 @@ export const RTL: Story = {
   play: async (context) => {
     await formattingPlay!(context);
     await expect(getComputedStyle(roots(context.canvasElement)[0]!).direction).toBe('rtl');
-    await expectFits(roots(context.canvasElement)[0]!);
+    await expectFits(roots(context.canvasElement)[0]!, new Intl.NumberFormat(context.args.locale, context.args.formatOptions).format(context.args.value!));
   },
 };
 export const ReducedMotion: Story = {

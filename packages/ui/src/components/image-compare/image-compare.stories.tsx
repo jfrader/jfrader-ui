@@ -4,6 +4,8 @@ import { expect, fireEvent, fn, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { withLightTheme } from '../../testing/story-decorators';
+import { requireElement, requireNonEmpty } from '../../testing/assertion-preconditions';
+import { mockReducedMotion } from '../../testing/reduced-motion';
 import { ImageCompare } from './index';
 import { Button } from '../button';
 import { sceneSource } from '../scene';
@@ -143,7 +145,7 @@ export function Example() {
 export default meta;
 type Story = StoryObj<typeof ImageCompare>;
 
-const part = (root: Element, name: string) => root.querySelector<HTMLElement>(`[data-ui="${name}"]`)!;
+const part = (root: Element, name: string) => requireElement(root.querySelector<HTMLElement>(`[data-ui="${name}"]`), name);
 
 /** Which layer is visible (hit-testable through the clip) at \`ratio\` along the reveal axis. */
 function layerAt(root: Element, ratio: number, vertical = false) {
@@ -264,8 +266,8 @@ export function Example() {
       expect(after.naturalHeight).toBe(before.naturalHeight);
     });
     await expect(after.getBoundingClientRect().toJSON()).toEqual(before.getBoundingClientRect().toJSON());
-    await expect(canvas.queryByText('Before')?.closest('[aria-hidden="true"]')).not.toBeNull();
-    await expect(canvas.queryByText('After')?.closest('[aria-hidden="true"]')).not.toBeNull();
+    await expect(requireElement(canvas.getByText('Before').closest('[aria-hidden="true"]'), 'Hidden before caption')).toBeInTheDocument();
+    await expect(requireElement(canvas.getByText('After').closest('[aria-hidden="true"]'), 'Hidden after caption')).toBeInTheDocument();
     // Captions are chips sized by their text, not stretched like the images.
     const frameBox = part(canvasElement, 'image-compare-frame').getBoundingClientRect();
     for (const name of ['image-compare-before-label', 'image-compare-after-label']) {
@@ -347,8 +349,11 @@ export const FadingCaptions: Story = {
     </>
   ),
   play: async ({ canvasElement, userEvent }) => {
-    for (const root of canvasElement.querySelectorAll('[data-ui="image-compare"]')) {
+    const roots = requireNonEmpty(canvasElement.querySelectorAll('[data-ui="image-compare"]'), 'Caption comparisons');
+    await expect(roots).toHaveLength(3);
+    for (const [index, root] of roots.entries()) {
       const slider = part(root, 'image-compare-handle');
+      await expect(slider).toHaveAccessibleName(['Horizontal captions', 'Vertical captions', 'RTL captions'][index]);
       const before = part(root, 'image-compare-before-label');
       const after = part(root, 'image-compare-after-label');
       await expect(before.parentElement).toBe(part(root, 'image-compare-frame'));
@@ -1171,15 +1176,18 @@ export const FirstDragFrame: Story = {
 
 export const AnimatedReveal: Story = {
   tags: ['!autodocs'],
+  beforeEach: () => mockReducedMotion(false),
   play: async ({ canvas, canvasElement, userEvent }) => {
     const handle = canvas.getByRole('slider');
     const frame = part(canvasElement, 'image-compare-frame');
     const before = part(canvasElement, 'image-compare-before');
+    await expect(matchMedia('(prefers-reduced-motion: reduce)').matches).toBe(false);
     handle.focus();
     await userEvent.keyboard('{End}');
     await expect(handle).toHaveAttribute('aria-valuenow', '100');
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    {
       const samples: number[] = [];
+      const alignedSamples: number[] = [];
       for (let index = 0; index < 5; index++) {
         await new Promise(requestAnimationFrame);
         const ratio = dividerRatio(canvasElement);
@@ -1187,12 +1195,16 @@ export const AnimatedReveal: Story = {
         const frameBox = frame.getBoundingClientRect();
         const handleBox = handle.getBoundingClientRect();
         const handleRatio = (handleBox.left + handleBox.width / 2 - frameBox.left) / frameBox.width;
-        if (ratio < 0.9) await expect(Math.abs(handleRatio - ratio)).toBeLessThan(0.01);
+        if (ratio > 0.5 && ratio < 0.9) {
+          alignedSamples.push(ratio);
+          await expect(Math.abs(handleRatio - ratio)).toBeLessThan(0.01);
+        }
         const clip = getComputedStyle(before).clipPath.match(/[\d.]+%/);
         await expect(clip).not.toBeNull();
         await expect(Math.abs(1 - Number.parseFloat(clip![0]) / 100 - ratio)).toBeLessThan(0.01);
       }
       await expect(samples.some((sample) => sample > 0.5 && sample < 0.99)).toBe(true);
+      requireNonEmpty(alignedSamples, 'Intermediate handle alignment samples');
       await expect(samples.at(-1)!).toBeGreaterThan(samples[0]!);
     }
     await waitFor(() => expect(Math.abs(dividerRatio(canvasElement) - 1)).toBeLessThan(0.01));
