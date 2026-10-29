@@ -21,7 +21,7 @@ The theme has four layers:
 | --- | --- | --- |
 | Document palette | `data-theme` on `<html>` | The document's light or dark palette. |
 | Theme scope | `ThemeRoot` | A palette for a React subtree and the overlays opened inside it. |
-| Token overrides | `createTheme` / `tokens` | Derived accent colors and overrides for individual token values. |
+| [Token overrides](https://ui.jfrader.com/#/components/overrides) | `createTheme` / `tokens` | Derived accent colors and overrides for individual token values. |
 | Typed references | `theme` / `vars` | Typed `var(--ui-*)` references for your styles. They are the same object. |
 
 `ThemeProvider` gives Emotion callbacks access to token references. It does not select a palette.
@@ -160,8 +160,11 @@ See [Palette](https://ui.jfrader.com/#/components/palette) for every color token
 
 ## Override tokens
 
-The `createTheme` `tokens` option takes any token path, including spacing, radii, and fonts. Explicit
-values win over the derived accent family. See the [compact theme](#compact-theme) recipe.
+An override replaces one token value inside a scope. [Token overrides](https://ui.jfrader.com/#/components/overrides)
+lists every path a map may set, the custom property it writes, and its default on each palette.
+
+The `createTheme` `tokens` option takes any of those paths. Explicit values win over the derived accent
+family. See the [compact theme](#compact-theme) recipe.
 
 Pass a sparse object to `ThemeRoot tokens` directly when you need no accent derivation. A nested root
 with the same theme and no `tokens` inherits the enclosing overrides; a different theme drops them. A

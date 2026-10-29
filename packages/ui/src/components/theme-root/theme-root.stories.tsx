@@ -2,7 +2,6 @@ import type { CSSProperties } from 'react';
 import { useId, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
-import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
@@ -11,8 +10,6 @@ import { Popover, type PopoverBaseProps } from '../popover';
 import { TextField } from '../text-field';
 import { ThemeProvider, useTheme } from '../theme-provider/theme-provider';
 import { ThemeRoot, type ThemeName, type ThemeRootProps } from './index';
-import { TokenOverrides as TokenOverridesPanel } from '../theme-docs/kit/overrides';
-import { OVERRIDE_COUNT, OVERRIDE_GROUPS } from '../theme-docs/kit/overrides-model';
 
 const THEMES = ['dark', 'light'] as const satisfies readonly ThemeName[];
 
@@ -95,7 +92,7 @@ export function ThemedSection() {
       description: { component: 'Apply a theme to part of a page and its overlays.' },
       usage: `Nested scopes and their overlays use the nearest theme. For app setup and custom palettes, start with the [Theming guide](./?path=/docs/foundations-theming--docs).
 
-\`tokens\` takes any token path; [Token overrides](#token-overrides) lists every path and the value it keeps.`,
+\`tokens\` takes any token path; [Token overrides](./?path=/docs/theme-token-overrides--docs) lists every path and the value it keeps.`,
       sections: [
         {
           title: 'Theme scopes',
@@ -103,7 +100,6 @@ export function ThemedSection() {
         },
         { title: 'Overlays', stories: ['PortalContainer', 'NestedOverlayKeyboard', 'LiveThemeChange'] },
         { title: 'Provider', stories: ['ThemeProviderStandalone'] },
-        { title: 'Token overrides', stories: ['TokenOverrides'] },
       ],
     },
   },
@@ -436,62 +432,5 @@ export const ThemeIdentity: Story = {
     // Both dark and light roots supply token var references (values never change between dark and light)
     await expect(probes[0]).toHaveAttribute('data-color-text', vars.color.text);
     await expect(probes[1]).toHaveAttribute('data-color-text', vars.color.text);
-  },
-};
-
-export const TokenOverrides: Story = {
-  render: () => <TokenOverridesPanel />,
-  parameters: {
-    layout: 'fullscreen',
-    docs: {
-      description: {
-        story: 'Every path a `tokens` map may set, grouped by token family, with the value it keeps on each palette.',
-      },
-      source: {
-        language: 'tsx',
-        code: `import { Button, ThemeRoot } from '@jfrader/ui';
-
-const compact = {
-  radius: { md: '0.25rem' },
-  color: { accent: '#0f766e' },
-  space: { 4: '0.875rem' },
-};
-
-<ThemeRoot theme="light" tokens={compact}>
-  <Button tone="accent">Save</Button>
-</ThemeRoot>`,
-      },
-    },
-  },
-  play: async ({ canvasElement }) => {
-    // Counted from the token source, not from the model the section renders.
-    const countPaths = (tree: Record<string, unknown>): number =>
-      Object.values(tree).reduce<number>(
-        (total, value) => total + (typeof value === 'string' ? 1 : countPaths(value as Record<string, unknown>)),
-        0,
-      );
-    const sourcePaths = Object.values(base).reduce<number>(
-      (total, group) => total + countPaths(group as Record<string, unknown>),
-      0,
-    );
-    const cards = canvasElement.querySelectorAll('[data-group]');
-    await expect(cards).toHaveLength(Object.keys(base).length);
-    await expect(canvasElement.querySelectorAll('[data-group] li')).toHaveLength(sourcePaths);
-    await expect(OVERRIDE_COUNT).toBe(sourcePaths);
-    for (const group of OVERRIDE_GROUPS) {
-      const card = canvasElement.querySelector<HTMLElement>(`[data-group="${group.name}"]`);
-      if (!card) throw new Error(`Missing token group ${group.name}`);
-      await expect(card.querySelectorAll('li')).toHaveLength(group.keys.length);
-    }
-    // A palette-dependent path shows both values; a theme-independent one shows a single value.
-    const accent = [...canvasElement.querySelectorAll('[data-group="color"] li')]
-      .find((chip) => chip.textContent?.startsWith('accent#'));
-    await expect(accent).toHaveTextContent('#a78bff');
-    await expect(accent).toHaveTextContent('#7747ff');
-    const spaceKeys = [...canvasElement.querySelectorAll('[data-group="space"] li')].map((chip) => [
-      chip.querySelector('code')?.textContent,
-      chip.querySelector('span')?.textContent,
-    ]);
-    await expect(spaceKeys).toContainEqual(['4', '16px']);
   },
 };

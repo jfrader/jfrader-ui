@@ -18,7 +18,7 @@ type GroupOverrides<T> = { readonly [K in keyof T]?: T[K] extends string ? strin
 /**
  * Sparse token overrides for a ThemeRoot scope, one member per token group. Every value is a CSS
  * string and every path is optional: what a map leaves out keeps the base theme's value. The
- * ThemeRoot docs list the paths and their current values under "Token overrides".
+ * Theme/Token overrides page lists the paths and their current values.
  */
 export type ThemeTokens = {
   readonly color?: GroupOverrides<JfraderTheme['color']>;
