@@ -74,7 +74,7 @@ export function syncReadme() {
   const showcase = content.match(showcaseSection);
   if (showcase) {
     content = content.replace(showcaseSection, '');
-    writeIfChanged(showcasePagePath, `---\ntitle: Showcase\ngroup: Showcase\n---\n\n${showcase[1]}`);
+    writeIfChanged(showcasePagePath, `---\ntitle: Highlights\ngroup: Showcase\n---\n\n${showcase[1]}`);
   } else {
     rmSync(showcasePagePath, { force: true });
   }
