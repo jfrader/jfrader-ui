@@ -47,7 +47,7 @@ export default {
     ],
   },
   // The token reference is authored in jfrader-ui as the Theme pages (palette, typography,
-  // spacing and shape, elevation and motion). The engine's generated token listings duplicated
+  // spacing and shape, elevation and motion, token overrides). The engine's generated token listings duplicated
   // them with raw var() strings and no values, so they stay off.
   pages: {
     color: false,
