@@ -40,6 +40,21 @@ documentation spec, review checklist).
 
 Packing and publishing are in `docs/releasing.md`.
 
+## Deploy triggers
+
+- Render static site `jfrader-ui-storybook` deploys `storybook`, not `master` or `main`.
+  Pushes to `master` intentionally trigger no deploy. To publish, merge `master` into `storybook`
+  and push: exactly one build.
+- See `pnpm build` in Commands for `DOCS_BUILD=1`. The one service serves the docs site at `/` and
+  Storybook at `/storybook/` on `ui.jfrader.com` from `apps/storybook/storybook-static`.
+  A Storybook publish also publishes the docs site: they stay in step, but both can lag `master`.
+- Keep branch isolation; do not repoint the service to `master`: auto-deploying every `master` push
+  produced 601 deploys and 1,669 build minutes in October 2026, exhausting the workspace's included minutes.
+- **Do not add Render build filters.** Only about 2.8% of commits are docs/CI-only, so savings are
+  negligible. Five Storybook MDX files (GettingStarted, Icons, Theming, Styling, and Flights) import
+  `docs/*.md` with `?raw`; `apps/docs/scripts/sync-readme.mjs` reads `README.md` and copies
+  `docs/showcase/`. Excluding `docs/**` or `**/*.md` silently publishes stale documentation.
+
 ## Where each rule lives
 
 - `SKILL.md`: component rules, accessibility contracts, styling, API conventions, performance, motion,
