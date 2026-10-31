@@ -774,11 +774,12 @@ export function LinearTimeline<T>(props: LinearTimelineProps<T>) {
           <Trigger
             {...withoutSx(triggerSlot)}
             aria-label={label}
-            css={[triggerStyle, nodeStyles[orientation], triggerSlot?.sx]}
+            css={[triggerStyle, nodeStyles[orientation]]}
+            sx={triggerSlot?.sx}
           >
             {axisChildren}
           </Trigger>
-          <Details {...withoutSx(detailsSlot)} css={detailsSlot?.sx}>
+          <Details {...withoutSx(detailsSlot)} sx={detailsSlot?.sx}>
             {details?.(item, index)}
           </Details>
         </HoverCard>
@@ -906,7 +907,8 @@ export function LinearTimeline<T>(props: LinearTimelineProps<T>) {
             size="sm"
             variant="ghost"
             {...withoutSx(previousSlot)}
-            css={[stepButtonStyle, previousSlot?.sx]}
+            css={stepButtonStyle}
+            sx={previousSlot?.sx}
             data-ui="linear-timeline-previous"
             aria-label={previousSlot?.['aria-label'] ?? labels.previous}
             aria-controls={joinIds(listId, previousSlot?.['aria-controls'])}
@@ -931,7 +933,8 @@ export function LinearTimeline<T>(props: LinearTimelineProps<T>) {
             size="sm"
             variant="ghost"
             {...withoutSx(nextSlot)}
-            css={[stepButtonStyle, nextSlot?.sx]}
+            css={stepButtonStyle}
+            sx={nextSlot?.sx}
             data-ui="linear-timeline-next"
             aria-label={nextSlot?.['aria-label'] ?? labels.next}
             aria-controls={joinIds(listId, nextSlot?.['aria-controls'])}

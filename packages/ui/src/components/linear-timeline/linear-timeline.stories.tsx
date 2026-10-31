@@ -7,7 +7,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { expectAligned, expectNoOverlap } from '../../testing/geometry-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
-import { Button, Card, HoverCard, Pagination, styled, type ButtonProps, type HoverCardTriggerProps } from '../../index';
+import { Button, Card, HoverCard, Pagination, styled, type ButtonProps, type HoverCardContentProps, type HoverCardTriggerProps } from '../../index';
 import { LinearTimeline } from './index';
 
 interface Article {
@@ -620,6 +620,17 @@ export const StyledParts: Story = {
   parameters: docs(`import { Card, LinearTimeline, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 
+const moments = [
+  { id: 'draft', at: '2026-02-03', title: 'Draft filed' },
+  { id: 'consultation', at: '2026-02-17', title: 'Public consultation opens' },
+  { id: 'closing', at: '2026-03-19', title: 'Consultation closes' },
+  { id: 'committee', at: '2026-04-08', title: 'Committee report' },
+];
+const dateFormat = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeZone: 'UTC' });
+const When = styled.time({ fontSize: vars.textSize.sm, color: vars.color.textMuted, fontVariantNumeric: 'tabular-nums' });
+const date = (moment: (typeof moments)[number]) => (
+  <When dateTime={moment.at}>{dateFormat.format(new Date(moment.at))}</When>
+);
 const AccentCard = styled(Card)({ borderColor: vars.color.accentBorder });
 
 <LinearTimeline
@@ -698,10 +709,16 @@ function ReplacementItem(props: ComponentPropsWithRef<'li'>) {
   return <li {...props} data-testid="replacement-item" />;
 }
 function ReplacementTrigger(props: HoverCardTriggerProps) {
-  return <HoverCard.Trigger {...props} data-testid="replacement-trigger" />;
+  return <HoverCard.Trigger {...props} data-testid="replacement-trigger" data-received-sx={props.sx !== undefined} />;
+}
+function ReplacementDetails(props: HoverCardContentProps) {
+  return <HoverCard.Content {...props} data-received-sx={props.sx !== undefined} />;
 }
 function ReplacementNext(props: ButtonProps) {
-  return <Button {...props} data-testid="replacement-next" />;
+  return <Button {...props} data-testid="replacement-next" data-received-sx={props.sx !== undefined} />;
+}
+function ReplacementPrevious(props: ButtonProps) {
+  return <Button {...props} data-received-sx={props.sx !== undefined} />;
 }
 
 /** Replacement slots receive the part's props and keep its behavior. */
@@ -722,13 +739,15 @@ export const SlotReplacement: Story = {
       component={SugarRoot}
       className="consumer-root"
       data-ui="consumer"
-      slots={{ root: ReplacementRoot, item: ReplacementItem, trigger: ReplacementTrigger, nextButton: ReplacementNext }}
+      slots={{ root: ReplacementRoot, item: ReplacementItem, trigger: ReplacementTrigger, details: ReplacementDetails, previousButton: ReplacementPrevious, nextButton: ReplacementNext }}
       slotProps={{
         root: { className: 'slot-root', title: 'slot title' },
         list: { className: 'slot-list', id: 'custom-moments' },
         item: { className: 'slot-item' },
-        trigger: { className: 'slot-trigger' },
-        details: { className: 'slot-details' },
+        trigger: { className: 'slot-trigger', sx: { color: vars.color.accentText } },
+        details: { className: 'slot-details', sx: { padding: vars.space[2] } },
+        previousButton: { sx: { color: vars.color.accentText } },
+        nextButton: { sx: { color: vars.color.accentText } },
         range: { className: 'slot-range' },
       }}
     />
@@ -744,11 +763,14 @@ export const SlotReplacement: Story = {
     await expect(listOf(canvasElement)).toHaveClass('slot-list');
     await expect(canvas.getByRole('button', { name: 'Previous items' })).toHaveAttribute('aria-controls', 'custom-moments');
     await expect(canvas.getByTestId('replacement-next')).toHaveAttribute('aria-controls', 'custom-moments');
+    await expect(canvas.getByRole('button', { name: 'Previous items' })).toHaveAttribute('data-received-sx', 'true');
+    await expect(canvas.getByTestId('replacement-next')).toHaveAttribute('data-received-sx', 'true');
     const items = canvas.getAllByTestId('replacement-item');
     await expect(items).toHaveLength(MOMENTS.length);
     await expect(items[0]).toHaveClass('slot-item');
     await expect(items[0]).toHaveAttribute('data-ui', 'linear-timeline-item');
     await expect(canvas.getAllByTestId('replacement-trigger')[0]).toHaveClass('slot-trigger');
+    await expect(canvas.getAllByTestId('replacement-trigger')[0]).toHaveAttribute('data-received-sx', 'true');
     await waitFor(() => expect(canvas.getByRole('status')).toHaveClass('slot-range'));
     const status = canvas.getByRole('status');
     const before = status.textContent;
@@ -761,6 +783,7 @@ export const SlotReplacement: Story = {
     await fireEvent.click(trigger);
     const body = within(canvasElement.ownerDocument.body);
     await expect(await body.findByRole('tooltip')).toHaveClass('slot-details');
+    await expect(body.getByRole('tooltip')).toHaveAttribute('data-received-sx', 'true');
     await fireEvent.click(canvas.getByRole('button', { name: 'Previous items' }));
     await waitFor(() => expect(body.queryByRole('tooltip')).toBeNull());
   },
