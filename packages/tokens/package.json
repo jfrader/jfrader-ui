@@ -1,6 +1,6 @@
 {
   "name": "@jfrader/tokens",
-  "version": "0.23.0",
+  "version": "0.24.0",
   "description": "Design tokens for @jfrader/ui: CSS custom properties and typed var() references.",
   "keywords": [
     "design-tokens",
