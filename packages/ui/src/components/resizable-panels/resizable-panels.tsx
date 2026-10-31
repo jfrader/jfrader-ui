@@ -32,7 +32,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ChangeEvent,
   type ComponentPropsWithRef,
   type ComponentType,
   type CSSProperties,

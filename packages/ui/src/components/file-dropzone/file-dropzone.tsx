@@ -648,7 +648,7 @@ export function FileDropzone({
                 src={preview}
                 alt=""
                 styles={[previewStyle]}
-                onError={(event) => {
+                onError={() => {
                   setBrokenPreviews((previous) => new Set([...previous, preview]));
                 }}
               />
