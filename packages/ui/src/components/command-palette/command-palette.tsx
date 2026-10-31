@@ -41,7 +41,6 @@ import {
   useMergeRefs,
   type UseInteractionsReturn,
 } from '@floating-ui/react';
-import { type Theme } from '../../styling/css';
 import { listboxItemStateStyle, listboxItemStyle } from '../../styling/listbox-style';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';

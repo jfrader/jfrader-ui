@@ -17,7 +17,7 @@ import { resolveTimeOptions } from '../../utils/intl';
 import { Button, type ButtonProps } from '../button';
 import { Avatar } from '../avatar';
 import { Dialog, type DialogContentProps } from '../dialog';
-import { RadioGroup, type RadioGroupProps, type RadioGroupShorthandProps } from '../radio-group';
+import { RadioGroup, type RadioGroupShorthandProps } from '../radio-group';
 import { Slider, type SliderProps } from '../slider';
 import { Switch, type SwitchProps } from '../switch';
 import { FieldSlot, type FieldParts, type FieldSlots } from '../field/field-slot';

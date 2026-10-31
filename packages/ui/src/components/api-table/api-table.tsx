@@ -261,7 +261,6 @@ const rowInheritedStyle = css({ backgroundColor: vars.color.surfaceInset });
 
 const nameCellStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: vars.space[1], minInlineSize: 0 });
 const nameStyle = css({ fontFamily: vars.font.mono, fontSize: vars.textSize.sm, fontWeight: vars.fontWeight.semibold, lineHeight: vars.lineHeight.base });
-const nameLinkStyle = css({ color: 'inherit', textUnderlineOffset: '0.2em' });
 const badgeStyle = css({
   display: 'inline-flex',
   alignItems: 'center',
@@ -379,7 +378,6 @@ const signatureTypeStyle = css({
   overflowWrap: 'anywhere',
 });
 const parameterRowStyle = css({ display: 'grid', gridTemplateColumns: 'minmax(90px, 0.4fr) minmax(0, 1.6fr)', columnGap: vars.space[3], rowGap: '0.1em' });
-const tagListStyle = css({ display: 'grid', gap: vars.space[1], marginBlockStart: vars.space[1] });
 const tagStyle = css({ color: vars.color.textMuted, fontSize: vars.textSize.xs, lineHeight: vars.lineHeight.relaxed });
 const exampleStyle = css({
   margin: 0,
@@ -644,7 +642,7 @@ function MemberRows({ members, depth = 0 }: { members: readonly ApiPropDoc[]; de
   );
 }
 
-function Signatures({ signatures, propType }: { signatures: readonly ApiSignatureDoc[]; propType?: string }) {
+function Signatures({ signatures }: { signatures: readonly ApiSignatureDoc[] }) {
   return (
     <div css={signatureStyle}>
       {signatures.map((signature) => (
@@ -945,7 +943,7 @@ function PropRow({ prop, density }: { prop: ApiPropDoc; density: ApiTableDensity
             </>
           ) : null}
           {prop.members?.length ? <MemberRows members={prop.members} /> : null}
-          {prop.signatures?.length ? <Signatures signatures={prop.signatures} propType={prop.type} /> : null}
+          {prop.signatures?.length ? <Signatures signatures={prop.signatures} /> : null}
           {deprecated ? <p css={tagStyle}>{deprecated.text}</p> : null}
           {example ? <pre css={exampleStyle}>{example.text}</pre> : null}
         </div>

@@ -38,31 +38,6 @@ export interface PhoneInputMessages {
   valid: (name: string) => string;
   invalid: (name: string | null) => string;
 }
-type Part =
-  | /** Renders a `div` by default. */
-    'root'
-  | /** Renders a `label` by default. */
-    'label'
-  | /** Renders a `div` by default. */
-    'control'
-  | /** Renders a `button` by default. */
-    'countryTrigger'
-  | /** Renders an `input` by default. */
-    'number'
-  | /** Renders an `input` by default. */
-    'search'
-  | /** Renders a `div` by default. */
-    'panel'
-  | /** Renders a `div` by default. */
-    'list'
-  | /** Renders a `div` by default. */
-    'option'
-  | /** Renders a `span` by default. */
-    'description'
-  | /** Renders a `span` by default. */
-    'error'
-  | /** Renders a `span` by default. */
-    'status';
 type PhoneInputAnatomy = {
   root: 'div'; label: 'label'; control: 'div'; countryTrigger: 'button'; number: 'input';
   search: 'input'; panel: 'div'; list: 'div'; option: 'div'; description: 'span'; error: 'span'; status: 'span';

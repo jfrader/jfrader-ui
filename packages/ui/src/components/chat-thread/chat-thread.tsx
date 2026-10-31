@@ -43,7 +43,6 @@ import {
   fileStyle,
   type ChatAttachment,
   type ChatMessage,
-  type ChatMessageStatus,
   type ChatParticipant,
   type ChatReaction,
 } from '../chat-message/chat-message';
