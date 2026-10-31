@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Breaking pre-1.0
+
+- `ButtonGroup` replaces `collapseLabels` with `overflow="collapse-labels" | "menu" | "none"`. Use `overflow="collapse-labels"` for the previous label-collapse behavior, `overflow="menu"` to move trailing actions into a menu, or `overflow="none"` to retain every label.
+
+### Added
+
+- `AutoEllipsis` fits text on one line with an ellipsis and shows the full text in a tooltip on hover and keyboard focus when truncated. Import it from `@jfrader/ui` or `@jfrader/ui/auto-ellipsis`.
+- `Tooltip.Trigger` accepts `as="button" | "span"` to choose its native host and `describe={false}` to omit the tooltip's accessible description. The defaults remain `as="button"` and `describe={true}`.
+
 ## 0.23.0 — 2026-10-28
 
 ### Breaking pre-1.0

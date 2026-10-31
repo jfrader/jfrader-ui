@@ -8,9 +8,9 @@ composed modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **174**; public callable parts: **188**.
-- Families exposing `slots.root`: **121**; remaining without a family-level root slot: **53** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **133**; remaining without family-level interior slots: **41** (includes components without generated anatomy).
+- Public callable families: **175**; public callable parts: **188**.
+- Families exposing `slots.root`: **121**; remaining without a family-level root slot: **54** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **133**; remaining without family-level interior slots: **42** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -67,6 +67,7 @@ panel material. The section has no background, border or radius to migrate.
 | [ArticleSection](../packages/ui/src/components/article-section/article-section.tsx) | yes | `article`, `band`, `heading`, `list`, `listItem`, `root` | `article`, `band`, `heading`, `list`, `listItem`, `root` | — | — | `Heading` |
 | [ArticleSection.Heading](../packages/ui/src/components/article-section/article-section.tsx) | yes | `accessory`, `heading`, `kicker`, `link`, `root` | `accessory`, `heading`, `kicker`, `link`, `root` | — | — | — |
 | [AttachmentList](../packages/ui/src/components/attachment-list/attachment-list.tsx) | yes | `expandButton`, `item`, `link`, `root` | `expandButton`, `item`, `link`, `root` | — | — | — |
+| [AutoEllipsis](../packages/ui/src/components/auto-ellipsis/auto-ellipsis.tsx) | — | — | — | — | — | — |
 | [Avatar](../packages/ui/src/components/avatar/avatar.tsx) | — | `fallback`, `image`, `status` | `fallback`, `image`, `status` | — | — | — |
 | [AvatarGroup](../packages/ui/src/components/avatar-group/avatar-group.tsx) | — | `member`, `overflow`, `summary` | `member`, `overflow`, `summary` | — | `avatarProps` | — |
 | [Badge](../packages/ui/src/components/badge/badge.tsx) | — | `badge`, `root` | `badge`, `root` | — | — | — |

@@ -22,6 +22,10 @@
     "dist"
   ],
   "exports": {
+    "./auto-ellipsis": {
+      "types": "./src/components/auto-ellipsis/index.ts",
+      "import": "./src/components/auto-ellipsis/index.ts"
+    },
     "./flights": {
       "types": "./src/components/flights/index.ts",
       "import": "./src/components/flights/index.ts"

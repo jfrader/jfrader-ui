@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { syncBuiltinESMExports } from 'node:module';
+import { performance } from 'node:perf_hooks';
 import path from 'node:path';
 import { test } from 'node:test';
 import { loadCsf } from 'storybook/internal/csf-tools';
@@ -196,6 +197,39 @@ test('reads each component story once across coverage and duplicate-title checks
   assert.match(errors[0], /button\/button.stories.tsx: .*Unexpected token/s);
   assert.match(errors[1], /button\/button.stories.tsx: cannot check docs title: .*Unexpected token/s);
   assert.equal(reads, 3);
+});
+
+test('deduplicates shared token arrays in section, snippet, and Games traversals', (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), 'jfrader-docs-shared-array-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  mkdirSync(path.join(root, 'game-card'));
+  writeFileSync(path.join(root, 'game-card/index.ts'), '');
+  writeFileSync(path.join(root, 'game-card/game-card.stories.tsx'), '');
+  const csf = loadCsf(story('"Show a card."'), {
+    fileName: 'game-card.stories.tsx', makeTitle: () => 'Games/GameCard',
+  }).parse();
+  const size = 3000;
+  const traversalCount = 3;
+  const maxDurationMs = 5000;
+  let elementReads = 0;
+  const visits = Array(size).fill(0);
+  const tokens = Array.from({ length: size }, (_, index) => ({
+    get marker() { visits[index] += 1; return index; },
+  }));
+  for (const [index, token] of tokens.entries()) {
+    Object.defineProperty(tokens, index, {
+      enumerable: true,
+      get() { elementReads += 1; return token; },
+    });
+  }
+  csf._ast.sharedLocations = Array.from({ length: size }, () => ({ tokens }));
+  const started = performance.now();
+  assert.deepEqual(checkComponentDocs(root, () => csf), { checked: 1, errors: [] });
+  const elapsed = performance.now() - started;
+  t.diagnostic(`shared-array traversal: ${elapsed.toFixed(3)} ms, ${elementReads} element reads`);
+  assert.deepEqual(visits, Array(size).fill(traversalCount));
+  assert.equal(elementReads, size * traversalCount, 'shared arrays must be enumerated once per traversal');
+  assert.ok(elapsed < maxDurationMs, `shared-array traversal took ${elapsed.toFixed(3)} ms (limit ${maxDurationMs} ms)`);
 });
 
 test('checks curated sections in nested story files without a component index', (t) => {
