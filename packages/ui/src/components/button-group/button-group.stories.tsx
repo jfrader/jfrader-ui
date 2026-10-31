@@ -1274,12 +1274,17 @@ export const OverflowWithComposedMenu: Story = {
   render: (args) => <OverflowLane style={{ '--overflow-fixture-width': `${OVERFLOW_WIDTHS.narrow}px` } as CSSProperties}>
     <ButtonGroup {...args} overflow="menu">
       <ButtonGroup.Item startIcon={<Icon />}>Share document</ButtonGroup.Item>
+      <ButtonGroup.Item startIcon={<Icon />}>Archive selected documents</ButtonGroup.Item>
       <ButtonGroup.Trigger aria-label="Document options" />
       <ButtonGroup.Content><ButtonGroup.MenuItem>Custom command</ButtonGroup.MenuItem></ButtonGroup.Content>
     </ButtonGroup>
   </OverflowLane>,
   play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(canvas.queryByRole('button', { name: 'More actions' })).toBeNull();
+    const group = canvas.getByRole('group');
+    await expect(group).not.toHaveAttribute('data-overflow');
+    await expect(getComputedStyle(group).overflowX).toBe('auto');
+    await expect(group.scrollWidth).toBeGreaterThan(group.clientWidth);
     await expect(canvas.getAllByRole('button', { name: 'Document options' })).toHaveLength(1);
     await userEvent.click(canvas.getByRole('button', { name: 'Document options' }));
     const body = within(canvasElement.ownerDocument.body);
@@ -1293,7 +1298,7 @@ export const OverflowNativeLinkNavigation: Story = {
   render: (args) => <Stack>
     <OverflowLane style={{ '--overflow-fixture-width': `${OVERFLOW_WIDTHS.single}px` } as CSSProperties}>
       <ButtonGroup {...args} overflow="menu">
-        <ButtonGroup.Link href="about:blank#overflow-navigation" target="overflow-navigation-target"
+        <ButtonGroup.Link id="overflow-history-source" href="about:blank#overflow-navigation" target="overflow-navigation-target"
           referrerPolicy="no-referrer" hrefLang="en" type="text/html" ping=""
           onKeyDown={(event) => { event.currentTarget.dataset.consumerKey = event.key; }}>
           Open document history
@@ -1305,6 +1310,8 @@ export const OverflowNativeLinkNavigation: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }));
     const link = await within(canvasElement.ownerDocument.body).findByRole('menuitem', { name: 'Open document history' });
+    await expect(link).not.toHaveAttribute('id', 'overflow-history-source');
+    await expect(canvasElement.ownerDocument.querySelectorAll('#overflow-history-source')).toHaveLength(1);
     await expect(link).toHaveAttribute('referrerpolicy', 'no-referrer');
     await expect(link).toHaveAttribute('hreflang', 'en');
     await expect(link).toHaveAttribute('type', 'text/html');
@@ -1421,6 +1428,43 @@ export const OverflowWithSeparator: Story = {
     const body = within(canvasElement.ownerDocument.body);
     await expect(await body.findByRole('menuitem', { name: 'Archive document' })).toBeVisible();
     await expect(body.getByRole('menuitem', { name: 'Delete document' })).toBeVisible();
+  },
+};
+
+export const OverflowWithVisibleSeparator: Story = {
+  tags: ['!autodocs'],
+  render: (args) => <OverflowLane style={{ '--overflow-fixture-width': '450px' } as CSSProperties}>
+    <ButtonGroup {...args} overflow="menu">
+      <ButtonGroup.Item>Share</ButtonGroup.Item>
+      <ButtonGroup.Separator orientation="vertical" />
+      <ButtonGroup.Item>Archive</ButtonGroup.Item>
+      <ButtonGroup.Item>Publish all selected documents and notify collaborators</ButtonGroup.Item>
+    </ButtonGroup>
+  </OverflowLane>,
+  play: async ({ canvas, canvasElement }) => {
+    const group = canvas.getByRole('group');
+    const lane = group.parentElement!;
+    const separator = canvasElement.querySelector<HTMLElement>('[data-button-group-separator]')!;
+    const trigger = await canvas.findByRole('button', { name: 'More actions' });
+    const actions = Array.from(group.querySelectorAll<HTMLElement>('[data-button-group-action-id]'));
+    const styles = getComputedStyle(separator);
+    const margins = parseFloat(styles.marginInlineStart) + parseFloat(styles.marginInlineEnd);
+    await expect(margins).toBeGreaterThan(0);
+    const required = actions[0]!.getBoundingClientRect().width + separator.getBoundingClientRect().width
+      + margins + actions[1]!.getBoundingClientRect().width + trigger.getBoundingClientRect().width;
+    for (const width of [required + 1, required - margins / 2]) {
+      lane.style.setProperty('--overflow-fixture-width', `${width}px`);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      await waitFor(async () => {
+        if (width > required) {
+          await expect(separator).toBeVisible();
+          await expect(actions[1]).toBeVisible();
+        }
+        const rootStyles = getComputedStyle(group);
+        const contentEnd = group.getBoundingClientRect().left + group.clientLeft + group.clientWidth - parseFloat(rootStyles.paddingRight);
+        await expect(trigger.getBoundingClientRect().right).toBeLessThanOrEqual(contentEnd + 1);
+      });
+    }
   },
 };
 
@@ -1645,7 +1689,7 @@ export const OverflowResizeWhileOpen: Story = {
     await waitFor(async () => { await expect(canvas.queryByRole('button', { name: 'More actions' })).toBeNull(); });
     await waitFor(async () => { await expect(canvas.getByRole('button', { name: 'Archive document' })).toBeVisible(); });
     await waitFor(async () => {
-      await expect(canvasElement.ownerDocument.activeElement).toBe(canvas.getByRole('link', { name: 'Document history' }));
+      await expect(canvasElement.ownerDocument.activeElement).toBe(canvas.getByRole('button', { name: 'Share document' }));
     });
     await userEvent.click(canvas.getByRole('button', { name: 'Narrow' }));
     const remainingTrigger = await canvas.findByRole('button', { name: 'More actions' });
@@ -1665,7 +1709,7 @@ export const OverflowResizeWhileOpen: Story = {
     await userEvent.click(canvas.getByRole('group').parentElement!);
     await waitFor(async () => { await expect(body.queryByRole('menu')).toBeNull(); });
     await waitFor(async () => {
-      await expect(canvasElement.ownerDocument.activeElement).toBe(canvas.getByRole('link', { name: 'Document history' }));
+      await expect(canvasElement.ownerDocument.activeElement).toBe(canvasElement.ownerDocument.body);
     });
     await userEvent.click(canvas.getByRole('button', { name: 'Narrow' }));
     await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }));
@@ -1675,7 +1719,7 @@ export const OverflowResizeWhileOpen: Story = {
     await userEvent.click(activatedArchive);
     await waitFor(async () => { await expect(body.queryByRole('menu')).toBeNull(); });
     await waitFor(async () => {
-      await expect(canvasElement.ownerDocument.activeElement).toBe(canvas.getByRole('link', { name: 'Document history' }));
+      await expect(canvasElement.ownerDocument.activeElement).toBe(canvas.getByRole('button', { name: 'Archive document' }));
     });
   },
 };
@@ -1690,8 +1734,27 @@ export const NoOverflowPolicy: Story = {
   parameters: { docs: { description: { story: 'Scroll the row to reach actions without hiding labels.' } } },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('group')).not.toHaveAttribute('data-compact');
+    for (const label of canvas.getByRole('group').querySelectorAll('[data-button-group-labels]')) {
+      await expect(label).not.toHaveAttribute('data-collapsed');
+      await expect(label.getBoundingClientRect().width).toBeGreaterThan(0);
+    }
     await expect(canvas.getByRole('button', { name: 'Publish all selected documents' })).toBeVisible();
     await expect(canvas.queryByRole('button', { name: 'More actions' })).toBeNull();
+  },
+};
+
+export const ZeroWidthGroup: Story = {
+  tags: ['!autodocs'],
+  render: (args) => <div style={{ width: 0 }}><ButtonGroup {...args}>
+    <ButtonGroup.Item startIcon={<Icon />}>Share document</ButtonGroup.Item>
+  </ButtonGroup></div>,
+  play: async ({ canvas }) => {
+    const group = canvas.getByRole('group');
+    await expect(group.clientWidth).toBe(0);
+    await expect(group).not.toHaveAttribute('data-compact');
+    const label = group.querySelector('[data-button-group-labels]')!;
+    await expect(label).not.toHaveAttribute('data-collapsed');
+    await expect(label.getBoundingClientRect().width).toBeGreaterThan(0);
   },
 };
 

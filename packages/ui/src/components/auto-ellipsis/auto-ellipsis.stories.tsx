@@ -575,6 +575,8 @@ export const MeasurementEdges: Story = {
   render: () => (
     <Column>
       <Lane><AutoEllipsis text="" data-case="empty" /></Lane>
+      <Lane><AutoEllipsis text="   " data-case="whitespace" /></Lane>
+      <Lane><AutoEllipsis text="WWWWWWWWWWWWWWWW" width={24} data-case="token" /></Lane>
       <Lane><AutoEllipsis text="W" width={1} data-case="single" /></Lane>
       <Lane><AutoEllipsis text={LONG} width={0} data-case="zero" /></Lane>
       <Lane><AutoEllipsis text={SHORT} data-case="exact" /></Lane>
@@ -585,6 +587,12 @@ export const MeasurementEdges: Story = {
     await expect(empty.textContent).toBe('');
     await expect(empty).not.toHaveAttribute('data-truncated');
     await expect(empty).not.toHaveAttribute('tabindex');
+    const whitespace = canvasElement.querySelector<HTMLElement>('[data-case="whitespace"]')!;
+    await expect(whitespace).not.toHaveAttribute('data-truncated');
+    await expect(whitespace).not.toHaveAttribute('tabindex');
+    const token = canvasElement.querySelector<HTMLElement>('[data-case="token"]')!;
+    await waitFor(() => expect(token).toHaveAttribute('data-truncated', 'true'));
+    await expect(token.querySelector('[data-ui="auto-ellipsis-text"]')?.textContent).toBe(ELLIPSIS);
     for (const name of ['single', 'zero']) {
       const root = canvasElement.querySelector<HTMLElement>(`[data-case="${name}"]`)!;
       await waitFor(() => expect(root).toHaveAttribute('data-truncated', 'true'));

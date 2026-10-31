@@ -301,11 +301,6 @@ const overflowItemToneStyles: Record<ButtonTone, SerializedStyles> = {
   ...menuItemToneStyles,
   accent: css({ color: vars.color.accentText }),
 };
-const overflowProbeStyle = css({
-  position: 'absolute',
-  visibility: 'hidden',
-  pointerEvents: 'none',
-});
 const segmentStyle = css({
   label: 'button-group-segment',
   position: 'relative',
@@ -652,8 +647,9 @@ function ButtonGroupRoot({
   const [overflowed, setOverflowed] = useState<HTMLElement[]>([]);
   const overflowedRef = useRef<HTMLElement[]>([]);
   const overflowTriggerRef = useRef<HTMLButtonElement>(null);
-  const overflowProbeRef = useRef<HTMLButtonElement>(null);
   const overflowReturnAction = useRef<HTMLElement | null>(null);
+  const overflowCloseReason = useRef<'escape' | 'activation' | null>(null);
+  const [automaticOverflow, setAutomaticOverflow] = useState(false);
   const restoreOverflowFocus = useCallback((triggerAvailable = true) => {
     const root = rootRef.current;
     if (!root?.isConnected) return;
@@ -667,7 +663,7 @@ function ButtonGroupRoot({
     const trigger = overflowTriggerRef.current;
     const destination = (original && visible.includes(original) ? original : null)
       ?? (trigger && visible.includes(trigger) ? trigger : null)
-      ?? visible.at(-1) ?? visible[0];
+      ?? (!triggerAvailable || !trigger?.isConnected ? visible[0] : null);
     if (destination) destination.focus();
     else {
       if (!root.hasAttribute('tabindex')) {
@@ -755,6 +751,7 @@ function ButtonGroupRoot({
     }
     const measure = () => {
       if (overflow !== 'menu') {
+        if (!root.clientWidth) { setCompact(false); return; }
         const segments = queryOwnedItems(root, {
           ownerSelector: OWNER,
           itemSelector: '[data-button-group-segment]',
@@ -780,12 +777,14 @@ function ButtonGroupRoot({
       const trigger = overflowTriggerRef.current;
       const composedTrigger = segments.find((node) => node !== trigger && node.matches('[data-ui~="button-group-trigger"]'));
       const automaticMenu = overflow === 'menu' && !composedTrigger;
-      const triggerWidth = (trigger ?? overflowProbeRef.current)?.getBoundingClientRect().width ?? 0;
+      setAutomaticOverflow(automaticMenu);
+      const triggerWidth = trigger?.getBoundingClientRect().width ?? 0;
       setCompact(false);
-      const widths = segments.filter((node) => node !== trigger).map((node) => ({
-        node,
-        width: node.getBoundingClientRect().width / scale,
-      }));
+      const widths = segments.filter((node) => node !== trigger).map((node) => {
+        const styles = getComputedStyle(node);
+        return { node, width: node.getBoundingClientRect().width / scale
+          + (parseFloat(styles.marginInlineStart) || 0) + (parseFloat(styles.marginInlineEnd) || 0) };
+      });
       const rootStyles = getComputedStyle(root);
       const gap = parseFloat(rootStyles.columnGap) || 0;
       const availableWithoutTrigger = root.clientWidth - (parseFloat(rootStyles.paddingInlineStart) || 0) - (parseFloat(rootStyles.paddingInlineEnd) || 0);
@@ -797,17 +796,26 @@ function ButtonGroupRoot({
       let used = 0;
       let trailing = false;
       let visibleCount = 0;
+      let pendingWidth = 0;
+      let pendingCount = 0;
       const nextOverflowed: HTMLElement[] = [];
       for (const item of widths) {
+        if (item.node.hasAttribute('data-button-group-separator')) {
+          pendingWidth += item.width;
+          pendingCount += 1;
+          continue;
+        }
         const previouslyOverflowed = overflowedRef.current.includes(item.node);
-        const nextUsed = used + item.width + (visibleCount ? gap : 0);
+        const nextUsed = used + pendingWidth + item.width + gap * (pendingCount + (visibleCount ? 1 : 0));
         const fits = nextUsed <= available - (previouslyOverflowed ? COMPACT_HYSTERESIS : 0);
-        if (needsTrigger && actions.current.has(item.node) && (trailing || !fits)) {
+        if (needsTrigger && actions.current.has(item.node) && (trailing || !fits || (menuOpen && previouslyOverflowed))) {
           trailing = true;
           nextOverflowed.push(item.node);
         } else {
           used = nextUsed;
-          visibleCount += 1;
+          visibleCount += pendingCount + 1;
+          pendingWidth = 0;
+          pendingCount = 0;
         }
       }
       // Keep the open collection's order and identity; newly overflowed actions append without
@@ -854,6 +862,12 @@ function ButtonGroupRoot({
   }, [presentation, overflow, orientation, rest.dir, actionRevision, menuOpen, needsOverflowTrigger, restoreOverflowFocus]);
   useLayoutEffect(() => { measureRef.current?.(); });
   const wasOverflowMenuOpen = useRef(menuOpen && needsOverflowTrigger);
+  useEffect(() => {
+    const document = rootRef.current?.ownerDocument;
+    const clearReason = () => { overflowCloseReason.current = null; };
+    document?.addEventListener('pointerdown', clearReason, true);
+    return () => document?.removeEventListener('pointerdown', clearReason, true);
+  }, []);
   useLayoutEffect(() => {
     const lostMenu = wasOverflowMenuOpen.current && (!menuOpen || !needsOverflowTrigger);
     wasOverflowMenuOpen.current = menuOpen && needsOverflowTrigger;
@@ -862,8 +876,9 @@ function ButtonGroupRoot({
       if (wasOverflowMenuOpen.current) return;
       const root = rootRef.current;
       const active = root?.ownerDocument.activeElement;
-      if (root && (active === root.ownerDocument.body || active === overflowTriggerRef.current))
-        restoreOverflowFocus();
+      if (overflowCloseReason.current && root && (active === root.ownerDocument.body || active === overflowTriggerRef.current))
+        restoreOverflowFocus(needsOverflowTrigger);
+      overflowCloseReason.current = null;
       overflowReturnAction.current = null;
     });
   }, [menuOpen, needsOverflowTrigger, restoreOverflowFocus]);
@@ -934,7 +949,7 @@ function ButtonGroupRoot({
                 data-orientation={orientation}
                 data-presentation={presentation}
                 data-compact={compact || undefined}
-                data-overflow={overflow === 'menu' && presentation === 'joined' && orientation === 'horizontal' ? 'menu' : undefined}
+                data-overflow={automaticOverflow && overflow === 'menu' && presentation === 'joined' && orientation === 'horizontal' ? 'menu' : undefined}
                 style={mergedStyle}
                 className={resolvedClassName}
                 onKeyDown={(event) => {
@@ -1071,18 +1086,18 @@ function ButtonGroupRoot({
                 )}
                 {overflow === 'menu' && presentation === 'joined' && orientation === 'horizontal' && (
                   <>
-                    <Button ref={overflowProbeRef} aria-hidden inert tabIndex={-1}
-                      variant={variant} tone={tone} size={size}
-                      data-button-group-probe
-                      css={[segmentStyle, sizeStyles[size], overflowProbeStyle]}
-                    ><span css={caretStyle} aria-hidden>{caret}</span></Button>
                     {needsOverflowTrigger && (
                       <>
                         <ButtonGroupTrigger ref={overflowTriggerRef} aria-label={overflowLabel} />
-                        <ButtonGroupContent>
+                        <ButtonGroupContent onKeyDownCapture={(event) => {
+                          overflowCloseReason.current = event.key === 'Escape' ? 'escape' : null;
+                        }} onPointerDownCapture={() => { overflowCloseReason.current = null; }}>
                           {overflowed.map((node) => {
                             const action = actions.current.get(node);
-                            return action ? <OverflowMenuAction key={node.dataset.buttonGroupActionId} node={node} action={action} /> : null;
+                            return action ? <OverflowMenuAction key={node.dataset.buttonGroupActionId} node={node} action={action} onActivate={() => {
+                              overflowReturnAction.current = node;
+                              overflowCloseReason.current = 'activation';
+                            }} /> : null;
                           })}
                         </ButtonGroupContent>
                       </>
@@ -1099,7 +1114,7 @@ function ButtonGroupRoot({
 }
 ButtonGroupRoot.displayName = 'ButtonGroup';
 
-function OverflowMenuAction({ node, action }: { node: HTMLElement; action: OverflowAction }) {
+function OverflowMenuAction({ node, action, onActivate }: { node: HTMLElement; action: OverflowAction; onActivate: () => void }) {
   const group = useGroup('Item');
   const metadata = useRef(action);
   metadata.current = action;
@@ -1119,8 +1134,14 @@ function OverflowMenuAction({ node, action }: { node: HTMLElement; action: Overf
         const native = action.native;
         return native.kind === 'link' ? (
           <a
-            {...native.props}
             {...props}
+            target={native.props.target}
+            rel={native.props.rel}
+            download={native.props.download}
+            referrerPolicy={native.props.referrerPolicy}
+            hrefLang={native.props.hrefLang}
+            type={native.props.type}
+            ping={native.props.ping}
             href={inactive ? undefined : native.props.href}
             onKeyDown={(event) => {
               const current = metadata.current;
@@ -1136,6 +1157,7 @@ function OverflowMenuAction({ node, action }: { node: HTMLElement; action: Overf
               const current = metadata.current;
               if (group.disabled || current.disabled) { event.preventDefault(); return; }
               if (current.native.kind === 'link') current.native.props.onClick?.(event);
+              if (!event.defaultPrevented) onActivate();
               props.onClick?.(event);
             }}
           >{children}</a>
@@ -1147,6 +1169,7 @@ function OverflowMenuAction({ node, action }: { node: HTMLElement; action: Overf
               const current = metadata.current;
               if (group.disabled || current.disabled) { event.preventDefault(); return; }
               if (current.native.kind === 'button') current.native.props.onClick?.(event);
+              if (!event.defaultPrevented) onActivate();
               props.onClick?.(event);
               if (!event.defaultPrevented && node instanceof HTMLButtonElement && node.type === 'submit') node.form?.requestSubmit(node);
             }}
