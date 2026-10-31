@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.25.0 - 2026-10-31
+
 ### Breaking pre-1.0
 
 - `ButtonGroup` replaces `collapseLabels` with `overflow="collapse-labels" | "menu" | "none"`. Use `overflow="collapse-labels"` for the previous label-collapse behavior, `overflow="menu"` to move trailing actions into a menu, or `overflow="none"` to retain every label.

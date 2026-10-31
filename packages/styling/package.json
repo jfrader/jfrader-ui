@@ -1,6 +1,6 @@
 {
   "name": "@jfrader/styling",
-  "version": "0.24.0",
+  "version": "0.25.0",
   "description": "Shared Emotion styling seam for @jfrader/icons and @jfrader/ui.",
   "keywords": [
     "react",
