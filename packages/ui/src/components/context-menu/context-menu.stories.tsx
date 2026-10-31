@@ -1058,7 +1058,8 @@ const TargetBox = styled(ContextMenu.Target)({
     // Shift+Tab from the first item returns to the invoker and keeps the menu open (Menu policy).
     await userEvent.tab({ shift: true });
     await expectActive(canvasElement, target);
-    await expect(bodyOf(canvasElement).getByRole('menu')).toBeVisible();
+    // Focus can settle before the menu's entry animation becomes visible.
+    await waitFor(() => expect(bodyOf(canvasElement).getByRole('menu')).toBeVisible(), { timeout: 1000 });
     await userEvent.keyboard('{Escape}');
     await expectClosed(canvasElement);
 
@@ -2234,7 +2235,8 @@ export const RejectedEscapeThenScroll: Story = {
     // The parent rejects Escape: the menu stays and keeps focus.
     await userEvent.keyboard('{Escape}');
     await expect(callValues(args.onOpenChange)).toEqual([true, false]);
-    await expect(bodyOf(canvasElement).getByRole('menu')).toBeVisible();
+    // Focus can settle before the menu's entry animation becomes visible.
+    await waitFor(() => expect(bodyOf(canvasElement).getByRole('menu')).toBeVisible(), { timeout: 1000 });
     await expectItemFocused(canvasElement, 'Copy link');
 
     // An accepted scroll dismissal afterwards never focuses the invoker, not even transiently.
@@ -2723,7 +2725,8 @@ export const InsidePopover: Story = {
     await expectItemFocused(canvasElement, 'Copy link');
     await userEvent.tab({ shift: true });
     await expectActive(canvasElement, target);
-    await expect(bodyOf(canvasElement).getByRole('menu')).toBeVisible();
+    // Focus can settle before the menu's entry animation becomes visible.
+    await waitFor(() => expect(bodyOf(canvasElement).getByRole('menu')).toBeVisible(), { timeout: 1000 });
     await userEvent.keyboard('{Escape}');
     await expectClosed(canvasElement, target);
     await expectActive(canvasElement, target);

@@ -19,7 +19,7 @@ function walk(node, visit, seen = new WeakSet()) {
   seen.add(node);
   visit(node);
   for (const value of Object.values(node)) {
-    if (Array.isArray(value)) value.forEach((child) => walk(child, visit, seen));
+    if (Array.isArray(value)) walk(value, visit, seen);
     else if (value && typeof value === 'object') walk(value, visit, seen);
   }
 }
@@ -141,7 +141,7 @@ function checkSnippetsCsf(csf) {
       }
     }
     for (const value of Object.values(node)) {
-      if (Array.isArray(value)) value.forEach(visit);
+      if (Array.isArray(value)) visit(value);
       else if (value && typeof value === 'object') visit(value);
     }
   }

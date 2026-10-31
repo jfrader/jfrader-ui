@@ -11,6 +11,7 @@ export * from './components/article';
 export * from './components/article-list';
 export * from './components/article-section';
 export * from './components/attachment-list';
+export * from './components/auto-ellipsis';
 export * from './components/avatar';
 export * from './components/avatar-group';
 export * from './components/badge';

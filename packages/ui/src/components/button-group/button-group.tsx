@@ -2,8 +2,10 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -11,6 +13,7 @@ import {
   type ComponentPropsWithRef,
   type ComponentType,
   type ReactNode,
+  type Ref,
 } from 'react';
 import { useMergeRefs, type Placement } from '@floating-ui/react';
 import { MotionConfig, animate, motion, useMotionValue, useReducedMotion } from 'motion/react';
@@ -52,6 +55,7 @@ const tokens = (...values: Array<unknown>): string | undefined => {
 
 export type ButtonGroupOrientation = 'horizontal' | 'vertical';
 export type ButtonGroupPresentation = 'joined' | 'floating' | 'expanding';
+export type ButtonGroupOverflow = 'none' | 'collapse-labels' | 'menu';
 
 export type ButtonGroupItemRecord =
   | Readonly<Omit<ButtonGroupItemProps, 'children' | 'label'> & {
@@ -105,8 +109,10 @@ export interface ButtonGroupBaseProps extends Omit<ComponentPropsWithRef<'div'>,
   size?: ButtonSize;
   /** Arrange actions horizontally or vertically. Defaults to `horizontal`. */
   orientation?: ButtonGroupOrientation;
-  /** Hide icon-bearing action labels when a horizontal joined group overflows. Defaults to `true`. */
-  collapseLabels?: boolean;
+  /** Fit horizontal joined actions by hiding icon-bearing labels with `collapse-labels`, or moving fully labeled trailing actions to a menu with `menu`. `none` disables measurement. Defaults to `collapse-labels`. */
+  overflow?: ButtonGroupOverflow;
+  /** Name the generated overflow menu trigger. Defaults to `More actions`. */
+  overflowLabel?: string;
   /** Disable every action and the menu trigger. Defaults to `false`. */
   disabled?: boolean;
   /** Control whether the group's menu is open. */
@@ -197,6 +203,19 @@ interface GroupContext {
   direction: 'ltr' | 'rtl' | undefined;
   triggerLabelledBy: string | undefined;
   setTriggerLabelledBy: (ids: string | undefined) => void;
+  registerAction: (node: HTMLElement, action: OverflowAction) => () => void;
+  reviseAction: () => void;
+}
+interface OverflowAction {
+  native: { kind: 'link'; props: ComponentPropsWithRef<'a'> } | { kind: 'button'; props: ComponentPropsWithRef<'button'> };
+  content: ReactNode;
+  icon: ReactNode;
+  name?: string;
+  variant?: ButtonVariant;
+  tone?: ButtonTone;
+  size?: ButtonSize;
+  inert?: boolean;
+  disabled?: boolean;
 }
 const Context = createContext<GroupContext | null>(null);
 function useGroup(part: string) {
@@ -204,10 +223,26 @@ function useGroup(part: string) {
   if (!context) throw new Error(`ButtonGroup.${part} must be rendered inside <ButtonGroup>.`);
   return context;
 }
+function useOverflowAction(action: OverflowAction, ref: Ref<HTMLElement> | undefined) {
+  const { registerAction, reviseAction } = useGroup('Item');
+  const nodeRef = useRef<HTMLElement>(null);
+  const metadata = useRef(action);
+  const id = useId();
+  useLayoutEffect(() => {
+    const changed = metadata.current.disabled !== action.disabled || metadata.current.content !== action.content || metadata.current.name !== action.name;
+    Object.assign(metadata.current, action);
+    if (changed) reviseAction();
+  });
+  useLayoutEffect(() => {
+    const node = nodeRef.current;
+    if (node) return registerAction(node, metadata.current);
+  }, [registerAction]);
+  return { ref: useMergeRefs([nodeRef, ref]), id };
+}
 const OWNER = '[data-ui~="button-group"]';
 const OWNED_ACTIONS = {
   ownerSelector: OWNER,
-  itemSelector: '[data-button-group-action]:not(:disabled):not([aria-disabled="true"])',
+  itemSelector: '[data-button-group-action]:not([data-button-group-overflowed]):not(:disabled):not([aria-disabled="true"])',
 };
 const SPRING = {
   type: 'spring',
@@ -238,6 +273,38 @@ const rootStyle = css({
   overflowY: 'hidden',
   '&[data-compact]': { inlineSize: '100%' },
   '&[data-orientation="vertical"]': { flexDirection: 'column', whiteSpace: 'normal', textAlign: 'start' },
+  '&[data-overflow="menu"]': {
+    inlineSize: '100%',
+    overflow: 'clip',
+    boxSizing: 'border-box',
+  },
+  '& > [data-button-group-overflowed]': {
+    position: 'absolute',
+    visibility: 'hidden',
+    pointerEvents: 'none',
+  },
+});
+const overflowItemStyle = css({
+  gap: vars.space[2],
+  inlineSize: '100%',
+  minInlineSize: 0,
+  minBlockSize: controlBlockSize.sm,
+  blockSize: 'auto',
+  justifyContent: 'flex-start',
+  textAlign: 'start',
+  overflowWrap: 'anywhere',
+  whiteSpace: 'normal',
+  textDecoration: 'none',
+  '& > svg': { inlineSize: vars.space[4], blockSize: vars.space[4], flexShrink: 0 },
+});
+const overflowItemToneStyles: Record<ButtonTone, SerializedStyles> = {
+  ...menuItemToneStyles,
+  accent: css({ color: vars.color.accentText }),
+};
+const overflowProbeStyle = css({
+  position: 'absolute',
+  visibility: 'hidden',
+  pointerEvents: 'none',
 });
 const segmentStyle = css({
   label: 'button-group-segment',
@@ -255,21 +322,21 @@ const segmentStyle = css({
   whiteSpace: 'inherit',
   textAlign: 'inherit',
   '&:focus-visible': { zIndex: 1, outlineOffset: '-2px' },
-  '&:where([data-orientation="horizontal"] > [data-button-group-segment] ~ [data-button-group-segment])': {
+  '&:where([data-orientation="horizontal"] > [data-button-group-segment]:not([role="separator"]):not([data-button-group-overflowed]) ~ [data-button-group-segment]:not([role="separator"]))': {
     '--button-group-start-start-radius': '0px',
     '--button-group-end-start-radius': '0px',
     '--button-group-inline-start-width': '0px',
   },
-  '&:where([data-orientation="horizontal"] > :has(~ [data-button-group-segment]))': {
+  '&:where([data-orientation="horizontal"] > [data-button-group-segment]:not([role="separator"]):has(~ [data-button-group-segment]:not([role="separator"]):not([data-button-group-overflowed])))': {
     '--button-group-start-end-radius': '0px',
     '--button-group-end-end-radius': '0px',
   },
-  '&:where([data-orientation="vertical"] > [data-button-group-segment] ~ [data-button-group-segment])': {
+  '&:where([data-orientation="vertical"] > [data-button-group-segment]:not([role="separator"]) ~ [data-button-group-segment]:not([role="separator"]))': {
     '--button-group-start-start-radius': '0px',
     '--button-group-start-end-radius': '0px',
     '--button-group-block-start-width': '0px',
   },
-  '&:where([data-orientation="vertical"] > :has(~ [data-button-group-segment]))': {
+  '&:where([data-orientation="vertical"] > [data-button-group-segment]:not([role="separator"]):has(~ [data-button-group-segment]:not([role="separator"])))': {
     '--button-group-end-start-radius': '0px',
     '--button-group-end-end-radius': '0px',
   },
@@ -520,7 +587,8 @@ function ButtonGroupRoot({
   tone = 'neutral',
   size = 'md',
   orientation = 'horizontal',
-  collapseLabels = true,
+  overflow = 'collapse-labels',
+  overflowLabel = 'More actions',
   disabled = false,
   open,
   defaultOpen,
@@ -570,6 +638,48 @@ function ButtonGroupRoot({
   const rootRef = useRef<HTMLDivElement>(null);
   const mergedRef = useMergeRefs([rootRef, ref, rootSlotRef]);
   const [compact, setCompact] = useState(false);
+  const actions = useRef(new Map<HTMLElement, OverflowAction>());
+  const [actionRevision, setActionRevision] = useState(0);
+  const reviseAction = useCallback(() => setActionRevision((revision) => revision + 1), []);
+  const registerAction = useCallback((node: HTMLElement, action: OverflowAction) => {
+    actions.current.set(node, action);
+    setActionRevision((revision) => revision + 1);
+    return () => {
+      actions.current.delete(node);
+      setActionRevision((revision) => revision + 1);
+    };
+  }, []);
+  const [overflowed, setOverflowed] = useState<HTMLElement[]>([]);
+  const overflowedRef = useRef<HTMLElement[]>([]);
+  const overflowTriggerRef = useRef<HTMLButtonElement>(null);
+  const overflowProbeRef = useRef<HTMLButtonElement>(null);
+  const overflowReturnAction = useRef<HTMLElement | null>(null);
+  const restoreOverflowFocus = useCallback((triggerAvailable = true) => {
+    const root = rootRef.current;
+    if (!root?.isConnected) return;
+    const visible = queryOwnedItems(root, OWNED_ACTIONS).filter((node) => (
+      (triggerAvailable || node !== overflowTriggerRef.current)
+      && !node.closest('[inert]')
+      && node.getClientRects().length > 0
+      && getComputedStyle(node).visibility !== 'hidden'
+    ));
+    const original = overflowReturnAction.current;
+    const trigger = overflowTriggerRef.current;
+    const destination = (original && visible.includes(original) ? original : null)
+      ?? (trigger && visible.includes(trigger) ? trigger : null)
+      ?? visible.at(-1) ?? visible[0];
+    if (destination) destination.focus();
+    else {
+      if (!root.hasAttribute('tabindex')) {
+        root.tabIndex = -1;
+        root.addEventListener('blur', () => root.removeAttribute('tabindex'), { once: true });
+      }
+      root.focus();
+    }
+  }, []);
+  const measureRef = useRef<(() => void) | null>(null);
+  const [needsOverflowTrigger, setNeedsOverflowTrigger] = useState(false);
+  const [menuOpen = false, requestMenuOpen] = useControlledState(open, defaultOpen ?? false, onOpenChange);
   const [direction, setDirection] = useState<'ltr' | 'rtl'>();
   const [triggerLabelledBy, setTriggerLabelledBy] = useState<string>();
   const [target, setTarget] = useState<HTMLElement | null>(null);
@@ -628,43 +738,142 @@ function ButtonGroupRoot({
     const root = rootRef.current;
     if (!root) return;
     setDirection(getComputedStyle(root).direction === 'rtl' ? 'rtl' : 'ltr');
-    if (presentation !== 'joined' || !collapseLabels || orientation === 'vertical') {
+    queryOwnedItems(root, { ownerSelector: OWNER, itemSelector: '[data-button-group-separator][data-button-group-overflowed]' }).forEach((node) => {
+      node.removeAttribute('data-button-group-overflowed');
+    });
+    if (presentation !== 'joined' || overflow === 'none' || orientation === 'vertical') {
       setCompact(false);
+      for (const node of overflowedRef.current) {
+        node.removeAttribute('data-button-group-overflowed');
+        node.inert = actions.current.get(node)?.inert ?? false;
+      }
+      if (overflowedRef.current.length) {
+        overflowedRef.current = [];
+        setOverflowed([]);
+      }
       return;
     }
     const measure = () => {
+      if (overflow !== 'menu') {
+        const segments = queryOwnedItems(root, {
+          ownerSelector: OWNER,
+          itemSelector: '[data-button-group-segment]',
+        });
+        const fullWidth = segments.reduce((sum, node) => {
+          const labelEl = node.querySelector<HTMLElement>('[data-button-group-labels][data-collapsed]');
+          return (
+            sum +
+            node.getBoundingClientRect().width / (root.getBoundingClientRect().width / root.offsetWidth || 1) +
+            (labelEl ? labelEl.scrollWidth + parseFloat(getComputedStyle(node).columnGap || '0') : 0)
+          );
+        }, 0);
+        setCompact((current) =>
+          current ? fullWidth > root.clientWidth - COMPACT_HYSTERESIS : fullWidth > root.clientWidth + 1,
+        );
+        return;
+      }
       const segments = queryOwnedItems(root, {
         ownerSelector: OWNER,
-        itemSelector: '[data-button-group-segment]',
+        itemSelector: '[data-button-group-segment], [data-button-group-separator]',
       });
-      const fullWidth = segments.reduce((sum, node) => {
-        const labelEl = node.querySelector<HTMLElement>('[data-button-group-labels][data-collapsed]');
-        return (
-          sum +
-          node.getBoundingClientRect().width / (root.getBoundingClientRect().width / root.offsetWidth || 1) +
-          (labelEl ? labelEl.scrollWidth + parseFloat(getComputedStyle(node).columnGap || '0') : 0)
-        );
-      }, 0);
-      setCompact((current) =>
-        current ? fullWidth > root.clientWidth - COMPACT_HYSTERESIS : fullWidth > root.clientWidth + 1,
-      );
+      const scale = root.getBoundingClientRect().width / root.offsetWidth || 1;
+      const trigger = overflowTriggerRef.current;
+      const composedTrigger = segments.find((node) => node !== trigger && node.matches('[data-ui~="button-group-trigger"]'));
+      const automaticMenu = overflow === 'menu' && !composedTrigger;
+      const triggerWidth = (trigger ?? overflowProbeRef.current)?.getBoundingClientRect().width ?? 0;
+      setCompact(false);
+      const widths = segments.filter((node) => node !== trigger).map((node) => ({
+        node,
+        width: node.getBoundingClientRect().width / scale,
+      }));
+      const rootStyles = getComputedStyle(root);
+      const gap = parseFloat(rootStyles.columnGap) || 0;
+      const availableWithoutTrigger = root.clientWidth - (parseFloat(rootStyles.paddingInlineStart) || 0) - (parseFloat(rootStyles.paddingInlineEnd) || 0);
+      const fullWidth = widths.reduce((sum, item) => sum + item.width, 0) + gap * Math.max(0, widths.length - 1);
+      const needsTrigger = automaticMenu && (fullWidth > availableWithoutTrigger - (overflowedRef.current.length ? COMPACT_HYSTERESIS : 0) || (menuOpen && overflowedRef.current.length > 0));
+      setNeedsOverflowTrigger(needsTrigger);
+      if (needsTrigger && !trigger) return;
+      const available = availableWithoutTrigger - (needsTrigger ? triggerWidth / scale + gap : 0);
+      let used = 0;
+      let trailing = false;
+      let visibleCount = 0;
+      const nextOverflowed: HTMLElement[] = [];
+      for (const item of widths) {
+        const previouslyOverflowed = overflowedRef.current.includes(item.node);
+        const nextUsed = used + item.width + (visibleCount ? gap : 0);
+        const fits = nextUsed <= available - (previouslyOverflowed ? COMPACT_HYSTERESIS : 0);
+        if (needsTrigger && actions.current.has(item.node) && (trailing || !fits)) {
+          trailing = true;
+          nextOverflowed.push(item.node);
+        } else {
+          used = nextUsed;
+          visibleCount += 1;
+        }
+      }
+      // Keep the open collection's order and identity; newly overflowed actions append without
+      // changing the active item's navigation index. Recovery waits until the menu closes.
+      const next = automaticMenu && menuOpen
+        ? [...overflowedRef.current.filter((node) => actions.current.has(node)), ...nextOverflowed.filter((node) => !overflowedRef.current.includes(node))]
+        : nextOverflowed;
+      const hiddenNodes = new Set(next);
+      let hasFollowingVisibleAction = false;
+      for (const { node } of widths.toReversed()) {
+        if (actions.current.has(node)) hasFollowingVisibleAction ||= !hiddenNodes.has(node);
+        else if (node.hasAttribute('data-button-group-separator') && !hasFollowingVisibleAction) hiddenNodes.add(node);
+      }
+      for (const { node } of widths) {
+        const hidden = hiddenNodes.has(node);
+        if (hidden && node === root.ownerDocument.activeElement) {
+          overflowReturnAction.current = node;
+          trigger?.focus();
+        }
+        node.toggleAttribute('data-button-group-overflowed', hidden);
+        const action = actions.current.get(node);
+        if (action) node.inert = hidden || (action.inert ?? false);
+      }
+      if (!needsTrigger && trigger === root.ownerDocument.activeElement) {
+        restoreOverflowFocus(false);
+      }
+      if (next.length !== overflowedRef.current.length || next.some((node, index) => node !== overflowedRef.current[index])) {
+        overflowedRef.current = next;
+        setOverflowed(next);
+      }
     };
     const observer = new ResizeObserver(measure);
+    measureRef.current = measure;
     observer.observe(root);
     queryOwnedItems(root, {
       ownerSelector: OWNER,
-      itemSelector: '[data-button-group-segment], [data-button-group-labels]',
+      itemSelector: '[data-button-group-segment], [data-button-group-separator], [data-button-group-labels]',
     }).forEach((node) => observer.observe(node));
     measure();
-    return () => observer.disconnect();
-  }, [presentation, collapseLabels, orientation, children, items, rest.dir]);
+    return () => {
+      measureRef.current = null;
+      observer.disconnect();
+    };
+  }, [presentation, overflow, orientation, rest.dir, actionRevision, menuOpen, needsOverflowTrigger, restoreOverflowFocus]);
+  useLayoutEffect(() => { measureRef.current?.(); });
+  const wasOverflowMenuOpen = useRef(menuOpen && needsOverflowTrigger);
+  useLayoutEffect(() => {
+    const lostMenu = wasOverflowMenuOpen.current && (!menuOpen || !needsOverflowTrigger);
+    wasOverflowMenuOpen.current = menuOpen && needsOverflowTrigger;
+    if (!lostMenu) return;
+    queueMicrotask(() => {
+      if (wasOverflowMenuOpen.current) return;
+      const root = rootRef.current;
+      const active = root?.ownerDocument.activeElement;
+      if (root && (active === root.ownerDocument.body || active === overflowTriggerRef.current))
+        restoreOverflowFocus();
+      overflowReturnAction.current = null;
+    });
+  }, [menuOpen, needsOverflowTrigger, restoreOverflowFocus]);
   useEffect(() => {
     if (
       disabled ||
       (target && (!target.matches(OWNED_ACTIONS.itemSelector) || target.closest(OWNER) !== rootRef.current))
     )
       setTarget(null);
-  }, [disabled, children, items, target]);
+  }, [disabled, children, items, target, overflowed]);
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root || !target) return;
@@ -685,12 +894,14 @@ function ButtonGroupRoot({
       tone: variant === 'solid' ? 'neutral' : tone,
       size,
       disabled,
-      compact,
+      compact: overflow === 'collapse-labels' && compact,
       direction,
       triggerLabelledBy,
       setTriggerLabelledBy,
+      registerAction,
+      reviseAction,
     }),
-    [presentation, expandedValue, variant, tone, size, disabled, compact, direction, triggerLabelledBy],
+    [presentation, expandedValue, variant, tone, size, disabled, compact, overflow, direction, triggerLabelledBy, registerAction, reviseAction],
   );
   const owned = (node: EventTarget | null) => {
     const item = node instanceof Element ? node.closest<HTMLElement>(OWNED_ACTIONS.itemSelector) : null;
@@ -703,16 +914,15 @@ function ButtonGroupRoot({
   };
   return (
     <Menu
-      open={open}
-      defaultOpen={defaultOpen}
+      open={menuOpen}
       onOpenChange={(next) => {
-        if (!next || !disabled) onOpenChange?.(next);
+        if (!next || !disabled) requestMenuOpen(next);
       }}
       placement={placement ?? (orientation === 'vertical' ? 'bottom-start' : 'bottom-end')}
     >
       <Context.Provider value={context}>
         <MotionConfig reducedMotion="user">
-          <WithSx className={mergedClassName} styles={[rootStyle, presentation === 'floating' && trayStyle, rootSlotSx]} sx={sx}>
+          <WithSx className={mergedClassName} styles={[rootStyle, overflow === 'menu' && controlSizeStyles[size], overflow === 'menu' && controlTouchTargetStyles[size], presentation === 'floating' && trayStyle, rootSlotSx]} sx={sx}>
             {(resolvedClassName) => (
               <Root
                 {...rest}
@@ -724,6 +934,7 @@ function ButtonGroupRoot({
                 data-orientation={orientation}
                 data-presentation={presentation}
                 data-compact={compact || undefined}
+                data-overflow={overflow === 'menu' && presentation === 'joined' && orientation === 'horizontal' ? 'menu' : undefined}
                 style={mergedStyle}
                 className={resolvedClassName}
                 onKeyDown={(event) => {
@@ -763,6 +974,7 @@ function ButtonGroupRoot({
                   (rootSlotOnFocus ?? onFocus)?.(event);
                   const item = owned(event.target);
                   if (!event.defaultPrevented && item) {
+                    if (item !== overflowTriggerRef.current) overflowReturnAction.current = null;
                     setTarget(item);
                     reveal(item);
                     item.scrollIntoView({
@@ -857,6 +1069,26 @@ function ButtonGroupRoot({
                 ) : (
                   children
                 )}
+                {overflow === 'menu' && presentation === 'joined' && orientation === 'horizontal' && (
+                  <>
+                    <Button ref={overflowProbeRef} aria-hidden inert tabIndex={-1}
+                      variant={variant} tone={tone} size={size}
+                      data-button-group-probe
+                      css={[segmentStyle, sizeStyles[size], overflowProbeStyle]}
+                    ><span css={caretStyle} aria-hidden>{caret}</span></Button>
+                    {needsOverflowTrigger && (
+                      <>
+                        <ButtonGroupTrigger ref={overflowTriggerRef} aria-label={overflowLabel} />
+                        <ButtonGroupContent>
+                          {overflowed.map((node) => {
+                            const action = actions.current.get(node);
+                            return action ? <OverflowMenuAction key={node.dataset.buttonGroupActionId} node={node} action={action} /> : null;
+                          })}
+                        </ButtonGroupContent>
+                      </>
+                    )}
+                  </>
+                )}
               </Root>
             )}
           </WithSx>
@@ -866,6 +1098,64 @@ function ButtonGroupRoot({
   );
 }
 ButtonGroupRoot.displayName = 'ButtonGroup';
+
+function OverflowMenuAction({ node, action }: { node: HTMLElement; action: OverflowAction }) {
+  const group = useGroup('Item');
+  const metadata = useRef(action);
+  metadata.current = action;
+  const inactive = group.disabled || action.disabled;
+  return (
+    <MenuItemPart
+      family="ButtonGroup"
+      marker="button-group-overflow-item"
+      disabled={inactive}
+      styles={[menuItemStyles, overflowItemToneStyles[action.tone ?? group.tone], overflowItemStyle]}
+      data-tone={action.tone ?? group.tone}
+      data-variant={action.variant ?? group.variant}
+      aria-label={node.getAttribute('aria-label') ?? action.name}
+      aria-labelledby={node.getAttribute('aria-labelledby') ?? undefined}
+      render={(props) => {
+        const children = <>{action.icon}{isRenderable(action.content) && action.content !== '' ? action.content : action.name}</>;
+        const native = action.native;
+        return native.kind === 'link' ? (
+          <a
+            {...native.props}
+            {...props}
+            href={inactive ? undefined : native.props.href}
+            onKeyDown={(event) => {
+              const current = metadata.current;
+              if (current.native.kind === 'link') current.native.props.onKeyDown?.(event);
+              if (!event.defaultPrevented) props.onKeyDown?.(event);
+            }}
+            onAuxClick={(event) => {
+              const current = metadata.current;
+              if (group.disabled || current.disabled) event.preventDefault();
+              else if (current.native.kind === 'link') current.native.props.onAuxClick?.(event);
+            }}
+            onClick={(event) => {
+              const current = metadata.current;
+              if (group.disabled || current.disabled) { event.preventDefault(); return; }
+              if (current.native.kind === 'link') current.native.props.onClick?.(event);
+              props.onClick?.(event);
+            }}
+          >{children}</a>
+        ) : (
+          <button
+            {...props}
+            type="button"
+            onClick={(event) => {
+              const current = metadata.current;
+              if (group.disabled || current.disabled) { event.preventDefault(); return; }
+              if (current.native.kind === 'button') current.native.props.onClick?.(event);
+              props.onClick?.(event);
+              if (!event.defaultPrevented && node instanceof HTMLButtonElement && node.type === 'submit') node.form?.requestSubmit(node);
+            }}
+          >{children}</button>
+        );
+      }}
+    />
+  );
+}
 
 // Tooltip.Trigger renders its own button, and segments render through Button's render seam, so
 // the segment element itself is the reference; behavior and surface come from Tooltip's seam.
@@ -966,6 +1256,7 @@ function ButtonGroupItem({
   const isDisabled = disabled || group.disabled;
   const inactive =
     isDisabled || rest['aria-disabled'] === true || rest['aria-disabled'] === 'true' || rest.loading;
+  const overflowAction = useOverflowAction({ native: { kind: 'button', props: rest }, content: children, icon: startIcon, name, variant, tone, size, inert: rest.inert, disabled: Boolean(inactive) }, ref);
   const resolvedSize = size ?? group.size;
   const expandable =
     group.presentation === 'expanding' &&
@@ -985,7 +1276,7 @@ function ButtonGroupItem({
         {(tooltipProps, tooltipRef) => (
           <Button
             {...rest}
-            ref={ref}
+            ref={overflowAction.ref}
             variant={variant ?? group.variant}
             tone={tone ?? group.tone}
             size={resolvedSize}
@@ -999,6 +1290,7 @@ function ButtonGroupItem({
             data-expandable={expandable || undefined}
             data-expanded={expandable ? expanded : undefined}
             data-ui="button-group-item"
+            data-button-group-action-id={overflowAction.id}
             css={[segmentStyle, sizeStyles[resolvedSize], iconOnly && iconOnlyStyle, expandable && expandingActionStyle]}
             sx={sx}
             render={(props) => (
@@ -1088,6 +1380,7 @@ function ButtonGroupLink({
     startIcon,
     children,
   });
+  const overflowAction = useOverflowAction({ native: { kind: 'link', props: { ...rest, href, onClick, onAuxClick, onKeyDown } }, content: children, icon: startIcon, name, variant, tone, size, inert: rest.inert, disabled: inactive }, ref);
   return (
     <IsolatedOverlay>
       <ActionTooltip name={name} labelledBy={rest['aria-labelledby']} enabled={collapsed && !inactive}>
@@ -1107,7 +1400,8 @@ function ButtonGroupLink({
                 tooltipRef={tooltipRef}
                 {...rest}
                 {...props}
-                ref={ref}
+                ref={overflowAction.ref}
+                data-button-group-action-id={overflowAction.id}
                 href={inactive ? undefined : href}
                 role={rest.role ?? (inactive ? 'link' : undefined)}
                 aria-busy={rest['aria-busy']}
@@ -1292,6 +1586,7 @@ function ButtonGroupSeparator({ orientation = 'horizontal', ...props }: ButtonGr
     <MenuSeparatorPart
       {...props}
       aria-orientation={orientation}
+      data-button-group-separator
       marker="button-group-separator"
       styles={[menuSeparatorStyles, orientation === 'vertical' && verticalSeparatorStyle]}
     />

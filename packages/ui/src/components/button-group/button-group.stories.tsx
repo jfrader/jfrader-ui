@@ -1,8 +1,13 @@
-import { useState, type ComponentPropsWithRef, type MouseEventHandler, type RefCallback } from 'react';
+import { useState, type ComponentPropsWithRef, type CSSProperties, type MouseEventHandler, type RefCallback } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
+import { Archive, Copy, History, Pencil, Share } from '@jfrader/icons';
+import { Button } from '../button';
+import { Surface } from '../surface';
+import { SplitButton } from '../split-button';
 import { doubleRootText, expectControlMinimums } from '../../testing/control-size-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
 import { ClassNames, css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -72,7 +77,7 @@ const meta = {
       sections: [
         { title: 'Actions', stories: ['Default', 'Composed'] },
         { title: 'Composition', stories: ['NativeFormActions', 'Link', 'WithMenu'] },
-        { title: 'Layout', stories: ['Vertical'] },
+        { title: 'Layout', stories: ['Vertical', 'PersistentCompact', 'AutomaticOverflow', 'NoOverflowPolicy'] },
       ],
       usage: `### When to use
 Group related commands, not persistent choices. Use ToggleGroup for selection. Give the group an accessible name and name every icon-only action.
@@ -85,6 +90,7 @@ Each expanding action needs a unique identifier, an icon and a text label. Expan
 
 Application code owns async completion and errors. Reserve room for changing result labels to avoid moving nearby actions. Give at most one action solid accent emphasis.
 Accepted Escape or menu selection returns focus to the trigger; outside press and Tab-out do not.
+In automatic overflow menus, actions already in an open menu stay there until it closes. Newly overflowing actions join the end of that menu.
 
 ### Keyboard and accessibility
 
@@ -887,7 +893,7 @@ export const PersistentCompact: Story = {
   },
 };
 export const LongLocalizedLabels: Story = {
-  args: { collapseLabels: false, orientation: 'vertical' },
+  args: { overflow: 'none', orientation: 'vertical' },
   render: (args) => (
     <NarrowContainer>
       <ButtonGroup {...args}>
@@ -996,6 +1002,7 @@ export const SxPrecedence: Story = {
   },
 };
 export const ReducedMotion: Story = {
+  render: (args) => <OverflowBoundaryFixture args={args} />,
   parameters: {
     docs: {
       description: {
@@ -1006,6 +1013,7 @@ export const ReducedMotion: Story = {
   },
 };
 export const ForcedColors: Story = {
+  render: (args) => <OverflowBoundaryFixture args={args} />,
   parameters: {
     docs: {
       description: {
@@ -1074,7 +1082,7 @@ export const HighlightGeometry: Story = {
     <ScaledContainer>
       <ButtonGroup
         {...args}
-        collapseLabels={false}
+        overflow="none"
         sx={{ border: '2px solid', borderColor: vars.color.borderControl }}
       >
         <ButtonGroup.Item>Share</ButtonGroup.Item>
@@ -1189,4 +1197,538 @@ ControlledMenuExample.displayName = 'ControlledMenuExample';
 export const Controlled: Story = {
   ...WithMenu,
   render: (args) => <ControlledMenuExample args={args} />,
+};
+
+const overflowLaneStyle = css({
+  inlineSize: 'var(--overflow-fixture-width)',
+  maxInlineSize: '100%',
+});
+const responsiveOverflowLaneStyle = css({ flex: '1 1 0%', minInlineSize: 0 });
+const documentFrameStyle = css({
+  inlineSize: '100%', maxInlineSize: '100%', boxSizing: 'border-box', padding: vars.space[4],
+  display: 'flex', flexDirection: 'column', gap: vars.space[4],
+});
+const documentHeadingStyle = css({ margin: 0, fontSize: vars.textSize.lg, color: vars.color.text });
+const documentMetaStyle = css({ margin: 0, fontSize: vars.textSize.sm, color: vars.color.textMuted });
+const documentToolbarStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[3] });
+function OverflowLane({ children, responsive = false, ...props }: ComponentPropsWithRef<'div'> & { responsive?: boolean }) {
+  return <Surface css={documentFrameStyle}>
+    <div><h2 css={documentHeadingStyle}>Product launch plan</h2><p css={documentMetaStyle}>Workspace / Marketing · 3 collaborators</p></div>
+    <div css={documentToolbarStyle}>
+      <Button startIcon={<Pencil />} variant="solid">Edit</Button>
+      <div {...props} css={[overflowLaneStyle, responsive && responsiveOverflowLaneStyle]}>{children}</div>
+    </div>
+  </Surface>;
+}
+const OVERFLOW_WIDTHS = { narrow: 150, toolbarNarrow: 224, wide: 800, single: 64 } as const;
+
+export const ToolbarMenuComparison: Story = {
+  name: 'Toolbar menu reference',
+  tags: ['!autodocs'],
+  render: () => <Surface css={documentFrameStyle}>
+    <div><h2 css={documentHeadingStyle}>Product launch plan</h2><p css={documentMetaStyle}>Workspace / Marketing · 3 collaborators</p></div>
+    <div css={documentToolbarStyle}>
+      <Button startIcon={<Pencil />} variant="solid">Edit</Button>
+      <SplitButton label="Share document" menuLabel="More actions" variant="outline" tone="neutral" items={[
+        { label: <><Copy />Duplicate document</>, disabled: true },
+        { label: <><Archive />Archive document</>, tone: 'danger' },
+        { label: <><History />Document history</> },
+      ]} slotProps={{ item: { sx: { gap: vars.space[2], '& > svg': { inlineSize: vars.space[4], blockSize: vars.space[4], flexShrink: 0 } } } }} />
+    </div>
+  </Surface>,
+};
+function OverflowSubmitExample({ args }: { args: ButtonGroupComposedProps }) {
+  const [submitted, setSubmitted] = useState('Not submitted');
+  return <form onSubmit={(event) => {
+    event.preventDefault();
+    const submitter = event.nativeEvent instanceof SubmitEvent ? event.nativeEvent.submitter : null;
+    const data = new FormData(event.currentTarget, submitter);
+    setSubmitted(String(data.get('command')));
+  }}>
+    <OverflowLane style={{ '--overflow-fixture-width': `${OVERFLOW_WIDTHS.single}px` } as CSSProperties}>
+      <ButtonGroup {...args} overflow="menu">
+        <ButtonGroup.Item type="submit" name="command" value="publish">Publish selected documents</ButtonGroup.Item>
+      </ButtonGroup>
+    </OverflowLane>
+    <output aria-label="Submission">{submitted}</output>
+  </form>;
+}
+export const OverflowNativeSubmit: Story = {
+  name: 'Overflow preserves native submission',
+  render: (args) => <OverflowSubmitExample args={args} />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }));
+    const submit = await within(canvasElement.ownerDocument.body).findByRole('menuitem', { name: 'Publish selected documents' });
+    await expect(submit.tagName).toBe('BUTTON');
+    await expect(submit).toHaveAttribute('type', 'button');
+    await expect(submit).not.toHaveAttribute('name');
+    await expect(canvas.getByRole('group').closest('form')).not.toHaveAttribute('id');
+    await userEvent.keyboard('{Enter}');
+    await expect(canvas.getByLabelText('Submission')).toHaveTextContent('publish');
+    await expect(canvas.getByRole('group').closest('form')).not.toHaveAttribute('id');
+  },
+};
+
+export const OverflowWithComposedMenu: Story = {
+  name: 'Automatic overflow respects a composed menu',
+  render: (args) => <OverflowLane style={{ '--overflow-fixture-width': `${OVERFLOW_WIDTHS.narrow}px` } as CSSProperties}>
+    <ButtonGroup {...args} overflow="menu">
+      <ButtonGroup.Item startIcon={<Icon />}>Share document</ButtonGroup.Item>
+      <ButtonGroup.Trigger aria-label="Document options" />
+      <ButtonGroup.Content><ButtonGroup.MenuItem>Custom command</ButtonGroup.MenuItem></ButtonGroup.Content>
+    </ButtonGroup>
+  </OverflowLane>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expect(canvas.queryByRole('button', { name: 'More actions' })).toBeNull();
+    await expect(canvas.getAllByRole('button', { name: 'Document options' })).toHaveLength(1);
+    await userEvent.click(canvas.getByRole('button', { name: 'Document options' }));
+    const body = within(canvasElement.ownerDocument.body);
+    await expect(await body.findByRole('menuitem', { name: 'Custom command' })).toBeVisible();
+    await expect(body.getAllByRole('menu')).toHaveLength(1);
+  },
+};
+
+export const OverflowNativeLinkNavigation: Story = {
+  name: 'Overflow link keeps native navigation',
+  render: (args) => <Stack>
+    <OverflowLane style={{ '--overflow-fixture-width': `${OVERFLOW_WIDTHS.single}px` } as CSSProperties}>
+      <ButtonGroup {...args} overflow="menu">
+        <ButtonGroup.Link href="about:blank#overflow-navigation" target="overflow-navigation-target"
+          referrerPolicy="no-referrer" hrefLang="en" type="text/html" ping=""
+          onKeyDown={(event) => { event.currentTarget.dataset.consumerKey = event.key; }}>
+          Open document history
+        </ButtonGroup.Link>
+      </ButtonGroup>
+    </OverflowLane>
+    <iframe name="overflow-navigation-target" title="Navigation destination" />
+  </Stack>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }));
+    const link = await within(canvasElement.ownerDocument.body).findByRole('menuitem', { name: 'Open document history' });
+    await expect(link).toHaveAttribute('referrerpolicy', 'no-referrer');
+    await expect(link).toHaveAttribute('hreflang', 'en');
+    await expect(link).toHaveAttribute('type', 'text/html');
+    await expect(link).toHaveAttribute('ping', '');
+    await waitFor(async () => { await expect(link).toHaveFocus(); });
+    await userEvent.keyboard('{Enter}');
+    await expect(link).toHaveAttribute('data-consumer-key', 'Enter');
+    const frame = canvas.getByTitle<HTMLIFrameElement>('Navigation destination');
+    await waitFor(async () => { await expect(frame.contentWindow?.location.hash).toBe('#overflow-navigation'); });
+  },
+};
+
+function OverflowLiveMetadataExample({ args }: { args: ButtonGroupComposedProps }) {
+  const [disabled, setDisabled] = useState(false);
+  return <OverflowLane style={{ '--overflow-fixture-width': `${OVERFLOW_WIDTHS.single}px` } as CSSProperties}>
+    <ButtonGroup {...args} overflow="menu" onKeyDown={(event) => {
+      if (event.key === 'F6') setDisabled(true);
+      if (event.key === 'F7') setDisabled(false);
+    }}>
+      <ButtonGroup.Link href="about:blank#live-action" disabled={disabled}>
+        {disabled ? 'History unavailable' : 'Open document history'}
+      </ButtonGroup.Link>
+    </ButtonGroup>
+  </OverflowLane>;
+}
+
+export const OverflowLiveMetadata: Story = {
+  name: 'Open overflow reflects action updates',
+  render: (args) => <OverflowLiveMetadataExample args={args} />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }));
+    const body = within(canvasElement.ownerDocument.body);
+    const item = await body.findByRole('menuitem', { name: 'Open document history' });
+    await waitFor(async () => { await expect(item).toHaveFocus(); });
+    await userEvent.keyboard('{F6}');
+    await expect(await body.findByRole('menuitem', { name: 'History unavailable' })).toBe(item);
+    await expect(item).toHaveAttribute('aria-disabled', 'true');
+    await expect(item).not.toHaveAttribute('href');
+    await userEvent.keyboard('{F7}');
+    await expect(await body.findByRole('menuitem', { name: 'Open document history' })).toBe(item);
+    await expect(item).not.toHaveAttribute('aria-disabled', 'true');
+    await expect(item).toHaveAttribute('href', 'about:blank#live-action');
+  },
+};
+
+export const LegacyCollapseMeasurement: Story = {
+  name: 'Default collapse keeps its original width threshold',
+  render: (args) => <Stack>
+    {[undefined, 'collapse-labels' as const].map((overflow) => <div key={overflow ?? 'default'} style={{ width: OVERFLOW_WIDTHS.wide, maxWidth: '100%' }}>
+      <ButtonGroup {...args} overflow={overflow} sx={{ boxSizing: 'border-box', inlineSize: '100%', paddingInline: vars.space[4], columnGap: vars.space[3] }}>
+        <ButtonGroup.Separator orientation="vertical" />
+        <ButtonGroup.Item startIcon={<Icon />}>Share document</ButtonGroup.Item>
+        <ButtonGroup.Item startIcon={<Icon />}>Archive document</ButtonGroup.Item>
+        <ButtonGroup.Separator orientation="vertical" />
+      </ButtonGroup>
+    </div>)}
+  </Stack>,
+  play: async ({ canvas }) => {
+    for (const group of canvas.getAllByRole('group')) {
+      const actions = within(group).getAllByRole('button');
+      await expect(getComputedStyle(actions[0]!).borderStartStartRadius).not.toBe('0px');
+      await expect(getComputedStyle(actions.at(-1)!).borderStartEndRadius).not.toBe('0px');
+      const segments = Array.from(group.querySelectorAll<HTMLElement>('[data-button-group-segment]'));
+      await expect(segments).toHaveLength(2);
+      const originalWidthSum = () => segments.reduce((sum, node) => {
+        const label = node.querySelector<HTMLElement>('[data-button-group-labels][data-collapsed]');
+        return sum + node.getBoundingClientRect().width / (group.getBoundingClientRect().width / group.offsetWidth || 1)
+          + (label ? label.scrollWidth + parseFloat(getComputedStyle(node).columnGap || '0') : 0);
+      }, 0);
+      group.parentElement!.style.width = `${Math.ceil(originalWidthSum()) + 2}px`;
+      await waitFor(async () => {
+        await expect(originalWidthSum()).toBeLessThanOrEqual(group.clientWidth + 1);
+        await expect(group).not.toHaveAttribute('data-compact');
+      });
+      group.parentElement!.style.width = `${Math.floor(originalWidthSum()) - 2}px`;
+      await waitFor(async () => { await expect(group).toHaveAttribute('data-compact'); });
+      group.parentElement!.style.width = `${Math.ceil(originalWidthSum()) + 9}px`;
+      await waitFor(async () => { await expect(group).not.toHaveAttribute('data-compact'); });
+    }
+  },
+};
+
+export const OverflowAllActionsFit: Story = {
+  name: 'No overflow trigger when labeled actions fit',
+  render: (args) => <OverflowLane style={{ '--overflow-fixture-width': `${OVERFLOW_WIDTHS.toolbarNarrow}px` } as CSSProperties}>
+    <ButtonGroup {...args} overflow="menu"><ButtonGroup.Item startIcon={<Icon />}>Share document</ButtonGroup.Item></ButtonGroup>
+  </OverflowLane>,
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('group')).not.toHaveAttribute('data-compact');
+    await expect(canvas.getByRole('button', { name: 'Share document' })).toBeVisible();
+    await expect(canvas.queryByRole('button', { name: 'More actions' })).toBeNull();
+  },
+};
+
+export const OverflowWithSeparator: Story = {
+  name: 'Overflow counts separator width',
+  render: (args) => <OverflowLane style={{ '--overflow-fixture-width': `${OVERFLOW_WIDTHS.narrow}px` } as CSSProperties}>
+    <ButtonGroup {...args} overflow="menu">
+      <ButtonGroup.Item startIcon={<Icon />}>Share document</ButtonGroup.Item>
+      <ButtonGroup.Separator orientation="vertical" sx={{ inlineSize: vars.space[8], flexShrink: 0 }} />
+      <ButtonGroup.Item startIcon={<Icon />}>Archive document</ButtonGroup.Item>
+      <ButtonGroup.Item startIcon={<Icon />}>Delete document</ButtonGroup.Item>
+    </ButtonGroup>
+  </OverflowLane>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const group = canvas.getByRole('group');
+    const separator = canvasElement.querySelector('[data-button-group-separator]');
+    await expect(separator).not.toHaveAttribute('data-button-group-segment');
+    await expect(separator).toHaveAttribute('data-button-group-overflowed');
+    await expect(separator).not.toBeVisible();
+    const trigger = await canvas.findByRole('button', { name: 'More actions' });
+    await expect(trigger.getBoundingClientRect().right).toBeLessThanOrEqual(group.getBoundingClientRect().right + 1);
+    await userEvent.click(trigger);
+    const body = within(canvasElement.ownerDocument.body);
+    await expect(await body.findByRole('menuitem', { name: 'Archive document' })).toBeVisible();
+    await expect(body.getByRole('menuitem', { name: 'Delete document' })).toBeVisible();
+  },
+};
+
+function DocumentOverflowActions({ args }: { args: Parameters<NonNullable<Story['render']>>[0] }) {
+  const { onClick, ...groupArgs } = args;
+  return <ButtonGroup {...groupArgs} overflow="menu">
+    <ButtonGroup.Item startIcon={<Share />}>Share document</ButtonGroup.Item>
+    <ButtonGroup.Item startIcon={<Copy />} disabled>Duplicate document</ButtonGroup.Item>
+    <ButtonGroup.Item startIcon={<Archive />} tone="danger" variant="soft" onClick={onClick}>Archive document</ButtonGroup.Item>
+    <ButtonGroup.Link startIcon={<History />} href="#history" target="_blank" rel="noopener" download="history.txt" onClick={(event) => { onClick?.(event); event.preventDefault(); }}>Document history</ButtonGroup.Link>
+  </ButtonGroup>;
+}
+
+function OverflowBoundaryFixture({ args, initiallyWide = false }: {
+  args: Parameters<NonNullable<Story['render']>>[0];
+  initiallyWide?: boolean;
+}) {
+  const [width, setWidth] = useState<number>(initiallyWide ? OVERFLOW_WIDTHS.wide : OVERFLOW_WIDTHS.toolbarNarrow);
+  return <Stack>
+    <OverflowLane style={{ '--overflow-fixture-width': `${width}px` } as CSSProperties}>
+      <DocumentOverflowActions args={args} />
+    </OverflowLane>
+    <div css={documentToolbarStyle}>
+      <Button size="sm" variant="ghost" onMouseDown={(event) => event.preventDefault()} onClick={() => setWidth(OVERFLOW_WIDTHS.toolbarNarrow)}>Narrow</Button>
+      <Button size="sm" variant="ghost" onMouseDown={(event) => event.preventDefault()} onClick={() => setWidth(OVERFLOW_WIDTHS.wide)}>Widen</Button>
+    </div>
+  </Stack>;
+}
+
+export const AutomaticOverflow: Story = {
+  name: 'Automatic action overflow',
+  args: { onClick: fn(), onOpenChange: fn() },
+  render: (args) => <OverflowLane responsive><DocumentOverflowActions args={args} /></OverflowLane>,
+  parameters: { docs: {
+    description: { story: 'Resize the viewport. Open More actions for commands that do not fit.' },
+    source: { language: 'tsx', code: `import { ButtonGroup } from '@jfrader/ui';
+import { Archive, Copy, History, Share } from '@jfrader/icons';
+
+<ButtonGroup label="Document actions" overflow="menu" overflowLabel="More actions" items={[
+  { label: 'Share document', startIcon: <Share /> },
+  { label: 'Duplicate document', startIcon: <Copy />, disabled: true },
+  { label: 'Archive document', startIcon: <Archive />, tone: 'danger', variant: 'soft' },
+  { label: 'Document history', startIcon: <History />, href: '#history' },
+]} />` },
+  } },
+};
+
+export const OverflowLabelsRemainVisible: Story = {
+  name: 'Menu overflow never collapses action labels',
+  tags: ['!autodocs'],
+  render: (args) => <OverflowLane style={{ '--overflow-fixture-width': `${FIXTURE_WIDTHS.narrow}px` } as CSSProperties}>
+    <DocumentOverflowActions args={args} />
+  </OverflowLane>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const group = canvas.getByRole('group');
+    const lane = group.parentElement!;
+    for (const width of [320, 800, 600, 450, 224, 150, 64, 320]) {
+      lane.style.setProperty('--overflow-fixture-width', `${width}px`);
+      await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      await waitFor(async () => {
+        const visible = Array.from(group.querySelectorAll<HTMLElement>('[data-button-group-action-id]:not([data-button-group-overflowed])'));
+        if (width >= OVERFLOW_WIDTHS.toolbarNarrow) await expect(visible.length).toBeGreaterThan(0);
+        for (const action of visible) {
+          const label = action.querySelector<HTMLElement>('[data-button-group-labels]')!;
+          await expect(label).toBeVisible();
+          await expect(label).not.toHaveAttribute('data-collapsed');
+          await expect(label.getBoundingClientRect().width).toBeGreaterThan(0);
+          await expect(label.textContent?.trim().length).toBeGreaterThan(0);
+          await expect(action.getBoundingClientRect().right).toBeLessThanOrEqual(group.getBoundingClientRect().right + 1);
+        }
+        await expect(group).not.toHaveAttribute('data-compact');
+      });
+      const trigger = canvas.queryByRole('button', { name: 'More actions' });
+      if (trigger) {
+        await userEvent.click(trigger);
+        const menu = await within(canvasElement.ownerDocument.body).findByRole('menu');
+        for (const item of within(menu).getAllByRole('menuitem')) {
+          await expect(item).toBeVisible();
+          await expect(item.textContent?.trim().length).toBeGreaterThan(0);
+        }
+        await userEvent.keyboard('{Escape}');
+      }
+    }
+  },
+};
+
+export const AutomaticOverflowBoundaryFixture: Story = {
+  ...AutomaticOverflow,
+  name: 'Boundary fixture: automatic overflow at 224px and 800px',
+  tags: ['!autodocs'],
+  render: (args) => <OverflowBoundaryFixture args={args} />,
+  parameters: { docs: { description: { story: 'Use Narrow (224px) and Widen (800px) to exercise fixed-width boundaries.' } } },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: 'More actions' });
+    await waitFor(async () => { await expect(trigger).not.toHaveAttribute('aria-disabled'); });
+    await expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    await userEvent.click(canvas.getByRole('button', { name: 'Share document' }));
+    await userEvent.keyboard('{End}');
+    await expect(trigger).toHaveFocus();
+    await userEvent.keyboard('{ArrowDown}');
+    const body = within(canvasElement.ownerDocument.body);
+    const archive = await body.findByRole('menuitem', { name: 'Archive document' });
+    await expect(archive).toHaveAttribute('data-ui', expect.stringContaining('button-group-overflow-item'));
+    await expect(archive.matches('[data-ui~="button-group-overflow-item"]')).toBe(true);
+    await expect(getComputedStyle(archive).borderTopWidth).toBe('0px');
+    await expect(archive.getBoundingClientRect().width).toBe(body.getByRole('menuitem', { name: 'Document history' }).getBoundingClientRect().width);
+    await expect(body.getByRole('menuitem', { name: 'Duplicate document' })).toHaveAttribute('aria-disabled', 'true');
+    await waitFor(async () => { await expect(archive).toHaveFocus(); });
+    await expect(archive.querySelector('svg')).not.toBeNull();
+    const originalArchive = canvas.getByText('Archive document', { selector: '[data-live]' }).closest('button')!;
+    await Promise.all([settleMotion(archive), settleMotion(originalArchive)]);
+    await expect(getComputedStyle(archive).color).toBe(getComputedStyle(originalArchive).color);
+    await expect(getComputedStyle(archive).backgroundColor).toBe(getComputedStyle(originalArchive).backgroundColor);
+    await userEvent.keyboard('{ArrowDown}');
+    const history = body.getByRole('menuitem', { name: 'Document history' });
+    await expect(history).toHaveFocus();
+    await settleMotion(history);
+    const highlight = canvasElement.ownerDocument.createElement('span');
+    highlight.style.backgroundColor = vars.color.surfaceHover;
+    history.append(highlight);
+    try {
+      await expect(getComputedStyle(history).backgroundColor).toBe(getComputedStyle(highlight).backgroundColor);
+    } finally {
+      highlight.remove();
+    }
+    await expect(history.tagName).toBe('A');
+    await expect(history).toHaveAttribute('href', '#history');
+    await expect(history).toHaveAttribute('target', '_blank');
+    await expect(history).toHaveAttribute('rel', 'noopener');
+    await expect(history).toHaveAttribute('download', 'history.txt');
+    await userEvent.keyboard('{Enter}');
+    await expect(args.onClick).toHaveBeenCalledTimes(1);
+    await userEvent.keyboard('{Escape}');
+    await waitFor(async () => { await expect(trigger).toHaveFocus(); });
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.keyboard('{ArrowDown}');
+    await body.findByRole('menu');
+    await userEvent.keyboard('{Home}{Enter}');
+    await expect(args.onClick).toHaveBeenCalledTimes(2);
+  },
+};
+
+export const OverflowFocusHandoff: Story = {
+  name: 'Boundary fixture: focused action moves into overflow',
+  args: { onClick: fn() },
+  render: (args) => <OverflowBoundaryFixture args={args} initiallyWide />,
+  parameters: { docs: { description: { story: 'Focus Archive document, then narrow the group. Focus moves to More actions.' } } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expect(canvas.queryByRole('button', { name: 'More actions' })).toBeNull();
+    const archive = canvas.getByRole('button', { name: 'Archive document' });
+    await userEvent.click(archive);
+    await expect(archive).toHaveFocus();
+    await userEvent.click(canvas.getByRole('button', { name: 'Narrow' }));
+    const trigger = canvas.getByRole('button', { name: 'More actions' });
+    await waitFor(async () => { await expect(trigger).toHaveFocus(); });
+    await expect(archive).not.toBeVisible();
+    await userEvent.keyboard('{ArrowDown}');
+    const menuArchive = await within(canvasElement.ownerDocument.body).findByRole('menuitem', { name: 'Archive document' });
+    await waitFor(async () => { await expect(menuArchive).toHaveFocus(); });
+    canvas.getByRole('button', { name: 'Widen' }).click();
+    await waitFor(async () => { await expect(canvas.getByRole('group').parentElement!.clientWidth).toBeGreaterThan(OVERFLOW_WIDTHS.narrow); });
+    await userEvent.keyboard('{Escape}');
+    await waitFor(async () => { await expect(canvasElement.ownerDocument.activeElement).toBe(archive); });
+  },
+};
+
+export const AutomaticOverflowRTL: Story = {
+  ...AutomaticOverflowBoundaryFixture,
+  name: 'Boundary fixture: automatic overflow in RTL',
+  args: { dir: 'rtl', onClick: fn(), onOpenChange: fn() },
+  play: async (context) => {
+    await expect(getComputedStyle(context.canvas.getByRole('group')).direction).toBe('rtl');
+    await AutomaticOverflowBoundaryFixture.play?.(context);
+    const group = context.canvas.getByRole('group');
+    const actions = Array.from(group.querySelectorAll<HTMLElement>('[data-button-group-action-id]'));
+    await expect(actions.map((node) => node.hasAttribute('data-button-group-overflowed'))).toEqual([false, true, true, true]);
+    await expect(actions[0]!.getBoundingClientRect().left).toBeGreaterThan(context.canvas.getByRole('button', { name: 'More actions' }).getBoundingClientRect().left);
+  },
+};
+
+export const AutomaticOverflowLight: Story = {
+  ...AutomaticOverflowBoundaryFixture,
+  name: 'Boundary fixture: automatic overflow in light theme',
+  decorators: [withLightTheme],
+  globals: { theme: 'light' },
+  args: { onClick: fn(), onOpenChange: fn() },
+};
+
+export const OverflowResizeWhileOpen: Story = {
+  name: 'Boundary fixture: resize an open overflow menu',
+  args: { onOpenChange: fn() },
+  render: (args) => <OverflowBoundaryFixture args={args} />,
+  parameters: { docs: { description: { story: 'Keep a menu action focused while widening the group.' } } },
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = canvas.getByRole('button', { name: 'More actions' });
+    await waitFor(async () => { await expect(trigger).not.toHaveAttribute('aria-disabled'); });
+    await userEvent.click(trigger);
+    const body = within(canvasElement.ownerDocument.body);
+    const menu = await body.findByRole('menu');
+    const archive = body.getByRole('menuitem', { name: 'Archive document' });
+    await waitFor(async () => { await expect(archive).toHaveFocus(); });
+    // A keyboard command resizes the fixture without moving focus out of the popup.
+    const widen = (event: KeyboardEvent) => {
+      const widths: Record<string, number> = { F6: 64, F7: 66, F8: 62 };
+      if (event.key in widths) canvas.getByRole('group').parentElement!.style.setProperty('--overflow-fixture-width', `${widths[event.key]}px`);
+      if (event.key === 'F9') canvas.getByRole('button', { name: 'Widen' }).click();
+    };
+    canvasElement.ownerDocument.addEventListener('keydown', widen, true);
+    try {
+      await userEvent.keyboard('{F6}');
+      await body.findByRole('menuitem', { name: 'Share document' });
+      await expect(archive).toHaveFocus();
+      await userEvent.keyboard('{F7}{F8}{F9}');
+    }
+    finally { canvasElement.ownerDocument.removeEventListener('keydown', widen, true); }
+    await waitFor(async () => { await expect(canvas.getByRole('group').parentElement!.clientWidth).toBeGreaterThan(OVERFLOW_WIDTHS.narrow); });
+    await expect(body.getByRole('menu')).toBe(menu);
+    await expect(body.getByRole('menuitem', { name: 'Archive document' })).toBe(archive);
+    await expect(archive).toHaveFocus();
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await userEvent.keyboard('{Escape}');
+    await waitFor(async () => { await expect(canvas.queryByRole('button', { name: 'More actions' })).toBeNull(); });
+    await waitFor(async () => { await expect(canvas.getByRole('button', { name: 'Archive document' })).toBeVisible(); });
+    await waitFor(async () => {
+      await expect(canvasElement.ownerDocument.activeElement).toBe(canvas.getByRole('link', { name: 'Document history' }));
+    });
+    await userEvent.click(canvas.getByRole('button', { name: 'Narrow' }));
+    const remainingTrigger = await canvas.findByRole('button', { name: 'More actions' });
+    const lane = canvas.getByRole('group').parentElement!;
+    lane.style.setProperty('--overflow-fixture-width', `${OVERFLOW_WIDTHS.single}px`);
+    await waitFor(async () => { await expect(lane.clientWidth).toBe(OVERFLOW_WIDTHS.single); });
+    await userEvent.click(remainingTrigger);
+    await body.findByRole('menu');
+    lane.style.setProperty('--overflow-fixture-width', `${OVERFLOW_WIDTHS.narrow}px`);
+    await waitFor(async () => { await expect(lane.clientWidth).toBe(OVERFLOW_WIDTHS.narrow); });
+    await userEvent.keyboard('{Escape}');
+    await waitFor(async () => { await expect(canvasElement.ownerDocument.activeElement).toBe(remainingTrigger); });
+    await userEvent.click(remainingTrigger);
+    await body.findByRole('menu');
+    canvas.getByRole('button', { name: 'Widen' }).click();
+    await waitFor(async () => { await expect(canvas.getByRole('group').parentElement!.clientWidth).toBeGreaterThan(OVERFLOW_WIDTHS.narrow); });
+    await userEvent.click(canvas.getByRole('group').parentElement!);
+    await waitFor(async () => { await expect(body.queryByRole('menu')).toBeNull(); });
+    await waitFor(async () => {
+      await expect(canvasElement.ownerDocument.activeElement).toBe(canvas.getByRole('link', { name: 'Document history' }));
+    });
+    await userEvent.click(canvas.getByRole('button', { name: 'Narrow' }));
+    await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }));
+    const activatedArchive = await body.findByRole('menuitem', { name: 'Archive document' });
+    canvas.getByRole('button', { name: 'Widen' }).click();
+    await waitFor(async () => { await expect(canvas.getByRole('group').parentElement!.clientWidth).toBeGreaterThan(OVERFLOW_WIDTHS.narrow); });
+    await userEvent.click(activatedArchive);
+    await waitFor(async () => { await expect(body.queryByRole('menu')).toBeNull(); });
+    await waitFor(async () => {
+      await expect(canvasElement.ownerDocument.activeElement).toBe(canvas.getByRole('link', { name: 'Document history' }));
+    });
+  },
+};
+
+export const NoOverflowPolicy: Story = {
+  name: 'Keep every label',
+  args: { overflow: 'none' },
+  render: (args) => <NarrowContainer><ButtonGroup {...args}>
+    <ButtonGroup.Item startIcon={<Icon />}>Publish all selected documents</ButtonGroup.Item>
+    <ButtonGroup.Item startIcon={<Icon />}>Archive selected documents</ButtonGroup.Item>
+  </ButtonGroup></NarrowContainer>,
+  parameters: { docs: { description: { story: 'Scroll the row to reach actions without hiding labels.' } } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('group')).not.toHaveAttribute('data-compact');
+    await expect(canvas.getByRole('button', { name: 'Publish all selected documents' })).toBeVisible();
+    await expect(canvas.queryByRole('button', { name: 'More actions' })).toBeNull();
+  },
+};
+
+export const SingleActionOverflow: Story = {
+  name: 'One action wider than the group',
+  render: (args) => <OverflowLane style={{ '--overflow-fixture-width': `${OVERFLOW_WIDTHS.single}px` } as CSSProperties}>
+    <ButtonGroup {...args} overflow="menu" overflowLabel="Document commands">
+      <ButtonGroup.Item>Publish all selected documents and notify collaborators</ButtonGroup.Item>
+    </ButtonGroup>
+  </OverflowLane>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: 'Document commands' });
+    await waitFor(async () => { await expect(trigger).not.toHaveAttribute('aria-disabled'); });
+    const groupBox = canvas.getByRole('group').getBoundingClientRect();
+    await expect(trigger.getBoundingClientRect().right).toBeLessThanOrEqual(groupBox.right + 1);
+    await expect(trigger.getBoundingClientRect().left).toBeGreaterThanOrEqual(groupBox.left - 1);
+    const triggerBox = trigger.getBoundingClientRect();
+    await expect(groupBox.height).toBeGreaterThanOrEqual(triggerBox.height);
+    await expect(trigger.contains(canvasElement.ownerDocument.elementFromPoint(triggerBox.x + triggerBox.width / 2, triggerBox.y + triggerBox.height / 2))).toBe(true);
+    await userEvent.click(trigger);
+    await within(canvasElement.ownerDocument.body).findByRole('menuitem', { name: 'Publish all selected documents and notify collaborators' });
+  },
+};
+
+export const AllActionsDisabledOverflow: Story = {
+  name: 'Every overflow action disabled',
+  render: (args) => <NarrowContainer><ButtonGroup {...args} overflow="menu">
+    <ButtonGroup.Item disabled>Publish all selected documents</ButtonGroup.Item>
+    <ButtonGroup.Item disabled>Archive selected documents</ButtonGroup.Item>
+  </ButtonGroup></NarrowContainer>,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const trigger = canvas.getByRole('button', { name: 'More actions' });
+    await waitFor(async () => { await expect(trigger).not.toHaveAttribute('aria-disabled'); });
+    await userEvent.click(trigger);
+    const menu = await within(canvasElement.ownerDocument.body).findByRole('menu');
+    for (const item of within(menu).getAllByRole('menuitem')) await expect(item).toHaveAttribute('aria-disabled', 'true');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(async () => { await expect(trigger).toHaveFocus(); });
+  },
 };

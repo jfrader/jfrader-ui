@@ -87,7 +87,14 @@ export interface TooltipShorthandProps extends Omit<TooltipBaseProps, 'children'
 
 export type TooltipProps = TooltipComposedProps | TooltipShorthandProps;
 
-export interface TooltipTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
+export type TooltipTriggerProps<Host extends 'button' | 'span' = 'button'> = ComponentPropsWithRef<Host> & SxProps & {
+  /** Render a native span with `as="span"`, without button styling. Native props and ref follow the selected host. Defaults to `button`. */
+  as?: Host;
+  /** Describe the trigger with the tooltip. Set false when it repeats the trigger's readable text. Defaults to true. */
+  describe?: boolean;
+  /** Add markers alongside `tooltip-trigger`. */
+  'data-ui'?: string;
+};
 export interface TooltipContentProps extends ComponentPropsWithRef<'div'>, SxProps {}
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
@@ -190,25 +197,25 @@ function TooltipRoot(props: TooltipProps) {
 
 TooltipRoot.displayName = 'Tooltip';
 
-function TooltipTrigger({ ref, 'aria-describedby': ariaDescribedByProp, className, sx, ...rest }: TooltipTriggerProps) {
+function TooltipTrigger<Host extends 'button' | 'span' = 'button'>({ as, describe = true, ref, 'aria-describedby': ariaDescribedByProp, className, sx, ...rest }: TooltipTriggerProps<Host>) {
   const { refs, getReferenceProps, slots } = useTooltipContext('Trigger');
-  const Root = slots?.trigger ?? 'button';
-  const mergedRef = useMergeRefs([refs.setReference, ref]);
+  const Root = as === 'span' ? 'span' : slots?.trigger ?? 'button';
+  const mergedRef = useMergeRefs<HTMLElement>([refs.setReference, ref]);
   const referenceProps = getReferenceProps(rest);
-  // useRole sets aria-describedby on the reference; merge it with the consumer's ids.
+  // Preserve external descriptions even when the tooltip repeats the trigger's readable text.
   const describedBy =
-    [ariaDescribedByProp, referenceProps['aria-describedby'] as string | undefined].filter(Boolean).join(' ') ||
+    [ariaDescribedByProp, describe && referenceProps['aria-describedby'] as string | undefined].filter(Boolean).join(' ') ||
     undefined;
 
   return (
-    <WithSx className={className} styles={triggerStyle} sx={sx}>
+    <WithSx className={className} styles={as === 'span' ? undefined : triggerStyle} sx={sx}>
       {(className) => (
         <Root
-          type="button"
+          type={as === 'span' ? undefined : 'button'}
           {...referenceProps}
           ref={mergedRef}
           aria-describedby={describedBy}
-          data-ui="tooltip-trigger"
+          data-ui={[...new Set(['tooltip-trigger', rest['data-ui']].flatMap((value) => typeof value === 'string' ? value.split(/\s+/) : []).filter(Boolean))].join(' ')}
           className={className}
         />
       )}

@@ -1,4 +1,4 @@
-import type { ComponentPropsWithRef, CSSProperties } from 'react';
+import type { ComponentPropsWithRef, CSSProperties, RefCallback } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
@@ -42,6 +42,51 @@ Press Escape to close without moving focus. Moving focus away from the trigger a
 export default meta;
 
 type Story = StoryObj<typeof meta>;
+
+function NativeSpanDemo({ onRef, onFocus }: { onRef: RefCallback<HTMLSpanElement>; onFocus: () => void }) {
+  const [mounted, setMounted] = useState(true);
+  return (
+    <>
+      {mounted && (
+        <Tooltip>
+          <Tooltip.Trigger as="span" ref={onRef} onFocus={onFocus} tabIndex={0} aria-describedby="span-help" data-ui="native-text">
+            Report title
+          </Tooltip.Trigger>
+          <Tooltip.Content>Full report title</Tooltip.Content>
+        </Tooltip>
+      )}
+      <span id="span-help">Report details</span>
+      <Button onClick={() => setMounted(false)}>Remove text</Button>
+    </>
+  );
+}
+
+export const NativeSpan: StoryObj<typeof NativeSpanDemo> = {
+  tags: ['!autodocs'],
+  args: { onRef: fn(), onFocus: fn() },
+  render: (args) => <NativeSpanDemo {...args} />,
+  play: async ({ canvas, canvasElement, userEvent, args }) => {
+    const trigger = canvasElement.querySelector<HTMLElement>('[data-ui~="native-text"]')!;
+    await expect(trigger.tagName).toBe('SPAN');
+    await expect(trigger).not.toHaveAttribute('type');
+    await expect(args.onRef).toHaveBeenCalledWith(trigger);
+    await expect(getComputedStyle(trigger).display).toBe('inline');
+    await userEvent.tab();
+    await expect(trigger).toHaveFocus();
+    await expect(args.onFocus).toHaveBeenCalledTimes(1);
+    const tooltip = await within(canvasElement.ownerDocument.body).findByRole('tooltip');
+    await expect(trigger.getAttribute('aria-describedby')?.split(' ')).toEqual(['span-help', tooltip.id]);
+    await expect(trigger).toHaveAccessibleDescription('Report details Full report title');
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => expect(within(canvasElement.ownerDocument.body).queryByRole('tooltip')).toBeNull());
+    await expect(trigger).toHaveFocus();
+    await userEvent.tab();
+    await expect(canvas.getByRole('button', { name: 'Remove text' })).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    await expect(trigger).not.toBeInTheDocument();
+    await expect(args.onRef).toHaveBeenLastCalledWith(null);
+  },
+};
 
 type CheckedTooltip<Props extends import('./index').TooltipProps> = Props;
 export type TooltipTypeRegression = {
