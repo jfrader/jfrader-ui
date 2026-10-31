@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.24.0 - 2026-10-31
+
 ### Added
 
 - `LinearTimeline` shows ordered moments along a continuous rail, with independent content on either side and square, dot, or custom markers. Horizontal timelines fit the available width and page without scrolling when needed. Markers-only timelines show details on hover, focus, or tap.
