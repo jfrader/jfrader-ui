@@ -430,6 +430,10 @@
       "types": "./src/components/lightbox-gallery/index.ts",
       "import": "./src/components/lightbox-gallery/index.ts"
     },
+    "./linear-timeline": {
+      "types": "./src/components/linear-timeline/index.ts",
+      "import": "./src/components/linear-timeline/index.ts"
+    },
     "./link-unfurl": {
       "types": "./src/components/link-unfurl/index.ts",
       "import": "./src/components/link-unfurl/index.ts"

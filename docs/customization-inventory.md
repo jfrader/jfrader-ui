@@ -8,9 +8,9 @@ composed modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **174**; public callable parts: **188**.
-- Families exposing `slots.root`: **121**; remaining without a family-level root slot: **53** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **133**; remaining without family-level interior slots: **41** (includes components without generated anatomy).
+- Public callable families: **175**; public callable parts: **188**.
+- Families exposing `slots.root`: **122**; remaining without a family-level root slot: **53** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **134**; remaining without family-level interior slots: **41** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -256,6 +256,7 @@ panel material. The section has no background, border or radius to migrate.
 | [Kbd.Group](../packages/ui/src/components/kbd/kbd.tsx) | — | — | — | — | — | — |
 | [KeycapKeyboard](../packages/ui/src/components/keycap-keyboard/keycap-keyboard.tsx) | — | `key`, `legend`, `row` | `key`, `legend`, `row` | — | — | — |
 | [LightboxGallery](../packages/ui/src/components/lightbox-gallery/lightbox-gallery.tsx) | — | `caption`, `controls`, `grid`, `image`, `stage`, `status`, `thumbnails`, `tile`, `title`, `viewer` | `caption`, `controls`, `grid`, `image`, `stage`, `status`, `thumbnails`, `tile`, `title`, `viewer` | — | — | — |
+| [LinearTimeline](../packages/ui/src/components/linear-timeline/linear-timeline.tsx) | yes | `axis`, `content`, `controls`, `details`, `empty`, `item`, `list`, `marker`, `nextButton`, `opposite`, `previousButton`, `range`, `root`, `trigger` | `axis`, `content`, `controls`, `details`, `empty`, `item`, `list`, `marker`, `nextButton`, `opposite`, `previousButton`, `range`, `root`, `trigger` | — | — | — |
 | [LinkPreview](../packages/ui/src/components/link-preview/link-preview.tsx) | — | `body`, `image`, `title` | `body`, `image`, `title` | — | — | — |
 | [LinkUnfurl](../packages/ui/src/components/link-unfurl/link-unfurl.tsx) | yes | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `root`, `send`, `status`, `title` | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `root`, `send`, `status`, `title` | — | — | — |
 | [LocaleSwitcher](../packages/ui/src/components/locale-switcher/locale-switcher.tsx) | — | `content`, `option`, `trigger` | `content`, `option`, `trigger` | — | — | — |
