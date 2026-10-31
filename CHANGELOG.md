@@ -10,6 +10,13 @@
 
 - `AutoEllipsis` fits text on one line with an ellipsis and shows the full text in a tooltip on hover and keyboard focus when truncated. Import it from `@jfrader/ui` or `@jfrader/ui/auto-ellipsis`.
 - `Tooltip.Trigger` accepts `as="button" | "span"` to choose its native host and `describe={false}` to omit the tooltip's accessible description. The defaults remain `as="button"` and `describe={true}`.
+- `LinearTimeline` shows ordered moments along a continuous rail, with independent content on either side and square, dot, or custom markers. Horizontal timelines fit the available width and page without scrolling when needed. Markers-only timelines show details on hover, focus, or tap.
+
+### Fixed
+
+- Touch-open `HoverCard` previews stay visible after emulated mouse-leave events.
+- `context-menu` tests wait for the entry animation before asserting visibility.
+- `verify-docs.mjs` avoids repeated AST traversal of shared arrays and includes a regression test.
 
 ## 0.23.0 — 2026-10-28
 

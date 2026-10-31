@@ -65,6 +65,7 @@ export * from './components/json-viewer';
 export * from './components/kbd';
 export * from './components/keycap-keyboard';
 export * from './components/lightbox-gallery';
+export * from './components/linear-timeline';
 export * from './components/link-unfurl';
 export * from './components/link-preview';
 export * from './components/locale-switcher';
