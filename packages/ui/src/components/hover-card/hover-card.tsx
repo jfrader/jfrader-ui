@@ -34,6 +34,7 @@ import {
   type ReactNode,
   type HTMLAttributes,
   type RefCallback,
+  type RefObject,
 } from 'react';
 import {
   useFocus,
@@ -275,12 +276,19 @@ const hasVisibleFocus = (element: Element | null | undefined) =>
  * Touch taps toggle; mouse clicks and keyboard activation only open. Never prevents default.
  * A tap toggles from the state at pointerdown, so a card the tap's own focus opened stays open.
  */
-function usePressToOpen(open: boolean, requestOpenChange: (open: boolean) => void): ElementProps {
+function usePressToOpen(
+  open: boolean,
+  requestOpenChange: (open: boolean) => void,
+  pointerType: RefObject<string | undefined>,
+): ElementProps {
   const touchPressRef = useRef<{ wasOpen: boolean } | null>(null);
   return useMemo(
     () => ({
       reference: {
+        onPointerEnter: (event: PointerEvent<Element>) => { pointerType.current = event.pointerType; },
+        onPointerMove: (event: PointerEvent<Element>) => { pointerType.current = event.pointerType; },
         onPointerDown: (event: PointerEvent<Element>) => {
+          pointerType.current = event.pointerType;
           touchPressRef.current = event.pointerType === 'touch' ? { wasOpen: open } : null;
         },
         onClick: (event: MouseEvent<Element>) => {
@@ -292,7 +300,7 @@ function usePressToOpen(open: boolean, requestOpenChange: (open: boolean) => voi
         },
       },
     }),
-    [open, requestOpenChange],
+    [open, requestOpenChange, pointerType],
   );
 }
 
@@ -441,12 +449,14 @@ function HoverCardLayer({
     if (register && memberValue !== undefined) return register(memberValue);
   }, [register, memberValue]);
 
+  const pointerType = useRef<string | undefined>(undefined);
   const floating = useOverlayFloating({
     open,
     placement,
     nodeId,
     onOpenChange: (next, event, reason) => {
       if (!next && (reason === 'hover' || reason === 'safe-polygon')) {
+        if (pointerType.current === 'touch') return;
         if (hasVisibleFocus(floating.refs.domReference.current)) return;
       }
       // The card is the topmost layer: its Escape must not also close an enclosing native dialog.
@@ -471,7 +481,7 @@ function HoverCardLayer({
   const focus = useFocus(context, { visibleOnly: true });
   const dismiss = useLayerDismiss(context, 'leaf');
   const role = useRole(context, { role: 'tooltip' });
-  const press = usePressToOpen(open, requestOpenChange);
+  const press = usePressToOpen(open, requestOpenChange, pointerType);
   const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus, ...dismiss, role, press]);
 
   const side = resolvedPlacement.split('-')[0] as Side;
