@@ -23,6 +23,96 @@ import {
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
+async function expectResponsiveFixture(
+  { canvasElement, canvas, userEvent }: Pick<Parameters<NonNullable<Story['play']>>[0], 'canvasElement' | 'canvas' | 'userEvent'>,
+  name: string,
+  choices: readonly [string, string],
+) {
+  const doc = canvasElement.ownerDocument;
+  const fonts = new Map<HTMLElement, Array<[string, string, string]>>();
+  const bodyWidth = [doc.body.style.getPropertyValue('inline-size'), doc.body.style.getPropertyPriority('inline-size')];
+  const restoreFonts = () => {
+    for (const [element, properties] of fonts) for (const [key, value, priority] of properties) element.style.setProperty(key, value, priority);
+  };
+  const applyTextMode = async (mode: 'normal' | 'text-only' | 'root-stress') => {
+    restoreFonts();
+    const sizes = Array.from(doc.querySelectorAll<HTMLElement>('*')).map((element) => {
+      if (!fonts.has(element)) fonts.set(element, ['font-size', 'line-height'].map((key) => [key, element.style.getPropertyValue(key), element.style.getPropertyPriority(key)]));
+      const styles = getComputedStyle(element);
+      return { element, fontSize: styles.fontSize, lineHeight: styles.lineHeight };
+    });
+    if (mode !== 'normal') for (const { element, fontSize, lineHeight } of sizes) {
+      if (mode === 'text-only' && element === doc.documentElement) continue;
+      element.style.setProperty('font-size', `${parseFloat(fontSize) * 2}px`, 'important');
+      if (lineHeight !== 'normal') element.style.setProperty('line-height', `${parseFloat(lineHeight) * 2}px`, 'important');
+    }
+    await doc.fonts.ready;
+  };
+  const expectContained = async () => {
+    const bounds = doc.body.getBoundingClientRect();
+    await expect(doc.documentElement.scrollWidth).toBeLessThanOrEqual(doc.documentElement.clientWidth + 1);
+    for (const control of canvasElement.querySelectorAll<HTMLElement>('button')) {
+      const box = control.getBoundingClientRect();
+      await expect(box.left).toBeGreaterThanOrEqual(bounds.left - 1);
+      await expect(box.right).toBeLessThanOrEqual(bounds.right + 1);
+    }
+    const walker = doc.createTreeWalker(canvasElement, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      if (!node.textContent?.trim() || node.parentElement?.closest('[data-ui="select-value"]')) continue;
+      const range = doc.createRange();
+      range.selectNode(node);
+      for (const box of range.getClientRects()) {
+        await expect(box.left).toBeGreaterThanOrEqual(bounds.left - 1);
+        await expect(box.right).toBeLessThanOrEqual(bounds.right + 1);
+      }
+    }
+  };
+  try {
+    doc.body.style.setProperty('inline-size', '320px');
+    for (const [index, mode] of (['normal', 'text-only', 'root-stress'] as const).entries()) {
+      await applyTextMode(mode);
+      await expectContained();
+      const trigger = canvas.getByRole('combobox', { name });
+      trigger.scrollIntoView({ block: 'center' });
+      await userEvent.click(trigger);
+      const list = await within(doc.body).findByRole('listbox', { name });
+      await applyTextMode(mode);
+      await settleMotion(list);
+      const menu = list.getBoundingClientRect();
+      await expect(menu.left).toBeGreaterThanOrEqual(0);
+      await expect(menu.right).toBeLessThanOrEqual(doc.documentElement.clientWidth + 1);
+      for (const key of ['{Home}', '{End}']) {
+        await userEvent.keyboard(key);
+        const active = doc.getElementById(trigger.getAttribute('aria-activedescendant')!)!;
+        await expect(active).toBeVisible();
+        await waitFor(async () => {
+          const box = active.getBoundingClientRect();
+          const visible = list.getBoundingClientRect();
+          await expect(box.top).toBeGreaterThanOrEqual(visible.top - 1);
+          await expect(box.bottom).toBeLessThanOrEqual(visible.bottom + 1);
+        });
+      }
+      const choice = choices[index % choices.length]!;
+      await userEvent.click(within(list).getByRole('option', { name: choice }));
+      await expect(trigger).toHaveTextContent(choice);
+      await expect(doc.activeElement).toBe(trigger);
+      await expectContained();
+      const upgrade = canvas.queryByRole('button', { name: 'Upgrade' });
+      if (upgrade) {
+        upgrade.scrollIntoView({ block: 'center' });
+        const box = upgrade.getBoundingClientRect();
+        await expect(upgrade.contains(doc.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2))).toBe(true);
+        await userEvent.click(upgrade);
+        await expect(doc.activeElement).toBe(upgrade);
+      }
+    }
+  } finally {
+    restoreFonts();
+    doc.body.style.setProperty('inline-size', bodyWidth[0]!, bodyWidth[1]);
+  }
+}
+
 const NarrowFrame = styled.div({ inlineSize: 240 });
 const DESCENDER_OPTIONS = [
   { value: 'stripes', label: 'Rayas' },
@@ -148,7 +238,8 @@ export const RootRelativeSizes: Story = {
 const VisualGrid = styled.div({
   display: 'grid',
   gap: vars.space[6],
-  inlineSize: `min(640px, calc(100vw - ${vars.space[8]}))`,
+  inlineSize: '100%',
+  maxInlineSize: '640px',
   gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))',
 });
 const EdgeFrame = styled.div({
@@ -397,6 +488,7 @@ import { vars } from '@jfrader/tokens/vars';
 
 const PlanActions = styled.div({
   display: 'flex',
+  flexWrap: 'wrap',
   alignItems: 'flex-end',
   gap: vars.space[3],
 });
@@ -424,6 +516,7 @@ const Row = styled.div({
 // A labeled field is taller than its control; an action beside it aligns to the control's bottom.
 const FieldRow = styled.div({
   display: 'flex',
+  flexWrap: 'wrap',
   alignItems: 'flex-end',
   gap: vars.space[3],
 });
@@ -477,6 +570,7 @@ const LONG_LABEL = 'InternationalEnterpriseWorkspaceWithoutWordSeparators';
 
 export const FieldStates: ShorthandStory = {
   tags: ['!autodocs'],
+  parameters: { layout: 'padded' },
   render: () => (
     <VisualGrid>
       <Select label="Small" size="sm" options={FRUITS} defaultValue="apple" />
@@ -504,6 +598,7 @@ export const FieldStates: ShorthandStory = {
 
 export const Grouped: Story = {
   tags: ['!autodocs'],
+  parameters: { layout: 'padded' },
   render: () => (
     <Select>
       <Select.Trigger aria-label="Destination"><Select.Value placeholder="Choose a destination" /></Select.Trigger>
@@ -885,6 +980,7 @@ export const Default: ShorthandStory = {
     </FieldRow>
   ),
   parameters: {
+    layout: 'padded',
     docs: {
       description: { story: 'Choose a billing plan beside an upgrade action; Enterprise is unavailable.' },
       source: {
@@ -1799,4 +1895,23 @@ export const LightTheme: Story = {
     await userEvent.keyboard('{Escape}');
     await expectClosed(canvasElement);
   },
+};
+
+export const ResponsiveBillingPlan: ShorthandStory = {
+  ...Default,
+  name: 'Responsive billing plan',
+  tags: ['!autodocs'],
+  play: (context) => expectResponsiveFixture(context, PLAN_LABEL, ['Pro', 'Free']),
+};
+export const ResponsiveGrouped: Story = {
+  ...Grouped,
+  name: 'Responsive grouped choices',
+  tags: ['!autodocs'],
+  play: (context) => expectResponsiveFixture(context, 'Destination', ['Lima', 'Madrid']),
+};
+export const ResponsiveFieldStates: ShorthandStory = {
+  ...FieldStates,
+  name: 'Responsive field states',
+  tags: ['!autodocs'],
+  play: (context) => expectResponsiveFixture(context, 'Small', ['Cherry', 'Apple']),
 };
