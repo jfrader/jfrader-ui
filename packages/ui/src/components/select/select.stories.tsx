@@ -24,6 +24,116 @@ import {
 import { styled } from '../../index';
 
 const NarrowFrame = styled.div({ inlineSize: 240 });
+const DESCENDER_OPTIONS = [
+  { value: 'stripes', label: 'Rayas' },
+  { value: 'floor', label: 'Planta baja' },
+  { value: 'room', label: 'Sala' },
+  { value: 'dots', label: 'Puntos' },
+];
+
+function valueInkClearance(value: HTMLElement) {
+  const doc = value.ownerDocument;
+  const styles = getComputedStyle(value);
+  const reference = doc.createElement('div');
+  for (const property of ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'fontVariant',
+    'fontFeatureSettings', 'fontVariationSettings', 'fontOpticalSizing', 'fontKerning', 'letterSpacing', 'lineHeight'] as const) {
+    reference.style[property] = styles[property];
+  }
+  Object.assign(reference.style, { position: 'fixed', top: '0', left: '0', whiteSpace: 'nowrap', visibility: 'hidden' });
+  const text = doc.createElement('span');
+  text.textContent = value.textContent;
+  const marker = doc.createElement('span');
+  Object.assign(marker.style, { display: 'inline-block', width: '0', height: '0', verticalAlign: 'baseline' });
+  reference.append(text, marker);
+  doc.body.append(reference);
+  try {
+    const range = doc.createRange();
+    range.selectNodeContents(text);
+    const offset = marker.getBoundingClientRect().top - range.getBoundingClientRect().top;
+    range.selectNodeContents(value);
+    const baseline = range.getBoundingClientRect().top + offset;
+    const context = doc.createElement('canvas').getContext('2d')!;
+    context.font = `${styles.fontStyle} ${styles.fontWeight} ${styles.fontSize} ${styles.fontFamily}`;
+    if (styles.fontKerning === 'auto' || styles.fontKerning === 'normal' || styles.fontKerning === 'none') {
+      context.fontKerning = styles.fontKerning;
+    }
+    const ink = context.measureText(value.textContent ?? '');
+    const box = value.getBoundingClientRect();
+    return {
+      top: baseline - ink.actualBoundingBoxAscent - box.top - parseFloat(styles.borderTopWidth),
+      bottom: box.bottom - parseFloat(styles.borderBottomWidth) - baseline - ink.actualBoundingBoxDescent,
+    };
+  } finally {
+    reference.remove();
+  }
+}
+
+export const EnlargedValueInk: Story = {
+  tags: ['!autodocs'],
+  render: () => <div>
+    <Select size="lg" label="Pattern" options={DESCENDER_OPTIONS} defaultValue="stripes" />
+    <Select size="lg" label="Floor" options={DESCENDER_OPTIONS} defaultValue="floor" slotProps={{ root: { dir: 'rtl' } }} />
+  </div>,
+  play: async ({ canvasElement, canvas, userEvent }) => {
+    const doc = canvasElement.ownerDocument;
+    const originals = new Map<HTMLElement, { fontSize: string; lineHeight: string }>();
+    const restore = () => {
+      for (const [element, styles] of originals) Object.assign(element.style, styles);
+    };
+    const enlarge = async () => {
+      restore();
+      const sizes = Array.from(doc.querySelectorAll<HTMLElement>('*')).map((element) => {
+        if (!originals.has(element)) originals.set(element, { fontSize: element.style.fontSize, lineHeight: element.style.lineHeight });
+        const styles = getComputedStyle(element);
+        return { element, fontSize: parseFloat(styles.fontSize) * 2, lineHeight: styles.lineHeight };
+      });
+      for (const { element, fontSize, lineHeight } of sizes) {
+        element.style.fontSize = `${fontSize}px`;
+        if (lineHeight !== 'normal') element.style.lineHeight = `${parseFloat(lineHeight) * 2}px`;
+      }
+      await doc.fonts.ready;
+    };
+    try {
+      await doc.fonts.ready;
+      await enlarge();
+      for (const name of ['Pattern', 'Floor']) {
+        const trigger = canvas.getByRole('combobox', { name });
+        const value = trigger.querySelector<HTMLElement>('[data-ui="select-value"]')!;
+        await expect(value.scrollWidth).toBeLessThanOrEqual(value.clientWidth);
+        const ink = valueInkClearance(value);
+        await expect(ink.top, `${value.textContent}: top ink clearance`).toBeGreaterThanOrEqual(0);
+        await expect(ink.bottom, `${value.textContent}: bottom ink clearance`).toBeGreaterThanOrEqual(0);
+        await userEvent.click(trigger);
+        const list = await within(doc.body).findByRole('listbox');
+        await enlarge();
+        const option = within(list).getByRole('option', { name: value.textContent! });
+        await expect(option).toBeVisible();
+        await userEvent.click(option);
+        await expect(doc.activeElement).toBe(trigger);
+        const originalWidth = trigger.style.inlineSize;
+        const originalMinimum = trigger.style.minInlineSize;
+        try {
+          trigger.style.minInlineSize = '0';
+          trigger.style.inlineSize = `${value.getBoundingClientRect().width}px`;
+          await expect(value.scrollWidth).toBeGreaterThan(value.clientWidth);
+          await expect(getComputedStyle(value).textOverflow).toBe('ellipsis');
+          await expect(trigger).toHaveAccessibleName(name);
+          await userEvent.keyboard('{ArrowDown}');
+          const narrowList = await within(doc.body).findByRole('listbox');
+          await enlarge();
+          await expect(within(narrowList).getByRole('option', { name: value.textContent! })).toBeVisible();
+          await userEvent.keyboard('{Escape}');
+          await expect(doc.activeElement).toBe(trigger);
+        } finally {
+          trigger.style.inlineSize = originalWidth;
+          trigger.style.minInlineSize = originalMinimum;
+        }
+      }
+    } finally {
+      restore();
+    }
+  },
+};
 export const ControlSizeContract: Story = {
   name: 'Control size contract',
   render: () => <>{(['sm', 'md', 'lg'] as const).map(size => <Select key={size} size={size} options={[{ value: 'draft', label: 'Draft' }]} defaultValue="draft" slotProps={{ trigger: { 'aria-label': `${size} status` } }} />)}</>,

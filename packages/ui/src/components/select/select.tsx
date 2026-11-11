@@ -347,6 +347,7 @@ const selectCaretStyle = css({
 
 const valueStyle = css({
   minInlineSize: 0,
+  lineHeight: vars.lineHeight.base,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
