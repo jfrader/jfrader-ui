@@ -22,6 +22,7 @@ const meta = {
       description: { component: 'Enter an exact quantity or measurement with step controls.' },
       sections: [
         { title: 'Quantities', stories: ['Default', 'DecimalStep', 'Unit', 'PrefixSuffix'] },
+        { title: 'Sizes', stories: ['Sizes'] },
         { title: 'State and forms', stories: ['Controlled', 'FormReset'] },
       ],
       usage: `### Values
@@ -81,18 +82,34 @@ export const Default: Story = {
 export const TouchSizes: Story = {
   name: 'NumberField touch sizes',
   render: (args, context) => Sizes.render!(args, context),
-  play: async ({ canvasElement }) => {
+  play: async (context) => {
+    const { canvasElement } = context;
     const inputs = within(canvasElement).getAllByRole('spinbutton');
     await expect(inputs).toHaveLength(3);
     for (const [index, input] of inputs.entries()) {
       await expect(input.parentElement!.getBoundingClientRect().height).toBe([44, 44, 48][index]);
     }
+    await expectLargeTargets(context);
   },
 };
 
 export const Sizes: Story = {
+  parameters: { docs: { source: { language: 'tsx', code: `import { NumberField, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Frame = styled.div({
+  display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)',
+  gap: vars.space[4], inlineSize: 'max-content', maxInlineSize: '100%',
+});
+
+<Frame>
+  {(['sm', 'md', 'lg'] as const).map((size) => (
+    <NumberField key={size} size={size} label={size} defaultValue={5} min={1} max={500} locale="en-US" />
+  ))}
+</Frame>` } } },
   render: (args) => <IntrinsicFrame>{(['sm', 'md', 'lg'] as const).map((size) => <NumberField {...args} key={size} size={size} label={size} />)}</IntrinsicFrame>,
-  play: async ({ canvasElement }) => {
+  play: async (context) => {
+    const { canvasElement } = context;
     for (const [size, height, width] of [['sm', 32, 160], ['md', 40, 192], ['lg', 48, 224]] as const) {
       const input = within(canvasElement).getByRole('spinbutton', { name: size });
       await expect(input.parentElement!.getBoundingClientRect().height).toBe(height);
@@ -102,8 +119,27 @@ export const Sizes: Story = {
       await expect(button.getBoundingClientRect().width).toBeGreaterThanOrEqual(32);
       await expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(24);
     }
+    await expectLargeTargets(context);
   },
 };
+
+async function expectLargeTargets({ canvasElement, userEvent }: Parameters<NonNullable<Story['play']>>[0]) {
+  const canvas = within(canvasElement);
+  const input = canvas.getByRole('spinbutton', { name: 'lg' });
+  const increase = canvas.getByRole('button', { name: 'Increase lg' });
+  const decrease = canvas.getByRole('button', { name: 'Decrease lg' });
+  for (const target of [input, increase, decrease]) {
+    const box = target.getBoundingClientRect();
+    await expect(box.width).toBeGreaterThanOrEqual(44);
+    await expect(box.height).toBeGreaterThanOrEqual(44);
+    const hit = target.ownerDocument.elementFromPoint(box.left + 2, box.top + 2)!;
+    await expect(target.contains(hit)).toBe(true);
+    await userEvent.click(hit);
+    await expect(input.ownerDocument.activeElement).toBe(input);
+    await expect(input).toHaveValue(target === increase ? '6' : '5');
+  }
+  await expect(input).toHaveValue('5');
+}
 export const DecimalStep: Story = {
   name: 'Exact decimal steps',
   parameters: { docs: {
@@ -495,6 +531,30 @@ export const Narrow: Story = {
     for (const button of within(root).getAllByRole('button')) {
       const rect = button.getBoundingClientRect();
       await expect(Math.abs((rect.top + rect.bottom) / 2 - (input.top + input.bottom) / 2)).toBeLessThan(1);
+    }
+  },
+};
+export const LargeNarrow: Story = {
+  args: { size: 'lg' },
+  render: (args) => <NarrowFrame><NumberField {...args} /></NarrowFrame>,
+  play: async ({ canvasElement, userEvent }) => {
+    const root = canvasElement.querySelector<HTMLElement>('[data-ui="number-field"]')!;
+    const input = within(root).getByRole('spinbutton');
+    const originalFontSize = input.style.fontSize;
+    try {
+      input.style.fontSize = `${parseFloat(getComputedStyle(input).fontSize) * 2}px`;
+      await expect(input.clientHeight).toBeGreaterThanOrEqual(parseFloat(getComputedStyle(input).lineHeight));
+      await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth);
+      for (const target of [input, ...within(root).getAllByRole('button')]) {
+        const box = target.getBoundingClientRect();
+        await expect(box.width).toBeGreaterThanOrEqual(44);
+        await expect(box.height).toBeGreaterThanOrEqual(44);
+        await expect(box.right).toBeLessThanOrEqual(root.getBoundingClientRect().right);
+      }
+      await userEvent.click(within(root).getByRole('button', { name: 'Increase Seats' }));
+      await expect(input).toHaveValue('6');
+    } finally {
+      input.style.fontSize = originalFontSize;
     }
   },
 };
