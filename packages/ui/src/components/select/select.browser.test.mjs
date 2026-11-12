@@ -471,6 +471,7 @@ for (const child of ['Fruit', 'Search fruit', 'Fruit actions']) {
       await page.keyboard.press('Escape');
       await page.waitForFunction(() => !document.querySelector('dialog')?.open);
       assert.ok(await opener.evaluate(node => node === document.activeElement));
+      await page.waitForFunction(() => JSON.parse(document.querySelector('[aria-label="Escape events"]').textContent).includes('close'));
       const events = await escapeEvents(page);
       assert.deepEqual(events.filter(event => event.startsWith('cancel:')), ['cancel:true', 'cancel:false']);
       assert.deepEqual(events.filter(event => event.startsWith('parent:')), ['parent:true', 'parent:false']);
@@ -655,3 +656,96 @@ test('DialogStack trusted nested native cancellation closes only its own modal t
     assert.ok(await opener.evaluate(node => node === document.activeElement));
   }, { width: 768, height: 900 });
 });
+
+async function retainedEvents(page) {
+  return JSON.parse(await page.getByLabel('Retained child events').textContent());
+}
+
+async function observeRetainedNativeEvents(page) {
+  await page.evaluate(() => {
+    window.retainedNativeEvents = [];
+    for (const type of ['cancel', 'close']) document.addEventListener(type, event => {
+      const owner = event.target.getAttribute('data-escape-owner');
+      setTimeout(() => window.retainedNativeEvents.push({ type, owner, trusted: event.isTrusted, prevented: event.defaultPrevented }), 0);
+    }, true);
+  });
+}
+
+test('a retained controlled-open Select inside a closed native dialog cannot veto outer trusted Escape', async () => {
+  await withStory('surfaces-dialog--retained-native-child-escape', async page => {
+    await observeRetainedNativeEvents(page);
+    const opener = page.getByRole('button', { name: 'Open outer', exact: true });
+    const outer = page.locator('dialog[data-escape-owner="outer"]');
+    await page.waitForFunction(() => document.querySelector('dialog[data-escape-owner="outer"]')?.open);
+    await outer.getByRole('button', { name: 'Open inner', exact: true }).click();
+    const inner = page.locator('dialog[data-escape-owner="inner"]');
+    const select = inner.getByRole('combobox', { name: 'Retained fruit', exact: true });
+    await select.click();
+    await select.press('Escape');
+    await page.waitForFunction(() => window.retainedNativeEvents.some(e => e.owner === 'inner' && e.type === 'cancel'));
+    assert.ok(await inner.evaluate(node => node.open));
+    assert.ok(await outer.evaluate(node => node.open));
+    assert.equal(await select.getAttribute('aria-expanded'), 'true');
+    assert.ok((await retainedEvents(page)).some(event => event.type === 'select-request' && event.open === false && event.accepted === false));
+    assert.equal((await retainedEvents(page)).filter(event => event.type === 'inner-request' && event.open === false).length, 0);
+    await inner.getByRole('button', { name: 'Close inner', exact: true }).click();
+    await page.waitForFunction(() => !document.querySelector('dialog[data-escape-owner="inner"]').open);
+    assert.ok(await outer.getByRole('button', { name: 'Open inner', exact: true }).evaluate(node => node === document.activeElement));
+    const branch = await inner.evaluate(node => {
+      const trigger = node.querySelector('[role="combobox"]'), popup = node.querySelector('[role="listbox"]');
+      return { open: node.open, display: getComputedStyle(node).display, hidden: node.hidden, inert: node.inert,
+        expanded: trigger.getAttribute('aria-expanded'), triggerRects: trigger.getClientRects().length,
+        popupRects: popup.getClientRects().length, containsPopup: node.contains(popup) };
+    });
+    assert.deepEqual(branch, { open: false, display: 'none', hidden: false, inert: false, expanded: 'true', triggerRects: 0, popupRects: 0, containsPopup: true });
+    const action = outer.getByRole('button', { name: 'Outer action', exact: true });
+    await action.click();
+    assert.ok(await action.evaluate(node => node === document.activeElement));
+    await action.press('Escape');
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.waitForFunction(() => document.querySelector('dialog[data-escape-owner="outer"]').getAttribute('data-state') !== 'closing');
+    assert.equal(await outer.evaluate(node => node.open), false, 'inactive retained child must not veto the outer close request');
+    assert.ok(await outer.evaluate(node => !node.contains(document.activeElement)));
+    await page.waitForFunction(() => window.retainedNativeEvents.some(e => e.owner === 'outer' && e.type === 'close'));
+    const events = await retainedEvents(page);
+    assert.equal(events.filter(event => event.type === 'outer-request' && event.open === false).length, 1);
+    assert.equal(events.filter(event => event.type === 'close' && event.owner === 'outer' && event.own).length, 1);
+    assert.deepEqual(events.filter(event => event.type === 'cancel' && event.owner === 'outer' && event.own).map(event => event.prevented), [false]);
+    assert.deepEqual((await page.evaluate(() => window.retainedNativeEvents)).filter(event => event.owner === 'outer').map(({ type, trusted }) => ({ type, trusted })), [
+      { type: 'cancel', trusted: true }, { type: 'close', trusted: true },
+    ]);
+    await opener.click();
+    await outer.getByRole('button', { name: 'Close outer', exact: true }).click();
+    await page.waitForFunction(() => !document.querySelector('dialog[data-escape-owner="outer"]').open);
+    assert.ok(await opener.evaluate(node => node === document.activeElement));
+  }, { width: 1024, height: 900 });
+});
+
+for (const branch of ['hidden-branch-child', 'outer-alone']) {
+  test(`${branch} permits outer trusted Escape and normal focus return`, async () => {
+    await withStory(`surfaces-dialog--${branch}-escape`, async page => {
+      await observeRetainedNativeEvents(page);
+      const opener = page.getByRole('button', { name: 'Open outer', exact: true });
+      const outer = page.locator('dialog[data-escape-owner="outer"]');
+      await page.waitForFunction(() => document.querySelector('dialog[data-escape-owner="outer"]')?.open);
+      if (branch === 'hidden-branch-child') {
+        const select = outer.getByRole('combobox', { name: 'Retained fruit' });
+        await select.click();
+        await select.press('Escape');
+        assert.equal(await select.getAttribute('aria-expanded'), 'true');
+        assert.ok(await outer.evaluate(node => node.open));
+        await outer.getByRole('button', { name: 'Hide retained child' }).click();
+        assert.deepEqual(await outer.locator('[role="combobox"]').evaluate(node => ({ expanded: node.getAttribute('aria-expanded'), hidden: Boolean(node.closest('[hidden]')), rects: node.getClientRects().length })), { expanded: 'true', hidden: true, rects: 0 });
+      }
+      const priorRequests = (await retainedEvents(page)).filter(event => event.type === 'outer-request' && event.open === false).length;
+      await outer.getByRole('button', { name: 'Outer action', exact: true }).click();
+      await page.keyboard.press('Escape');
+      await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      await page.waitForFunction(() => document.querySelector('dialog[data-escape-owner="outer"]').getAttribute('data-state') !== 'closing');
+      assert.equal(await outer.evaluate(node => node.open), false);
+      assert.ok(await outer.evaluate(node => !node.contains(document.activeElement)));
+      assert.equal((await retainedEvents(page)).filter(event => event.type === 'outer-request' && event.open === false).length, priorRequests + 1);
+      assert.ok((await page.evaluate(() => window.retainedNativeEvents)).some(event => event.owner === 'outer' && event.type === 'cancel' && event.trusted));
+    }, { width: 1024, height: 900 });
+  });
+}

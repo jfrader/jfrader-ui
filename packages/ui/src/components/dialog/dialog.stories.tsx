@@ -80,6 +80,56 @@ export const ChildEscapeRejected: Story = { tags: ['!autodocs'], render: () => <
 export const ParentEscapeRejected: Story = { tags: ['!autodocs'], render: () => <ChildEscapeFixture rejectParent /> };
 export const ChildEscapeCancelVeto: Story = { tags: ['!autodocs'], render: () => <ChildEscapeFixture veto /> };
 
+const RetainedChildCloseRow = styled.div({ marginBlockEnd: vars.space[12] });
+
+function RetainedChildEscapeFixture({ branch = 'native' }: { branch?: 'native' | 'hidden' | 'none' }) {
+  const [innerOpen, setInnerOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [portalHost, setPortalHost] = useState<HTMLDivElement | null>(null);
+  const [events, setEvents] = useState<Array<Record<string, unknown>>>([]);
+  const record = (event: Record<string, unknown>) => setEvents(values => [...values, event]);
+  const cancel = (owner: string, event: SyntheticEvent<HTMLDialogElement>) => {
+    record({ type: 'cancel', owner, own: event.target === event.currentTarget, prevented: event.defaultPrevented, trusted: event.nativeEvent.isTrusted });
+  };
+  const close = (owner: string, event: SyntheticEvent<HTMLDialogElement>) => {
+    record({ type: 'close', owner, own: event.target === event.currentTarget, trusted: event.nativeEvent.isTrusted });
+  };
+  const selection = <ThemeRoot portalContainer={portalHost}>
+    <Select label="Retained fruit" options={ESCAPE_OPTIONS} defaultValue="apple" open
+      onOpenChange={open => record({ type: 'select-request', open, accepted: open })} />
+    <div ref={setPortalHost} />
+  </ThemeRoot>;
+  return <>
+    <Dialog defaultOpen onOpenChange={open => record({ type: 'outer-request', open })}>
+      <Dialog.Trigger>Open outer</Dialog.Trigger>
+      <Dialog.Content data-escape-owner="outer" onCancel={event => cancel('outer', event)} onClose={event => close('outer', event)}>
+        <Dialog.Title>Outer dialog</Dialog.Title>
+        <Dialog.Description>Choose a fruit.</Dialog.Description>
+        <Button>Outer action</Button>
+        {branch === 'native' && <Dialog open={innerOpen} onOpenChange={open => { record({ type: 'inner-request', open }); setInnerOpen(open); }}>
+          <Dialog.Trigger>Open inner</Dialog.Trigger>
+          <Dialog.Content data-escape-owner="inner" onCancel={event => cancel('inner', event)} onClose={event => close('inner', event)}>
+            <Dialog.Title>Inner dialog</Dialog.Title>
+            <Dialog.Description>Choose a fruit.</Dialog.Description>
+            <RetainedChildCloseRow><Dialog.Close>Close inner</Dialog.Close></RetainedChildCloseRow>
+            {selection}
+          </Dialog.Content>
+        </Dialog>}
+        {branch === 'hidden' && <>
+          <Button onClick={() => setHidden(true)}>Hide retained child</Button>
+          <div hidden={hidden}>{selection}</div>
+        </>}
+        <Dialog.Close>Close outer</Dialog.Close>
+      </Dialog.Content>
+    </Dialog>
+    <output aria-label="Retained child events">{JSON.stringify(events)}</output>
+  </>;
+}
+
+export const RetainedNativeChildEscape: Story = { tags: ['!autodocs'], render: () => <RetainedChildEscapeFixture /> };
+export const HiddenBranchChildEscape: Story = { tags: ['!autodocs'], render: () => <RetainedChildEscapeFixture branch="hidden" /> };
+export const OuterAloneEscape: Story = { tags: ['!autodocs'], render: () => <RetainedChildEscapeFixture branch="none" /> };
+
 function setNativeAutoFocus(input: HTMLInputElement | null) {
   input?.setAttribute('autofocus', '');
 }
