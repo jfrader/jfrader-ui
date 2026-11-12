@@ -280,9 +280,9 @@ test('composed Select actions and callback history wrap without losing their ful
   }
 });
 
-test('ordinary Select respects a smaller authored maximum and enlarged RTL text', async () => {
+test('ordinary Select respects a smaller composed authored maximum and enlarged RTL text', async () => {
   await withStory('inputs-select--sticky-list', async page => {
-    await page.addStyleTag({ content: '[data-ui="select-listbox"] { max-block-size: 144px; }' });
+    await page.addStyleTag({ content: '[data-ui="select-listbox"] { max-block-size: min(144px, var(--select-available-height, 100vh)); }' });
     await page.evaluate(() => { document.documentElement.dir = 'rtl'; });
     await doubleText(page);
     const trigger = page.getByRole('combobox');
@@ -296,7 +296,7 @@ test('ordinary Select respects a smaller authored maximum and enlarged RTL text'
     const tall = await adjacentGeometry(page);
     assertAdjacent(tall);
     assert.ok(tall.panel.height <= 145);
-    await page.getByRole('listbox').evaluate(element => { element.style.maxBlockSize = '112px'; });
+    await page.getByRole('listbox').evaluate(element => { element.style.maxBlockSize = 'min(112px, var(--select-available-height, 100vh))'; });
     await page.waitForFunction(() => document.querySelector('[role="listbox"]').getBoundingClientRect().height <= 113);
     assertAdjacent(await adjacentGeometry(page));
     await trigger.press('End');
@@ -749,3 +749,166 @@ for (const branch of ['hidden-branch-child', 'outer-alone']) {
     }, { width: 1024, height: 900 });
   });
 }
+
+async function settleCss(page) {
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  });
+}
+
+test('raw authored CSS maximum stays reactive to ancestor-variable changes without resize or reopening', async () => {
+  await withStory('inputs-select--sticky-list', async page => {
+    const rule = '[data-ui="select-listbox"] { max-block-size: var(--qa-popup-max); }';
+    const stylesheet = await page.addStyleTag({ content: rule });
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty('--qa-popup-max', '240px');
+      window.qaPanel = document.querySelector('[data-ui="select-listbox"]');
+      window.qaClassName = window.qaPanel.className;
+      window.qaResizeEvents = 0;
+      addEventListener('resize', () => window.qaResizeEvents++);
+    });
+    const panel = page.locator('[data-ui="select-listbox"]');
+    assert.equal(await panel.evaluate(node => node.style.maxBlockSize), '');
+    assert.equal(await panel.evaluate(node => getComputedStyle(node).maxBlockSize), '240px');
+    const trigger = page.getByRole('combobox');
+    await trigger.press('ArrowDown');
+    await page.getByRole('listbox').waitFor();
+    await settleCss(page);
+    const reference = await trigger.boundingBox();
+    const scroll = await page.evaluate(() => [scrollX, scrollY]);
+    assert.equal((await adjacentGeometry(page)).active.text, 'Option 720');
+    for (const height of [240, 96, 360, 240]) {
+      await page.evaluate(value => document.documentElement.style.setProperty('--qa-popup-max', `${value}px`), height);
+      await settleCss(page);
+      const geometry = await adjacentGeometry(page);
+      assert.ok(Math.abs(geometry.panel.height - height) <= 1, `Expected used height ${height}, got ${geometry.panel.height}`);
+      assertAdjacent(geometry);
+      assert.equal(await trigger.getAttribute('aria-expanded'), 'true');
+      assert.deepEqual(await trigger.boundingBox(), reference);
+      assert.deepEqual(await page.evaluate(() => [scrollX, scrollY]), scroll);
+      assert.equal(await panel.evaluate(node => node === window.qaPanel && node.className === window.qaClassName), true);
+      assert.equal(await page.evaluate(() => window.qaResizeEvents), 0);
+    }
+    assert.equal(await stylesheet.textContent(), rule);
+    assert.equal(await panel.evaluate(node => node.style.maxBlockSize), '');
+    for (const key of ['Home', 'End']) {
+      await trigger.press(key);
+      assertAdjacent(await adjacentGeometry(page));
+    }
+    await trigger.press('Enter');
+    assert.equal(await trigger.textContent(), 'Option 1439');
+    assert.ok(await trigger.evaluate(node => node === document.activeElement));
+  }, { width: 844, height: 900 });
+});
+
+async function assertAvailableHeightData(page) {
+  const geometry = await adjacentGeometry(page);
+  const value = await page.getByRole('listbox').evaluate(node => node.style.getPropertyValue('--select-available-height'));
+  assert.match(value, /^\d+(?:\.\d+)?px$/);
+  const height = Number.parseFloat(value);
+  const viewportPadding = 8;
+  const adjacent = geometry.panel.top >= geometry.anchor.bottom - 1
+    ? geometry.viewport.height - viewportPadding - geometry.panel.top
+    : geometry.panel.bottom - viewportPadding;
+  assert.ok(Math.abs(height - adjacent) <= 1, JSON.stringify({ value, adjacent, geometry }));
+  assertAdjacent(geometry);
+  return { geometry, height };
+}
+
+for (const enlarged of [false, true]) {
+  test(`composed CSS maximum bounds live variable/calc limits and grows again (${enlarged ? '200% RTL' : 'normal'})`, async () => {
+    await withStory('inputs-select--sticky-list', async page => {
+      const expression = 'min(calc(var(--qa-popup-unit) * var(--qa-popup-count)), var(--select-available-height, 100vh))';
+      const rule = `[data-ui="select-listbox"] { max-block-size: ${expression} !important; }`;
+      const stylesheet = await page.addStyleTag({ content: rule });
+      await page.evaluate(rtl => {
+        document.documentElement.dir = rtl ? 'rtl' : 'ltr';
+        document.documentElement.style.setProperty('--qa-popup-unit', '48px');
+        document.documentElement.style.setProperty('--qa-popup-count', '10');
+        window.qaComposedPanel = document.querySelector('[data-ui="select-listbox"]');
+        window.qaComposedResizes = 0;
+        addEventListener('resize', () => window.qaComposedResizes++);
+      }, enlarged);
+      if (enlarged) await doubleText(page);
+      const trigger = page.getByRole('combobox');
+      await trigger.click();
+      if (enlarged) await doubleText(page);
+      await settleCss(page);
+      const initial = await assertAvailableHeightData(page);
+      assert.equal(initial.geometry.active.text, 'Option 720');
+      assert.ok(initial.height < 480);
+      assert.ok(Math.abs(initial.geometry.panel.height - initial.height) <= 1);
+      for (const count of [enlarged ? 3 : 2, 8]) {
+        await page.evaluate(value => document.documentElement.style.setProperty('--qa-popup-count', String(value)), count);
+        await settleCss(page);
+        const current = await assertAvailableHeightData(page);
+        assert.ok(Math.abs(current.geometry.panel.height - Math.min(48 * count, current.height)) <= 1);
+        assert.equal(await page.evaluate(() => window.qaComposedResizes), 0);
+        assert.equal(await page.getByRole('listbox').evaluate(node => node === window.qaComposedPanel), true);
+      }
+      assert.equal(await stylesheet.textContent(), rule);
+      const declared = await page.getByRole('listbox').evaluate((node, maximum) => {
+        node.style.setProperty('max-block-size', maximum, 'important');
+        node.style.setProperty('letter-spacing', '0.25px');
+        return { maximum: node.style.getPropertyValue('max-block-size'), priority: node.style.getPropertyPriority('max-block-size'), spacing: node.style.letterSpacing };
+      }, expression);
+      await page.evaluate(() => document.documentElement.style.setProperty('--qa-popup-count', '10'));
+      await page.setViewportSize({ width: 844, height: 900 });
+      await settleCss(page);
+      const grown = await assertAvailableHeightData(page);
+      assert.ok(grown.geometry.panel.height > initial.geometry.panel.height + 1);
+      assert.ok(Math.abs(grown.geometry.panel.height - Math.min(480, grown.height)) <= 1);
+      assert.deepEqual(await page.getByRole('listbox').evaluate(node => ({ maximum: node.style.getPropertyValue('max-block-size'), priority: node.style.getPropertyPriority('max-block-size'), spacing: node.style.letterSpacing })), declared);
+      for (const key of ['Home', 'End']) {
+        await trigger.press(key);
+        assertAdjacent(await adjacentGeometry(page));
+      }
+      await trigger.press('Enter');
+      assert.equal(await trigger.textContent(), 'Option 1439');
+      assert.ok(await trigger.evaluate(node => node === document.activeElement));
+      assert.deepEqual(await page.locator('[data-ui="select-listbox"]').evaluate(node => ({ maximum: node.style.getPropertyValue('max-block-size'), priority: node.style.getPropertyPriority('max-block-size'), spacing: node.style.letterSpacing })), declared);
+      assert.equal(await page.locator('[data-ui="select-listbox"]').evaluate(node => node.style.getPropertyValue('--select-available-height')), '');
+    }, { width: 844, height: 390 });
+  });
+}
+
+test('available-height data stays on the public Content ref and is cleared on close, morph, and unmount', async () => {
+  await withStory('inputs-select--content-sizing-lifecycle', async page => {
+    await page.evaluate(() => document.documentElement.style.setProperty('--select-available-height', '1px'));
+    const content = page.getByTestId('sizing-content');
+    await content.waitFor({ state: 'attached' });
+    assert.equal(await page.getByLabel('Content ref').textContent(), 'sizing-content');
+    assert.equal(await content.evaluate(node => node.style.getPropertyValue('--select-available-height')), '');
+    assert.equal(await content.evaluate(node => getComputedStyle(node).getPropertyValue('--select-available-height').trim()), '');
+    await page.getByRole('button', { name: 'Open popup', exact: true }).click();
+    await settleCss(page);
+    assert.ok(Number.parseFloat(await content.evaluate(node => node.style.getPropertyValue('--select-available-height'))) > 1);
+    assert.ok((await content.boundingBox()).height < 280, 'short content must not stretch to its maximum');
+    assert.equal(await content.evaluate(node => node.style.letterSpacing), '0.25px');
+    assert.equal(await content.evaluate(node => node.style.maxBlockSize), '');
+    const handle = await content.elementHandle();
+    await page.getByRole('button', { name: 'Change presentation' }).click();
+    await settleCss(page);
+    assert.equal(await content.evaluate((node, original) => node === original, handle), true);
+    assert.equal(await content.getAttribute('data-variant'), 'morph');
+    assert.equal(await content.evaluate(node => node.style.getPropertyValue('--select-available-height')), '');
+    assert.equal(await content.evaluate(node => getComputedStyle(node).getPropertyValue('--select-available-height').trim()), '');
+    assert.ok((await content.boundingBox()).height > 1, 'morph must not inherit an adjacent cap');
+    await page.getByRole('button', { name: 'Change presentation' }).click();
+    await settleCss(page);
+    assert.ok(Number.parseFloat(await content.evaluate(node => node.style.getPropertyValue('--select-available-height'))) > 1);
+    await page.getByRole('button', { name: 'Close popup', exact: true }).click();
+    await settleCss(page);
+    assert.equal(await content.evaluate(node => node.style.getPropertyValue('--select-available-height')), '');
+    assert.equal(await content.evaluate(node => node.style.letterSpacing), '0.25px');
+    await page.getByRole('button', { name: 'Open popup', exact: true }).click();
+    await settleCss(page);
+    await page.getByRole('button', { name: 'Unmount picker' }).click();
+    assert.equal(await handle.evaluate(node => node.isConnected), false);
+    assert.equal(await handle.evaluate(node => node.style.getPropertyValue('--select-available-height')), '');
+    assert.equal(await page.getByLabel('Content ref').textContent(), 'none');
+  });
+});

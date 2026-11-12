@@ -21,6 +21,7 @@ import {
   type SelectLabelProps,
   type SelectTriggerProps,
   type SelectEmptyProps,
+  type SelectContentProps,
 } from './index';
 
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -561,6 +562,21 @@ const meta: Meta<SelectComposedProps> = {
 - Long lists scroll inside the popup.
 - Named fields submit a single value. Native required validation is not supported.
 
+### Popup sizing
+
+- Ordinary Select.Content publishes \`--select-available-height\`, a nonnegative CSS pixel length for the adjacent space within its positioning boundary. Select sets it while the popup is open and removes it on close or unmount. Morph does not publish or use it, and Content does not inherit another Select's value.
+- The ordinary default maximum combines 280px with the available height. When replacing the maximum through className, sx, style, or a Content adapter, compose your limit with the available height to retain adjacent bounds. A replacement without that composition opts out of the bound; CSS remains responsible for resolving the authored maximum.
+
+\`\`\`tsx
+<Select
+  label="Workspace"
+  options={workspaces}
+  slotProps={{ content: { sx: {
+    maxBlockSize: 'min(var(--workspace-popup-max, 20rem), var(--select-available-height, 100vh))',
+  } } }}
+/>
+\`\`\`
+
 ### Motion
 
 - Reduced motion skips the pill presentation's spring. Closing removes the list from interaction immediately, before its visual collapse finishes.`,
@@ -826,8 +842,8 @@ const StickyHeader = styled.div({
 });
 const HeaderContent = styled(Select.Content)({ scrollPaddingBlockStart: vars.space[12] });
 const authoredPopupMaximumStyles = {
-  limited: { maxBlockSize: `calc(${vars.space[12]} * 3)` },
-  expanded: { maxBlockSize: `calc(${vars.space[12]} * 5)` },
+  limited: { maxBlockSize: `min(calc(${vars.space[12]} * 3), var(--select-available-height, 100vh))` },
+  expanded: { maxBlockSize: `min(calc(${vars.space[12]} * 5), var(--select-available-height, 100vh))` },
 };
 
 function AuthoredPopupMaximumFixture() {
@@ -843,7 +859,45 @@ function AuthoredPopupMaximumFixture() {
 export const AuthoredPopupMaximum: Story = {
   tags: ['!autodocs'],
   render: () => <AuthoredPopupMaximumFixture />,
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, Select } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+export function PopupMaximum({ options }) {
+  const [limited, setLimited] = useState(false);
+  const limit = limited ? 3 : 5;
+  return <>
+    <Button onClick={() => setLimited(true)}>Limit popup</Button>
+    <Button onClick={() => setLimited(false)}>Expand popup</Button>
+    <Select open label="Option" options={options} initialActiveValue="720"
+      slotProps={{ content: { sx: {
+        maxBlockSize: \`min(calc(\${vars.space[12]} * \${limit}), var(--select-available-height, 100vh))\`,
+      } } }} />
+  </>;
+}` } } },
 };
+
+function SizingContentAdapter(props: SelectContentProps) {
+  return <Select.Content {...props} data-testid="sizing-content" />;
+}
+
+function ContentSizingLifecycleFixture() {
+  const [open, setOpen] = useState(false);
+  const [morph, setMorph] = useState(false);
+  const [mounted, setMounted] = useState(true);
+  const [content, setContent] = useState<HTMLDivElement | null>(null);
+  return <>
+    <Button onClick={() => setMorph(value => !value)}>Change presentation</Button>
+    <Button onClick={() => setOpen(value => !value)}>{open ? 'Close popup' : 'Open popup'}</Button>
+    <Button onClick={() => setMounted(false)}>Unmount picker</Button>
+    {mounted && <Select label="Adapter fruit" options={FRUITS} defaultValue="apple" open={open} onOpenChange={next => { if (next) setOpen(true); }}
+      variant={morph ? 'morph' : 'default'} slots={{ content: SizingContentAdapter }}
+      slotProps={{ content: { ref: setContent, style: { letterSpacing: '0.25px' } } }} />}
+    <DiagnosticOutput aria-label="Content ref">{content?.getAttribute('data-testid') ?? 'none'}</DiagnosticOutput>
+  </>;
+}
+
+export const ContentSizingLifecycle: Story = { tags: ['!autodocs'], render: () => <ContentSizingLifecycleFixture /> };
 
 /** Keep the highlighted option below a sticky header. */
 export const StickyList: Story = {
