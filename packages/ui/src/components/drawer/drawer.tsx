@@ -33,7 +33,6 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
-  type KeyboardEvent,
   type MouseEvent,
   type PointerEvent,
   type ReactNode,
@@ -237,11 +236,6 @@ const NO_DRAG_SELECTOR = [
   '[data-ui~="drawer-title"]',
   '[data-ui~="drawer-description"]',
 ].join(', ');
-// An open overlay opened from inside the drawer handles Escape first. Its trigger carries the
-// library's own open-state contract, so a Select that keeps its popup mounted while hidden does not
-// count as an open layer (GURI-2293) and the drawer keeps its Escape.
-const NESTED_LAYER_SELECTOR = '[aria-expanded="true"][aria-haspopup]';
-
 // Structural sizes.
 const INLINE_SIZE_CAP: Record<DrawerSize, string> = { sm: '22rem', md: '30rem', lg: '38rem' };
 const BLOCK_SIZE_CAP = '32rem';
@@ -786,29 +780,18 @@ function DrawerContent({ ref, className, sx, ...props }: DrawerContentProps) {
   const { setOpen, titleId, descriptionId, hasTitle, hasDescription, side, draggable } = context;
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const escapeHandledByLayerRef = useRef(false);
   const requestClose = useCallback(() => {
     requestNativeDialogClose(dialogRef.current, setOpen);
   }, [setOpen]);
   const { headerGesture, reset, transition } = usePanelMotion(draggable, side, dialogRef, panelRef, requestClose);
 
-  // The browser turns an Escape keydown into a native cancel even when a floating layer nested in
-  // this drawer closes on it: that keystroke belongs to the layer, so its cancel is dropped.
-  const handleCancel = (event: SyntheticEvent<HTMLDialogElement>) => {
-    if (escapeHandledByLayerRef.current) {
-      escapeHandledByLayerRef.current = false;
-      event.preventDefault();
-      return;
-    }
-    onCancel?.(event);
-  };
   const handleClose = (event: SyntheticEvent<HTMLDialogElement>) => {
     reset();
     onClose?.(event);
   };
   const nativeDialog = useNativeDialog(
     { ...context, requestClose },
-    { onCancel: handleCancel, onClick, onClose: handleClose },
+    { onCancel, onClick, onClose: handleClose },
     ref,
     dialogRef,
     transition,
@@ -822,17 +805,8 @@ function DrawerContent({ ref, className, sx, ...props }: DrawerContentProps) {
     ...nativeDialog,
     onCancel: ownEvent(nativeDialog.onCancel, onCancel),
     onClose: ownEvent(nativeDialog.onClose, onClose),
-    // Capture phase: a nested layer's own Escape handler may stop propagation before bubbling.
-    onKeyDownCapture: (event: KeyboardEvent<HTMLDialogElement>) => {
-      onKeyDownCapture?.(event);
-      if (event.key === 'Escape') {
-        escapeHandledByLayerRef.current = Boolean(dialogRef.current?.querySelector(NESTED_LAYER_SELECTOR));
-      }
-    },
-    onKeyUp: (event: KeyboardEvent<HTMLDialogElement>) => {
-      onKeyUp?.(event);
-      if (event.key === 'Escape') escapeHandledByLayerRef.current = false;
-    },
+    onKeyDownCapture,
+    onKeyUp,
   };
 
   const surface = useMemo(() => ({ requestClose, panelRef, dialogRef, headerGesture }), [requestClose, headerGesture]);
