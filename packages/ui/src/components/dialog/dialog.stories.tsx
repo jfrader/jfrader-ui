@@ -21,6 +21,11 @@ import { motionDurationMs } from '../../styling/motion-timings';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useNativeDialog, useNativeDialogRoot } from '../../overlay/use-native-dialog';
 import { Dialog, type DialogPanelProps, type DialogComposedProps, type DialogShorthandProps, type DialogScroll } from './index';
+import { Select } from '../select';
+import { Combobox } from '../combobox';
+import { Menu } from '../menu';
+import { Popover } from '../popover';
+import { Morph } from '../morph';
 
 const TITLE = 'Edit profile';
 const LONG_REFERENCE = 'CustomerAccountExportConfirmationReference'.repeat(3);
@@ -28,6 +33,52 @@ const DESCRIPTION = 'Update your display name and avatar.';
 const DELETE_LABEL = 'Delete account';
 const composedTriggerClick = fn();
 const composedTriggerRef = fn<(element: HTMLButtonElement | null) => void>();
+
+const ESCAPE_OPTIONS = [{ value: 'apple', label: 'Apple' }, { value: 'cherry', label: 'Cherry' }];
+
+function ChildEscapeFixture({ rejectChild = false, rejectParent = false, veto = false }: {
+  rejectChild?: boolean; rejectParent?: boolean; veto?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [childOpen, setChildOpen] = useState(false);
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  const [events, setEvents] = useState<string[]>([]);
+  const record = (event: string) => setEvents(values => [...values, event]);
+  return <>
+    <Dialog open={open} onOpenChange={next => { record(`parent:${next}`); if (next || !rejectParent) setOpen(next); }}>
+      <Dialog.Trigger>Open child Escape dialog</Dialog.Trigger>
+      <Dialog.Content onCancel={event => { record(`cancel:${event.defaultPrevented}`); if (veto) event.preventDefault(); }} onClose={() => record('close')}>
+        <Dialog.Title>Child Escape dialog</Dialog.Title>
+        <Dialog.Description>Choose a fruit or open its actions.</Dialog.Description>
+        <ThemeRoot portalContainer={host}>
+          <TextField label="Parent field" />
+          <Select label="Fruit" options={ESCAPE_OPTIONS} defaultValue="apple" open={childOpen}
+            onOpenChange={next => { record(`child:${next}`); if (next || !rejectChild) setChildOpen(next); }} />
+          <Combobox label="Search fruit" options={ESCAPE_OPTIONS} />
+          <Menu triggerLabel="Fruit actions" items={[{ type: 'item', label: 'Edit fruit' }, { type: 'item', label: 'Delete fruit' }]} />
+          <Popover>
+            <Popover.Trigger>More fruit</Popover.Trigger>
+            <Popover.Content aria-label="More fruit">
+              <Select label="Nested fruit" options={ESCAPE_OPTIONS} defaultValue="apple" />
+            </Popover.Content>
+          </Popover>
+          <Morph.Root>
+            <Morph.Trigger>Fruit details</Morph.Trigger>
+            <Morph.Surface label="Fruit details"><Morph.Step id="summary"><Button>Inspect fruit</Button></Morph.Step></Morph.Surface>
+          </Morph.Root>
+          <Dialog.Close>Close parent</Dialog.Close>
+          <div ref={setHost} />
+        </ThemeRoot>
+      </Dialog.Content>
+    </Dialog>
+    <output aria-label="Escape events">{JSON.stringify(events)}</output>
+  </>;
+}
+
+export const ChildEscape: Story = { tags: ['!autodocs'], render: () => <ChildEscapeFixture /> };
+export const ChildEscapeRejected: Story = { tags: ['!autodocs'], render: () => <ChildEscapeFixture rejectChild /> };
+export const ParentEscapeRejected: Story = { tags: ['!autodocs'], render: () => <ChildEscapeFixture rejectParent /> };
+export const ChildEscapeCancelVeto: Story = { tags: ['!autodocs'], render: () => <ChildEscapeFixture veto /> };
 
 function setNativeAutoFocus(input: HTMLInputElement | null) {
   input?.setAttribute('autofocus', '');

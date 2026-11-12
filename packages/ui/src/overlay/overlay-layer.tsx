@@ -4,7 +4,7 @@
 // The first layer creates the tree; nested layers join it through React context, across portals.
 // Overlays that do not take part render inside `IsolatedOverlay`, so the
 // enclosing layer's tree and node never change their roles, list navigation or focus handling.
-import { useMemo, type KeyboardEvent, type ReactNode } from 'react';
+import { useLayoutEffect, useMemo, type KeyboardEvent, type ReactNode } from 'react';
 import {
   FloatingNode,
   FloatingTree,
@@ -17,6 +17,7 @@ import {
   type UseDismissProps,
 } from '@floating-ui/react';
 import { getDeepestNode } from '@floating-ui/react/utils';
+import { registerOpenLayer } from './use-child-escape';
 
 /**
  * `container`: a layer whose content holds focus and may host other layers (Popover,
@@ -59,6 +60,10 @@ function useTopmostEscape(context: LayerContext, enabled: boolean): ElementProps
 
 /** Escape and outside-press dismissal for one layer; pass the result into `useInteractions`. */
 export function useLayerDismiss(context: LayerContext, kind: LayerKind): ElementProps[] {
+  const floating = context.elements.floating;
+  useLayoutEffect(() => {
+    if (context.open && floating) return registerOpenLayer(floating);
+  }, [context.open, floating]);
   const topmostEscape = useTopmostEscape(context, kind === 'container');
   const dismiss = useDismiss(context, LAYER_DISMISS[kind]);
   return [topmostEscape, dismiss];

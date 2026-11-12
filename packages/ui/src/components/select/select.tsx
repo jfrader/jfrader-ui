@@ -1142,7 +1142,7 @@ function SelectEmpty({ ref, children, className, sx, ...rest }: SelectEmptyProps
   return (
     <WithSx className={className} styles={selectEmptyStyle} sx={sx}>
       {(className) => (
-        <div {...rest} ref={ref} data-ui="select-empty" className={className}>
+        <div {...rest} ref={ref} data-ui="select-empty" role="option" aria-disabled="true" aria-selected="false" className={className}>
           {content}
         </div>
       )}

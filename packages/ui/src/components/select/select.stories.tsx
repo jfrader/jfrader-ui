@@ -20,6 +20,7 @@ import {
   type SelectProps,
   type SelectLabelProps,
   type SelectTriggerProps,
+  type SelectEmptyProps,
 } from './index';
 
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -601,6 +602,28 @@ export const FieldStates: ShorthandStory = {
     await userEvent.keyboard('{Escape}');
   },
 };
+
+function ForwardedEmpty(props: SelectEmptyProps) {
+  return <Select.Empty {...props} data-testid="forwarded-empty" />;
+}
+
+function DynamicEmptyFixture({ rejected = false }: { rejected?: boolean }) {
+  const [populated, setPopulated] = useState(false);
+  const [changes, setChanges] = useState<string[]>([]);
+  const emptyId = useId();
+  return <form>
+    <Button onClick={() => setPopulated(value => !value)}>Toggle options</Button>
+    <Select open label="Dynamic workspace" name="workspace" options={populated ? FRUITS : []}
+      {...(rejected ? { value: 'missing' } : {})}
+      onValueChange={value => setChanges(values => [...values, value])}
+      placeholder="Choose a workspace" empty={<span>No workspaces</span>}
+      slots={{ empty: ForwardedEmpty }} slotProps={{ empty: { id: emptyId, 'aria-label': 'No workspaces available' } }} />
+    <DiagnosticOutput aria-label="Selection history">{JSON.stringify(changes)}</DiagnosticOutput>
+  </form>;
+}
+
+export const DynamicEmpty: Story = { tags: ['!autodocs'], render: () => <DynamicEmptyFixture /> };
+export const RejectedEmpty: Story = { tags: ['!autodocs'], render: () => <DynamicEmptyFixture rejected /> };
 
 export const Grouped: Story = {
   tags: ['!autodocs'],
