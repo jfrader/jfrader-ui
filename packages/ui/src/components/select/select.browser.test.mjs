@@ -231,11 +231,16 @@ async function adjacentGeometry(page) {
   });
 }
 
-function assertAdjacent(geometry) {
-  const { panel, anchor, viewport, active, stickyInset } = geometry;
+function assertAdjacentBounds(geometry) {
+  const { panel, anchor, viewport } = geometry;
   assert.ok(panel.bottom <= anchor.top + 1 || panel.top >= anchor.bottom - 1, JSON.stringify(geometry));
   assert.ok(panel.top >= 0 && panel.bottom <= viewport.height + 1, JSON.stringify(geometry));
   assert.ok(panel.left >= 0 && panel.right <= viewport.width + 1, JSON.stringify(geometry));
+}
+
+function assertAdjacent(geometry) {
+  assertAdjacentBounds(geometry);
+  const { panel, active, stickyInset } = geometry;
   assert.ok(active.top >= panel.top + stickyInset - 1 && active.bottom <= panel.bottom + 1, JSON.stringify(geometry));
   assert.ok(active.hit, JSON.stringify(geometry));
 }
@@ -412,6 +417,125 @@ test(`trusted Escape closes ColorPicker Format before its native dialog and retu
   });
 });
 }
+
+for (const { presentation, enlarged } of [
+  { presentation: 'list', enlarged: false },
+  { presentation: 'dial', enlarged: false },
+  { presentation: 'list', enlarged: true },
+]) {
+  test(`TimePicker ${presentation} retains adjacent bounds and canonical selection after actual ancestor wheel${enlarged ? ' with 200% RTL text' : ''}`, async () => {
+    await withStory(`inputs-timepicker--ancestor-scroll${presentation === 'dial' ? '-dial' : ''}`, async page => {
+      const host = page.getByTestId('time-scroll-host');
+      const trigger = page.getByRole('combobox', { name: 'Scroll time' });
+      if (enlarged) {
+        await page.evaluate(() => { document.documentElement.dir = 'rtl'; });
+        await doubleText(page);
+      }
+      await trigger.click();
+      await page.getByRole('listbox').waitFor();
+      await settleCss(page);
+      await host.evaluate(node => {
+        window.timeScrollEvents = [];
+        window.timeResizeEvents = 0;
+        node.addEventListener('scroll', event => window.timeScrollEvents.push({ trusted: event.isTrusted, top: node.scrollTop }));
+        addEventListener('resize', () => window.timeResizeEvents++);
+      });
+      const check = presentation === 'list' ? assertAdjacent : assertAdjacentBounds;
+      const before = await adjacentGeometry(page);
+      check(before);
+      const panel = await page.getByRole('listbox').elementHandle();
+      const dialSize = presentation === 'dial' ? await page.locator('[data-ui="time-picker-dial"]').evaluate(node => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height })) : undefined;
+      const bounds = await host.boundingBox();
+      const point = { x: bounds.x + bounds.width - 20, y: bounds.y + bounds.height - 30 };
+      assert.ok(await host.evaluate((node, point) => node.contains(document.elementFromPoint(point.x, point.y)) && !document.elementFromPoint(point.x, point.y).closest('[role="listbox"]'), point));
+      await page.mouse.move(point.x, point.y);
+      await page.mouse.wheel(0, 140);
+      await page.waitForFunction(() => window.timeScrollEvents.length > 0);
+      await settleCss(page);
+      const after = await adjacentGeometry(page);
+      check(after);
+      assert.ok(after.anchor.top < before.anchor.top);
+      assert.equal(await page.getByRole('listbox').evaluate((node, original) => node === original, panel), true);
+      assert.equal(await trigger.getAttribute('aria-expanded'), 'true');
+      assert.equal(await page.evaluate(() => window.timeResizeEvents), 0);
+      assert.ok((await page.evaluate(() => window.timeScrollEvents)).every(event => event.trusted));
+      assert.equal(await page.getByLabel('Scroll time changes').textContent(), '[]');
+      if (dialSize) assert.deepEqual(await page.locator('[data-ui="time-picker-dial"]').evaluate(node => ({ width: node.getBoundingClientRect().width, height: node.getBoundingClientRect().height })), dialSize);
+      for (const key of ['Home', 'End']) {
+        await trigger.press(key);
+        check(await adjacentGeometry(page));
+      }
+      await trigger.press('Enter');
+      assert.equal(await trigger.textContent(), '23:45');
+      assert.equal(await page.locator('input[name="scroll-time"]').inputValue(), '23:45');
+      assert.equal(await page.getByLabel('Scroll time changes').textContent(), '["23:45"]');
+      assert.ok(await trigger.evaluate(node => node === document.activeElement));
+    }, { width: 844, height: 390 });
+  });
+}
+
+test('TimePicker content adapter keeps off-step seeding, capture veto, RTL and trigger width after resize', async () => {
+  await withStory('inputs-timepicker--available-space-adapter', async page => {
+    const trigger = page.getByRole('combobox', { name: 'Start time' });
+    await trigger.click();
+    const popup = page.getByTestId('time-content-adapter');
+    await popup.waitFor();
+    assert.equal(await popup.getAttribute('data-consumer-ref'), 'attached');
+    assert.equal(await popup.getAttribute('dir'), 'rtl');
+    assert.equal(await trigger.textContent(), '9:07');
+    assert.ok((await adjacentGeometry(page)).active.text.includes('9:15'));
+    assert.equal(await popup.locator('[aria-selected="true"]').count(), 0);
+    const active = await trigger.getAttribute('aria-activedescendant');
+    await trigger.press('End');
+    assert.equal(await trigger.getAttribute('aria-activedescendant'), active);
+    const widths = [];
+    for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 390, height: 844 }]) {
+      await page.setViewportSize(viewport);
+      await settleCss(page);
+      await page.waitForFunction(() => {
+        const trigger = document.querySelector('[role="combobox"]'), popup = document.querySelector('[role="listbox"]');
+        return Math.abs(trigger.getBoundingClientRect().width - popup.getBoundingClientRect().width) < 1;
+      });
+      const geometry = await adjacentGeometry(page);
+      assertAdjacent(geometry);
+      widths.push(await trigger.evaluate(node => node.getBoundingClientRect().width));
+      assert.equal(await popup.getAttribute('dir'), 'rtl');
+    }
+    assert.ok(widths[1] > widths[0]);
+    assert.equal(widths[0], widths[2]);
+    await trigger.press('Home');
+    assertAdjacent(await adjacentGeometry(page));
+    await trigger.press('Enter');
+    assert.equal(await page.locator('input[name="adapted-time"]').inputValue(), '00:00');
+    assert.ok(await trigger.evaluate(node => node === document.activeElement));
+  });
+});
+
+test('TimePicker portrait dial retains virtual focus, keyboard selection and pointer commitment', async () => {
+  await withStory('inputs-timepicker--dial', async page => {
+    const trigger = page.getByRole('combobox', { name: 'Start time' });
+    await trigger.click();
+    await page.getByRole('listbox').waitFor();
+    assertAdjacentBounds(await adjacentGeometry(page));
+    assert.ok((await adjacentGeometry(page)).active.hit);
+    await trigger.press('Home');
+    assert.ok((await adjacentGeometry(page)).active.text.includes('0:00'));
+    await trigger.press('End');
+    assertAdjacent(await adjacentGeometry(page));
+    await trigger.press('Enter');
+    assert.equal(await trigger.textContent(), '23:45');
+    assert.ok(await trigger.evaluate(node => node === document.activeElement));
+    await trigger.click();
+    const dial = page.locator('[data-ui="time-picker-dial"]');
+    await dial.waitFor();
+    assert.equal(await dial.getAttribute('aria-hidden'), 'true');
+    const box = await dial.boundingBox();
+    await page.mouse.click(box.x + box.width * 0.9, box.y + box.height / 2);
+    await page.waitForFunction(() => document.querySelector('[role="combobox"]').getAttribute('aria-expanded') === 'false');
+    assert.equal(await trigger.textContent(), '6:00');
+    assert.ok(await trigger.evaluate(node => node === document.activeElement));
+  });
+});
 
 for (const rejected of [false, true]) {
   test(`dynamic empty Select preserves slot content, registry navigation, and ${rejected ? 'rejected' : 'accepted'} payload`, async () => {
