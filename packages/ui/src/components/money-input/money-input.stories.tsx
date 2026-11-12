@@ -619,6 +619,30 @@ export const FormReset: Story = {
     await expect(args.onCurrencyChange).toHaveBeenCalledTimes(1);
   },
 };
+
+function CanceledResetAmounts() {
+  const [cancel, setCancel] = useState(true);
+  const [amountChanges, setAmountChanges] = useState(0);
+  const [currencyChanges, setCurrencyChanges] = useState(0);
+  const callbacks = {
+    onValueChange: () => setAmountChanges(count => count + 1),
+    onCurrencyChange: () => setCurrencyChanges(count => count + 1),
+  };
+  return <Form onReset={event => { if (cancel) event.preventDefault(); }}>
+    <MoneyInput {...callbacks} label="Uncontrolled amount" name="uncontrolled" currencies={['USD', 'EUR']} defaultValue={1250} locale="en-US" />
+    <MoneyInput {...callbacks} label="Owned amount" name="amount-owned" currencies={['USD', 'EUR']} value={4500} locale="en-US" />
+    <MoneyInput {...callbacks} label="Owned currency" name="currency-owned" currencies={['USD', 'EUR']} defaultValue={1250} currency="USD" locale="en-US" />
+    <MoneyInput {...callbacks} label="Owned both" name="both-owned" currencies={['USD', 'EUR']} value={4500} currency="USD" locale="en-US" />
+    <Button type="reset">Reset</Button>
+    <Button onClick={() => setCancel(false)}>Allow reset</Button>
+    <Summary aria-label="Reset callbacks">{amountChanges},{currencyChanges}</Summary>
+  </Form>;
+}
+
+export const CanceledFormReset: Story = {
+  tags: ['!autodocs'],
+  render: () => <CanceledResetAmounts />,
+};
 /** Merge external descriptions with range and help text. */
 export const ExternalAria: Story = {
   args: { description: 'Before tax.' },

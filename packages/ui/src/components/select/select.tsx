@@ -84,6 +84,19 @@ import { useFormReset } from '../../utils/use-form-reset';
 const TYPEAHEAD_RESET_MS = 500;
 const TYPEAHEAD_COLLATOR = new Intl.Collator(undefined, { usage: 'search', sensitivity: 'base' });
 const SELECTED_GLYPH = '✓';
+const HEIGHT_LIMIT_PROPERTY = 'max-block-size';
+interface SelectHeightLimit {
+  element: HTMLElement;
+  authored: string;
+  priority: string;
+  applied: string;
+}
+function restoreHeightLimit(limit: SelectHeightLimit | null) {
+  if (limit && limit.element.style.getPropertyValue(HEIGHT_LIMIT_PROPERTY) === limit.applied &&
+    limit.element.style.getPropertyPriority(HEIGHT_LIMIT_PROPERTY) === 'important') {
+    limit.element.style.setProperty(HEIGHT_LIMIT_PROPERTY, limit.authored, limit.priority);
+  }
+}
 const MORPH_SPRING = { type: 'spring', stiffness: 360, damping: 36 } as const;
 const morphTriggerStyle = css({
   borderRadius: vars.radius.full,
@@ -280,6 +293,7 @@ interface SelectContextValue {
   triggerLabelling: TriggerLabelling | null;
   refs: OverlayFloating['refs'];
   floatingStyles: CSSProperties;
+  refreshSizing: () => void;
   elementsRef: MutableRefObject<Array<HTMLElement | null>>;
   labelsRef: MutableRefObject<Array<string | null>>;
   getReferenceProps: UseInteractionsReturn['getReferenceProps'];
@@ -455,15 +469,41 @@ function SelectOverlay<V extends string = string>({ nodeId, ...props }: SelectPr
   const selectedIndex = selectedRecord && selectedRecord.index !== -1 ? selectedRecord.index : null;
   const initialRecord = initialActiveValue === undefined ? undefined : options.get(initialActiveValue);
   const initialIndex = initialRecord && !initialRecord.disabled && initialRecord.index !== -1 ? initialRecord.index : null;
+  const heightLimit = useRef<SelectHeightLimit | null>(null);
+  useLayoutEffect(() => {
+    if (!open || variant === 'morph') {
+      restoreHeightLimit(heightLimit.current);
+      heightLimit.current = null;
+    }
+  }, [open, variant]);
+  useLayoutEffect(() => () => restoreHeightLimit(heightLimit.current), []);
 
-  const { refs, floatingStyles, context, isPositioned } = useOverlayFloating({
+  const { refs, floatingStyles, context, isPositioned, update } = useOverlayFloating({
     nodeId,
     open,
     placement,
     transform: variant !== 'morph',
     gap: variant === 'morph' ? 0 : undefined,
+    shiftCrossAxis: variant === 'morph',
+    onAvailableSize: variant === 'morph' ? undefined : ({ height }) => {
+      const element = refs.floating.current;
+      const ownerWindow = element?.ownerDocument.defaultView;
+      if (!element || !ownerWindow) return;
+      restoreHeightLimit(heightLimit.current);
+      const authored = element.style.getPropertyValue(HEIGHT_LIMIT_PROPERTY);
+      const priority = element.style.getPropertyPriority(HEIGHT_LIMIT_PROPERTY);
+      const maximum = ownerWindow.getComputedStyle(element).maxBlockSize;
+      const available = `${Math.max(0, height)}px`;
+      element.style.setProperty(HEIGHT_LIMIT_PROPERTY, maximum === 'none' ? available : `min(${maximum}, ${available})`, 'important');
+      heightLimit.current = { element, authored, priority, applied: element.style.getPropertyValue(HEIGHT_LIMIT_PROPERTY) };
+    },
     onOpenChange: (next) => requestOpenChange(next),
   });
+  const refreshSizing = useCallback(() => {
+    restoreHeightLimit(heightLimit.current);
+    heightLimit.current = null;
+    update();
+  }, [update]);
 
   const click = useClick(context, { enabled: !disabled });
   const role = useRole(context, { role: 'listbox' });
@@ -515,6 +555,7 @@ function SelectOverlay<V extends string = string>({ nodeId, ...props }: SelectPr
       triggerLabelling,
       refs,
       floatingStyles,
+      refreshSizing,
       elementsRef,
       labelsRef,
       getReferenceProps,
@@ -565,6 +606,7 @@ function SelectOverlay<V extends string = string>({ nodeId, ...props }: SelectPr
     triggerLabelling,
     refs,
     floatingStyles,
+    refreshSizing,
     getReferenceProps,
     getFloatingProps,
     getItemProps,
@@ -817,7 +859,7 @@ function SelectValue({ ref, placeholder, className, sx, ...rest }: SelectValuePr
 SelectValue.displayName = 'Select.Value';
 
 function SelectContent({ ref, style, onMouseDown, children, className, sx, ...rest }: SelectContentProps) {
-  const { open, activeIndex, variant, positioned, triggerLabelling, refs, floatingStyles, elementsRef, getFloatingProps } = useSelectContext('Content');
+  const { open, activeIndex, variant, positioned, triggerLabelling, refs, floatingStyles, refreshSizing, elementsRef, getFloatingProps } = useSelectContext('Content');
   const reduced = useReducedMotion();
   const panelRef = useRef<HTMLDivElement>(null);
   const [exiting, setExiting] = useState(false);
@@ -830,6 +872,10 @@ function SelectContent({ ref, style, onMouseDown, children, className, sx, ...re
   // Only an open listbox is the floating element, so a closed one does no positioning work.
   const mergedRef = useMergeRefs([open ? refs.setFloating : null, panelRef, ref]);
   const centered = useRef(false);
+
+  useLayoutEffect(() => {
+    if (open && !morph) refreshSizing();
+  }, [open, morph, className, sx, style?.maxBlockSize, style?.maxHeight, refreshSizing]);
 
   useLayoutEffect(() => {
     if (!open) centered.current = false;

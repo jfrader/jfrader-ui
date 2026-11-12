@@ -1,5 +1,5 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
-import { useId, useState } from 'react';
+import { StrictMode, useId, useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, mocked, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -9,6 +9,8 @@ import { expectThemedSurface } from '../../testing/theme-assertions';
 import { settleMotion } from '../../testing/motion-assertions';
 import { Button } from '../button';
 import { Popover } from '../popover';
+import { TextField } from '../text-field';
+import { useFormReset } from '../../utils/use-form-reset';
 import {
   Select,
   type SelectComposedProps,
@@ -509,9 +511,13 @@ const PlanActions = styled.div({
 
 const Row = styled.div({
   display: 'flex',
+  flexWrap: 'wrap',
+  minInlineSize: 0,
+  maxInlineSize: '100%',
   alignItems: 'center',
   gap: vars.space[3],
 });
+const DiagnosticOutput = styled.output({ display: 'block', minInlineSize: 0, maxInlineSize: '100%', overflowWrap: 'anywhere' });
 
 // A labeled field is taller than its control; an action beside it aligns to the control's bottom.
 const FieldRow = styled.div({
@@ -796,6 +802,25 @@ const StickyHeader = styled.div({
   background: vars.color.surfaceRaised, zIndex: 1,
 });
 const HeaderContent = styled(Select.Content)({ scrollPaddingBlockStart: vars.space[12] });
+const authoredPopupMaximumStyles = {
+  limited: { maxBlockSize: `calc(${vars.space[12]} * 3)` },
+  expanded: { maxBlockSize: `calc(${vars.space[12]} * 5)` },
+};
+
+function AuthoredPopupMaximumFixture() {
+  const [limited, setLimited] = useState(false);
+  return <>
+    <Button onClick={() => setLimited(true)}>Limit popup</Button>
+    <Button onClick={() => setLimited(false)}>Expand popup</Button>
+    <Select open label="Option" options={LONG_OPTIONS} initialActiveValue="720"
+      slotProps={{ content: { sx: authoredPopupMaximumStyles[limited ? 'limited' : 'expanded'] } }} />
+  </>;
+}
+
+export const AuthoredPopupMaximum: Story = {
+  tags: ['!autodocs'],
+  render: () => <AuthoredPopupMaximumFixture />,
+};
 
 /** Keep the highlighted option below a sticky header. */
 export const StickyList: Story = {
@@ -1027,13 +1052,19 @@ export const Composed: Story = {
       source: {
         language: 'tsx',
         code: `import { useId } from 'react';
-import { Select } from '@jfrader/ui';
+import { Button, Select, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex', flexWrap: 'wrap', minInlineSize: 0, maxInlineSize: '100%',
+  alignItems: 'center', gap: vars.space[3],
+});
 
 function FruitPicker() {
   const labelId = useId();
 
   return (
-    <>
+    <Row>
       <span id={labelId}>Fruit</span>
       <Select defaultValue="apple">
         <Select.Trigger aria-labelledby={labelId}>
@@ -1045,7 +1076,8 @@ function FruitPicker() {
           <Select.Item value="cherry">Cherry</Select.Item>
         </Select.Content>
       </Select>
-    </>
+      <Button>After</Button>
+    </Row>
   );
 }`,
       },
@@ -1272,13 +1304,15 @@ export const NativeFormReset: Story = {
 function AssociatedFormResetSelect(props: SelectComposedProps) {
   const formId = useId();
   const [cancelReset, setCancelReset] = useState(true);
+  const [changes, setChanges] = useState(0);
+  const onValueChange = (value: string) => { setChanges(count => count + 1); props.onValueChange?.(value); };
   return (
     <>
       <form id={formId} onReset={event => { if (cancelReset) event.preventDefault(); }}>
         <Button type="reset">Reset</Button>
       </form>
       <Button onClick={() => setCancelReset(false)}>Allow reset</Button>
-      <Select {...props} defaultValue="apple">
+      <Select {...props} onValueChange={onValueChange} defaultValue="apple">
         <Select.Trigger form={formId} aria-label={LABEL}><Select.Value /></Select.Trigger>
         <Select.Content>
           <Select.Item value="apple">Apple</Select.Item>
@@ -1289,6 +1323,7 @@ function AssociatedFormResetSelect(props: SelectComposedProps) {
         <Select.Trigger form={formId} aria-label="Controlled fruit"><Select.Value /></Select.Trigger>
         <Select.Content><Select.Item value="cherry">Cherry</Select.Item></Select.Content>
       </Select>
+      <DiagnosticOutput aria-label="Selection callbacks">{changes}</DiagnosticOutput>
     </>
   );
 }
@@ -1312,6 +1347,38 @@ export const AssociatedFormReset: Story = {
   },
 };
 
+function ResetLifecycleControl({ form, revision, onSettled }: { form: string; revision: number; onSettled: (revision: number) => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  useFormReset(input, () => onSettled(revision), form);
+  return <TextField ref={input} form={form} label="Lifecycle input" defaultValue="Apple" />;
+}
+
+function ResetLifecycleFixture() {
+  const firstForm = useId();
+  const secondForm = useId();
+  const [mode, setMode] = useState('rerender');
+  const [revision, setRevision] = useState(0);
+  const [alternate, setAlternate] = useState(false);
+  const [mounted, setMounted] = useState(true);
+  const [settled, setSettled] = useState<number[]>([]);
+  return <>
+    <form id={firstForm} onReset={() => {
+      if (mode === 'rerender') setRevision(value => value + 1);
+      if (mode === 'reassociate') setAlternate(true);
+      if (mode === 'unmount') setMounted(false);
+    }}><Button type="reset">Reset</Button></form>
+    <form id={secondForm}><Button type="reset">Reset alternate</Button></form>
+    {(['rerender', 'reassociate', 'unmount'] as const).map(value => <Button key={value} onClick={() => setMode(value)}>{value}</Button>)}
+    {mounted && <ResetLifecycleControl form={alternate ? secondForm : firstForm} revision={revision} onSettled={value => setSettled(values => [...values, value])} />}
+    <DiagnosticOutput aria-label="Settled resets">{JSON.stringify(settled)}</DiagnosticOutput>
+  </>;
+}
+
+export const ResetLifecycle: Story = {
+  tags: ['!autodocs'],
+  render: () => <StrictMode><ResetLifecycleFixture /></StrictMode>,
+};
+
 function ControlledSelect(props: SelectComposedProps) {
   const [value, setValue] = useState('apple');
   const [open, setOpen] = useState(false);
@@ -1333,7 +1400,7 @@ function ControlledSelect(props: SelectComposedProps) {
           props.onOpenChange?.(next);
         }}
       />
-      <output aria-label="Callback order">{callbackOrder.join(',')}</output>
+      <DiagnosticOutput aria-label="Callback order">{callbackOrder.join(',')}</DiagnosticOutput>
     </>
   );
 }
