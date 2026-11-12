@@ -38,7 +38,7 @@ const COMPACT_QUERY = '(max-width: 40rem)';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const GUTTER_PX = Number.parseFloat(base.space[3]);
 
-const RetainedOwnerActions = styled.div({ marginBlockEnd: vars.space[12] });
+const DiagnosticOutput = styled.output({ display: 'block', minInlineSize: 0, maxInlineSize: '100%', overflowWrap: 'anywhere' });
 const OWNER_FRUITS = [{ value: 'apple', label: 'Apple' }, { value: 'cherry', label: 'Cherry' }];
 
 function NativeOwnerFixture({ child = true, vetoInitially = false }: { child?: boolean; vetoInitially?: boolean }) {
@@ -62,14 +62,9 @@ function NativeOwnerFixture({ child = true, vetoInitially = false }: { child?: b
           <Drawer.Header>
             <Drawer.Title>Native owner drawer</Drawer.Title>
             <Drawer.Description>Choose a fruit.</Drawer.Description>
-            <Drawer.Close>Close owner drawer</Drawer.Close>
+            <Drawer.Close>Close</Drawer.Close>
           </Drawer.Header>
           <Drawer.Body>
-            <RetainedOwnerActions>
-              <FixtureButton>Drawer action</FixtureButton>
-              {child && <FixtureButton onClick={() => { record({ type: 'branch-hidden' }); setHidden(true); }}>Hide branch</FixtureButton>}
-              {veto && <FixtureButton onClick={() => setVeto(false)}>Allow close</FixtureButton>}
-            </RetainedOwnerActions>
             {child && <section hidden={hidden} data-testid="retained-owner-branch">
               <ThemeRoot portalContainer={portalHost}>
                 <Select label="Drawer fruit" options={OWNER_FRUITS} defaultValue="apple" open
@@ -78,16 +73,21 @@ function NativeOwnerFixture({ child = true, vetoInitially = false }: { child?: b
               </ThemeRoot>
             </section>}
           </Drawer.Body>
+          <Drawer.Footer>
+            <FixtureButton>Drawer action</FixtureButton>
+            {child && <FixtureButton onClick={() => { record({ type: 'branch-hidden' }); setHidden(true); }}>Hide branch</FixtureButton>}
+            {veto && <FixtureButton onClick={() => setVeto(false)}>Allow close</FixtureButton>}
+          </Drawer.Footer>
         </Drawer.Panel>
       </Drawer.Content>
     </Drawer>
-    <output aria-label="Drawer owner events">{JSON.stringify(events)}</output>
+    <DiagnosticOutput aria-label="Drawer owner events">{JSON.stringify(events)}</DiagnosticOutput>
   </>;
 }
 
-export const HiddenNativeOwner: Story = { tags: ['!autodocs'], render: () => <NativeOwnerFixture /> };
-export const NativeOwnerAlone: Story = { tags: ['!autodocs'], render: () => <NativeOwnerFixture child={false} /> };
-export const NativeOwnerVeto: Story = { tags: ['!autodocs'], render: () => <NativeOwnerFixture child={false} vetoInitially /> };
+export const HiddenNativeOwner: Story = { tags: ['!autodocs'], parameters: { layout: 'padded' }, render: () => <NativeOwnerFixture /> };
+export const NativeOwnerAlone: Story = { tags: ['!autodocs'], parameters: { layout: 'padded' }, render: () => <NativeOwnerFixture child={false} /> };
+export const NativeOwnerVeto: Story = { tags: ['!autodocs'], parameters: { layout: 'padded' }, render: () => <NativeOwnerFixture child={false} vetoInitially /> };
 
 const AdapterMaterial = styled.div({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, borderRadius: vars.radius.full, boxShadow: 'none' });
 function DrawerPaper({ className, ...props }: SurfacePartProps) {

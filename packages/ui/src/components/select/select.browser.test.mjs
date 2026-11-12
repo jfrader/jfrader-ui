@@ -917,8 +917,22 @@ async function drawerOwnerEvents(page) {
   return JSON.parse(await page.getByLabel('Drawer owner events').textContent());
 }
 
-for (const child of [true, false]) {
-  test(`native Drawer ${child ? 'ignores a retained hidden child' : 'alone accepts closure'} after trusted Escape`, async () => {
+async function assertDrawerActionReachable(control) {
+  const geometry = await control.evaluate(node => {
+    const rect = node.getBoundingClientRect(), x = rect.x + rect.width / 2, y = rect.y + rect.height / 2;
+    const hit = document.elementFromPoint(x, y);
+    return { text: node.textContent, top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right,
+      width: rect.width, height: rect.height, viewport: { width: innerWidth, height: innerHeight }, hit: hit === node || node.contains(hit) };
+  });
+  assert.ok(geometry.top >= 0 && geometry.bottom <= geometry.viewport.height && geometry.left >= 0 && geometry.right <= geometry.viewport.width && geometry.hit, JSON.stringify(geometry));
+}
+
+for (const { child, width, enlarged } of [
+  { child: true, width: 390, enlarged: false },
+  { child: false, width: 390, enlarged: false },
+  { child: true, width: 320, enlarged: true },
+]) {
+  test(`native Drawer ${child ? 'ignores a retained hidden child' : 'alone accepts closure'} after trusted Escape${enlarged ? ' at 320px with 200% text' : ''}`, async () => {
     await withStory(`surfaces-drawer--${child ? 'hidden-native-owner' : 'native-owner-alone'}`, async page => {
       await observeRetainedNativeEvents(page);
       const opener = page.getByRole('button', { name: 'Open owner drawer', exact: true });
@@ -928,8 +942,13 @@ for (const child of [true, false]) {
       await settleCss(page);
       assert.ok(await drawer.evaluate(node => node.open), JSON.stringify(await drawerOwnerEvents(page)));
       await page.waitForFunction(() => document.querySelector('dialog[data-escape-owner="drawer"]')?.open);
+      if (enlarged) {
+        await doubleText(page);
+        await settleCss(page);
+      }
       if (child) {
         const select = drawer.getByRole('combobox', { name: 'Drawer fruit' });
+        await assertDrawerActionReachable(select);
         await select.click();
         await select.press('Escape');
         await page.waitForFunction(() => window.retainedNativeEvents.some(event => event.type === 'cancel'));
@@ -939,13 +958,16 @@ for (const child of [true, false]) {
         assert.ok((await drawerOwnerEvents(page)).some(event => event.type === 'select-request' && event.open === false && event.accepted === false));
         assert.equal((await drawerOwnerEvents(page)).filter(event => event.type === 'drawer-request' && event.open === false).length, 0);
         assert.equal((await drawerOwnerEvents(page)).filter(event => event.type === 'key-up' && event.trusted).length, 1);
-        await drawer.getByRole('button', { name: 'Hide branch', exact: true }).click();
+        const hide = drawer.getByRole('button', { name: 'Hide branch', exact: true });
+        await assertDrawerActionReachable(hide);
+        await hide.click();
         assert.deepEqual(await page.getByTestId('retained-owner-branch').evaluate(node => {
           const trigger = node.querySelector('[role="combobox"]'), popup = node.querySelector('[role="listbox"]');
           return { hidden: node.hidden, display: getComputedStyle(node).display, expanded: trigger.getAttribute('aria-expanded'), triggerRects: trigger.getClientRects().length, popupRects: popup.getClientRects().length, containsPopup: node.contains(popup) };
         }), { hidden: true, display: 'none', expanded: 'true', triggerRects: 0, popupRects: 0, containsPopup: true });
       }
       const before = await drawerOwnerEvents(page);
+      await assertDrawerActionReachable(drawer.getByRole('button', { name: 'Drawer action', exact: true }));
       await drawer.getByRole('button', { name: 'Drawer action', exact: true }).click();
       assert.ok(await drawer.getByRole('button', { name: 'Drawer action', exact: true }).evaluate(node => node === document.activeElement));
       await page.keyboard.press('Escape');
@@ -962,39 +984,55 @@ for (const child of [true, false]) {
       assert.equal(delta.filter(event => event.type === 'key-capture' && event.trusted).length, 1);
       assert.equal(delta.filter(event => event.type === 'key-up' && event.trusted).length, 0);
       assert.ok((await page.evaluate(() => window.retainedNativeEvents)).some(event => event.type === 'cancel' && event.owner === 'drawer' && event.trusted));
+      await settleCss(page);
       await opener.click();
-      await drawer.getByRole('button', { name: 'Close owner drawer', exact: true }).click();
+      assert.ok(await drawer.evaluate(node => node.open), JSON.stringify(await drawerOwnerEvents(page)));
+      await drawer.getByRole('button', { name: 'Close', exact: true }).click();
       await page.waitForFunction(() => !document.querySelector('dialog[data-escape-owner="drawer"]').open);
       assert.ok(await opener.evaluate(node => node === document.activeElement));
-    }, { width: 390, height: 844 });
+      if (enlarged) await assertViewportText(page);
+    }, { width, height: 844 });
   });
 }
 
-test('native Drawer keeps the public own cancel veto for Escape and Close until the consumer permits closure', async () => {
-  await withStory('surfaces-drawer--native-owner-veto', async page => {
-    await observeRetainedNativeEvents(page);
-    const opener = page.getByRole('button', { name: 'Open owner drawer' });
-    await opener.click();
-    const drawer = page.locator('dialog[data-escape-owner="drawer"]');
-    await drawer.getByRole('button', { name: 'Drawer action' }).click();
-    await page.keyboard.press('Escape');
-    await settleCss(page);
-    assert.ok(await drawer.evaluate(node => node.open));
-    assert.equal((await drawerOwnerEvents(page)).filter(event => event.type === 'cancel' && event.own).length, 1);
-    await drawer.getByRole('button', { name: 'Close owner drawer' }).click();
-    await settleCss(page);
-    assert.ok(await drawer.evaluate(node => node.open));
-    const blocked = await drawerOwnerEvents(page);
-    assert.equal(blocked.filter(event => event.type === 'cancel' && event.own && event.veto).length, 2);
-    assert.equal(blocked.filter(event => event.type === 'drawer-request' && event.open === false).length, 0);
-    assert.equal(blocked.filter(event => event.type === 'close' && event.own).length, 0);
-    await drawer.getByRole('button', { name: 'Allow close' }).click();
-    await drawer.getByRole('button', { name: 'Close owner drawer' }).click();
-    await page.waitForFunction(() => !document.querySelector('dialog[data-escape-owner="drawer"]').open);
-    await page.waitForFunction(() => JSON.parse(document.querySelector('[aria-label="Drawer owner events"]').textContent).some(event => event.type === 'close' && event.own));
-    const accepted = await drawerOwnerEvents(page);
-    assert.equal(accepted.filter(event => event.type === 'drawer-request' && event.open === false).length, 1);
-    assert.equal(accepted.filter(event => event.type === 'close' && event.own).length, 1);
-    assert.ok(await opener.evaluate(node => node === document.activeElement));
+for (const enlarged of [false, true]) {
+  test(`native Drawer keeps the public own cancel veto for Escape and Close until the consumer permits closure${enlarged ? ' at 390px with 200% text' : ''}`, async () => {
+    await withStory('surfaces-drawer--native-owner-veto', async page => {
+      await observeRetainedNativeEvents(page);
+      const opener = page.getByRole('button', { name: 'Open owner drawer' });
+      await opener.click();
+      const drawer = page.locator('dialog[data-escape-owner="drawer"]');
+      if (enlarged) {
+        await doubleText(page);
+        await settleCss(page);
+      } else await drawer.getByRole('button', { name: 'Drawer action' }).click();
+      await page.keyboard.press('Escape');
+      await settleCss(page);
+      assert.ok(await drawer.evaluate(node => node.open));
+      assert.equal((await drawerOwnerEvents(page)).filter(event => event.type === 'cancel' && event.own).length, 1);
+      await assertDrawerActionReachable(drawer.getByRole('button', { name: 'Close', exact: true }));
+      await drawer.getByRole('button', { name: 'Close', exact: true }).click();
+      await settleCss(page);
+      assert.ok(await drawer.evaluate(node => node.open));
+      const blocked = await drawerOwnerEvents(page);
+      assert.equal(blocked.filter(event => event.type === 'cancel' && event.own && event.veto).length, 2);
+      assert.equal(blocked.filter(event => event.type === 'drawer-request' && event.open === false).length, 0);
+      assert.equal(blocked.filter(event => event.type === 'close' && event.own).length, 0);
+      const allow = drawer.getByRole('button', { name: 'Allow close' });
+      if (enlarged) {
+        for (let count = 0; count < 5 && !await allow.evaluate(node => node === document.activeElement); count++) await page.keyboard.press('Tab');
+        assert.ok(await allow.evaluate(node => node === document.activeElement));
+      }
+      await assertDrawerActionReachable(allow);
+      await allow.click();
+      await drawer.getByRole('button', { name: 'Close', exact: true }).click();
+      await page.waitForFunction(() => !document.querySelector('dialog[data-escape-owner="drawer"]').open);
+      await page.waitForFunction(() => JSON.parse(document.querySelector('[aria-label="Drawer owner events"]').textContent).some(event => event.type === 'close' && event.own));
+      const accepted = await drawerOwnerEvents(page);
+      assert.equal(accepted.filter(event => event.type === 'drawer-request' && event.open === false).length, 1);
+      assert.equal(accepted.filter(event => event.type === 'close' && event.own).length, 1);
+      assert.ok(await opener.evaluate(node => node === document.activeElement));
+      if (enlarged) await assertViewportText(page);
+    });
   });
-});
+}
