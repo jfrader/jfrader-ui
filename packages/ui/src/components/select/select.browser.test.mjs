@@ -293,16 +293,19 @@ test('ordinary Select respects a smaller composed authored maximum and enlarged 
     const trigger = page.getByRole('combobox');
     await trigger.click();
     await page.waitForFunction(() => document.querySelector('[role="listbox"]')?.scrollTop > 0);
+    await settleCss(page);
     const short = await adjacentGeometry(page);
     assertAdjacent(short);
     assert.ok(short.panel.height <= 145);
     await page.setViewportSize({ width: 844, height: 900 });
     await page.waitForFunction(() => document.querySelector('[role="listbox"]').getBoundingClientRect().bottom <= innerHeight);
+    await settleCss(page);
     const tall = await adjacentGeometry(page);
     assertAdjacent(tall);
     assert.ok(tall.panel.height <= 145);
     await page.getByRole('listbox').evaluate(element => { element.style.maxBlockSize = 'min(112px, var(--select-available-height, 100vh))'; });
     await page.waitForFunction(() => document.querySelector('[role="listbox"]').getBoundingClientRect().height <= 113);
+    await settleCss(page);
     assertAdjacent(await adjacentGeometry(page));
     await trigger.press('End');
     assertAdjacent(await adjacentGeometry(page));
@@ -858,7 +861,14 @@ for (const branch of ['hidden-branch-child', 'outer-alone']) {
         await select.press('Escape');
         assert.equal(await select.getAttribute('aria-expanded'), 'true');
         assert.ok(await outer.evaluate(node => node.open));
-        await outer.getByRole('button', { name: 'Hide retained child' }).click();
+        const hide = outer.getByRole('button', { name: 'Hide retained child' });
+        assert.ok(await hide.evaluate(node => {
+          const action = node.getBoundingClientRect();
+          const popup = node.closest('dialog').querySelector('[role="listbox"]').getBoundingClientRect();
+          return action.bottom <= popup.top || action.top >= popup.bottom
+            || action.right <= popup.left || action.left >= popup.right;
+        }), 'the retained popup must not cover the fixture action');
+        await hide.click();
         assert.deepEqual(await outer.locator('[role="combobox"]').evaluate(node => ({ expanded: node.getAttribute('aria-expanded'), hidden: Boolean(node.closest('[hidden]')), rects: node.getClientRects().length })), { expanded: 'true', hidden: true, rects: 0 });
       }
       const priorRequests = (await retainedEvents(page)).filter(event => event.type === 'outer-request' && event.open === false).length;

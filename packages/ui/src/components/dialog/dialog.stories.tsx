@@ -80,7 +80,7 @@ export const ChildEscapeRejected: Story = { tags: ['!autodocs'], render: () => <
 export const ParentEscapeRejected: Story = { tags: ['!autodocs'], render: () => <ChildEscapeFixture rejectParent /> };
 export const ChildEscapeCancelVeto: Story = { tags: ['!autodocs'], render: () => <ChildEscapeFixture veto /> };
 
-const RetainedChildCloseRow = styled.div({ marginBlockEnd: vars.space[12] });
+const RetainedChildActionRow = styled.div({ marginBlockEnd: `calc(${vars.space[12]} + ${vars.space[4]})` });
 
 function RetainedChildEscapeFixture({ branch = 'native' }: { branch?: 'native' | 'hidden' | 'none' }) {
   const [innerOpen, setInnerOpen] = useState(false);
@@ -111,12 +111,12 @@ function RetainedChildEscapeFixture({ branch = 'native' }: { branch?: 'native' |
           <Dialog.Content data-escape-owner="inner" onCancel={event => cancel('inner', event)} onClose={event => close('inner', event)}>
             <Dialog.Title>Inner dialog</Dialog.Title>
             <Dialog.Description>Choose a fruit.</Dialog.Description>
-            <RetainedChildCloseRow><Dialog.Close>Close inner</Dialog.Close></RetainedChildCloseRow>
+            <RetainedChildActionRow><Dialog.Close>Close inner</Dialog.Close></RetainedChildActionRow>
             {selection}
           </Dialog.Content>
         </Dialog>}
         {branch === 'hidden' && <>
-          <Button onClick={() => setHidden(true)}>Hide retained child</Button>
+          <RetainedChildActionRow><Button onClick={() => setHidden(true)}>Hide retained child</Button></RetainedChildActionRow>
           <div hidden={hidden}>{selection}</div>
         </>}
         <Dialog.Close>Close outer</Dialog.Close>
