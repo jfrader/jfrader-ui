@@ -1,5 +1,5 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
-import { useId, useState } from 'react';
+import { StrictMode, useId, useRef, useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, mocked, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
@@ -9,6 +9,8 @@ import { expectThemedSurface } from '../../testing/theme-assertions';
 import { settleMotion } from '../../testing/motion-assertions';
 import { Button } from '../button';
 import { Popover } from '../popover';
+import { TextField } from '../text-field';
+import { useFormReset } from '../../utils/use-form-reset';
 import {
   Select,
   type SelectComposedProps,
@@ -18,12 +20,214 @@ import {
   type SelectProps,
   type SelectLabelProps,
   type SelectTriggerProps,
+  type SelectEmptyProps,
+  type SelectContentProps,
 } from './index';
 
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
+async function expectResponsiveFixture(
+  { canvasElement, canvas, userEvent }: Pick<Parameters<NonNullable<Story['play']>>[0], 'canvasElement' | 'canvas' | 'userEvent'>,
+  name: string,
+  choices: readonly [string, string],
+) {
+  const doc = canvasElement.ownerDocument;
+  const fonts = new Map<HTMLElement, Array<[string, string, string]>>();
+  const bodyWidth = [doc.body.style.getPropertyValue('inline-size'), doc.body.style.getPropertyPriority('inline-size')];
+  const restoreFonts = () => {
+    for (const [element, properties] of fonts) for (const [key, value, priority] of properties) element.style.setProperty(key, value, priority);
+  };
+  const applyTextMode = async (mode: 'normal' | 'text-only' | 'root-stress') => {
+    restoreFonts();
+    const sizes = Array.from(doc.querySelectorAll<HTMLElement>('*')).map((element) => {
+      if (!fonts.has(element)) fonts.set(element, ['font-size', 'line-height'].map((key) => [key, element.style.getPropertyValue(key), element.style.getPropertyPriority(key)]));
+      const styles = getComputedStyle(element);
+      return { element, fontSize: styles.fontSize, lineHeight: styles.lineHeight };
+    });
+    if (mode !== 'normal') for (const { element, fontSize, lineHeight } of sizes) {
+      if (mode === 'text-only' && element === doc.documentElement) continue;
+      element.style.setProperty('font-size', `${parseFloat(fontSize) * 2}px`, 'important');
+      if (lineHeight !== 'normal') element.style.setProperty('line-height', `${parseFloat(lineHeight) * 2}px`, 'important');
+    }
+    await doc.fonts.ready;
+  };
+  const expectContained = async () => {
+    const bounds = doc.body.getBoundingClientRect();
+    await expect(doc.documentElement.scrollWidth).toBeLessThanOrEqual(doc.documentElement.clientWidth + 1);
+    for (const control of canvasElement.querySelectorAll<HTMLElement>('button')) {
+      const box = control.getBoundingClientRect();
+      await expect(box.left).toBeGreaterThanOrEqual(bounds.left - 1);
+      await expect(box.right).toBeLessThanOrEqual(bounds.right + 1);
+    }
+    const walker = doc.createTreeWalker(canvasElement, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      if (!node.textContent?.trim() || node.parentElement?.closest('[data-ui="select-value"]')) continue;
+      const range = doc.createRange();
+      range.selectNode(node);
+      for (const box of range.getClientRects()) {
+        await expect(box.left).toBeGreaterThanOrEqual(bounds.left - 1);
+        await expect(box.right).toBeLessThanOrEqual(bounds.right + 1);
+      }
+    }
+  };
+  try {
+    doc.body.style.setProperty('inline-size', '320px');
+    for (const [index, mode] of (['normal', 'text-only', 'root-stress'] as const).entries()) {
+      await applyTextMode(mode);
+      await expectContained();
+      const trigger = canvas.getByRole('combobox', { name });
+      trigger.scrollIntoView({ block: 'center' });
+      await userEvent.click(trigger);
+      const list = await within(doc.body).findByRole('listbox', { name });
+      await applyTextMode(mode);
+      await settleMotion(list);
+      const menu = list.getBoundingClientRect();
+      await expect(menu.left).toBeGreaterThanOrEqual(0);
+      await expect(menu.right).toBeLessThanOrEqual(doc.documentElement.clientWidth + 1);
+      for (const key of ['{Home}', '{End}']) {
+        await userEvent.keyboard(key);
+        const active = doc.getElementById(trigger.getAttribute('aria-activedescendant')!)!;
+        await expect(active).toBeVisible();
+        await waitFor(async () => {
+          const box = active.getBoundingClientRect();
+          const visible = list.getBoundingClientRect();
+          await expect(box.top).toBeGreaterThanOrEqual(visible.top - 1);
+          await expect(box.bottom).toBeLessThanOrEqual(visible.bottom + 1);
+        });
+      }
+      const choice = choices[index % choices.length]!;
+      await userEvent.click(within(list).getByRole('option', { name: choice }));
+      await expect(trigger).toHaveTextContent(choice);
+      await expect(doc.activeElement).toBe(trigger);
+      await expectContained();
+      const upgrade = canvas.queryByRole('button', { name: 'Upgrade' });
+      if (upgrade) {
+        upgrade.scrollIntoView({ block: 'center' });
+        const box = upgrade.getBoundingClientRect();
+        await expect(upgrade.contains(doc.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2))).toBe(true);
+        await userEvent.click(upgrade);
+        await expect(doc.activeElement).toBe(upgrade);
+      }
+    }
+  } finally {
+    restoreFonts();
+    doc.body.style.setProperty('inline-size', bodyWidth[0]!, bodyWidth[1]);
+  }
+}
+
 const NarrowFrame = styled.div({ inlineSize: 240 });
+const DESCENDER_OPTIONS = [
+  { value: 'stripes', label: 'Rayas' },
+  { value: 'floor', label: 'Planta baja' },
+  { value: 'room', label: 'Sala' },
+  { value: 'dots', label: 'Puntos' },
+];
+
+function valueInkClearance(value: HTMLElement) {
+  const doc = value.ownerDocument;
+  const styles = getComputedStyle(value);
+  const reference = doc.createElement('div');
+  for (const property of ['fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'fontVariant',
+    'fontFeatureSettings', 'fontVariationSettings', 'fontOpticalSizing', 'fontKerning', 'letterSpacing', 'lineHeight'] as const) {
+    reference.style[property] = styles[property];
+  }
+  Object.assign(reference.style, { position: 'fixed', top: '0', left: '0', whiteSpace: 'nowrap', visibility: 'hidden' });
+  const text = doc.createElement('span');
+  text.textContent = value.textContent;
+  const marker = doc.createElement('span');
+  Object.assign(marker.style, { display: 'inline-block', width: '0', height: '0', verticalAlign: 'baseline' });
+  reference.append(text, marker);
+  doc.body.append(reference);
+  try {
+    const range = doc.createRange();
+    range.selectNodeContents(text);
+    const offset = marker.getBoundingClientRect().top - range.getBoundingClientRect().top;
+    range.selectNodeContents(value);
+    const baseline = range.getBoundingClientRect().top + offset;
+    const context = doc.createElement('canvas').getContext('2d')!;
+    context.font = `${styles.fontStyle} ${styles.fontWeight} ${styles.fontSize} ${styles.fontFamily}`;
+    if (styles.fontKerning === 'auto' || styles.fontKerning === 'normal' || styles.fontKerning === 'none') {
+      context.fontKerning = styles.fontKerning;
+    }
+    const ink = context.measureText(value.textContent ?? '');
+    const box = value.getBoundingClientRect();
+    return {
+      top: baseline - ink.actualBoundingBoxAscent - box.top - parseFloat(styles.borderTopWidth),
+      bottom: box.bottom - parseFloat(styles.borderBottomWidth) - baseline - ink.actualBoundingBoxDescent,
+    };
+  } finally {
+    reference.remove();
+  }
+}
+
+export const EnlargedValueInk: Story = {
+  tags: ['!autodocs'],
+  render: () => <div>
+    <Select size="lg" label="Pattern" options={DESCENDER_OPTIONS} defaultValue="stripes" />
+    <Select size="lg" label="Floor" options={DESCENDER_OPTIONS} defaultValue="floor" slotProps={{ root: { dir: 'rtl' } }} />
+  </div>,
+  play: async ({ canvasElement, canvas, userEvent }) => {
+    const doc = canvasElement.ownerDocument;
+    const originals = new Map<HTMLElement, { fontSize: string; lineHeight: string }>();
+    const restore = () => {
+      for (const [element, styles] of originals) Object.assign(element.style, styles);
+    };
+    const enlarge = async () => {
+      restore();
+      const sizes = Array.from(doc.querySelectorAll<HTMLElement>('*')).map((element) => {
+        if (!originals.has(element)) originals.set(element, { fontSize: element.style.fontSize, lineHeight: element.style.lineHeight });
+        const styles = getComputedStyle(element);
+        return { element, fontSize: parseFloat(styles.fontSize) * 2, lineHeight: styles.lineHeight };
+      });
+      for (const { element, fontSize, lineHeight } of sizes) {
+        element.style.fontSize = `${fontSize}px`;
+        if (lineHeight !== 'normal') element.style.lineHeight = `${parseFloat(lineHeight) * 2}px`;
+      }
+      await doc.fonts.ready;
+    };
+    try {
+      await doc.fonts.ready;
+      await enlarge();
+      for (const name of ['Pattern', 'Floor']) {
+        const trigger = canvas.getByRole('combobox', { name });
+        const value = trigger.querySelector<HTMLElement>('[data-ui="select-value"]')!;
+        await expect(value.scrollWidth).toBeLessThanOrEqual(value.clientWidth);
+        const ink = valueInkClearance(value);
+        await expect(ink.top, `${value.textContent}: top ink clearance`).toBeGreaterThanOrEqual(0);
+        await expect(ink.bottom, `${value.textContent}: bottom ink clearance`).toBeGreaterThanOrEqual(0);
+        await userEvent.click(trigger);
+        const list = await within(doc.body).findByRole('listbox');
+        await enlarge();
+        const option = within(list).getByRole('option', { name: value.textContent! });
+        await expect(option).toBeVisible();
+        await userEvent.click(option);
+        await expect(doc.activeElement).toBe(trigger);
+        const originalWidth = trigger.style.inlineSize;
+        const originalMinimum = trigger.style.minInlineSize;
+        try {
+          trigger.style.minInlineSize = '0';
+          trigger.style.inlineSize = `${value.getBoundingClientRect().width}px`;
+          await expect(value.scrollWidth).toBeGreaterThan(value.clientWidth);
+          await expect(getComputedStyle(value).textOverflow).toBe('ellipsis');
+          await expect(trigger).toHaveAccessibleName(name);
+          await userEvent.keyboard('{ArrowDown}');
+          const narrowList = await within(doc.body).findByRole('listbox');
+          await enlarge();
+          await expect(within(narrowList).getByRole('option', { name: value.textContent! })).toBeVisible();
+          await userEvent.keyboard('{Escape}');
+          await expect(doc.activeElement).toBe(trigger);
+        } finally {
+          trigger.style.inlineSize = originalWidth;
+          trigger.style.minInlineSize = originalMinimum;
+        }
+      }
+    } finally {
+      restore();
+    }
+  },
+};
 export const ControlSizeContract: Story = {
   name: 'Control size contract',
   render: () => <>{(['sm', 'md', 'lg'] as const).map(size => <Select key={size} size={size} options={[{ value: 'draft', label: 'Draft' }]} defaultValue="draft" slotProps={{ trigger: { 'aria-label': `${size} status` } }} />)}</>,
@@ -38,7 +242,8 @@ export const RootRelativeSizes: Story = {
 const VisualGrid = styled.div({
   display: 'grid',
   gap: vars.space[6],
-  inlineSize: `min(640px, calc(100vw - ${vars.space[8]}))`,
+  inlineSize: '100%',
+  maxInlineSize: '640px',
   gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))',
 });
 const EdgeFrame = styled.div({
@@ -287,6 +492,7 @@ import { vars } from '@jfrader/tokens/vars';
 
 const PlanActions = styled.div({
   display: 'flex',
+  flexWrap: 'wrap',
   alignItems: 'flex-end',
   gap: vars.space[3],
 });
@@ -307,13 +513,18 @@ const PlanActions = styled.div({
 
 const Row = styled.div({
   display: 'flex',
+  flexWrap: 'wrap',
+  minInlineSize: 0,
+  maxInlineSize: '100%',
   alignItems: 'center',
   gap: vars.space[3],
 });
+const DiagnosticOutput = styled.output({ display: 'block', minInlineSize: 0, maxInlineSize: '100%', overflowWrap: 'anywhere' });
 
 // A labeled field is taller than its control; an action beside it aligns to the control's bottom.
 const FieldRow = styled.div({
   display: 'flex',
+  flexWrap: 'wrap',
   alignItems: 'flex-end',
   gap: vars.space[3],
 });
@@ -351,6 +562,21 @@ const meta: Meta<SelectComposedProps> = {
 - Long lists scroll inside the popup.
 - Named fields submit a single value. Native required validation is not supported.
 
+### Popup sizing
+
+- Ordinary Select.Content publishes \`--select-available-height\`, a nonnegative CSS pixel length for the adjacent space within its positioning boundary. Select sets it while the popup is open and removes it on close or unmount. Morph does not publish or use it, and Content does not inherit another Select's value.
+- The ordinary default maximum combines 280px with the available height. When replacing the maximum through className, sx, style, or a Content adapter, compose your limit with the available height to retain adjacent bounds. A replacement without that composition opts out of the bound; CSS remains responsible for resolving the authored maximum.
+
+\`\`\`tsx
+<Select
+  label="Workspace"
+  options={workspaces}
+  slotProps={{ content: { sx: {
+    maxBlockSize: 'min(var(--workspace-popup-max, 20rem), var(--select-available-height, 100vh))',
+  } } }}
+/>
+\`\`\`
+
 ### Motion
 
 - Reduced motion skips the pill presentation's spring. Closing removes the list from interaction immediately, before its visual collapse finishes.`,
@@ -367,6 +593,7 @@ const LONG_LABEL = 'InternationalEnterpriseWorkspaceWithoutWordSeparators';
 
 export const FieldStates: ShorthandStory = {
   tags: ['!autodocs'],
+  parameters: { layout: 'padded' },
   render: () => (
     <VisualGrid>
       <Select label="Small" size="sm" options={FRUITS} defaultValue="apple" />
@@ -392,8 +619,31 @@ export const FieldStates: ShorthandStory = {
   },
 };
 
+function ForwardedEmpty(props: SelectEmptyProps) {
+  return <Select.Empty {...props} data-testid="forwarded-empty" />;
+}
+
+function DynamicEmptyFixture({ rejected = false }: { rejected?: boolean }) {
+  const [populated, setPopulated] = useState(false);
+  const [changes, setChanges] = useState<string[]>([]);
+  const emptyId = useId();
+  return <form>
+    <Button onClick={() => setPopulated(value => !value)}>Toggle options</Button>
+    <Select open label="Dynamic workspace" name="workspace" options={populated ? FRUITS : []}
+      {...(rejected ? { value: 'missing' } : {})}
+      onValueChange={value => setChanges(values => [...values, value])}
+      placeholder="Choose a workspace" empty={<span>No workspaces</span>}
+      slots={{ empty: ForwardedEmpty }} slotProps={{ empty: { id: emptyId, 'aria-label': 'No workspaces available' } }} />
+    <DiagnosticOutput aria-label="Selection history">{JSON.stringify(changes)}</DiagnosticOutput>
+  </form>;
+}
+
+export const DynamicEmpty: Story = { tags: ['!autodocs'], render: () => <DynamicEmptyFixture /> };
+export const RejectedEmpty: Story = { tags: ['!autodocs'], render: () => <DynamicEmptyFixture rejected /> };
+
 export const Grouped: Story = {
   tags: ['!autodocs'],
+  parameters: { layout: 'padded' },
   render: () => (
     <Select>
       <Select.Trigger aria-label="Destination"><Select.Value placeholder="Choose a destination" /></Select.Trigger>
@@ -591,6 +841,63 @@ const StickyHeader = styled.div({
   background: vars.color.surfaceRaised, zIndex: 1,
 });
 const HeaderContent = styled(Select.Content)({ scrollPaddingBlockStart: vars.space[12] });
+const authoredPopupMaximumStyles = {
+  limited: { maxBlockSize: `min(calc(${vars.space[12]} * 3), var(--select-available-height, 100vh))` },
+  expanded: { maxBlockSize: `min(calc(${vars.space[12]} * 5), var(--select-available-height, 100vh))` },
+};
+
+function AuthoredPopupMaximumFixture() {
+  const [limited, setLimited] = useState(false);
+  return <>
+    <Button onClick={() => setLimited(true)}>Limit popup</Button>
+    <Button onClick={() => setLimited(false)}>Expand popup</Button>
+    <Select open label="Option" options={LONG_OPTIONS} initialActiveValue="720"
+      slotProps={{ content: { sx: authoredPopupMaximumStyles[limited ? 'limited' : 'expanded'] } }} />
+  </>;
+}
+
+export const AuthoredPopupMaximum: Story = {
+  tags: ['!autodocs'],
+  render: () => <AuthoredPopupMaximumFixture />,
+  parameters: { docs: { source: { language: 'tsx', code: `import { useState } from 'react';
+import { Button, Select } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+export function PopupMaximum({ options }) {
+  const [limited, setLimited] = useState(false);
+  const limit = limited ? 3 : 5;
+  return <>
+    <Button onClick={() => setLimited(true)}>Limit popup</Button>
+    <Button onClick={() => setLimited(false)}>Expand popup</Button>
+    <Select open label="Option" options={options} initialActiveValue="720"
+      slotProps={{ content: { sx: {
+        maxBlockSize: \`min(calc(\${vars.space[12]} * \${limit}), var(--select-available-height, 100vh))\`,
+      } } }} />
+  </>;
+}` } } },
+};
+
+function SizingContentAdapter(props: SelectContentProps) {
+  return <Select.Content {...props} data-testid="sizing-content" />;
+}
+
+function ContentSizingLifecycleFixture() {
+  const [open, setOpen] = useState(false);
+  const [morph, setMorph] = useState(false);
+  const [mounted, setMounted] = useState(true);
+  const [content, setContent] = useState<HTMLDivElement | null>(null);
+  return <>
+    <Button onClick={() => setMorph(value => !value)}>Change presentation</Button>
+    <Button onClick={() => setOpen(value => !value)}>{open ? 'Close popup' : 'Open popup'}</Button>
+    <Button onClick={() => setMounted(false)}>Unmount picker</Button>
+    {mounted && <Select label="Adapter fruit" options={FRUITS} defaultValue="apple" open={open} onOpenChange={next => { if (next) setOpen(true); }}
+      variant={morph ? 'morph' : 'default'} slots={{ content: SizingContentAdapter }}
+      slotProps={{ content: { ref: setContent, style: { letterSpacing: '0.25px' } } }} />}
+    <DiagnosticOutput aria-label="Content ref">{content?.getAttribute('data-testid') ?? 'none'}</DiagnosticOutput>
+  </>;
+}
+
+export const ContentSizingLifecycle: Story = { tags: ['!autodocs'], render: () => <ContentSizingLifecycleFixture /> };
 
 /** Keep the highlighted option below a sticky header. */
 export const StickyList: Story = {
@@ -775,6 +1082,7 @@ export const Default: ShorthandStory = {
     </FieldRow>
   ),
   parameters: {
+    layout: 'padded',
     docs: {
       description: { story: 'Choose a billing plan beside an upgrade action; Enterprise is unavailable.' },
       source: {
@@ -821,13 +1129,19 @@ export const Composed: Story = {
       source: {
         language: 'tsx',
         code: `import { useId } from 'react';
-import { Select } from '@jfrader/ui';
+import { Button, Select, styled } from '@jfrader/ui';
+import { vars } from '@jfrader/tokens/vars';
+
+const Row = styled.div({
+  display: 'flex', flexWrap: 'wrap', minInlineSize: 0, maxInlineSize: '100%',
+  alignItems: 'center', gap: vars.space[3],
+});
 
 function FruitPicker() {
   const labelId = useId();
 
   return (
-    <>
+    <Row>
       <span id={labelId}>Fruit</span>
       <Select defaultValue="apple">
         <Select.Trigger aria-labelledby={labelId}>
@@ -839,7 +1153,8 @@ function FruitPicker() {
           <Select.Item value="cherry">Cherry</Select.Item>
         </Select.Content>
       </Select>
-    </>
+      <Button>After</Button>
+    </Row>
   );
 }`,
       },
@@ -1066,13 +1381,15 @@ export const NativeFormReset: Story = {
 function AssociatedFormResetSelect(props: SelectComposedProps) {
   const formId = useId();
   const [cancelReset, setCancelReset] = useState(true);
+  const [changes, setChanges] = useState(0);
+  const onValueChange = (value: string) => { setChanges(count => count + 1); props.onValueChange?.(value); };
   return (
     <>
       <form id={formId} onReset={event => { if (cancelReset) event.preventDefault(); }}>
         <Button type="reset">Reset</Button>
       </form>
       <Button onClick={() => setCancelReset(false)}>Allow reset</Button>
-      <Select {...props} defaultValue="apple">
+      <Select {...props} onValueChange={onValueChange} defaultValue="apple">
         <Select.Trigger form={formId} aria-label={LABEL}><Select.Value /></Select.Trigger>
         <Select.Content>
           <Select.Item value="apple">Apple</Select.Item>
@@ -1083,6 +1400,7 @@ function AssociatedFormResetSelect(props: SelectComposedProps) {
         <Select.Trigger form={formId} aria-label="Controlled fruit"><Select.Value /></Select.Trigger>
         <Select.Content><Select.Item value="cherry">Cherry</Select.Item></Select.Content>
       </Select>
+      <DiagnosticOutput aria-label="Selection callbacks">{changes}</DiagnosticOutput>
     </>
   );
 }
@@ -1106,6 +1424,38 @@ export const AssociatedFormReset: Story = {
   },
 };
 
+function ResetLifecycleControl({ form, revision, onSettled }: { form: string; revision: number; onSettled: (revision: number) => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  useFormReset(input, () => onSettled(revision), form);
+  return <TextField ref={input} form={form} label="Lifecycle input" defaultValue="Apple" />;
+}
+
+function ResetLifecycleFixture() {
+  const firstForm = useId();
+  const secondForm = useId();
+  const [mode, setMode] = useState('rerender');
+  const [revision, setRevision] = useState(0);
+  const [alternate, setAlternate] = useState(false);
+  const [mounted, setMounted] = useState(true);
+  const [settled, setSettled] = useState<number[]>([]);
+  return <>
+    <form id={firstForm} onReset={() => {
+      if (mode === 'rerender') setRevision(value => value + 1);
+      if (mode === 'reassociate') setAlternate(true);
+      if (mode === 'unmount') setMounted(false);
+    }}><Button type="reset">Reset</Button></form>
+    <form id={secondForm}><Button type="reset">Reset alternate</Button></form>
+    {(['rerender', 'reassociate', 'unmount'] as const).map(value => <Button key={value} onClick={() => setMode(value)}>{value}</Button>)}
+    {mounted && <ResetLifecycleControl form={alternate ? secondForm : firstForm} revision={revision} onSettled={value => setSettled(values => [...values, value])} />}
+    <DiagnosticOutput aria-label="Settled resets">{JSON.stringify(settled)}</DiagnosticOutput>
+  </>;
+}
+
+export const ResetLifecycle: Story = {
+  tags: ['!autodocs'],
+  render: () => <StrictMode><ResetLifecycleFixture /></StrictMode>,
+};
+
 function ControlledSelect(props: SelectComposedProps) {
   const [value, setValue] = useState('apple');
   const [open, setOpen] = useState(false);
@@ -1127,7 +1477,7 @@ function ControlledSelect(props: SelectComposedProps) {
           props.onOpenChange?.(next);
         }}
       />
-      <output aria-label="Callback order">{callbackOrder.join(',')}</output>
+      <DiagnosticOutput aria-label="Callback order">{callbackOrder.join(',')}</DiagnosticOutput>
     </>
   );
 }
@@ -1689,4 +2039,23 @@ export const LightTheme: Story = {
     await userEvent.keyboard('{Escape}');
     await expectClosed(canvasElement);
   },
+};
+
+export const ResponsiveBillingPlan: ShorthandStory = {
+  ...Default,
+  name: 'Responsive billing plan',
+  tags: ['!autodocs'],
+  play: (context) => expectResponsiveFixture(context, PLAN_LABEL, ['Pro', 'Free']),
+};
+export const ResponsiveGrouped: Story = {
+  ...Grouped,
+  name: 'Responsive grouped choices',
+  tags: ['!autodocs'],
+  play: (context) => expectResponsiveFixture(context, 'Destination', ['Lima', 'Madrid']),
+};
+export const ResponsiveFieldStates: ShorthandStory = {
+  ...FieldStates,
+  name: 'Responsive field states',
+  tags: ['!autodocs'],
+  play: (context) => expectResponsiveFixture(context, 'Small', ['Cherry', 'Apple']),
 };

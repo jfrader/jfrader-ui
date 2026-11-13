@@ -2174,6 +2174,11 @@ function NestedDialogBody() {
     </Dialog>
   );
 }
+
+export const NestedPopoverContained: Story = {
+  tags: ['!autodocs'],
+  render: (args) => <Container><Levels {...args} contained body={<NestedPopoverBody />} /></Container>,
+};
 NestedDialogBody.displayName = 'NestedDialogBody';
 
 export const NestedDialog: Story = {

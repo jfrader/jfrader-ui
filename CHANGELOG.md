@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## 0.26.0 - 2026-11-13
+
+### Changed
+
+- The docs site uses `@jfrader/react-storydocs` 0.19.1.
+
+### Fixed
+
+- `NumberField` keeps its step controls usable with large interaction targets.
+- `TreeView` sizes its rows and controls for large interaction targets and enlarged text.
+- `Select` and `TimePicker` keep popup content within the available height and let controls grow with enlarged text.
+- Native `Drawer` and `Dialog` shells leave Escape dismissal to the owning overlay.
+- Shared form controls settle their values after native form reset.
+- `Select.Empty` preserves listbox semantics when no options are available.
+
 ## 0.25.0 - 2026-10-31
 
 ### Breaking pre-1.0

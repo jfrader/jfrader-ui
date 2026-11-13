@@ -20,6 +20,13 @@ documentation spec, review checklist).
   `apps/docs/scripts/sync-readme.mjs`, so `README.md` stays the single source for that page, and
   `apps/docs/guidance/` is generated and ignored.
 
+## Consumer-driven scope
+
+Bound prerequisite work to the named consumer journeys. Preserve public APIs and optional modes
+unused by those consumers. Library-wide removal or redesign requires explicit library-level approval.
+Record unrelated findings with their actual status, without making them unsolicited consumer blockers
+or calling them passes.
+
 ## Commands
 
 | Command | What it does |

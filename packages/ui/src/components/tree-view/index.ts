@@ -5,6 +5,7 @@ export {
   type TreeViewMessages,
   type TreeViewPartProps,
   type TreeViewProps,
+  type TreeViewSize,
   type TreeViewSlotProps,
   type TreeViewSlots,
 } from './tree-view';

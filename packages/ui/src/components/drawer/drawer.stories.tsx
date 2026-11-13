@@ -1,6 +1,6 @@
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useState, type ReactNode, type SyntheticEvent } from 'react';
 import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within } from 'storybook/test';
 import { base } from '@jfrader/tokens';
@@ -37,6 +37,57 @@ const INLINE_CAP_REM: Record<DrawerSize, number> = { sm: 22, md: 30, lg: 38 };
 const COMPACT_QUERY = '(max-width: 40rem)';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const GUTTER_PX = Number.parseFloat(base.space[3]);
+
+const DiagnosticOutput = styled.output({ display: 'block', minInlineSize: 0, maxInlineSize: '100%', overflowWrap: 'anywhere' });
+const OWNER_FRUITS = [{ value: 'apple', label: 'Apple' }, { value: 'cherry', label: 'Cherry' }];
+
+function NativeOwnerFixture({ child = true, vetoInitially = false }: { child?: boolean; vetoInitially?: boolean }) {
+  const [hidden, setHidden] = useState(false);
+  const [veto, setVeto] = useState(vetoInitially);
+  const [portalHost, setPortalHost] = useState<HTMLDivElement | null>(null);
+  const [events, setEvents] = useState<Array<Record<string, unknown>>>([]);
+  const record = (event: Record<string, unknown>) => setEvents(values => [...values, event]);
+  const cancel = (event: SyntheticEvent<HTMLDialogElement>) => {
+    record({ type: 'cancel', own: event.target === event.currentTarget, prevented: event.defaultPrevented, veto, trusted: event.nativeEvent.isTrusted });
+    if (veto) event.preventDefault();
+  };
+  return <>
+    <Drawer onOpenChange={open => record({ type: 'drawer-request', open })}>
+      <Drawer.Trigger>Open owner drawer</Drawer.Trigger>
+      <Drawer.Content data-escape-owner="drawer" onCancel={cancel}
+        onClose={event => record({ type: 'close', own: event.target === event.currentTarget, trusted: event.nativeEvent.isTrusted })}
+        onKeyDownCapture={event => { if (event.key === 'Escape') record({ type: 'key-capture', trusted: event.nativeEvent.isTrusted }); }}
+        onKeyUp={event => { if (event.key === 'Escape') record({ type: 'key-up', trusted: event.nativeEvent.isTrusted }); }}>
+        <Drawer.Panel>
+          <Drawer.Header>
+            <Drawer.Title>Native owner drawer</Drawer.Title>
+            <Drawer.Description>Choose a fruit.</Drawer.Description>
+            <Drawer.Close>Close</Drawer.Close>
+          </Drawer.Header>
+          <Drawer.Body>
+            {child && <section hidden={hidden} data-testid="retained-owner-branch">
+              <ThemeRoot portalContainer={portalHost}>
+                <Select label="Drawer fruit" options={OWNER_FRUITS} defaultValue="apple" open
+                  onOpenChange={open => record({ type: 'select-request', open, accepted: open })} />
+                <div ref={setPortalHost} />
+              </ThemeRoot>
+            </section>}
+          </Drawer.Body>
+          <Drawer.Footer>
+            <FixtureButton>Drawer action</FixtureButton>
+            {child && <FixtureButton onClick={() => { record({ type: 'branch-hidden' }); setHidden(true); }}>Hide branch</FixtureButton>}
+            {veto && <FixtureButton onClick={() => setVeto(false)}>Allow close</FixtureButton>}
+          </Drawer.Footer>
+        </Drawer.Panel>
+      </Drawer.Content>
+    </Drawer>
+    <DiagnosticOutput aria-label="Drawer owner events">{JSON.stringify(events)}</DiagnosticOutput>
+  </>;
+}
+
+export const HiddenNativeOwner: Story = { tags: ['!autodocs'], parameters: { layout: 'padded' }, render: () => <NativeOwnerFixture /> };
+export const NativeOwnerAlone: Story = { tags: ['!autodocs'], parameters: { layout: 'padded' }, render: () => <NativeOwnerFixture child={false} /> };
+export const NativeOwnerVeto: Story = { tags: ['!autodocs'], parameters: { layout: 'padded' }, render: () => <NativeOwnerFixture child={false} vetoInitially /> };
 
 const AdapterMaterial = styled.div({ backgroundColor: vars.color.surfaceRaised, color: vars.color.text, border: `1px dashed ${vars.color.border}`, borderRadius: vars.radius.full, boxShadow: 'none' });
 function DrawerPaper({ className, ...props }: SurfacePartProps) {

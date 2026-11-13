@@ -55,6 +55,7 @@ import {
 import { GeneratedRoot, type GeneratedRootSlotProps } from '../../utils/generated-root';
 import { createPortal } from 'react-dom';
 import { FloatingFocusManager, useFloating, useMergeRefs } from '@floating-ui/react';
+import { useChildEscape } from '../../overlay/use-child-escape';
 import { animate, type AnimationPlaybackControls } from 'motion/react';
 import { base } from '@jfrader/tokens';
 import { ChevronLeft, Close } from '@jfrader/icons';
@@ -265,8 +266,6 @@ interface DialogStackContextValue extends DialogStackActions {
   unregister: (key: string, entry: SheetEntry) => void;
   setNaming: (naming: Naming) => void;
   dismissTop: () => void;
-  /** Escape keydowns that a child overlay inside the top panel owns. */
-  escapeOwnedByChildRef: RefObject<boolean>;
 }
 
 interface SheetContentContextValue {
@@ -312,8 +311,6 @@ const GESTURE = {
 // Read when a drag starts, not at render: the markup stays identical on server and client.
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const NO_DRAG_SELECTOR = '[data-sheet-no-drag]';
-// Child overlays that own an Escape: open floating portals and native dialogs inside the panel.
-const CHILD_LAYER_SELECTOR = '[data-floating-ui-portal]:not(:empty), dialog[open]';
 
 const DEFAULT_BREAKPOINT = Number.parseFloat(base.size.dialogStackBreakpoint);
 const EMPTY_STACK: readonly string[] = [];
@@ -639,7 +636,6 @@ function DialogStackRoot(props: DialogStackProps) {
   const [stage, setStage] = useState<HTMLDivElement | null>(null);
   const [layer, setLayer] = useState<HTMLElement | null>(null);
   const [naming, setNamingState] = useState<Naming>({ label: undefined, labelledBy: undefined, describedBy: undefined });
-  const escapeOwnedByChildRef = useRef(false);
 
   // The registry lives in a ref (Contents register in layout effects); the version re-derives the stack.
   const stack = useMemo(() => normalize(raw, entriesRef.current), [raw, registryVersion]);
@@ -769,7 +765,6 @@ function DialogStackRoot(props: DialogStackProps) {
       unregister,
       setNaming,
       dismissTop,
-      escapeOwnedByChildRef,
     }),
     [stack, push, pop, popTo, close, contained, resolvedVariant, stage, register, unregister, setNaming, dismissTop],
   );
@@ -975,7 +970,7 @@ interface ViewportLayerProps {
 }
 
 function ViewportLayer({ native, naming, variant }: ViewportLayerProps) {
-  const { setStage, setLayer, dismissTop, escapeOwnedByChildRef } = useDialogStackContext('Layer');
+  const { setStage, setLayer, dismissTop } = useDialogStackContext('Layer');
   const shellRef = useRef<HTMLDialogElement | null>(null);
 
   // Escape arrives as the shell's native cancel. It never reaches the shared close path: an
@@ -983,11 +978,8 @@ function ViewportLayer({ native, naming, variant }: ViewportLayerProps) {
   // reconciliation (a clear request).
   const handleCancel = (event: SyntheticEvent<HTMLDialogElement>) => {
     if (event.target !== shellRef.current) return;
+    if (event.defaultPrevented) return;
     event.preventDefault();
-    if (escapeOwnedByChildRef.current) {
-      escapeOwnedByChildRef.current = false;
-      return;
-    }
     if (event.nativeEvent.cancelable) dismissTop();
   };
 
@@ -1196,13 +1188,14 @@ function DialogStackContent({
     ...rest
   } = selected;
   const root = useDialogStackContext('Content');
-  const { contained, variant, stage, register, unregister, setNaming, dismissTop, escapeOwnedByChildRef } = root;
+  const { contained, variant, stage, register, unregister, setNaming, dismissTop } = root;
   const baseId = useId();
   const titleId = `${baseId}-title`;
   const descriptionId = `${baseId}-description`;
   const [hasTitle, setHasTitle] = useState(false);
   const [hasDescription, setHasDescription] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const escapeOwnedByChildRef = useChildEscape(panelRef);
 
   const index = root.value.indexOf(value);
   const inStack = index !== -1;
@@ -1257,13 +1250,6 @@ function DialogStackContent({
     [titleId, descriptionId],
   );
 
-  // Capture phase: a child overlay's own Escape handler may stop propagation before bubbling.
-  const handleKeyDownCapture = (event: KeyboardEvent<HTMLDivElement>) => {
-    onKeyDownCapture?.(event);
-    if (event.key === 'Escape') {
-      escapeOwnedByChildRef.current = Boolean(panelRef.current?.querySelector(CHILD_LAYER_SELECTOR));
-    }
-  };
   // Contained layers have no native cancel: Escape is handled here, once, by the top panel.
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);
@@ -1271,10 +1257,6 @@ function DialogStackContent({
     if (event.defaultPrevented || escapeOwnedByChildRef.current) return;
     event.preventDefault();
     dismissTop();
-  };
-  const handleKeyUp = (event: KeyboardEvent<HTMLDivElement>) => {
-    onKeyUp?.(event);
-    if (event.key === 'Escape') escapeOwnedByChildRef.current = false;
   };
 
   if (!inStack || !stage) return null;
@@ -1318,9 +1300,9 @@ function DialogStackContent({
             'aria-hidden': isTop ? undefined : 'true',
             inert: !isTop,
             tabIndex: -1,
-            onKeyDownCapture: handleKeyDownCapture,
+            onKeyDownCapture,
             onKeyDown: handleKeyDown,
-            onKeyUp: handleKeyUp,
+            onKeyUp,
           }}
           wrapChildren={(body) => (
             <>

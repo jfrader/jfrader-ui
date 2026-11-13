@@ -91,7 +91,7 @@ const meta = {
     a11y: { test: 'error' },
     docs: {
       sections: [
-        { title: 'Basic', stories: ['Default'] },
+        { title: 'Basic', stories: ['Default', 'Large'] },
         { title: 'Expansion and selection', stories: ['Expanded', 'ControlledSelection', 'ControlledExpansion', 'DisabledNode'] },
         { title: 'Lazy loading and empty states', stories: ['LazyChildren', 'LazyError', 'EmptyLoadedChildren', 'Empty'] },
         { title: 'Long labels and deep trees', stories: ['DeepAndLongLabels'] },
@@ -241,6 +241,31 @@ const files: TreeNode[] = [
     await expect(canvas.getByRole('treeitem', { name: 'src' })).toHaveAttribute('aria-expanded', 'true');
     await expect(canvas.getByRole('treeitem', { name: 'components' })).toHaveAttribute('aria-expanded', 'false');
     await expect(canvas.getByRole('treeitem', { name: 'index.ts' })).toHaveAttribute('aria-selected', 'true');
+  },
+};
+
+export const Large: Story = {
+  args: { size: 'lg' },
+  parameters: { docs: { source: { language: 'tsx', code: `import { TreeView, type TreeNode } from '@jfrader/ui';
+
+${treeNodesSource}
+
+<TreeView label="Files" nodes={nodes} size="lg" />` } } },
+  play: async ({ canvas, userEvent }) => {
+    const item = canvas.getByRole('treeitem', { name: 'Application' });
+    for (const target of [item, disclosure(item)]) {
+      const box = target.getBoundingClientRect();
+      await expect(box.width).toBeGreaterThanOrEqual(44);
+      await expect(box.height).toBeGreaterThanOrEqual(44);
+      const hit = target.ownerDocument.elementFromPoint(box.left + 2, box.top + 2)!;
+      await expect(target.contains(hit)).toBe(true);
+      await userEvent.click(hit);
+      await focus(item);
+    }
+    await expect(item).toHaveAttribute('aria-selected', 'true');
+    await expect(item).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.keyboard('{ArrowRight}');
+    await focus(canvas.getByRole('treeitem', { name: 'Alpha' }));
   },
 };
 export const Expanded: Story = {
