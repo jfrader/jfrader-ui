@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- `Menu` and its composed action menus preserve keyboard navigation without hidden, tabbable focus guards.
+
 ## 0.26.0 - 2026-11-13
 
 ### Changed

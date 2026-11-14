@@ -496,7 +496,8 @@ Overlay family contracts (Popover/Tooltip/Menu follow these):
   focus reads and scroll locks to the floating element's `ownerDocument`; disable positioning
   middleware when the surface is closed. Native `menu`/`listbox` roles need explicit item roles
   through the getters. Keep `FloatingPortal` (via `OverlayPortal`) with its default
-  `preserveTabOrder`: the focus manager depends on it. a bare custom portal is not a substitute.
+   `preserveTabOrder`, except where the family explicitly owns keyboard boundary navigation through
+   the shared portal seam (Menu). A bare custom portal is not a substitute.
 - **Initial focus:** the JSX spelling is `autoFocus` on the intended descendant; the browser's dialog
   focus algorithm honors the attribute (there is no universal "first input" guarantee). React calls
   `focus()` on mount instead of rendering the attribute, so inside a native `<dialog>` that mounts

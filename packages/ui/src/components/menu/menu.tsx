@@ -45,7 +45,6 @@ import {
 } from 'react';
 import { GeneratedRoot, type GeneratedRootProps, type GeneratedRootSlotProps } from '../../utils/generated-root';
 import {
-  FloatingFocusManager,
   FloatingList,
   useClick,
   useInteractions,
@@ -65,7 +64,7 @@ import { translucentSurfaceStyle } from '../../styling/surface';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { LayerContent, MenuLayer, useLayerDismiss } from '../../overlay/overlay-layer';
-import { OverlayPortal } from '../../overlay/overlay-portal';
+import { MenuFocusManager } from './menu-focus-manager';
 import { useOverlayFloating, type OverlayFloatingOptions } from '../../overlay/use-overlay-floating';
 import { useCollectionIndexRegistration, useCollectionListItem } from '../../utils/collection-registry';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -568,34 +567,23 @@ export function MenuContentPart({
     ariaLabelledBy !== undefined ? joinIds(ariaLabelledBy, triggerLabel) : ariaLabel !== undefined ? undefined : triggerLabel;
 
   return (
-    <OverlayPortal>
-      {/* Non-modal: no trap; Tab closes via focus-out. Focus return is explicit (see
-          requestClose) — returnFocus is off so an outside press never transiently focuses
-          the trigger. */}
-      <FloatingFocusManager
-        context={floatingContext}
-        modal={false}
-        initialFocus={-1}
-        returnFocus={false}
-        restoreFocus
-      >
-        <WithSx className={className} styles={styles} sx={sx}>
-          {(className) => (
-            <Content
-              {...floatingProps}
-              aria-label={ariaLabel}
-              aria-labelledby={labelledBy}
-              ref={mergedRef}
-              data-ui={marker}
-              style={{ ...style, ...floatingStyles }}
-              className={className}
-            >
-              <MenuCollection family={family}>{children}</MenuCollection>
-            </Content>
-          )}
-        </WithSx>
-      </FloatingFocusManager>
-    </OverlayPortal>
+    <MenuFocusManager context={floatingContext}>
+      <WithSx className={className} styles={styles} sx={sx}>
+        {(className) => (
+          <Content
+            {...floatingProps}
+            aria-label={ariaLabel}
+            aria-labelledby={labelledBy}
+            ref={mergedRef}
+            data-ui={marker}
+            style={{ ...style, ...floatingStyles }}
+            className={className}
+          >
+            <MenuCollection family={family}>{children}</MenuCollection>
+          </Content>
+        )}
+      </WithSx>
+    </MenuFocusManager>
   );
 }
 
