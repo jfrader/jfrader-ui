@@ -76,6 +76,8 @@ Packing and publishing are in `docs/releasing.md`.
 
 - `@emotion/react`, `@emotion/styled` (re-exported as the app-facing `styled`; components never use
   it), and `@floating-ui/react` (Popover, Tooltip, Menu).
+- `tabbable` owns enabled, visible tab-stop discovery for menu boundary navigation.
+- `axe-core` is development-only, for unfiltered accessibility regression scans in stories.
 - `motion` (v14.x, imported as `motion/react`).
 - `@jfrader/styling` is public API, depends on `@jfrader/tokens`, and owns the shared Emotion seam.
   Its exports and `sx` contract are documented in `packages/styling/README.md`.

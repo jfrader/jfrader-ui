@@ -272,7 +272,7 @@ importers:
         specifier: ^3.6.9
         version: 3.6.9
       '@jfrader/icons':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../icons
       '@jfrader/styling':
         specifier: workspace:*
@@ -292,6 +292,9 @@ importers:
       motion:
         specifier: ^14.1.0
         version: 14.1.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      tabbable:
+        specifier: ^6.5.0
+        version: 6.5.0
     devDependencies:
       '@emotion/cache':
         specifier: ^11.14.0
@@ -308,6 +311,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: ^6.1.2
         version: 6.1.2(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
+      axe-core:
+        specifier: ^4.14.0
+        version: 4.14.0
       next:
         specifier: ^16.4.0
         version: 16.4.0(@types/node@26.6.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)

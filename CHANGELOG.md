@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.27.0 - 2026-11-14
+
+### Added
+
+- `ThemeRoot appearance="inherit"` keeps the enclosing palette for local overlay hosts. Roots without this option still default to dark.
+
+### Fixed
+
+- `Menu` and its composed action menus preserve keyboard navigation without hidden, tabbable focus guards.
+
 ## 0.26.0 - 2026-11-13
 
 ### Changed

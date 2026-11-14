@@ -120,8 +120,14 @@ export function LightWidget() {
 ```
 
 The Card paints its own surface. `ThemeRoot` sets text color and native `color-scheme`, but paints no
-background and adds no padding. Omitting its `theme` selects **dark**, even on a light page, so pass
-the mode explicitly when nesting roots.
+background and adds no padding. Omitting both `theme` and `appearance` selects **dark**, even on a
+light page. Use `appearance="inherit"` to keep the enclosing palette, text color, and native
+`color-scheme` instead. An explicit `theme` takes precedence over `appearance="inherit"`.
+
+An inherited root keeps the same `div`, native props, ref, and `ThemeProvider`. It does not declare
+`data-theme` or palette styles. Explicit `tokens`, `style`, and `sx` still apply. The enclosing React
+theme context, when present, continues through its overlays; a DOM-only palette inherits through
+the overlay's host. Keep that host inside the same DOM scope to preserve ancestor CSS variables.
 
 ## Palettes
 
@@ -274,9 +280,26 @@ export function ShareWidget() {
 - `null`: wait for the host before rendering overlays.
 - An element: render there. Set it once; switching hosts later is unsupported.
 
+For a host that keeps its enclosing palette, use `appearance="inherit"`:
+
+```tsx
+import { useState } from 'react';
+import { Menu, ThemeRoot } from '@jfrader/ui';
+
+export function LocalMenuHost() {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  return (
+    <ThemeRoot appearance="inherit" portalContainer={host}>
+      <Menu triggerLabel="Actions" items={[{ type: 'item', label: 'Inspect' }]} />
+      <div ref={setHost} />
+    </ThemeRoot>
+  );
+}
+```
+
 Inside a native modal, place the host **inside the open dialog's DOM**. A portal under `body` sits
-outside its top layer and can be inert or hidden. For a host inside a contrast panel, give its
-`ThemeRoot` the panel's enclosing theme so the appearance carries through.
+outside its top layer and can be inert or hidden. `appearance="inherit"` keeps the enclosing panel's
+theme and contrast appearance without selecting another palette.
 
 ## Recipes
 

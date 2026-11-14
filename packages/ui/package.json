@@ -1,6 +1,6 @@
 {
   "name": "@jfrader/ui",
-  "version": "0.26.0",
+  "version": "0.27.0",
   "description": "React component library based on Emotion and CSS custom properties.",
   "keywords": [
     "react",
@@ -705,13 +705,14 @@
     "@emotion/styled": "^11.14.0",
     "@floating-ui/react": "^0.27.20",
     "@internationalized/number": "^3.6.9",
-    "@jfrader/icons": "workspace:^",
+    "@jfrader/icons": "workspace:*",
     "@jfrader/styling": "workspace:*",
     "@jfrader/tokens": "workspace:*",
     "culori": "^4.0.2",
     "decimal.js": "^10.6.0",
     "libphonenumber-js": "^1.13.15",
-    "motion": "^14.1.0"
+    "motion": "^14.1.0",
+    "tabbable": "^6.5.0"
   },
   "peerDependencies": {
     "@emotion/cache": "^11.14.0",
@@ -737,6 +738,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "axe-core": "^4.14.0",
     "next": "^16.4.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
