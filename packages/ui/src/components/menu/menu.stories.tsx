@@ -834,7 +834,7 @@ function DrawerMenuExample(props: MenuComposedProps) {
       <Drawer.Content>
         <Drawer.Title>Actions drawer</Drawer.Title>
         <Drawer.Body>
-          <ThemeRoot portalContainer={portalHost}>
+          <ThemeRoot appearance="inherit" portalContainer={portalHost}>
             <MenuExample {...props} />
             <div ref={setPortalHost} />
           </ThemeRoot>
