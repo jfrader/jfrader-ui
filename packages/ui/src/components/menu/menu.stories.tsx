@@ -121,7 +121,7 @@ export const ReplacementSlots: ShorthandStory = {
     await expect(separator).toHaveAttribute('role', 'separator');
     await expect(canvasElement.querySelector('[data-ui="menu-trigger"]:not([data-testid="replacement-trigger"])')).toBeNull();
     await expect(canvasElement.ownerDocument.querySelector('div[role="menu"]')).toBeNull();
-    await expect(item).toHaveFocus();
+    await waitFor(() => expect(item).toHaveFocus());
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(content).not.toBeInTheDocument());
     await expect(trigger).toHaveFocus();

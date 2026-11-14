@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.27.0 - 2026-11-14
+
 ### Added
 
 - `ThemeRoot appearance="inherit"` keeps the enclosing palette for local overlay hosts. Roots without this option still default to dark.

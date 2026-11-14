@@ -272,7 +272,7 @@ importers:
         specifier: ^3.6.9
         version: 3.6.9
       '@jfrader/icons':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../icons
       '@jfrader/styling':
         specifier: workspace:*
