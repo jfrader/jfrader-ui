@@ -46,7 +46,7 @@ import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { ThemeBoundary, useThemeScope } from '../../styling/theme-scope';
 import { isRenderable } from '../../utils/renderable';
-import { devWarn } from '../../utils/dev';
+import { devWarn, isDev } from '../../utils/dev';
 import { Button } from '../button';
 import { Spinner } from '../spinner';
 import { ToastStack, type ToastStackProps } from '../toast-stack/toast-stack';
@@ -368,7 +368,7 @@ function ToastProvider(props: ToastProviderProps) {
   }, []);
   const registerRenderer = useCallback(() => {
     rendererCount.current += 1;
-    if (rendererCount.current > 1)
+    if (isDev && rendererCount.current > 1)
       devWarn('Mount only one Toast queue renderer per provider.');
     return () => {
       rendererCount.current -= 1;

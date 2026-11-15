@@ -34,7 +34,7 @@ import type { SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
-import { devWarn } from '../../utils/dev';
+import { devWarn, isDev } from '../../utils/dev';
 import { useControlledState } from '../../utils/use-controlled-state';
 import {
   FieldRoot,
@@ -636,7 +636,7 @@ export function MentionInput({
   }));
 
   useLayoutEffect(() => {
-    if (mentions.length !== accepted.mentions.length)
+    if (isDev && mentions.length !== accepted.mentions.length)
       devWarn(copy.invalidValue);
   }, [accepted, copy.invalidValue, mentions.length]);
   useLayoutEffect(() => {

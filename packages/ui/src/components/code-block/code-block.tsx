@@ -24,7 +24,7 @@ import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import type { SxProps } from '../../styling/sx';
 import { withoutSx } from '../../styling/sx';
-import { devWarn } from '../../utils/dev';
+import { devWarn, isDev } from '../../utils/dev';
 import type { PresentationProps } from '../../utils/presentation-slot';
 import { SurfaceRoot } from '../surface/surface-root';
 import type { SurfaceAppearance } from '../../styling/surface';
@@ -264,7 +264,7 @@ function defaultExpandLabel(count: number, formatted: string) {
 }
 
 function warnHighlightFailure(error: unknown) {
-  devWarn('CodeBlock: highlighting failed; showing plain text.', error);
+  if (isDev) devWarn('CodeBlock: highlighting failed; showing plain text.', error);
 }
 
 interface HighlightState {
