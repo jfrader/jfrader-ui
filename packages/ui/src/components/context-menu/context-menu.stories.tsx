@@ -243,7 +243,7 @@ const meta = {
         { title: 'Customization', stories: ['CustomSlots'] },
         { title: 'Choices', stories: ['CheckboxItems'] },
         { title: 'Opening and placement', stories: ['PointerAnchor', 'KeyboardAnchor', 'VisibleTrigger', 'ViewportCorners', 'RTL'] },
-        { title: 'Scrolling', stories: ['ManyItems', 'ScrollCloses'] },
+        { title: 'Scrolling', stories: ['ManyItems', 'ScrollCloses', 'KeepOpenOnScroll'] },
         { title: 'State', stories: ['ControlledAccept', 'RejectedOpen'] },
       ],
       usage: `### When to use
@@ -253,7 +253,7 @@ Offer secondary actions for an object, such as a file or board. Keep primary act
 
 Context clicks open at the pointer; keyboard requests open below the object at its inline start. Ordinary clicks preserve the object's actions. Enable whole-object click opening only for objects without interactive children.
 
-Scrolling outside the menu or resizing the window requests closure; scrolling inside it does not. Controlled state may reject a request.
+Scrolling outside the menu or resizing the window requests closure; scrolling inside it does not. Set \`closeOnScroll={false}\` on the root to keep the menu open when another panel scrolls, including programmatic scrolling. Resize, Escape, outside press, action selection, and focus behavior remain unchanged. Controlled state may reject a request.
 
 ### Keyboard and accessibility
 
@@ -2031,6 +2031,119 @@ export const ScrollAndResize: Story = {
     await expect(bodyOf(canvasElement).getByRole('menu')).toBe(menu);
     await expect(near(menu.getBoundingClientRect().top, before.top)).toBe(true);
     await expectItemFocused(canvasElement, 'Copy link');
+  },
+};
+
+const ScrollPanel = styled.div({
+  blockSize: '6rem',
+  overflowY: 'auto',
+  border: `1px solid ${vars.color.borderControl}`,
+  padding: vars.space[3],
+});
+const ScrollPanelContent = styled.div({ minBlockSize: '30rem' });
+
+export const PanelScrollCloses: Story = {
+  tags: ['!autodocs'],
+  parameters: { layout: 'fullscreen' },
+  render: (args) => (
+    <Frame>
+      <FileRow {...args} />
+      <ScrollPanel role="region" aria-label="Inspector" tabIndex={0}>
+        <ScrollPanelContent>Object properties</ScrollPanelContent>
+      </ScrollPanel>
+    </Frame>
+  ),
+  play: async ({ args, canvasElement, userEvent }) => {
+    const target = getTarget(canvasElement);
+    const panel = within(canvasElement).getByRole('region', { name: 'Inspector' });
+    await userEvent.click(target);
+    await userEvent.keyboard('{Shift>}{F10}{/Shift}');
+    await expectItemFocused(canvasElement, 'Copy link');
+    const scrolled = fn();
+    panel.addEventListener('scroll', scrolled, { once: true });
+    panel.scrollTop = panel.scrollHeight;
+    await waitFor(() => expect(scrolled).toHaveBeenCalledOnce());
+    await expect(panel.scrollTop).toBeGreaterThan(0);
+
+    if (args.closeOnScroll !== false) {
+      await expectClosed(canvasElement);
+      await expect(callValues(args.onOpenChange)).toEqual([true, false]);
+      return;
+    }
+
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expectItemFocused(canvasElement, 'Copy link');
+    await userEvent.keyboard('{ArrowDown}');
+    await expectItemFocused(canvasElement, 'Rename');
+    await expectFocusRing(bodyOf(canvasElement).getByRole('menuitem', { name: 'Rename' }));
+    await userEvent.keyboard('{Shift>}{Tab}{/Shift}');
+    await expectActive(canvasElement, target);
+    await findMenu(canvasElement);
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expectActive(canvasElement, target);
+
+    await userEvent.keyboard('{Shift>}{F10}{/Shift}');
+    await expectItemFocused(canvasElement, 'Copy link');
+    await userEvent.click(getAfter(canvasElement));
+    await expectClosed(canvasElement);
+    await expectActive(canvasElement, getAfter(canvasElement));
+
+    await userEvent.click(target);
+    await userEvent.keyboard('{Shift>}{F10}{/Shift}');
+    await expectItemFocused(canvasElement, 'Copy link');
+    await userEvent.keyboard('{Enter}');
+    await expectClosed(canvasElement);
+    await expect(args.onCopy).toHaveBeenCalledOnce();
+    await expectActive(canvasElement, target);
+
+    await userEvent.keyboard('{Shift>}{F10}{/Shift}');
+    await findMenu(canvasElement);
+    canvasElement.ownerDocument.defaultView!.dispatchEvent(new Event('resize'));
+    await expectClosed(canvasElement);
+    await expect(callValues(args.onOpenChange)).toEqual([true, false, true, false, true, false, true, false]);
+
+    await userEvent.click(target);
+    await userEvent.keyboard('{Shift>}{F10}{/Shift}');
+    await expectItemFocused(canvasElement, 'Copy link');
+  },
+};
+
+export const KeepOpenOnScroll: Story = {
+  ...PanelScrollCloses,
+  tags: [],
+  name: 'Keep open on outside scroll',
+  args: { closeOnScroll: false },
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: { story: 'Set closeOnScroll={false} when selecting an object scrolls another panel.' },
+      source: { code: `<ContextMenu closeOnScroll={false}>
+  <ContextMenu.Target aria-label="Object actions">Object</ContextMenu.Target>
+  <ContextMenu.Content>
+    <ContextMenu.Item onSelect={() => {}}>Copy link</ContextMenu.Item>
+  </ContextMenu.Content>
+</ContextMenu>` },
+    },
+  },
+};
+
+export const ShorthandKeepOpenOnScroll: StoryObj<(props: ContextMenuShorthandProps) => ReactNode> = {
+  ...Default,
+  tags: ['!autodocs'],
+  args: { ...Default.args, closeOnScroll: false },
+  play: async ({ canvasElement, userEvent }) => {
+    const target = getTarget(canvasElement);
+    await userEvent.click(target);
+    await userEvent.keyboard('{Shift>}{F10}{/Shift}');
+    const menu = await findMenu(canvasElement);
+    canvasElement.ownerDocument.dispatchEvent(new Event('scroll'));
+    await wait(SETTLE_MS);
+    await expect(bodyOf(canvasElement).getByRole('menu')).toBe(menu);
+    await expectItemFocused(canvasElement, 'Copy link');
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expectActive(canvasElement, target);
   },
 };
 

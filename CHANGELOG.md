@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.28.0 - 2026-11-15
+
+### Added
+
+- `ContextMenu closeOnScroll={false}` keeps the menu open when another panel scrolls. The default remains `true`; resize, Escape, outside press, action selection, and focus behavior are unchanged.
+
 ## 0.27.0 - 2026-11-14
 
 ### Added
