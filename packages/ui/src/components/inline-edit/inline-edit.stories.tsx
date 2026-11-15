@@ -5,7 +5,7 @@ import {
   fieldRootStyles,
   expectFieldSlotCustomization,
 } from '../../testing/field-slot-fixtures';
-import { useState, type KeyboardEvent } from 'react';
+import { useState, type ComponentPropsWithRef, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, waitFor, within } from 'storybook/test';
@@ -16,6 +16,27 @@ import { withLightTheme } from '../../testing/story-decorators';
 import { InlineEdit, type InlineEditProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
+
+/** Compile-time consumer checks; never rendered. */
+function InlineEditControlChecks() {
+  const InputControl = (props: ComponentPropsWithRef<'input'>) => <input {...props} />;
+  const TextareaControl = (props: ComponentPropsWithRef<'textarea'>) => <textarea {...props} />;
+  const onSave = (next: string) => { void next; };
+  return (
+    <>
+      <InlineEdit label="Title" onSave={onSave} slots={{ control: InputControl }} controlProps={{ type: 'text' }} slotProps={{ control: { ref: (element) => { element?.checkValidity(); } } }} />
+      <InlineEdit multiline label="Notes" onSave={onSave} slots={{ control: TextareaControl }} controlProps={{ rows: 4 }} slotProps={{ control: { ref: (element) => { element?.rows; } } }} controlRef={(element) => { element?.rows; }} />
+      {/* @ts-expect-error single-line controls receive input props, not textarea props */}
+      <InlineEdit label="Title" onSave={onSave} slots={{ control: TextareaControl }} />
+      {/* @ts-expect-error multiline controls receive textarea props, not input props */}
+      <InlineEdit multiline label="Notes" onSave={onSave} slots={{ control: InputControl }} />
+      {/* @ts-expect-error rows is a textarea attribute, not an input attribute */}
+      <InlineEdit label="Title" onSave={onSave} controlProps={{ rows: 4 }} />
+      {/* @ts-expect-error type is an input attribute, not a textarea attribute */}
+      <InlineEdit multiline label="Notes" onSave={onSave} controlProps={{ type: 'text' }} />
+    </>
+  );
+}
 
 // Raw fixture buttons must pass the global target-size (WCAG 2.5.8) axe gate in every environment.
 const FixtureButton = styled.button({ minBlockSize: vars.space[6], minInlineSize: vars.space[6], paddingBlock: vars.space[1], paddingInline: `calc(${vars.space[5]} / 2)`, boxSizing: 'border-box' });
@@ -163,7 +184,7 @@ async function expectFocus(element: HTMLElement) {
   await expectRing(element);
 }
 
-function ControlledField(props: InlineEditProps) {
+function ControlledField<M extends boolean = false>(props: InlineEditProps<M>) {
   const [value, setValue] = useState(props.defaultValue ?? '');
   const [open, setOpen] = useState(false);
   return (
@@ -189,7 +210,7 @@ function ControlledField(props: InlineEditProps) {
 ControlledField.displayName = 'ControlledInlineEdit';
 
 /** The parent renames the value from elsewhere while the editor stays focused. */
-function ExternalValueField(props: InlineEditProps) {
+function ExternalValueField<M extends boolean = false>(props: InlineEditProps<M>) {
   const [value, setValue] = useState('Apollo');
   return (
     <>
@@ -211,7 +232,7 @@ function ExternalValueField(props: InlineEditProps) {
 ExternalValueField.displayName = 'ExternalValueInlineEdit';
 
 /** The parent can close the editor or remove the widget while a save is pending. */
-function ParentControls(props: InlineEditProps) {
+function ParentControls<M extends boolean = false>(props: InlineEditProps<M>) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(true);
   return (
@@ -238,7 +259,7 @@ function ParentControls(props: InlineEditProps) {
 ParentControls.displayName = 'ParentControlledInlineEdit';
 
 /** The parent holds each open request and applies it only when Apply is pressed. */
-function DeferredOpenField(props: InlineEditProps) {
+function DeferredOpenField<M extends boolean = false>(props: InlineEditProps<M>) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<boolean | null>(null);
   return (
@@ -271,7 +292,7 @@ function DeferredOpenField(props: InlineEditProps) {
 DeferredOpenField.displayName = 'DeferredOpenInlineEdit';
 
 /** An enclosing layer that dismisses on Escape, counting the presses it receives. */
-function EscapeLayer(props: InlineEditProps) {
+function EscapeLayer(props: InlineEditProps<boolean>) {
   const [escapes, setEscapes] = useState(0);
   const handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === 'Escape') setEscapes((count) => count + 1);
@@ -282,7 +303,7 @@ function EscapeLayer(props: InlineEditProps) {
       <InlineEdit
         {...props}
         label="Vetoed"
-        controlProps={{ onKeyDown: (event) => event.key === 'Escape' && event.preventDefault() }}
+        controlProps={{ onKeyDown: (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => event.key === 'Escape' && event.preventDefault() }}
       />
       <output data-testid="layer-escapes">{escapes}</output>
     </div>
@@ -291,7 +312,7 @@ function EscapeLayer(props: InlineEditProps) {
 EscapeLayer.displayName = 'EscapeLayerInlineEdit';
 
 /** The parent can close the editor, report a conflict or tighten validation after a failed save. */
-function RetryPolicyField(props: InlineEditProps) {
+function RetryPolicyField<M extends boolean = false>(props: InlineEditProps<M>) {
   const [open, setOpen] = useState(false);
   const [conflict, setConflict] = useState(false);
   const [requireName, setRequireName] = useState(false);
@@ -322,7 +343,7 @@ function RetryPolicyField(props: InlineEditProps) {
 RetryPolicyField.displayName = 'RetryPolicyInlineEdit';
 
 /** Renders the widget into an iframe document, the other realm a focus target can come from. */
-function FrameField(props: InlineEditProps) {
+function FrameField<M extends boolean = false>(props: InlineEditProps<M>) {
   const [body, setBody] = useState<HTMLElement | null>(null);
   return (
     <>
@@ -1466,7 +1487,7 @@ export function ProjectNames({ save }: { save: InlineEditProps['onSave'] }) {
 };
 
 /** The parent writes the saved value before the save resolves, then the save settles. */
-function OptimisticField(props: InlineEditProps & { persist: (next: string) => Promise<void> }) {
+function OptimisticField<M extends boolean = false>(props: InlineEditProps<M> & { persist: (next: string) => Promise<void> }) {
   const { persist, ...rest } = props;
   const [value, setValue] = useState('Apollo');
   return (

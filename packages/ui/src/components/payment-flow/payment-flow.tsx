@@ -14,7 +14,7 @@ import {
 import { useMergeRefs } from '@floating-ui/react';
 import { Check } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type Interpolation, type Theme } from '../../styling/css';
+import { css, type CSSObject, type Interpolation, type Theme } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
@@ -171,10 +171,10 @@ const LABEL_GAP = vars.space[2];
  * the scene, because the root also reports `data-density` and keeps the committed value while a
  * fit tries the others.
  */
-const inLayout = (layout: PaymentFlowLayout, styles: object) => ({
+const inLayout = (layout: PaymentFlowLayout, styles: CSSObject) => ({
   [densitiesWithLayout(layout).map((density) => `[data-ui~="payment-flow-scene"][data-density="${density}"] &`).join(', ')]: styles,
 });
-const vertical = (styles: object) => ({ ...inLayout('split', styles), ...inLayout('stack', styles) });
+const vertical = (styles: CSSObject) => ({ ...inLayout('split', styles), ...inLayout('stack', styles) });
 
 const rootStyle = css({
   margin: 0,

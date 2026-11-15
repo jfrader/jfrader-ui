@@ -4,6 +4,9 @@
 
 ### Changed
 
+- `ChipGroup`, `ToggleGroup` and the `SegmentedControl` shorthand infer their value union from `options`, and single-mode callbacks include the `''` clear. A computed `string` or `string[]` value can opt out with an explicit type argument, for example `<ChipGroup<string>>`.
+- `InlineEdit` correlates its control slot, `controlProps` and `controlRef` with `multiline`. The default control props are input attributes, so textarea-only attributes require `multiline`.
+- New named public types: `DeckArtProviderProps`, `DatePickerSlotProps`, `TooltipSlotProps`, and one props type per `GameTable` part.
 - Development-only diagnostics route through one `devWarn`/`devError` seam in `src/utils/dev.ts`. Production builds no longer emit them, and development output is unchanged.
 - Hook-using source modules declare their client boundary, matching the `'use client'` banner on published chunks.
 
