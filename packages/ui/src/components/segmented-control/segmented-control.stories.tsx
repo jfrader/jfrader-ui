@@ -174,10 +174,17 @@ const VIEW_OPTIONS = [
 /** Compile-time consumer checks; never rendered. */
 function SegmentedControlGenericChecks() {
   const saveView = (view: View) => view;
+  const TextareaTrack = (props: ComponentPropsWithRef<'textarea'>) => <textarea {...props} />;
   return (
     <>
       <SegmentedControl<View> options={VIEW_OPTIONS} value="list" onValueChange={saveView} aria-label="View" />
       <SegmentedControl options={VIEW_OPTIONS} onValueChange={(next) => saveView(next)} aria-label="View" />
+      <SegmentedControl options={VIEW_OPTIONS} onOptionIntent={saveView} slots={{ track: ReplacementSegmentTrack }} aria-label="View" />
+      <SegmentedControl options={VIEW_OPTIONS} onOptionIntent={(next) => saveView(next)} aria-label="View" />
+      {/* @ts-expect-error intent callbacks cannot add values absent from options */}
+      <SegmentedControl options={VIEW_OPTIONS} onOptionIntent={(next: 'board') => next} aria-label="View" />
+      {/* @ts-expect-error track replacements must forward div props, not textarea props */}
+      <SegmentedControl options={VIEW_OPTIONS} slots={{ track: TextareaTrack }} aria-label="View" />
       {/* @ts-expect-error value must be one of the options */}
       <SegmentedControl<View> options={VIEW_OPTIONS} value="board" aria-label="View" />
     </>

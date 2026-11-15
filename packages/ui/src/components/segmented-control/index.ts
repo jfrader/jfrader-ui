@@ -8,5 +8,6 @@ export type {
   SegmentedControlProps,
   SegmentedControlItemProps,
   SegmentedControlSize,
+  SegmentedControlValueProps,
   SegmentedControlVariant,
 } from './segmented-control';

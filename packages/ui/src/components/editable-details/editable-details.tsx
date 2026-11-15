@@ -162,7 +162,7 @@ export interface EditableDetailsMessages {
 /** InlineEdit props shared by every editable row. Row data and saving stay with the row. */
 export type EditableDetailsEditProps = Partial<
   Omit<
-    InlineEditProps,
+    InlineEditProps<boolean>,
     | 'value'
     | 'defaultValue'
     | 'onValueChange'
@@ -186,7 +186,7 @@ export interface EditableDetailsSlots {
   /** Replaces each item generated from a value or editable row. */
   item?: ComponentType<EditableDetailsItemProps>;
   /** Replaces the InlineEdit of each text row with `edit`; forward its props and ref. */
-  edit?: ComponentType<InlineEditProps>;
+  edit?: ComponentType<InlineEditProps<boolean>>;
 }
 
 export interface EditableDetailsSlotProps {
@@ -539,7 +539,7 @@ function EditableDetailsRoot<Context extends {} = true>(props: EditableDetailsPr
     const SectionPart = rowSlots?.section ?? EditableDetailsSection;
     const ListPart = rowSlots?.list ?? EditableDetailsList;
     const ItemPart = rowSlots?.item ?? EditableDetailsItem;
-    const EditPart = rowSlots?.edit ?? InlineEdit;
+    const EditPart: ComponentType<InlineEditProps<boolean>> = rowSlots?.edit ?? InlineEdit;
     const text: EditableDetailsMessages = { ...DEFAULT_MESSAGES, ...messages };
 
     const renderItem = (row: DetailRow<Context>) => (

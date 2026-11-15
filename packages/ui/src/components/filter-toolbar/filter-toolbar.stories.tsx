@@ -756,7 +756,7 @@ export const MultipleControls: Story = {
         {({ value, disabled, onValueChange }) => (
           <>
             <TextField label="Search" disabled={disabled} />
-            <ChipGroup
+            <ChipGroup<string>
               label="Owners"
               disabled={disabled}
               options={[{ value: 'me', label: 'Me' }]}

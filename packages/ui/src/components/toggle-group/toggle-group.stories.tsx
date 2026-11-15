@@ -3,7 +3,7 @@ import type { Meta, StoryContext, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
-import { ToggleGroup, type ToggleGroupComposedProps as ToggleGroupProps, type ToggleGroupProps as PublicToggleGroupProps, type ToggleGroupSingleProps } from './index';
+import { ToggleGroup, type ToggleGroupComposedProps as ToggleGroupProps, type ToggleGroupProps as PublicToggleGroupProps, type ToggleGroupSingleProps, type ToggleGroupOption } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 
@@ -29,6 +29,38 @@ const ARRAY_OPTIONS: readonly Option[] = [
   { value: 'a', label: 'A' },
   { value: 'b', label: 'B' },
 ];
+
+type View = 'list' | 'grid';
+const VIEW_OPTIONS: readonly ToggleGroupOption<View>[] = [
+  { value: 'list', label: 'List' },
+  { value: 'grid', label: 'Grid' },
+];
+
+/** Compile-time consumer checks; never rendered. */
+function ToggleGroupGenericChecks() {
+  const saveView = (view: View | '') => (view === '' ? 'list' : view);
+  const saveViews = (views: View[]) => views;
+  return (
+    <>
+      <ToggleGroup<View> options={VIEW_OPTIONS} value="list" onValueChange={saveView} />
+      <ToggleGroup options={VIEW_OPTIONS} onValueChange={(next) => saveView(next)} />
+      <ToggleGroup type="multiple" options={VIEW_OPTIONS} value={['grid']} onValueChange={(next) => saveViews(next)} />
+      {/* @ts-expect-error value must be inferred from options */}
+      <ToggleGroup options={VIEW_OPTIONS} value="board" />
+      {/* @ts-expect-error defaultValue must be inferred from options */}
+      <ToggleGroup options={VIEW_OPTIONS} defaultValue="board" />
+      {/* @ts-expect-error multiple values must be inferred from options */}
+      <ToggleGroup type="multiple" options={VIEW_OPTIONS} value={['board']} />
+      {/* @ts-expect-error multiple defaults must be inferred from options */}
+      <ToggleGroup type="multiple" options={VIEW_OPTIONS} defaultValue={['board']} />
+      <ToggleGroup<View> value="board" onValueChange={(next: string) => next}>
+        <ToggleGroup.Item value="board">Board</ToggleGroup.Item>
+      </ToggleGroup>
+      {/* @ts-expect-error composed children cannot promise a narrow callback */}
+      <ToggleGroup<View> onValueChange={saveView}><ToggleGroup.Item value="board">Board</ToggleGroup.Item></ToggleGroup>
+    </>
+  );
+}
 
 const Frame = styled.div({
   display: 'flex',

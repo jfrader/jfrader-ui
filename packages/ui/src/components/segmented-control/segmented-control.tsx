@@ -104,11 +104,13 @@ export interface SegmentedControlSlotProps extends NonNullable<SegmentedControlC
 export interface SegmentedControlShorthandProps<V extends string = string>
   extends Omit<
       SegmentedControlComposedProps,
-      'children' | 'options' | 'slots' | 'slotProps' | 'component' | 'value' | 'defaultValue' | 'onValueChange'
+      'children' | 'options' | 'slots' | 'slotProps' | 'component' | 'value' | 'defaultValue' | 'onValueChange' | 'onOptionIntent'
     >,
     SegmentedControlValueProps<V> {
   /** Renders segments in order using each option's value as its key. */
   options: readonly SegmentedControlOption<V>[];
+  /** Called with an enabled option's inferred value when it receives focus or pointer hover. */
+  onOptionIntent?: (value: NoInfer<V>) => void;
   /** Not accepted when `options` supplies the segments. */
   children?: never;
   /** Replaces the generated root, items, track or selection indicator. */
@@ -284,9 +286,9 @@ const MotionSelection = motion.create(SelectionSurface);
 
 type SegmentedControlRootProps<V extends string = string> = Omit<
   SegmentedControlComposedProps,
-  'value' | 'defaultValue' | 'onValueChange'
+  'value' | 'defaultValue' | 'onValueChange' | 'onOptionIntent'
 > &
-  SegmentedControlValueProps<V>;
+  SegmentedControlValueProps<V> & Pick<SegmentedControlShorthandProps<V>, 'onOptionIntent'>;
 
 function SegmentedControlRoot<V extends string = string>({
   rootElement: Root = 'div',
@@ -403,7 +405,7 @@ function SegmentedControlRoot<V extends string = string>({
       tabStop,
       disabled,
       variant,
-      onOptionIntent,
+      onOptionIntent: onOptionIntent as SegmentedControlComposedProps['onOptionIntent'],
       selection: slotProps?.selection,
       selectionComponent: slots?.selection,
       reducedMotion,
