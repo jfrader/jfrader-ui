@@ -430,6 +430,10 @@ const errorStyle = css({
   color: vars.color.dangerText,
 });
 
+const focusScrollOptions: ScrollIntoViewOptions & { container: 'nearest' } = {
+  block: 'nearest', inline: 'nearest', container: 'nearest', behavior: 'instant',
+};
+
 const contentStyle = css({
   ...raisedSurface,
   display: 'grid',
@@ -440,6 +444,7 @@ const contentStyle = css({
   boxShadow: vars.shadow.overlay,
   padding: vars.space[4],
   overflow: 'auto',
+  scrollPadding: vars.space[4],
   overscrollBehavior: 'contain',
   ...floatingSurfaceMotion,
   '&[data-layout="rail"]': {
@@ -606,6 +611,7 @@ function DateRangePickerLayer({
   const { refs, floatingStyles, context } = useOverlayFloating({
     open,
     placement: PLACEMENT,
+    strategy: 'fixed',
     shiftCrossAxis: false,
     nodeId,
     boundary,
@@ -1101,6 +1107,19 @@ function DateRangePickerPanel({
     [contentRef],
   );
   const mergedRef = useMergeRefs([refs.setFloating, ref, setContentNode, presenceRef]);
+  useLayoutEffect(() => {
+    const surface = contentRef.current;
+    const view = surface?.ownerDocument.defaultView;
+    if (!surface || !view || closing) return;
+    const observer = new ResizeObserver(() => {
+      const active = surface.ownerDocument.activeElement;
+      if (active instanceof view.HTMLElement && surface.contains(active)) {
+        active.scrollIntoView(focusScrollOptions);
+      }
+    });
+    observer.observe(surface);
+    return () => observer.disconnect();
+  }, [contentRef, availableSize, closing]);
   // The trigger's effective direction, which the portal would otherwise lose. Read after the
   // trigger attaches: a surface open on mount renders before the trigger's ref is set.
   const triggerNode = floatingContext.elements.domReference;

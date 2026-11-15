@@ -435,7 +435,7 @@ export const NestedDismissal: StoryObj = {
     <>
       <Popover defaultOpen>
         <Popover.Trigger>Parent</Popover.Trigger>
-        <Popover.Content aria-label="Parent">
+        <Popover.Content aria-label="Parent" closeOnFocusOut={false}>
           <Tooltip triggerLabel="Nested help" content="Fruit help" openDelay={0} />
         </Popover.Content>
       </Popover>

@@ -43,6 +43,7 @@ import { triggerStyle } from '../../styling/trigger-style';
 import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
+import { useFloatingTabOrder } from '../../overlay/use-floating-tab-order';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 export interface PopoverBaseProps {
@@ -102,7 +103,10 @@ export interface PopoverShorthandProps extends Omit<PopoverBaseProps, 'children'
 export type PopoverProps = PopoverComposedProps | PopoverShorthandProps;
 
 export interface PopoverTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {}
-export interface PopoverContentProps extends ComponentPropsWithRef<'div'>, SxProps {}
+export interface PopoverContentProps extends ComponentPropsWithRef<'div'>, SxProps {
+  /** Close when focus leaves the panel and trigger. Defaults to `true`. */
+  closeOnFocusOut?: boolean;
+}
 
 type OverlayFloating = ReturnType<typeof useOverlayFloating>;
 
@@ -235,23 +239,25 @@ function PopoverTrigger({ ref, className, sx, ...props }: PopoverTriggerProps) {
 
 PopoverTrigger.displayName = 'Popover.Trigger';
 
-function PopoverContent({ ref, style, className, sx, ...rest }: PopoverContentProps) {
+function PopoverContent({ ref, style, className, sx, closeOnFocusOut = true, ...rest }: PopoverContentProps) {
   const { open, refs, floatingContext, floatingStyles, getFloatingProps, slots } = usePopoverContext('Content');
   const Root = slots?.content ?? 'div';
   const mergedRef = useMergeRefs([refs.setFloating, ref]);
+  useFloatingTabOrder(floatingContext, { enabled: open, closeOnFocusOut });
 
   if (!open) return null;
 
   return (
-    <OverlayPortal>
+    <OverlayPortal preserveTabOrder={false}>
       {/* Non-modal: keeps the page's tab order across the portal (Tab reaches the content),
           while suppressing initial focus, the trap and automatic focus return. */}
       <FloatingFocusManager
         context={floatingContext}
         modal={false}
+        guards={false}
         initialFocus={-1}
         returnFocus={false}
-        closeOnFocusOut={false}
+        closeOnFocusOut={closeOnFocusOut}
       >
         <WithSx className={className} styles={contentStyle} sx={sx}>
           {(className) => (

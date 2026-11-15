@@ -38,12 +38,12 @@ const headingStyle = {
   fontSize: vars.textSize.md,
 } satisfies CSSProperties;
 
-function ThemedPopover({ label, ...props }: PopoverBaseProps & { label: string }) {
+function ThemedPopover({ label, closeOnFocusOut, ...props }: PopoverBaseProps & { label: string; closeOnFocusOut?: boolean }) {
   const headingId = useId();
   return (
     <Popover {...props}>
       <Popover.Trigger>{label}</Popover.Trigger>
-      <Popover.Content aria-labelledby={headingId}>
+      <Popover.Content aria-labelledby={headingId} closeOnFocusOut={closeOnFocusOut}>
         <h2 id={headingId} style={headingStyle}>
           {`${label} details`}
         </h2>
@@ -252,7 +252,7 @@ export function ShareSection() {
     await expect(ownerDocument.activeElement).toBe(within(popover).getByRole('button', { name: 'Share action' }));
     await userEvent.tab();
     await expect(ownerDocument.activeElement).toBe(canvas.getByRole('button', { name: 'After' }));
-    await expect(popover).toBeVisible();
+    await waitFor(() => expect(popover).not.toBeInTheDocument());
   },
 };
 
@@ -263,8 +263,8 @@ export const NestedOverlayKeyboard: Story = {
       <div style={rowStyle}>
         <Popover>
           <Popover.Trigger>Outer</Popover.Trigger>
-          <Popover.Content aria-label="Outer details">
-            <ThemedPopover label="Inner" />
+          <Popover.Content aria-label="Outer details" closeOnFocusOut={false}>
+            <ThemedPopover label="Inner" closeOnFocusOut={false} />
             <Button>After inner</Button>
           </Popover.Content>
         </Popover>

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Added
+
+- `Popover.Content closeOnFocusOut={false}` keeps the panel open when focus leaves. By default, leaving the panel and trigger now dismisses it without returning focus.
+
+### Fixed
+
+- `UserMenu.Identity` wraps long names and email addresses, including at enlarged text sizes.
+- Desktop `UserMenu` and `Popover` preserve keyboard entry and exit without hidden, tabbable focus guards.
+- `DateRangePicker` uses viewport-relative positioning and keeps focused controls in its scroll viewport when the panel resizes.
+
 ### Changed
 
 - Development-only diagnostics route through one `devWarn`/`devError` seam in `src/utils/dev.ts`. Production builds no longer emit them, and development output is unchanged.
