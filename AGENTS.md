@@ -37,6 +37,7 @@ or calling them passes.
 | `pnpm og:image` | Generate tokens and icons, then regenerate the Open Graph share card (`apps/storybook/public/og-image.png`) |
 | `pnpm test` | Generate tokens and icons, then run Storybook's test suites |
 | `pnpm typecheck` | Generate tokens and icons, then typecheck every package |
+| `pnpm lint` | Run oxlint with the repo config: hook order, the styling seam, `any`, dead bindings, and console diagnostics outside `src/utils/dev.ts` |
 | `pnpm verify:docs` | Check component documentation coverage; also runs before the Storybook build |
 | `pnpm verify:api` | Check sx-only public styling types, slot props, and authored examples |
 | `pnpm verify:slots` | Check that every replacement key a family declares is rendered |
@@ -106,7 +107,8 @@ Packing and publishing are in `docs/releasing.md`.
   that document.
 - `typescript-compiler` (an alias of TypeScript 5.9) is development-only, for the customization
   inventory. TypeScript 7 remains the typecheck command.
-- Any other dependency requires updating this file first.
+- `oxlint` is development-only, for the `pnpm lint` gate in CI. It is pinned to one version because
+  rule defaults move between minor releases. Any other dependency requires updating this file first.
 
 ## Generated files
 

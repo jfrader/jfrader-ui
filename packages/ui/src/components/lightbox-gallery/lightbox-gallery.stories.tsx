@@ -234,11 +234,15 @@ export const ToolbarSlots: Story = {
     slots: { controls: SlotControls, status: SlotStatus },
     slotProps: {
       controls: {
+        // The spread bypasses excess-property checking: Slot<'div'> declares no data-* keys,
+        // and this fixture asserts the attribute reaches the slot.
+        // oxlint-disable-next-line unicorn/no-useless-spread
         ...{ 'data-ui': 'lightbox-gallery-controls' },
         id: 'lightbox-slot-controls',
         className: 'custom-lightbox-controls',
       },
       status: {
+        // oxlint-disable-next-line unicorn/no-useless-spread
         ...{ 'data-ui': 'lightbox-gallery-status' },
         id: 'lightbox-slot-status',
         className: 'custom-lightbox-status',

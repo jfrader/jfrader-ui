@@ -1,0 +1,109 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "import", "unicorn", "oxc"],
+  "rules": {
+    // The hook-order contract the repo documents in SKILL.md section 2.
+    "react/rules-of-hooks": "error",
+    // Destructuring to keep a prop out of `...rest` is this library's idiom.
+    "no-unused-vars": [
+      "error",
+      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "ignoreRestSiblings": true }
+    ],
+    // SKILL.md type contracts: never `any`.
+    "@typescript-eslint/no-explicit-any": "error",
+    // SKILL.md styling seam and motion rules, enforced instead of reviewed.
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          { "name": "framer-motion", "message": "Import from 'motion/react'; see SKILL.md." }
+        ],
+        "patterns": [
+          {
+            "group": ["@emotion/react", "@emotion/react/*"],
+            "message": "Import the styling seam (packages/ui/src/styling/css.ts) instead of @emotion/react."
+          },
+          {
+            "group": ["@emotion/styled", "@emotion/styled/*"],
+            "message": "Components never use styled(). App-facing styled comes from @jfrader/styling."
+          }
+        ]
+      }
+    ],
+    // Diagnostics go through src/utils/dev.ts so production builds stay silent.
+    "no-console": "error",
+    "no-debugger": "error",
+    "no-self-assign": "error",
+    "no-control-regex": "error",
+    "no-sparse-arrays": "error",
+    "no-useless-escape": "error",
+    "import/default": "error",
+    "import/named": "error",
+    "unicorn/no-thenable": "error",
+    "unicorn/no-useless-spread": "error",
+    "unicorn/prefer-string-starts-ends-with": "error",
+    "typescript/triple-slash-reference": "error",
+    // False positive: a prop forwarded to a child component reads as recursive-only.
+    "oxc/only-used-in-recursion": "off",
+
+    // React Compiler analysis: real signal, but 240 existing findings make it a
+    // refactor campaign of its own, not a gate. Revisit as its own issue.
+    "react/refs": "off",
+    "react/set-state-in-effect": "off",
+    "react/immutability": "off",
+    "react/purity": "off",
+    "react/preserve-manual-memoization": "off",
+    "react/void-use-memo": "off",
+    "react/use-memo": "off",
+    // 127 findings across hooks that intentionally read latest props through refs.
+    "react-hooks/exhaustive-deps": "off",
+    // False positives: `'use client'` is a directive, and this library passes
+    // children through adapter props by design.
+    "no-unused-expressions": "off",
+    "react/no-children-prop": "off"
+  },
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/src/generated/**",
+    "**/storybook-static/**",
+    "graphify-out/**",
+    "**/*.d.ts"
+  ],
+  "overrides": [
+    {
+      "files": ["packages/ui/src/styling/css.ts", "packages/ui/src/styling/styled.ts", "packages/styling/src/**"],
+      "rules": { "no-restricted-imports": "off" }
+    },
+    {
+      "files": ["apps/storybook/.storybook/**", "apps/storybook/showcase/Styling.stories.tsx"],
+      "rules": { "no-restricted-imports": "off" }
+    },
+    {
+      // Story render functions are anonymous by design, and story files carry
+      // deliberate compile-time fixtures (`@ts-expect-error` type aliases,
+      // `*GenericChecks` functions) that are never referenced at runtime.
+      "files": ["**/*.stories.tsx", "**/*.stories.ts"],
+      "rules": {
+        "react/rules-of-hooks": "off",
+        "no-console": "off",
+        "no-unused-vars": "off",
+        // Vite `?raw` imports have a default string export the resolver cannot see.
+        "import/default": "off"
+      }
+    },
+    {
+      // Workbench chrome logs to the console and loads fixtures through `?raw`.
+      "files": ["apps/storybook/**"],
+      "rules": { "no-console": "off", "import/default": "off" }
+    },
+    {
+      "files": ["scripts/**", "packages/*/scripts/**", "**/*.test.mjs", "**/*.test.ts", "**/*.browser.test.mjs"],
+      "rules": { "no-console": "off" }
+    },
+    {
+      "files": ["packages/ui/src/utils/dev.ts"],
+      "rules": { "no-console": "off" }
+    }
+  ]
+}

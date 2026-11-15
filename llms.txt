@@ -48,6 +48,7 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 - pnpm build: generate tokens and build static Storybook
 - pnpm test: generate tokens and run Storybook browser tests
 - pnpm typecheck: generate tokens and typecheck every package
+- pnpm lint: check hook order, the styling seam, any, dead bindings, and production diagnostics
 - pnpm verify:docs: check component documentation coverage
 - pnpm verify:icons: check icon sources, generated output, and metadata
 - pnpm verify:api: check sx-only public styling types, slot props and authored examples

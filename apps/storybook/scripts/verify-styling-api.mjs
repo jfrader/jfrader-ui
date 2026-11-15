@@ -74,7 +74,7 @@ export function checkStylingApi(source, filename = 'component.tsx', { snippet = 
         code = value.head.text + value.templateSpans.map((span) => `placeholder${span.literal.text}`).join('');
       if (code) errors.push(...checkStylingApi(code, `${filename} source.code`, { snippet: true }));
     }
-    if (!snippet && /\.stories\.tsx$/.test(filename) && (ts.isPropertyAssignment(node) || ts.isShorthandPropertyAssignment(node)) && ['usage', 'description'].includes(name(node.name))) {
+    if (!snippet && filename.endsWith('.stories.tsx') && (ts.isPropertyAssignment(node) || ts.isShorthandPropertyAssignment(node)) && ['usage', 'description'].includes(name(node.name))) {
       let ancestor = node.parent;
       while (ancestor && !(ts.isPropertyAssignment(ancestor) && name(ancestor.name) === 'docs')) ancestor = ancestor.parent;
       function prose(value, seen = new Set()) {

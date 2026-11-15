@@ -158,6 +158,9 @@ export function Avatar({
       {(className) => (
         <span {...rest} ref={ref} data-ui="avatar" role="img" aria-label={label} className={className}>
           {showImage ? (
+            // `children` and `dangerouslySetInnerHTML` are pinned to undefined so a
+            // consumer slot cannot leak them onto the generated image.
+            // oxlint-disable-next-line react/no-danger-with-children
             <Image
               {...withoutSx(slotProps?.image)}
               src={src}

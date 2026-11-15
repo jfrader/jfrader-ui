@@ -18,7 +18,6 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..'
 const storybookApp = path.join(repoRoot, 'apps', 'storybook');
 const docsApp = path.join(repoRoot, 'apps', 'docs');
 const published = path.join(storybookApp, 'storybook-static');
-const workbench = path.join(published, 'storybook');
 
 // One entry point for both build paths: CI and local builds produce the workbench only; the deploy
 // (DOCS_BUILD=1) builds it once under /storybook/ and adds the docs front. Never build it twice.

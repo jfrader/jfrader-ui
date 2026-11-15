@@ -30,7 +30,7 @@ export function describePhone(value: string, country: PhoneCountryCode | null): 
 export function editPhone(text: string, country: PhoneCountryCode | null) {
   if (!text.trim()) return { value: '', country, international: false };
   // parseIncompletePhoneNumber deliberately drops punctuation; reject unsupported content first.
-  if ([...text].some((character) => !/[\s()+.\-]/.test(character) && !parseIncompletePhoneNumber(character)) || (text.includes('+') && !text.trimStart().startsWith('+')) || (text.match(/\+/g)?.length ?? 0) > 1) return null;
+  if ([...text].some((character) => !/[\s()+.-]/.test(character) && !parseIncompletePhoneNumber(character)) || (text.includes('+') && !text.trimStart().startsWith('+')) || (text.match(/\+/g)?.length ?? 0) > 1) return null;
   const international = text.trimStart().startsWith('+');
   if (!international && !country) return null;
   const formatter = new AsYouType(international ? undefined : country ?? undefined);

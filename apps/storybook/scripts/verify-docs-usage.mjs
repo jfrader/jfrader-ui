@@ -40,7 +40,7 @@ export function checkUsage(source, fileName = 'component.stories.tsx') {
   if (tags.includes('!autodocs')) return [];
   const component = property(meta, 'component');
   const name = component?.name ?? component?.property?.name ?? '';
-  const provider = /Provider$/.test(name) || name === 'ThemeRoot';
+  const provider = name.endsWith('Provider') || name === 'ThemeRoot';
   const nullChildren = property(property(meta, 'args'), 'children')?.type === 'NullLiteral';
   if (!provider && !nullChildren) return [];
   const code = authoredSource(meta);

@@ -793,6 +793,8 @@ export const ThrowingThenable: Story = {
   play: async ({ args, canvasElement }) => {
     const failure = new Error('broken thenable');
     const writeText = fn(() => ({
+      // A thenable that throws on settlement is the behavior under test.
+      // oxlint-disable-next-line unicorn/no-thenable
       then() {
         throw failure;
       },
@@ -813,6 +815,7 @@ export const RejectingThenable: Story = {
     const failure = new Error('rejected thenable');
     // Settles more than once and both ways; only the first settlement counts.
     const writeText = fn(() => ({
+      // oxlint-disable-next-line unicorn/no-thenable
       then(_onFulfilled: () => void, onRejected: (reason: unknown) => void) {
         onRejected(failure);
         onRejected(new Error('second rejection'));

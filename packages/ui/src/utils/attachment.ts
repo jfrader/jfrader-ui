@@ -6,6 +6,8 @@ import { numberFormatter } from './intl';
  * spaces, backslashes, and other protocols (such as javascript:) return undefined.
  */
 export function safeUrl(url: string | undefined): string | undefined {
+  // Control characters and spaces are rejected on purpose; this is the sanitizer.
+  // oxlint-disable-next-line no-control-regex
   if (!url || /[\u0000-\u0020\u007f\\]/u.test(url)) return undefined;
   try {
     return ['http:', 'https:', 'blob:'].includes(new URL(url, 'https://attachments.invalid/').protocol)
