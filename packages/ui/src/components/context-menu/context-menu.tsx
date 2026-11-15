@@ -19,8 +19,8 @@
 // Disabled items stay visible with aria-disabled="true" and are skipped by arrows and typeahead
 // (deliberate deviation from APG's focusable-disabled recommendation, shared with Menu). A menu
 // without enabled items focuses its own container, so Escape and Tab still work.
-// Scrolling outside the menu or resizing the window asks once to close it (the anchor is a fixed
-// point); scrolling inside the menu does not.
+// Scrolling outside the menu (unless closeOnScroll is false) or resizing the window asks once to
+// close it (the anchor is a fixed point); scrolling inside the menu does not.
 import {
   type ComponentType,
   createContext,
@@ -107,6 +107,8 @@ export type ContextMenuSeparatorAction = {
 export type ContextMenuAction = ContextMenuItemAction | ContextMenuSeparatorAction;
 
 export interface ContextMenuStateProps {
+  /** Closes the menu when content outside it scrolls. Defaults to `true`. Resize still closes it. */
+  closeOnScroll?: boolean;
   /** Controls whether the menu is open. */
   open?: boolean;
   /** Opens the uncontrolled menu initially. Defaults to `false`. */
@@ -347,9 +349,11 @@ const checkGlyph = <Check size="inherit" decorative />;
 
 function ContextMenuScope({
   available,
+  closeOnScroll,
   children,
 }: {
   available: OverlayAvailableSize | undefined;
+  closeOnScroll: boolean;
   children?: ReactNode;
 }) {
   const { open, refs, requestOpen, requestClose } = useMenuContext(FAMILY, 'Root');
@@ -400,13 +404,13 @@ function ContextMenuScope({
       requested = true;
       dismissOnViewportChange();
     };
-    document.addEventListener('scroll', handleChange, { capture: true, passive: true });
+    if (closeOnScroll) document.addEventListener('scroll', handleChange, { capture: true, passive: true });
     view?.addEventListener('resize', handleChange);
     return () => {
       document.removeEventListener('scroll', handleChange, { capture: true });
       view?.removeEventListener('resize', handleChange);
     };
-  }, [open, refs, dismissOnViewportChange]);
+  }, [open, refs, dismissOnViewportChange, closeOnScroll]);
 
   const value = useMemo<ContextMenuContextValue>(
     () => ({
@@ -435,6 +439,7 @@ function ContextMenuRoot(props: ContextMenuProps) {
   const Item = props.slots?.item ?? ContextMenuItem;
   const Separator = props.slots?.separator ?? ContextMenuSeparator;
   const { open: _open, defaultOpen: _defaultOpen, onOpenChange: _onOpenChange,
+    closeOnScroll = true,
     children: _children, targetLabel: _targetLabel, items: _items, content: _content,
     openOnClick: _openOnClick, disabled: _disabled, slotProps: _slotProps, slots: _slots,
     component: _component, ...rootProps } = props;
@@ -460,7 +465,7 @@ function ContextMenuRoot(props: ContextMenuProps) {
       placement="bottom-start"
       positioning={positioning}
     >
-      <ContextMenuScope available={available}>
+      <ContextMenuScope available={available} closeOnScroll={closeOnScroll}>
         {props.items !== undefined ? (
           <GeneratedRoot {...rootProps} component={props.slots?.root ?? props.component} rootSlot={props.slotProps?.root} marker="context-menu-root">
             <Target
