@@ -1,3 +1,5 @@
+'use client';
+
 import { useLayoutEffect, useRef, useState } from 'react';
 import { AUTO_SEAT_PLACEMENT_MAX_INLINE_SIZE, fitBoardContent, GAME_TABLE_LIMITS, type BoardContentSize, type BoardMeasurements } from './fit-layout';
 

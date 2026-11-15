@@ -19,6 +19,7 @@ import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { devWarn } from '../../utils/dev';
 import { dateTimeFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { CIVIL_DATE_FORMAT_OPTIONS, dateFromIso, isIsoDate } from '../calendar/calendar.utils';
@@ -199,7 +200,6 @@ export type ActivityRingsProps = Omit<
     hideLegend?: boolean;
   };
 
-declare const process: { env: { NODE_ENV?: string } };
 const DEFAULT_LABELS = {
   root: 'Activity',
   days: 'Day',
@@ -821,11 +821,10 @@ export function ActivityRings({
 
   useEffect(() => {
     if (
-      process.env.NODE_ENV !== 'production' &&
-      (metrics.some((metric) => !metric.id) ||
-        new Set(metrics.map((metric) => metric.id)).size !== metrics.length)
+      metrics.some((metric) => !metric.id) ||
+      new Set(metrics.map((metric) => metric.id)).size !== metrics.length
     ) {
-      console.warn('ActivityRings: metric ids must be nonempty and unique.');
+      devWarn('ActivityRings: metric ids must be nonempty and unique.');
     }
   }, [metrics]);
 

@@ -1,6 +1,6 @@
-import { withoutSx } from '../../styling/sx';
 'use client';
 
+import { withoutSx } from '../../styling/sx';
 // Semantics: a named `section` (region) around a Card surface. Comments are native lists
 // (`role="list"` keeps list semantics under `list-style: none` in WebKit) of items that each hold an
 // `article` named by its author and `<time>` and described by the full localized date; deleted
@@ -43,6 +43,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type SerializedStyles } from '../../styling/css';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import type { SxProps } from '../../styling/sx';
+import { devError, isDev } from '../../utils/dev';
 import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { partId } from '../../utils/part-id';
@@ -287,9 +288,6 @@ interface FocusReturn {
   /** Comment to recover around when the target is gone too. */
   commentId: string | null;
 }
-
-// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
-declare const process: { env: { NODE_ENV?: string } };
 
 const UI = 'comment-thread';
 const ROOT_COMPOSER = 'root';
@@ -743,8 +741,8 @@ export function CommentThread({
     ...(index.cyclic ? ['CommentThread: a comment appears among its own replies; the repeat is not shown.'] : []),
   ].join('\n');
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production' || diagnostics === '') return;
-    console.error(diagnostics);
+    if (!isDev || diagnostics === '') return;
+    devError(diagnostics);
   }, [diagnostics]);
 
   const handleFocus = (event: FocusEvent<HTMLElement>) => {

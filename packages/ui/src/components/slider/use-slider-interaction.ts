@@ -1,3 +1,5 @@
+'use client';
+
 // Shared numeric, pointer, keyboard and form engine behind every slider skin (Slider,
 // skins). The skin owns rendering and visual feedback; this module owns the value lattice,
 // the controlled/uncontrolled authority, gestures, key handling and commit semantics.

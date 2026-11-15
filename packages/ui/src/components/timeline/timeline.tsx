@@ -38,6 +38,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { withoutSx, type SxProps } from '../../styling/sx';
+import { devError, isDev } from '../../utils/dev';
 import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import {
@@ -192,9 +193,6 @@ interface Anchor {
   id: string;
   top: number;
 }
-
-// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
-declare const process: { env: { NODE_ENV?: string } };
 
 const INVALID_GROUP_KEY = 'invalid';
 const EMPTY_IDS: readonly string[] = [];
@@ -568,8 +566,8 @@ export function Timeline({
     ...(duplicateIds.length > 0 ? [`Timeline: duplicate event ids ${JSON.stringify(duplicateIds)}.`] : []),
   ].join('\n');
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production' || diagnostics === '') return;
-    console.error(diagnostics);
+    if (!isDev || diagnostics === '') return;
+    devError(diagnostics);
   }, [diagnostics]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {

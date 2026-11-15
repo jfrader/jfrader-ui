@@ -1,3 +1,5 @@
+'use client';
+
 // APG pattern: native checkbox. Space toggles it, the label is part of the click target,
 // and state is exposed through the native checked property plus aria-checked="mixed"
 // while `indeterminate` is set. `indeterminate` is controlled: clear the prop to leave

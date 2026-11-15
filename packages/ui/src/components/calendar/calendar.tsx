@@ -1,3 +1,5 @@
+'use client';
+
 // APG pattern: the calendar grid of the date picker dialog example
 // (https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/).
 // Calendar.Grid is a role="grid" table: one row per week, a gridcell per day holding a day

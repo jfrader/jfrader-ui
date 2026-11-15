@@ -22,6 +22,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { devWarn, isDev } from '../../utils/dev';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
@@ -219,9 +220,6 @@ export class SignatureExportError extends Error {
     this.name = 'SignatureExportError';
   }
 }
-
-// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
-declare const process: { env: { NODE_ENV?: string } };
 
 // Ids only need to be unique within one value; the random part keeps new strokes apart from persisted ones.
 // `getRandomValues` works on insecure origins, unlike `randomUUID`.
@@ -728,11 +726,11 @@ export function SignaturePad({
 
   const warnedValue = useRef<SignatureStroke[] | null>(null);
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production') return;
+    if (!isDev) return;
     if (isValid(current)) warnedValue.current = null;
     else if (warnedValue.current === null || !equal(warnedValue.current, current)) {
       warnedValue.current = current;
-      console.warn(
+      devWarn(
         'SignaturePad: value contains malformed strokes; invalid samples are skipped when drawing and exports reject with an "invalid" SignatureExportError.',
       );
     }
@@ -898,6 +896,8 @@ export function SignaturePad({
       try {
         const link = doc.createElement('a');
         link.href = url;
+        // Control characters are stripped from the download name on purpose.
+        // oxlint-disable-next-line no-control-regex
         link.download = `${fileName.replace(/[\\/\u0000-\u001f:*?"<>|]/g, '_') || 'signature'}.${format}`;
         link.click();
         setStatus(messages.exported);

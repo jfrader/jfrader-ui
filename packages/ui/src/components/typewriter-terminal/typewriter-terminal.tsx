@@ -1,5 +1,6 @@
-import { withoutSx } from '../../styling/sx';
 'use client';
+
+import { withoutSx } from '../../styling/sx';
 import { numberFormatter } from '../../utils/intl';
 
 import {

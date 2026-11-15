@@ -1,6 +1,6 @@
-import { withoutSx } from '../../styling/sx';
 'use client';
 
+import { withoutSx } from '../../styling/sx';
 // Semantics: one `role="img"` root per card, named by `label`; the rank mark, the suit glyph and the
 // suit watermarks are presentational children, so a screen reader hears the playing card once, in the
 // consumer's own words. A face-down card omits built-in rank, suit and deck data; consumer artwork

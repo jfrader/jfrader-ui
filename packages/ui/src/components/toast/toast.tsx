@@ -1,3 +1,5 @@
+'use client';
+
 // Toast notifications. The APG has no toast pattern (checked 2026-10-10); this follows the APG
 // Alert pattern and the ARIA live-region roles instead:
 // - Each toast's text-only message is a live region: `role="status"` (polite) or
@@ -44,14 +46,13 @@ import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { ThemeBoundary, useThemeScope } from '../../styling/theme-scope';
 import { isRenderable } from '../../utils/renderable';
+import { devWarn } from '../../utils/dev';
 import { Button } from '../button';
 import { Spinner } from '../spinner';
 import { ToastStack, type ToastStackProps } from '../toast-stack/toast-stack';
 import { TOAST_VIEWPORT_INLINE_SIZE } from './toast-layout';
 export { TOAST_VIEWPORT_INLINE_SIZE } from './toast-layout';
 
-// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
-declare const process: { env: { NODE_ENV?: string } };
 
 export type ToastTone = 'neutral' | 'success' | 'danger' | 'info' | 'warning';
 
@@ -367,8 +368,8 @@ function ToastProvider(props: ToastProviderProps) {
   }, []);
   const registerRenderer = useCallback(() => {
     rendererCount.current += 1;
-    if (process.env.NODE_ENV !== 'production' && rendererCount.current > 1)
-      console.warn('Mount only one Toast queue renderer per provider.');
+    if (rendererCount.current > 1)
+      devWarn('Mount only one Toast queue renderer per provider.');
     return () => {
       rendererCount.current -= 1;
     };

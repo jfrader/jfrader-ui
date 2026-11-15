@@ -1,6 +1,6 @@
-import { withoutSx } from '../../styling/sx';
 'use client';
 
+import { withoutSx } from '../../styling/sx';
 // APG horizontal single/multi-thumb slider: arrows, Shift+arrows, PageUp/Down,
 // Home/End. Horizontal arrows mirror in RTL; Up/PageUp always increase.
 // Commit reports the completed request, not controlled-parent acceptance.

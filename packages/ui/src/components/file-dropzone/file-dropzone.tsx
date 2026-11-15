@@ -1,3 +1,5 @@
+'use client';
+
 import { withoutSx } from '../../styling/sx';
 import {
   useEffect,

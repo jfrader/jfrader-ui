@@ -31,6 +31,7 @@ import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { translucentSurfaceStyle } from '../../styling/surface';
 import { isRenderable } from '../../utils/renderable';
+import { isDev, devWarn } from '../../utils/dev';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
 import { Card } from '../card';
@@ -188,7 +189,6 @@ export interface CardStackProps<T>
   slots?: CardStackSlots;
 }
 
-declare const process: { env: { NODE_ENV?: string } };
 const EMPTY_HISTORY: readonly CardStackDecision[] = [];
 const DEFAULT_GESTURE = {
   distanceRatio: 0.35,
@@ -687,17 +687,17 @@ export function CardStack<T>({
     return () => query.removeEventListener('change', update);
   }, []);
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production') return;
+    if (!isDev) return;
     if (unique.length !== entries.length)
-      console.warn('CardStack: item keys must be unique; using the first occurrence.');
+      devWarn('CardStack: item keys must be unique; using the first occurrence.');
     if (history.length !== (rawHistory?.length ?? 0))
-      console.warn('CardStack: invalid or duplicate history entries were ignored.');
+      devWarn('CardStack: invalid or duplicate history entries were ignored.');
     if (visibleCount !== windowSize)
-      console.warn('CardStack: visibleCount must be an integer from 1 to 8.');
+      devWarn('CardStack: visibleCount must be an integer from 1 to 8.');
     for (const key of Object.keys(DEFAULT_GESTURE) as (keyof typeof DEFAULT_GESTURE)[]) {
       const n = gesture?.[key];
       if (n !== undefined && (!Number.isFinite(n) || n < 0))
-        console.warn(
+        devWarn(
           `CardStack: gesture.${key} must be finite and nonnegative; using the default.`,
         );
     }

@@ -1,3 +1,5 @@
+'use client';
+
 // APG pattern: date picker combobox with a dialog popup
 // (https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-datepicker/).
 // DatePicker.Input is a read-only TextField whose <input> carries role="combobox",

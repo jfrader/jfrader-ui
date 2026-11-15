@@ -71,10 +71,8 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { useNativeDialog, useNativeDialogRoot } from '../../overlay/use-native-dialog';
 import { isRenderable } from '../../utils/renderable';
+import { devWarn } from '../../utils/dev';
 import { useControlledState } from '../../utils/use-controlled-state';
-
-// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
-declare const process: { env: { NODE_ENV?: string } };
 
 export type DialogStackVariant = 'auto' | 'sheet' | 'dialog';
 type ResolvedVariant = Exclude<DialogStackVariant, 'auto'>;
@@ -566,7 +564,7 @@ function joinIds(...ids: (string | false | undefined)[]) {
 }
 
 function warn(message: string) {
-  if (process.env.NODE_ENV !== 'production') console.warn(`DialogStack: ${message}`);
+  devWarn(`DialogStack: ${message}`);
 }
 
 /** Known keys only, first occurrence wins. */

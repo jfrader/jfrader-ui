@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Development-only diagnostics route through one `devWarn`/`devError` seam in `src/utils/dev.ts`; production builds no longer emit them, and development output is unchanged.
+- Hook-using source modules declare their client boundary, matching the `'use client'` banner on published chunks.
+
 ## 0.28.0 - 2026-11-15
 
 ### Added

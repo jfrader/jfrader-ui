@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';

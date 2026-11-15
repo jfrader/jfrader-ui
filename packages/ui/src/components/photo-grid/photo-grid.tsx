@@ -1,6 +1,6 @@
-import { withoutSx } from '../../styling/sx';
 'use client';
 
+import { withoutSx } from '../../styling/sx';
 import {
   memo,
   useCallback,
@@ -29,6 +29,7 @@ import { css, keyframes, type Interpolation, type Theme } from '../../styling/cs
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION, REDUCED_TRANSPARENCY } from '../../styling/media';
 import type { SxProps } from '../../styling/sx';
+import { isDev } from '../../utils/dev';
 import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
@@ -275,8 +276,6 @@ export interface PhotoGridProps<P extends PhotoGridPhoto = PhotoGridPhoto>
   /** Replace gallery, product, cover-flow, and viewer elements. */
   slots?: PhotoGridSlots;
 }
-
-declare const process: { env: { NODE_ENV?: string } };
 
 const DEFAULT_STEPS = [5, 3, 2] as const;
 const DEFAULT_DENSITY = 3;
@@ -1372,7 +1371,7 @@ export function PhotoGrid<P extends PhotoGridPhoto = PhotoGridPhoto>({
   const previewOrigin = useTransform([previewOriginX, previewOriginY], ([ox, oy]) => `${ox} ${oy}`);
   const densityIndex = steps.indexOf(density);
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (isDev) {
     const seen = new Set<string>();
     for (const photo of photos) {
       if (seen.has(photo.id)) throw new Error('PhotoGrid: photo IDs must be unique.');

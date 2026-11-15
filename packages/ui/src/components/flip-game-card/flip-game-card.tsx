@@ -1,6 +1,6 @@
-import { withoutSx } from '../../styling/sx';
 'use client';
 
+import { withoutSx } from '../../styling/sx';
 import { useEffect, useState, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { MotionConfig, useReducedMotion } from 'motion/react';
 import { vars } from '@jfrader/tokens/vars';

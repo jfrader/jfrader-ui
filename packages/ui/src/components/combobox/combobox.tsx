@@ -1,3 +1,5 @@
+'use client';
+
 // APG pattern: editable combobox with listbox popup and explicit-commit list autocomplete.
 // Highlighting does not commit a value; aria-selected tracks the committed value only.
 // Combobox.Input is a TextField whose <input> carries role="combobox",

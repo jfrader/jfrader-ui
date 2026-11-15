@@ -1,3 +1,5 @@
+'use client';
+
 // APG pattern: combobox (list autocomplete) inside a modal dialog. The Input is a
 // role="combobox" text input with aria-autocomplete="list", aria-controls and (while an option
 // is active) aria-activedescendant; the List is a role="listbox" of role="option" items,
@@ -60,6 +62,7 @@ import {
   type CollectionRegistration,
 } from '../../utils/collection-registry';
 import { isRenderable } from '../../utils/renderable';
+import { devWarn, isDev } from '../../utils/dev';
 import { useControlledState } from '../../utils/use-controlled-state';
 import {
   dialogStyle,
@@ -72,7 +75,6 @@ import {
   panelStyle,
 } from './command-palette.styles';
 
-declare const process: { env: { NODE_ENV?: string } };
 const DEFAULT_LABEL = 'Command palette';
 const DEFAULT_EMPTY_MESSAGE = 'No results';
 const RESULT_PLURALS = new Intl.PluralRules('en');
@@ -452,10 +454,8 @@ function CommandPaletteOverlay<T extends CommandPaletteItemRecord = CommandPalet
       ...hostRest
     } = props;
 
-    if (process.env.NODE_ENV !== 'production') {
-      if (component && slots?.root && component !== slots.root) {
-        console.warn('CommandPalette: component is redundant when slots.root is supplied; slots.root wins.');
-      }
+    if (isDev && component && slots?.root && component !== slots.root) {
+      devWarn('CommandPalette: component is redundant when slots.root is supplied; slots.root wins.');
     }
 
     const TriggerPart = slots?.trigger ?? CommandPaletteTrigger;

@@ -1,3 +1,5 @@
+'use client';
+
 // APG pattern: menu button. The trigger exposes aria-haspopup="menu", aria-expanded and (while
 // open) aria-controls; the menu is labelled by the trigger. Items use real DOM focus with a
 // roving tabindex.

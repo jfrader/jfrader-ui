@@ -1,3 +1,5 @@
+'use client';
+
 // Internal field anatomy shared by the field components: root, label with required marker,
 // description and error parts plus their id wiring. Not exported from the package index; each
 // component keeps its own control element and control styles.

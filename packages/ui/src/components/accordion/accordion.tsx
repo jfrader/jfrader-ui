@@ -1,3 +1,5 @@
+'use client';
+
 // APG pattern: accordion. Each Trigger is a native <button> inside an <h3> heading, with
 // aria-expanded and aria-controls pointing at its Panel; each Panel is a role="region"
 // labelled by its Trigger. The heading level is fixed at h3 — consumers must place the

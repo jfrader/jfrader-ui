@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useRef, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { Close, Search } from '@jfrader/icons';

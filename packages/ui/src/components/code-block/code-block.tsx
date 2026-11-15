@@ -1,4 +1,3 @@
-import { withoutSx } from '../../styling/sx';
 'use client';
 
 // Syntax highlighting is opt-in through `highlight`, a loader that returns tokenized lines. This
@@ -24,6 +23,8 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import type { SxProps } from '../../styling/sx';
+import { withoutSx } from '../../styling/sx';
+import { devWarn } from '../../utils/dev';
 import type { PresentationProps } from '../../utils/presentation-slot';
 import { SurfaceRoot } from '../surface/surface-root';
 import type { SurfaceAppearance } from '../../styling/surface';
@@ -262,10 +263,8 @@ function defaultExpandLabel(count: number, formatted: string) {
   return `Show all ${formatted} ${englishPluralRules.select(count) === 'one' ? 'line' : 'lines'}`;
 }
 
-// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
-declare const process: { env: { NODE_ENV?: string } };
 function warnHighlightFailure(error: unknown) {
-  if (process.env.NODE_ENV !== 'production') console.warn('CodeBlock: highlighting failed; showing plain text.', error);
+  devWarn('CodeBlock: highlighting failed; showing plain text.', error);
 }
 
 interface HighlightState {

@@ -1,3 +1,5 @@
+'use client';
+
 // APG pattern: switch (native checkbox input with role="switch"). Space toggles it,
 // the label is part of the click target, and state is exposed through the native
 // checked property. The thumb position and track color change together, so state is
