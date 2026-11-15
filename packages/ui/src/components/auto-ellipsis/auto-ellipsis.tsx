@@ -1,3 +1,5 @@
+'use client';
+
 // Single-line text cut to a real string ending in `…`, sized to the root's content box.
 // Measurement: canvas `measureText` with the root's computed font, plus its letter and word
 // spacing, binary-searched over grapheme boundaries (`fitText`). It runs in a layout effect and

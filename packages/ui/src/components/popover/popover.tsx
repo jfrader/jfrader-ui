@@ -1,3 +1,5 @@
+'use client';
+
 // Non-modal popover with dialog semantics (role="dialog", no aria-modal), positioned by
 // @floating-ui/react and portaled to the body (or the ThemeRoot's `portalContainer`).
 // Keyboard map: Enter/Space on the trigger toggles; Escape closes; Tab moves through the

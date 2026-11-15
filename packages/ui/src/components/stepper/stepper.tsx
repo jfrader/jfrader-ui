@@ -1,3 +1,5 @@
+'use client';
+
 // Ordered-flow indicator. No dedicated APG pattern exists: a native <ol> keeps list position, the
 // current step carries aria-current="step", and every state is spelled out in each step's name.
 // Static mode is a labelled group; interactive mode is a labelled <nav> whose steps are native

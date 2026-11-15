@@ -1,5 +1,6 @@
-import { withoutSx } from '../../styling/sx';
 'use client';
+
+import { withoutSx } from '../../styling/sx';
 
 // Presentational end-of-match panel. Exposes `outcome` (`'won' | 'lost' | 'draw'`) as data.
 // Sets `data-outcome` and `data-tone` (success | danger | neutral) for styling; consumers own

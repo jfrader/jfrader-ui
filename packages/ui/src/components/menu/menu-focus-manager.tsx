@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, type ReactElement } from 'react';
 import { FloatingFocusManager, type FloatingContext } from '@floating-ui/react';
 import { focusable, tabbable } from 'tabbable';

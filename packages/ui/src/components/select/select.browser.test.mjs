@@ -852,7 +852,6 @@ for (const branch of ['hidden-branch-child', 'outer-alone']) {
   test(`${branch} permits outer trusted Escape and normal focus return`, async () => {
     await withStory(`surfaces-dialog--${branch}-escape`, async page => {
       await observeRetainedNativeEvents(page);
-      const opener = page.getByRole('button', { name: 'Open outer', exact: true });
       const outer = page.locator('dialog[data-escape-owner="outer"]');
       await page.waitForFunction(() => document.querySelector('dialog[data-escape-owner="outer"]')?.open);
       if (branch === 'hidden-branch-child') {

@@ -41,13 +41,12 @@ import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
+import { devWarn, isDev } from '../../utils/dev';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button/button';
 import { controlBlockSize } from '../../styling/control-size';
 import { FieldError } from '../field/field-anatomy';
 import { InlineEdit, type InlineEditProps } from '../inline-edit';
-
-declare const process: { env: { NODE_ENV?: string } };
 
 export type EditableDetailsHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -503,10 +502,8 @@ function EditableDetailsRoot<Context extends {} = true>(props: EditableDetailsPr
     ...restProps
   } = props;
 
-  if (process.env.NODE_ENV !== 'production') {
-    if (component && slots?.root && component !== slots.root) {
-      console.warn('EditableDetails: component is redundant when slots.root is supplied; slots.root wins.');
-    }
+  if (isDev && component && slots?.root && component !== slots.root) {
+    devWarn('EditableDetails: component is redundant when slots.root is supplied; slots.root wins.');
   }
 
   const RootPart = slots?.root ?? component ?? 'div';

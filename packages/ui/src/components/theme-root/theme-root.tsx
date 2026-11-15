@@ -1,3 +1,5 @@
+'use client';
+
 import { useContext, useMemo, useRef, type ComponentPropsWithRef, type ReactNode } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { themeTokenStyle, type ThemeTokens } from '../../styling/create-theme';

@@ -1,3 +1,5 @@
+'use client';
+
 // APG patterns: a button opening a non-modal dialog
 // (https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/examples/datepicker-dialog/) whose
 // month grids use the grid pattern with multi-selection (aria-multiselectable, aria-selected

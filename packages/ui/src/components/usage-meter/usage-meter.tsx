@@ -21,6 +21,7 @@ import { motionDurationMs } from '../../styling/motion-timings';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
+import { devWarn, isDev } from '../../utils/dev';
 import { useControlledState } from '../../utils/use-controlled-state';
 import {
   createUsageFormats,
@@ -143,7 +144,6 @@ export interface UsageMeterProps
   };
 }
 
-declare const process: { env: { NODE_ENV?: string } };
 const DEFAULT_LABELS: UsageMeterLabels = {
   free: 'Free',
   near: 'Near limit',
@@ -601,16 +601,16 @@ export function UsageMeter({
   }, [state, summary.over, statusText, announceChanges, unitText, summary.free]);
   useEffect(() => {
     if (
-      process.env.NODE_ENV !== 'production' &&
+      isDev &&
       (segments.some((segment) => !segment.id) ||
         new Set(segments.map((segment) => segment.id)).size !== segments.length)
     ) {
-      console.warn('UsageMeter: segment ids must be nonempty and unique.');
+      devWarn('UsageMeter: segment ids must be nonempty and unique.');
     }
   }, [segments]);
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'production' && valid && !hasLabel && !ariaLabel && !labelledBy) {
-      console.warn('UsageMeter: the meter needs an accessible name (label, ariaLabel, or labelledBy).');
+    if (isDev && valid && !hasLabel && !ariaLabel && !labelledBy) {
+      devWarn('UsageMeter: the meter needs an accessible name (label, ariaLabel, or labelledBy).');
     }
   }, [valid, hasLabel, ariaLabel, labelledBy]);
   useLayoutEffect(() => {

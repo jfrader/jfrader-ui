@@ -1,3 +1,5 @@
+// Local ambient types for `culori`; the triple-slash reference is intentional.
+// oxlint-disable-next-line typescript/triple-slash-reference
 /// <reference path="./culori.d.ts" />
 import {
   blend,

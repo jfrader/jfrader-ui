@@ -647,10 +647,12 @@ ${mentionExampleData}
     await expect(input.ownerDocument.activeElement).toBe(input);
     // Resync the synthetic keyboard's value tracker after a native insertion. Real
     // browser keys are checked separately; this unchanged input must not notify twice.
+    // oxlint-disable-next-line no-self-assign
     (input as HTMLTextAreaElement).value = (input as HTMLTextAreaElement).value;
     await userEvent.keyboard('#{Tab}');
     await expect(input).toHaveValue('@Ada #design ');
     await expect(args.onMentionAdd).toHaveBeenCalledTimes(2);
+    // oxlint-disable-next-line no-self-assign
     (input as HTMLTextAreaElement).value = (input as HTMLTextAreaElement).value;
     await userEvent.keyboard('@ ');
     await expect(input).toHaveValue('@Ada #design @ ');

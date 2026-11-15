@@ -1,3 +1,5 @@
+'use client';
+
 // APG pattern: dialog (modal), built on native <dialog> + showModal(). The top layer makes
 // the rest of the page inert and traps focus; close() returns focus to the element that was
 // focused before opening (normally the Trigger).
@@ -14,8 +16,6 @@
 //
 // Lifecycle contract (Root owns logical `open`, Content owns native state): see
 // `overlay/use-native-dialog.ts`.
-'use client';
-
 import {
   Children,
   Fragment,
@@ -59,6 +59,7 @@ import {
 } from '../../overlay/use-native-dialog';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { isRenderable } from '../../utils/renderable';
+import { devWarn, isDev } from '../../utils/dev';
 
 export type DialogScroll = 'paper' | 'body';
 
@@ -235,7 +236,6 @@ const DialogPanelContext = createContext<{
   panelRef: RefObject<HTMLDivElement | null>;
 } | null>(null);
 
-declare const process: { env: { NODE_ENV?: string } };
 
 function useDialogContext(part: string): DialogContextValue {
   const context = useContext(DialogContext);
@@ -595,8 +595,8 @@ function dialogPanelChildren(children: ReactNode) {
   const direct = directChildren(children);
   const panels = direct.filter((child) => isValidElement(child) && child.type === DialogPanel);
   if (panels.length === 0) return <DialogPanel>{children}</DialogPanel>;
-  if (process.env.NODE_ENV !== 'production' && (panels.length !== 1 || direct.length !== 1)) {
-    console.warn('Dialog.Content: use one direct Dialog.Panel child, optionally inside fragments, without substantive siblings.');
+  if (isDev && (panels.length !== 1 || direct.length !== 1)) {
+    devWarn('Dialog.Content: use one direct Dialog.Panel child, optionally inside fragments, without substantive siblings.');
   }
   return children;
 }

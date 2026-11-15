@@ -1,3 +1,5 @@
+'use client';
+
 // A group of native toggle buttons (`aria-pressed`) inside a labelled `role="group"`, with
 // the toolbar keyboard model from the APG: the group is a single tab stop whose roving
 // tabindex sits on the focused item, falling back to the first pressed item and then to the

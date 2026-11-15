@@ -18,14 +18,13 @@ import { css } from '../../styling/css';
 import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import type { SxProps } from '../../styling/sx';
+import { isDev, devWarn } from '../../utils/dev';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useLatestCallback } from '../../utils/use-latest-callback';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { useReducedMotion } from '../../utils/use-reduced-motion';
 import { Button } from '../button';
 import { FieldSlot, type FieldElementProps } from '../field/field-slot';
-
-declare const process: { env: { NODE_ENV?: string } };
 
 export interface GravityWellItem {
   id: string;
@@ -292,13 +291,11 @@ export function GravityWell<T extends GravityWellItem = GravityWellItem>({
     return () => media.removeEventListener('change', update);
   }, []);
 
-  if (process.env.NODE_ENV !== 'production') {
-    if (component && slots?.root) {
-      console.warn('GravityWell: component is redundant when slots.root is supplied; slots.root wins.');
-    }
-    if (items.length > 60) {
-      console.warn('GravityWell: item count exceeds 60; rendering static list without animations.');
-    }
+  if (isDev && component && slots?.root) {
+    devWarn('GravityWell: component is redundant when slots.root is supplied; slots.root wins.');
+  }
+  if (isDev && items.length > 60) {
+    devWarn('GravityWell: item count exceeds 60; rendering static list without animations.');
   }
 
   const [value, setValue] = useControlledState(
@@ -360,12 +357,12 @@ export function GravityWell<T extends GravityWellItem = GravityWellItem>({
 
   // Detect interactive content inside tiles in dev mode
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'production' && fieldRef.current) {
+    if (isDev && fieldRef.current) {
       const interactiveChild = fieldRef.current.querySelector(
         'a, button, input, select, textarea, [tabindex]:not([data-ui="gravity-well-field"])',
       );
       if (interactiveChild) {
-        console.warn('GravityWell: tiles must not contain interactive or focusable elements.');
+        devWarn('GravityWell: tiles must not contain interactive or focusable elements.');
       }
     }
   }, [items]);

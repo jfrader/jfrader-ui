@@ -1,3 +1,5 @@
+'use client';
+
 import { useId, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';

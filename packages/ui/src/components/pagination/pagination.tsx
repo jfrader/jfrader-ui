@@ -1,3 +1,5 @@
+'use client';
+
 // Pattern: a labelled <nav> landmark around a list of native buttons (no APG composite widget,
 // so no roving tabindex: every enabled button is a Tab stop; Enter/Space activate natively).
 // The current page button carries aria-current="page". Previous/Next use the native `disabled`

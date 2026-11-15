@@ -44,6 +44,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
+import { devWarn, isDev } from '../../utils/dev';
 import { numberFormatter } from '../../utils/intl';
 import { moveRovingFocus, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -483,7 +484,7 @@ export function Carousel({
   const indicatorId = (index: number) => `${baseId}-tab-${index}`;
 
   useEffect(() => {
-    if (!Number.isFinite(rawIndex)) console.warn(`Carousel: value ${rawIndex} is not a finite index; showing the first slide.`);
+    if (isDev && !Number.isFinite(rawIndex)) devWarn(`Carousel: value ${rawIndex} is not a finite index; showing the first slide.`);
   }, [rawIndex]);
 
   useEffect(() => {

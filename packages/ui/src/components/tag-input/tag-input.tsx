@@ -32,6 +32,7 @@ import { inputControlStyle } from '../../styling/input-control';
 import { COARSE_POINTER, FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import type { SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { devWarn, isDev } from '../../utils/dev';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import {
@@ -148,9 +149,6 @@ const EMPTY_TOKENS: readonly string[] = [];
 const DRAFT_MIN_INLINE_SIZE = '8ch';
 
 const trim = (draft: string) => draft.trim();
-
-// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
-declare const process: { env: { NODE_ENV?: string } };
 
 /** Entries that break the list contract: empty, not normalized, or a duplicate of an earlier entry. */
 const invalidTokens = (tokens: readonly string[], normalize: (draft: string) => string, collator: Intl.Collator) =>
@@ -411,13 +409,13 @@ export function TagInput({
 
   const warnedTokens = useRef<string | null>(null);
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production') return;
+    if (!isDev) return;
     const invalid = invalidTokens(tokens, normalize, collator);
     const warning =
       invalid.length > 0
         ? `TagInput: tokens must be unique, nonempty and normalized; invalid entries: ${JSON.stringify(invalid)}`
         : null;
-    if (warning !== null && warning !== warnedTokens.current) console.warn(warning);
+    if (warning !== null && warning !== warnedTokens.current) devWarn(warning);
     warnedTokens.current = warning;
   }, [tokens, normalize, collator]);
 

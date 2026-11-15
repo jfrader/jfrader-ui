@@ -18,10 +18,9 @@ import {
   useThemeScope,
 } from '../../styling/theme-scope';
 import { WithSx } from '../../styling/sx';
+import { devWarn, isDev } from '../../utils/dev';
 import type { SurfacePartProps, SurfaceProps, SurfaceVariant } from './surface';
 import type { PresentationProps } from '../../utils/presentation-slot';
-
-declare const process: { env: { NODE_ENV?: string } };
 
 const material = css({ ...raisedSurface, borderRadius: vars.radius.lg });
 const shadows = {
@@ -40,7 +39,7 @@ export function resolveSurfaceValue<T extends string>(
   fallback: T,
 ): T {
   if (value === undefined || allowed.includes(value)) return value ?? fallback;
-  if (process.env.NODE_ENV !== 'production') console.warn(`${owner}: invalid ${name}. Using ${fallback}.`);
+  if (isDev) devWarn(`${owner}: invalid ${name}. Using ${fallback}.`);
   return fallback;
 }
 
@@ -125,26 +124,23 @@ export function SurfaceRoot<T extends SurfaceElement = 'div'>({
   const node = useRef<HTMLElementTagNameMap[T]>(null);
   const ref = useMergeRefs([node, internalRef, merged.ref]);
 
-  if (process.env.NODE_ENV !== 'production') {
-    if (previousRoot.current !== Root) {
-      console.warn(
-        `${owner}: root component identity changed (component/slots.root). Inline component functions remount the panel and reset focus and form state. Declare the component outside render.`,
-      );
-    }
-    if (component && slots?.root && component !== slots.root) {
-      console.warn(`${owner}: component is redundant when slots.root is supplied; slots.root wins.`);
-    }
+  if (isDev && previousRoot.current !== Root) {
+    devWarn(
+      `${owner}: root component identity changed (component/slots.root). Inline component functions remount the panel and reset focus and form state. Declare the component outside render.`,
+    );
+  }
+  if (isDev && component && slots?.root && component !== slots.root) {
+    devWarn(`${owner}: component is redundant when slots.root is supplied; slots.root wins.`);
   }
   useEffect(() => {
     previousRoot.current = Root;
-    if (process.env.NODE_ENV !== 'production') {
-      if (!node.current || node.current.localName !== nativeElement) {
-        console.warn(nativeElement === 'div'
-          ? `${owner}: root must forward its ref to one HTMLDivElement. Missing or non-div root registration.`
-          : `${owner}: root must forward its ref to one ${nativeElement} element. Missing or mismatched root registration.`);
-      } else if (containerRef && !containerRef.current?.contains(node.current)) {
-        console.warn(`${owner}: root must remain inside its owning shell or stage.`);
-      }
+    if (!isDev) return;
+    if (!node.current || node.current.localName !== nativeElement) {
+      devWarn(nativeElement === 'div'
+        ? `${owner}: root must forward its ref to one HTMLDivElement. Missing or non-div root registration.`
+        : `${owner}: root must forward its ref to one ${nativeElement} element. Missing or mismatched root registration.`);
+    } else if (containerRef && !containerRef.current?.contains(node.current)) {
+      devWarn(`${owner}: root must remain inside its owning shell or stage.`);
     }
   });
 

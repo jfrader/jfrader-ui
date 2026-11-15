@@ -8,6 +8,7 @@ import { css } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
 import { WithSx, withoutSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
+import { devWarn, isDev } from '../../utils/dev';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { useLatestCallback } from '../../utils/use-latest-callback';
 import { CardFlights } from '../card-flights';
@@ -23,7 +24,6 @@ import { PersonAvatar } from '../person-avatar';
 import type { FlightOutcome, TableFlightEvent } from '../flights/types';
 import { useFlightSurface } from '../flights/flight-provider';
 
-declare const process: { env: { NODE_ENV?: string } };
 
 /** One card on the community board. */
 export interface PokerTableCard {
@@ -423,7 +423,7 @@ function PokerTableContent({
       .find(node => node.dataset.slotPlayer === event.from);
     const from = seat?.querySelector<HTMLElement>('[data-ui~="game-seat"]');
     const to = potRef.current?.querySelector<HTMLElement>('[data-ui="game-chip-stack"]') ?? potRef.current;
-    if (!players.some(player => player.key === event.from) && process.env.NODE_ENV !== 'production') console.warn(`PokerTable: unknown player key "${event.from}".`);
+    if (isDev && !players.some(player => player.key === event.from)) devWarn(`PokerTable: unknown player key "${event.from}".`);
     const supported = event.to === undefined || event.to === 'pot';
     const result = supported && from && to && Number.isFinite(event.amount) && event.amount > 0
       ? send({ from, to, chips: potChips(event.amount, denominations), size: 'sm', locale })

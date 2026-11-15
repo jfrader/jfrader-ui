@@ -140,6 +140,7 @@ Run from the repo root. Node 22.12 or later.
 | `pnpm dev` | Generate tokens and start Storybook on port 6006 |
 | `pnpm test` | Generate tokens and run the browser tests |
 | `pnpm typecheck` | Generate tokens and typecheck every package |
+| `pnpm lint` | Check hook order, the styling seam, `any`, dead bindings, and production diagnostics |
 | `pnpm build` | Generate tokens and build static Storybook |
 | `pnpm --filter @jfrader/docs dev` | Start the docs site on port 5173 |
 

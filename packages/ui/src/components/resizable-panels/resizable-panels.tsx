@@ -48,6 +48,7 @@ import { css } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { devWarn, isDev } from '../../utils/dev';
 import { numberFormatter } from '../../utils/intl';
 import { partId } from '../../utils/part-id';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -154,7 +155,6 @@ export interface ResizablePanelsPanelProps extends ComponentPropsWithRef<'div'>,
   collapsible?: boolean;
 }
 
-declare const process: { env: { NODE_ENV?: string } };
 const DEFAULT_MIN_SIZE = 80;
 const KEY_STEP = 16;
 const LARGE_KEY_STEP = 64;
@@ -545,10 +545,8 @@ function ResizablePanelsRoot(props: ResizablePanelsProps) {
     ...rest
   } = props;
 
-  if (process.env.NODE_ENV !== 'production') {
-    if (component && slots?.root && component !== slots.root) {
-      console.warn('ResizablePanels: component is redundant when slots.root is supplied; slots.root wins.');
-    }
+  if (isDev && component && slots?.root && component !== slots.root) {
+    devWarn('ResizablePanels: component is redundant when slots.root is supplied; slots.root wins.');
   }
 
   const baseId = useId();

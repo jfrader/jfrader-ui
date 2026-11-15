@@ -1,3 +1,5 @@
+'use client';
+
 // Display primitive for a view with nothing to show yet: an empty list, a search with no matches,
 // first-run content. Not an APG widget: a section holding a decorative icon, a real heading, an
 // optional description and caller-owned actions (native Tab order, native activation).

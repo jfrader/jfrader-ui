@@ -10,6 +10,7 @@ Start Storybook with `pnpm dev` and open each story at `http://localhost:6006`.
 | Command | Gate |
 | --- | --- |
 | `pnpm typecheck` | Generate tokens and typecheck every workspace package, including `apps/pilot`. |
+| `pnpm lint` | Check hook order, the styling seam, `any`, dead bindings, and console diagnostics outside `src/utils/dev.ts`. CI runs it after typecheck. |
 | `pnpm test` | Generate tokens and run Storybook play tests in headless Chromium. The axe gate fails the run on violations in the `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22a`, `wcag22aa`, and `best-practice` rules (`a11y.test: 'error'`). |
 | `pnpm --filter @jfrader/storybook exec vitest run --project=storybook --maxWorkers=2 <story-file>` | One story file against the same axe gate. |
 | `pnpm verify:exports` | Every public component folder has a subpath export, and every source export target exists. It does not validate built artifacts or root-index coverage. |

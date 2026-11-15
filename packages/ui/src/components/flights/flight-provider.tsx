@@ -2,10 +2,9 @@
 
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react';
 import { useLatestCallback } from '../../utils/use-latest-callback';
+import { devWarn, isDev } from '../../utils/dev';
 import { useFlightQueue } from './use-flight-queue';
 import type { FlightEvent, FlightEventInput, FlightHandle, FlightId, FlightOutcome, Flights } from './types';
-
-declare const process: { env: { NODE_ENV?: string } };
 
 type SurfaceKind = 'cards' | 'chips';
 interface PendingRequest {
@@ -51,7 +50,7 @@ export function FlightProvider({ children, onBusyChange }: FlightProviderProps) 
       if (count) registrations.current.set(kind, count);
       else {
         registrations.current.delete(kind);
-        for (const id of [...pending.current.keys()]) settle(id, { status: 'cancelled' }, kind);
+        for (const id of pending.current.keys()) settle(id, { status: 'cancelled' }, kind);
       }
     };
   }, [settle]);
@@ -66,7 +65,7 @@ export function FlightProvider({ children, onBusyChange }: FlightProviderProps) 
     const missing = required ? !registrations.current.has(required) : registrations.current.size === 0;
     if (missing) {
       const command = { deal: 'deal()', transfer: 'sendChips()', resync: 'resync()' }[event.kind];
-      if (process.env.NODE_ENV !== 'production') console.warn(`FlightProvider: ${command} has no registered ${required ?? 'flight'} surface. Render its surface inside this FlightProvider before triggering motion.`);
+      if (isDev) devWarn(`FlightProvider: ${command} has no registered ${required ?? 'flight'} surface. Render its surface inside this FlightProvider before triggering motion.`);
       finish(handle.id, { status: 'skipped', reason: 'not-ready' });
     }
     return handle;

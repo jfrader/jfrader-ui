@@ -104,4 +104,6 @@ export const OVERRIDE_GROUPS: readonly OverrideGroup[] = ORDER.map((name) => ({
 
 // A token group added to the palette must be listed above; `pnpm typecheck` fails otherwise.
 type MissingGroups = Exclude<OverrideGroupName, (typeof ORDER)[number]>;
+// Compile-time assertion only; the value is never read at runtime.
+// oxlint-disable-next-line no-unused-vars
 const groupsAreComplete: MissingGroups extends never ? true : ['missing group', MissingGroups] = true;

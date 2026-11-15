@@ -34,6 +34,7 @@ import type { SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
+import { devWarn } from '../../utils/dev';
 import { useControlledState } from '../../utils/use-controlled-state';
 import {
   FieldRoot,
@@ -175,7 +176,6 @@ export interface MentionInputProps
 }
 
 const EMPTY_VALUE: MentionValue = { text: '', mentions: [] };
-declare const process: { env: { NODE_ENV?: string } };
 const SYMBOL: Record<MentionKind, string> = { person: '@', channel: '#' };
 const POPUP_GAP = 8;
 const VIEWPORT_PADDING = 8;
@@ -636,8 +636,8 @@ export function MentionInput({
   }));
 
   useLayoutEffect(() => {
-    if (mentions.length !== accepted.mentions.length && process.env.NODE_ENV !== 'production')
-      console.warn(copy.invalidValue);
+    if (mentions.length !== accepted.mentions.length)
+      devWarn(copy.invalidValue);
   }, [accepted, copy.invalidValue, mentions.length]);
   useLayoutEffect(() => {
     const input = textRef.current;

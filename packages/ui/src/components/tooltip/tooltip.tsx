@@ -1,3 +1,5 @@
+'use client';
+
 // APG pattern: tooltip. The trigger is described by the tooltip (`aria-describedby`, wired by
 // useRole while open). Opens on hover after `openDelay` and immediately on keyboard focus
 // (focus-visible); closes on unhover after `closeDelay`, on blur, and on Escape.

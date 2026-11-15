@@ -38,6 +38,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { withoutSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { devError, isDev } from '../../utils/dev';
 import { numberFormatter } from '../../utils/intl';
 import { PresentationSlot, repeatedTemplate, type PresentationProps } from '../../utils/presentation-slot';
 import { isRenderable } from '../../utils/renderable';
@@ -208,9 +209,6 @@ interface FocusRecord {
   key: LinearTimelineKey;
   index: number;
 }
-
-// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
-declare const process: { env: { NODE_ENV?: string } };
 
 const DEFAULT_MIN_ITEM_SIZE = '12rem';
 const DEFAULT_MARKER_ITEM_SIZE = vars.size.touch;
@@ -717,8 +715,8 @@ export function LinearTimeline<T>(props: LinearTimelineProps<T>) {
     ...(missingKey ? ['LinearTimeline: items without an `id` need `getKey`; falling back to positions.'] : []),
   ].join('\n');
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production' || diagnostics === '') return;
-    console.error(diagnostics);
+    if (!isDev || diagnostics === '') return;
+    devError(diagnostics);
   }, [diagnostics]);
 
   const minItem = minItemSize ?? (markersOnly ? DEFAULT_MARKER_ITEM_SIZE : DEFAULT_MIN_ITEM_SIZE);
