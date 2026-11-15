@@ -37,6 +37,7 @@ import {
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
+import { clamp } from '../../utils/clamp';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useImageStatus } from '../../utils/use-image-status';
 import { Filmstrip, ViewerHeader, ViewerToolbar } from './lightbox-gallery-chrome';
@@ -350,9 +351,6 @@ interface ReturnFlight {
 
 function joinIds(...ids: (string | undefined | false)[]) {
   return ids.filter(Boolean).join(' ') || undefined;
-}
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
 }
 function validPositive(value: number, fallback: number) {
   return Number.isFinite(value) && value > 0 ? value : fallback;

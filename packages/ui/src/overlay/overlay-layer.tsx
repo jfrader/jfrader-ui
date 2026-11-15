@@ -58,14 +58,30 @@ function useTopmostEscape(context: LayerContext, enabled: boolean): ElementProps
   }, [enabled, tree, nodeId]);
 }
 
+/** Extra policy for one layer; a custom predicate narrows the default outside-press behavior. */
+export interface LayerDismissOptions {
+  /** Turns dismissal off for this layer, for example while its control is disabled. */
+  enabled?: boolean;
+  /** Keep the layer open for presses this predicate rejects. */
+  outsidePress?: UseDismissProps['outsidePress'];
+}
+
 /** Escape and outside-press dismissal for one layer; pass the result into `useInteractions`. */
-export function useLayerDismiss(context: LayerContext, kind: LayerKind): ElementProps[] {
+export function useLayerDismiss(
+  context: LayerContext,
+  kind: LayerKind,
+  options: LayerDismissOptions = {},
+): ElementProps[] {
   const floating = context.elements.floating;
   useLayoutEffect(() => {
     if (context.open && floating) return registerOpenLayer(floating);
   }, [context.open, floating]);
   const topmostEscape = useTopmostEscape(context, kind === 'container');
-  const dismiss = useDismiss(context, LAYER_DISMISS[kind]);
+  const dismiss = useDismiss(context, {
+    ...LAYER_DISMISS[kind],
+    ...(options.enabled === undefined ? {} : { enabled: options.enabled }),
+    ...(options.outsidePress === undefined ? {} : { outsidePress: options.outsidePress }),
+  });
   return [topmostEscape, dismiss];
 }
 

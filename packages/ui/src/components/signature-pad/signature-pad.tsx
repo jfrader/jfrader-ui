@@ -22,6 +22,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { clamp } from '../../utils/clamp';
 import { devWarn, isDev } from '../../utils/dev';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -269,7 +270,6 @@ function isValid(strokes: SignatureStroke[]) {
 function validate(strokes: SignatureStroke[]) {
   if (!isValid(strokes)) throw new SignatureExportError('invalid', 'Invalid signature strokes.');
 }
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 /** Preview-safe copy of an untrusted value: unknown ink/nib and non-finite samples are skipped, the rest clamped. */
 function drawable(strokes: SignatureStroke[]): SignatureStroke[] {
   if (isValid(strokes)) return strokes;
