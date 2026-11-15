@@ -1174,8 +1174,6 @@ export const PlanZeroAndLongIdentity: Story = {
     const identity = shell.querySelector<HTMLElement>('[data-ui="user-menu-identity"]')!;
     // 0 is a plan: it renders.
     await expect(identity.querySelector('[data-ui="pill"]')).toHaveTextContent('0');
-    // Long text ellipsizes inside the surface (measured after the entry scale settles); the full
-    // text stays in the DOM for AT.
     await wait(SETTLE_MS);
     const box = shell.getBoundingClientRect();
     const leaves = Array.from(identity.querySelectorAll('span')).filter((node) => node.childElementCount === 0);
@@ -1183,6 +1181,7 @@ export const PlanZeroAndLongIdentity: Story = {
       const rect = text.getBoundingClientRect();
       await expect(rect.right).toBeLessThanOrEqual(box.right + TOLERANCE_PX);
       await expect(rect.left).toBeGreaterThanOrEqual(box.left - TOLERANCE_PX);
+      await expect(text.scrollWidth).toBeLessThanOrEqual(text.clientWidth + TOLERANCE_PX);
     }
     await expect(identity).toHaveTextContent('a-very-long-company-domain.example.com');
     // The preferred 17.5rem width holds; long identities never widen the menu.
