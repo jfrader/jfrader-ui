@@ -161,6 +161,31 @@ export const TextFieldParity: Story = {
   },
 };
 
+export const SizeParity: Story = {
+  tags: ['!autodocs'],
+  render: () => (
+    <Column>
+      {(['sm', 'md', 'lg'] as const).map((size) => (
+        <div key={size}>
+          <TextField label={`Reference ${size}`} size={size} />
+          <AmountField label={`Amount ${size}`} size={size} />
+        </div>
+      ))}
+    </Column>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const size of ['sm', 'md', 'lg']) {
+      const reference = canvas.getByRole('textbox', { name: `Reference ${size}` });
+      const input = canvas.getByRole('textbox', { name: `Amount ${size}` });
+      const frame = frameOf(input);
+      await expect(frame.getBoundingClientRect().height).toBeCloseTo(reference.getBoundingClientRect().height, 1);
+      await expect(skinOf(frame)).toEqual(skinOf(reference));
+      await expect(typeOf(input)).toEqual(typeOf(reference));
+    }
+  },
+};
+
 export const Invalid: Story = {
   name: 'Validation error',
   parameters: { docs: {
