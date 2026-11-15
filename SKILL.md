@@ -111,10 +111,10 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - **The styling seam**: import `css`/`keyframes`/types only from `src/styling/css.ts`. Never from
   `@emotion/react` directly, never `styled()` inside the library. `styled`, `ThemeProvider`,
   `useTheme`, `theme`, and `createTheme` are the app-facing styling API; library internals stay on `css()` constants.
-- **Development diagnostics**: guard with `isDev` and report through `devWarn`/`devError` from
-  `src/utils/dev.ts`. A bare `console.*` call or a repeated `process.env.NODE_ENV` check is a defect.
-  Keep the guard at the call site so a production build drops the branch and its message. `pnpm lint`
-  enforces it.
+- **Development diagnostics**: report through `devWarn`/`devError` from `src/utils/dev.ts`.
+  Guard a call site that builds a message with `if (isDev)` so a consumer build can drop the branch
+  and its string; the helpers gate too, so a missed guard cannot leak output. A bare `console.*` call
+  or a repeated `process.env.NODE_ENV` check is a defect. `pnpm lint` enforces the seam.
 - **Examples, guides, and app chrome use `styled`**, built at module scope from library components
   (`styled(Surface)({ … })`) or plain tags, with token values for every color, space, radius and
   font. Never a `css` prop, an inline `style` object, a Tailwind-style class or a literal value in

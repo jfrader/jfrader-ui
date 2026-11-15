@@ -6,7 +6,9 @@ import { measureCardBox, type CardBox } from './geometry';
 import type { GameCardValue } from '../game-card';
 import type { ReactNode } from 'react';
 
-export function warnFlight(message: string) { devWarn(message); }
+export function warnFlight(message: string) {
+  if (isDev) devWarn(message);
+}
 export function assertLegacyFlightEngine(treeOwned: boolean | undefined) {
   if (treeOwned && isDev) throw new Error('Do not mix legacy flight hooks with CardFlights. Render the card tree instead.');
 }

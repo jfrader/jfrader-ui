@@ -71,7 +71,7 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { useNativeDialog, useNativeDialogRoot } from '../../overlay/use-native-dialog';
 import { isRenderable } from '../../utils/renderable';
-import { devWarn } from '../../utils/dev';
+import { devWarn, isDev } from '../../utils/dev';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 export type DialogStackVariant = 'auto' | 'sheet' | 'dialog';
@@ -564,7 +564,7 @@ function joinIds(...ids: (string | false | undefined)[]) {
 }
 
 function warn(message: string) {
-  devWarn(`DialogStack: ${message}`);
+  if (isDev) devWarn(`DialogStack: ${message}`);
 }
 
 /** Known keys only, first occurrence wins. */

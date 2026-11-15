@@ -19,7 +19,7 @@ import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
-import { devWarn } from '../../utils/dev';
+import { devWarn, isDev } from '../../utils/dev';
 import { dateTimeFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { CIVIL_DATE_FORMAT_OPTIONS, dateFromIso, isIsoDate } from '../calendar/calendar.utils';
@@ -821,8 +821,9 @@ export function ActivityRings({
 
   useEffect(() => {
     if (
-      metrics.some((metric) => !metric.id) ||
-      new Set(metrics.map((metric) => metric.id)).size !== metrics.length
+      isDev &&
+      (metrics.some((metric) => !metric.id) ||
+        new Set(metrics.map((metric) => metric.id)).size !== metrics.length)
     ) {
       devWarn('ActivityRings: metric ids must be nonempty and unique.');
     }
