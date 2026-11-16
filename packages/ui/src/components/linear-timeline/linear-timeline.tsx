@@ -38,6 +38,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { withoutSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { clamp } from '../../utils/clamp';
 import { devError, isDev } from '../../utils/dev';
 import { numberFormatter } from '../../utils/intl';
 import { PresentationSlot, repeatedTemplate, type PresentationProps } from '../../utils/presentation-slot';
@@ -229,7 +230,6 @@ const RAIL_WIDTH = '1px';
 // HoverCard.Trigger owns its `data-ui`, so triggers are found through the item's own axis.
 const TRIGGER_SELECTOR = ':scope > [data-ui~="linear-timeline-axis"] > [data-ui~="hover-card-trigger"]';
 
-const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), Math.max(min, max));
 const joinIds = (...ids: (string | undefined)[]) => ids.filter(Boolean).join(' ') || undefined;
 
 /** Runs the consumer handler first; `preventDefault()` there skips the component's own. */

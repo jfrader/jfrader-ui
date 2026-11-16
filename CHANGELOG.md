@@ -8,6 +8,8 @@
 
 ### Fixed
 
+- `MultiSelect` joins the shared overlay dismissal tree, so a popup opened inside another overlay closes alone and a press inside it no longer dismisses the parent.
+- `InputGroup` and `MentionInput` take their control heights and typography from the shared control-size scale, matching `TextField` at every size.
 - On coarse pointers, overlay triggers (Dialog, Drawer, BottomSheet, DialogStack, Popover, Menu, Tooltip, HoverCard, ContextMenu, and CommandPalette) reach the 44px `size.touch` height, and the Dialog, Drawer, BottomSheet, and DialogStack close buttons, the BottomSheet handle, and DialogStack Back reach 44×44px. Fine-pointer sizes are unchanged.
 - `UserMenu.Identity` wraps long names and email addresses, including at enlarged text sizes.
 - Desktop `UserMenu` and `Popover` preserve keyboard entry and exit without hidden, tabbable focus guards.

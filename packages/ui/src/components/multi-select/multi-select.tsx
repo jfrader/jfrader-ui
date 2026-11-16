@@ -19,7 +19,6 @@ import {
 } from 'react';
 import {
   FloatingList,
-  useDismiss,
   useInteractions,
   useListNavigation,
   useMergeRefs,
@@ -43,7 +42,7 @@ import {
   listboxOptionCheckStyle,
 } from '../../styling/listbox-style';
 import { fieldColumnStyle, type FieldLabelPlacement } from '../field/field-anatomy';
-import { IsolatedOverlay } from '../../overlay/overlay-layer';
+import { OverlayLayer, useLayerDismiss } from '../../overlay/overlay-layer';
 import { OverlayPortal } from '../../overlay/overlay-portal';
 import { useOverlayFloating } from '../../overlay/use-overlay-floating';
 import { collectionItemId, useCollectionItem, useCollectionRegistry } from '../../utils/collection-registry';
@@ -296,6 +295,7 @@ const clearStyle = css({
 });
 
 function useMultiSelectModel<V extends string = string>({
+  nodeId,
   value: valueProp,
   defaultValue = EMPTY_VALUES,
   onValueChange,
@@ -307,7 +307,7 @@ function useMultiSelectModel<V extends string = string>({
   locale,
   messages: messagesProp,
   placement = 'bottom-start',
-}: MultiSelectProps<V>) {
+}: MultiSelectProps<V> & { nodeId?: string }) {
   const baseId = useId();
   const [listId, setListId] = useState(`${baseId}-listbox`);
   const [direction, setDirection] = useState('ltr');
@@ -378,13 +378,14 @@ function useMultiSelectModel<V extends string = string>({
   const floating = useOverlayFloating({
     open,
     placement,
+    nodeId,
     onOpenChange: (next) => {
       if (!disabled) requestOpen(next);
     },
     onAvailableSize: setAvailable,
   });
   const role = useRole(floating.context, { role: 'listbox' });
-  const dismiss = useDismiss(floating.context, {
+  const dismiss = useLayerDismiss(floating.context, 'container', {
     enabled: !disabled,
     outsidePress: (event) => !clearRef.current?.contains(event.target as Node),
   });
@@ -402,7 +403,7 @@ function useMultiSelectModel<V extends string = string>({
       return value === undefined || options.get(value)?.disabled === true;
     },
   });
-  const interactions = useInteractions([role, dismiss, navigation]);
+  const interactions = useInteractions([role, ...dismiss, navigation]);
   // Floating UI runs hook handlers before the user's; the trigger's own key handling (and any
   // consumer veto) must run first, and navigation/dismissal only for keys it left unhandled.
   const getReferenceProps = ({ onKeyDown, ...userProps }: HTMLProps<HTMLButtonElement> = {}) => {
@@ -503,8 +504,11 @@ const tokens = (...values: Array<unknown>): string | undefined => {
   return list.join(' ') || undefined;
 };
 
-function MultiSelectOverlay<V extends string = string>(props: MultiSelectProps<V>) {
-  const model = useMultiSelectModel(props);
+function MultiSelectOverlay<V extends string = string>({
+  nodeId,
+  ...props
+}: MultiSelectProps<V> & { nodeId: string | undefined }) {
+  const model = useMultiSelectModel({ ...props, nodeId });
   const labels = model.selected.map((value) => model.options.get(value)?.label ?? value);
   const previousSelection = useRef(model.selected);
   const [announcement, setAnnouncement] = useState('');
@@ -687,9 +691,9 @@ function MultiSelectOverlay<V extends string = string>(props: MultiSelectProps<V
 }
 function MultiSelectRoot<V extends string = string>(props: MultiSelectProps<V>) {
   return (
-    <IsolatedOverlay>
-      <MultiSelectOverlay {...props} />
-    </IsolatedOverlay>
+    <OverlayLayer>
+      {(nodeId) => <MultiSelectOverlay {...props} nodeId={nodeId} />}
+    </OverlayLayer>
   );
 }
 MultiSelectRoot.displayName = 'MultiSelect';

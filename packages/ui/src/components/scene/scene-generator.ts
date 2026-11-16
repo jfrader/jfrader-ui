@@ -1,3 +1,4 @@
+import { clamp } from '../../utils/clamp';
 import { hashSeed, createPrng } from '../../utils/seeded';
 
 /**
@@ -594,7 +595,6 @@ type Rgb = readonly [number, number, number];
 const GAMUT_TOLERANCE = 1e-4;
 const GAMUT_STEPS = 12;
 
-const clamp = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
 const lerp = (from: number, to: number, t: number): number => from + (to - from) * t;
 
 function oklchToLinearRgb(l: number, c: number, h: number): Rgb {
