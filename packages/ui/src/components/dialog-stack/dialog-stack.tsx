@@ -42,8 +42,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ComponentPropsWithRef,
-  type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
@@ -52,227 +50,80 @@ import {
   type RefObject,
   type SyntheticEvent,
 } from 'react';
-import { GeneratedRoot, type GeneratedRootSlotProps } from '../../utils/generated-root';
+import { GeneratedRoot } from '../../utils/generated-root';
 import { createPortal } from 'react-dom';
 import { FloatingFocusManager, useFloating, useMergeRefs } from '@floating-ui/react';
 import { useChildEscape } from '../../overlay/use-child-escape';
 import { animate, type AnimationPlaybackControls } from 'motion/react';
 import { base } from '@jfrader/tokens';
 import { ChevronLeft, Close } from '@jfrader/icons';
-import { vars } from '@jfrader/tokens/vars';
-import { css, keyframes, type SerializedStyles } from '../../styling/css';
-import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
-import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
-import { modalShellReset } from '../../styling/surface';
 import { ThemeBoundary } from '../../styling/theme-scope';
-import type { DrawerPanelProps } from '../drawer';
 import { SurfaceRoot } from '../surface/surface-root';
-import { WithSx, type SxProps } from '../../styling/sx';
-import { touchTargetStyle } from '../../styling/touch-target';
+import { WithSx } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { useNativeDialog, useNativeDialogRoot } from '../../overlay/use-native-dialog';
 import { isRenderable } from '../../utils/renderable';
 import { devWarn, isDev } from '../../utils/dev';
 import { useControlledState } from '../../utils/use-controlled-state';
+import {
+  shellStyle,
+  containedLayerStyle,
+  scrimStyle,
+  stageStyle,
+  panelStyle,
+  panelVariantStyles,
+  parentStyles,
+  handleStyle,
+  scrollerStyle,
+  footerStyle,
+  titleStyle,
+  descriptionStyle,
+  actionStyle,
+  topBarStyle,
+  topBarEndStyle,
+  backIconStyle,
+} from './dialog-stack.styles';
+import type {
+  DialogStackActions,
+  DialogStackBackProps,
+  DialogStackCloseProps,
+  DialogStackContentProps,
+  DialogStackContextValue,
+  DialogStackDescriptionProps,
+  DialogStackFooterProps,
+  DialogStackProps,
+  DialogStackSlotProps,
+  DialogStackTitleProps,
+  DialogStackTriggerProps,
+  DialogStackVariant,
+  DragSession,
+  Naming,
+  ResolvedVariant,
+  SheetContentContextValue,
+  SheetEntry,
+  ViewportLayerProps,
+} from './dialog-stack.types';
 
-export type DialogStackVariant = 'auto' | 'sheet' | 'dialog';
-type ResolvedVariant = Exclude<DialogStackVariant, 'auto'>;
-export type DialogStackHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
-
-export interface DialogStackPageRecord {
-  /** Identifies this panel. Keep the key stable and unique within the stack. */
-  value: string;
-  /** Heading for this panel. */
-  title: ReactNode;
-  /** Main content of this panel. */
-  content: ReactNode;
-  /** Description below the title. */
-  description?: ReactNode;
-  /** Footer content placed at the bottom of the panel. */
-  footer?: ReactNode;
-  /** Back button label or content. */
-  back?: string;
-  /** Close button label or content. */
-  close?: string;
-  /** Allows Escape, backdrop, and drag dismissal. Defaults to `true`. When `false`, Back and Close still work. */
-  dismissible?: boolean;
-  /** Receives Escape, backdrop, or drag dismissal requests while this panel is on top. Call `preventDefault()` to keep it open. */
-  onCancel?: (event: Event) => void;
-  /** Inherit appearance by default; `contrast` establishes fixed charcoal. */
-  appearance?: DrawerPanelProps['appearance'];
-  /** Includes `Description` in the accessible description. Defaults to `true`. Use `false` for structured content. */
-  withDescription?: boolean;
-  /** Optional page-specific slotProps overrides. */
-  slotProps?: DialogStackSlotProps;
-}
-
-export interface DialogStackSlots {
-  /** Replaces the content panel's adopted div; renders a `div` by default. */
-  root?: NonNullable<DialogStackContentProps['slots']>['root'];
-  /** Replaces the generated header wrapper around title and description. */
-  header?: ComponentType<ComponentPropsWithRef<'div'>>;
-  /** Replaces the generated body wrapper around the page content. */
-  body?: ComponentType<ComponentPropsWithRef<'div'>>;
-  /** Replaces the button that opens a dialog panel. */
-  trigger?: ComponentType<DialogStackTriggerProps>;
-  /** Replaces the stacked page panel container. */
-  content?: ComponentType<DialogStackContentProps>;
-  /** Replaces the heading element that names the page. */
-  title?: ComponentType<DialogStackTitleProps>;
-  /** Replaces the text element that describes the page. */
-  description?: ComponentType<DialogStackDescriptionProps>;
-  /** Replaces the bottom container for action buttons. */
-  footer?: ComponentType<DialogStackFooterProps>;
-  /** Replaces the button that navigates back to the parent panel. */
-  back?: ComponentType<DialogStackBackProps>;
-  /** Replaces the button that dismisses the entire dialog stack. */
-  close?: ComponentType<DialogStackCloseProps>;
-}
-
-export interface DialogStackSlotProps {
-  /** Customize the panel's adopted div, not the native dialog shell. */
-  root?: NonNullable<DialogStackContentProps['slotProps']>['root'];
-  /** Generated header wrapper around title and description. */
-  header?: GeneratedRootSlotProps;
-  /** Generated body wrapper around the page content. */
-  body?: GeneratedRootSlotProps;
-  /** Button that opens a dialog panel. */
-  trigger?: Partial<Omit<DialogStackTriggerProps, 'value' | 'children'>>;
-  /** Stacked page panel container. */
-  content?: Partial<Omit<DialogStackContentProps, 'value' | 'children'>>;
-  /** Heading element that names the page. */
-  title?: Partial<DialogStackTitleProps>;
-  /** Text element that describes the page. */
-  description?: Partial<DialogStackDescriptionProps>;
-  /** Bottom container for action buttons. */
-  footer?: Partial<DialogStackFooterProps>;
-  /** Button that navigates back to the parent panel. */
-  back?: Partial<DialogStackBackProps>;
-  /** Button that dismisses the entire dialog stack. */
-  close?: Partial<DialogStackCloseProps>;
-}
-
-export interface DialogStackBaseProps {
-  /** Controls the open panel keys, bottom first. */
-  value?: readonly string[];
-  /** Sets the initial uncontrolled stack, bottom first. Defaults to `[]`. */
-  defaultValue?: readonly string[];
-  /** Requests a changed ordered stack. Controlled panels change only when `value` updates. */
-  onValueChange?: (value: string[]) => void;
-  /** Sets the layout. Defaults to `'auto'`: a sheet below `breakpoint`, a centered dialog at or above it. */
-  variant?: DialogStackVariant;
-  /** Sets the layer width in CSS pixels where `'auto'` switches to a dialog. Defaults to the `dialogStackBreakpoint` token. */
-  breakpoint?: number;
-  /** Draws inside the nearest positioned ancestor. Modality stays document-wide, without a page scroll lock. Defaults to `false`. */
-  contained?: boolean;
-}
-
-export interface DialogStackComposedProps extends DialogStackBaseProps {
-  /** Supplies stack triggers and panels in composed mode. */
-  children?: ReactNode;
-  pages?: never;
-  triggerLabel?: never;
-  initialPage?: never;
-  slots?: never;
-  slotProps?: never;
-  component?: never;
-}
-
-export interface DialogStackShorthandProps extends DialogStackBaseProps {
-  /** Name the button that opens the stack. */
-  triggerLabel?: ReactNode;
-  /** The panel key opened by the trigger button. Defaults to the first page's value. */
-  initialPage?: string;
-  /** Page specifications for the stack. */
-  pages: readonly DialogStackPageRecord[];
-  children?: never;
-  /** Replaces the panels and controls generated from `pages`. */
-  slots?: DialogStackSlots;
-  /** Passes props and styles to the generated panels and controls. Page overrides take precedence. */
-  slotProps?: DialogStackSlotProps;
-  /** Replaces each panel's adopted div, not the dialog shell. `slots.root` takes precedence. */
-  component?: DialogStackSlots['root'];
-}
-
-export type DialogStackProps = DialogStackComposedProps | DialogStackShorthandProps;
-
-export interface DialogStackTriggerProps extends ComponentPropsWithRef<'button'>, SxProps {
-  /** Opens this panel key. An open key removes the panels above it. */
-  value: string;
-}
-
-export interface DialogStackContentProps extends Omit<DrawerPanelProps, 'onCancel'> {
-  /** Inherit appearance by default; `contrast` establishes fixed charcoal. */
-  appearance?: DrawerPanelProps['appearance'];
-  /** Identifies this panel. Keep the key stable and unique within the stack. */
-  value: string;
-  /** Allows Escape, backdrop, and drag dismissal. Defaults to `true`. When `false`, Back and Close still work. */
-  dismissible?: boolean;
-  /** Receives Escape, backdrop, or drag dismissal requests while this panel is on top. Call `preventDefault()` to keep it open. */
-  onCancel?: (event: Event) => void;
-  /** Includes `Description` in the accessible description. Defaults to `true`. Use `false` for structured content. */
-  withDescription?: boolean;
-}
-
-export interface DialogStackTitleProps extends ComponentPropsWithRef<'h2'>, SxProps {
-  /** Sets the heading level. Defaults to `2`. */
-  level?: DialogStackHeadingLevel;
-}
-export interface DialogStackDescriptionProps extends ComponentPropsWithRef<'p'>, SxProps {}
-export interface DialogStackFooterProps extends ComponentPropsWithRef<'div'>, SxProps {}
-export interface DialogStackBackProps extends Omit<ComponentPropsWithRef<'button'>, 'aria-label'>, SxProps {
-  /** Names the Back button for assistive technology. Supply a localized name, such as "Back to Settings". */
-  label: string;
-}
-export interface DialogStackCloseProps extends Omit<ComponentPropsWithRef<'button'>, 'aria-label'>, SxProps {
-  /** Names the Close button for assistive technology. Supply a localized name, such as "Close all". */
-  label: string;
-}
-
-export interface DialogStackActions {
-  /** The open keys, bottom first. */
-  value: readonly string[];
-  /** Requests opening `key` on top. An open key removes the panels above it. */
-  push: (key: string) => void;
-  /** Requests closing the top panel. Does nothing on an empty stack. */
-  pop: () => void;
-  /** Requests removing the panels above an open `key`. A closed key is ignored with a development warning. */
-  popTo: (key: string) => void;
-  /** Requests closing every panel. Does nothing on an empty stack. */
-  close: () => void;
-}
-
-interface Naming {
-  label: string | undefined;
-  labelledBy: string | undefined;
-  describedBy: string | undefined;
-}
-
-/** What the Root knows about one declared sheet; written by its Content. */
-interface SheetEntry {
-  dismissible: boolean;
-  onCancel: ((event: Event) => void) | undefined;
-  panel: HTMLDivElement | null;
-}
-
-interface DialogStackContextValue extends DialogStackActions {
-  contained: boolean;
-  variant: ResolvedVariant;
-  stage: HTMLDivElement | null;
-  setStage: (element: HTMLDivElement | null) => void;
-  setLayer: (element: HTMLElement | null) => void;
-  register: (key: string, entry: SheetEntry) => void;
-  unregister: (key: string, entry: SheetEntry) => void;
-  setNaming: (naming: Naming) => void;
-  dismissTop: () => void;
-}
-
-interface SheetContentContextValue {
-  titleId: string;
-  descriptionId: string;
-  setHasTitle: (present: boolean) => void;
-  setHasDescription: (present: boolean) => void;
-}
+// The component module keeps the public type surface it has always had.
+export type {
+  DialogStackActions,
+  DialogStackBackProps,
+  DialogStackBaseProps,
+  DialogStackCloseProps,
+  DialogStackComposedProps,
+  DialogStackContentProps,
+  DialogStackDescriptionProps,
+  DialogStackFooterProps,
+  DialogStackHeadingLevel,
+  DialogStackPageRecord,
+  DialogStackProps,
+  DialogStackShorthandProps,
+  DialogStackSlots,
+  DialogStackSlotProps,
+  DialogStackTitleProps,
+  DialogStackTriggerProps,
+  DialogStackVariant,
+} from './dialog-stack.types';
 
 const DialogStackContext = createContext<DialogStackContextValue | null>(null);
 const SheetContentContext = createContext<SheetContentContextValue | null>(null);
@@ -314,242 +165,7 @@ const NO_DRAG_SELECTOR = '[data-sheet-no-drag]';
 const DEFAULT_BREAKPOINT = Number.parseFloat(base.size.dialogStackBreakpoint);
 const EMPTY_STACK: readonly string[] = [];
 
-// Structural sizes.
-const LAYER_GUTTER = vars.space[4];
-const SHEET_TOP_GAP = `calc(${vars.space[6]} + env(safe-area-inset-top, 0px))`;
-const DIALOG_INLINE_CAP = '32rem';
-// No depth shrinks a panel below this, so its header and actions stay reachable.
-const PANEL_MIN_BLOCK = '12rem';
-const DEPTH_SCALE_STEP = 0.05;
-const DEPTH = 'var(--dialog-stack-depth, 0)';
-const INDEX = 'var(--dialog-stack-index, 0)';
-const ACTIVE_SIZE = 'var(--dialog-stack-active-size, 0px)';
 const PANEL_MOTION_STYLE_KEYS = ['translate'] as const;
-
-const sheetEntry = keyframes({ from: { opacity: 0, transform: 'translateY(100%)' } });
-const dialogEntry = keyframes({ from: { opacity: 0, transform: 'scale(0.96)' } });
-
-const shellStyle = css({
-  ...modalShellReset,
-  position: 'fixed',
-  inset: 0,
-  margin: 0,
-  inlineSize: '100%',
-  blockSize: '100%',
-  maxInlineSize: 'none',
-  maxBlockSize: 'none',
-  overflow: 'hidden',
-  '&[open]': { display: 'block' },
-});
-
-const containedLayerStyle = css({
-  zIndex: vars.zIndex.modal,
-  position: 'absolute',
-  inset: 0,
-  overflow: 'hidden',
-  borderRadius: 'inherit',
-});
-
-const scrimStyle = css({
-  position: 'absolute',
-  inset: 0,
-  backgroundColor: vars.color.scrim,
-});
-
-// Panels opt back into pointer events, so a press beside them reaches the backdrop.
-const stageStyle = css({
-  position: 'absolute',
-  inset: 0,
-  pointerEvents: 'none',
-});
-
-const panelStyle = css({
-  overflowWrap: 'anywhere',
-  boxSizing: 'border-box',
-  position: 'absolute',
-  zIndex: INDEX,
-  display: 'flex',
-  flexDirection: 'column',
-  minBlockSize: 0,
-  pointerEvents: 'auto',
-  overflow: 'hidden',
-  '&:focus-visible': { ...focusRingInset },
-  transformOrigin: 'top center',
-  transitionProperty: 'transform, min-block-size',
-  transitionDuration: vars.motion.duration.slow,
-  transitionTimingFunction: vars.motion.easeStandard,
-  animationDuration: vars.motion.duration.slow,
-  animationTimingFunction: vars.motion.easeStandard,
-  animationFillMode: 'backwards',
-  [REDUCED_MOTION]: { animation: 'none', transitionDuration: '0s' },
-});
-
-/** Each level down the stack leaves one more peek of room, never below the panel minimum. */
-function depthCappedBlockSize(gap: string, peek: string) {
-  return `min(100%, max(${PANEL_MIN_BLOCK}, calc(100% - ${gap} - ${INDEX} * ${peek})))`;
-}
-
-// Layout per variant and the parents' peek. Separate top-level styles (no attribute selectors),
-// so a consumer `sx` merged after them overrides them.
-const panelVariantStyles: Record<ResolvedVariant, SerializedStyles> = {
-  sheet: css({
-    borderRadius: 0,
-    insetInline: 0,
-    insetBlockEnd: 0,
-    marginInline: 'auto',
-    inlineSize: '100%',
-    maxInlineSize: vars.size.dialogStackBreakpoint,
-    maxBlockSize: depthCappedBlockSize(SHEET_TOP_GAP, vars.size.dialogStackSheetPeek),
-    borderBlockEndWidth: 0,
-    borderStartStartRadius: vars.radius.xl,
-    borderStartEndRadius: vars.radius.xl,
-    paddingBlockEnd: 'env(safe-area-inset-bottom, 0px)',
-    animationName: sheetEntry,
-    [FORCED_COLORS]: { borderBlockEndWidth: '1px' },
-  }),
-  dialog: css({
-    inset: 0,
-    margin: 'auto',
-    inlineSize: `min(${DIALOG_INLINE_CAP}, calc(100% - 2 * ${LAYER_GUTTER}))`,
-    blockSize: 'fit-content',
-    maxBlockSize: depthCappedBlockSize(`2 * ${LAYER_GUTTER}`, `2 * ${vars.size.dialogStackDialogPeek}`),
-    borderRadius: vars.radius.lg,
-    animationName: dialogEntry,
-  }),
-};
-
-// Parents peek above the active panel: at least its size plus one peek per level, scaled from the top edge.
-const parentScale = `scale(calc(1 - ${DEPTH} * ${DEPTH_SCALE_STEP}))`;
-const parentStyles: Record<ResolvedVariant, SerializedStyles> = {
-  sheet: css({
-    animationName: 'none',
-    minBlockSize: `calc(${ACTIVE_SIZE} + ${DEPTH} * ${vars.size.dialogStackSheetPeek})`,
-    transform: parentScale,
-  }),
-  dialog: css({
-    animationName: 'none',
-    blockSize: ACTIVE_SIZE,
-    transform: `translateY(calc(-1 * ${DEPTH} * ${vars.size.dialogStackDialogPeek})) ${parentScale}`,
-  }),
-};
-
-const handleStyle = css({
-  flexShrink: 0,
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  blockSize: vars.space[8],
-  cursor: 'grab',
-  touchAction: 'none',
-  '&::before': {
-    content: '""',
-    inlineSize: vars.space[10],
-    blockSize: vars.space[1],
-    borderRadius: vars.radius.full,
-    backgroundColor: vars.color.borderControl,
-  },
-  '&[data-dragging]': { cursor: 'grabbing' },
-  '[data-variant="dialog"] > &': { display: 'none' },
-  '[data-sheet-no-drag] > &': { cursor: 'auto', touchAction: 'auto' },
-  [REDUCED_MOTION]: { cursor: 'auto', touchAction: 'auto' },
-  [FORCED_COLORS]: { '&::before': { backgroundColor: 'CanvasText' } },
-});
-
-const scrollerStyle = css({
-  flex: '1 1 auto',
-  minBlockSize: 0,
-  overflow: 'auto',
-  overscrollBehavior: 'contain',
-  display: 'flex',
-  flexDirection: 'column',
-  gap: vars.space[2],
-  paddingInline: vars.space[5],
-  paddingBlockStart: vars.space[4],
-  fontSize: vars.textSize.sm,
-  // Below the handle: just enough room for a focus ring.
-  '[data-variant="sheet"] > &': { paddingBlockStart: vars.space[1] },
-  // Without a Footer the content keeps its bottom padding; the Footer brings its own.
-  '&:not(:has(> [data-ui~="dialog-stack-footer"]))': { paddingBlockEnd: vars.space[5] },
-});
-
-const footerStyle = css({
-  position: 'sticky',
-  insetBlockEnd: 0,
-  marginBlockStart: 'auto',
-  marginInline: `calc(-1 * ${vars.space[5]})`,
-  display: 'flex',
-  flexWrap: 'wrap',
-  justifyContent: 'flex-end',
-  alignItems: 'center',
-  gap: vars.space[3],
-  paddingInline: vars.space[5],
-  paddingBlock: vars.space[4],
-  backgroundColor: vars.color.surfaceRaised,
-  borderBlockStart: `1px solid ${vars.color.border}`,
-});
-
-const titleStyle = css({
-  margin: 0,
-  fontSize: vars.textSize.lg,
-  fontWeight: vars.fontWeight.semibold,
-  lineHeight: vars.lineHeight.tight,
-  borderRadius: vars.radius.sm,
-  '&:focus': { outline: 'none' },
-  '&:focus-visible': { ...focusRingOutset },
-  [FORCED_COLORS]: { '&:focus-visible': { outlineColor: 'Highlight' } },
-});
-
-const descriptionStyle = css({
-  margin: 0,
-  color: vars.color.textMuted,
-});
-
-const actionStyle = css({
-  appearance: 'none',
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: vars.space[1],
-  alignSelf: 'flex-start',
-  boxSizing: 'border-box',
-  minBlockSize: vars.space[8],
-  minInlineSize: vars.space[8],
-  border: '1px solid transparent',
-  borderRadius: vars.radius.md,
-  backgroundColor: 'transparent',
-  paddingBlock: vars.space[1],
-  paddingInline: vars.space[2],
-  font: 'inherit',
-  fontSize: vars.textSize.sm,
-  fontWeight: vars.fontWeight.medium,
-  color: vars.color.textMuted,
-  cursor: 'pointer',
-  transitionProperty: 'background-color, color',
-  transitionDuration: vars.motion.duration.fast,
-  transitionTimingFunction: vars.motion.easeStandard,
-  '& > svg': { inlineSize: '1em', blockSize: '1em', flexShrink: 0 },
-  '&:hover:not(:disabled)': { backgroundColor: vars.color.surfaceHover, color: vars.color.text },
-  '&:focus-visible': { ...focusRingOutset },
-  '&:disabled': { opacity: 0.55, cursor: 'not-allowed' },
-  [REDUCED_MOTION]: { transitionDuration: '0s' },
-  [FORCED_COLORS]: {
-    borderColor: 'ButtonBorder',
-    '&:focus-visible': { outlineColor: 'Highlight' },
-  },
-}, touchTargetStyle);
-
-// Back and Close share one top bar: Back at the inline start, Close at the end. Rendering them as
-// scroller children would stack them in the content column.
-const topBarStyle = css({
-  display: 'flex',
-  alignItems: 'center',
-  gap: vars.space[2],
-  minBlockSize: vars.space[8],
-});
-const topBarEndStyle = css({ marginInlineStart: 'auto' });
-
-// The back chevron points toward the inline start in either direction.
-const backIconStyle = css({ '&:dir(rtl)': { transform: 'scaleX(-1)' } });
 
 /** Title/Description only exist (and name/describe the sheet) with content: `0` counts, `''` does not. */
 function hasText(children: ReactNode) {
@@ -962,12 +578,6 @@ function fallbackTarget(panel: HTMLElement): HTMLElement {
   );
 }
 
-interface ViewportLayerProps {
-  native: ReturnType<typeof useNativeDialogRoot> & { open: boolean };
-  naming: Naming;
-  variant: ResolvedVariant;
-}
-
 function ViewportLayer({ native, naming, variant }: ViewportLayerProps) {
   const { setStage, setLayer, dismissTop } = useDialogStackContext('Layer');
   const shellRef = useRef<HTMLDialogElement | null>(null);
@@ -1075,14 +685,6 @@ function DialogStackTrigger({ ref, value, onClick, className, sx, ...rest }: Dia
 }
 
 DialogStackTrigger.displayName = 'DialogStack.Trigger';
-
-interface DragSession {
-  pointerId: number;
-  start: number;
-  extent: number;
-  offset: number;
-  samples: { position: number; time: number }[];
-}
 
 /** Handle drag on the top panel; null (no listeners) on parents, nondismissible or opted-out panels. */
 function useHandleDrag(enabled: boolean, panelRef: RefObject<HTMLDivElement | null>, dismissTop: () => void) {
