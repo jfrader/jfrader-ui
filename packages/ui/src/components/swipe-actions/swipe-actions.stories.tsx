@@ -4,6 +4,7 @@ import { expect, fn, fireEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
+import { settleAnimations } from '../../testing/settle';
 import { expectInside } from '../../testing/geometry-assertions';
 import {
   SwipeActions,
@@ -1039,11 +1040,17 @@ export const Removal: Story = {
     await waitFor(async () => {
       await expect(canvas.queryByRole('button', { name: 'Actions for second' })).toBeNull();
     });
+    // The row leaves on an exit transition; wait for its text, not only its trigger, so the
+    // accessibility gate never samples a translucent row mid-fade.
+    await waitFor(() => expect(canvas.queryByText('second')).toBeNull());
     await expect(canvasElement.ownerDocument.activeElement).toBe(
       canvas.getByRole('button', { name: 'Actions for third' }),
     );
     await userEvent.click(canvas.getByRole('button', { name: 'Undo removal' }));
     await expect(canvas.getByRole('button', { name: 'Actions for second' })).toBeInTheDocument();
+    // The restored row re-enters on a transition; finish it so the accessibility gate never
+    // samples a half-faded row.
+    await settleAnimations(canvasElement.ownerDocument);
   },
 };
 export const Undo: Story = { ...Removal };
