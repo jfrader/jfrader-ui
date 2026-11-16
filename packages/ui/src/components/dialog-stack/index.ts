@@ -17,4 +17,4 @@ export type {
   DialogStackTitleProps,
   DialogStackTriggerProps,
   DialogStackVariant,
-} from './dialog-stack';
+} from './dialog-stack.types';

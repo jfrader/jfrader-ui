@@ -4,7 +4,7 @@ import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { modalShellReset } from '../../styling/surface';
 import { touchTargetStyle } from '../../styling/touch-target';
-import type { DialogStackVariant } from './dialog-stack';
+import type { DialogStackVariant } from './dialog-stack.types';
 
 type ResolvedVariant = Exclude<DialogStackVariant, 'auto'>;
 
