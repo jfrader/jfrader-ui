@@ -267,6 +267,7 @@ export const RootRelativeSizes: Story = {
 export const TouchSizes: Story = {
   ...ControlSizeContract,
   name: 'MoneyInput touch sizes',
+  tags: ['touch'],
   play: async ({ canvas }) => { await expectControlHeights(canvas.getAllByRole('spinbutton').map(input => input.parentElement!), [44, 44, 48]); },
 };
 /** Give a checkout total a taller editor. */

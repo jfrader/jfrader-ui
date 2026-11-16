@@ -22,6 +22,7 @@ type Story = StoryObj<typeof meta>;
 
 export const OverlayTriggerTouchTargets: Story = {
   name: 'Overlay trigger touch targets',
+  tags: ['touch'],
   render: () => (
     <Triggers>
       <Popover>
