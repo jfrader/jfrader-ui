@@ -37,8 +37,6 @@ import { useControlledState } from '../../utils/use-controlled-state';
 export type ToggleGroupType = 'single' | 'multiple';
 export type ToggleGroupOrientation = 'horizontal' | 'vertical';
 
-type ToggleGroupValue = string | string[];
-
 interface ToggleGroupBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'onChange' | 'defaultValue'>, SxProps {
   /** Sets item layout and arrow-key navigation. Defaults to `horizontal`. */
   orientation?: ToggleGroupOrientation;
@@ -50,30 +48,30 @@ interface ToggleGroupBaseProps extends Omit<ComponentPropsWithRef<'div'>, 'onCha
   label?: string;
 }
 
-export interface ToggleGroupSingleProps extends ToggleGroupBaseProps {
+export interface ToggleGroupSingleProps<V extends string = string> extends ToggleGroupBaseProps {
   /** Allows one pressed item at a time. Defaults to `single`. */
   type?: 'single';
   /** Controls the pressed item; `''` leaves every item unpressed. */
-  value?: string;
+  value?: NoInfer<V> | '';
   /** Initial uncontrolled pressed item. Defaults to no selection. */
-  defaultValue?: string;
+  defaultValue?: NoInfer<V> | '';
   /** Requests the pressed item's value, or `''` when cleared with `allowEmpty`. */
-  onValueChange?: (value: string) => void;
+  onValueChange?: (value: V | '') => void;
 }
 
-export interface ToggleGroupMultipleProps extends ToggleGroupBaseProps {
+export interface ToggleGroupMultipleProps<V extends string = string> extends ToggleGroupBaseProps {
   /** Allows items to be pressed and cleared independently. */
   type: 'multiple';
   /** Controls the pressed item values. */
-  value?: string[];
+  value?: NoInfer<V>[];
   /** Initial uncontrolled pressed values. Defaults to no selection. */
-  defaultValue?: string[];
+  defaultValue?: NoInfer<V>[];
   /** Requests pressed values in the order they were selected. */
-  onValueChange?: (value: string[]) => void;
+  onValueChange?: (value: V[]) => void;
 }
 
-export interface ToggleGroupOption {
-  value: string;
+export interface ToggleGroupOption<V extends string = string> {
+  value: V;
   label: ReactNode;
   disabled?: boolean;
   id?: string;
@@ -93,7 +91,7 @@ export interface ToggleGroupSlotProps {
   /** Button toggling one option. */
   item?: Omit<ToggleGroupItemProps, 'value' | 'children' | 'disabled' | 'id'>;
 }
-type ToggleGroupComposition =
+type ToggleGroupComposition<V extends string = string> =
   | {
       options?: never;
       /** Supplies composed `ToggleGroup.Item` elements instead of `options`. */
@@ -104,7 +102,7 @@ type ToggleGroupComposition =
     }
   | {
       /** Generates items from nonempty values, labels and optional disabled states. */
-      options: readonly ToggleGroupOption[];
+      options: readonly ToggleGroupOption<V>[];
       children?: never;
       /** Replaces the generated root; `slots.root` takes precedence. */
       component?: ToggleGroupSlots['root'];
@@ -114,8 +112,11 @@ type ToggleGroupComposition =
       slotProps?: ToggleGroupSlotProps;
     };
 export type ToggleGroupComposedProps = ToggleGroupSingleProps | ToggleGroupMultipleProps;
-export type ToggleGroupProps = (Omit<ToggleGroupSingleProps, 'children'> | Omit<ToggleGroupMultipleProps, 'children'>) & ToggleGroupComposition;
-export type ToggleGroupShorthandProps = Extract<ToggleGroupProps, { options: readonly ToggleGroupOption[] }>;
+export type ToggleGroupShorthandProps<V extends string = string> =
+  (Omit<ToggleGroupSingleProps<V>, 'children'> | Omit<ToggleGroupMultipleProps<V>, 'children'>) &
+  Extract<ToggleGroupComposition<V>, { options: readonly ToggleGroupOption<V>[] }>;
+export type ToggleGroupProps<V extends string = string> = ToggleGroupShorthandProps<V> |
+  (ToggleGroupComposedProps & Extract<ToggleGroupComposition, { options?: never }>);
 
 export interface ToggleGroupItemProps extends Omit<ComponentPropsWithRef<'button'>, 'value'>, SxProps {
   /** Identifies this item in the group's selection; must be nonempty. */
@@ -140,7 +141,7 @@ function useToggleGroupContext(part: string): ToggleGroupContextValue {
 
 const EMPTY: readonly string[] = [];
 
-const toPressed = (value: ToggleGroupValue | undefined, type: ToggleGroupType): readonly string[] => {
+const toPressed = (value: string | string[] | undefined, type: ToggleGroupType): readonly string[] => {
   if (Array.isArray(value)) {
     if (type === 'multiple') return value;
     value = value[0] ?? '';
@@ -230,7 +231,7 @@ const itemStyle = css({
   },
 });
 
-function ToggleGroupRoot({
+function ToggleGroupRoot<V extends string = string>({
   rootElement: Root = 'div',
   slotStyles,
   ref,
@@ -247,12 +248,13 @@ function ToggleGroupRoot({
   className,
   sx,
   ...rest
-}: ToggleGroupComposedProps & { rootElement?: 'div' | ToggleGroupSlots['root']; slotStyles?: Interpolation<Theme> }) {
-  // `toggle` only emits the shape that matches `type`, so either callback accepts it.
-  const [value, setValue] = useControlledState<ToggleGroupValue>(
+}: (ToggleGroupSingleProps<V> | ToggleGroupMultipleProps<V>) & { rootElement?: 'div' | ToggleGroupSlots['root']; slotStyles?: Interpolation<Theme> }) {
+  type ToggleGroupValue = V | V[];
+  // Context items stay string-based; selection matches `type` and clearing retains the '' sentinel.
+  const [value, setValue] = useControlledState<ToggleGroupValue | string | string[]>(
     valueProp,
     defaultValue,
-    onValueChange as ((value: ToggleGroupValue) => void) | undefined,
+    onValueChange as ((value: ToggleGroupValue | string | string[]) => void) | undefined,
   );
   const [focused, setFocused] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -369,7 +371,10 @@ function ToggleGroupItem({
 
 ToggleGroupItem.displayName = 'ToggleGroup.Item';
 
-function ToggleGroupComponent(props: ToggleGroupProps) {
+function ToggleGroupComponent<V extends string = string>(props: ToggleGroupShorthandProps<V>): ReactNode;
+function ToggleGroupComponent<V extends string = string>(props: ToggleGroupComposedProps & Extract<ToggleGroupComposition<V>, { options?: never }>): ReactNode;
+function ToggleGroupComponent<V extends string = string>(props: ToggleGroupProps<V>): ReactNode;
+function ToggleGroupComponent<V extends string = string>(props: ToggleGroupProps<V>) {
   if (props.options === undefined) return <ToggleGroupRoot {...props} />;
   const { options, component, slots, slotProps, ...rest } = props;
   const { className, style, sx: slotSx, ...rootProps } = slotProps?.root ?? {};

@@ -24,8 +24,8 @@ import { isRenderable } from '../../utils/renderable';
 import { moveRovingFocus, queryOwnedItems, type OwnedItemsQuery } from '../../utils/roving-focus';
 import { useControlledState } from '../../utils/use-controlled-state';
 
-export interface ChipGroupOption {
-  value: string;
+export interface ChipGroupOption<V extends string = string> {
+  value: V;
   label: ReactNode;
   disabled?: boolean;
 }
@@ -37,13 +37,13 @@ type StyledSlot<T extends 'div' | 'span' | 'button'> = Omit<
   sx?: Interpolation<Theme>;
 };
 
-export interface ChipGroupSlotProps {
+export interface ChipGroupSlotProps<V extends string = string> {
   /** Animated container frame clipping expanding chip rows. */
   frame?: StyledSlot<'div'>;
   /** Flex container holding the chip buttons and overflow toggle. */
   row?: StyledSlot<'div'>;
   /** Toggle button representing an individual chip option. */
-  chip?: StyledSlot<'button'> | ((option: ChipGroupOption) => StyledSlot<'button'>);
+  chip?: StyledSlot<'button'> | ((option: ChipGroupOption<V>) => StyledSlot<'button'>);
   /** Text label displayed inside a chip. */
   label?: StyledSlot<'span'>;
   /** Checkmark glyph displayed when a chip is selected. */
@@ -67,10 +67,10 @@ export interface ChipGroupSlots {
   overflow?: ComponentType<ComponentPropsWithRef<'button'>>;
 }
 
-interface ChipGroupBaseProps
+interface ChipGroupBaseProps<V extends string = string>
   extends Omit<ComponentPropsWithRef<'div'>, 'defaultValue' | 'onChange' | 'children'>, SxProps {
   /** Supplies the chips in display and multiple-selection callback order. */
-  options: readonly ChipGroupOption[];
+  options: readonly ChipGroupOption<V>[];
   /** Names the group when no ARIA naming prop is supplied. */
   label?: string;
   /** Allows clearing the selected chip in `single` mode. Defaults to true; ignored in `multiple` mode. */
@@ -96,34 +96,33 @@ interface ChipGroupBaseProps
   /** Replaces the frame, chip row and chip presentation parts. */
   slots?: ChipGroupSlots;
   /** Passes props to the frame, chip row and chip presentation parts. */
-  slotProps?: ChipGroupSlotProps;
+  slotProps?: ChipGroupSlotProps<V>;
 }
 
-export interface ChipGroupSingleProps extends ChipGroupBaseProps {
+export interface ChipGroupSingleProps<V extends string = string> extends ChipGroupBaseProps<V> {
   /** Restricts selection to one chip. */
   type: 'single';
   /** Controls the selected chip; an empty string clears selection. */
-  value?: string;
+  value?: NoInfer<V> | '';
   /** Sets the initial uncontrolled selection. Defaults to an empty string. */
-  defaultValue?: string;
+  defaultValue?: NoInfer<V> | '';
   /** Reports the requested chip value, or an empty string when cleared. */
-  onValueChange?: (value: string) => void;
+  onValueChange?: (value: V | '') => void;
 }
 
-export interface ChipGroupMultipleProps extends ChipGroupBaseProps {
+export interface ChipGroupMultipleProps<V extends string = string> extends ChipGroupBaseProps<V> {
   /** Allows selecting several chips. Defaults to `multiple`. */
   type?: 'multiple';
   /** Controls the selected chips; an empty array clears selection. */
-  value?: readonly string[];
+  value?: readonly NoInfer<V>[];
   /** Sets the initial uncontrolled selections. Defaults to an empty array. */
-  defaultValue?: readonly string[];
+  defaultValue?: readonly NoInfer<V>[];
   /** Reports requested selections in option order. */
-  onValueChange?: (value: string[]) => void;
+  onValueChange?: (value: V[]) => void;
 }
 
-export type ChipGroupProps = ChipGroupSingleProps | ChipGroupMultipleProps;
-type Value = string | readonly string[];
-const EMPTY: readonly string[] = [];
+export type ChipGroupProps<V extends string = string> = ChipGroupSingleProps<V> | ChipGroupMultipleProps<V>;
+const EMPTY = [] as const;
 const OVERFLOW = Symbol('overflow');
 const LAYOUT_SPRING = { type: 'spring', stiffness: 380, damping: 36 } as const;
 const MAX_REVEAL_STAGGER_MS = Number.parseFloat(base.motion.duration.slow);
@@ -190,7 +189,7 @@ const checkGlyphStyle = css({ inlineSize: vars.space[4], blockSize: vars.space[4
 
 /** Choose and clear filters. Arrows and Home/End move focus; horizontal arrows reverse in RTL.
  * Enter/Space toggle selection. Multiple values are reported in option order. */
-export function ChipGroup({
+export function ChipGroup<V extends string = string>({
   ref,
   options,
   type = 'multiple',
@@ -217,7 +216,8 @@ export function ChipGroup({
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
   ...rest
-}: ChipGroupProps) {
+}: ChipGroupProps<V>) {
+  type Value = V | readonly V[];
   const Row = slots?.row ?? 'div';
   const Chip = slots?.chip ?? 'button';
   const Label = slots?.label ?? 'span';
@@ -228,10 +228,11 @@ export function ChipGroup({
   ) {
     throw new Error('ChipGroup maxVisible requires a positive integer, moreLabel and lessLabel.');
   }
-  const [value, requestValue] = useControlledState<Value>(
+  const [value, requestValue] = useControlledState<Value | ''>(
     valueProp,
     defaultValue ?? (type === 'single' ? '' : EMPTY),
-    onValueChange as ((next: Value) => void) | undefined,
+    // Selection emits the mode's shape; clearing retains the existing empty-string sentinel.
+    onValueChange as ((next: Value | '') => void) | undefined,
   );
   const [expandedValue, requestExpanded] = useControlledState(expandedProp, defaultExpanded, onExpandedChange);
   const expanded = expandedValue ?? false;
@@ -264,7 +265,7 @@ export function ChipGroup({
   const rowRef = useRef<HTMLDivElement>(null);
   const lastFocused = useRef<HTMLElement | null>(null);
   const focusInside = useRef(false);
-  const [focused, setFocused] = useState<string | typeof OVERFLOW | null>(null);
+  const [focused, setFocused] = useState<V | typeof OVERFLOW | null>(null);
   const rowId = useId();
   useImperativeHandle(ref, () => rootRef.current!, []);
   useImperativeHandle(slotProps?.row?.ref, () => rowRef.current!, []);

@@ -48,9 +48,9 @@ export interface TooltipBaseProps {
   onOpenChange?: (open: boolean) => void;
   /** Prefer this side of the trigger; may flip to fit the viewport. Defaults to `top`. */
   placement?: Placement;
-  /** Hover delay before opening, in ms. Keyboard focus opens immediately. */
+  /** Hover delay before opening, in ms. Defaults to 300; keyboard focus opens immediately. */
   openDelay?: number;
-  /** Delay before closing after the pointer leaves trigger and content, in ms. */
+  /** Delay before closing after the pointer leaves trigger and content, in ms. Defaults to 100. */
   closeDelay?: number;
   /** Compose `Tooltip.Trigger` and `Tooltip.Content` instead of using generated parts. */
   children?: ReactNode;
@@ -79,12 +79,15 @@ export interface TooltipShorthandProps extends Omit<TooltipBaseProps, 'children'
     content?: ComponentType<ComponentPropsWithRef<'div'>>;
   };
   /** Pass props and `sx` to the generated trigger and tooltip content. */
-  slotProps?: {
-    /** Button element that triggers the tooltip on hover or focus. */
-    trigger?: TooltipGeneratedPartProps<TooltipTriggerProps>;
-    /** Floating tooltip overlay container displaying the help content. */
-    content?: TooltipGeneratedPartProps<TooltipContentProps>;
-  };
+  slotProps?: TooltipSlotProps;
+}
+
+/** Props for the generated Tooltip trigger and content parts. */
+export interface TooltipSlotProps {
+  /** Button element that triggers the tooltip on hover or focus. */
+  trigger?: TooltipGeneratedPartProps<TooltipTriggerProps>;
+  /** Floating tooltip overlay container displaying the help content. */
+  content?: TooltipGeneratedPartProps<TooltipContentProps>;
 }
 
 export type TooltipProps = TooltipComposedProps | TooltipShorthandProps;

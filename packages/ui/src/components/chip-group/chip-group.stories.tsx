@@ -9,7 +9,7 @@ import { withLightTheme } from '../../testing/story-decorators';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
 import { ThemeRoot } from '../theme-root';
-import { ChipGroup, type ChipGroupProps, type ChipGroupMultipleProps } from './index';
+import { ChipGroup, type ChipGroupProps, type ChipGroupMultipleProps, type ChipGroupOption } from './index';
 
 const Stack = styled.div({ display: 'grid', gap: vars.space[4] });
 const ConstrainedFrame = styled.div({ maxInlineSize: '22rem' });
@@ -37,6 +37,34 @@ const OPTIONS = [
   { value: 'delivery', label: 'Delivery' },
 ];
 const SIZE_PX = { sm: Number.parseFloat(base.space[8]), md: Number.parseFloat(base.space[10]) };
+
+type Topic = 'design' | 'code';
+const TOPIC_OPTIONS: readonly ChipGroupOption<Topic>[] = [
+  { value: 'design', label: 'Design' },
+  { value: 'code', label: 'Code' },
+];
+
+/** Compile-time consumer checks; never rendered. */
+function ChipGroupGenericChecks() {
+  const saveTopic = (topic: Topic | '') => (topic === '' ? 'design' : topic);
+  const saveTopics = (topics: Topic[]) => topics;
+  return (
+    <>
+      <ChipGroup<Topic> type="single" options={TOPIC_OPTIONS} value="design" onValueChange={saveTopic} />
+      <ChipGroup type="single" options={TOPIC_OPTIONS} onValueChange={(next) => saveTopic(next)} />
+      <ChipGroup options={TOPIC_OPTIONS} value={['code']} onValueChange={(next) => saveTopics(next)}
+        slotProps={{ chip: (option) => ({ title: saveTopic(option.value) }) }} />
+      {/* @ts-expect-error value must be inferred from options */}
+      <ChipGroup type="single" options={TOPIC_OPTIONS} value="research" />
+      {/* @ts-expect-error defaultValue must be inferred from options */}
+      <ChipGroup type="single" options={TOPIC_OPTIONS} defaultValue="research" />
+      {/* @ts-expect-error multiple values must be inferred from options */}
+      <ChipGroup options={TOPIC_OPTIONS} value={['research']} />
+      {/* @ts-expect-error multiple defaults must be inferred from options */}
+      <ChipGroup options={TOPIC_OPTIONS} defaultValue={['research']} />
+    </>
+  );
+}
 
 function SlotChip(props: ComponentPropsWithRef<'button'>) {
   return <button {...props} data-slot="chip-group-chip" />;

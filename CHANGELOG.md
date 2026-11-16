@@ -2,8 +2,22 @@
 
 ## Unreleased
 
+### Added
+
+- `Popover.Content closeOnFocusOut={false}` keeps the panel open when focus leaves. By default, leaving the panel and trigger now dismisses it without returning focus.
+
+### Fixed
+
+- On coarse pointers, overlay triggers (Dialog, Drawer, BottomSheet, DialogStack, Popover, Menu, Tooltip, HoverCard, ContextMenu, and CommandPalette) reach the 44px `size.touch` height, and the Dialog, Drawer, BottomSheet, and DialogStack close buttons, the BottomSheet handle, and DialogStack Back reach 44×44px. Fine-pointer sizes are unchanged.
+- `UserMenu.Identity` wraps long names and email addresses, including at enlarged text sizes.
+- Desktop `UserMenu` and `Popover` preserve keyboard entry and exit without hidden, tabbable focus guards.
+- `DateRangePicker` uses viewport-relative positioning and keeps focused controls in its scroll viewport when the panel resizes.
+
 ### Changed
 
+- `ChipGroup`, `ToggleGroup` and the `SegmentedControl` shorthand infer their value union from `options`, and single-mode callbacks include the `''` clear. A computed `string` or `string[]` value can opt out with an explicit type argument, for example `<ChipGroup<string>>`.
+- `InlineEdit` correlates its control slot, `controlProps` and `controlRef` with `multiline`. The default control props are input attributes, so textarea-only attributes require `multiline`.
+- New named public types: `DeckArtProviderProps`, `DatePickerSlotProps`, `TooltipSlotProps`, and one props type per `GameTable` part.
 - Development-only diagnostics route through one `devWarn`/`devError` seam in `src/utils/dev.ts`. Production builds no longer emit them, and development output is unchanged.
 - Hook-using source modules declare their client boundary, matching the `'use client'` banner on published chunks.
 
@@ -139,7 +153,6 @@
 - The Satoshi mark is a dot, three increasing bars and a dot, tilted 10 degrees.
 - `SvgIcon` documentation lives under Icons with the rest of the set.
 
-
 ### Changed
 
 - `Timeline` uses separated day headings, a single marker rail, event-first summaries, and inline expanded details. Timestamps move below each event in narrow containers, and disclosure targets stay at least 44px tall. Details unfold when opened, and new-event markers pulse once; both honor reduced motion.
@@ -161,7 +174,6 @@
 
 - A release packs once and publishes to each registry in its own job, so a slow or failing registry can no longer time out the other one.
 
-
 ## 0.19.2 — 2026-10-26
 
 ### Fixed
@@ -169,7 +181,6 @@
 - `@jfrader/icons` carries its license, description, keywords, repository and homepage on npm.
 - `@jfrader/styling` carries its keywords, repository and homepage.
 - A release now publishes to both registries independently, so a failure on one no longer leaves the other empty.
-
 
 ## 0.19.1 — 2026-10-26
 
@@ -197,7 +208,6 @@ First published build of the icon system. Same content as 0.19.0, which stayed i
 - `Dock` toolbar labels no longer obstruct an open group tray at enlarged text sizes.
 - `Dock` keeps multiline tray labels above running and selection markers.
 - `ColorPicker` shows the selected color beside the hex field, so the panel no longer leaves the pad as its only sample of the color.
-
 
 ## 0.17.1 — 2026-10-25
 
@@ -261,6 +271,7 @@ First published build of the icon system. Same content as 0.19.0, which stayed i
 - `RadialMenu`'s satellites use icons instead of text characters.
 - `BottomSheet`, `Dialog`, `Drawer`, `DialogStack` and `UserMenu` no longer shift the page while they are open. The scroll lock hid the scrollbar before measuring it, so the width came out as zero and no compensating padding was applied.
 - `BottomSheet`'s entrance no longer jumps straight to its resting position. The resize that follows the scroll lock is width-only, and it used to cancel the animation; the sheet now re-measures only when a value it reads changes.
+
 ## 0.14.0 — 2026-10-24
 
 ### Added
@@ -536,7 +547,6 @@ First published build of the icon system. Same content as 0.19.0, which stayed i
 ### Changed
 
 - `SortableDataTable` sort headers drop the pill-style chip chrome: borderless, text-forward labels with paired chevrons (shape and accent color mark the active direction), quiet surface hover, and the existing focus ring. API and behavior unchanged; 32px targets, forced-colors and reduced-motion preserved.
-
 
 ### Added
 

@@ -19,11 +19,14 @@ export function useDeckArt({ artSet, cardArtSets }: DeckArtOptions = {}): DeckAr
   }), [artSet, cardArtSets, parent]);
 }
 
-/** Share deck artwork choices with descendant cards. */
-export function DeckArtProvider({ children, ...options }: DeckArtOptions & {
+/** Props for DeckArtProvider: shared artwork options plus its children. */
+export interface DeckArtProviderProps extends DeckArtOptions {
   /** Receives the shared artwork selections. */
   children: ReactNode;
-}) {
+}
+
+/** Share deck artwork choices with descendant cards. */
+export function DeckArtProvider({ children, ...options }: DeckArtProviderProps) {
   const value = useDeckArt(options);
   return <ArtContext value={value}>{children}</ArtContext>;
 }

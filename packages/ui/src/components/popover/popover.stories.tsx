@@ -83,7 +83,7 @@ Show related information or actions beside a button while keeping the rest of th
 
 ### Keyboard and accessibility
 
-Give the panel an accessible name, preferably from a visible heading. Enter or Space toggles it; Escape and outside press request closure. Opening does not move focus. Tab follows page order through the panel and out without closing it or trapping focus.
+Give the panel an accessible name, preferably from a visible heading. Enter or Space toggles it; Escape and outside press request closure. Opening does not move focus. Tab follows page order through the panel and closes it on leaving. Set Content's closeOnFocusOut to false to keep it open instead.
 
 Escape returns focus to the trigger only after an accepted close. Outside press closes without moving focus to the trigger. Nested layers handle Escape and outside press before their parent.`,
     },
@@ -504,7 +504,7 @@ export const RejectedControlled: Story = {
 export const KeyboardEntry: Story = {
   name: 'Tab through the panel',
   parameters: { docs: {
-    description: { story: 'Open with Enter and Tab through both actions to After popover without closing the panel.' },
+    description: { story: 'Open with Enter and Tab through both actions to After popover, closing the panel on leaving.' },
     source: { language: 'tsx', code: `import { useId } from 'react';
 import { Button, Popover, styled, theme } from '@jfrader/ui';
 
@@ -548,10 +548,16 @@ function KeyboardShare() {
     await expect(ownerDocument.activeElement).toBe(within(popover).getByRole('button', { name: 'Copy link' }));
     await userEvent.tab();
     await expect(ownerDocument.activeElement).toBe(within(popover).getByRole('button', { name: 'Email link' }));
-    // ...and continues to the following page control without closing (no trap).
+    await userEvent.tab({ shift: true });
+    await expect(ownerDocument.activeElement).toBe(within(popover).getByRole('button', { name: 'Copy link' }));
+    await userEvent.tab({ shift: true });
+    await expect(ownerDocument.activeElement).toBe(trigger);
+    await expect(popover).toBeVisible();
+    await userEvent.tab();
+    await userEvent.tab();
     await userEvent.tab();
     await expect(ownerDocument.activeElement).toBe(within(canvasElement).getByRole('button', { name: AFTER }));
-    await expect(popover).toBeVisible();
+    await waitFor(() => expect(popover).not.toBeInTheDocument());
   },
 };
 
@@ -616,7 +622,7 @@ const outerOpenChange = fn<(open: boolean) => void>();
 const innerOpenChange = fn<(open: boolean) => void>();
 const callValues = (spy: unknown) => (spy as Mock).mock.calls.map(([value]) => value);
 
-function NestedPopovers() {
+function NestedPopovers({ closeOnFocusOut = true }: { closeOnFocusOut?: boolean }) {
   return (
     <Popover onOpenChange={outerOpenChange}>
       <Popover.Trigger>{TRIGGER}</Popover.Trigger>
@@ -625,7 +631,7 @@ function NestedPopovers() {
           <Button size="sm">Copy link</Button>
           <Popover onOpenChange={innerOpenChange}>
             <Popover.Trigger>Link settings</Popover.Trigger>
-            <Popover.Content aria-label="Link settings">
+            <Popover.Content aria-label="Link settings" closeOnFocusOut={closeOnFocusOut}>
               <Button size="sm">Expire link</Button>
             </Popover.Content>
           </Popover>
@@ -671,7 +677,7 @@ async function expectEscapeClosesTopmostFirst(
 }
 
 export const NestedEscapeFromParent: Story = {
-  render: () => <NestedPopovers />,
+  render: () => <NestedPopovers closeOnFocusOut={false} />,
   play: async ({ canvasElement }) => {
     const layers = await openNestedPopovers(canvasElement);
     // Focus on a control that belongs to the outer popover only.
