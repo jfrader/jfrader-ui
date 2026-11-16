@@ -1,6 +1,6 @@
 {
   "name": "@jfrader/styling",
-  "version": "0.19.3",
+  "version": "0.29.1",
   "description": "Shared Emotion styling seam for @jfrader/icons and @jfrader/ui.",
   "keywords": [
     "react",
@@ -33,7 +33,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "build": "vite build --config vite.lib.config.ts && tsc -p tsconfig.build.json",
+    "build": "vite build --config vite.lib.config.ts && tsc -p tsconfig.build.json && node ../../scripts/rewrite-dts-specifiers.mjs dist/types",
     "prepack": "pnpm build && node ../../scripts/flip-exports.mjs dist --package styling",
     "postpack": "node ../../scripts/flip-exports.mjs src --package styling"
   },

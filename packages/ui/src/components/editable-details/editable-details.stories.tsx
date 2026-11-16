@@ -832,7 +832,7 @@ export const DefaultExpanded: Story = {
   },
 };
 
-function SlotEdit(props: InlineEditProps) {
+function SlotEdit(props: InlineEditProps<boolean>) {
   return <InlineEdit {...props} data-slot="edit" />;
 }
 function SlotItem(props: EditableDetailsItemProps) {

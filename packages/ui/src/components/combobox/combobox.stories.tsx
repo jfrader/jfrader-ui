@@ -5,6 +5,8 @@ import { expect, fireEvent, fn, mocked, userEvent, waitFor, within } from 'story
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
+import { expectTouchTargets } from '../../testing/touch-target-assertions';
+import { styled } from '../../styling/styled';
 import { Button } from '../button';
 import { Popover } from '../popover';
 import {
@@ -20,6 +22,33 @@ import {
 const LABEL = 'Fruit';
 const DESCRIPTION = 'Type to search';
 const EMPTY_LABEL = 'No results';
+
+const TouchFields = styled.div({ display: 'grid', gap: vars.space[4] });
+
+export const TouchTargets: StoryObj = {
+  name: 'Combobox touch targets',
+  tags: ['!autodocs', 'touch'],
+  render: () => (
+    <TouchFields>
+      {(['sm', 'md', 'lg'] as const).map((size) => (
+        <TouchFields key={size}>
+          <Combobox size={size} label={`${size} shorthand fruit`} options={FRUITS} />
+          <Combobox>
+            <Combobox.Input size={size} label={`${size} composed fruit`} />
+            <Combobox.List>
+              <Combobox.Item value="apple">Apple</Combobox.Item>
+            </Combobox.List>
+          </Combobox>
+        </TouchFields>
+      ))}
+    </TouchFields>
+  ),
+  play: async ({ canvasElement }) => {
+    const inputs = within(canvasElement).getAllByRole<HTMLElement>('combobox');
+    await expect(inputs).toHaveLength(6);
+    await expectTouchTargets(inputs);
+  },
+};
 
 export const NestedDismissal: StoryObj = {
   tags: ['!autodocs'],
@@ -714,14 +743,21 @@ export const NativeFormReset: Story = {
 function AssociatedFormResetCombobox(props: ComboboxComposedProps) {
   const formId = useId();
   const [cancelReset, setCancelReset] = useState(true);
+  const [valueChanges, setValueChanges] = useState(0);
+  const [inputChanges, setInputChanges] = useState(0);
+  const callbacks = {
+    onValueChange: (value: string | null) => { setValueChanges(count => count + 1); props.onValueChange?.(value); },
+    onInputChange: (value: string) => { setInputChanges(count => count + 1); props.onInputChange?.(value); },
+  };
   return (
     <>
       <form id={formId} onReset={event => { if (cancelReset) event.preventDefault(); }}>
         <Button type="reset">Reset</Button>
       </form>
       <Button onClick={() => setCancelReset(false)}>Allow reset</Button>
-      <ComboboxExample {...props} defaultValue="apple" inputProps={{ form: formId }} />
-      <ComboboxExample {...props} value="cherry" inputProps={{ form: formId, label: 'Controlled fruit', inputValue: 'Controlled query' }} />
+      <ComboboxExample {...props} {...callbacks} defaultValue="apple" inputProps={{ form: formId }} />
+      <ComboboxExample {...props} {...callbacks} value="cherry" inputProps={{ form: formId, label: 'Controlled fruit', inputValue: 'Controlled query' }} />
+      <output aria-label="Reset callbacks">{valueChanges},{inputChanges}</output>
     </>
   );
 }

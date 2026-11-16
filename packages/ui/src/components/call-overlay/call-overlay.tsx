@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
+import { useEffect, type ComponentPropsWithRef, type ComponentType, type ReactNode } from 'react';
 import { MotionConfig, motion, useReducedMotion } from 'motion/react';
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';

@@ -8,9 +8,9 @@ composed modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **173**; public callable parts: **188**.
-- Families exposing `slots.root`: **120**; remaining without a family-level root slot: **53** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **132**; remaining without family-level interior slots: **41** (includes components without generated anatomy).
+- Public callable families: **176**; public callable parts: **188**.
+- Families exposing `slots.root`: **122**; remaining without a family-level root slot: **54** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **134**; remaining without family-level interior slots: **42** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -67,6 +67,7 @@ panel material. The section has no background, border or radius to migrate.
 | [ArticleSection](../packages/ui/src/components/article-section/article-section.tsx) | yes | `article`, `band`, `heading`, `list`, `listItem`, `root` | `article`, `band`, `heading`, `list`, `listItem`, `root` | — | — | `Heading` |
 | [ArticleSection.Heading](../packages/ui/src/components/article-section/article-section.tsx) | yes | `accessory`, `heading`, `kicker`, `link`, `root` | `accessory`, `heading`, `kicker`, `link`, `root` | — | — | — |
 | [AttachmentList](../packages/ui/src/components/attachment-list/attachment-list.tsx) | yes | `expandButton`, `item`, `link`, `root` | `expandButton`, `item`, `link`, `root` | — | — | — |
+| [AutoEllipsis](../packages/ui/src/components/auto-ellipsis/auto-ellipsis.tsx) | — | — | — | — | — | — |
 | [Avatar](../packages/ui/src/components/avatar/avatar.tsx) | — | `fallback`, `image`, `status` | `fallback`, `image`, `status` | — | — | — |
 | [AvatarGroup](../packages/ui/src/components/avatar-group/avatar-group.tsx) | — | `member`, `overflow`, `summary` | `member`, `overflow`, `summary` | — | `avatarProps` | — |
 | [Badge](../packages/ui/src/components/badge/badge.tsx) | — | `badge`, `root` | `badge`, `root` | — | — | — |
@@ -204,6 +205,7 @@ panel material. The section has no background, border or radius to migrate.
 | [Flex](../packages/ui/src/components/flex/flex.tsx) | — | — | — | — | — | — |
 | [FlightProvider](../packages/ui/src/components/flights/flight-provider.tsx) | — | — | — | — | — | — |
 | [FlipGameCard](../packages/ui/src/components/flip-game-card/flip-game-card.tsx) | yes | `back`, `front`, `root`, `rotator` | `back`, `front`, `root`, `rotator` | — | — | — |
+| [GalleryEditor](../packages/ui/src/components/gallery-editor/gallery-editor.tsx) | yes | `empty`, `header`, `list`, `root`, `tile`, `tileActions`, `toolbar` | `empty`, `header`, `list`, `root`, `tile`, `tileActions`, `toolbar` | — | — | — |
 | [GameActions](../packages/ui/src/components/game-actions/game-actions.tsx) | yes | `action`, `root` | `action`, `root` | — | — | — |
 | [GameCard](../packages/ui/src/components/game-card/game-card.tsx) | yes | `back`, `face`, `root` | `back`, `face`, `root` | — | — | — |
 | [GameCardStack](../packages/ui/src/components/game-card-stack/game-card-stack.tsx) | yes | `card`, `pile`, `root`, `trigger` | `card`, `pile`, `root`, `trigger` | — | — | `Pile` |
@@ -255,6 +257,7 @@ panel material. The section has no background, border or radius to migrate.
 | [Kbd.Group](../packages/ui/src/components/kbd/kbd.tsx) | — | — | — | — | — | — |
 | [KeycapKeyboard](../packages/ui/src/components/keycap-keyboard/keycap-keyboard.tsx) | — | `key`, `legend`, `row` | `key`, `legend`, `row` | — | — | — |
 | [LightboxGallery](../packages/ui/src/components/lightbox-gallery/lightbox-gallery.tsx) | — | `caption`, `controls`, `grid`, `image`, `stage`, `status`, `thumbnails`, `tile`, `title`, `viewer` | `caption`, `controls`, `grid`, `image`, `stage`, `status`, `thumbnails`, `tile`, `title`, `viewer` | — | — | — |
+| [LinearTimeline](../packages/ui/src/components/linear-timeline/linear-timeline.tsx) | yes | `axis`, `content`, `controls`, `details`, `empty`, `item`, `list`, `marker`, `nextButton`, `opposite`, `previousButton`, `range`, `root`, `trigger` | `axis`, `content`, `controls`, `details`, `empty`, `item`, `list`, `marker`, `nextButton`, `opposite`, `previousButton`, `range`, `root`, `trigger` | — | — | — |
 | [LinkPreview](../packages/ui/src/components/link-preview/link-preview.tsx) | — | `body`, `image`, `title` | `body`, `image`, `title` | — | — | — |
 | [LinkUnfurl](../packages/ui/src/components/link-unfurl/link-unfurl.tsx) | yes | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `root`, `send`, `status`, `title` | `card`, `chip`, `controls`, `error`, `field`, `image`, `lane`, `root`, `send`, `status`, `title` | — | — | — |
 | [LocaleSwitcher](../packages/ui/src/components/locale-switcher/locale-switcher.tsx) | — | `content`, `option`, `trigger` | `content`, `option`, `trigger` | — | — | — |
@@ -290,7 +293,7 @@ panel material. The section has no background, border or radius to migrate.
 | [PasswordField](../packages/ui/src/components/password-field/password-field.tsx) | yes | `control`, `description`, `error`, `label`, `reveal`, `root`, `shell` | `control`, `description`, `error`, `label`, `reveal`, `root`, `shell` | — | — | — |
 | [PasswordStrength](../packages/ui/src/components/password-strength/password-strength.tsx) | yes | `mark`, `meter`, `meterRow`, `remaining`, `root`, `rule`, `rules`, `segment`, `strengthLabel` | `mark`, `meter`, `meterRow`, `remaining`, `root`, `rule`, `rules`, `segment`, `strengthLabel` | — | `fieldSlotProps` | — |
 | [Pattern](../packages/ui/src/components/pattern/pattern.tsx) | — | — | — | — | — | — |
-| [PaymentFlow](../packages/ui/src/components/payment-flow/payment-flow.tsx) | yes | `caption`, `controls`, `journey`, `node`, `pauseButton`, `replayButton`, `root`, `scene`, `stepButton`, `summary`, `summaryItem` | `caption`, `controls`, `journey`, `node`, `pauseButton`, `replayButton`, `root`, `scene`, `stepButton`, `summary`, `summaryItem` | — | — | — |
+| [PaymentFlow](../packages/ui/src/components/payment-flow/payment-flow.tsx) | yes | `caption`, `controls`, `node`, `pauseButton`, `phase`, `replayButton`, `root`, `scene`, `stepButton`, `summary`, `summaryItem` | `caption`, `controls`, `node`, `pauseButton`, `phase`, `replayButton`, `root`, `scene`, `stepButton`, `summary`, `summaryItem` | — | — | — |
 | [PersonAvatar](../packages/ui/src/components/person-avatar/person-avatar.tsx) | yes | `root` | `root` | — | — | — |
 | [PhoneInput](../packages/ui/src/components/phone-input/phone-input.tsx) | — | — | `control`, `countryTrigger`, `description`, `error`, `label`, `list`, `number`, `option`, `panel`, `root`, `search`, `status` | `control`, `countryTrigger`, `description`, `error`, `label`, `list`, `number`, `option`, `panel`, `root`, `search`, `status` | — | — |
 | [PhotoGrid](../packages/ui/src/components/photo-grid/photo-grid.tsx) | yes | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `root`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | `caption`, `colors`, `controls`, `density`, `details`, `favorite`, `filmstrip`, `header`, `item`, `list`, `main`, `navigation`, `options`, `photo`, `position`, `presentationStage`, `root`, `stage`, `status`, `thumbnails`, `title`, `viewer`, `viewerFavorite` | — | — | — |

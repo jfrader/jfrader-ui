@@ -6,7 +6,7 @@
 ## Versioning
 
 All four packages carry the same version. While the major is `0`, a breaking change ships in a minor
-release and is marked "Breaking pre-1.0" in the changelog. Fixes are patches.
+release and is marked "Breaking pre-1.0" in the changelog. Additive APIs are minor releases. Fixes are patches.
 
 ## Publish a release
 

@@ -20,6 +20,13 @@ documentation spec, review checklist).
   `apps/docs/scripts/sync-readme.mjs`, so `README.md` stays the single source for that page, and
   `apps/docs/guidance/` is generated and ignored.
 
+## Consumer-driven scope
+
+Bound prerequisite work to the named consumer journeys. Preserve public APIs and optional modes
+unused by those consumers. Library-wide removal or redesign requires explicit library-level approval.
+Record unrelated findings with their actual status, without making them unsolicited consumer blockers
+or calling them passes.
+
 ## Commands
 
 | Command | What it does |
@@ -30,15 +37,32 @@ documentation spec, review checklist).
 | `pnpm og:image` | Generate tokens and icons, then regenerate the Open Graph share card (`apps/storybook/public/og-image.png`) |
 | `pnpm test` | Generate tokens and icons, then run Storybook's test suites |
 | `pnpm typecheck` | Generate tokens and icons, then typecheck every package |
+| `pnpm lint` | Run oxlint with the repo config: hook order, the styling seam, `any`, dead bindings, and console diagnostics outside `src/utils/dev.ts` |
 | `pnpm verify:docs` | Check component documentation coverage; also runs before the Storybook build |
 | `pnpm verify:api` | Check sx-only public styling types, slot props, and authored examples |
 | `pnpm verify:slots` | Check that every replacement key a family declares is rendered |
 | `pnpm verify:exports` | Check that every component's subpath export resolves and matches the index |
+| `pnpm verify:types` | Check that built declaration files use explicit relative specifiers for `node16` and `nodenext` consumers |
 | `pnpm verify:icons` | Check icon sources, geometry, metadata, generated components, and exports |
 | `pnpm --filter @jfrader/storybook audit:docs` | Crawl the docs site and report examples without code and API coverage (`DOCS_URL`, `--only`, `--check`) |
-| `pnpm --filter @jfrader/storybook exec vitest run --project=storybook --maxWorkers=2 packages/ui/src/components/<name>/<name>.stories.tsx` | Run one story file from the repo root (fast loop; tokens and icons must already be generated) |
+| `pnpm --filter @jfrader/storybook exec vitest run --project=storybook --project=storybook-touch --maxWorkers=2 packages/ui/src/components/<name>/<name>.stories.tsx` | Run one story file from the repo root (fast loop; tokens and icons must already be generated) |
 
 Packing and publishing are in `docs/releasing.md`.
+
+## Deploy triggers
+
+- Render static site `jfrader-ui-storybook` deploys `storybook`, not `master` or `main`.
+  Pushes to `master` intentionally trigger no deploy. To publish, merge `master` into `storybook`
+  and push: exactly one build.
+- See `pnpm build` in Commands for `DOCS_BUILD=1`. The one service serves the docs site at `/` and
+  Storybook at `/storybook/` on `ui.jfrader.com` from `apps/storybook/storybook-static`.
+  A Storybook publish also publishes the docs site: they stay in step, but both can lag `master`.
+- Keep branch isolation; do not repoint the service to `master`: auto-deploying every `master` push
+  produced 601 deploys and 1,669 build minutes in October 2026, exhausting the workspace's included minutes.
+- **Do not add Render build filters.** Only about 2.8% of commits are docs/CI-only, so savings are
+  negligible. Five Storybook MDX files (GettingStarted, Icons, Theming, Styling, and Flights) import
+  `docs/*.md` with `?raw`; `apps/docs/scripts/sync-readme.mjs` reads `README.md` and copies
+  `docs/showcase/`. Excluding `docs/**` or `**/*.md` silently publishes stale documentation.
 
 ## Where each rule lives
 
@@ -54,8 +78,11 @@ Packing and publishing are in `docs/releasing.md`.
 
 - `@emotion/react`, `@emotion/styled` (re-exported as the app-facing `styled`; components never use
   it), and `@floating-ui/react` (Popover, Tooltip, Menu).
+- `tabbable` owns enabled, visible tab-stop discovery for menu boundary navigation.
+- `axe-core` is development-only, for unfiltered accessibility regression scans in stories.
 - `motion` (v14.x, imported as `motion/react`).
-- `@jfrader/styling` depends on `@jfrader/tokens` and owns the shared Emotion seam.
+- `@jfrader/styling` is public API, depends on `@jfrader/tokens`, and owns the shared Emotion seam.
+  Its exports and `sx` contract are documented in `packages/styling/README.md`.
 - `@jfrader/icons` owns `SvgIcon` and `createSvgIcon`, depends on styling and tokens, and uses
   `@floating-ui/react` for ref composition. It has no runtime dependency on `@jfrader/ui`.
 - `@jfrader/ui` depends on `@jfrader/icons` and `@jfrader/styling`; runtime components may import glyphs.
@@ -73,6 +100,7 @@ Packing and publishing are in `docs/releasing.md`.
   minor-unit arithmetic (NumberField, MoneyInput).
 - `libphonenumber-js` (the `/max` build) for PhoneInput country metadata, AsYouType formatting, and
   E.164 validation.
+- `markdown-to-jsx` is development-only, for authored guides shared by Storybook and the docs site.
 - `culori` for ColorPicker color-space conversion and contrast math.
 - `next` and `@emotion/cache` are optional peers and devDependencies. Runtime imports stay in
   `packages/ui/src/components/next/`, published as the `./next` subpath. Iframe stories may use
@@ -80,7 +108,8 @@ Packing and publishing are in `docs/releasing.md`.
   that document.
 - `typescript-compiler` (an alias of TypeScript 5.9) is development-only, for the customization
   inventory. TypeScript 7 remains the typecheck command.
-- Any other dependency requires updating this file first.
+- `oxlint` is development-only, for the `pnpm lint` gate in CI. It is pinned to one version because
+  rule defaults move between minor releases. Any other dependency requires updating this file first.
 
 ## Generated files
 

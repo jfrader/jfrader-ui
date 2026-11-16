@@ -41,13 +41,12 @@ import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
+import { devWarn, isDev } from '../../utils/dev';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button/button';
 import { controlBlockSize } from '../../styling/control-size';
 import { FieldError } from '../field/field-anatomy';
 import { InlineEdit, type InlineEditProps } from '../inline-edit';
-
-declare const process: { env: { NODE_ENV?: string } };
 
 export type EditableDetailsHeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -163,7 +162,7 @@ export interface EditableDetailsMessages {
 /** InlineEdit props shared by every editable row. Row data and saving stay with the row. */
 export type EditableDetailsEditProps = Partial<
   Omit<
-    InlineEditProps,
+    InlineEditProps<boolean>,
     | 'value'
     | 'defaultValue'
     | 'onValueChange'
@@ -187,7 +186,7 @@ export interface EditableDetailsSlots {
   /** Replaces each item generated from a value or editable row. */
   item?: ComponentType<EditableDetailsItemProps>;
   /** Replaces the InlineEdit of each text row with `edit`; forward its props and ref. */
-  edit?: ComponentType<InlineEditProps>;
+  edit?: ComponentType<InlineEditProps<boolean>>;
 }
 
 export interface EditableDetailsSlotProps {
@@ -503,10 +502,8 @@ function EditableDetailsRoot<Context extends {} = true>(props: EditableDetailsPr
     ...restProps
   } = props;
 
-  if (process.env.NODE_ENV !== 'production') {
-    if (component && slots?.root && component !== slots.root) {
-      console.warn('EditableDetails: component is redundant when slots.root is supplied; slots.root wins.');
-    }
+  if (isDev && component && slots?.root && component !== slots.root) {
+    devWarn('EditableDetails: component is redundant when slots.root is supplied; slots.root wins.');
   }
 
   const RootPart = slots?.root ?? component ?? 'div';
@@ -542,7 +539,7 @@ function EditableDetailsRoot<Context extends {} = true>(props: EditableDetailsPr
     const SectionPart = rowSlots?.section ?? EditableDetailsSection;
     const ListPart = rowSlots?.list ?? EditableDetailsList;
     const ItemPart = rowSlots?.item ?? EditableDetailsItem;
-    const EditPart = rowSlots?.edit ?? InlineEdit;
+    const EditPart: ComponentType<InlineEditProps<boolean>> = rowSlots?.edit ?? InlineEdit;
     const text: EditableDetailsMessages = { ...DEFAULT_MESSAGES, ...messages };
 
     const renderItem = (row: DetailRow<Context>) => (

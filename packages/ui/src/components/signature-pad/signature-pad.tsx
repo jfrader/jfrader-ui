@@ -22,6 +22,8 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { REDUCED_MOTION, FORCED_COLORS } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
+import { clamp } from '../../utils/clamp';
+import { devWarn, isDev } from '../../utils/dev';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button } from '../button';
@@ -220,9 +222,6 @@ export class SignatureExportError extends Error {
   }
 }
 
-// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
-declare const process: { env: { NODE_ENV?: string } };
-
 // Ids only need to be unique within one value; the random part keeps new strokes apart from persisted ones.
 // `getRandomValues` works on insecure origins, unlike `randomUUID`.
 let strokeSequence = 0;
@@ -271,7 +270,6 @@ function isValid(strokes: SignatureStroke[]) {
 function validate(strokes: SignatureStroke[]) {
   if (!isValid(strokes)) throw new SignatureExportError('invalid', 'Invalid signature strokes.');
 }
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 /** Preview-safe copy of an untrusted value: unknown ink/nib and non-finite samples are skipped, the rest clamped. */
 function drawable(strokes: SignatureStroke[]): SignatureStroke[] {
   if (isValid(strokes)) return strokes;
@@ -728,11 +726,11 @@ export function SignaturePad({
 
   const warnedValue = useRef<SignatureStroke[] | null>(null);
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production') return;
+    if (!isDev) return;
     if (isValid(current)) warnedValue.current = null;
     else if (warnedValue.current === null || !equal(warnedValue.current, current)) {
       warnedValue.current = current;
-      console.warn(
+      devWarn(
         'SignaturePad: value contains malformed strokes; invalid samples are skipped when drawing and exports reject with an "invalid" SignatureExportError.',
       );
     }
@@ -898,6 +896,8 @@ export function SignaturePad({
       try {
         const link = doc.createElement('a');
         link.href = url;
+        // Control characters are stripped from the download name on purpose.
+        // oxlint-disable-next-line no-control-regex
         link.download = `${fileName.replace(/[\\/\u0000-\u001f:*?"<>|]/g, '_') || 'signature'}.${format}`;
         link.click();
         setStatus(messages.exported);

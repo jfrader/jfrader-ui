@@ -17,4 +17,4 @@ for (const [file, contents] of files) {
   mkdirSync(dirname(target), { recursive: true });
   writeFileSync(target, contents);
 }
-console.log(`Generated ${Object.keys(metadata).length} icons (${sources.length} variants) → src/generated, icons.json`);
+console.log(`Generated ${Object.keys(metadata).length} icons (${sources.length} variants) → src/generated, icons.json, sprite.svg, paths.json`);

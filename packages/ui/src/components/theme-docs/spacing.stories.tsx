@@ -3,9 +3,8 @@ import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { expect, within } from 'storybook/test';
 import { css } from '../../styling/css';
-import { FORCED_COLORS } from '../../styling/media';
 import { customProperty, tokenPath } from './kit/model';
-import { ScaleBar, TokenFamily, TokenPanel, TokenRow, tokenStyle } from './kit/primitives';
+import { RadiusSpecimen, ScaleBar, TokenFamily, TokenPanel, TokenRow, shapeStyle, tokenStyle } from './kit/primitives';
 import { FIXED_SIZES, RADII, SPACE_STEPS } from './kit/space-model';
 
 const SPACE_PREVIEW_SIZE = '48px';
@@ -18,17 +17,6 @@ const spacePreviewStyle = css({
   flexShrink: 0,
 });
 
-const shapeStyle = css({
-  display: 'block',
-  boxSizing: 'border-box',
-  flexShrink: 0,
-  backgroundColor: vars.color.surfaceRaised,
-  border: `1px solid ${vars.color.borderStrong}`,
-  [FORCED_COLORS]: { borderColor: 'CanvasText' },
-});
-
-const radiusStyle = css({ inlineSize: SHAPE_PREVIEW_SIZE, blockSize: SHAPE_PREVIEW_SIZE });
-const pillStyle = css({ blockSize: vars.space[6] });
 const sizeStyle = css({
   maxInlineSize: SHAPE_PREVIEW_SIZE,
   maxBlockSize: MAX_SIZE_PREVIEW,
@@ -77,7 +65,7 @@ export const Spacing: Story = {
         {RADII.map((doc) => (
           <TokenRow
             key={doc.key}
-            preview={<span css={[shapeStyle, radiusStyle, doc.key === 'full' ? pillStyle : undefined, tokenStyle('borderRadius', `var(${doc.variable})`)]} aria-hidden="true" />}
+            preview={<RadiusSpecimen variable={doc.variable} pill={doc.key === 'full'} />}
             name={doc.name}
             variable={doc.variable}
             values={[{ label: 'Value', value: doc.value }]}

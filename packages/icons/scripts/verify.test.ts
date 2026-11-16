@@ -76,7 +76,61 @@ test('solid companions generate beside the line component and update metadata', 
   const table = JSON.parse(files.get('icons.json')!);
   assert.deepEqual(table.find((entry: { name: string }) => entry.name === 'play').variants, ['line', 'solid']);
   assert.equal(table.find((entry: { name: string }) => entry.name === 'search').category, 'action');
+  assert.match(files.get('sprite.svg')!, /<symbol id="play-solid" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M9 5 18 12 9 19Z"\/><\/symbol>/);
+  const catalogue = JSON.parse(files.get('paths.json')!);
+  assert.deepEqual(catalogue.icons.find((entry: { name: string }) => entry.name === 'play').geometry.solid.elements, parseSvg(source.svg, 'solid'));
 });
+
+test('sprite and catalogue preserve every source, style, and variant', () => {
+  const sources = readSources(root);
+  const files = artifacts(sources, metadata);
+  const sprite = files.get('sprite.svg')!;
+  const ids = [...sprite.matchAll(/<symbol id="([^"]+)"/g)].map((match) => match[1]);
+  assert.equal(ids.length, sources.length);
+  assert.equal(new Set(ids).size, ids.length);
+  const catalogue = JSON.parse(files.get('paths.json')!);
+  assert.equal(catalogue.icons.length, Object.keys(metadata).length);
+  for (const source of sources) {
+    const id = source.name + (source.variant === 'solid' ? '-solid' : '');
+    assert.match(id, /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/);
+    assert.ok(ids.includes(id));
+    const entry = catalogue.icons.find((icon: { name: string }) => icon.name === source.name);
+    assert.deepEqual(entry.geometry[source.variant].elements, parseSvg(source.svg, source.variant));
+    assert.equal(entry.geometry[source.variant].attrs[source.variant === 'line' ? 'stroke' : 'fill'], 'currentColor');
+  }
+});
+
+test('source names cannot collide with solid symbol ids', () => {
+  const source = readSources(root).find((item) => item.variant === 'solid')!;
+  const collision = { ...source, name: `${source.name}-solid`, variant: 'line' as const, file: `${source.name}-solid.svg`, svg: search };
+  assert.match([...collect([...readSources(root), collision], metadata).errors.values()].flat().join('\n'), /duplicate symbol id/);
+});
+
+for (const [name, file, change] of [
+  ['missing symbol', 'sprite.svg', (text: string) => text.replace(/  <symbol[^>]*>[\s\S]*?<\/symbol>\n/, '')],
+  ['colliding symbol id', 'sprite.svg', (text: string) => text.replace(/id="[^"]+"/, 'id="search"')],
+  ['non-kebab-case id', 'sprite.svg', (text: string) => text.replace('id="search"', 'id="Search"')],
+  ['stale sprite geometry', 'sprite.svg', (text: string) => text.replace('r="6.5"', 'r="6"')],
+  ['catalogue entry without source', 'paths.json', (text: string) => {
+    const catalogue = JSON.parse(text);
+    catalogue.icons.push({ ...catalogue.icons[0], name: 'orphan' });
+    return JSON.stringify(catalogue, null, 2) + '\n';
+  }],
+] as const) {
+  test(`rejects ${name}`, () => {
+    const directory = mkdtempSync(join(tmpdir(), 'icons-verify-'));
+    try {
+      cpSync(join(root, 'src'), join(directory, 'src'), { recursive: true });
+      for (const asset of ['icons.json', 'sprite.svg', 'paths.json', 'package.json']) cpSync(join(root, asset), join(directory, asset));
+      assert.deepEqual(verify(directory), []);
+      const original = readFileSync(join(directory, file), 'utf8');
+      const changed = change(original);
+      assert.notEqual(changed, original);
+      writeFileSync(join(directory, file), changed);
+      assert.ok(verify(directory).some((error) => error.startsWith(`${file}: stale generated file`)));
+    } finally { rmSync(directory, { recursive: true, force: true }); }
+  });
+}
 
 test('curve and arc extrema use geometry rather than control-point bounds', () => {
   const points = pathPoints('M4 12C4 0 20 0 20 12');

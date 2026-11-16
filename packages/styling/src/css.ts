@@ -8,5 +8,5 @@ export {
   ThemeProvider as EmotionThemeProvider,
   useTheme as useEmotionTheme,
 } from '@emotion/react';
-export type { ClassNamesContent, Interpolation, SerializedStyles, Theme } from '@emotion/react';
+export type { ClassNamesContent, CSSObject, Interpolation, SerializedStyles, Theme } from '@emotion/react';
 export type { JfraderTheme } from './theme';

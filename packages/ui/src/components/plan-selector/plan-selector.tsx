@@ -17,7 +17,6 @@ import {
   type SetStateAction,
 } from 'react';
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'motion/react';
-import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';

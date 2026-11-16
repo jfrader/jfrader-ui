@@ -56,7 +56,7 @@ export interface NumberFieldProps extends Omit<ComponentPropsWithRef<'input'>,
   description?: ReactNode;
   /** Marks the input invalid and shows an error unless an internal validation error takes precedence. */
   error?: ReactNode;
-  /** Sets the field width, control height and text size. Defaults to `md`. */
+  /** Sets the field width, control height, and text size. `lg` gives the input and each stepper a target of at least 44px. Defaults to `md`. */
   size?: NumberFieldSize;
   /** Sets the locale for parsing and formatting. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
@@ -99,7 +99,7 @@ const DEFAULT_MESSAGES: NumberFieldMessages = {
   required: 'Enter a number.',
 };
 const HOLD = { delay: 400, interval: 150, acceleration: 20, floor: 40 } as const;
-const rootStyle = css({ minInlineSize: 0, overflowWrap: 'anywhere' });
+const rootStyle = css({ minInlineSize: 0, maxInlineSize: '100%', overflowWrap: 'anywhere' });
 const rootStyles: Record<NumberFieldSize, SerializedStyles> = {
   sm: css({ inlineSize: `calc(${vars.space[10]} * 4)` }),
   md: css({ inlineSize: `calc(${vars.space[12]} * 4)` }),
@@ -121,7 +121,7 @@ const controlStyle = css({
 });
 const stepperStyle = css({
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  inlineSize: vars.space[8], minBlockSize: vars.space[6], padding: 0, border: 0,
+  inlineSize: vars.space[8], padding: 0, border: 0,
   borderRadius: vars.radius.sm, background: 'transparent', color: vars.color.text,
   fontFamily: vars.font.sans, fontSize: vars.textSize.md, cursor: 'pointer', touchAction: 'none',
   transitionProperty: 'background-color, color', transitionDuration: vars.motion.duration.fast,
@@ -132,7 +132,12 @@ const stepperStyle = css({
   [REDUCED_MOTION]: { transitionDuration: '0s' },
   [FORCED_COLORS]: { color: 'ButtonText', '&[aria-disabled="true"]': { color: 'GrayText' } },
 });
-const largeStepperStyle = css({ minBlockSize: vars.space[8] });
+const largeControlStyle = css({ minInlineSize: vars.size.touch, minBlockSize: `calc(${controlBlockSize.lg} - 2px)` });
+const stepperSizeStyles: Record<NumberFieldSize, SerializedStyles> = {
+  sm: css({ minBlockSize: vars.space[6] }),
+  md: css({ minBlockSize: vars.space[8] }),
+  lg: css({ inlineSize: vars.size.touch, minBlockSize: vars.size.touch }),
+};
 const affixStyle = css({ color: vars.color.textMuted, fontSize: 'inherit', overflowWrap: 'anywhere' });
 const messageStyle = css({ fontSize: vars.textSize.sm, lineHeight: vars.lineHeight.base, color: vars.color.textMuted });
 const statusStyle = css({ fontSize: vars.textSize.sm, lineHeight: vars.lineHeight.base, color: vars.color.warning });
@@ -298,7 +303,7 @@ export function NumberField({
     'aria-valuenow': current === null ? undefined : model.serialize(current),
   };
   const renderStepper = (part: 'increment' | 'decrement', direction: 1 | -1, icon: ReactNode, text: string) => (
-    <FieldSlot element="button" component={slots?.[part]} slotProps={slotProps?.[part]} styles={[stepperStyle, size !== 'sm' && largeStepperStyle]}
+    <FieldSlot element="button" component={slots?.[part]} slotProps={slotProps?.[part]} styles={[stepperStyle, stepperSizeStyles[size]]}
       type="button" disabled={disabled} aria-disabled={unavailable || atBound(direction) || undefined}
       aria-label={text} aria-controls={field.id}
       onPointerDown={(event) => beginHold(event, direction)} onPointerUp={stopHold} onPointerCancel={stopHold} onLostPointerCapture={stopHold}
@@ -321,7 +326,7 @@ export function NumberField({
         {renderStepper('decrement', -1, decrementIcon ?? <StepIcon increment={false} />, decrementLabel ?? messages.decrement(labelText))}
         {isRenderable(prefixNode) && <FieldSlot element="span" component={slots?.prefix} slotProps={slotProps?.prefix} styles={affixStyle} aria-hidden="true">{prefixNode}</FieldSlot>}
         <FieldSlot element="input" component={slots?.control} slotProps={slotProps?.control} {...native}
-          styles={controlStyle} ref={mergedRef} type="text" role="spinbutton" inputMode="decimal" id={field.id} dir={dir}
+          styles={[controlStyle, size === 'lg' && largeControlStyle]} ref={mergedRef} type="text" role="spinbutton" inputMode="decimal" id={field.id} dir={dir}
           name={undefined} form={form} required={required} disabled={disabled} readOnly={readOnly}
           value={draft ?? model.format(current)} {...numericAria}
           aria-valuetext={formatValueText?.(current, model.format(current)) ?? (current === null ? messages.empty : model.format(current))}

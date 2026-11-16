@@ -179,6 +179,9 @@ export function StatusDot({
       sx={sx}
     >
       {(className) => (
+        // `children` and `dangerouslySetInnerHTML` are pinned to undefined so a
+        // consumer slot cannot leak them onto the generated glyph.
+        // oxlint-disable-next-line react/no-danger-with-children
         <span
           {...rest}
           ref={ref}

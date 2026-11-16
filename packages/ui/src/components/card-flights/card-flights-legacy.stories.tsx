@@ -476,13 +476,17 @@ export const DealOrderAndTracks: Story = {
     }
     await expectFlightSamples(await sampledDeal, 6);
     await landed(canvasElement);
+    for (const card of ownHand) await expect(canvas.getByRole('img', { name: card.label })).toBeVisible();
     const sampledOwn = sampleFrames(canvasElement, 700);
     await userEvent.click(canvas.getByRole('button', { name: 'Play own' }));
+    await expect(flights(canvasElement)).toHaveLength(1);
     await expect(flights(canvasElement)[0]?.getAnimations()[0]?.effect?.getTiming().duration).toBe(400);
     await expectFlightSamples(await sampledOwn, 1);
     await landed(canvasElement);
+    await expect(canvas.getByRole('img', { name: 'A of spades' })).toBeVisible();
     const sampledRival = sampleFrames(canvasElement, 800);
     await userEvent.click(canvas.getByRole('button', { name: 'Play rival' }));
+    await expect(flights(canvasElement)).toHaveLength(1);
     const rival = required(flights(canvasElement)[0]);
     const flip = required(rival.querySelector('[data-ui="card-flight-turn"]')).getAnimations()[0];
     await expect(flip?.effect?.getTiming().duration).toBe(364);

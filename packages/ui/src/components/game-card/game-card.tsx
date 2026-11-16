@@ -1,6 +1,6 @@
-import { withoutSx } from '../../styling/sx';
 'use client';
 
+import { withoutSx } from '../../styling/sx';
 // Semantics: one `role="img"` root per card, named by `label`; the rank mark, the suit glyph and the
 // suit watermarks are presentational children, so a screen reader hears the playing card once, in the
 // consumer's own words. A face-down card omits built-in rank, suit and deck data; consumer artwork
@@ -169,11 +169,18 @@ const suitInkStyles: Record<'red' | 'ink', SerializedStyles> = {
   ink: css({ color: vars.color.cardInk }),
 };
 
+export const gameCardWidth: Record<GameCardSize, string> = {
+  sm: vars.size.gameCardSm,
+  md: vars.size.gameCardMd,
+  lg: vars.size.gameCardLg,
+  xl: vars.size.gameCardXl,
+};
+
 export const gameCardSizeStyles: Record<GameCardSize, SerializedStyles> = {
-  sm: css({ '--game-card-width': vars.size.gameCardSm }),
-  md: css({ '--game-card-width': vars.size.gameCardMd }),
-  lg: css({ '--game-card-width': vars.size.gameCardLg }),
-  xl: css({ '--game-card-width': vars.size.gameCardXl }),
+  sm: css({ '--game-card-width': gameCardWidth.sm }),
+  md: css({ '--game-card-width': gameCardWidth.md }),
+  lg: css({ '--game-card-width': gameCardWidth.lg }),
+  xl: css({ '--game-card-width': gameCardWidth.xl }),
 };
 
 export function GameCard(props: GameCardProps) {

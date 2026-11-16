@@ -28,6 +28,7 @@ import { focusRingOutset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { motionDurationMs } from '../../styling/motion-timings';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
+import { devWarn, isDev } from '../../utils/dev';
 import { numberFormatter } from '../../utils/intl';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useReducedMotion } from '../../utils/use-reduced-motion';
@@ -132,9 +133,6 @@ export interface ImageCompareProps
   /** Applies props and styles to the named comparison parts. */
   slotProps?: ImageCompareSlotProps;
 }
-
-// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
-declare const process: { env: { NODE_ENV?: string } };
 
 const MIN = 0;
 const MAX = 100;
@@ -533,13 +531,13 @@ export function ImageCompare({
   );
 
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production') return;
+    if (!isDev) return;
     for (const [name, n] of [
       ['value', valueProp],
       ['defaultValue', defaultValue],
     ] as const) {
       if (n !== undefined && !Number.isFinite(n))
-        console.warn(`ImageCompare: ${name} ${n} is not finite; showing ${CENTER}%.`);
+        devWarn(`ImageCompare: ${name} ${n} is not finite; showing ${CENTER}%.`);
     }
   }, [valueProp, defaultValue]);
 

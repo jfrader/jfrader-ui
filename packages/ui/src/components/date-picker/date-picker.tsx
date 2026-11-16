@@ -1,3 +1,5 @@
+'use client';
+
 // APG pattern: date picker combobox with a dialog popup
 // (https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-datepicker/).
 // DatePicker.Input is a read-only TextField whose <input> carries role="combobox",
@@ -131,12 +133,15 @@ export interface DatePickerShorthandProps extends Omit<DatePickerBaseProps, 'chi
   /** Replace the field presentation or popup div; forward all supplied props and ref. */
   slots?: DatePickerSlots;
   /** Pass props and `sx` to the generated input and popup. */
-  slotProps?: {
-    /** Text field trigger displaying the selected date. Default: `TextField`. */
-    input?: DatePickerGeneratedPartProps<DatePickerInputProps>;
-    /** Dialog popup container enclosing the calendar. */
-    popup?: DatePickerGeneratedPartProps<DatePickerPopupProps>;
-  };
+  slotProps?: DatePickerSlotProps;
+}
+
+/** Props for the generated date field input and popup. */
+export interface DatePickerSlotProps {
+  /** Text field trigger displaying the selected date. Default: `TextField`. */
+  input?: DatePickerGeneratedPartProps<DatePickerInputProps>;
+  /** Dialog popup container enclosing the calendar. */
+  popup?: DatePickerGeneratedPartProps<DatePickerPopupProps>;
 }
 
 export type DatePickerProps = DatePickerComposedProps | DatePickerShorthandProps;

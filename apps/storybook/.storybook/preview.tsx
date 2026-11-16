@@ -86,7 +86,7 @@ const preview: Preview = {
           'Foundations',
           ['Getting started', 'Theming', 'Styling', 'Next.js', '*'],
           'Theme',
-          ['Palette', 'Typography', 'Spacing & shape', 'Elevation & motion', 'ThemeRoot', 'Custom accent', '*'],
+          ['Palette', 'Typography', 'Spacing & shape', 'Elevation & motion', 'Token overrides', 'ThemeRoot', 'Custom accent', '*'],
           'Inputs',
           'Data display',
           'Data',

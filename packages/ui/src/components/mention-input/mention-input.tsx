@@ -26,7 +26,8 @@ import {
 } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { OverlayPortal } from '../../overlay/overlay-portal';
-import { css, type SerializedStyles } from '../../styling/css';
+import { css } from '../../styling/css';
+import { controlBlockSize, controlFixedSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { inputControlStyle } from '../../styling/input-control';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { listboxSurfaceStyle, listboxItemStyle, listboxItemStateStyle } from '../../styling/listbox-style';
@@ -34,6 +35,7 @@ import type { SxProps } from '../../styling/sx';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
+import { devWarn, isDev } from '../../utils/dev';
 import { useControlledState } from '../../utils/use-controlled-state';
 import {
   FieldRoot,
@@ -175,7 +177,6 @@ export interface MentionInputProps
 }
 
 const EMPTY_VALUE: MentionValue = { text: '', mentions: [] };
-declare const process: { env: { NODE_ENV?: string } };
 const SYMBOL: Record<MentionKind, string> = { person: '@', channel: '#' };
 const POPUP_GAP = 8;
 const VIEWPORT_PADDING = 8;
@@ -316,16 +317,26 @@ const metricsStyle = css({
   minInlineSize: 0,
   fontFamily: vars.font.sans,
   lineHeight: vars.lineHeight.base,
-  paddingBlock: vars.space[2],
   whiteSpace: 'pre-wrap',
   overflowWrap: 'break-word',
   tabSize: 4,
 });
 const rootLayoutStyle = css({ minInlineSize: 0, maxInlineSize: '100%', overflowWrap: 'anywhere' });
-const sizeStyles: Record<'sm' | 'md' | 'lg', SerializedStyles> = {
-  sm: css({ paddingInline: vars.space[3], fontSize: vars.textSize.sm }),
-  md: css({ paddingInline: vars.space[4], fontSize: vars.textSize.sm }),
-  lg: css({ paddingInline: vars.space[4], fontSize: vars.textSize.md }),
+function controlSizeStyle(size: NonNullable<MentionInputProps['size']>) {
+  return css(
+    controlFixedSizeStyles[size],
+    {
+      minBlockSize: controlBlockSize[size],
+      paddingInline: size === 'sm' ? vars.space[3] : vars.space[4],
+      paddingBlock: `max(0px, calc((${controlBlockSize[size]} - 1lh) / 2 - 1px))`,
+    },
+    controlTouchTargetStyles[size],
+  );
+}
+const sizeStyles = {
+  sm: controlSizeStyle('sm'),
+  md: controlSizeStyle('md'),
+  lg: controlSizeStyle('lg'),
 };
 const shellStyle = css({
   position: 'relative',
@@ -337,7 +348,6 @@ const inputStyle = css({
   display: 'block',
   resize: 'none',
   borderRadius: vars.radius.sm,
-  minBlockSize: vars.space[8],
   backgroundColor: 'transparent',
   color: 'transparent',
   caretColor: vars.color.text,
@@ -352,6 +362,7 @@ const inputStyle = css({
 });
 const mirrorStyle = css({
   position: 'absolute',
+  blockSize: 'auto',
   inset: 0,
   pointerEvents: 'none',
   overflow: 'hidden',
@@ -636,8 +647,8 @@ export function MentionInput({
   }));
 
   useLayoutEffect(() => {
-    if (mentions.length !== accepted.mentions.length && process.env.NODE_ENV !== 'production')
-      console.warn(copy.invalidValue);
+    if (isDev && mentions.length !== accepted.mentions.length)
+      devWarn(copy.invalidValue);
   }, [accepted, copy.invalidValue, mentions.length]);
   useLayoutEffect(() => {
     const input = textRef.current;

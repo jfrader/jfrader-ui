@@ -1,3 +1,5 @@
+'use client';
+
 // Static separator, not interactive and never focusable.
 // Horizontal without a label renders a native <hr>, whose implicit role is separator.
 // Vertical renders a div with role="separator" aria-orientation="vertical". It has no intrinsic

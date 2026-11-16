@@ -12,7 +12,8 @@ import {
   type ReactNode,
 } from 'react';
 import { vars } from '@jfrader/tokens/vars';
-import { css, type SerializedStyles } from '../../styling/css';
+import { css } from '../../styling/css';
+import { controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
 import { inputControlStyle } from '../../styling/input-control';
 import type { SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
@@ -110,11 +111,6 @@ const frameStyle = css({
     borderColor: vars.color.dangerBorder,
   },
 });
-const sizes: Record<InputGroupSize, SerializedStyles> = {
-  sm: css({ minBlockSize: '32px', paddingInline: vars.space[3], fontSize: vars.textSize.sm }),
-  md: css({ minBlockSize: '40px', paddingInline: vars.space[4], fontSize: vars.textSize.sm }),
-  lg: css({ minBlockSize: '48px', paddingInline: vars.space[4], fontSize: vars.textSize.md }),
-};
 const controlStyle = css({
   flex: 1,
   alignSelf: 'stretch',
@@ -222,7 +218,13 @@ function InputGroupRoot({
           data-invalid={invalid || errored || undefined}
           data-disabled={disabled || undefined}
           behavior={{ onMouseDown: focusControl }}
-          styles={[inputControlStyle, frameStyle, sizes[size]]}
+          styles={[
+            inputControlStyle,
+            frameStyle,
+            controlSizeStyles[size],
+            controlTouchTargetStyles[size],
+            { paddingInline: size === 'sm' ? vars.space[3] : vars.space[4] },
+          ]}
         >
           {children}
         </FieldSlot>

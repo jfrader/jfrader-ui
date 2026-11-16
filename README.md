@@ -10,10 +10,52 @@ listed in the [changelog](CHANGELOG.md).
 - Storybook: [ui.jfrader.com/storybook/](https://ui.jfrader.com/storybook/)
 - Changelog: [CHANGELOG.md](CHANGELOG.md)
 
+## Showcase
+
+![TrucoTable with four seats; a hand of three cards is dealt and Truco is called](docs/showcase/truco-table.gif)
+
+[`TrucoTable`](https://ui.jfrader.com/#/components/truco-table): four seats, a dealt hand, and a Truco call.
+
+![Chips fly from the source stack to the pot on a green felt table](docs/showcase/game-chip-stack.gif)
+
+[`GameChipStack`](https://ui.jfrader.com/#/components/game-chip-stack): chips fly from the source stack to the pot.
+
+![PokerTable with six seats, posted blinds, stacks, and a dealt hand](docs/showcase/poker-table.webp)
+
+[`PokerTable`](https://ui.jfrader.com/#/components/poker-table): blinds posted and a hand dealt.
+
+![Share access panel with an invite field, people with roles, and general access](docs/showcase/share-access.webp)
+
+[`ShareAccess`](https://ui.jfrader.com/#/components/share-access): people, roles, and general access.
+
+![Date reel picker showing day, month, year, and time reels](docs/showcase/date-reel.webp)
+
+[`DateReel`](https://ui.jfrader.com/#/components/date-reel): day, month, year, and time on reels.
+
+![A photo opened over a thumbnail strip with zoom and rotate controls](docs/showcase/lightbox-gallery.webp)
+
+[`LightboxGallery`](https://ui.jfrader.com/#/components/lightbox-gallery): a photo opened over its thumbnail strip.
+
+![Data flow diagram from client events, database CDC, and partner webhooks through a transform engine](docs/showcase/data-flow.webp)
+
+[`DataFlow`](https://ui.jfrader.com/#/components/data-flow): sources through a transform engine.
+
+![Activity rings at 83 percent with distance, exercise, and stand rows](docs/showcase/activity-rings.webp)
+
+[`ActivityRings`](https://ui.jfrader.com/#/components/activity-rings): three goals, exercise past its target.
+
+![A landscape split by a draggable divider, labeled Before and After](docs/showcase/image-compare.webp)
+
+[`ImageCompare`](https://ui.jfrader.com/#/components/image-compare): drag the divider or use the arrow keys.
+
+![Four cards from a custom deck, each face a painted landscape](docs/showcase/deck.webp)
+
+[`defineDeck`](https://ui.jfrader.com/#/components/deck): a deck built from painted scenes.
+
 ## Install
 
 ```sh
-pnpm add @jfrader/ui @jfrader/tokens
+pnpm add @jfrader/ui @jfrader/tokens @jfrader/icons
 ```
 
 Requires React 19. Import the token stylesheet once, in your app entry:
@@ -58,6 +100,8 @@ export function Project() {
 
 Storybook renders the setup, theming, styling, and QA guides under **Foundations**, straight from these files.
 
+Find the icon guide and searchable browser under [Icons / All icons](https://ui.jfrader.com/#/components/gallery).
+
 ## Packages
 
 | Path | Package | Contents |
@@ -96,6 +140,7 @@ Run from the repo root. Node 22.12 or later.
 | `pnpm dev` | Generate tokens and start Storybook on port 6006 |
 | `pnpm test` | Generate tokens and run the browser tests |
 | `pnpm typecheck` | Generate tokens and typecheck every package |
+| `pnpm lint` | Check hook order, the styling seam, `any`, dead bindings, and production diagnostics |
 | `pnpm build` | Generate tokens and build static Storybook |
 | `pnpm --filter @jfrader/docs dev` | Start the docs site on port 5173 |
 

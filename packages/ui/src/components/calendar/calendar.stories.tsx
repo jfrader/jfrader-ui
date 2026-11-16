@@ -5,6 +5,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, spyOn, userEvent, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { requireElement, requireNonEmpty } from '../../testing/assertion-preconditions';
 import { expectAligned, expectInside, expectMirroredDirection } from '../../testing/geometry-assertions';
 import { Calendar, type CalendarComposedProps as CalendarProps, type CalendarShorthandProps } from './index';
 import {
@@ -590,7 +591,11 @@ export const LocalizedGeometry: Story = {
     await expectInside(root, root.parentElement!);
     const widths = headers.map((header) => header.getBoundingClientRect().width);
     await expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1);
-    for (const button of root.querySelectorAll<HTMLButtonElement>('[data-ui="calendar-day"]')) {
+    const days = requireNonEmpty(root.querySelectorAll<HTMLButtonElement>('[data-ui="calendar-day"]'), 'September days');
+    await expect(days).toHaveLength(30);
+    const selected = requireElement(root.querySelector('[data-date="2026-09-14"]'), 'Selected September day');
+    await expect(selected.closest('td')).toHaveAttribute('aria-selected', 'true');
+    for (const button of days) {
       const column = (button.closest('td') as HTMLTableCellElement).cellIndex;
       await expectAligned([headers[column]!, button], 'center-x');
       await expectInside(button, root);
@@ -895,14 +900,6 @@ export const RangeSelection: Story = {
     await expect(day(canvasElement, 'October 12, 2026')).toHaveAccessibleDescription('Start date');
     await expect(day(canvasElement, 'October 14, 2026')).toHaveAccessibleDescription('End date');
     await expect(day(canvasElement, 'October 11, 2026')).toHaveAttribute('aria-current', 'date');
-    if (canvasElement.ownerDocument.defaultView!.matchMedia('(forced-colors: active)').matches) {
-      const start = getComputedStyle(day(canvasElement, 'October 12, 2026'));
-      const interior = getComputedStyle(day(canvasElement, 'October 13, 2026'));
-      const outside = getComputedStyle(day(canvasElement, 'October 20, 2026'));
-      await expect(interior.backgroundColor).toBe(start.backgroundColor);
-      await expect(interior.backgroundColor).not.toBe(outside.backgroundColor);
-      await expect(interior.color).toBe(start.color);
-    }
 
     // Activation only reports; the selection stays with the parent.
     await userEvent.click(day(canvasElement, 'October 20, 2026'));
@@ -910,6 +907,23 @@ export const RangeSelection: Story = {
     await expect(args.onDayActivate).toHaveBeenLastCalledWith('2026-10-20');
     await expect(args.onValueChange).not.toHaveBeenCalled();
     await expect(day(canvasElement, 'October 20, 2026').closest('td')).toHaveAttribute('aria-selected', 'false');
+  },
+};
+
+export const RangeForcedColors: Story = {
+  ...RangeSelection,
+  name: 'Calendar range forced colors',
+  globals: { theme: 'light' },
+  decorators: [withLightTheme],
+  play: async (context) => {
+    await expect(matchMedia('(forced-colors: active)').matches).toBe(true);
+    await RangeSelection.play!(context);
+    const start = getComputedStyle(day(context.canvasElement, 'October 12, 2026'));
+    const interior = getComputedStyle(day(context.canvasElement, 'October 13, 2026'));
+    const outside = getComputedStyle(day(context.canvasElement, 'October 20, 2026'));
+    await expect(interior.backgroundColor).toBe(start.backgroundColor);
+    await expect(interior.backgroundColor).not.toBe(outside.backgroundColor);
+    await expect(interior.color).toBe(start.color);
   },
 };
 

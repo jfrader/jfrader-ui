@@ -13,7 +13,6 @@ import {
   type PointerEvent,
   type ReactNode,
   type Ref,
-  type WheelEvent,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import {

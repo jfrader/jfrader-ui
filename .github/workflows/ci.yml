@@ -15,7 +15,13 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.0-noble@sha256:06a9939e57531807f8d5fd76ce44b53165ffb7d7501d87ab10e285c20b1e971f
+      options: --init --ipc=host
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v6
@@ -24,8 +30,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @jfrader/storybook exec playwright install --with-deps chromium
+      - run: node --test scripts/verify-ci-playwright.test.mjs && node scripts/verify-ci-playwright.mjs
       - run: pnpm typecheck
+      - run: pnpm lint
       - run: pnpm test
       - run: pnpm verify:exports
       - run: pnpm verify:slots
@@ -33,10 +40,12 @@ jobs:
       - run: pnpm verify:api
       - run: pnpm verify:docs
       - run: node scripts/release-tooling.test.mjs
+      - run: node --test scripts/dts-specifiers.test.mjs
       - run: pnpm build
       - run: pnpm --filter @jfrader/storybook test:browser
       - run: pnpm --filter @jfrader/tokens build
       - run: pnpm --filter @jfrader/styling build
       - run: pnpm --filter @jfrader/icons build
       - run: pnpm --filter @jfrader/ui build
+      - run: node scripts/verify-dts-specifiers.mjs
       - run: pnpm --filter @jfrader/storybook verify:docs:layout

@@ -11,9 +11,11 @@ import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { CardFlights } from '../card-flights';
 import { DeckProvider } from '../deck';
 import { GameActions, type GameActionItem, type GameActionsProps } from '../game-actions';
+import { gameActionsRowBlockSize } from '../game-actions/game-actions';
 import { GameCard, type GameCardValue } from '../game-card';
 import { GameCardStack, type PlayedCard } from '../game-card-stack';
 import { GameHand } from '../game-hand';
+import { gameHandBlockSize } from '../game-hand/game-hand';
 import { GameSeat, type GameSeatProps } from '../game-seat';
 import { GameTable, useGameTableSeat, type GameTableProps } from '../game-table';
 import { PersonAvatar } from '../person-avatar';
@@ -226,14 +228,22 @@ const announcementStyle = css({
   [FORCED_COLORS]: { color: 'CanvasText' },
 });
 
+const HAND_SIZE = 'md';
+const DOCK_GAP = vars.space[3];
+
 const dockStyle = css({
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'flex-end',
   justifyContent: 'center',
-  gap: vars.space[3],
+  gap: DOCK_GAP,
   inlineSize: '100%',
 });
+
+/** Reserves a hand stacked over one action row so the felt keeps its size across deals and turns. */
+function dockReserve(confirm: boolean, actionSize: GameActionsProps['size']) {
+  return css({ minBlockSize: `calc(${gameHandBlockSize(HAND_SIZE, confirm)} + ${DOCK_GAP} + ${gameActionsRowBlockSize(actionSize ?? 'md')})` });
+}
 
 const handGroupStyle = css({ display: 'grid', justifyItems: 'center', gap: vars.space[2], minInlineSize: 0 });
 
@@ -373,28 +383,26 @@ export function TrucoTable({
                     <div role="status" css={announcementStyle}>{announcement}</div>
                   </GameTable.Footer>
                 )}
-                {(hasDock || showActions || handGroup) && (
-                  <GameTable.Dock>
-                    {hasDock ? dock : (
-                      <div css={dockStyle}>
-                        {handGroup && (
-                          <div css={handGroupStyle} role="group" aria-label={labels.hand}>
-                            <GameHand cards={hand ?? []} size="md">
-                              {onPlayIntent && <GameHand.Confirm onPlay={(card) => onPlayIntent(card)}>{labels.playCard}</GameHand.Confirm>}
-                            </GameHand>
-                          </div>
-                        )}
-                        {showActions && (
-                          <Actions
-                            {...slotProps?.actions}
-                            actions={actions ?? []}
-                            label={actionsLabel ?? labels.actions}
-                          />
-                        )}
-                      </div>
-                    )}
-                  </GameTable.Dock>
-                )}
+                <GameTable.Dock>
+                  {hasDock ? dock : (
+                    <div css={[dockStyle, dockReserve(onPlayIntent !== undefined, slotProps?.actions?.size)]}>
+                      {handGroup && (
+                        <div css={handGroupStyle} role="group" aria-label={labels.hand}>
+                          <GameHand cards={hand ?? []} size={HAND_SIZE}>
+                            {onPlayIntent && <GameHand.Confirm onPlay={(card) => onPlayIntent(card)}>{labels.playCard}</GameHand.Confirm>}
+                          </GameHand>
+                        </div>
+                      )}
+                      {showActions && (
+                        <Actions
+                          {...slotProps?.actions}
+                          actions={actions ?? []}
+                          label={actionsLabel ?? labels.actions}
+                        />
+                      )}
+                    </div>
+                  )}
+                </GameTable.Dock>
                 {isRenderable(floating) && <GameTable.Floating>{floating}</GameTable.Floating>}
               </GameTable>
             </CardFlights>

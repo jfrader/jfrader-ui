@@ -988,6 +988,7 @@ export const InternationalUrls: Story = {
     await pasteInto(field(canvasElement), urls.join(' '), userEvent);
     await expect(args.onPreviewRequest).toHaveBeenCalledTimes(2);
     const links = await canvas.findAllByRole('link', { name: 'International page' });
+    await expect(links).toHaveLength(urls.length);
     for (const [index, link] of links.entries()) {
       await expect(link).toHaveAttribute('href', new URL(urls[index]!).href);
     }

@@ -8,7 +8,7 @@ export default {
     title: 'jfrader/ui',
     mark: 'j',
     tagline:
-      'React component library based on Emotion and CSS custom properties. Navigation and examples come from the library’s Storybook stories; the API comes from the component sources.',
+      'React components and icons.',
     links: [
       { label: 'Storybook', href: '/storybook/' },
       { label: 'GitHub', href: 'https://github.com/jfrader/jfrader-ui' },
@@ -47,7 +47,7 @@ export default {
     ],
   },
   // The token reference is authored in jfrader-ui as the Theme pages (palette, typography,
-  // spacing and shape, elevation and motion). The engine's generated token listings duplicated
+  // spacing and shape, elevation and motion, token overrides). The engine's generated token listings duplicated
   // them with raw var() strings and no values, so they stay off.
   pages: {
     color: false,

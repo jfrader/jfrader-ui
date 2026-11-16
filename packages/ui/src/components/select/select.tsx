@@ -63,7 +63,7 @@ import {
 } from '../../styling/listbox-style';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { controlSizeStyles, controlTouchTargetStyles } from '../../styling/control-size';
-import { touchTargetStyle } from '../../styling/touch-target';
+import { touchTargetMinInlineSize, touchTargetStyle } from '../../styling/touch-target';
 import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
@@ -84,6 +84,8 @@ import { useFormReset } from '../../utils/use-form-reset';
 const TYPEAHEAD_RESET_MS = 500;
 const TYPEAHEAD_COLLATOR = new Intl.Collator(undefined, { usage: 'search', sensitivity: 'base' });
 const SELECTED_GLYPH = '✓';
+const AVAILABLE_HEIGHT_PROPERTY = '--select-available-height';
+const DEFAULT_MAX_BLOCK_SIZE = '280px';
 const MORPH_SPRING = { type: 'spring', stiffness: 360, damping: 36 } as const;
 const morphTriggerStyle = css({
   borderRadius: vars.radius.full,
@@ -91,6 +93,10 @@ const morphTriggerStyle = css({
 const morphPanelStyle = css({
   transformOrigin: '0 0',
   borderRadius: vars.radius.lg,
+});
+const selectSizingDataStyle = css({ [AVAILABLE_HEIGHT_PROPERTY]: 'initial' });
+const selectOrdinaryHeightStyle = css({
+  maxBlockSize: `min(${DEFAULT_MAX_BLOCK_SIZE}, var(${AVAILABLE_HEIGHT_PROPERTY}, calc(100vh - ${vars.space[8]})))`,
 });
 
 export interface SelectOption<V extends string = string> {
@@ -315,7 +321,8 @@ const selectTriggerStyle = css({
   lineHeight: vars.lineHeight.tight,
   justifyContent: 'flex-start',
   gap: vars.space[2],
-  minInlineSize: '180px',
+  [touchTargetMinInlineSize]: '180px',
+  minInlineSize: `var(${touchTargetMinInlineSize})`,
   maxInlineSize: '100%',
   '&[aria-expanded="true"]': {
     backgroundColor: vars.color.surfaceHover,
@@ -346,6 +353,7 @@ const selectCaretStyle = css({
 
 const valueStyle = css({
   minInlineSize: 0,
+  lineHeight: vars.lineHeight.base,
   overflow: 'hidden',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
@@ -453,13 +461,18 @@ function SelectOverlay<V extends string = string>({ nodeId, ...props }: SelectPr
   const selectedIndex = selectedRecord && selectedRecord.index !== -1 ? selectedRecord.index : null;
   const initialRecord = initialActiveValue === undefined ? undefined : options.get(initialActiveValue);
   const initialIndex = initialRecord && !initialRecord.disabled && initialRecord.index !== -1 ? initialRecord.index : null;
-
   const { refs, floatingStyles, context, isPositioned } = useOverlayFloating({
     nodeId,
     open,
     placement,
     transform: variant !== 'morph',
     gap: variant === 'morph' ? 0 : undefined,
+    shiftCrossAxis: variant === 'morph',
+    onAvailableSize: variant === 'morph' ? undefined : ({ height }) => {
+      const element = refs.floating.current;
+      if (element?.dataset.state !== 'open' || element.dataset.variant === 'morph') return;
+      element.style.setProperty(AVAILABLE_HEIGHT_PROPERTY, `${Math.max(0, height)}px`);
+    },
     onOpenChange: (next) => requestOpenChange(next),
   });
 
@@ -830,6 +843,12 @@ function SelectContent({ ref, style, onMouseDown, children, className, sx, ...re
   const centered = useRef(false);
 
   useLayoutEffect(() => {
+    const panel = panelRef.current;
+    if (!open || morph) panel?.style.removeProperty(AVAILABLE_HEIGHT_PROPERTY);
+    return () => { panel?.style.removeProperty(AVAILABLE_HEIGHT_PROPERTY); };
+  }, [open, morph]);
+
+  useLayoutEffect(() => {
     if (!open) centered.current = false;
     const panel = panelRef.current;
     if (!open || !positioned || !panel || activeIndex === null) return;
@@ -916,7 +935,7 @@ function SelectContent({ ref, style, onMouseDown, children, className, sx, ...re
 
   return (
     <OverlayPortal>
-      <WithSx className={className} styles={[listboxSurfaceStyle, listboxScrollStyle, morph && morphPanelStyle]} sx={sx}>
+      <WithSx className={className} styles={[listboxSurfaceStyle, listboxScrollStyle, selectSizingDataStyle, !morph && selectOrdinaryHeightStyle, morph && morphPanelStyle]} sx={sx}>
         {(className) => (
           <div
             {...getFloatingProps({ ...labelling, ...rest, onMouseDown: handleMouseDown })}
@@ -1094,7 +1113,7 @@ function SelectEmpty({ ref, children, className, sx, ...rest }: SelectEmptyProps
   return (
     <WithSx className={className} styles={selectEmptyStyle} sx={sx}>
       {(className) => (
-        <div {...rest} ref={ref} data-ui="select-empty" className={className}>
+        <div {...rest} ref={ref} data-ui="select-empty" role="option" aria-disabled="true" aria-selected="false" className={className}>
           {content}
         </div>
       )}

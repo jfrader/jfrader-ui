@@ -609,6 +609,8 @@ const cycle: Record<string, unknown> = {};
 cycle.self = cycle;
 const getter = fn(() => 'do not execute');
 const accessor = Object.defineProperty({}, 'secret', { enumerable: true, get: getter });
+// The sparse slot is deliberate: a hole in the data must render, not crash.
+// oxlint-disable-next-line no-sparse-arrays
 const invalidValues = [cycle, accessor, undefined, BigInt(1), NaN, Infinity, { nested: undefined }, [, 1]];
 export const InvalidData: Story = {
   render: (args) => (

@@ -28,6 +28,8 @@ export interface Element { tag: string; attrs: Record<string, string> }
 
 const lineStyle = { fill: 'none', stroke: 'currentColor', 'stroke-width': '1.5', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' };
 const solidStyle = { fill: 'currentColor', stroke: 'none' };
+const variantStyles = { line: lineStyle, solid: solidStyle };
+const symbolId = (source: Source) => source.name + (source.variant === 'solid' ? '-solid' : '');
 const elementAttributes: Record<string, string[]> = {
   path: ['d'], circle: ['cx', 'cy', 'r'], rect: ['x', 'y', 'width', 'height', 'rx'],
 };
@@ -92,8 +94,12 @@ export function collect(sources: Source[], metadata: MetadataSource) {
   const errors = new Map<string, string[]>();
   const parsed = new Map<Source, Element[]>();
   const fingerprints = new Map<string, string>();
+  const symbolIds = new Set<string>();
   const fail = (file: string, message: string) => errors.set(file, [...(errors.get(file) ?? []), message]);
   for (const source of sources) {
+    const id = symbolId(source);
+    if (symbolIds.has(id)) fail(source.file, `duplicate symbol id ${id}`);
+    symbolIds.add(id);
     if (!/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/.test(source.name) || !source.file.endsWith('.svg')) fail(source.file, 'filename must be kebab-case.svg');
     const entry = metadata[source.name];
     if (!entry) fail(source.file, 'missing metadata entry');
@@ -144,5 +150,20 @@ export function artifacts(sources: Source[], metadata: MetadataSource): Map<stri
   }
   files.set('src/generated/index.ts', header + table.map((entry) => `export { ${entry.variants.map((variant) => componentName(entry.name) + (variant === 'solid' ? 'Solid' : '')).join(', ')} } from './${entry.name}';`).join('\n') + '\n');
   files.set('icons.json', JSON.stringify(table, null, 2) + '\n');
+  const notice = 'Generated from src/icons and src/metadata. Do not edit. Run pnpm generate.';
+  const attrsText = (attrs: Record<string, string>) => Object.entries(attrs).map(([key, value]) => `${key}="${value}"`).join(' ');
+  const symbols = sources.map((source) => {
+    const geometry = parsed.get(source)!.map(({ tag, attrs }) => `<${tag} ${attrsText(attrs)}/>`).join('');
+    return `  <symbol id="${symbolId(source)}" viewBox="0 0 24 24" ${attrsText(variantStyles[source.variant])}>${geometry}</symbol>`;
+  });
+  files.set('sprite.svg', `<!-- ${notice} -->\n<svg xmlns="http://www.w3.org/2000/svg">\n${symbols.join('\n')}\n</svg>\n`);
+  const icons = table.map((entry) => ({
+    ...entry,
+    geometry: Object.fromEntries(entry.variants.map((variant) => {
+      const source = sources.find((item) => item.name === entry.name && item.variant === variant)!;
+      return [variant, { attrs: variantStyles[variant], elements: parsed.get(source)! }];
+    })),
+  }));
+  files.set('paths.json', JSON.stringify({ $comment: notice, viewBox: '0 0 24 24', icons }, null, 2) + '\n');
   return files;
 }

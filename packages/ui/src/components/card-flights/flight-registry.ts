@@ -1,16 +1,16 @@
 'use client';
 
 import { createContext, useContext } from 'react';
+import { isDev, devWarn } from '../../utils/dev';
 import { measureCardBox, type CardBox } from './geometry';
 import type { GameCardValue } from '../game-card';
 import type { ReactNode } from 'react';
 
-declare const process: { env: { NODE_ENV?: string } };
 export function warnFlight(message: string) {
-  if (process.env.NODE_ENV !== 'production') console.warn(message);
+  if (isDev) devWarn(message);
 }
 export function assertLegacyFlightEngine(treeOwned: boolean | undefined) {
-  if (treeOwned && process.env.NODE_ENV !== 'production') throw new Error('Do not mix legacy flight hooks with CardFlights. Render the card tree instead.');
+  if (treeOwned && isDev) throw new Error('Do not mix legacy flight hooks with CardFlights. Render the card tree instead.');
 }
 
 /** Stable card identity shared by hands and play destinations. */

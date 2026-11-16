@@ -8,11 +8,9 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
-  type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
   type PointerEvent,
-  type ReactNode,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { animate, MotionConfig, motion, useMotionValue, useReducedMotion } from 'motion/react';
@@ -22,148 +20,49 @@ import {
   omitNativeOpen,
   useNativeDialog,
   useNativeDialogRoot,
-  type NativeDialogController,
 } from '../../overlay/use-native-dialog';
-import { css, type Interpolation, type Theme } from '../../styling/css';
-import { focusRingOutset } from '../../styling/focus-ring';
-import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { REDUCED_MOTION } from '../../styling/media';
 import { motionDurationMs } from '../../styling/motion-timings';
-import {
-  enterTransition as enter,
-  exitTransition as exit,
-  MODAL_ENTER_SCALE,
-  modalBackdropMotion,
-} from '../../styling/overlay-motion';
-import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
+import { withoutSx, WithSx } from '../../styling/sx';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
+import { clamp } from '../../utils/clamp';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { useImageStatus } from '../../utils/use-image-status';
 import { Filmstrip, ViewerHeader, ViewerToolbar } from './lightbox-gallery-chrome';
 
-export interface LightboxGalleryImage {
-  id: string;
-  src: string;
-  width: number;
-  height: number;
-  alt: string;
-  title?: string;
-  caption?: ReactNode;
-  srcSet?: string;
-  sizes?: string;
-}
+import {
+  rootStyle,
+  gridStyle,
+  tileStyle,
+  imageStyle,
+  viewerStyle,
+  contentStyle,
+  stageStyle,
+  viewerImageStyle,
+  captionStyle,
+  fallbackStyle,
+  statusStyle,
+  loadingStyle,
+  returnFlightStyle,
+} from './lightbox-gallery.styles';
+import type {
+  LightboxGalleryImage,
+  LightboxGalleryLabels,
+  LightboxGalleryProps,
+  LightboxGallerySlotProps,
+  LightboxGallerySlots,
+  LightboxViewerProps,
+} from './lightbox-gallery.types';
 
-type Slot<Tag extends keyof React.JSX.IntrinsicElements> = Omit<ComponentPropsWithRef<Tag>, 'children'> & {
-  sx?: Interpolation<Theme>;
-};
-
-export interface LightboxGallerySlotProps {
-  /** Grid list container element (`ul`) holding thumbnail tiles. */
-  grid?: Slot<'ul'>;
-  /** Thumbnail button element opening the lightbox viewer. */
-  tile?: Omit<Slot<'button'>, 'type'>;
-  /** Image element displaying the thumbnail or zoomed photo. */
-  image?: Omit<Slot<'img'>, 'src' | 'srcSet' | 'sizes' | 'alt' | 'width' | 'height'>;
-  /** Native `<dialog>` element hosting the fullscreen lightbox viewer. */
-  viewer?: Omit<Slot<'dialog'>, 'open'> & { withDescription?: boolean };
-  /** Viewport stage container element panning and zooming the active image. */
-  stage?: Slot<'div'>;
-  /** Heading element naming the currently active image. Renders an `h2` by default. */
-  title?: Slot<'h2'>;
-  /** Caption paragraph element (`p`) describing the active image. */
-  caption?: Slot<'p'>;
-  /** Thumbnail strip container element at the bottom of the viewer. */
-  thumbnails?: Slot<'div'>;
-  /** Toolbar container element holding zoom and dismiss action buttons. */
-  controls?: Slot<'div'>;
-  /** Live region container element announcing active image position and zoom. */
-  status?: Slot<'div'>;
-}
-
-export interface LightboxGallerySlots {
-  /** Lists the gallery thumbnails. */
-  grid?: ComponentType<NonNullable<LightboxGallerySlotProps['grid']>>;
-  /** Opens an image in the viewer. */
-  tile?: ComponentType<NonNullable<LightboxGallerySlotProps['tile']>>;
-  /** Displays a gallery image. */
-  image?: ComponentType<NonNullable<LightboxGallerySlotProps['image']>>;
-  /** Hosts the image viewer dialog. */
-  viewer?: ComponentType<NonNullable<LightboxGallerySlotProps['viewer']>>;
-  /** Holds the pannable image. */
-  stage?: ComponentType<NonNullable<LightboxGallerySlotProps['stage']>>;
-  /** Displays the image title. Renders an `h2` by default. */
-  title?: ComponentType<NonNullable<LightboxGallerySlotProps['title']>>;
-  /** Displays the image caption. */
-  caption?: ComponentType<NonNullable<LightboxGallerySlotProps['caption']>>;
-  /** Holds the image thumbnail strip. */
-  thumbnails?: ComponentType<NonNullable<LightboxGallerySlotProps['thumbnails']>>;
-  /** Holds the viewer controls. */
-  controls?: ComponentType<NonNullable<LightboxGallerySlotProps['controls']>>;
-  /** Announces image position. */
-  status?: ComponentType<NonNullable<LightboxGallerySlotProps['status']>>;
-}
-
-export interface LightboxGalleryLabels {
-  open: string;
-  close: string;
-  previous: string;
-  next: string;
-  /** @deprecated No longer rendered: double-click the image, or use `zoomIn` and `reset`. Removed in the next major. */
-  zoom: string;
-  zoomIn: string;
-  zoomOut: string;
-  reset: string;
-  /** @deprecated No longer rendered: drag the zoomed image or press the arrow keys. Removed in the next major. */
-  panLeft: string;
-  /** @deprecated No longer rendered: drag the zoomed image or press the arrow keys. Removed in the next major. */
-  panRight: string;
-  /** @deprecated No longer rendered: drag the zoomed image or press the arrow keys. Removed in the next major. */
-  panUp: string;
-  /** @deprecated No longer rendered: drag the zoomed image or press the arrow keys. Removed in the next major. */
-  panDown: string;
-  empty: string;
-  unavailable: string;
-  imageUnavailable: string;
-  loading: string;
-  thumbnails: string;
-  position: (position: string, total: string) => string;
-  zoomPercent: (percent: string) => string;
-}
-
-export interface LightboxGalleryProps
-  extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>,
-    SxProps {
-  /** Supplies images in thumbnail and viewer navigation order, keyed by stable ids. */
-  images: readonly LightboxGalleryImage[];
-  /** Names the gallery region and viewer and prefixes the active image title. */
-  label: string;
-  /** Sets the target minimum column width in pixels; at least two columns remain. Defaults to 150 for omitted, non-positive or non-finite values. */
-  minColumnWidth?: number;
-  /** Selects the spacing token between thumbnail tiles. Defaults to `2`. */
-  gap?: keyof typeof vars.space;
-  /** Controls the selected image id; an unknown or `null` id prevents the viewer opening. */
-  value?: string | null;
-  /** Selects the initial image when uncontrolled. Defaults to the first image id, or `null` for an empty gallery. */
-  defaultValue?: string | null;
-  /** Called with the requested image id when opening a tile or navigating. */
-  onValueChange?: (id: string | null) => void;
-  /** Controls viewer visibility; the selected id must exist in `images`. */
-  open?: boolean;
-  /** Opens the uncontrolled viewer initially when the selected image exists. Defaults to `false`. */
-  defaultOpen?: boolean;
-  /** Called when the viewer requests opening or closing. */
-  onOpenChange?: (open: boolean) => void;
-  /** Caps magnification as a multiplier, with a minimum of 1. Defaults to 4 for omitted, non-positive or non-finite values. */
-  maxZoom?: number;
-  /** Overrides English control labels, fallback text and position/zoom formatters. */
-  labels?: Partial<LightboxGalleryLabels>;
-  /** Sets number and zoom-percentage formatting locales; omitted uses the runtime locale. */
-  locale?: Intl.LocalesArgument;
-  /** Passes props to thumbnail and viewer parts. */
-  slotProps?: LightboxGallerySlotProps;
-  /** Replaces thumbnail and viewer parts. */
-  slots?: LightboxGallerySlots;
-}
+export type {
+  LightboxGalleryImage,
+  LightboxGalleryLabels,
+  LightboxGalleryProps,
+  LightboxGallerySlotProps,
+  LightboxGallerySlots,
+  LightboxViewerProps,
+} from './lightbox-gallery.types';
 
 const MIN_COLUMN_WIDTH = 150;
 const MAX_ZOOM = 4;
@@ -177,7 +76,7 @@ const DOUBLE_TAP_MS = motionDurationMs.slow * 1.5;
 const DRAG_SLOP = 8;
 const WHEEL_ZOOM_RATE = 0.002;
 const FLIGHT_SPRING = { type: 'spring', stiffness: 360, damping: 36 } as const;
-const defaults: LightboxGalleryLabels = {
+export const lightboxLabelDefaults: LightboxGalleryLabels = {
   open: 'Open image',
   close: 'Close viewer',
   previous: 'Previous image',
@@ -198,149 +97,6 @@ const defaults: LightboxGalleryLabels = {
   position: (position, total) => `${position} / ${total}`,
   zoomPercent: (percent) => percent,
 };
-const rootStyle = css({
-  label: 'lightbox-gallery',
-  minInlineSize: 0,
-  color: vars.color.text,
-  fontFamily: vars.font.sans,
-  '&:focus-visible': focusRingOutset,
-});
-const gridStyle = css({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(var(--lightbox-columns, 2), minmax(0, 1fr))',
-  gridAutoRows: '1px',
-  gap: 'var(--lightbox-gap)',
-  padding: 0,
-  margin: 0,
-  listStyle: 'none',
-});
-const tileStyle = css({
-  position: 'relative',
-  display: 'block',
-  inlineSize: '100%',
-  minBlockSize: vars.space[8],
-  padding: 0,
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.md,
-  background: 'transparent',
-  cursor: 'pointer',
-  overflow: 'hidden',
-  '&:focus-visible': focusRingOutset,
-});
-const imageStyle = css({
-  position: 'relative',
-  display: 'block',
-  inlineSize: '100%',
-  blockSize: '100%',
-  objectFit: 'cover',
-  userSelect: 'none',
-});
-// Motion: the viewer's own surface (background, border) and its chrome fade over the fading scrim;
-// the image fades and scales in (during its flight from the tile, when it has one). On close an
-// image that flies home stays put for the hand-off to the return flight; otherwise it fades with
-// the chrome.
-const hiddenSurface = { backgroundColor: 'transparent', borderColor: 'transparent' };
-const hiddenImage = { opacity: 0, scale: String(MODAL_ENTER_SCALE) };
-const viewerStyle = css(
-  {
-    boxSizing: 'border-box',
-    inlineSize: '100%',
-    maxInlineSize: '100%',
-    blockSize: '100dvh',
-    maxBlockSize: '100dvh',
-    margin: 0,
-    border: `1px solid ${vars.color.borderControl}`,
-    background: vars.color.bg,
-    color: vars.color.text,
-    padding: `max(${vars.space[4]}, env(safe-area-inset-top)) max(${vars.space[4]}, env(safe-area-inset-right)) max(${vars.space[4]}, env(safe-area-inset-bottom)) max(${vars.space[4]}, env(safe-area-inset-left))`,
-    overflow: 'auto',
-    fontFamily: vars.font.sans,
-    '&::backdrop': { background: vars.color.scrim },
-    transitionProperty: 'background-color, border-color',
-    ...enter,
-    '@starting-style': hiddenSurface,
-    '&[data-state="closing"]': { ...hiddenSurface, ...exit },
-    [REDUCED_MOTION]: { '&, &[data-state="closing"]': { transitionDuration: '0s' } },
-    [FORCED_COLORS]: { boxShadow: 'none' },
-  },
-  modalBackdropMotion,
-);
-const CHROME = ':not([data-ui="lightbox-gallery-stage"])';
-const contentStyle = css({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: vars.space[3],
-  blockSize: '100%',
-  minBlockSize: 0,
-  '& > *': { flexShrink: 0 },
-  [`& > ${CHROME}`]: { transitionProperty: 'opacity', ...enter, '@starting-style': { opacity: 0 } },
-  [`&[data-state="closing"] > ${CHROME}`]: { opacity: 0, ...exit },
-  [REDUCED_MOTION]: { [`& > ${CHROME}, &[data-state="closing"] > ${CHROME}`]: { transitionDuration: '0s' } },
-});
-const stageStyle = css({
-  position: 'relative',
-  display: 'grid',
-  placeItems: 'center',
-  flex: '1 1 auto',
-  blockSize: '50dvh',
-  minBlockSize: vars.space[12],
-  overflow: 'hidden',
-  touchAction: 'none',
-  borderRadius: vars.radius.md,
-  '&:focus-visible': focusRingOutset,
-});
-// Motion values own `transform` here (flight); the entrance moves the separate `scale` property.
-const viewerImageStyle = css({
-  position: 'absolute',
-  pointerEvents: 'none',
-  display: 'grid',
-  placeItems: 'center',
-  transitionProperty: 'opacity, scale',
-  ...enter,
-  '@starting-style': hiddenImage,
-  '&[data-exit="fade"]': { ...hiddenImage, ...exit },
-  [REDUCED_MOTION]: { '&, &[data-exit="fade"]': { transitionDuration: '0s' } },
-});
-const captionStyle = css({
-  margin: 0,
-  fontSize: vars.textSize.sm,
-  color: vars.color.textMuted,
-  overflowWrap: 'anywhere',
-  maxBlockSize: '25%',
-  overflow: 'auto',
-  '&:focus-visible': focusRingOutset,
-});
-const fallbackStyle = css({
-  position: 'absolute',
-  inset: 0,
-  display: 'grid',
-  placeItems: 'center',
-  padding: vars.space[3],
-  color: vars.color.textMuted,
-  textAlign: 'center',
-  overflowWrap: 'anywhere',
-});
-const statusStyle = css({
-  fontSize: vars.textSize.sm,
-  color: vars.color.textMuted,
-  overflowWrap: 'anywhere',
-});
-// Hidden only while the client knows the image is loading (server markup never carries the
-// state); only the reveal fades.
-const loadingStyle = css({
-  transitionProperty: 'opacity',
-  transitionDuration: vars.motion.duration.base,
-  '&[data-image-state="loading"]': { opacity: 0, transitionDuration: '0s' },
-  [REDUCED_MOTION]: { transitionDuration: '0s' },
-});
-const returnFlightStyle = css({
-  position: 'fixed',
-  pointerEvents: 'none',
-  transformOrigin: 'top left',
-  zIndex: 1,
-  overflow: 'hidden',
-  borderRadius: vars.radius.md,
-});
 
 interface ReturnFlight {
   image: LightboxGalleryImage;
@@ -351,11 +107,12 @@ interface ReturnFlight {
 function joinIds(...ids: (string | undefined | false)[]) {
   return ids.filter(Boolean).join(' ') || undefined;
 }
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
 function validPositive(value: number, fallback: number) {
   return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+/** The viewer's magnification cap: `maxZoom` when positive and finite, else the default, never below 1. */
+export function lightboxZoomLimit(maxZoom = MAX_ZOOM) {
+  return Math.max(1, validPositive(maxZoom, MAX_ZOOM));
 }
 
 function GalleryImage({
@@ -427,22 +184,8 @@ function Tile({
   return <Root {...props} ref={merged} />;
 }
 
-interface ViewerProps {
-  images: readonly LightboxGalleryImage[];
-  selected: string | null | undefined;
-  label: string;
-  controller: NativeDialogController;
-  select: (id: string | null) => void;
-  restore: () => void;
-  launch: React.RefObject<HTMLButtonElement | null>;
-  home: () => HTMLButtonElement | undefined;
-  labels: LightboxGalleryLabels;
-  locale?: Intl.LocalesArgument;
-  maxZoom: number;
-  slotProps?: LightboxGallerySlotProps;
-  slots?: LightboxGallerySlots;
+interface ViewerProps extends LightboxViewerProps {
   returnFlight: (flight: ReturnFlight) => void;
-  reduced: boolean;
 }
 
 function Viewer({
@@ -1005,6 +748,63 @@ function Viewer({
   );
 }
 
+/** Tracks `prefers-reduced-motion` in the document that owns `ref`. */
+export function useReducedMotionPreference(ref: React.RefObject<HTMLElement | null>) {
+  const initialReduced = useReducedMotion();
+  const [reduced, setReduced] = useState(initialReduced ?? false);
+  useEffect(() => {
+    const query = ref.current?.ownerDocument.defaultView?.matchMedia(REDUCED_MOTION.replace('@media ', ''));
+    if (!query) return;
+    const update = () => setReduced(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, [ref]);
+  return reduced;
+}
+
+/** The viewer dialog and the flight back to the launching element; LightboxGallery and GalleryEditor render it. */
+export function LightboxViewer(props: LightboxViewerProps) {
+  const [returnFlight, setReturnFlight] = useState<ReturnFlight | null>(null);
+  return (
+    <>
+      <Viewer {...props} returnFlight={setReturnFlight} />
+      {returnFlight && !props.reduced && !props.controller.open && (
+        <motion.div
+          key={returnFlight.image.id}
+          aria-hidden="true"
+          inert
+          css={returnFlightStyle}
+          style={{
+            left: returnFlight.from.left,
+            top: returnFlight.from.top,
+            width: returnFlight.from.width,
+            height: returnFlight.from.height,
+          }}
+          initial={{ x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1 }}
+          animate={{
+            x: returnFlight.to.left - returnFlight.from.left,
+            y: returnFlight.to.top - returnFlight.from.top,
+            scaleX: returnFlight.to.width / returnFlight.from.width,
+            scaleY: returnFlight.to.height / returnFlight.from.height,
+            opacity: 0,
+          }}
+          transition={FLIGHT_SPRING}
+          onAnimationComplete={() => setReturnFlight(null)}
+        >
+          <img
+            src={returnFlight.image.src}
+            srcSet={returnFlight.image.srcSet}
+            sizes={returnFlight.image.sizes}
+            alt=""
+            css={imageStyle}
+          />
+        </motion.div>
+      )}
+    </>
+  );
+}
+
 export function LightboxGallery({
   ref,
   images,
@@ -1034,34 +834,21 @@ export function LightboxGallery({
   );
   const [open, requestOpen] = useControlledState(openProp, defaultOpen, onOpenChange);
   const [pendingLaunch, setPendingLaunch] = useState<string | null>(null);
-  const [returnFlight, setReturnFlight] = useState<ReturnFlight | null>(null);
-  const initialReduced = useReducedMotion();
-  const [reduced, setReduced] = useState(initialReduced ?? false);
   const validSelection = images.some((image) => image.id === selected);
   const effectiveOpen = !!open && validSelection && (pendingLaunch === null || pendingLaunch === selected);
   const lifecycle = useNativeDialogRoot(effectiveOpen, requestOpen);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLUListElement | null>(null);
   const mergedRoot = useMergeRefs([ref, rootRef]);
+  const reduced = useReducedMotionPreference(rootRef);
   const mergedGrid = useMergeRefs([slotProps?.grid?.ref, gridRef]);
   const tiles = useRef(new Map<string, HTMLButtonElement>());
   const invoker = useRef<HTMLButtonElement | null>(null);
-  const labels = { ...defaults, ...labelOverrides };
+  const labels = { ...lightboxLabelDefaults, ...labelOverrides };
   const [geometry, setGeometry] = useState({ columns: 2, width: MIN_COLUMN_WIDTH, gap: 0 });
   const width = validPositive(minColumnWidth, MIN_COLUMN_WIDTH);
-  const zoomLimit = Math.max(1, validPositive(maxZoom, MAX_ZOOM));
+  const zoomLimit = lightboxZoomLimit(maxZoom);
   const format = useMemo(() => numberFormatter(locale), [locale]);
-
-  useEffect(() => {
-    const query = rootRef.current?.ownerDocument.defaultView?.matchMedia(
-      REDUCED_MOTION.replace('@media ', ''),
-    );
-    if (!query) return;
-    const update = () => setReduced(query.matches);
-    update();
-    query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
-  }, []);
 
   useEffect(() => {
     if (pendingLaunch === selected) setPendingLaunch(null);
@@ -1177,7 +964,7 @@ export function LightboxGallery({
                 {labels.unavailable}
               </p>
             )}
-            <Viewer
+            <LightboxViewer
               images={images}
               selected={selected}
               label={label}
@@ -1191,41 +978,8 @@ export function LightboxGallery({
               maxZoom={zoomLimit}
               slotProps={slotProps}
               slots={slots}
-              returnFlight={setReturnFlight}
               reduced={reduced}
             />
-            {returnFlight && !reduced && !effectiveOpen && (
-              <motion.div
-                key={returnFlight.image.id}
-                aria-hidden="true"
-                inert
-                css={returnFlightStyle}
-                style={{
-                  left: returnFlight.from.left,
-                  top: returnFlight.from.top,
-                  width: returnFlight.from.width,
-                  height: returnFlight.from.height,
-                }}
-                initial={{ x: 0, y: 0, scaleX: 1, scaleY: 1, opacity: 1 }}
-                animate={{
-                  x: returnFlight.to.left - returnFlight.from.left,
-                  y: returnFlight.to.top - returnFlight.from.top,
-                  scaleX: returnFlight.to.width / returnFlight.from.width,
-                  scaleY: returnFlight.to.height / returnFlight.from.height,
-                  opacity: 0,
-                }}
-                transition={FLIGHT_SPRING}
-                onAnimationComplete={() => setReturnFlight(null)}
-              >
-                <img
-                  src={returnFlight.image.src}
-                  srcSet={returnFlight.image.srcSet}
-                  sizes={returnFlight.image.sizes}
-                  alt=""
-                  css={imageStyle}
-                />
-              </motion.div>
-            )}
           </div>
         )}
       </WithSx>

@@ -46,11 +46,13 @@ import {
 import { GeneratedRoot, type GeneratedRootProps, type GeneratedRootSlotProps } from '../../utils/generated-root';
 import { createPortal } from 'react-dom';
 import { FloatingFocusManager, useMergeRefs, type Placement } from '@floating-ui/react';
+import { useFloatingTabOrder } from '../../overlay/use-floating-tab-order';
 import { animate } from 'motion/react';
 import { Close } from '@jfrader/icons';
 import { vars } from '@jfrader/tokens/vars';
 import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
+import { touchTargetStyle } from '../../styling/touch-target';
 import { iconWrapperStyle } from '../../styling/icon-wrapper';
 import { listboxSurfaceStyle } from '../../styling/listbox-style';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -444,7 +446,7 @@ const scrimEnter = keyframes({
   to: { opacity: 1 },
 });
 
-const triggerStyle = css({
+const triggerStyle = css(touchTargetStyle, {
   label: 'user-menu-trigger',
   appearance: 'none',
   boxSizing: 'border-box',
@@ -620,6 +622,7 @@ const errorStyle = css({
 const identityStyle = css({
   label: 'user-menu-identity',
   display: 'flex',
+  minInlineSize: 0,
   alignItems: 'center',
   gap: vars.space[3],
   paddingBlock: vars.space[2],
@@ -631,12 +634,7 @@ const identityTextStyle = css({
   flexDirection: 'column',
   gap: vars.space[1],
   minInlineSize: 0,
-});
-
-const ellipsisStyle = css({
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
+  overflowWrap: 'anywhere',
 });
 
 const identityNameStyle = css({
@@ -1056,6 +1054,7 @@ function UserMenuSurface({
   const { compact, contentId, menuId, identityNameId, sessionRef, signOutFailure } = useUserMenu('Content');
   const { refs, floatingContext, floatingStyles, getFloatingProps, requestClose } = useMenuContext(FAMILY, 'Content');
   const sheet = presentationOf(variant, compact) === 'sheet';
+  useFloatingTabOrder(floatingContext, { enabled: !sheet });
   const [session] = useState<Session>(() => ({}));
   const [shell, setShell] = useState<HTMLDivElement | null>(null);
   const [identitySlot, setIdentitySlot] = useState<HTMLDivElement | null>(null);
@@ -1183,7 +1182,7 @@ function UserMenuSurface({
   const failure = signOutFailure?.session === session ? signOutFailure.message : null;
 
   return (
-    <OverlayPortal>
+    <OverlayPortal preserveTabOrder={sheet}>
       {/* The layer is the floating element and the focus manager's direct child. Desktop is
           non-modal (Tab closes, no trap, focus return is explicit); the sheet is modal with inert
           outside content. The sheet's scrim lives inside the layer, so a press on it is not an
@@ -1192,6 +1191,7 @@ function UserMenuSurface({
       <FloatingFocusManager
         context={floatingContext}
         modal={sheet}
+        guards={sheet}
         outsideElementsInert={sheet}
         initialFocus={-1}
         returnFocus={false}
@@ -1296,10 +1296,10 @@ function UserMenuIdentity({ ref, className, sx, ...rest }: UserMenuIdentityProps
           {/* Decorative: the visible name below is the same text. */}
           <Avatar aria-hidden name={user.name} src={user.avatarSrc} size="lg" />
           <div css={identityTextStyle}>
-            <span id={nameId} css={[ellipsisStyle, identityNameStyle]}>
+            <span id={nameId} css={identityNameStyle}>
               {user.name}
             </span>
-            <span css={[ellipsisStyle, identityEmailStyle]}>{user.email}</span>
+            <span css={identityEmailStyle}>{user.email}</span>
             {isRenderable(user.plan) && user.plan !== '' && (
               <Pill tone="accent" css={identityPlanStyle}>
                 {user.plan}

@@ -1,5 +1,6 @@
 import { StrictMode, useState, type ComponentPropsWithRef, type ComponentType, type MouseEvent } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { requireNonEmpty } from '../../testing/assertion-preconditions';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { motionDurationMs } from '../../styling/motion-timings';
@@ -1510,7 +1511,7 @@ export const LongIntlUnits: Story = {
     values: { distance: 98765432.1, speed: 12345.6, volume: 2.25 },
   },
   play: async ({ canvasElement }) => {
-    for (const element of canvasElement.querySelectorAll<HTMLElement>('[data-ui="activity-rings-metric"]')) {
+    for (const element of requireNonEmpty(canvasElement.querySelectorAll<HTMLElement>('[data-ui="activity-rings-metric"]'), 'Localized metrics')) {
       await expect(element.scrollWidth).toBeLessThanOrEqual(element.clientWidth + 1);
     }
   },
@@ -1985,7 +1986,9 @@ export const FocusedLongLabels: Story = {
   ))}
 </>` } } },
   play: async ({ canvasElement }) => {
-    for (const root of canvasElement.querySelectorAll('[data-ui="activity-rings"]')) {
+    const roots = requireNonEmpty(canvasElement.querySelectorAll('[data-ui="activity-rings"]'), 'Focused ring sizes');
+    await expect(roots).toHaveLength(3);
+    for (const root of roots) {
       const plot = root.querySelector('svg')!;
       const svg = plot.getBoundingClientRect();
       const center = root.querySelector('[data-ui="activity-rings-center"]')!.getBoundingClientRect();

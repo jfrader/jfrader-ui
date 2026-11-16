@@ -1,6 +1,6 @@
 {
   "name": "@jfrader/icons",
-  "version": "0.19.3",
+  "version": "0.29.1",
   "description": "React icons and SVG icon components for @jfrader/ui.",
   "keywords": [
     "react",
@@ -25,24 +25,17 @@
     "access": "public"
   },
   "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts"
-    },
+    ".": { "types": "./src/index.ts", "import": "./src/index.ts" },
     "./metadata": "./icons.json",
-    "./svg-icon": {
-      "types": "./src/svg-icon/index.ts",
-      "import": "./src/svg-icon/index.ts"
-    },
-    "./*": {
-      "types": "./src/generated/*.tsx",
-      "import": "./src/generated/*.tsx"
-    }
+    "./sprite.svg": "./sprite.svg",
+    "./paths.json": "./paths.json",
+    "./svg-icon": { "types": "./src/svg-icon/index.ts", "import": "./src/svg-icon/index.ts" },
+    "./*": { "types": "./src/generated/*.tsx", "import": "./src/generated/*.tsx" }
   },
   "scripts": {
     "generate": "tsx scripts/generate.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "build": "pnpm generate && vite build --config vite.lib.config.ts && tsc -p tsconfig.build.json",
+    "build": "pnpm generate && vite build --config vite.lib.config.ts && tsc -p tsconfig.build.json && node ../../scripts/rewrite-dts-specifiers.mjs dist/types",
     "prepack": "pnpm build && node ../../scripts/flip-exports.mjs dist --package icons",
     "postpack": "node ../../scripts/flip-exports.mjs src --package icons"
   },
@@ -55,6 +48,7 @@
     "react": "^19.0.0"
   },
   "devDependencies": {
+    "@storybook/addon-docs": "^10.6.1",
     "@vitejs/plugin-react": "^6.1.2",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",

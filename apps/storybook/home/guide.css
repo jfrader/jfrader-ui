@@ -1,4 +1,33 @@
+.foundation-guide {
+  min-inline-size: 0;
+  font-family: var(--ui-font-sans);
+  font-size: var(--ui-text-size-md);
+  line-height: var(--ui-line-height-relaxed);
+  color: var(--ui-color-text);
+}
+
+.foundation-guide :is(h1, h2, h3, h4) {
+  font-family: var(--ui-font-sans);
+  line-height: var(--ui-line-height-tight);
+  margin-block: var(--ui-space-6) var(--ui-space-3);
+}
+
+.foundation-guide h1 {
+  margin-block-start: 0;
+}
+
+.foundation-guide a {
+  color: var(--ui-color-accent-text);
+}
+
+.foundation-guide :is(th, td) {
+  padding: var(--ui-space-3);
+  border-block-end: 1px solid var(--ui-color-border);
+  text-align: start;
+}
+
 .foundation-guide :not(pre) > code {
+  font-family: var(--ui-font-mono);
   /* A token name broken across lines ("var(" / "-ui-color-accent)") cannot be read or copied. */
   white-space: nowrap;
 }

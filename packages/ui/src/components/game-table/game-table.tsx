@@ -199,6 +199,11 @@ export type GameTableSeatProps = GameTablePartProps & {
   slotKey?: string;
 };
 export type GameTablePlayProps = GameTableSeatProps;
+export type GameTableCenterProps = GameTablePartProps;
+export type GameTableHeaderProps = GameTablePartProps;
+export type GameTableDockProps = GameTablePartProps;
+export type GameTableFooterProps = GameTablePartProps;
+export type GameTableFloatingProps = GameTablePartProps;
 
 function SeatProvider({ slot, geometry, children }: { slot: GameTableSlot; geometry: BoardSeatGeometry; children: ReactNode }) {
   const value = useMemo(() => ({ slot, player: slot.player, index: geometry.index, geometry }), [slot, geometry]);

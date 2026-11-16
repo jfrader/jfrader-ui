@@ -15,7 +15,7 @@ function fixture(files) {
   return root;
 }
 
-const family = (body) => `packages/ui/src/components/widget/widget.tsx`;
+const family = () => `packages/ui/src/components/widget/widget.tsx`;
 
 test('package re-exports keep the owning component in slot verification', (t) => {
   const root = fixture({

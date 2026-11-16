@@ -1,5 +1,5 @@
 import { configure, getConfig } from 'storybook/test';
-import { beforeAll, beforeEach, afterEach } from 'vitest';
+import { beforeAll, beforeEach, afterEach, expect, inject } from 'vitest';
 import { cdp } from 'vitest/browser';
 import { auditDesign } from '../../../packages/ui/src/testing/design-assertions';
 
@@ -64,6 +64,7 @@ afterEach(() => {
 
 // Emulate the browser preference itself: mocking matchMedia does not activate CSS media rules.
 const storyMediaPreferences: Readonly<Record<string, string | undefined>> = {
+  'Calendar range forced colors': 'forced-colors',
   'Caret Reduced Motion': 'prefers-reduced-motion',
   'Reduced Transparency': 'prefers-reduced-transparency',
   'Dial Reduced Motion': 'prefers-reduced-motion',
@@ -85,23 +86,23 @@ const storyMediaPreferences: Readonly<Record<string, string | undefined>> = {
   'Gravity Well Reduced Motion': 'prefers-reduced-motion',
 };
 
+async function emulateStoryMedia(features: { name: string; value: string }[]) {
+  await cdp().send('Emulation.setEmulatedMedia', { features });
+  // MediaQueryList change events run at the next rendering opportunity. Motion caches
+  // that event's value when mounting, so deliver it before the next story renders.
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+}
+
 beforeEach(async ({ task }) => {
-  const touchWidth = /^Touch table (320|390|768)$/.exec(task.name)?.[1];
-  const touchControls = task.name === 'Touch control sizes' || task.name === 'MoneyInput touch sizes' || task.name === 'NumberField touch sizes';
-  if (touchWidth || touchControls || task.name === 'Desktop table controls') {
-    await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: Boolean(touchWidth || touchControls) });
-  }
+  const touchInput = inject('touchInput');
+  expect(window.matchMedia('(pointer: coarse)').matches).toBe(touchInput);
+  expect(window.matchMedia('(hover: hover)').matches).toBe(!touchInput);
   const preference = storyMediaPreferences[task.name];
   if (!preference) return;
-  await cdp().send('Emulation.setEmulatedMedia', {
-    features: [{ name: preference, value: preference === 'forced-colors' ? 'active' : 'reduce' }],
-  });
+  await emulateStoryMedia([{ name: preference, value: preference === 'forced-colors' ? 'active' : 'reduce' }]);
 });
 
 afterEach(async ({ task }) => {
-  if (/^Touch table (320|390|768)$/.test(task.name) || task.name === 'Touch control sizes' || task.name === 'MoneyInput touch sizes' || task.name === 'NumberField touch sizes' || task.name === 'Desktop table controls') {
-    await cdp().send('Emulation.setTouchEmulationEnabled', { enabled: false });
-  }
   if (!storyMediaPreferences[task.name]) return;
-  await cdp().send('Emulation.setEmulatedMedia', { features: [] });
+  await emulateStoryMedia([]);
 });

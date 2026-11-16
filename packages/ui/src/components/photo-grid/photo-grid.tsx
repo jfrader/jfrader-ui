@@ -1,6 +1,6 @@
-import { withoutSx } from '../../styling/sx';
 'use client';
 
+import { withoutSx } from '../../styling/sx';
 import {
   memo,
   useCallback,
@@ -10,14 +10,11 @@ import {
   useRef,
   useState,
   type ComponentPropsWithRef,
-  type ComponentType,
   type CSSProperties,
   type KeyboardEvent,
-  type ReactNode,
 } from 'react';
 import { useMergeRefs } from '@floating-ui/react';
 import { LayoutGroup, MotionConfig, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react';
-import { vars } from '@jfrader/tokens/vars';
 import {
   useNativeDialog,
   useNativeDialogRoot,
@@ -25,11 +22,8 @@ import {
   type NativeDialogController,
 } from '../../overlay/use-native-dialog';
 import { styledDialogTransition } from '../../overlay/exit-motion';
-import { css, keyframes, type Interpolation, type Theme } from '../../styling/css';
-import { focusRingInset, focusRingOutset } from '../../styling/focus-ring';
-import { FORCED_COLORS, REDUCED_MOTION, REDUCED_TRANSPARENCY } from '../../styling/media';
-import type { SxProps } from '../../styling/sx';
-import { PresentationSlot, type PresentationProps } from '../../utils/presentation-slot';
+import { isDev } from '../../utils/dev';
+import { PresentationSlot } from '../../utils/presentation-slot';
 import { numberFormatter } from '../../utils/intl';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
@@ -40,7 +34,6 @@ import { PhotoImage, photoFallbackStyle } from './photo-image';
 export { isPhotoGridOptionSoldOut } from './gallery-presentation';
 import {
   ChromeAction,
-  type ChromeActionProps,
   chromeIcons,
   filmstripStyle,
   Glyph,
@@ -48,235 +41,57 @@ import {
   thumbStyle,
 } from '../viewer-chrome/viewer-chrome';
 
-export interface PhotoGridPhoto {
-  id: string;
-  src: string;
-  srcSet?: string;
-  sizes?: string;
-  alt: string;
-  width: number;
-  height: number;
-  title: string;
-  detail?: ReactNode;
-}
-
-export interface PhotoGridColor<P extends PhotoGridPhoto = PhotoGridPhoto> {
-  value: string;
-  label: string;
-  photos: readonly P[];
-  soldOut?: boolean;
-}
-
-export interface PhotoGridOption {
-  value: string;
-  label: string;
-  /** Disable everywhere, or for the listed color values. */
-  soldOut?: boolean | readonly string[];
-}
-
-type Slot<Tag extends keyof React.JSX.IntrinsicElements> = ComponentPropsWithRef<Tag> & {
-  sx?: Interpolation<Theme>;
-};
-type ActionSlot = Slot<'button'>;
-
-export interface PhotoGridSlotProps {
-  /** Outer gallery element. */
-  root?: PresentationProps<'div'>;
-  presentationStage?: Slot<'div'>;
-  main?: ActionSlot;
-  thumbnails?: Slot<'div'>;
-  details?: Slot<'div'>;
-  colors?: Slot<'fieldset'>;
-  options?: Slot<'fieldset'>;
-  caption?: Slot<'div'>;
-  position?: ActionSlot;
-  navigation?: Slot<'div'>;
-  /** Header bar holding the title and density controls. */
-  header?: Slot<'header'>;
-  /** Heading element displaying the grid title. */
-  title?: Slot<'h2'>;
-  /** Container element wrapping column density controls. */
-  density?: Slot<'div'>;
-  /** Unordered list element rendering photo grid items. */
-  list?: Slot<'ul'>;
-  /** List item element wrapping an individual photo. */
-  item?: Slot<'li'>;
-  /** Button element opening the full photo viewer. */
-  photo?: ActionSlot;
-  /** Button element toggling the photo favorite state. */
-  favorite?: ActionSlot;
-  /** Favorite action in the full photo viewer. */
-  viewerFavorite?: Partial<ChromeActionProps> & { sx?: Interpolation<Theme> };
-  /** Dialog element for the full photo viewer modal. */
-  viewer?: Omit<Slot<'dialog'>, 'open'>;
-  /** Container element displaying the active photo in the viewer. */
-  stage?: Slot<'div'>;
-  /** Thumbnail strip container for browsing photos in the viewer. */
-  filmstrip?: Slot<'div'>;
-  /** Action container holding viewer close and navigation buttons. */
-  controls?: Slot<'div'>;
-  /** Status element displaying the photo index and total count. */
-  status?: Slot<'div'>;
-}
-
-export interface PhotoGridSlots {
-  /** Replaces the outer gallery element. */
-  root?: ComponentType<ComponentPropsWithRef<'div'>>;
-  presentationStage?: ComponentType<Slot<'div'>>;
-  main?: ComponentType<ActionSlot>;
-  thumbnails?: ComponentType<Slot<'div'>>;
-  details?: ComponentType<Slot<'div'>>;
-  colors?: ComponentType<Slot<'fieldset'>>;
-  options?: ComponentType<Slot<'fieldset'>>;
-  caption?: ComponentType<Slot<'div'>>;
-  position?: ComponentType<ActionSlot>;
-  navigation?: ComponentType<Slot<'div'>>;
-  /** Header holding the title and density controls. */
-  header?: ComponentType<Slot<'header'>>;
-  /** Heading displaying the grid title. */
-  title?: ComponentType<Slot<'h2'>>;
-  /** Container holding density controls. */
-  density?: ComponentType<Slot<'div'>>;
-  /** List of photo tiles. */
-  list?: ComponentType<Slot<'ul'>>;
-  /** List item surrounding a photo. */
-  item?: ComponentType<Slot<'li'>>;
-  /** Button opening the photo viewer. */
-  photo?: ComponentType<ActionSlot>;
-  /** Button toggling a tile favorite. */
-  favorite?: ComponentType<ActionSlot>;
-  /** Favorite action in the full photo viewer. */
-  viewerFavorite?: ComponentType<NonNullable<PhotoGridSlotProps['viewerFavorite']>>;
-  /** Dialog displaying the full photo viewer. */
-  viewer?: ComponentType<Omit<Slot<'dialog'>, 'open'>>;
-  /** Container displaying the active photo. */
-  stage?: ComponentType<Slot<'div'>>;
-  /** Thumbnail strip for browsing photos. */
-  filmstrip?: ComponentType<Slot<'div'>>;
-  /** Container holding viewer navigation controls. */
-  controls?: ComponentType<Slot<'div'>>;
-  /** Live region announcing grid updates. */
-  status?: ComponentType<Slot<'div'>>;
-}
-
-export interface PhotoGridLabels {
-  carousel: string;
-  slide: string;
-  navigationHint: string;
-  colors: string;
-  options: string;
-  clearOption: string;
-  soldOut: string;
-  inspect: string;
-  /** @deprecated No longer rendered: each density step is a toggle named by `columns`. Removed in the next major. */
-  larger: string;
-  /** @deprecated No longer rendered: each density step is a toggle named by `columns`. Removed in the next major. */
-  smaller: string;
-  density: string;
-  empty: string;
-  unavailable: string;
-  imageUnavailable: string;
-  close: string;
-  previous: string;
-  next: string;
-  filmstrip: string;
-  zoomIn: string;
-  zoomOut: string;
-  resetZoom: string;
-  panLeft: string;
-  panRight: string;
-  panUp: string;
-  panDown: string;
-  favorite: (title: string, favorite: boolean) => string;
-  openPhoto: (title: string, alt: string, favorite: boolean) => string;
-  position: (position: string, total: string, title: string) => string;
-  /** Names a density step and the current density. `columns` is formatted; `count` selects the plural. */
-  columns: (columns: string, count: number) => string;
-  /** The album size under the title. `count` is formatted; `total` selects the plural. */
-  photoCount: (count: string, total: number) => string;
-}
-
-export interface PhotoGridProps<P extends PhotoGridPhoto = PhotoGridPhoto>
-  extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue'>, SxProps {
-  /** Photo collection; product colors may supply their own collections instead. */
-  photos?: readonly P[];
-  /** Shorthand for slots.root. */
-  component?: PhotoGridSlots['root'];
-  /** Name the gallery and display its heading. */
-  title: string;
-  /** Keep the grid, show a product detail, or browse a focused cover rail. */
-  variant?: 'grid' | 'product' | 'cover-flow';
-  /** Cover rail geometry; reduced motion and forced colors also flatten depth. */
-  depth?: boolean;
-  /** Show reflected images in the cover-flow rail. Defaults to `false`. */
-  reflection?: boolean;
-  /** Supply product color choices and their photo collections. */
-  colors?: readonly PhotoGridColor<P>[];
-  /** Supply product options, including availability by color. */
-  options?: readonly PhotoGridOption[];
-  /** Control the selected product color by its `value`. */
-  selectedColor?: string;
-  /** Seed the uncontrolled color. Defaults to the first color that is not sold out. */
-  defaultSelectedColor?: string;
-  /** Receive requests to select a product color. */
-  onSelectedColorChange?: (value: string) => void;
-  /** Control the selected product option by its `value`, or `null` for none. */
-  selectedOption?: string | null;
-  /** Seed the uncontrolled product option. Defaults to `null`. */
-  defaultSelectedOption?: string | null;
-  /** Receive requests to select or clear a product option. */
-  onSelectedOptionChange?: (value: string | null) => void;
-  /** Content above the product or cover-flow presentation; ignored by `variant="grid"`. */
-  header?: ReactNode;
-  /** Content below the product or cover-flow presentation; ignored by `variant="grid"`. */
-  footer?: ReactNode;
-  /** Render the current product or cover-flow caption; ignored by `variant="grid"`. */
-  renderCaption?: (photo: P, index: number) => ReactNode;
-  /** Fine-pointer inspection. The modal zoom controls remain available when false. */
-  magnifier?: boolean;
-  /** Positive product image ratio; defaults to 4 / 5. */
-  aspectRatio?: number;
-  /** Maximum modal magnification, finite and at least 1; defaults to 3. */
-  zoomFactor?: number;
-  /** Column counts offered as density steps. The container width never overrides them. */
-  densitySteps?: readonly number[];
-  /** Control the grid column count, snapped to the nearest `densitySteps` entry. */
-  density?: number;
-  /** Seed the uncontrolled column count. Defaults to the density step nearest 3. */
-  defaultDensity?: number;
-  /** Receive requests to change the grid column count. */
-  onDensityChange?: (columns: number) => void;
-  /** Control the collection of favorite photo ids. */
-  favorites?: readonly string[];
-  /** Seed the uncontrolled favorite photo ids. Defaults to an empty list. */
-  defaultFavorites?: readonly string[];
-  /** Receive the next favorite photo ids after a toggle. */
-  onFavoritesChange?: (ids: string[]) => void;
-  /** Receive the toggled photo id and its requested favorite state. */
-  onFavoriteChange?: (id: string, favorite: boolean) => void;
-  /** Control the active photo id, or `null` for no selection. */
-  value?: string | null;
-  /** Seed the uncontrolled active photo. Defaults to the first photo id, or `null` if empty. */
-  defaultValue?: string | null;
-  /** Receive requests to change the active photo id. */
-  onValueChange?: (id: string | null) => void;
-  /** Control whether the full-photo viewer is open. */
-  open?: boolean;
-  /** Open the uncontrolled full-photo viewer initially. Defaults to `false`. */
-  defaultOpen?: boolean;
-  /** Receive requests to open or close the full-photo viewer. */
-  onOpenChange?: (open: boolean) => void;
-  /** Override individual action labels, empty states, and announcement formatters. */
-  labels?: Partial<PhotoGridLabels>;
-  /** Choose the locale for photo counts, positions, and column counts. */
-  locale?: Intl.LocalesArgument;
-  /** Pass props to gallery, product, cover-flow, and viewer parts. */
-  slotProps?: PhotoGridSlotProps;
-  /** Replace gallery, product, cover-flow, and viewer elements. */
-  slots?: PhotoGridSlots;
-}
-
-declare const process: { env: { NODE_ENV?: string } };
+import {
+  rootStyle,
+  headerStyle,
+  headingStyle,
+  titleStyle,
+  summaryStyle,
+  densityStyle,
+  segmentStyle,
+  listStyle,
+  cellStyle,
+  itemStyle,
+  photoStyle,
+  tileFavoriteStyle,
+  imageBoxStyle,
+  viewerStyle,
+  viewerContentStyle,
+  barStyle,
+  topBarStyle,
+  bottomBarStyle,
+  viewerTitleStyle,
+  toolbarStyle,
+  controlsStyle,
+  favoriteSlotStyle,
+  compactHiddenStyle,
+  dividerStyle,
+  stageStyle,
+  viewerThumbStyle,
+  statusStyle,
+  counterStyle,
+  detailStyle,
+  viewerDetailStyle,
+} from './photo-grid.styles';
+import type {
+  ActionSlot,
+  PhotoGridLabels,
+  PhotoGridOption,
+  PhotoGridPhoto,
+  PhotoGridProps,
+  PhotoGridSlotProps,
+  PhotoGridSlots,
+  Slot,
+} from './photo-grid.types';
+export type {
+  PhotoGridColor,
+  PhotoGridLabels,
+  PhotoGridOption,
+  PhotoGridPhoto,
+  PhotoGridProps,
+  PhotoGridSlotProps,
+  PhotoGridSlots,
+} from './photo-grid.types';
 
 const DEFAULT_STEPS = [5, 3, 2] as const;
 const DEFAULT_DENSITY = 3;
@@ -301,16 +116,8 @@ const PAN_STEP = 40;
 const DISMISS_DISTANCE = 100;
 /** Density glyphs draw at most this many columns; denser steps share the densest glyph. */
 const GLYPH_MAX_COLUMNS = 6;
-/** Opacity of the chrome bars and tile favorites over the photo, before the blur. */
-const CHROME_MIX = '85%';
-/** Narrow or hoverless viewports: the viewer drops previous/next (swipe and the filmstrip remain) and shrinks. */
-const COMPACT_CHROME = '@media (max-width: 40rem), (hover: none)';
-/** Cells narrower than this show the favorite below the photo instead of over it. */
-const COMPACT_CELL = '@container (max-width: 7rem)';
 const SPRING = { type: 'spring', stiffness: 360, damping: 36 } as const;
 const englishPlural = new Intl.PluralRules('en');
-const favoritePop = keyframes({ from: { transform: 'scale(0.85)' }, to: { transform: 'scale(1)' } });
-const captionFade = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } });
 const defaultLabels: PhotoGridLabels = {
   carousel: 'carousel',
   slide: 'slide',
@@ -345,229 +152,6 @@ const defaultLabels: PhotoGridLabels = {
   columns: (columns, count) => `${columns} ${englishPlural.select(count) === 'one' ? 'column' : 'columns'}`,
   photoCount: (count, total) => `${count} ${englishPlural.select(total) === 'one' ? 'photo' : 'photos'}`,
 };
-
-const translucentChrome = {
-  background: `color-mix(in oklab, ${vars.color.bg} ${CHROME_MIX}, transparent)`,
-  backdropFilter: `blur(${vars.space[3]})`,
-  [REDUCED_TRANSPARENCY]: { background: vars.color.bg, backdropFilter: 'none' },
-};
-
-const rootStyle = css({
-  label: 'photo-grid',
-  display: 'grid',
-  gap: vars.space[4],
-  minInlineSize: 0,
-  fontFamily: vars.font.sans,
-  color: vars.color.text,
-  lineHeight: vars.lineHeight.base,
-  '&:focus-visible': focusRingOutset,
-});
-const headerStyle = css({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: vars.space[3],
-});
-const headingStyle = css({ display: 'grid', gap: vars.space[1], minInlineSize: 0 });
-const titleStyle = css({
-  margin: 0,
-  fontSize: vars.textSize.lg,
-  fontWeight: vars.fontWeight.semibold,
-  overflowWrap: 'anywhere',
-});
-const summaryStyle = css({
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: vars.space[3],
-  margin: 0,
-  fontSize: vars.textSize.sm,
-  color: vars.color.textMuted,
-  fontVariantNumeric: 'tabular-nums',
-});
-const densityStyle = css({
-  display: 'flex',
-  gap: vars.space[1],
-  padding: vars.space[1],
-  border: `1px solid ${vars.color.border}`,
-  borderRadius: vars.radius.full,
-  background: vars.color.surfaceInset,
-});
-const segmentStyle = css({ borderRadius: vars.radius.full });
-const listStyle = css({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(var(--photo-grid-columns), minmax(0, 1fr))',
-  gap: vars.space[1],
-  padding: 0,
-  margin: 0,
-  listStyle: 'none',
-  touchAction: 'pan-y',
-});
-const cellStyle = css({ containerType: 'inline-size' });
-const itemStyle = css({ position: 'relative', display: 'grid', gap: vars.space[1], minInlineSize: 0 });
-const photoStyle = css({
-  appearance: 'none',
-  boxSizing: 'border-box',
-  position: 'relative',
-  display: 'grid',
-  placeItems: 'center',
-  inlineSize: '100%',
-  aspectRatio: '1',
-  padding: 0,
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.sm,
-  background: vars.color.surfaceInset,
-  color: vars.color.text,
-  font: 'inherit',
-  fontSize: vars.textSize.sm,
-  cursor: 'pointer',
-  overflow: 'hidden',
-  '&:focus-visible': focusRingOutset,
-  [FORCED_COLORS]: { borderColor: 'ButtonText' },
-});
-// Over the photo, the favorite shows while pressed, focused or hovered, and always without hover.
-const tileFavoriteStyle = css({
-  font: 'inherit',
-  appearance: 'none',
-  boxSizing: 'border-box',
-  position: 'absolute',
-  insetBlockEnd: vars.space[2],
-  insetInlineStart: vars.space[2],
-  display: 'grid',
-  placeItems: 'center',
-  inlineSize: vars.space[8],
-  blockSize: vars.space[8],
-  padding: 0,
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.full,
-  color: vars.color.text,
-  cursor: 'pointer',
-  ...translucentChrome,
-  opacity: 0,
-  transitionProperty: 'opacity',
-  transitionDuration: vars.motion.duration.fast,
-  transitionTimingFunction: vars.motion.easeStandard,
-  '*:hover > &, &:focus-visible, &[aria-pressed="true"]': { opacity: 1 },
-  '&:focus-visible': focusRingOutset,
-  '&[aria-pressed="true"]': {
-    color: vars.color.accentText,
-    animation: `${favoritePop} ${vars.motion.duration.base} ${vars.motion.easeStandard}`,
-  },
-  '@media (hover: none)': { opacity: 1 },
-  [COMPACT_CELL]: { position: 'static', justifySelf: 'start', opacity: 1, background: vars.color.surfaceRaised },
-  [REDUCED_MOTION]: { transitionDuration: '0s', '&[aria-pressed="true"]': { animation: 'none' } },
-  [FORCED_COLORS]: { borderColor: 'ButtonText', '&[aria-pressed="true"]': { borderColor: 'Highlight' } },
-});
-const imageBoxStyle = css({ inlineSize: '100%', blockSize: '100%', minInlineSize: 0, minBlockSize: 0, borderRadius: 'inherit' });
-const viewerStyle = css({
-  boxSizing: 'border-box',
-  inlineSize: '100%',
-  blockSize: '100dvh',
-  maxInlineSize: '100%',
-  maxBlockSize: '100dvh',
-  overflow: 'hidden',
-  border: 'none',
-  borderRadius: 0,
-  padding: 0,
-  margin: 0,
-  background: vars.color.bg,
-  color: vars.color.text,
-  fontFamily: vars.font.sans,
-  position: 'fixed',
-  inset: 0,
-  '&[open]': { display: 'flex' },
-  flexDirection: 'column',
-  '&::backdrop': { background: vars.color.scrim },
-});
-// The stage spans every row; the chrome bars sit over its top and bottom edges.
-const viewerContentStyle = css({
-  display: 'grid',
-  gridTemplateRows: 'auto minmax(0, 1fr) auto',
-  gridTemplateColumns: 'minmax(0, 1fr)',
-  flex: '1 1 0',
-  minBlockSize: 0,
-  transitionProperty: 'opacity, transform',
-  transitionDuration: vars.motion.duration.slow,
-  transitionTimingFunction: vars.motion.easeStandard,
-  'dialog[data-state="closing"] &': { opacity: 0, transform: 'scale(0.98)' },
-  [REDUCED_MOTION]: { transitionDuration: '0s' },
-});
-const barStyle = css({
-  zIndex: 1,
-  gridColumn: '1',
-  display: 'grid',
-  gap: vars.space[2],
-  minInlineSize: 0,
-  ...translucentChrome,
-  [FORCED_COLORS]: { border: '1px solid CanvasText' },
-});
-const topBarStyle = css({
-  gridRow: '1',
-  gridTemplateColumns: 'minmax(0, 1fr) auto',
-  alignItems: 'center',
-  padding: `max(${vars.space[2]}, env(safe-area-inset-top)) max(${vars.space[4]}, env(safe-area-inset-right)) ${vars.space[2]} max(${vars.space[4]}, env(safe-area-inset-left))`,
-});
-const bottomBarStyle = css({
-  gridRow: '3',
-  padding: `${vars.space[2]} max(${vars.space[4]}, env(safe-area-inset-right)) max(${vars.space[2]}, env(safe-area-inset-bottom)) max(${vars.space[4]}, env(safe-area-inset-left))`,
-});
-const viewerTitleStyle = css({
-  margin: 0,
-  fontSize: vars.textSize.md,
-  fontWeight: vars.fontWeight.semibold,
-  overflowWrap: 'anywhere',
-});
-const toolbarStyle = css({
-  display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
-  alignItems: 'center',
-  gap: vars.space[2],
-  [COMPACT_CHROME]: { gridTemplateColumns: 'minmax(0, 1fr) auto' },
-});
-const controlsStyle = css({ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: vars.space[1] });
-const favoriteSlotStyle = css({ justifySelf: 'end' });
-const compactHiddenStyle = css({ [COMPACT_CHROME]: { display: 'none' } });
-const dividerStyle = css({
-  alignSelf: 'stretch',
-  marginBlock: vars.space[2],
-  marginInline: vars.space[1],
-  borderInlineStart: `1px solid ${vars.color.border}`,
-});
-const stageStyle = css({
-  position: 'relative',
-  gridRow: '1 / -1',
-  gridColumn: '1',
-  display: 'grid',
-  placeItems: 'center',
-  minBlockSize: 0,
-  overflow: 'hidden',
-  touchAction: 'none',
-  '&:focus-visible': focusRingInset,
-});
-const viewerThumbStyle = css({
-  scrollMarginInline: vars.space[1],
-  [COMPACT_CHROME]: { inlineSize: vars.space[8], blockSize: vars.space[8] },
-});
-const statusStyle = css({
-  fontSize: vars.textSize.sm,
-  color: vars.color.textMuted,
-  overflowWrap: 'anywhere',
-});
-const counterStyle = css({
-  fontSize: vars.textSize.sm,
-  fontVariantNumeric: 'tabular-nums',
-  overflowWrap: 'anywhere',
-  [COMPACT_CHROME]: { gridColumn: '1 / -1' },
-});
-const detailStyle = css({
-  margin: 0,
-  color: vars.color.textMuted,
-  fontSize: vars.textSize.sm,
-  overflowWrap: 'anywhere',
-  animation: `${captionFade} ${vars.motion.duration.slow} ${vars.motion.easeStandard}`,
-  [REDUCED_MOTION]: { animation: 'none' },
-});
-const viewerDetailStyle = css({ color: vars.color.text });
 
 function ids(...parts: (string | undefined | false)[]) {
   return parts.filter(Boolean).join(' ') || undefined;
@@ -1372,7 +956,7 @@ export function PhotoGrid<P extends PhotoGridPhoto = PhotoGridPhoto>({
   const previewOrigin = useTransform([previewOriginX, previewOriginY], ([ox, oy]) => `${ox} ${oy}`);
   const densityIndex = steps.indexOf(density);
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (isDev) {
     const seen = new Set<string>();
     for (const photo of photos) {
       if (seen.has(photo.id)) throw new Error('PhotoGrid: photo IDs must be unique.');

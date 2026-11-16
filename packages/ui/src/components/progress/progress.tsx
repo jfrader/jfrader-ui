@@ -1,3 +1,5 @@
+'use client';
+
 // WAI-ARIA progressbar (no APG keyboard pattern: it is not focusable and has no keyboard map).
 // Determinate: aria-valuemin/max/now, plus aria-valuetext from `getValueLabel`. Indeterminate
 // (`value` undefined): no aria-valuenow. An accessible name is required in every usage:

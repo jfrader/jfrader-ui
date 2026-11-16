@@ -62,7 +62,9 @@ These are the rules that repeatedly caught real defects in this repo's review cy
   the contrast script pattern (oklch→sRGB math), never by eye. Text contrast ≥ 4.5:1 for normal text in
   **both** themes.
 - **Targets ≥ 24×24 px** (WCAG 2.5.8 AA, with exceptions); library policy: our interactive controls
-  stay at 32px+ on the main axis, icon-only controls never below 24px.
+  stay at 32px+ on the main axis, icon-only controls never below 24px. On coarse pointers, controls on
+  the shared size scale, Button, and modal close buttons reach `size.touch` (44px) through
+  `controlTouchTargetStyles` or `touchTargetStyle`.
 - **Reduced motion is honored**: transitions/animation get a `prefers-reduced-motion: reduce`
   override; lifecycle behavior (open/close/focus) must still complete.
 - **RTL**: logical properties everywhere (`paddingInline`, `insetInlineStart`, `marginBlockEnd`);
@@ -111,6 +113,10 @@ These are the rules that repeatedly caught real defects in this repo's review cy
 - **The styling seam**: import `css`/`keyframes`/types only from `src/styling/css.ts`. Never from
   `@emotion/react` directly, never `styled()` inside the library. `styled`, `ThemeProvider`,
   `useTheme`, `theme`, and `createTheme` are the app-facing styling API; library internals stay on `css()` constants.
+- **Development diagnostics**: report through `devWarn`/`devError` from `src/utils/dev.ts`.
+  Guard a call site that builds a message with `if (isDev)` so a consumer build can drop the branch
+  and its string; the helpers gate too, so a missed guard cannot leak output. A bare `console.*` call
+  or a repeated `process.env.NODE_ENV` check is a defect. `pnpm lint` enforces the seam.
 - **Examples, guides, and app chrome use `styled`**, built at module scope from library components
   (`styled(Surface)({ … })`) or plain tags, with token values for every color, space, radius and
   font. Never a `css` prop, an inline `style` object, a Tailwind-style class or a literal value in
@@ -323,11 +329,15 @@ Shared styling modules in `src/styling/`, reused before writing a local copy:
   get one default Dialog.Panel; explicit composition accepts one direct Panel through fragments,
   without substantive siblings. DialogStack keeps its stage-directed portal inside a declaration-site
   ThemeBoundary. Host motion/measurement inline styles are reserved from ordinary root props.
+- `components/stepper/step-marker`: the step marker pill (numeral, check, current halo) shared by
+  Stepper and PaymentFlow; the host sets its size and font variables.
+- `components/data-flow/flow-node`: the node card (material, header row, icon box, and muted
+  detail) shared by DataFlow and PaymentFlow; the host may set its inset and detail font variables.
 - `components/viewer-chrome/viewer-chrome`: private media-viewer chrome shared by LightboxGallery and
   PhotoGrid: `ChromeAction` (ghost icon Button with a `focusVisibleOnly` tooltip, optional
   `aria-pressed`; unportaled inside a modal dialog, `portaled` elsewhere), the stroke glyphs and the
   thumbnail-strip styles.
-- `trigger-style`: overlay trigger button (Dialog, Popover, Menu).
+- `trigger-style`: overlay trigger button (Dialog, Drawer, BottomSheet, DialogStack, Popover, Menu), sized as an `md` control.
 - `listbox-style`: popup surface, item, and option fragments (Menu, Select, Combobox, CommandPalette, PhoneInput).
 - `input-control`: text-input control skin (TextField, Textarea, SearchField, TagInput, MentionInput, PasswordField, NumberField, MoneyInput, PhoneInput, InlineEdit, InputGroup, LinkUnfurl).
 - `choice-control`: root, row, and hidden-input fragments (Checkbox, Switch, RadioGroup.Radio).
@@ -345,10 +355,10 @@ Repository paths:
 | Avatar/artwork | [Avatar](packages/ui/src/components/avatar/avatar.tsx) owns identity/presence; [PersonAvatar](packages/ui/src/components/person-avatar/person-avatar.tsx) calls [appearance](packages/ui/src/components/person-avatar/appearance.ts) and [kit](packages/ui/src/components/person-avatar/kit.ts) resolvers, then [PersonArt](packages/ui/src/components/person-avatar/person-art.tsx). Internal [kit art](packages/ui/src/components/person-avatar/art/kit-art.tsx) and [staff art](packages/ui/src/components/person-avatar/art/staff-art.tsx) depend downward on kit data/tokens, never the shell. [Scene](packages/ui/src/components/scene/scene.tsx) owns independent scene generation. | AvatarGroup delegates member identity to Avatar; artwork stays ordinary content. |
 | Surface/panels/disclosures | [SurfaceRoot](packages/ui/src/components/surface/surface-root.tsx) owns material and appearance. | ExpandableCard still uses raisedSurface directly; disclosure/measurement remains its own responsibility. |
 | Native modal shells | [useNativeDialog](packages/ui/src/overlay/use-native-dialog.ts) owns native lifecycle; SurfaceRoot owns panel material. | Dialog, Drawer, BottomSheet, and DialogStack retain distinct host behavior. Shared panel types currently live in Drawer. |
-| Selection collections | [collection-registry](packages/ui/src/utils/collection-registry.ts) owns registration; [OverlayLayer](packages/ui/src/overlay/overlay-layer.tsx) owns dismissal-tree membership. | MultiSelect still uses IsolatedOverlay. Select-only, editable-text, and multi-value state remain distinct. |
+| Selection collections | [collection-registry](packages/ui/src/utils/collection-registry.ts) owns registration; [OverlayLayer](packages/ui/src/overlay/overlay-layer.tsx) owns dismissal-tree membership. | MultiSelect joins the tree. Select-only, editable-text, and multi-value state remain distinct. |
 | Tabs/value choices | [roving-focus](packages/ui/src/utils/roving-focus.ts) owns shared focus helpers. | Tabs owns panels/activation; SegmentedControl owns value choice. Indicators remain family-local. |
 | Field anatomy | [FieldRoot](packages/ui/src/components/field/field-anatomy.tsx) owns labeled anatomy; adopter list below. | Each control retains its native target and edit/commit axes. |
-| Control sizes | [control-size](packages/ui/src/styling/control-size.ts) owns single-line block sizes, typography, fixed-height styles, and coarse-pointer block minimums. | Button, TextField, NumberField, standard MoneyInput, SegmentedControl, Select, MultiSelect, PasswordField, SearchField, PhoneInput, TagInput, DateRangePicker, ColorPicker, LocaleSwitcher, TimePicker, CopyButton, ButtonGroup, ChipGroup, and SplitButton adopt the scale. Textarea uses twice the minimum; prominent MoneyInput retains its taller layout. Wrapping chips, tags, labels, and grouped actions may grow. Square checkbox/radio controls, range inputs, and popup options use their own target geometry. Adoption gaps: Combobox, InputGroup, and MentionInput still need a control-size audit. |
+| Control sizes | [control-size](packages/ui/src/styling/control-size.ts) owns single-line block sizes, typography, fixed-height styles, and coarse-pointer block minimums. | Button, TextField, NumberField, standard MoneyInput, SegmentedControl, Select, MultiSelect, PasswordField, SearchField, PhoneInput, TagInput, DateRangePicker, ColorPicker, LocaleSwitcher, TimePicker, CopyButton, ButtonGroup, ChipGroup, SplitButton, InputGroup, MentionInput, and the overlay triggers in `trigger-style` adopt the scale; Combobox inherits it through TextField. Textarea uses twice the minimum; prominent MoneyInput retains its taller layout. Wrapping chips, tags, labels, and grouped actions may grow. Square checkbox/radio controls, range inputs, and popup options use their own target geometry. |
 | Viewer chrome | [viewer-chrome](packages/ui/src/components/viewer-chrome/viewer-chrome.tsx) owns LightboxGallery/PhotoGrid actions, glyphs, and thumbnail styles. | Modal versus portaled tooltip ownership remains with the host. |
 
 ### Shared story assertions
@@ -375,6 +385,9 @@ Shared assertions in `src/testing/`, reused before writing a local copy:
 - `interior-slot-assertions.tsx`: `expectRootPrecedence`, `expectMergedClasses`,
   `expectSameDomIdentity`, `createRefCleanupTracker` for replacement-slot contracts.
 - `story-decorators.tsx`: `withLightTheme` for the light-theme story variant.
+- `text-wrap-assertions.ts`: `findWordBreaks`, `expectNoWordBreaks`. Reads each glyph's line box, so
+  it reports text wrapped inside a word, not character counts.
+- `reduced-motion.ts`: `mockReducedMotion` for a meta `beforeEach`; mocks the JS preference only.
 - `field-slot-fixtures.tsx`: `expectFieldSlotCustomization` and the field replacement fixtures shared by
   the form-field families.
 
@@ -489,7 +502,8 @@ Overlay family contracts (Popover/Tooltip/Menu follow these):
   focus reads and scroll locks to the floating element's `ownerDocument`; disable positioning
   middleware when the surface is closed. Native `menu`/`listbox` roles need explicit item roles
   through the getters. Keep `FloatingPortal` (via `OverlayPortal`) with its default
-  `preserveTabOrder`: the focus manager depends on it. a bare custom portal is not a substitute.
+   `preserveTabOrder`, except where the family explicitly owns keyboard boundary navigation through
+   the shared portal seam (Menu). A bare custom portal is not a substitute.
 - **Initial focus:** the JSX spelling is `autoFocus` on the intended descendant; the browser's dialog
   focus algorithm honors the attribute (there is no universal "first input" guarantee). React calls
   `focus()` on mount instead of rendering the attribute, so inside a native `<dialog>` that mounts
@@ -645,8 +659,9 @@ One house style covers every Markdown file in the repo: `README.md`, `docs/`, `S
 - `usage` carries behavior, constraints, and accessibility only. Props, slots, anatomy and
   root-replacement mechanics belong in the API, sourced from TSDoc, never restated here.
 - Curate the examples with `parameters.docs.sections`: ordered `{ title, stories }` using story
-  export names. The first listed story is the featured example above Usage; stories not listed
-  stay in Storybook as QA. Group by capability, not by fixture name.
+  export names. Sections group and order examples; the first listed story is the featured example
+  above Usage. Stories not listed render after the curated groups because `!dev` keeps them out of
+  the sidebar. Group by capability, not by fixture name.
 - Every listed example needs a usable code sample. Author `source.code` when the derived snippet
   cannot reproduce a compound, a custom render or non-serializable data. The code must match the
   canvas, read like a consumer wrote it, and include the import.
@@ -701,7 +716,8 @@ MentionInput's introduction: "Write a message and mention people with @ or chann
   style objects. A snippet is a pattern a reader copies.
 - Keep foundation-guide content in Markdown and render it through `apps/storybook/home/Guide.tsx`.
   Use the library's `CodeBlock` with syntax highlighting for source examples and
-  `TypewriterTerminal` for shell commands. Commands start fully visible; playback is opt-in.
+  `TypewriterTerminal` with `playback={false}` for shell commands: a static terminal with a copy
+  action. Reserve animation for stories that demonstrate playback.
   Isolate these components from Storybook's prose styles with `Unstyled`. Add other components
   only when they help a reader use the API, and keep example text in the Markdown source.
   For a named file, add `filename="path/to/file.tsx"` after the fence language.

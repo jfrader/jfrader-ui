@@ -4,10 +4,12 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fireEvent, fn, spyOn, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
+import { expectAligned, expectInside, expectNoOverlap } from '../../testing/geometry-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
 import { dateTimeFormatter, numberFormatter, relativeTime, relativeTimeFormatter, resolveTimeOptions, toEpoch, validEpoch } from '../../utils/intl';
 import { Timeline, type TimelineEvent, type TimelineProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
-import { styled } from '../../index';
+import { Button, styled, TextField } from '../../index';
 
 const MINUTE = 60_000;
 function ReplacementRoot(props: ComponentPropsWithRef<'div'>) {
@@ -64,7 +66,7 @@ const LOCALE = 'en-US';
 /** Outline is authored as 2px; fractional device pixel ratios compute it slightly thinner. */
 const RING_TOLERANCE = 1.1;
 const GEOMETRY_TOLERANCE = 1.5;
-const MIN_TRIGGER = 32;
+const MIN_TRIGGER = 44;
 const relative = new Intl.RelativeTimeFormat(LOCALE, { numeric: 'auto' });
 const fullDay = (at: number | string, timeZone = 'UTC', locale = LOCALE) =>
   new Intl.DateTimeFormat(locale, { timeZone, dateStyle: 'full' }).format(new Date(at));
@@ -72,22 +74,10 @@ const fullDay = (at: number | string, timeZone = 'UTC', locale = LOCALE) =>
 const headingCase = (day: string, locale = LOCALE) => day.charAt(0).toLocaleUpperCase(locale) + day.slice(1);
 
 const Frame = styled.div({ inlineSize: '34rem', maxInlineSize: '100%', marginInline: 'auto' });
-const Narrow = styled.div({ inlineSize: '16rem' });
-const StackFrame = styled.div({ display: 'grid', gap: vars.space[6] });
+const Narrow = styled.div({ inlineSize: '16rem', maxInlineSize: '100%' });
+// One bounded track: an `auto` track would grow to a child's intrinsic width and overflow the page.
+const StackFrame = styled.div({ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: vars.space[6] });
 const Toolbar = styled.div({ display: 'flex', flexWrap: 'wrap', gap: vars.space[2], marginBlockEnd: vars.space[4] });
-const FixtureInput = styled.input({
-  boxSizing: 'border-box',
-  minBlockSize: vars.space[8],
-  minInlineSize: vars.space[8],
-  paddingInline: vars.space[3],
-  color: vars.color.text,
-  backgroundColor: vars.color.surface,
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.sm,
-  font: 'inherit',
-});
-const FixtureButton = FixtureInput.withComponent('button');
-const Field = styled.label({ display: 'grid', gap: vars.space[1] });
 
 const checkIcon = (
   <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -104,12 +94,7 @@ const PORTRAIT_SRC = `data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><filter id="n"><feTurbulence baseFrequency="0.08" seed="7"/></filter><rect width="48" height="48" filter="url(#n)"/></svg>',
 )}`;
 
-const reasonField = (
-  <Field>
-    Rotation reason
-    <FixtureInput defaultValue="Quarterly" />
-  </Field>
-);
+const reasonField = <TextField label="Rotation reason" defaultValue="Quarterly" size="sm" />;
 
 /** Deliberately unsorted; `keys` and `review` share an instant to pin tie order. */
 const EVENTS: readonly TimelineEvent[] = Object.freeze([
@@ -144,21 +129,13 @@ const EVENTS: readonly TimelineEvent[] = Object.freeze([
 ] satisfies TimelineEvent[]);
 const SORTED_IDS = ['deploy', 'build', 'keys', 'review', 'project'];
 
-const usage = `import { Timeline, styled, type TimelineEvent } from '@jfrader/ui';
-import { vars } from '@jfrader/tokens/vars';
-
-const Field = styled.label({ display: 'grid', gap: vars.space[1] });
-const Input = styled.input({
-  boxSizing: 'border-box', minBlockSize: vars.space[8], minInlineSize: vars.space[8],
-  paddingInline: vars.space[3], color: vars.color.text, backgroundColor: vars.color.surface,
-  border: \`1px solid \${vars.color.borderControl}\`, borderRadius: vars.radius.sm, font: 'inherit',
-});
+const usage = (props = '') => `import { TextField, Timeline, type TimelineEvent } from '@jfrader/ui';
 
 const now = Date.parse('2026-10-11T12:00:00Z');
 const events: TimelineEvent[] = [
   { id: 'keys', at: '2026-10-10T08:00:00Z', actor: 'Grace Hopper',
     title: 'Rotated API keys', meta: '2 keys revoked',
-    detail: <Field>Rotation reason<Input defaultValue="Quarterly" /></Field> },
+    detail: <TextField label="Rotation reason" defaultValue="Quarterly" size="sm" /> },
   { id: 'deploy', at: '2026-10-11T11:55:00Z', actor: 'Ada Lovelace',
     title: 'Deployed web 4.2 to production', meta: 'main · 9f2c1ab', tone: 'success',
     icon: <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M3 8.5l3 3 7-7" /></svg>,
@@ -170,7 +147,7 @@ const events: TimelineEvent[] = [
   { id: 'review', at: '2026-10-10T10:00:00+02:00', actor: 'Grace Hopper', title: 'Opened pull request 118' },
 ];
 
-<Timeline events={events} now={now} locale="en-US" timeZone="UTC" aria-label="Deploy history" />`;
+<Timeline ${props}events={events} now={now} locale="en-US" timeZone="UTC" aria-label="Deploy history" />`;
 
 const part = (root: Element, name: string) => root.querySelector<HTMLElement>(`[data-ui="timeline-${name}"]`)!;
 const parts = (root: Element, name: string) =>
@@ -226,26 +203,26 @@ function LiveFeed(args: TimelineProps) {
   return (
     <>
       <Toolbar>
-        <FixtureButton type="button" onClick={add}>
+        <Button type="button" onClick={add}>
           Add event
-        </FixtureButton>
-        <FixtureButton type="button" onClick={() => setNow((current) => current + MINUTE)}>
+        </Button>
+        <Button type="button" onClick={() => setNow((current) => current + MINUTE)}>
           Tick clock
-        </FixtureButton>
-        <FixtureButton
+        </Button>
+        <Button
           type="button"
 
           onClick={() => setEvents((current) => current.filter((event) => event.id !== 'build'))}
         >
           Remove build
-        </FixtureButton>
-        <FixtureButton
+        </Button>
+        <Button
           type="button"
 
           onClick={() => setEvents((current) => current.filter((event) => event.id !== 'deploy'))}
         >
           Remove deploy
-        </FixtureButton>
+        </Button>
       </Toolbar>
       <Timeline {...args} events={events} now={now} />
     </>
@@ -276,11 +253,11 @@ const meta = {
     layout: 'padded',
     docs: {
       sections: [
-        { title: 'Activity and details', stories: ['Default', 'ExpandedDetails'] },
+        { title: 'Activity and details', stories: ['ActivityFeed', 'ExpandedDetails'] },
         { title: 'Long histories', stories: ['Scrolling'] },
         { title: 'Localization', stories: ['Localized'] },
       ],
-      source: { language: 'tsx', code: usage },
+      source: { language: 'tsx', code: usage() },
       description: {
         component: 'Read activity by day, newest first, and expand events to see details.',
       },
@@ -307,6 +284,17 @@ const meta = {
 } satisfies Meta<typeof Timeline>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+export const ActivityFeed: Story = {
+  name: 'Activity feed',
+  args: { defaultValue: ['deploy'] },
+  parameters: {
+    docs: {
+      description: { story: 'Read deployment activity, inspect the open deployment, or expand another event.' },
+      source: { language: 'tsx', code: usage('defaultValue={["deploy"]} ') },
+    },
+  },
+};
 
 export const Default: Story = {
   name: 'Deploy history',
@@ -542,7 +530,7 @@ export const ExpandedDetails: Story = {
       description: { story: 'Read several open details and edit the rotation reason without closing them.' },
       source: {
         language: 'tsx',
-        code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
+        code: `import { TextField, Timeline, type TimelineEvent } from '@jfrader/ui';
 
 const MINUTE = 60_000;
 const NOW = Date.parse('2026-10-11T12:00:00Z');
@@ -566,12 +554,7 @@ const events: TimelineEvent[] = [
     actor: 'Grace Hopper',
     title: 'Rotated API keys',
     meta: '2 keys revoked',
-    detail: (
-      <label>
-        Rotation reason
-        <input defaultValue="Quarterly" />
-      </label>
-    ),
+    detail: <TextField label="Rotation reason" defaultValue="Quarterly" size="sm" />,
   },
   {
     id: 'deploy',
@@ -623,8 +606,49 @@ const events: TimelineEvent[] = [
       await expect(trigger).toHaveAttribute('aria-expanded', 'true');
       await expect(controlled(trigger)).toBeVisible();
       await expect(item(canvasElement, id)).toHaveAttribute('data-state', 'open');
+      // Initially open details are already there; only a reader's toggle unfolds.
+      await expect(controlled(trigger)).not.toHaveAttribute('data-enter');
     }
     await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+export const DetailUnfold: Story = {
+  tags: ['!autodocs'],
+  args: { defaultValue: ['deploy'], slotProps: { detail: { onFocus: fn() } } },
+  play: async ({ canvasElement, userEvent, args }) => {
+    const deployDetail = controlled(triggerOf(canvasElement, 'deploy'));
+    const build = triggerOf(canvasElement, 'build');
+    const detail = controlled(build);
+    await userEvent.click(build);
+    await expect(detail).toBeVisible();
+    await expect(detail).toHaveAttribute('data-enter');
+    await expect(deployDetail).not.toHaveAttribute('data-enter');
+    await expect(getComputedStyle(detail).animationName).not.toBe('none');
+    // The unfold clips paint only: the panel's box is final from the first frame and nothing stays clipped.
+    const opened = detail.getBoundingClientRect();
+    await settleMotion(detail);
+    await expectNear(detail.getBoundingClientRect().top, opened.top, 'unfold keeps the detail box');
+    await expectNear(detail.getBoundingClientRect().height, opened.height, 'unfold keeps the detail height');
+    await expect(getComputedStyle(detail).clipPath).toBe('none');
+    // Closing is immediate, and reopening unfolds again.
+    await userEvent.click(build);
+    await expect(detail).not.toBeVisible();
+    await expect(detail).not.toHaveAttribute('data-enter');
+    await userEvent.click(build);
+    await expect(detail).toHaveAttribute('data-enter');
+    const keys = triggerOf(canvasElement, 'keys');
+    await userEvent.click(keys);
+    const editableDetail = controlled(keys);
+    const input = within(editableDetail).getByRole('textbox');
+    const [reveal] = editableDetail.getAnimations();
+    await expect(reveal).toBeDefined();
+    reveal!.pause();
+    reveal!.currentTime = 0;
+    await userEvent.tab();
+    await expectFocusRing(input);
+    await expect(args.slotProps?.detail?.onFocus).toHaveBeenCalledTimes(1);
+    await expect(getComputedStyle(editableDetail).clipPath).toBe('none');
   },
 };
 
@@ -677,9 +701,9 @@ function ControlledExample(args: TimelineProps) {
   return (
     <>
       <Toolbar>
-        <FixtureButton type="button" onClick={() => setOpen([])}>
+        <Button type="button" onClick={() => setOpen([])}>
           Collapse all
-        </FixtureButton>
+        </Button>
       </Toolbar>
       <Timeline
         {...args}
@@ -717,7 +741,7 @@ export const RejectedControlled: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
+        code: `import { TextField, Timeline, type TimelineEvent } from '@jfrader/ui';
 
 const MINUTE = 60_000;
 const NOW = Date.parse('2026-10-11T12:00:00Z');
@@ -741,12 +765,7 @@ const events: TimelineEvent[] = [
     actor: 'Grace Hopper',
     title: 'Rotated API keys',
     meta: '2 keys revoked',
-    detail: (
-      <label>
-        Rotation reason
-        <input defaultValue="Quarterly" />
-      </label>
-    ),
+    detail: <TextField label="Rotation reason" defaultValue="Quarterly" size="sm" />,
   },
   {
     id: 'deploy',
@@ -800,6 +819,7 @@ const events: TimelineEvent[] = [
     await expect(args.onValueChange).toHaveBeenLastCalledWith(['deploy']);
     await expect(deploy).toHaveAttribute('aria-expanded', 'false');
     await expect(controlled(deploy)).not.toBeVisible();
+    await expect(controlled(deploy)).not.toHaveAttribute('data-enter');
     await expect(deploy.ownerDocument.activeElement).toBe(deploy);
     // The same id set again is not a new request.
     await userEvent.keyboard('{Enter}');
@@ -820,7 +840,7 @@ function DoubleActivation(args: TimelineProps) {
   return (
     <>
       <Toolbar>
-        <FixtureButton
+        <Button
           type="button"
 
           onClick={(event) => {
@@ -831,7 +851,7 @@ function DoubleActivation(args: TimelineProps) {
           }}
         >
           Open deploy twice
-        </FixtureButton>
+        </Button>
       </Toolbar>
       <Timeline {...args} />
     </>
@@ -882,7 +902,7 @@ export const AriaMerge: Story = {
       <Timeline {...args} maxHeight="10rem" aria-label="Fallback history" aria-labelledby="missing-reference" />
     </StackFrame>
   ),
-  play: async ({ canvasElement }) => {
+  play: async ({ canvasElement, userEvent }) => {
     const [labelled, fallback] = Array.from(canvasElement.querySelectorAll<HTMLElement>('[data-ui="timeline"]')) as [
       HTMLElement,
       HTMLElement,
@@ -900,6 +920,24 @@ export const AriaMerge: Story = {
     await expect(part(labelled, 'scroller')).toHaveAccessibleName('Recent changes');
     await expect(part(fallback, 'scroller')).toHaveAttribute('aria-labelledby', 'missing-reference');
     await expect(part(fallback, 'scroller')).toHaveAccessibleName('Fallback history');
+
+    // Keyboard focus in a short bounded history lands wholly inside it and clear of the sticky heading.
+    const scroller = part(labelled, 'scroller');
+    await userEvent.tab();
+    await expect(scroller.ownerDocument.activeElement).toBe(scroller);
+    const expectReadable = async (id: string) => {
+      const trigger = triggerOf(labelled, id);
+      await expectFocusRing(trigger);
+      await waitFor(() => expectInside(trigger, scroller, { tolerancePx: GEOMETRY_TOLERANCE }));
+      for (const heading of parts(labelled, 'heading')) await expectNoOverlap(heading, trigger, { tolerancePx: GEOMETRY_TOLERANCE });
+    };
+    await userEvent.tab();
+    await expectReadable('deploy');
+    await userEvent.tab();
+    await expectReadable('build');
+    await expect(scroller.scrollTop).toBeGreaterThan(0);
+    await userEvent.tab({ shift: true });
+    await expectReadable('deploy');
   },
 };
 
@@ -912,6 +950,40 @@ const INVALID_EVENTS: TimelineEvent[] = [
   { id: 'date', at: new Date(Number.NaN), title: 'Imported invalid Date' },
   { id: 'infinite', at: Number.POSITIVE_INFINITY, title: 'Imported infinity' },
 ];
+
+export const TriggerAriaMerge: Story = {
+  tags: ['!autodocs'],
+  args: {
+    events: [
+      { id: 'dated', at: NOW, title: 'Deployment completed', detail: 'Three services updated.' },
+      { id: 'undated', at: 'unreadable', title: 'Imported activity', detail: 'Imported from the previous project.' },
+    ],
+    slotProps: { trigger: { 'aria-describedby': 'timeline-event-hint' } },
+  },
+  render: (args) => (
+    <>
+      <p id="timeline-event-hint">Expand for event details.</p>
+      <Timeline {...args} />
+    </>
+  ),
+  play: async ({ canvasElement }) => {
+    const dated = triggerOf(canvasElement, 'dated');
+    const time = part(item(canvasElement, 'dated'), 'time');
+    const dateIds = dated.getAttribute('aria-describedby')!.split(/\s+/);
+    await expect(dateIds).toContain('timeline-event-hint');
+    await expect(dateIds).toHaveLength(2);
+    const fullDateId = dateIds.find((id) => id !== 'timeline-event-hint')!;
+    const fullDate = dated.ownerDocument.getElementById(fullDateId)!;
+    await expect(time).toContainElement(fullDate);
+    const formattedDate = new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', dateStyle: 'full', timeStyle: 'long' }).format(NOW);
+    await expect(fullDate).toHaveTextContent(formattedDate);
+    await expect(dated).toHaveAccessibleDescription(`Expand for event details. ${formattedDate}`);
+    const undated = triggerOf(canvasElement, 'undated');
+    await expect(undated).toHaveAttribute('aria-describedby', 'timeline-event-hint');
+    await expect(undated).toHaveAccessibleDescription('Expand for event details.');
+    await expect(part(item(canvasElement, 'undated'), 'time')).toBeNull();
+  },
+};
 
 export const InvalidDates: Story = {
   tags: ['!autodocs'],
@@ -1047,7 +1119,7 @@ const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const NOW = Date.parse('2026-10-11T12:00:00Z');
 
-const Narrow = styled.div({ inlineSize: '16rem' });
+const Narrow = styled.div({ inlineSize: '16rem', maxInlineSize: '100%' });
 
 const events: TimelineEvent[] = [
   {
@@ -1114,7 +1186,7 @@ export const Scrolling: Story = {
       description: { story: 'Scroll through a bounded history while day headings stay visible.' },
       source: {
         language: 'tsx',
-        code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
+        code: `import { TextField, Timeline, type TimelineEvent } from '@jfrader/ui';
 
 const MINUTE = 60_000;
 const NOW = Date.parse('2026-10-11T12:00:00Z');
@@ -1138,12 +1210,7 @@ const events: TimelineEvent[] = [
     actor: 'Grace Hopper',
     title: 'Rotated API keys',
     meta: '2 keys revoked',
-    detail: (
-      <label>
-        Rotation reason
-        <input defaultValue="Quarterly" />
-      </label>
-    ),
+    detail: <TextField label="Rotation reason" defaultValue="Quarterly" size="sm" />,
   },
   {
     id: 'deploy',
@@ -1189,6 +1256,7 @@ const events: TimelineEvent[] = [
   },
   args: { maxHeight: '14rem', 'aria-label': undefined },
   play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvasElement.ownerDocument.fonts.ready;
     const scroller = part(canvasElement, 'scroller');
     await expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight);
     // Without an external name, the region and its focusable scroller share the labels.region fallback.
@@ -1196,13 +1264,12 @@ const events: TimelineEvent[] = [
     await expect(canvas.getByRole('group', { name: 'Activity' })).toBe(scroller);
     await userEvent.tab();
     await expectFocusRing(scroller);
-    scroller.scrollTop = scroller.scrollHeight;
+    const group = parts(canvasElement, 'group')[1]!;
+    const heading = part(group, 'heading');
+    scroller.scrollTop +=
+      group.getBoundingClientRect().top - scroller.getBoundingClientRect().top + heading.getBoundingClientRect().height;
     await waitFor(() => expect(scroller.scrollTop).toBeGreaterThan(0));
-    const top = scroller.getBoundingClientRect().top;
-    const stuck = parts(canvasElement, 'heading').filter(
-      (heading) => Math.abs(heading.getBoundingClientRect().top - top) < GEOMETRY_TOLERANCE,
-    );
-    await expect(stuck.length).toBeGreaterThan(0);
+    await waitFor(() => expectAligned([heading, scroller], 'top', { tolerancePx: GEOMETRY_TOLERANCE }));
   },
 };
 
@@ -1222,6 +1289,11 @@ export const LiveUpdates: Story = {
     await expect(Math.abs(input.getBoundingClientRect().top - before)).toBeLessThan(GEOMETRY_TOLERANCE);
     await expect(parts(canvasElement, 'item')[0]).toHaveAttribute('data-new');
     await expect(parts(canvasElement, 'item')[1]).not.toHaveAttribute('data-new');
+    // Only the new row's marker rings, once.
+    const [freshMarker, olderMarker] = parts(canvasElement, 'marker').map((marker) => getComputedStyle(marker));
+    await expect(freshMarker!.animationName).not.toBe('none');
+    await expect(freshMarker!.animationIterationCount).toBe('1');
+    await expect(olderMarker!.animationName).toBe('none');
 
     // A clock tick relabels times without a new announcement.
     const announced = status.firstElementChild;
@@ -1356,7 +1428,7 @@ export const Localized: Story = {
       description: { story: 'Read relative times, day headings, and event counts in Spanish.' },
       source: {
         language: 'tsx',
-        code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
+        code: `import { TextField, Timeline, type TimelineEvent } from '@jfrader/ui';
 
 const MINUTE = 60_000;
 const NOW = Date.parse('2026-10-11T12:00:00Z');
@@ -1380,12 +1452,7 @@ const events: TimelineEvent[] = [
     actor: 'Grace Hopper',
     title: 'Rotated API keys',
     meta: '2 keys revoked',
-    detail: (
-      <label>
-        Rotation reason
-        <input defaultValue="Quarterly" />
-      </label>
-    ),
+    detail: <TextField label="Rotation reason" defaultValue="Quarterly" size="sm" />,
   },
   {
     id: 'deploy',
@@ -1519,7 +1586,7 @@ export const LightTheme: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { ThemeRoot, Timeline, type TimelineEvent } from '@jfrader/ui';
+        code: `import { TextField, ThemeRoot, Timeline, type TimelineEvent } from '@jfrader/ui';
 
 const MINUTE = 60_000;
 const NOW = Date.parse('2026-10-11T12:00:00Z');
@@ -1543,12 +1610,7 @@ const events: TimelineEvent[] = [
     actor: 'Grace Hopper',
     title: 'Rotated API keys',
     meta: '2 keys revoked',
-    detail: (
-      <label>
-        Rotation reason
-        <input defaultValue="Quarterly" />
-      </label>
-    ),
+    detail: <TextField label="Rotation reason" defaultValue="Quarterly" size="sm" />,
   },
   {
     id: 'deploy',
@@ -1604,7 +1666,7 @@ export const RTL: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
+        code: `import { TextField, Timeline, type TimelineEvent } from '@jfrader/ui';
 
 const MINUTE = 60_000;
 const NOW = Date.parse('2026-10-11T12:00:00Z');
@@ -1628,12 +1690,7 @@ const events: TimelineEvent[] = [
     actor: 'Grace Hopper',
     title: 'Rotated API keys',
     meta: '2 keys revoked',
-    detail: (
-      <label>
-        Rotation reason
-        <input defaultValue="Quarterly" />
-      </label>
-    ),
+    detail: <TextField label="Rotation reason" defaultValue="Quarterly" size="sm" />,
   },
   {
     id: 'deploy',
@@ -1704,7 +1761,7 @@ export const ReducedMotion: Story = {
     docs: {
       source: {
         language: 'tsx',
-        code: `import { Timeline, type TimelineEvent } from '@jfrader/ui';
+        code: `import { TextField, Timeline, type TimelineEvent } from '@jfrader/ui';
 
 const MINUTE = 60_000;
 const NOW = Date.parse('2026-10-11T12:00:00Z');
@@ -1728,12 +1785,7 @@ const events: TimelineEvent[] = [
     actor: 'Grace Hopper',
     title: 'Rotated API keys',
     meta: '2 keys revoked',
-    detail: (
-      <label>
-        Rotation reason
-        <input defaultValue="Quarterly" />
-      </label>
-    ),
+    detail: <TextField label="Rotation reason" defaultValue="Quarterly" size="sm" />,
   },
   {
     id: 'deploy',
@@ -1779,10 +1831,18 @@ const events: TimelineEvent[] = [
     );
     const row = item(canvasElement, 'deploy');
     row.setAttribute('data-new', '');
-    await expect(mediaDeclarations(row, 'prefers-reduced-motion')).toContainEqual(
+    for (const element of [row, part(row, 'marker')]) {
+      await expect(mediaDeclarations(element, 'prefers-reduced-motion')).toContainEqual(
+        expect.objectContaining({ animationName: 'none' }),
+      );
+    }
+    row.removeAttribute('data-new');
+    const detail = part(row, 'detail');
+    detail.setAttribute('data-enter', '');
+    await expect(mediaDeclarations(detail, 'prefers-reduced-motion')).toContainEqual(
       expect.objectContaining({ animationName: 'none' }),
     );
-    row.removeAttribute('data-new');
+    detail.removeAttribute('data-enter');
   },
 };
 
@@ -1847,7 +1907,6 @@ export const MobileLayout: Story = {
 };
 
 const centreX = (rect: DOMRect) => (rect.left + rect.right) / 2;
-const centreY = (rect: DOMRect) => (rect.top + rect.bottom) / 2;
 const expectNear = (actual: number, expected: number, label: string) =>
   expect(Math.abs(actual - expected), `${label}: ${actual} vs ${expected}`).toBeLessThan(GEOMETRY_TOLERANCE);
 /** Rail box of an item, read from its positioned `::before`. */
@@ -1860,79 +1919,134 @@ function railRect(row: HTMLElement) {
 }
 /** Inline-start edge of a box, for either direction. */
 const inlineStart = (rect: DOMRect, rtl: boolean) => (rtl ? rect.right : rect.left);
-/** Where a disclosure's text starts: past its border and padding. */
-function triggerTextStart(trigger: HTMLElement, rtl: boolean) {
-  const style = getComputedStyle(trigger);
-  const inset = Number.parseFloat(style.borderInlineStartWidth) + Number.parseFloat(style.paddingInlineStart);
-  return inlineStart(trigger.getBoundingClientRect(), rtl) + (rtl ? -inset : inset);
-}
+const rhythmCases = [
+  { name: 'Regular history', size: 'md', dir: 'ltr', narrow: false },
+  { name: 'Compact history', size: 'sm', dir: 'ltr', narrow: false },
+  { name: 'RTL history', size: 'md', dir: 'rtl', narrow: false },
+  { name: 'Compact RTL history', size: 'sm', dir: 'rtl', narrow: false },
+  { name: 'Narrow regular history', size: 'md', dir: 'ltr', narrow: true },
+  { name: 'Narrow compact history', size: 'sm', dir: 'ltr', narrow: true },
+  { name: 'Narrow RTL history', size: 'md', dir: 'rtl', narrow: true },
+  { name: 'Narrow compact RTL history', size: 'sm', dir: 'rtl', narrow: true },
+] as const;
 
-/** Markers, rail and titles share one centre line; headings sit on the content column; heading,
- * event and day gaps grow in that order at both sizes, for days with one and two events; the gap
- * after an actor is the same before a disclosure and a plain title. */
 export const DayRhythm: Story = {
   tags: ['!autodocs'],
   render: (args) => (
-    <StackFrame>
-      <Timeline {...args} size="md" aria-label="Regular history" />
-      <Timeline {...args} size="sm" aria-label="Compact history" />
-      <Timeline {...args} size="md" dir="rtl" aria-label="RTL history" />
+    <StackFrame data-testid="rhythm-stack">
+      {rhythmCases.map(({ name, size, dir, narrow }) => {
+        const history = <Timeline {...args} size={size} dir={dir} aria-label={name} defaultValue={['deploy', 'keys']} />;
+        return narrow ? <Narrow key={name}>{history}</Narrow> : <div key={name}>{history}</div>;
+      })}
     </StackFrame>
   ),
   play: async ({ canvas }) => {
-    for (const name of ['Regular history', 'Compact history', 'RTL history']) {
+    for (const { name, dir, narrow } of rhythmCases) {
       const root = canvas.getByRole('region', { name });
-      const rtl = name === 'RTL history';
-      const headingGaps: number[] = [];
-      const rowGaps: number[] = [];
-      const dayGaps: number[] = [];
-      const actorGaps: number[] = [];
+      const rtl = dir === 'rtl';
       const groups = parts(root, 'group');
+      const rows = parts(root, 'item');
+      const options = { tolerancePx: GEOMETRY_TOLERANCE };
+      await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+      await expectAligned(parts(root, 'marker'), 'center-x', options);
+      if (!narrow) await expectAligned(parts(root, 'time'), rtl ? 'left' : 'right', options);
       for (const [groupIndex, group] of groups.entries()) {
-        const headingText = part(group, 'heading').firstElementChild!.getBoundingClientRect();
-        const rows = parts(group, 'item');
-        const content = (row: HTMLElement) => part(row, 'marker').nextElementSibling!.getBoundingClientRect();
-        await expectNear(inlineStart(headingText, rtl), inlineStart(content(rows[0]!), rtl), `${name} heading on content column`);
-        headingGaps.push(rows[0]!.getBoundingClientRect().top - headingText.bottom);
-        for (const [index, row] of rows.entries()) {
-          const marker = part(row, 'marker').getBoundingClientRect();
-          const titleLine = part(row, 'marker').nextElementSibling!.firstElementChild!.firstElementChild!;
-          await expectNear(centreY(marker), centreY(titleLine.getBoundingClientRect()), `${name} ${row.dataset.eventId} marker on title line`);
-          const trigger = part(titleLine as HTMLElement, 'trigger');
-          const actor = part(titleLine as HTMLElement, 'actor');
-          if (trigger && !actor)
-            await expectNear(triggerTextStart(trigger, rtl), inlineStart(content(row), rtl), `${name} ${row.dataset.eventId} leading disclosure text`);
-          if (actor) {
-            const titleStart = trigger
-              ? triggerTextStart(trigger, rtl)
-              : inlineStart(part(titleLine as HTMLElement, 'title').getBoundingClientRect(), rtl);
-            const actorBox = actor.getBoundingClientRect();
-            actorGaps.push(Math.abs(titleStart - (rtl ? actorBox.left : actorBox.right)));
+        const heading = part(group, 'heading');
+        const groupRows = parts(group, 'item');
+        await expectAligned([root, heading], 'left', options);
+        await expectAligned([root, heading], 'right', options);
+        await expectInside(heading.firstElementChild!, heading, options);
+        await expectNoOverlap(heading, part(group, 'list'), options);
+        for (const [index, row] of groupRows.entries()) {
+          const markerElement = part(row, 'marker');
+          const marker = markerElement.getBoundingClientRect();
+          const summary = part(row, 'summary');
+          const title = part(row, 'trigger') ?? part(row, 'title');
+          const time = part(row, 'time');
+          await expectInside(markerElement, row, options);
+          await expectNoOverlap(markerElement, title, options);
+          await expectNoOverlap(title, time, options);
+          await expectNear(marker.top - row.getBoundingClientRect().top,
+            part(rows[0]!, 'marker').getBoundingClientRect().top - rows[0]!.getBoundingClientRect().top,
+            `${name} markers align with the first summary line`);
+          for (const element of [summary, title, time, part(row, 'context')].filter(Boolean)) {
+            await expectInside(element, root, options);
+            await expect(element.scrollWidth).toBeLessThanOrEqual(element.clientWidth + 1);
           }
-          const next = rows[index + 1];
+          const context = part(row, 'context');
+          if (context) {
+            await expect(context.getBoundingClientRect().top).toBeGreaterThanOrEqual(title.getBoundingClientRect().bottom - GEOMETRY_TOLERANCE);
+            await expectNoOverlap(context, time, options);
+          }
+          if (narrow) {
+            const lastLine = context ?? title;
+            await expect(time.getBoundingClientRect().top).toBeGreaterThanOrEqual(lastLine.getBoundingClientRect().bottom - GEOMETRY_TOLERANCE);
+            await expectNear(inlineStart(time.getBoundingClientRect(), rtl), inlineStart(summary.getBoundingClientRect(), rtl), `${name} time below summary`);
+          } else {
+            await expect(time.getBoundingClientRect().top).toBeLessThan(title.getBoundingClientRect().bottom);
+          }
+          const detail = part(row, 'detail');
+          if (detail && !detail.hidden) {
+            await expectInside(detail, row, options);
+            await expectNoOverlap(detail, summary, options);
+            await expectAligned([detail, summary], rtl ? 'right' : 'left', options);
+          }
+          const next = groupRows[index + 1];
           if (!next) {
             await expect(getComputedStyle(row, '::before').content).toBe('none');
-            const nextGroup = groups[groupIndex + 1];
-            if (nextGroup)
-              dayGaps.push(part(nextGroup, 'heading').firstElementChild!.getBoundingClientRect().top - content(row).bottom);
             continue;
           }
           const rail = railRect(row);
           const nextMarker = part(next, 'marker').getBoundingClientRect();
           await expectNear(centreX(rail), centreX(marker), `${name} ${row.dataset.eventId} rail x`);
-          await expectNear(rail.top, centreY(marker), `${name} ${row.dataset.eventId} rail start`);
-          await expectNear(rail.bottom, centreY(nextMarker), `${name} ${row.dataset.eventId} rail end`);
-          rowGaps.push(next.getBoundingClientRect().top - content(row).bottom);
+          await expect(rail.height).toBeGreaterThan(0);
+          await expect(rail.top).toBeGreaterThan(marker.bottom);
+          await expect(rail.bottom).toBeLessThan(nextMarker.top);
+          await expect(rail.top - marker.bottom).toBeLessThan(marker.height / 2);
+          await expect(nextMarker.top - rail.bottom).toBeLessThan(nextMarker.height / 2);
+          if (detail && !detail.hidden) await expect(rail.bottom).toBeGreaterThan(detail.getBoundingClientRect().bottom);
+          await expectNoOverlap(row, next, options);
+        }
+        const nextGroup = groups[groupIndex + 1];
+        if (nextGroup) {
+          await expect(part(nextGroup, 'heading').getBoundingClientRect().top).toBeGreaterThan(groupRows.at(-1)!.getBoundingClientRect().bottom);
+          await expectNoOverlap(group, nextGroup, options);
         }
       }
-      // Default data: two days with two events, then one day with a single event.
       await expect(groups.map((group) => parts(group, 'item').length)).toEqual([2, 2, 1]);
-      await expect(dayGaps).toHaveLength(2);
-      // Default data: actors before both disclosures and plain titles.
-      await expect(actorGaps).toHaveLength(4);
-      for (const gaps of [headingGaps, rowGaps, dayGaps, actorGaps]) await expectNear(Math.max(...gaps), Math.min(...gaps), `${name} uniform gaps`);
-      await expect(headingGaps[0]!, `${name} heading gap below row gap`).toBeLessThan(rowGaps[0]!);
-      await expect(rowGaps[0]!, `${name} row gap below day gap`).toBeLessThan(dayGaps[0]!);
+    }
+  },
+};
+
+export const DayRhythmLargeText: Story = {
+  ...DayRhythm,
+  name: 'Day rhythm at 200% text size',
+  parameters: {
+    viewport: {
+      options: { tiny: { name: 'Tiny', styles: { width: '320px', height: '844px' }, type: 'mobile' } },
+    },
+  },
+  globals: { viewport: { value: 'tiny', isRotated: false } },
+  beforeEach: ({ canvasElement }) => {
+    const root = canvasElement.ownerDocument.documentElement;
+    const previous = root.style.fontSize;
+    root.style.fontSize = '200%';
+    return () => {
+      root.style.fontSize = previous;
+    };
+  },
+  play: async ({ canvas, canvasElement }) => {
+    const document = canvasElement.ownerDocument.documentElement;
+    await expect(document.scrollWidth).toBeLessThanOrEqual(document.clientWidth + 1);
+    const frame = canvas.getByTestId('rhythm-stack');
+    for (const { name } of rhythmCases) {
+      const root = canvas.getByRole('region', { name });
+      await expectInside(root, frame, { tolerancePx: GEOMETRY_TOLERANCE });
+      await expect(root.scrollWidth).toBeLessThanOrEqual(root.clientWidth + 1);
+      for (const trigger of parts(root, 'trigger')) {
+        await expectInside(trigger, root, { tolerancePx: GEOMETRY_TOLERANCE });
+        await expect(trigger.getBoundingClientRect().height).toBeGreaterThanOrEqual(MIN_TRIGGER - 0.5);
+      }
     }
   },
 };

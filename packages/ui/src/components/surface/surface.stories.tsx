@@ -2,6 +2,7 @@ import { createElement, StrictMode, useCallback, useId, useRef, useState, type R
 import { hydrateRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { requireNonEmpty } from '../../testing/assertion-preconditions';
 import { expect, fn, spyOn, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { ClassNames, css } from '../../styling/css';
@@ -16,8 +17,7 @@ import { ThemeRoot } from '../theme-root';
 import { Surface, type SurfacePartProps, type SurfaceProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
-
-declare const process: { env: { NODE_ENV?: string } };
+import { isDev } from '../../utils/dev';
 
 const Frame = styled.div({ display: 'grid', gap: vars.space[4], inlineSize: '32rem', maxInlineSize: `calc(100vw - ${vars.space[4]} * 2)` });
 const PaddedSurface = styled(Surface)({ padding: vars.space[4] });
@@ -499,7 +499,7 @@ export const IdentityDiagnostic: Story = {
     const warning = spyOn(console, 'warn').mockImplementation(() => {});
     try {
       await userEvent.click(canvas.getByRole('button', { name: 'Change root' }));
-      if (process.env.NODE_ENV !== 'production') {
+      if (isDev) {
         await expect(warning).toHaveBeenCalledWith(expect.stringContaining('root component identity changed'));
         await expect(warning).toHaveBeenCalledWith(expect.stringContaining('slots.root wins'));
       }
@@ -528,7 +528,7 @@ export const InvalidRootDiagnostics: Story = {
     const warning = spyOn(console, 'warn').mockImplementation(() => {});
     try {
       await userEvent.click(canvas.getByRole('button', { name: 'Mount invalid roots' }));
-      if (process.env.NODE_ENV !== 'production') {
+      if (isDev) {
         await expect(warning).toHaveBeenCalledWith(expect.stringContaining('invalid appearance'));
         await expect(warning).toHaveBeenCalledWith(expect.stringContaining('invalid variant'));
         await expect(warning).toHaveBeenCalledWith(expect.stringContaining('Missing or non-div root registration'));
@@ -576,7 +576,9 @@ export const ForcedColors: Story = {
   ...Variants,
   name: 'Forced colors',
   play: async ({ canvasElement }) => {
-    for (const root of canvasElement.querySelectorAll('[data-ui="surface"]')) {
+    const roots = requireNonEmpty(canvasElement.querySelectorAll('[data-ui="surface"]'), 'Surface variants');
+    await expect(roots).toHaveLength(3);
+    for (const root of roots) {
       await expect(getComputedStyle(root).borderTopStyle).toBe('solid');
       await expect(parseFloat(getComputedStyle(root).borderTopWidth)).toBeGreaterThan(0);
     }

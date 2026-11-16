@@ -18,7 +18,7 @@ export function verify(root: string, entries: MetadataSource = readMetadata(root
       if (!files.has(`src/generated/${file}`)) fail(`src/generated/${file}`, 'orphaned generated file');
     }
     const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
-    const expected = { '.': './src/index.ts', './metadata': './icons.json', './svg-icon': './src/svg-icon/index.ts', './*': './src/generated/*.tsx' };
+    const expected = { '.': './src/index.ts', './metadata': './icons.json', './sprite.svg': './sprite.svg', './paths.json': './paths.json', './svg-icon': './src/svg-icon/index.ts', './*': './src/generated/*.tsx' };
     for (const [subpath, target] of Object.entries(expected)) {
       const entry = manifest.exports?.[subpath];
       if (typeof entry === 'string' ? entry !== target : entry?.types !== target || entry?.import !== target) fail('package.json', `invalid export ${subpath}`);
@@ -39,5 +39,5 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const errors = verify(fileURLToPath(new URL('..', import.meta.url)));
   for (const error of errors) console.error(error);
   if (errors.length) process.exitCode = 1;
-  else console.log('Icon verification passed (sources, geometry, metadata, generated components, and exports).');
+  else console.log('Icon verification passed (sources, geometry, metadata, generated components, sprite, catalogue, and exports).');
 }

@@ -32,6 +32,7 @@ import {
   type PathSampleTable,
   type Point,
 } from './data-flow-geometry';
+import { flowNodeDetailStyle, flowNodeHeaderStyle, flowNodeIconStyle, flowNodeStyle } from './flow-node';
 
 export interface DataFlowNode {
   /** Unique stable identifier for the node. */
@@ -371,18 +372,9 @@ const coreContainerStyle = css({
   minInlineSize: 0,
 });
 
-const nodeStyle = css({
-  display: 'grid',
-  gap: vars.space[1],
-  alignContent: 'start',
-  padding: vars.space[3],
-  border: `1px solid ${vars.color.borderControl}`,
-  borderRadius: vars.radius.md,
-  backgroundColor: vars.color.surfaceRaised,
-  color: vars.color.text,
+const nodeStyle = css(flowNodeStyle, {
   minInlineSize: 0,
   overflowWrap: 'anywhere',
-  position: 'relative',
   zIndex: 1,
   transition: `border-color ${vars.motion.duration.fast} ${vars.motion.easeStandard}`,
   '&:hover': {
@@ -391,10 +383,10 @@ const nodeStyle = css({
   [REDUCED_MOTION]: {
     transition: 'none',
   },
-  [FORCED_COLORS]: {
-    borderColor: 'CanvasText',
-  },
 });
+
+// Labels wrap here, so nodes and their headers may shrink below their content.
+const nodeHeaderStyle = css(flowNodeHeaderStyle, { minInlineSize: 0 });
 
 const coreNodeStyle = css({
   display: 'grid',
@@ -414,25 +406,6 @@ const coreNodeStyle = css({
   [FORCED_COLORS]: {
     borderColor: 'Highlight',
   },
-});
-
-const nodeHeaderStyle = css({
-  display: 'flex',
-  alignItems: 'center',
-  gap: vars.space[2],
-  minInlineSize: 0,
-});
-
-const iconStyle = css({
-  display: 'inline-flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  flexShrink: 0,
-});
-
-const mutedTextStyle = css({
-  color: vars.color.textMuted,
-  fontSize: vars.textSize.xs,
 });
 
 const counterStyle = css({
@@ -1182,14 +1155,14 @@ export function DataFlow({
               >
                 <div css={nodeHeaderStyle}>
                   {isRenderable(source.icon) && (
-                    <span css={iconStyle} aria-hidden="true">
+                    <span css={flowNodeIconStyle} aria-hidden="true">
                       {source.icon}
                     </span>
                   )}
                   <strong>{source.label}</strong>
                 </div>
-                {source.meta && <span css={mutedTextStyle}>{source.meta}</span>}
-                {source.detail && <span css={mutedTextStyle}>{source.detail}</span>}
+                {source.meta && <span css={flowNodeDetailStyle}>{source.meta}</span>}
+                {source.detail && <span css={flowNodeDetailStyle}>{source.detail}</span>}
               </FieldSlot>
             ))}
           </div>
@@ -1206,13 +1179,13 @@ export function DataFlow({
             >
               <div css={nodeHeaderStyle}>
                 {isRenderable(core.icon) && (
-                  <span css={iconStyle} aria-hidden="true">
+                  <span css={flowNodeIconStyle} aria-hidden="true">
                     {core.icon}
                   </span>
                 )}
                 <strong>{core.label}</strong>
               </div>
-              {core.detail && <span css={mutedTextStyle}>{core.detail}</span>}
+              {core.detail && <span css={flowNodeDetailStyle}>{core.detail}</span>}
               <span ref={counterRef} css={counterStyle}>
                 {formatNumber(core.countStart ?? 0)} {core.countLabel}
               </span>
@@ -1239,14 +1212,14 @@ export function DataFlow({
               >
                 <div css={nodeHeaderStyle}>
                   {isRenderable(dest.icon) && (
-                    <span css={iconStyle} aria-hidden="true">
+                    <span css={flowNodeIconStyle} aria-hidden="true">
                       {dest.icon}
                     </span>
                   )}
                   <strong>{dest.label}</strong>
                 </div>
-                {dest.meta && <span css={mutedTextStyle}>{dest.meta}</span>}
-                {dest.detail && <span css={mutedTextStyle}>{dest.detail}</span>}
+                {dest.meta && <span css={flowNodeDetailStyle}>{dest.meta}</span>}
+                {dest.detail && <span css={flowNodeDetailStyle}>{dest.detail}</span>}
                 {dest.share !== undefined && (
                   <span css={shareBadgeStyle}>{percentFormat.format(dest.share)}</span>
                 )}

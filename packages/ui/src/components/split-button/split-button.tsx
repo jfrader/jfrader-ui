@@ -18,7 +18,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type ComponentPropsWithRef,
   type ComponentType,
   type MouseEventHandler,

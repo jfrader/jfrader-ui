@@ -1,3 +1,5 @@
+'use client';
+
 import { withoutSx } from '../../styling/sx';
 import {
   useEffect,
@@ -291,7 +293,7 @@ const DECIMAL_UNIT = 1000;
 const byteUnits = ['byte', 'kilobyte', 'megabyte', 'gigabyte'] as const;
 const sameItems = (a: FileDropzoneItem[], b: FileDropzoneItem[]) =>
   a.length === b.length && a.every((item, index) => item.id === b[index]?.id && item.file === b[index]?.file);
-const carriesFiles = (data: DataTransfer) => Array.from(data.types).includes('Files');
+export const carriesFiles = (data: DataTransfer) => Array.from(data.types).includes('Files');
 const duplicate = (a: File, b: File) => a.name === b.name && a.size === b.size && a.lastModified === b.lastModified;
 function matchesAccept(file: File, accept?: string) {
   const tokens =
@@ -648,7 +650,7 @@ export function FileDropzone({
                 src={preview}
                 alt=""
                 styles={[previewStyle]}
-                onError={(event) => {
+                onError={() => {
                   setBrokenPreviews((previous) => new Set([...previous, preview]));
                 }}
               />

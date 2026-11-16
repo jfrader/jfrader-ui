@@ -331,6 +331,31 @@ export function tokenStyle(property: keyof CSSProperties, value: string): Serial
   return style;
 }
 
+const RADIUS_SPECIMEN_SIZE = '44px';
+
+/** The specimen box: a raised fill with a strong outline. Size and corners come from the caller. */
+export const shapeStyle = css({
+  display: 'block',
+  boxSizing: 'border-box',
+  flexShrink: 0,
+  backgroundColor: vars.color.surfaceRaised,
+  border: `1px solid ${vars.color.borderStrong}`,
+  [FORCED_COLORS]: { borderColor: 'CanvasText' },
+});
+
+const radiusSpecimenStyle = css({ inlineSize: RADIUS_SPECIMEN_SIZE, blockSize: RADIUS_SPECIMEN_SIZE });
+const pillSpecimenStyle = css({ blockSize: vars.space[6] });
+
+/** A square whose corners are the radius token; `pill` flattens it so a full radius reads as a pill. */
+export function RadiusSpecimen({ variable, pill }: { variable: string; pill?: boolean }) {
+  return (
+    <span
+      css={[shapeStyle, radiusSpecimenStyle, pill ? pillSpecimenStyle : undefined, tokenStyle('borderRadius', `var(${variable})`)]}
+      aria-hidden="true"
+    />
+  );
+}
+
 /** A horizontal bar whose width is the token value: the space scale and fixed sizes. */
 export function ScaleBar({ value, max }: { value: string; max?: number }) {
   const style: CSSProperties = { inlineSize: value, maxInlineSize: max ? `${max}px` : '100%' };

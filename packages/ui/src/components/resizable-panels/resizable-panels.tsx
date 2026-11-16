@@ -32,7 +32,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ChangeEvent,
   type ComponentPropsWithRef,
   type ComponentType,
   type CSSProperties,
@@ -49,8 +48,10 @@ import { css } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
 import { WithSx, type SxProps } from '../../styling/sx';
+import { devWarn, isDev } from '../../utils/dev';
 import { numberFormatter } from '../../utils/intl';
 import { partId } from '../../utils/part-id';
+import { clamp } from '../../utils/clamp';
 import { useControlledState } from '../../utils/use-controlled-state';
 
 export type ResizablePanelsSeparatorProps = ComponentPropsWithRef<'div'> &
@@ -155,7 +156,6 @@ export interface ResizablePanelsPanelProps extends ComponentPropsWithRef<'div'>,
   collapsible?: boolean;
 }
 
-declare const process: { env: { NODE_ENV?: string } };
 const DEFAULT_MIN_SIZE = 80;
 const KEY_STEP = 16;
 const LARGE_KEY_STEP = 64;
@@ -304,7 +304,6 @@ interface PanelState {
 const PanelContext = createContext<PanelState | null>(null);
 
 const sum = (values: readonly number[]) => values.reduce((total, value) => total + value, 0);
-const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value));
 const roundShare = (value: number) => Math.round(value * SHARE_SCALE) / SHARE_SCALE;
 const roundPercent = (value: number) => Math.round(value * 100) / 100;
 const sameShares = (a: readonly number[], b: readonly number[]) =>
@@ -546,10 +545,8 @@ function ResizablePanelsRoot(props: ResizablePanelsProps) {
     ...rest
   } = props;
 
-  if (process.env.NODE_ENV !== 'production') {
-    if (component && slots?.root && component !== slots.root) {
-      console.warn('ResizablePanels: component is redundant when slots.root is supplied; slots.root wins.');
-    }
+  if (isDev && component && slots?.root && component !== slots.root) {
+    devWarn('ResizablePanels: component is redundant when slots.root is supplied; slots.root wins.');
   }
 
   const baseId = useId();

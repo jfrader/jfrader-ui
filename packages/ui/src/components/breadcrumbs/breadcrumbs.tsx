@@ -1,3 +1,5 @@
+'use client';
+
 // APG pattern: breadcrumb. A labelled <nav> landmark wraps an ordered list of links to the
 // current page's ancestors. The current item carries aria-current="page": it stays a link when
 // it has an href (APG), otherwise it renders as plain text. No keyboard map beyond native link

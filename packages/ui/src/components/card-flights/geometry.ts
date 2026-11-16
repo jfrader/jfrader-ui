@@ -43,10 +43,6 @@ export const flightTarget = {
   played: (playedKey: string) => `played:${playedKey}`,
 };
 
-export function findMarker(root: HTMLElement, attribute: string, value: string) {
-  return root.querySelector<HTMLElement>(`[${attribute}="${CSS.escape(value)}"]`);
-}
-
 export const FLIGHT_GEOMETRY = {
   maxLiftPx: 120, liftRatio: 0.32, peakScale: 1.14, perspectivePx: CARD_PERSPECTIVE.flightPx,
   shadowFadeRatio: 1.5,

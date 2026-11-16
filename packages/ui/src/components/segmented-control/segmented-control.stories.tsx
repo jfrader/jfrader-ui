@@ -64,7 +64,7 @@ export const SharedControlSizes: Story = {
   name: 'Shared control sizes and baseline',
   parameters: {
     layout: 'padded',
-    docs: { description: { story: 'Single-line controls use 2rem, 2.5rem, and 3rem outer heights. Button, Select, and SegmentedControl keep a 44px minimum on coarse pointers. Remove fixed-height overrides when placing controls in a row.' } },
+    docs: { description: { story: 'Single-line controls use 2rem, 2.5rem, and 3rem outer heights. Button, TextField, Select, and SegmentedControl keep a 44px minimum on coarse pointers. Remove fixed-height overrides when placing controls in a row.' } },
   },
   render: () => (
     <ControlRows>
@@ -133,6 +133,7 @@ export const SharedControlSizes200PercentText: Story = {
 export const SharedControlSizesTouch: Story = {
   ...SharedControlSizes,
   name: 'Touch control sizes',
+  tags: ['touch'],
   play: async ({ canvasElement }) => {
     await expect(canvasElement.ownerDocument.defaultView!.matchMedia('(pointer: coarse)').matches).toBe(true);
     for (const [size, height] of [['sm', 44], ['md', 44], ['lg', 48]] as const) {
@@ -174,10 +175,17 @@ const VIEW_OPTIONS = [
 /** Compile-time consumer checks; never rendered. */
 function SegmentedControlGenericChecks() {
   const saveView = (view: View) => view;
+  const TextareaTrack = (props: ComponentPropsWithRef<'textarea'>) => <textarea {...props} />;
   return (
     <>
       <SegmentedControl<View> options={VIEW_OPTIONS} value="list" onValueChange={saveView} aria-label="View" />
       <SegmentedControl options={VIEW_OPTIONS} onValueChange={(next) => saveView(next)} aria-label="View" />
+      <SegmentedControl options={VIEW_OPTIONS} onOptionIntent={saveView} slots={{ track: ReplacementSegmentTrack }} aria-label="View" />
+      <SegmentedControl options={VIEW_OPTIONS} onOptionIntent={(next) => saveView(next)} aria-label="View" />
+      {/* @ts-expect-error intent callbacks cannot add values absent from options */}
+      <SegmentedControl options={VIEW_OPTIONS} onOptionIntent={(next: 'board') => next} aria-label="View" />
+      {/* @ts-expect-error track replacements must forward div props, not textarea props */}
+      <SegmentedControl options={VIEW_OPTIONS} slots={{ track: TextareaTrack }} aria-label="View" />
       {/* @ts-expect-error value must be one of the options */}
       <SegmentedControl<View> options={VIEW_OPTIONS} value="board" aria-label="View" />
     </>

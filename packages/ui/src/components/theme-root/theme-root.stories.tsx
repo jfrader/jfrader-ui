@@ -1,18 +1,20 @@
 import type { CSSProperties } from 'react';
 import { useId, useState } from 'react';
+import { run as runAxe } from 'axe-core';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
-import { base } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
+import { settleMotion } from '../../testing/motion-assertions';
+import { styled } from '../../styling/styled';
+import { useThemeScope } from '../../styling/theme-scope';
 import { Button } from '../button';
+import { Menu } from '../menu';
 import { Popover, type PopoverBaseProps } from '../popover';
 import { TextField } from '../text-field';
 import { ThemeProvider, useTheme } from '../theme-provider/theme-provider';
 import { ThemeRoot, type ThemeName, type ThemeRootProps } from './index';
-import { TokenOverrides as TokenOverridesPanel } from '../theme-docs/kit/overrides';
-import { OVERRIDE_COUNT, OVERRIDE_GROUPS } from '../theme-docs/kit/overrides-model';
 
 const THEMES = ['dark', 'light'] as const satisfies readonly ThemeName[];
 
@@ -36,12 +38,12 @@ const headingStyle = {
   fontSize: vars.textSize.md,
 } satisfies CSSProperties;
 
-function ThemedPopover({ label, ...props }: PopoverBaseProps & { label: string }) {
+function ThemedPopover({ label, closeOnFocusOut, ...props }: PopoverBaseProps & { label: string; closeOnFocusOut?: boolean }) {
   const headingId = useId();
   return (
     <Popover {...props}>
       <Popover.Trigger>{label}</Popover.Trigger>
-      <Popover.Content aria-labelledby={headingId}>
+      <Popover.Content aria-labelledby={headingId} closeOnFocusOut={closeOnFocusOut}>
         <h2 id={headingId} style={headingStyle}>
           {`${label} details`}
         </h2>
@@ -95,21 +97,21 @@ export function ThemedSection() {
       description: { component: 'Apply a theme to part of a page and its overlays.' },
       usage: `Nested scopes and their overlays use the nearest theme. For app setup and custom palettes, start with the [Theming guide](./?path=/docs/foundations-theming--docs).
 
-\`tokens\` takes any token path; [Token overrides](#token-overrides) lists every path and the value it keeps.`,
+\`tokens\` takes any token path; [Token overrides](./?path=/docs/theme-token-overrides--docs) lists every path and the value it keeps.`,
       sections: [
         {
           title: 'Theme scopes',
-          stories: ['Default', 'Light', 'LightTheme', 'NestedThemeRoots', 'AttributePrecedence', 'ThemeIdentity'],
+          stories: ['Default', 'Light', 'Inherited', 'LightTheme', 'NestedThemeRoots', 'AttributePrecedence', 'ThemeIdentity'],
         },
         { title: 'Overlays', stories: ['PortalContainer', 'NestedOverlayKeyboard', 'LiveThemeChange'] },
         { title: 'Provider', stories: ['ThemeProviderStandalone'] },
-        { title: 'Token overrides', stories: ['TokenOverrides'] },
       ],
     },
   },
   args: { onClick: fn() },
   argTypes: {
-    theme: { control: 'radio', options: THEMES },
+    theme: { control: 'radio', options: THEMES, table: { defaultValue: { summary: 'dark' } } },
+    appearance: { control: 'radio', options: ['inherit'] },
   },
   render: (args) => (
     <ThemeRoot {...args} style={surfaceStyle}>
@@ -250,7 +252,7 @@ export function ShareSection() {
     await expect(ownerDocument.activeElement).toBe(within(popover).getByRole('button', { name: 'Share action' }));
     await userEvent.tab();
     await expect(ownerDocument.activeElement).toBe(canvas.getByRole('button', { name: 'After' }));
-    await expect(popover).toBeVisible();
+    await waitFor(() => expect(popover).not.toBeInTheDocument());
   },
 };
 
@@ -261,8 +263,8 @@ export const NestedOverlayKeyboard: Story = {
       <div style={rowStyle}>
         <Popover>
           <Popover.Trigger>Outer</Popover.Trigger>
-          <Popover.Content aria-label="Outer details">
-            <ThemedPopover label="Inner" />
+          <Popover.Content aria-label="Outer details" closeOnFocusOut={false}>
+            <ThemedPopover label="Inner" closeOnFocusOut={false} />
             <Button>After inner</Button>
           </Popover.Content>
         </Popover>
@@ -374,8 +376,9 @@ export const LiveThemeChange: Story = {
 
 function ThemeProbe() {
   const currentTheme = useTheme();
+  const scope = useThemeScope();
   return (
-    <span data-ui="theme-probe" data-color-text={currentTheme?.color?.text}>
+    <span data-ui="theme-probe" data-color-text={currentTheme?.color?.text} data-scope-theme={scope?.theme ?? 'inherited'} data-has-scope={Boolean(scope)}>
       Probe
     </span>
   );
@@ -439,59 +442,225 @@ export const ThemeIdentity: Story = {
   },
 };
 
-export const TokenOverrides: Story = {
-  render: () => <TokenOverridesPanel />,
-  parameters: {
-    layout: 'fullscreen',
-    docs: {
-      description: {
-        story: 'Every path a `tokens` map may set, grouped by token family, with the value it keeps on each palette.',
-      },
-      source: {
-        language: 'tsx',
-        code: `import { Button, ThemeRoot } from '@jfrader/ui';
+const InheritanceHost = styled.div({
+  '--ui-color-accent': vars.color.success,
+  color: vars.color.textMuted,
+  '&[data-theme="dark"]': { colorScheme: 'dark' },
+  '&[data-theme="light"]': { colorScheme: 'light' },
+});
 
-const compact = {
-  radius: { md: '0.25rem' },
-  color: { accent: '#0f766e' },
-  space: { 4: '0.875rem' },
-};
+const inheritedSectionStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: vars.space[3],
+  padding: vars.space[4],
+  backgroundColor: vars.color.surface,
+} satisfies CSSProperties;
 
-<ThemeRoot theme="light" tokens={compact}>
-  <Button tone="accent">Save</Button>
-</ThemeRoot>`,
-      },
+const inheritedTokens = { color: { accent: vars.color.danger }, radius: { md: vars.radius.lg } };
+
+function InheritedMenuExample({
+  theme,
+  withContext,
+  live = false,
+  localHost = true,
+  rootProps,
+}: {
+  theme: ThemeName;
+  withContext: boolean;
+  live?: boolean;
+  localHost?: boolean;
+  rootProps?: ThemeRootProps;
+}) {
+  const [palette, setPalette] = useState(theme);
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  const content = (
+    <InheritanceHost data-theme={withContext ? undefined : palette} data-testid="inherit-host">
+      <ThemeRoot {...rootProps} appearance="inherit" portalContainer={localHost ? host : undefined} data-testid="inherit-root" sx={inheritedSectionStyle}>
+        <ThemeProbe />
+        <Menu triggerLabel="Actions" items={[{ type: 'item', label: 'Inspect' }, { type: 'item', label: 'Rename' }]} open={live ? true : undefined} />
+        <Button>After</Button>
+        {live && <Button onClick={() => setPalette(current => current === 'dark' ? 'light' : 'dark')}>Switch theme</Button>}
+        <div ref={setHost} data-testid="inherit-portal-host" />
+      </ThemeRoot>
+    </InheritanceHost>
+  );
+  return withContext ? <ThemeRoot theme={palette} tokens={inheritedTokens} data-testid="inherit-context-root">{content}</ThemeRoot> : content;
+}
+
+function inheritedMenuStory(theme: ThemeName, withContext: boolean): Story {
+  return {
+    args: { appearance: 'inherit', ref: fn() },
+    render: args => <InheritedMenuExample theme={theme} withContext={withContext} rootProps={args} />,
+    play: async ({ args, canvasElement, userEvent }) => {
+      const canvas = within(canvasElement);
+      const root = canvas.getByTestId('inherit-root');
+      const host = canvas.getByTestId('inherit-host');
+      const probe = root.querySelector('[data-ui="theme-probe"]');
+      await expect(root).not.toHaveAttribute('data-theme');
+      await expect(root).not.toHaveAttribute('appearance');
+      await expect(args.ref).toHaveBeenCalledWith(root);
+      await expect(getComputedStyle(root).color).toBe(getComputedStyle(host).color);
+      await expect(getComputedStyle(root).colorScheme).toBe(getComputedStyle(host).colorScheme);
+      await expect(probe).toHaveAttribute('data-has-scope', 'true');
+      await expect(probe).toHaveAttribute('data-scope-theme', withContext ? theme : 'inherited');
+      await expect(probe).toHaveAttribute('data-color-text', vars.color.text);
+      const trigger = canvas.getByRole('button', { name: 'Actions' });
+      await userEvent.click(trigger);
+      const menu = await canvas.findByRole('menu', { name: 'Actions' });
+      const boundary = menu.closest('[data-ui="theme-boundary"]');
+      await expect(canvas.getByTestId('inherit-portal-host').contains(menu)).toBe(true);
+      await expect(getComputedStyle(menu).colorScheme).toBe(theme);
+      for (const property of ['--ui-color-accent', '--ui-radius-md', '--ui-color-surface']) {
+        await expect(getComputedStyle(menu).getPropertyValue(property)).toBe(getComputedStyle(host).getPropertyValue(property));
+      }
+      await expect(boundary).not.toHaveAttribute('data-theme');
+      await waitFor(() => expect(canvas.getByRole('menuitem', { name: 'Inspect' })).toHaveFocus());
+      await userEvent.tab({ shift: true });
+      await expect(trigger).toHaveFocus();
+      await userEvent.tab();
+      await waitFor(() => expect(canvas.getByRole('menuitem', { name: 'Inspect' })).toHaveFocus());
+      await userEvent.tab();
+      await expect(canvas.queryByRole('menu')).toBeNull();
+      await expect(canvas.getByRole('button', { name: 'After' })).toHaveFocus();
+      await userEvent.click(trigger);
+      await userEvent.keyboard('{Escape}');
+      await expect(trigger).toHaveFocus();
+      await expect(canvas.queryByRole('menu')).toBeNull();
+      await userEvent.click(trigger);
+      await waitFor(() => expect(canvas.getByRole('menuitem', { name: 'Inspect' })).toHaveFocus());
+      await settleMotion(canvasElement.ownerDocument.body);
+      const { violations } = await runAxe(canvasElement.ownerDocument.body);
+      await expect(violations.find(({ id }) => id === 'aria-hidden-focus')).toBeUndefined();
+      await expect(violations.filter(({ impact }) => impact === 'serious' || impact === 'critical')).toEqual([]);
     },
+  };
+}
+
+function LocalMenuHost() {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  return (
+    <ThemeRoot appearance="inherit" portalContainer={host} data-testid="inherit-root">
+      <Menu triggerLabel="Actions" items={[{ type: 'item', label: 'Inspect' }]} />
+      <div ref={setHost} />
+    </ThemeRoot>
+  );
+}
+
+export const Inherited: Story = {
+  name: 'Inherited palette',
+  render: () => <ThemeRoot theme="light" data-testid="inherit-host"><LocalMenuHost /></ThemeRoot>,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const root = canvas.getByTestId('inherit-root');
+    await expect(root).not.toHaveAttribute('data-theme');
+    await userEvent.click(canvas.getByRole('button', { name: 'Actions' }));
+    const menu = await canvas.findByRole('menu', { name: 'Actions' });
+    await waitFor(() => expect(within(menu).getByRole('menuitem', { name: 'Inspect' })).toHaveFocus());
+    await expect(root.contains(menu)).toBe(true);
+    await expect(getComputedStyle(menu).colorScheme).toBe('light');
+    await settleMotion(canvasElement.ownerDocument.body);
+    const { violations } = await runAxe(canvasElement.ownerDocument.body);
+    await expect(violations.filter(({ impact }) => impact === 'serious' || impact === 'critical')).toEqual([]);
   },
-  play: async ({ canvasElement }) => {
-    // Counted from the token source, not from the model the section renders.
-    const countPaths = (tree: Record<string, unknown>): number =>
-      Object.values(tree).reduce<number>(
-        (total, value) => total + (typeof value === 'string' ? 1 : countPaths(value as Record<string, unknown>)),
-        0,
-      );
-    const sourcePaths = Object.values(base).reduce<number>(
-      (total, group) => total + countPaths(group as Record<string, unknown>),
-      0,
-    );
-    const cards = canvasElement.querySelectorAll('[data-group]');
-    await expect(cards).toHaveLength(Object.keys(base).length);
-    await expect(canvasElement.querySelectorAll('[data-group] li')).toHaveLength(sourcePaths);
-    await expect(OVERRIDE_COUNT).toBe(sourcePaths);
-    for (const group of OVERRIDE_GROUPS) {
-      const card = canvasElement.querySelector<HTMLElement>(`[data-group="${group.name}"]`);
-      if (!card) throw new Error(`Missing token group ${group.name}`);
-      await expect(card.querySelectorAll('li')).toHaveLength(group.keys.length);
-    }
-    // A palette-dependent path shows both values; a theme-independent one shows a single value.
-    const accent = [...canvasElement.querySelectorAll('[data-group="color"] li')]
-      .find((chip) => chip.textContent?.startsWith('accent#'));
-    await expect(accent).toHaveTextContent('#a78bff');
-    await expect(accent).toHaveTextContent('#7747ff');
-    const spaceKeys = [...canvasElement.querySelectorAll('[data-group="space"] li')].map((chip) => [
-      chip.querySelector('code')?.textContent,
-      chip.querySelector('span')?.textContent,
-    ]);
-    await expect(spaceKeys).toContainEqual(['4', '16px']);
+  parameters: { docs: {
+    description: { story: 'Keep the enclosing light palette and route menu overlays to a local host.' },
+    source: { language: 'tsx', code: `import { useState } from 'react';
+import { Menu, ThemeRoot } from '@jfrader/ui';
+
+function LocalMenuHost() {
+  const [host, setHost] = useState<HTMLDivElement | null>(null);
+  return (
+    <ThemeRoot appearance="inherit" portalContainer={host}>
+      <Menu triggerLabel="Actions" items={[{ type: 'item', label: 'Inspect' }]} />
+      <div ref={setHost} />
+    </ThemeRoot>
+  );
+}
+
+<ThemeRoot theme="light"><LocalMenuHost /></ThemeRoot>` },
+  } },
+};
+
+export const InheritedDark: Story = { ...inheritedMenuStory('dark', true), tags: ['!autodocs'] };
+export const InheritedDomLight: Story = { ...inheritedMenuStory('light', false), tags: ['!autodocs'] };
+export const InheritedDomDark: Story = { ...inheritedMenuStory('dark', false), tags: ['!autodocs'] };
+
+export const InheritedExternalPortal: Story = {
+  tags: ['!autodocs'],
+  render: () => <InheritedMenuExample theme="light" withContext localHost={false} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+    const root = canvas.getByTestId('inherit-root');
+    const parent = canvas.getByTestId('inherit-context-root');
+    const trigger = canvas.getByRole('button', { name: 'Actions' });
+    await expect(root).not.toHaveAttribute('data-theme');
+    await userEvent.click(trigger);
+    const menu = await body.findByRole('menu', { name: 'Actions' });
+    await waitFor(() => expect(within(menu).getByRole('menuitem', { name: 'Inspect' })).toHaveFocus());
+    await expect(root.contains(menu)).toBe(false);
+    await expect(menu.closest('[data-ui="theme-boundary"]')).toHaveAttribute('data-theme', 'light');
+    await expect(getComputedStyle(menu).getPropertyValue('--ui-color-accent')).toBe(getComputedStyle(parent).getPropertyValue('--ui-color-accent'));
+    await settleMotion(canvasElement.ownerDocument.body);
+    const { violations } = await runAxe(canvasElement.ownerDocument.body);
+    await expect(violations.filter(({ impact }) => impact === 'serious' || impact === 'critical')).toEqual([]);
+    await userEvent.keyboard('{Escape}');
+    await expect(trigger).toHaveFocus();
   },
 };
+
+function inheritedLiveStory(withContext: boolean): Story {
+  return {
+    tags: ['!autodocs'],
+    render: () => <InheritedMenuExample theme="dark" withContext={withContext} live />,
+    play: async ({ canvasElement, userEvent }) => {
+      const canvas = within(canvasElement);
+      const root = canvas.getByTestId('inherit-root');
+      const menu = await canvas.findByRole('menu', { name: 'Actions' });
+      await expect(getComputedStyle(menu).colorScheme).toBe('dark');
+      await userEvent.click(canvas.getByRole('button', { name: 'Switch theme' }));
+      await expect(root).not.toHaveAttribute('data-theme');
+      await expect(getComputedStyle(menu).colorScheme).toBe('light');
+      await expect(root.querySelector('[data-ui="theme-probe"]')).toHaveAttribute('data-scope-theme', withContext ? 'light' : 'inherited');
+      await expect(getComputedStyle(menu).getPropertyValue('--ui-color-accent')).toBe(getComputedStyle(root).getPropertyValue('--ui-color-accent'));
+      await expect(canvas.getByRole('menu')).toBe(menu);
+      await expect(canvas.getByTestId('inherit-root')).toBe(root);
+      await settleMotion(canvasElement.ownerDocument.body);
+      const { violations } = await runAxe(canvasElement.ownerDocument.body);
+      await expect(violations.filter(({ impact }) => impact === 'serious' || impact === 'critical')).toEqual([]);
+    },
+  };
+}
+
+export const InheritedLiveContext: Story = inheritedLiveStory(true);
+export const InheritedLiveDom: Story = inheritedLiveStory(false);
+
+export const DefaultOnLight: Story = {
+  tags: ['!autodocs'],
+  render: () => <InheritanceHost data-theme="light"><ThemeRoot data-testid="default-on-light"><ThemeProbe /></ThemeRoot></InheritanceHost>,
+  play: async ({ canvasElement }) => {
+    const root = within(canvasElement).getByTestId('default-on-light');
+    await expect(root).toHaveAttribute('data-theme', 'dark');
+    await expect(meta.argTypes.theme.table.defaultValue.summary).toBe(root.getAttribute('data-theme'));
+    await expect(getComputedStyle(root).colorScheme).toBe('dark');
+    await expect(root.querySelector('[data-ui="theme-probe"]')).toHaveAttribute('data-scope-theme', 'dark');
+  },
+};
+
+export const InheritWithExplicitTheme: Story = {
+  tags: ['!autodocs'],
+  render: () => <InheritanceHost data-theme="dark"><ThemeRoot appearance="inherit" theme="light" data-testid="explicit-theme" sx={inheritedSectionStyle}><ThemeProbe /></ThemeRoot></InheritanceHost>,
+  play: async ({ canvasElement }) => {
+    const root = within(canvasElement).getByTestId('explicit-theme');
+    await expect(root).toHaveAttribute('data-theme', 'light');
+    await expect(getComputedStyle(root).colorScheme).toBe('light');
+  },
+};
+
+function inheritedTypeContract() {
+  <ThemeRoot appearance="inherit" theme="light" />;
+  // @ts-expect-error ThemeRoot's appearance mode does not accept surface appearances.
+  <ThemeRoot appearance="contrast" />;
+}
+void inheritedTypeContract;

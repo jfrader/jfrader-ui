@@ -1,12 +1,15 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { Fragment, useRef, useState } from 'react';
+import { run as runAxe } from 'axe-core';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, waitFor, within, type Mock } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
 import { expectThemedSurface } from '../../testing/theme-assertions';
 import { Button } from '../button';
+import { Drawer } from '../drawer';
 import { Popover } from '../popover';
+import { ThemeRoot } from '../theme-root';
 import { Menu, type MenuComposedProps, type MenuShorthandProps } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
@@ -46,14 +49,6 @@ Use a menu for a short list of actions. Use a select for choosing a form value. 
 - Shift+Tab from the first item returns to the trigger and leaves the menu open; Tab re-enters it.
 - Skipping disabled items and leaving the menu open on Shift+Tab differ from APG. Disabled items stay visible.
 - Focus is not trapped. An action can keep the menu open by preventing its click's default behavior.`,
-    },
-    // Floating UI's focus guards are aria-hidden spans with tabindex=0 that forward focus
-    // immediately; axe flags them as aria-hidden-focus (known false positive). Every other
-    // aria-hidden element is still checked.
-    a11y: {
-      config: {
-        rules: [{ id: 'aria-hidden-focus', selector: '[aria-hidden="true"]:not([data-floating-ui-focus-guard])' }],
-      },
     },
   },
 } satisfies Meta<typeof Menu>;
@@ -126,7 +121,7 @@ export const ReplacementSlots: ShorthandStory = {
     await expect(separator).toHaveAttribute('role', 'separator');
     await expect(canvasElement.querySelector('[data-ui="menu-trigger"]:not([data-testid="replacement-trigger"])')).toBeNull();
     await expect(canvasElement.ownerDocument.querySelector('div[role="menu"]')).toBeNull();
-    await expect(item).toHaveFocus();
+    await waitFor(() => expect(item).toHaveFocus());
     await userEvent.keyboard('{Escape}');
     await waitFor(() => expect(content).not.toBeInTheDocument());
     await expect(trigger).toHaveFocus();
@@ -813,6 +808,71 @@ export const TabMovesOn: Story = {
         within(canvasElement).getByRole('button', { name: 'After' }),
       ),
     );
+  },
+};
+
+export const OpenAccessibility: Story = {
+  tags: ['!autodocs'],
+  render: (args) => <MenuExample {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    await userEvent.click(getTrigger(canvasElement));
+    await expectFocused(canvasElement, 'Edit');
+    const document = canvasElement.ownerDocument;
+    const { violations } = await runAxe(document.body);
+    await expect(violations.find(({ id }) => id === 'aria-hidden-focus')).toBeUndefined();
+    await expect(violations.filter(({ impact }) => impact === 'serious' || impact === 'critical')).toEqual([]);
+    await expect(document.querySelector('[data-floating-ui-focus-guard]')).toBeNull();
+    await expect(bodyOf(canvasElement).getByRole('menu')).toBeVisible();
+  },
+};
+
+function DrawerMenuExample(props: MenuComposedProps) {
+  const [portalHost, setPortalHost] = useState<HTMLDivElement | null>(null);
+  return (
+    <Drawer defaultOpen>
+      <Drawer.Trigger>Open actions drawer</Drawer.Trigger>
+      <Drawer.Content>
+        <Drawer.Title>Actions drawer</Drawer.Title>
+        <Drawer.Body>
+          <ThemeRoot appearance="inherit" portalContainer={portalHost}>
+            <MenuExample {...props} />
+            <div ref={setPortalHost} />
+          </ThemeRoot>
+        </Drawer.Body>
+        <Drawer.Close>Close drawer</Drawer.Close>
+      </Drawer.Content>
+    </Drawer>
+  );
+}
+
+export const InsideDrawer: Story = {
+  tags: ['!autodocs'],
+  render: (args) => <DrawerMenuExample {...args} />,
+  play: async ({ canvasElement, userEvent }) => {
+    const body = bodyOf(canvasElement);
+    const drawer = await body.findByRole('dialog', { name: 'Actions drawer' });
+    const trigger = within(drawer).getByRole('button', { name: TRIGGER });
+    await userEvent.click(trigger);
+    await expectFocused(canvasElement, 'Edit');
+    await expect(drawer.contains(body.getByRole('menu'))).toBe(true);
+    await userEvent.tab({ shift: true });
+    await expect(trigger).toHaveFocus();
+    await userEvent.tab();
+    await expectFocused(canvasElement, 'Edit');
+    await userEvent.tab();
+    await expectClosed(canvasElement);
+    await expect(within(drawer).getByRole('button', { name: 'After' })).toHaveFocus();
+    await expect(drawer).toHaveAttribute('open');
+    await userEvent.click(trigger);
+    await expectFocused(canvasElement, 'Edit');
+    await userEvent.keyboard('{Escape}');
+    await expectClosed(canvasElement);
+    await expect(trigger).toHaveFocus();
+    await expect(drawer).toHaveAttribute('open');
+    await userEvent.click(trigger);
+    await expectFocused(canvasElement, 'Edit');
+    const { violations } = await runAxe(canvasElement.ownerDocument.body);
+    await expect(violations.filter(({ impact }) => impact === 'serious' || impact === 'critical')).toEqual([]);
   },
 };
 

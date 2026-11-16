@@ -2,12 +2,181 @@
 
 ## Unreleased
 
+### Added
+
+- `Popover.Content closeOnFocusOut={false}` keeps the panel open when focus leaves. By default, leaving the panel and trigger now dismisses it without returning focus.
+
+### Fixed
+
+- Published declaration files use explicit relative specifiers, so `@jfrader/ui`, `@jfrader/icons`, `@jfrader/styling` and `@jfrader/tokens` resolve under `moduleResolution: "node16"` and `"nodenext"`. Wildcard re-exports keep their names, and `skipLibCheck: false` no longer reports TS2834 in the published types.
+- A `Popover.Content` that a consumer focuses itself now tabs into its own first control, instead of skipping the panel and moving focus to the next element on the page.
+- `MultiSelect` joins the shared overlay dismissal tree, so a popup opened inside another overlay closes alone and a press inside it no longer dismisses the parent.
+- `InputGroup` and `MentionInput` take their control heights and typography from the shared control-size scale, matching `TextField` at every size.
+- On coarse pointers, overlay triggers (Dialog, Drawer, BottomSheet, DialogStack, Popover, Menu, Tooltip, HoverCard, ContextMenu, and CommandPalette) reach the 44px `size.touch` height, and the Dialog, Drawer, BottomSheet, and DialogStack close buttons, the BottomSheet handle, and DialogStack Back reach 44×44px. Fine-pointer sizes are unchanged.
+- `UserMenu.Identity` wraps long names and email addresses, including at enlarged text sizes.
+- Desktop `UserMenu` and `Popover` preserve keyboard entry and exit without hidden, tabbable focus guards.
+- `DateRangePicker` uses viewport-relative positioning and keeps focused controls in its scroll viewport when the panel resizes.
+
+### Changed
+
+- `ChipGroup`, `ToggleGroup` and the `SegmentedControl` shorthand infer their value union from `options`, and single-mode callbacks include the `''` clear. A computed `string` or `string[]` value can opt out with an explicit type argument, for example `<ChipGroup<string>>`.
+- `InlineEdit` correlates its control slot, `controlProps` and `controlRef` with `multiline`. The default control props are input attributes, so textarea-only attributes require `multiline`.
+- New named public types: `DeckArtProviderProps`, `DatePickerSlotProps`, `TooltipSlotProps`, and one props type per `GameTable` part.
+- Development-only diagnostics route through one `devWarn`/`devError` seam in `src/utils/dev.ts`. Production builds no longer emit them, and development output is unchanged.
+- Hook-using source modules declare their client boundary, matching the `'use client'` banner on published chunks.
+
+## 0.28.0 - 2026-11-15
+
+### Added
+
+- `ContextMenu closeOnScroll={false}` keeps the menu open when another panel scrolls. The default remains `true`; resize, Escape, outside press, action selection, and focus behavior are unchanged.
+
+## 0.27.0 - 2026-11-14
+
+### Added
+
+- `ThemeRoot appearance="inherit"` keeps the enclosing palette for local overlay hosts. Roots without this option still default to dark.
+
+### Fixed
+
+- `Menu` and its composed action menus preserve keyboard navigation without hidden, tabbable focus guards.
+
+## 0.26.0 - 2026-11-13
+
+### Changed
+
+- The docs site uses `@jfrader/react-storydocs` 0.19.1.
+
+### Fixed
+
+- `NumberField` keeps its step controls usable with large interaction targets.
+- `TreeView` sizes its rows and controls for large interaction targets and enlarged text.
+- `Select` and `TimePicker` keep popup content within the available height and let controls grow with enlarged text.
+- Native `Drawer` and `Dialog` shells leave Escape dismissal to the owning overlay.
+- Shared form controls settle their values after native form reset.
+- `Select.Empty` preserves listbox semantics when no options are available.
+
+## 0.25.0 - 2026-10-31
+
+### Breaking pre-1.0
+
+- `ButtonGroup` replaces `collapseLabels` with `overflow="collapse-labels" | "menu" | "none"`. Use `overflow="collapse-labels"` for the previous label-collapse behavior, `overflow="menu"` to move trailing actions into a menu, or `overflow="none"` to retain every label.
+
+### Added
+
+- `AutoEllipsis` fits text on one line with an ellipsis and shows the full text in a tooltip on hover and keyboard focus when truncated. Import it from `@jfrader/ui` or `@jfrader/ui/auto-ellipsis`.
+- `Tooltip.Trigger` accepts `as="button" | "span"` to choose its native host and `describe={false}` to omit the tooltip's accessible description. The defaults remain `as="button"` and `describe={true}`.
+
+### Fixed
+
+- `context-menu` tests wait for the entry animation before asserting visibility.
+- `verify-docs.mjs` avoids repeated AST traversal of shared arrays and includes a regression test.
+
+## 0.24.0 - 2026-10-31
+
+### Added
+
+- `LinearTimeline` shows ordered moments along a continuous rail, with independent content on either side and square, dot, or custom markers. Horizontal timelines fit the available width and page without scrolling when needed. Markers-only timelines show details on hover, focus, or tap.
+
+### Fixed
+
+- Touch-open `HoverCard` previews stay visible after emulated mouse-leave events.
+
+## 0.23.0 — 2026-10-28
+
+### Breaking pre-1.0
+
+- `PaymentFlow` draws its phase row itself instead of rendering a `Stepper`, so `slots.journey` and `slotProps.journey` are removed. Use the new `phase` slot to replace or style each phase.
+
+### Added
+
+- `Combobox` stories cover coarse-pointer targets for shorthand and composed fields in all three sizes.
+- `@jfrader/icons` includes `Cart`, `Bag`, and `Basket`, their solid companions, and shopping aliases in the icon browser, sprite, and path catalogue.
+
+### Changed
+
+- `PaymentFlow` picks one of four densities from its own width and its labels: actors above phases, the same rows tighter, actors beside phases, then one column. Actors and phases always share one orientation, labels and amounts never break inside a word, connectors keep at least 16px, and playback controls stay inside the viewport. The root and scene report the choice in `data-density`.
+- Next phase and Replay in `PaymentFlow` announce the selected phase and its narrative entry in a polite live region.
+
+### Deprecated
+
+- `PaymentFlow`'s `orientation="horizontal"` behaves as `auto` and will be removed in the next minor release.
+
+### Fixed
+
+- `TrucoTable` and `PokerTable` keep the felt the same size when the hand is dealt or the actions change. The default dock reserves a hand above one action row (TrucoTable) or one action row (PokerTable) from the first render.
+- Component docs pages with curated sections no longer render stories tagged `!autodocs` after the curated groups.
+- `Popover`, `Menu`, `Dialog`, and `UserMenu` keep their default trigger targets at least 44×44px on coarse pointers. The shared rule also widens `SplitButton`'s icon trigger from 40px to 44px and raises `SwipeActions` targets from 37px to 44px tall. `ColorPicker`, `ActionMorph`, and `BookingPill` are unaffected.
+
+## 0.22.0 — 2026-10-27
+
+### Added
+
+- `TypewriterTerminal` accepts `playback={false}` to show a completed, content-sized session without playback controls. Guide shell commands use this static terminal with a copy action, and the icons guide has its own usage page.
+
+### Changed
+
+- Component docs show one featured example and group the remaining examples into curated sections. `PaymentFlow` keeps participants and steps horizontal in wide containers, stacks both in narrow containers, and keeps playback controls inside the viewport.
+
+### Fixed
+
+- The Satoshi icon's three stacked strokes share one length in both line and solid variants.
+
+## 0.21.2 — 2026-10-27
+
+### Fixed
+
+- `GalleryEditor` places the upload tile first in the grid, so it stays reachable in a long gallery.
+
+## 0.21.1 — 2026-10-27
+
+### Fixed
+
+- `GalleryEditor` keeps the photo visible under the selection wash when a theme's `accentSoft` token is opaque.
+
+## 0.21.0 — 2026-10-27
+
+### Added
+
+- `GalleryEditor` edits a photo gallery: upload through `FileDropzone` or by dropping files on the grid, preview in the lightbox viewer, pick a cover, select several photos with checkboxes, and confirm deletes in a dialog. It ships two densities, replaceable slots, and the `@jfrader/ui/gallery-editor` subpath.
+- Size tokens `galleryEditorTile`, `galleryEditorTileCompact`, and `galleryEditorEmptyUpload` set the default minimum tile width per density and the empty gallery's drop target height.
+
+### Changed
+
+- `LightboxGallery` renders its viewer dialog and return flight through an internal `LightboxViewer` shared with `GalleryEditor`. Its public API is unchanged.
+
+## 0.20.0 — 2026-10-26
+
+### Added
+
+- `@jfrader/icons` ships a generated sprite (`sprite.svg`, 478 symbols) and a path catalogue (`paths.json`, 300 icons) for consumers outside React.
+- The icon docs are an icon browser: search over names, tags and aliases, category filter, line and solid, sizes 16 to 32, light and dark, and a click that copies the import.
+
+### Fixed
+
+- The Satoshi mark is a dot, three increasing bars and a dot, tilted 10 degrees.
+- `SvgIcon` documentation lives under Icons with the rest of the set.
+
+### Changed
+
+- `Timeline` uses separated day headings, a single marker rail, event-first summaries, and inline expanded details. Timestamps move below each event in narrow containers, and disclosure targets stay at least 44px tall. Details unfold when opened, and new-event markers pulse once; both honor reduced motion.
+
+### Fixed
+
+- `Timeline` keeps keyboard-focused events inside bounded histories, clear of sticky day headings.
+- `Timeline` completes the detail reveal when focus enters it, so keyboard users never land in clipped content.
+
+## 0.19.4 — 2026-10-26
+
+### Fixed
+
+- `Morph` projects only size between its steps, so the first Floating UI placement is never animated: the popover grows from its trigger on the first open instead of flying in, and the step contents keep their size transition.
+
 ## 0.19.3 — 2026-10-26
 
 ### Fixed
 
 - A release packs once and publishes to each registry in its own job, so a slow or failing registry can no longer time out the other one.
-
 
 ## 0.19.2 — 2026-10-26
 
@@ -16,7 +185,6 @@
 - `@jfrader/icons` carries its license, description, keywords, repository and homepage on npm.
 - `@jfrader/styling` carries its keywords, repository and homepage.
 - A release now publishes to both registries independently, so a failure on one no longer leaves the other empty.
-
 
 ## 0.19.1 — 2026-10-26
 
@@ -44,7 +212,6 @@ First published build of the icon system. Same content as 0.19.0, which stayed i
 - `Dock` toolbar labels no longer obstruct an open group tray at enlarged text sizes.
 - `Dock` keeps multiline tray labels above running and selection markers.
 - `ColorPicker` shows the selected color beside the hex field, so the panel no longer leaves the pad as its only sample of the color.
-
 
 ## 0.17.1 — 2026-10-25
 
@@ -108,6 +275,7 @@ First published build of the icon system. Same content as 0.19.0, which stayed i
 - `RadialMenu`'s satellites use icons instead of text characters.
 - `BottomSheet`, `Dialog`, `Drawer`, `DialogStack` and `UserMenu` no longer shift the page while they are open. The scroll lock hid the scrollbar before measuring it, so the width came out as zero and no compensating padding was applied.
 - `BottomSheet`'s entrance no longer jumps straight to its resting position. The resize that follows the scroll lock is width-only, and it used to cancel the animation; the sheet now re-measures only when a value it reads changes.
+
 ## 0.14.0 — 2026-10-24
 
 ### Added
@@ -383,7 +551,6 @@ First published build of the icon system. Same content as 0.19.0, which stayed i
 ### Changed
 
 - `SortableDataTable` sort headers drop the pill-style chip chrome: borderless, text-forward labels with paired chevrons (shape and accent color mark the active direction), quiet surface hover, and the existing focus ring. API and behavior unchanged; 32px targets, forced-colors and reduced-motion preserved.
-
 
 ### Added
 

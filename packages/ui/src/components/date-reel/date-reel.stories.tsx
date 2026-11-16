@@ -69,15 +69,42 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 async function expectCenteredRow(reel: HTMLElement, label: string) {
-  await waitFor(() => {
-    const selected = reel.querySelector<HTMLElement>('[data-selected="true"]')!;
-    expect(selected).toHaveTextContent(label);
-    const matrix = new DOMMatrix(getComputedStyle(selected).transform);
-    expect(matrix.m42).toBeCloseTo(0, 2);
-    expect(matrix.m43).toBeCloseTo(0, 2);
-    expect(matrix.m22).toBeCloseTo(1, 3);
-  }, { timeout: 3000 });
-  await expectInside(reel.querySelector('[data-selected="true"]')!, reel);
+  const win = reel.ownerDocument.defaultView!;
+  const settledFramesRequired = 3;
+  let selected: HTMLElement | null = null;
+  let previous = '';
+  let settledFrames = 0;
+  let frame = 0;
+  let deadline = 0;
+  try {
+    await new Promise<void>((resolve) => {
+      deadline = win.setTimeout(resolve, 3000);
+      const sample = () => {
+        const current = reel.querySelector<HTMLElement>('[data-selected="true"]');
+        const transform = current ? win.getComputedStyle(current).transform : '';
+        const matrix = new win.DOMMatrix(transform);
+        const box = current?.getBoundingClientRect();
+        const geometry = JSON.stringify([transform, box?.x, box?.y, box?.width, box?.height]);
+        const centered = current?.textContent === label &&
+          Math.abs(matrix.m42) < 0.005 && Math.abs(matrix.m43) < 0.005 &&
+          Math.abs(matrix.m22 - 1) < 0.0005;
+        settledFrames = centered && current === selected && geometry === previous
+          ? settledFrames + 1 : 0;
+        selected = current;
+        previous = geometry;
+        if (settledFrames >= settledFramesRequired) resolve();
+        else frame = win.requestAnimationFrame(sample);
+      };
+      frame = win.requestAnimationFrame(sample);
+    });
+    await expect(settledFrames, 'selected row settles at the center before the deadline')
+      .toBeGreaterThanOrEqual(settledFramesRequired);
+    await expect(selected).toHaveTextContent(label);
+    await expectInside(selected!, reel);
+  } finally {
+    win.cancelAnimationFrame(frame);
+    win.clearTimeout(deadline);
+  }
 }
 
 export const ClickRowRegression: Story = {

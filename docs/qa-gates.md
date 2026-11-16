@@ -10,8 +10,10 @@ Start Storybook with `pnpm dev` and open each story at `http://localhost:6006`.
 | Command | Gate |
 | --- | --- |
 | `pnpm typecheck` | Generate tokens and typecheck every workspace package, including `apps/pilot`. |
+| `pnpm lint` | Check hook order, the styling seam, `any`, dead bindings, and console diagnostics outside `src/utils/dev.ts`. CI runs it after typecheck. |
 | `pnpm test` | Generate tokens and run Storybook play tests in headless Chromium. The axe gate fails the run on violations in the `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22a`, `wcag22aa`, and `best-practice` rules (`a11y.test: 'error'`). |
-| `pnpm --filter @jfrader/storybook exec vitest run --project=storybook --maxWorkers=2 <story-file>` | One story file against the same axe gate. |
+| `pnpm --filter @jfrader/storybook exec vitest run --project=storybook --project=storybook-touch --maxWorkers=2 <story-file>` | One story file against the same axe gate. |
+| `pnpm verify:types` | Built declaration files resolve under `moduleResolution: "node16"` and `"nodenext"`: every relative specifier carries an explicit JavaScript extension. Run after the package builds. |
 | `pnpm verify:exports` | Every public component folder has a subpath export, and every source export target exists. It does not validate built artifacts or root-index coverage. |
 
 `scripts/verify-exports.mjs` is the source check; it is not a Storybook test. `scripts/flip-exports.mjs
@@ -53,7 +55,7 @@ bottom-sheet, breadcrumbs, button, button-group, calendar, card, carousel, chat-
 chip-group, code-block, combobox, command-palette, comment-thread, container, context-menu,
 copy-button, countdown, data-table, date-picker, date-range-picker, dialog, divider, dock, drawer,
 elastic-slider, empty-state, expandable-card, expanding-search, field, file-dropzone, filter-toolbar,
-flex, hold-to-confirm, hover-card, image-compare, inline-edit, json-viewer, kbd, keycap-keyboard,
+flex, gallery-editor, hold-to-confirm, hover-card, image-compare, inline-edit, json-viewer, kbd, keycap-keyboard,
 lightbox-gallery, mention-input, menu, metric-card, multi-select, navigation, now-playing, pagination,
 password-field, photo-grid, pill, popover, progress, radio-cards, radio-group, resizable-panels,
 scroll-area, search-field, segmented-control, select, shortcut-recorder, signature-pad, skeleton,

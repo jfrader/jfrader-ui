@@ -12,6 +12,7 @@ import { vars } from '@jfrader/tokens/vars';
 import { css } from '../../styling/css';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot, type ThemeRootProps } from '../theme-root';
+import { TextField } from '../text-field';
 import {
   MentionInput,
   mentionText,
@@ -376,6 +377,42 @@ export const Sizes: Story = {
     </Stack>
   ),
 };
+export const SizeParity: Story = {
+  tags: ['!autodocs'],
+  render: (args) => (
+    <Stack>
+      {(['sm', 'md', 'lg'] as const).map((size) => (
+        <div key={size}>
+          <TextField label={`Reference ${size}`} size={size} />
+          <MentionInput {...args} label={`Comment ${size}`} size={size} />
+        </div>
+      ))}
+    </Stack>
+  ),
+  play: async ({ canvas, userEvent }) => {
+    for (const size of ['sm', 'md', 'lg']) {
+      const reference = canvas.getByRole('textbox', { name: `Reference ${size}` });
+      const input = canvas.getByRole('textbox', { name: `Comment ${size}` });
+      const mirror = input.parentElement!.querySelector('[aria-hidden=true]')!;
+      const referenceStyle = getComputedStyle(reference);
+      const inputStyle = getComputedStyle(input);
+      const mirrorStyle = getComputedStyle(mirror);
+      await expect(input.getBoundingClientRect().height).toBeCloseTo(reference.getBoundingClientRect().height, 1);
+      for (const property of ['fontSize', 'fontFamily', 'paddingInlineStart', 'paddingInlineEnd'] as const) {
+        await expect(inputStyle[property]).toBe(referenceStyle[property]);
+        await expect(mirrorStyle[property]).toBe(inputStyle[property]);
+      }
+      for (const property of ['lineHeight', 'paddingBlockStart', 'paddingBlockEnd'] as const) {
+        await expect(mirrorStyle[property]).toBe(inputStyle[property]);
+      }
+      await userEvent.type(input, 'First line{Enter}Second line');
+      await expect(input).toHaveValue('First line\nSecond line');
+      await expect(input.getBoundingClientRect().height).toBeGreaterThan(reference.getBoundingClientRect().height);
+      await expect(mirror.getBoundingClientRect().height).toBeCloseTo(input.getBoundingClientRect().height, 1);
+    }
+  },
+};
+
 export const MinMaxRows: Story = {
   name: 'Scroll a longer message',
   parameters: { docs: {
@@ -647,10 +684,12 @@ ${mentionExampleData}
     await expect(input.ownerDocument.activeElement).toBe(input);
     // Resync the synthetic keyboard's value tracker after a native insertion. Real
     // browser keys are checked separately; this unchanged input must not notify twice.
+    // oxlint-disable-next-line no-self-assign
     (input as HTMLTextAreaElement).value = (input as HTMLTextAreaElement).value;
     await userEvent.keyboard('#{Tab}');
     await expect(input).toHaveValue('@Ada #design ');
     await expect(args.onMentionAdd).toHaveBeenCalledTimes(2);
+    // oxlint-disable-next-line no-self-assign
     (input as HTMLTextAreaElement).value = (input as HTMLTextAreaElement).value;
     await userEvent.keyboard('@ ');
     await expect(input).toHaveValue('@Ada #design @ ');

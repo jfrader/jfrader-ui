@@ -26,6 +26,7 @@ import { css, type Interpolation, type Theme } from '../../styling/css';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS } from '../../styling/media';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
+import { devWarn, isDev } from '../../utils/dev';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { Button, type ButtonProps } from '../button';
@@ -119,7 +120,6 @@ export interface StretchRefreshProps<T>
   slots?: StretchRefreshSlots;
 }
 
-declare const process: { env: { NODE_ENV?: string } };
 const DEFAULT_THRESHOLD = 72;
 const INTENT_SLOP = 8;
 const MAX_PULL_RATIO = 2;
@@ -407,10 +407,10 @@ export function StretchRefresh<T>({
     return () => doc?.removeEventListener('visibilitychange', hide);
   }, [y, progress, opacity]);
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production') return;
+    if (!isDev) return;
     const keys = items.map(getKey);
     if (new Set(keys).size !== keys.length)
-      console.warn('StretchRefresh: getKey must return unique keys.');
+      devWarn('StretchRefresh: getKey must return unique keys.');
   }, [items, getKey]);
 
   const move = (clientX: number, clientY: number, prevent: () => void) => {

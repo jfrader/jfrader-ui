@@ -102,13 +102,21 @@ const ACTION_QUERY: OwnedItemsQuery = {
   ownerSelector: OWNER,
 };
 
+const ROOT_PADDING = vars.space[1];
+const ROOT_BORDER_WIDTH = '1px';
+
+/** Layout block size of one horizontal row of `size` actions with single-line labels. */
+export function gameActionsRowBlockSize(size: ButtonSize) {
+  return `calc(${controlBlockSize[size]} + 2 * ${ROOT_PADDING} + 2 * ${ROOT_BORDER_WIDTH})`;
+}
+
 const rootBaseStyle = css({
   label: 'game-actions',
   display: 'inline-flex',
   alignItems: 'center',
   gap: vars.space[2],
-  padding: vars.space[1],
-  border: `1px solid ${vars.color.borderControl}`,
+  padding: ROOT_PADDING,
+  border: `${ROOT_BORDER_WIDTH} solid ${vars.color.borderControl}`,
   borderRadius: vars.radius.lg,
   backgroundColor: vars.color.surfaceInset,
   boxSizing: 'border-box',

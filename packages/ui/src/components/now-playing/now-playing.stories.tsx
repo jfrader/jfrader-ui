@@ -1,5 +1,6 @@
 import { StrictMode, useLayoutEffect, useRef, useState, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { requireNonEmpty } from '../../testing/assertion-preconditions';
 import { expect, fn, fireEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
@@ -708,7 +709,7 @@ export const ExternalAcceptedUpdates: Story = {
     await expect(canvas.getByRole('slider')).toHaveAttribute('aria-valuenow', '30');
     await expect(args.onValueChange).not.toHaveBeenCalled();
     await expect(args.onPositionChange).not.toHaveBeenCalled();
-    for (const output of canvasElement.querySelectorAll('output'))
+    for (const output of requireNonEmpty(canvasElement.querySelectorAll('output'), 'Playback time outputs'))
       await expect(output).toHaveAttribute('aria-live', 'off');
     await userEvent.click(canvas.getByRole('button', { name: 'External close' }));
     await expect(canvas.queryByRole('slider')).not.toBeInTheDocument();
@@ -861,7 +862,7 @@ export const LongDuration: Story = {
   tags: ['!autodocs'],
   args: { tracks: [{ ...tracks[0]!, duration: 360000 }], defaultOpen: true, locale: 'ar-EG' },
   play: async ({ canvas }) => {
-    for (const output of canvas.getByRole('region').querySelectorAll('output'))
+    for (const output of requireNonEmpty(canvas.getByRole('region').querySelectorAll('output'), 'Long duration outputs'))
       await expect(output.getBoundingClientRect().width).toBeLessThanOrEqual(
         canvas.getByRole('region').getBoundingClientRect().width + 1.1,
       );

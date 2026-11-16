@@ -10,6 +10,7 @@ import { expectInside } from '../../testing/geometry-assertions';
 import { settleMotion } from '../../testing/motion-assertions';
 import { Button } from '../button';
 import { ThemeRoot } from '../theme-root';
+import { Select, type SelectContentProps } from '../select';
 import { TimePicker, type TimePickerProps, type TimePickerMinuteStep } from './index';
 // `styled` is the app-facing styling API; consumers import it from `@jfrader/ui`.
 import { styled } from '../../index';
@@ -18,6 +19,48 @@ const LightThemeFrame = styled.div({ backgroundColor: vars.color.bg, padding: va
 
 const ExampleGrid = styled.div({ display: 'grid', gap: vars.space[4] });
 const NarrowFrame = styled.div({ inlineSize: '16rem', maxInlineSize: '100%' });
+const AncestorScrollHost = styled.div({
+  position: 'fixed', insetBlockStart: '16px', insetInlineStart: '250px', blockSize: '360px', inlineSize: '300px',
+  overflow: 'auto', border: `1px solid ${vars.color.border}`,
+});
+const AncestorScrollLead = styled.div({ blockSize: '299px' });
+const AncestorScrollTrail = styled.div({ blockSize: '600px' });
+const AncestorScrollLane = styled.div({ inlineSize: '240px' });
+const DiagnosticOutput = styled.output({ display: 'block', minInlineSize: 0, maxInlineSize: '100%', overflowWrap: 'anywhere' });
+const FluidFrame = styled.div({ inlineSize: '100%', maxInlineSize: '30rem' });
+
+function AncestorScrollFixture(props: TimePickerProps) {
+  const [changes, setChanges] = useState<string[]>([]);
+  return <>
+    <AncestorScrollHost data-testid="time-scroll-host">
+      <AncestorScrollLead />
+      <AncestorScrollLane>
+        <TimePicker {...props} label="Scroll time" labelPlacement="hidden" name="scroll-time" locale="en-GB"
+          onValueChange={value => { setChanges(values => [...values, value]); props.onValueChange?.(value); }} />
+      </AncestorScrollLane>
+      <AncestorScrollTrail />
+    </AncestorScrollHost>
+    <DiagnosticOutput aria-label="Scroll time changes">{JSON.stringify(changes)}</DiagnosticOutput>
+  </>;
+}
+
+function AvailableSpaceContent(props: SelectContentProps) {
+  return <Select.Content {...props} data-testid="time-content-adapter" />;
+}
+
+export const AncestorScroll: Story = { tags: ['!autodocs'], parameters: { layout: 'fullscreen' }, render: args => <AncestorScrollFixture {...args} /> };
+export const AncestorScrollDial: Story = { ...AncestorScroll, args: { presentation: 'dial' } };
+export const AvailableSpaceAdapter: Story = {
+  tags: ['!autodocs'],
+  parameters: { layout: 'padded' },
+  args: {
+    defaultValue: '09:07', dir: 'rtl', name: 'adapted-time',
+    slots: { content: AvailableSpaceContent },
+    slotProps: { content: { ref: node => { if (node) node.dataset.consumerRef = 'attached'; } } },
+    onKeyDownCapture: fn(event => { if (event.key === 'End') event.preventDefault(); }),
+  },
+  render: args => <FluidFrame><TimePicker {...args} /></FluidFrame>,
+};
 
 export const LocaleHydration: Story = {
   tags: ['!autodocs'],

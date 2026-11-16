@@ -17,6 +17,7 @@ import {
 import { useMergeRefs } from '@floating-ui/react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
+import { controlBlockSize, controlSizeStyles } from '../../styling/control-size';
 import { disclosureCaret } from '../../styling/disclosure-caret';
 import { focusRingInset } from '../../styling/focus-ring';
 import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
@@ -24,6 +25,8 @@ import { selectableRowStyle } from '../../styling/selectable-row';
 import { withoutSx, WithSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { useControlledState } from '../../utils/use-controlled-state';
+
+export type TreeViewSize = keyof typeof controlBlockSize;
 
 export interface TreeNodeBase {
   id: string;
@@ -82,6 +85,8 @@ export interface TreeViewProps<T extends TreeNodeBase = TreeNodeBase>
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'>, SxProps {
   /** Render these root nodes and their descendants in order. */
   nodes: readonly TreeNode<T>[];
+  /** Sets row height, disclosure target size, and text size. `lg` provides targets of at least 44px. Defaults to `sm`. */
+  size?: TreeViewSize;
   /** Control the selected node id. `null` clears selection. */
   value?: string | null;
   /** Set the initial uncontrolled selection. Defaults to `null`. */
@@ -153,14 +158,13 @@ const itemStyle = css({
   alignItems: 'center',
   flex: 1,
   minInlineSize: `calc(${vars.space[12]} * 2)`,
-  minBlockSize: vars.space[8],
+  minBlockSize: 'inherit',
 });
 const rowStyle = css({
   display: 'flex',
   minInlineSize: 'min-content',
   alignItems: 'center',
   gap: vars.space[2],
-  minBlockSize: vars.space[8],
   paddingInline: vars.space[2],
   paddingInlineStart: `calc(var(--tree-level) * ${vars.space[4]} + ${vars.space[2]})`,
   borderRadius: vars.radius.sm,
@@ -185,8 +189,6 @@ const iconStyle = css({
 const disclosureStyle = css({
   display: 'inline-flex',
   flexShrink: 0,
-  inlineSize: vars.space[8],
-  blockSize: vars.space[8],
   alignItems: 'center',
   justifyContent: 'center',
   color: 'currentColor',
@@ -204,6 +206,11 @@ const disclosureStyle = css({
     },
   },
 });
+const disclosureSizeStyles = {
+  sm: css({ inlineSize: controlBlockSize.sm, minBlockSize: controlBlockSize.sm }),
+  md: css({ inlineSize: controlBlockSize.md, minBlockSize: controlBlockSize.md }),
+  lg: css({ inlineSize: controlBlockSize.lg, minBlockSize: controlBlockSize.lg }),
+};
 const groupStyle = css({
   listStyle: 'none',
   margin: 0,
@@ -230,6 +237,7 @@ const statusStyle = css({
  * Loaded children are cached per instance. Remount with a new key to replace the cache. */
 export function TreeView<T extends TreeNodeBase = TreeNodeBase>({
   nodes,
+  size = 'sm',
   value,
   defaultValue = null,
   onValueChange,
@@ -498,7 +506,7 @@ export function TreeView<T extends TreeNodeBase = TreeNodeBase>({
             {...withoutSx(slotProps?.row)}
             data-ui="tree-view-row"
             className={slotProps?.row?.className}
-            css={[rowStyle, slotProps?.row?.sx]}
+            css={[rowStyle, controlSizeStyles[size], slotProps?.row?.sx]}
             style={{ ...slotProps?.row?.style, '--tree-level': entry.level - 1 } as CSSProperties}
           >
             <Disclosure
@@ -508,7 +516,7 @@ export function TreeView<T extends TreeNodeBase = TreeNodeBase>({
               data-branch={entry.branch}
               data-open={opened}
               className={slotProps?.disclosure?.className}
-              css={[disclosureStyle, slotProps?.disclosure?.sx]}
+              css={[disclosureStyle, disclosureSizeStyles[size], slotProps?.disclosure?.sx]}
             />
             {isRenderable(node.icon) && (
               <Icon

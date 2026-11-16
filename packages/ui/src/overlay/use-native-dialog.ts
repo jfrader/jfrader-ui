@@ -40,6 +40,7 @@ import {
   type SyntheticEvent,
 } from 'react';
 import { useScrollLock } from './use-scroll-lock';
+import { useChildEscape } from './use-child-escape';
 
 /** What Content needs from its Root; both Roots expose it through their context. */
 export interface NativeDialogController {
@@ -131,6 +132,7 @@ export function useNativeDialog(
 ) {
   const internalDialogRef = useRef<HTMLDialogElement | null>(null);
   const dialogRef = contentRef ?? internalDialogRef;
+  const escapeOwnedByChild = useChildEscape(dialogRef);
   useImperativeHandle(forwardedRef, () => dialogRef.current as HTMLDialogElement, []);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const wasOpenRef = useRef(false);
@@ -231,6 +233,10 @@ export function useNativeDialog(
     if (!open) {
       event.preventDefault();
       return;
+    }
+    if (escapeOwnedByChild.current) {
+      escapeOwnedByChild.current = false;
+      event.preventDefault();
     }
     onCancel?.(event);
     if (!event.cancelable) return;

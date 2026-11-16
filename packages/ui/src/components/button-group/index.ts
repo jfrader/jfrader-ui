@@ -7,6 +7,7 @@ export type {
   ButtonGroupSlots,
   ButtonGroupSlotProps,
   ButtonGroupOrientation,
+  ButtonGroupOverflow,
   ButtonGroupPresentation,
   ButtonGroupItemProps,
   ButtonGroupLinkProps,

@@ -12,12 +12,13 @@ import {
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type Theme } from '../../styling/css';
 import type { SxProps } from '../../styling/sx';
+import { devWarn, isDev } from '../../utils/dev';
 import { useControlledState } from '../../utils/use-controlled-state';
 import { resolveTimeOptions } from '../../utils/intl';
 import { Button, type ButtonProps } from '../button';
 import { Avatar } from '../avatar';
 import { Dialog, type DialogContentProps } from '../dialog';
-import { RadioGroup, type RadioGroupProps, type RadioGroupShorthandProps } from '../radio-group';
+import { RadioGroup, type RadioGroupShorthandProps } from '../radio-group';
 import { Slider, type SliderProps } from '../slider';
 import { Switch, type SwitchProps } from '../switch';
 import { FieldSlot, type FieldParts, type FieldSlots } from '../field/field-slot';
@@ -29,8 +30,6 @@ import {
   normalizeSettings,
   type ControlCenterValue,
 } from './control-center-config';
-
-declare const process: { env: { NODE_ENV?: string } };
 
 export type { ControlCenterValue } from './control-center-config';
 export interface ControlCenterLabels {
@@ -204,8 +203,7 @@ export function ControlCenter({
     if (open) setDraft(draftFromCurrent());
   }, [open]);
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'production')
-      timeOptions.problems.forEach((problem) => console.warn(problem));
+    if (isDev) timeOptions.problems.forEach((problem) => devWarn(problem));
   }, [timeOptions]);
   const invalidControlled =
     value !== undefined &&
@@ -214,8 +212,8 @@ export function ControlCenter({
       (value.focus !== null &&
         (current.focus === null || value.focus.minutes !== current.focus.minutes)));
   useEffect(() => {
-    if (invalidControlled && process.env.NODE_ENV !== 'production')
-      console.warn('ControlCenter: invalid controlled settings; rendering bounded values.');
+    if (isDev && invalidControlled)
+      devWarn('ControlCenter: invalid controlled settings; rendering bounded values.');
   }, [invalidControlled]);
   function draftFromCurrent() {
     return {

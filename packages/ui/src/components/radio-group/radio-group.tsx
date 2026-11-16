@@ -1,3 +1,5 @@
+'use client';
+
 // APG pattern: radio group, built on native radios that share one `name`. The browser owns
 // the keyboard model: the group is a single tab stop (the checked radio; with none checked,
 // the first or last enabled one by Tab direction), Arrow keys move focus AND selection to

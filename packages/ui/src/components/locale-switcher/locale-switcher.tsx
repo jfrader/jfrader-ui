@@ -40,10 +40,8 @@ import { WithSx, type SxProps } from '../../styling/sx';
 import { triggerStyle } from '../../styling/trigger-style';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { isRenderable } from '../../utils/renderable';
+import { isDev, devWarn } from '../../utils/dev';
 import { MenuContentPart, MenuController, MenuItemPart, MenuTriggerPart, joinIds, menuItemStyles, type MenuSlots } from '../menu/menu';
-
-// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
-declare const process: { env: { NODE_ENV?: string } };
 
 const FAMILY = 'LocaleSwitcher';
 const SELECTED_GLYPH = <Check size="inherit" decorative />;
@@ -552,15 +550,15 @@ export function LocaleSwitcher({
   const hasTriggerLabel = Boolean(triggerLabel);
 
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production') return;
-    if (!hasCurrent) console.warn(`LocaleSwitcher: value "${value}" matches no option.`);
+    if (!isDev) return;
+    if (!hasCurrent) devWarn(`LocaleSwitcher: value "${value}" matches no option.`);
     if (variant === 'swap' && optionCount !== 2) {
-      console.warn(
+      devWarn(
         `LocaleSwitcher: the swap variant expects exactly two options and got ${optionCount}; it links to the first option that is not current.`,
       );
     }
     if (variant === 'menu' && !hasTriggerLabel) {
-      console.warn('LocaleSwitcher: the menu variant needs a triggerLabel that names its action.');
+      devWarn('LocaleSwitcher: the menu variant needs a triggerLabel that names its action.');
     }
   }, [variant, value, hasCurrent, optionCount, hasTriggerLabel]);
 

@@ -18,7 +18,7 @@ type GroupOverrides<T> = { readonly [K in keyof T]?: T[K] extends string ? strin
 /**
  * Sparse token overrides for a ThemeRoot scope, one member per token group. Every value is a CSS
  * string and every path is optional: what a map leaves out keeps the base theme's value. The
- * ThemeRoot docs list the paths and their current values under "Token overrides".
+ * Theme/Token overrides page lists the paths and their current values.
  */
 export type ThemeTokens = {
   readonly color?: GroupOverrides<JfraderTheme['color']>;
@@ -39,6 +39,8 @@ export type ThemeTokens = {
 // A token group added to the palette has to be overridable here; `pnpm typecheck` fails otherwise.
 type MissingTokenGroups = Exclude<keyof JfraderTheme, keyof ThemeTokens>;
 type TokenGroupsAreComplete = MissingTokenGroups extends never ? true : ['missing group', MissingTokenGroups];
+// Compile-time assertion only; the value is never read at runtime.
+// oxlint-disable-next-line no-unused-vars
 const tokenGroupsAreComplete: TokenGroupsAreComplete = true;
 
 export interface CreateThemeOptions {
@@ -95,6 +97,9 @@ const round = (value: number, digits: number) => Number(value.toFixed(digits));
 /** `#rgb` / `#rrggbb` → linear sRGB channels in [0, 1]. */
 function linearRgb(hex: string): Rgb {
   if (!HEX_COLOR.test(hex)) throw new Error(`createTheme: accent must be a #rgb or #rrggbb color, got "${hex}".`);
+  // A 3-digit string expands to its doubled digits. `slice` on a string returns a
+  // string, so the spread is not redundant here.
+  // oxlint-disable-next-line unicorn/no-useless-spread
   const digits = hex.length === 4 ? [...hex.slice(1)].map((digit) => digit + digit) : hex.slice(1).match(/../g)!;
   const [r, g, b] = digits.map((pair) => {
     const channel = Number.parseInt(pair, 16) / 255;

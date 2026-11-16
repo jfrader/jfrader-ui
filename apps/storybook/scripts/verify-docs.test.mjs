@@ -1,10 +1,30 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { syncBuiltinESMExports } from 'node:module';
+import { performance } from 'node:perf_hooks';
 import path from 'node:path';
 import { test } from 'node:test';
 import { loadCsf } from 'storybook/internal/csf-tools';
-import { checkComponentDocs, checkIntroduction, checkSnippets, checkGameStories } from './verify-docs.mjs';
+import { checkComponentDocs, checkIntroduction, checkSections, checkSectionFiles, checkSnippets, checkGameStories } from './verify-docs.mjs';
+
+test('checks curated section names against story exports, not display names or other exports', () => {
+  const source = (names) => `
+    export default { excludeStories: ['helper'], parameters: { docs: { sections: [{ title: 'Examples', stories: ${JSON.stringify(names)} }] } } };
+    export const Default = { name: 'Basic example' };
+    export const Other = {};
+    export const helper = 1;
+  `;
+  assert.deepEqual(checkSections(source(['Default', 'Other'])), []);
+  assert.deepEqual(checkSections(source([])), []);
+  assert.deepEqual(checkSections('export default {}; export const Default = {};'), []);
+  for (const name of ['Defualt', 'Basic example', 'helper']) {
+    assert.deepEqual(checkSections(source([name])), [`parameters.docs.sections: unknown story export "${name}".`]);
+  }
+  assert.match(checkSections(source(['Default']).replace('["Default"]', '[storyName]'))[0], /literal story export name/);
+  assert.match(checkSections(source(['Default']).replace('["Default"]', 'storyNames'))[0], /literal stories array/);
+});
 
 const gameStory = (meta = '', story = '') => `
   export default { title: 'Games/GameCard', tags: ['autodocs'], ${meta} };
@@ -141,6 +161,87 @@ test('checks every public component and reports missing stories', (t) => {
   assert.deepEqual(checkComponentDocs(root), { checked: 2, errors: [] });
   writeFileSync(path.join(root, 'missing/missing.stories.tsx'), story('undefined'));
   assert.match(checkComponentDocs(root).errors[0], /missing\/missing.stories.tsx: Add a string literal/);
+  writeFileSync(path.join(root, 'missing/missing.stories.tsx'), story('"Show a message."')
+    .replace('docs: {', 'docs: { sections: [{ title: "Examples", stories: ["Defualt"] }],'));
+  assert.deepEqual(checkComponentDocs(root).errors, [
+    'missing/missing.stories.tsx: parameters.docs.sections: unknown story export "Defualt".',
+  ]);
+});
+
+test('reads each component story once across coverage and duplicate-title checks without caching between runs', (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), 'jfrader-docs-read-once-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  mkdirSync(path.join(root, 'button'));
+  writeFileSync(path.join(root, 'button/index.ts'), '');
+  const fileName = path.join(root, 'button/button.stories.tsx');
+  writeFileSync(fileName, story('"Run an action."'));
+  const originalReadFileSync = fs.readFileSync;
+  let reads = 0;
+  t.mock.method(fs, 'readFileSync', (file, ...args) => {
+    if (file === fileName) reads += 1;
+    return originalReadFileSync(file, ...args);
+  });
+  syncBuiltinESMExports();
+  t.after(() => {
+    t.mock.restoreAll();
+    syncBuiltinESMExports();
+  });
+  assert.deepEqual(checkComponentDocs(root), { checked: 1, errors: [] });
+  assert.equal(reads, 1);
+  writeFileSync(fileName, story('undefined'));
+  assert.match(checkComponentDocs(root).errors[0], /string literal/);
+  assert.equal(reads, 2);
+  writeFileSync(fileName, 'export default {');
+  const { errors } = checkComponentDocs(root);
+  assert.equal(errors.length, 2);
+  assert.match(errors[0], /button\/button.stories.tsx: .*Unexpected token/s);
+  assert.match(errors[1], /button\/button.stories.tsx: cannot check docs title: .*Unexpected token/s);
+  assert.equal(reads, 3);
+});
+
+test('deduplicates shared token arrays in section, snippet, and Games traversals', (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), 'jfrader-docs-shared-array-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  mkdirSync(path.join(root, 'game-card'));
+  writeFileSync(path.join(root, 'game-card/index.ts'), '');
+  writeFileSync(path.join(root, 'game-card/game-card.stories.tsx'), '');
+  const csf = loadCsf(story('"Show a card."'), {
+    fileName: 'game-card.stories.tsx', makeTitle: () => 'Games/GameCard',
+  }).parse();
+  const size = 3000;
+  const traversalCount = 3;
+  const maxDurationMs = 5000;
+  let elementReads = 0;
+  const visits = Array(size).fill(0);
+  const tokens = Array.from({ length: size }, (_, index) => ({
+    get marker() { visits[index] += 1; return index; },
+  }));
+  for (const [index, token] of tokens.entries()) {
+    Object.defineProperty(tokens, index, {
+      enumerable: true,
+      get() { elementReads += 1; return token; },
+    });
+  }
+  csf._ast.sharedLocations = Array.from({ length: size }, () => ({ tokens }));
+  const started = performance.now();
+  assert.deepEqual(checkComponentDocs(root, () => csf), { checked: 1, errors: [] });
+  const elapsed = performance.now() - started;
+  t.diagnostic(`shared-array traversal: ${elapsed.toFixed(3)} ms, ${elementReads} element reads`);
+  assert.deepEqual(visits, Array(size).fill(traversalCount));
+  assert.equal(elementReads, size * traversalCount, 'shared arrays must be enumerated once per traversal');
+  assert.ok(elapsed < maxDurationMs, `shared-array traversal took ${elapsed.toFixed(3)} ms (limit ${maxDurationMs} ms)`);
+});
+
+test('checks curated sections in nested story files without a component index', (t) => {
+  const root = mkdtempSync(path.join(tmpdir(), 'jfrader-docs-sections-'));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  mkdirSync(path.join(root, 'gallery'));
+  const fileName = path.join(root, 'gallery/gallery.stories.tsx');
+  writeFileSync(fileName, story('"Browse icons."')
+    .replace('docs: {', 'docs: { sections: [{ title: "Examples", stories: ["Defualt"] }],'));
+  assert.deepEqual(checkSectionFiles(root), [
+    `${fileName}: parameters.docs.sections: unknown story export "Defualt".`,
+  ]);
 });
 
 test('Article and ArticleSection each publish one documentation page', () => {
@@ -166,7 +267,7 @@ test('component re-exports retain documentation checks in the owning package', (
   writeFileSync(path.join(root, 'components/svg-icon/index.ts'), "export { SvgIcon } from '@jfrader/icons/svg-icon';\n");
   assert.deepEqual(checkComponentDocs(path.join(root, 'components')), { checked: 1, errors: [] });
   const source = readFileSync(path.join(icons, 'src/svg-icon/svg-icon.stories.tsx'), 'utf8');
-  assert.match(source, /title: 'Data display\/SvgIcon'/);
+  assert.match(source, /title: 'Icons\/SvgIcon'/);
 });
 
 const titled = (title, tags = "['autodocs']") => `

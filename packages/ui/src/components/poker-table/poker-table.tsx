@@ -8,11 +8,13 @@ import { css } from '../../styling/css';
 import { FORCED_COLORS } from '../../styling/media';
 import { WithSx, withoutSx, type SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
+import { devWarn, isDev } from '../../utils/dev';
 import { visuallyHiddenStyle } from '../../styling/visually-hidden';
 import { useLatestCallback } from '../../utils/use-latest-callback';
 import { CardFlights } from '../card-flights';
 import { DeckProvider } from '../deck';
 import { GameActions, type GameActionItem, type GameActionsProps } from '../game-actions';
+import { gameActionsRowBlockSize } from '../game-actions/game-actions';
 import { GameCard, type GameCardValue } from '../game-card';
 import { ChipFlights, GameChipStack, useChipFlights, type GameChipStackChip } from '../game-chip-stack';
 import { CARD_FRAME } from '../game-card/card-frame';
@@ -22,7 +24,6 @@ import { PersonAvatar } from '../person-avatar';
 import type { FlightOutcome, TableFlightEvent } from '../flights/types';
 import { useFlightSurface } from '../flights/flight-provider';
 
-declare const process: { env: { NODE_ENV?: string } };
 
 /** One card on the community board. */
 export interface PokerTableCard {
@@ -299,6 +300,11 @@ const dockStyle = css({
   inlineSize: '100%',
 });
 
+/** Reserves one action row so the felt keeps its size when the actions come and go between turns. */
+function dockReserve(actionSize: GameActionsProps['size']) {
+  return css({ minBlockSize: gameActionsRowBlockSize(actionSize ?? 'md') });
+}
+
 function mergeIdentity(...values: (string | number | boolean | undefined)[]) {
   return [...new Set(values.flatMap((value) => typeof value === 'string' ? value.split(/\s+/).filter(Boolean) : []))].join(' ');
 }
@@ -417,7 +423,7 @@ function PokerTableContent({
       .find(node => node.dataset.slotPlayer === event.from);
     const from = seat?.querySelector<HTMLElement>('[data-ui~="game-seat"]');
     const to = potRef.current?.querySelector<HTMLElement>('[data-ui="game-chip-stack"]') ?? potRef.current;
-    if (!players.some(player => player.key === event.from) && process.env.NODE_ENV !== 'production') console.warn(`PokerTable: unknown player key "${event.from}".`);
+    if (isDev && !players.some(player => player.key === event.from)) devWarn(`PokerTable: unknown player key "${event.from}".`);
     const supported = event.to === undefined || event.to === 'pot';
     const result = supported && from && to && Number.isFinite(event.amount) && event.amount > 0
       ? send({ from, to, chips: potChips(event.amount, denominations), size: 'sm', locale })
@@ -523,19 +529,19 @@ function PokerTableContent({
                     <div role="status" css={announcementStyle}>{announcement}</div>
                   </GameTable.Footer>
                 )}
-                {(hasDock || showActions) && (
-                  <GameTable.Dock>
-                    {hasDock ? dock : (
-                      <div css={dockStyle}>
+                <GameTable.Dock>
+                  {hasDock ? dock : (
+                    <div css={[dockStyle, dockReserve(slotProps?.actions?.size)]}>
+                      {showActions && (
                         <Actions
                           {...slotProps?.actions}
                           actions={actions ?? []}
                           label={actionsLabel ?? labels.actions}
                         />
-                      </div>
-                    )}
-                  </GameTable.Dock>
-                )}
+                      )}
+                    </div>
+                  )}
+                </GameTable.Dock>
                 {isRenderable(floating) && <GameTable.Floating>{floating}</GameTable.Floating>}
               </GameTable>
             </CardFlights>

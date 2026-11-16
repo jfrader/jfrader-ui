@@ -1,6 +1,7 @@
 import type { ComponentPropsWithRef, CSSProperties } from 'react';
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { requireElement } from '../../testing/assertion-preconditions';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { withLightTheme } from '../../testing/story-decorators';
@@ -128,7 +129,11 @@ export const EdgeGeometry: StoryObj<DatePickerShorthandProps> = {
       expect(box.top).toBeGreaterThanOrEqual(0);
       expect(Math.abs(anchor.top - box.bottom - 8)).toBeLessThanOrEqual(1);
     });
-    for (const day of popup.querySelectorAll('[data-ui="calendar-day"]')) {
+    const days = popup.querySelectorAll('[data-ui="calendar-day"]');
+    await expect(days).toHaveLength(31);
+    const selected = requireElement(popup.querySelector('[data-date="2026-10-12"]'), 'Selected departure day');
+    await expect(selected.closest('td')).toHaveAttribute('aria-selected', 'true');
+    for (const day of days) {
       await expect(day.getBoundingClientRect().width).toBeGreaterThanOrEqual(24);
       await expect(day.getBoundingClientRect().height).toBeGreaterThanOrEqual(32);
     }

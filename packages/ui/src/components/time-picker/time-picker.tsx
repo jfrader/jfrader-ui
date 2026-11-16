@@ -130,8 +130,6 @@ const DIAL_POPUP_BLOCK_LIMIT = '480px';
 const DIAL_POPUP_INLINE_SIZE = '240px';
 const DIAL_SIZE = 192;
 const DEFAULT_VALUE = '09:00';
-const VIEWPORT_PADDING = 8;
-const ANCHOR_GAP = 8;
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 export function minutes(time: string | undefined): number | undefined {
   if (time === undefined || !TIME_PATTERN.test(time)) return undefined;
@@ -196,7 +194,7 @@ const contentStyle = css({
   inlineSize: 'var(--time-picker-inline-size)',
   minInlineSize: 0,
   maxInlineSize: 'calc(100vw - 16px)',
-  maxBlockSize: `min(${POPUP_BLOCK_LIMIT}, var(--time-picker-available-height, ${POPUP_BLOCK_LIMIT}))`,
+  maxBlockSize: `min(${POPUP_BLOCK_LIMIT}, var(--select-available-height, ${POPUP_BLOCK_LIMIT}))`,
   overscrollBehavior: 'contain',
   [FORCED_COLORS]: {
     backgroundColor: 'Canvas',
@@ -213,7 +211,7 @@ const optionStyle = css({
 });
 const dialContentStyle = css({
   inlineSize: `max(${DIAL_POPUP_INLINE_SIZE}, var(--time-picker-inline-size))`,
-  maxBlockSize: `min(${DIAL_POPUP_BLOCK_LIMIT}, var(--time-picker-available-height, ${DIAL_POPUP_BLOCK_LIMIT}))`,
+  maxBlockSize: `min(${DIAL_POPUP_BLOCK_LIMIT}, var(--select-available-height, ${DIAL_POPUP_BLOCK_LIMIT}))`,
   scrollPaddingBlockStart: `calc(${DIAL_SIZE}px + ${vars.space[3]} * 2)`,
 });
 const dialFrameStyle = css({
@@ -518,16 +516,8 @@ export function TimePicker({
     if (!trigger || !popup || !view) return;
     const measure = () => {
       const bounds = trigger.getBoundingClientRect();
-      const available = Math.max(
-        bounds.top - ANCHOR_GAP - VIEWPORT_PADDING,
-        view.innerHeight - bounds.bottom - ANCHOR_GAP - VIEWPORT_PADDING,
-      );
       popup.dir = view.getComputedStyle(trigger).direction;
       popup.style.setProperty('--time-picker-inline-size', `${bounds.width}px`);
-      popup.style.setProperty(
-        '--time-picker-available-height',
-        `${Math.max(0, Math.min(available, view.innerHeight - 2 * VIEWPORT_PADDING))}px`,
-      );
     };
     measure();
     const resize = new ResizeObserver(measure);

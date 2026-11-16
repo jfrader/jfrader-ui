@@ -201,7 +201,7 @@ Use the [Flights guide](https://ui.jfrader.com/#/components/flights) for queue o
 
 ### Values and constraints
 
-Give the parent container an explicit inline and block size, exactly as for GameTable. \`players\` must contain at least two seats with unique keys; the local player's \`teamIdx\` is ignored because the table is a free-for-all.
+Give the parent container an explicit inline and block size, exactly as for GameTable. \`players\` must contain at least two seats with unique keys; the local player's \`teamIdx\` is ignored because the table is a free-for-all. The dock keeps room for one action row even while \`actions\` is empty, so the felt holds its size between turns. Pass \`dock\` to size it yourself.
 
 ### Keyboard and accessibility
 
@@ -692,6 +692,41 @@ export const EmptyCommands: Story = {
     const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]');
     await expect(table).not.toBeNull();
     await expect(within(table!).getByRole('button', { name: 'Check' })).toBeVisible();
+  },
+};
+
+function StableSurfaceExample() {
+  const [yourTurn, setYourTurn] = useState(false);
+  return <>
+    <DocsStage>
+      <PokerTable players={SEATS} title="Poker" pot={30}
+        actions={yourTurn ? [{ key: 'check', label: 'Check' }, { key: 'raise', label: 'Raise 60' }] : undefined} />
+    </DocsStage>
+    <Controls><Button onClick={() => setYourTurn((current) => !current)}>{yourTurn ? 'End turn' : 'Start turn'}</Button></Controls>
+  </>;
+}
+
+const surfaceBox = async (table: HTMLElement) => {
+  for (let frame = 0; frame < 12; frame++) await new Promise(requestAnimationFrame);
+  const origin = table.getBoundingClientRect();
+  const { x, y, width, height } = table.querySelector('[data-game-surface]')!.getBoundingClientRect();
+  return { x: x - origin.x, y: y - origin.y, width, height };
+};
+
+export const StableSurface: Story = {
+  name: 'Stable surface',
+  tags: ['!autodocs'],
+  render: () => <StableSurfaceExample />,
+  play: async ({ canvas, canvasElement }) => {
+    const table = canvasElement.querySelector<HTMLElement>('[data-ui="poker-table"]')!;
+    await waitFor(() => expect(table.querySelector('[data-game-surface]')).not.toHaveAttribute('data-layout-fit', 'measuring'));
+    const idle = await surfaceBox(table);
+    await userEvent.click(canvas.getByRole('button', { name: 'Start turn' }));
+    await expect(within(table).getByRole('button', { name: 'Check' })).toBeVisible();
+    await expect(await surfaceBox(table)).toEqual(idle);
+    await userEvent.click(canvas.getByRole('button', { name: 'End turn' }));
+    await expect(within(table).queryByRole('button', { name: 'Check' })).toBeNull();
+    await expect(await surfaceBox(table)).toEqual(idle);
   },
 };
 

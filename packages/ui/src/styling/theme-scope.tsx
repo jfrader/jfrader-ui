@@ -4,7 +4,7 @@
 // Scope roots publish what they set through context; ThemeBoundary re-applies it inside the portal
 // exactly like the root does. Only the named axes and the root's `tokens` cross the portal:
 // arbitrary ancestor CSS does not.
-import { createContext, useContext, useMemo, type CSSProperties, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css } from './css';
 
@@ -14,12 +14,13 @@ export type ThemeName = 'dark' | 'light';
 export type AppearanceName = 'default' | 'contrast';
 
 export interface ThemeScope {
-  theme: ThemeName;
+  theme: ThemeName | null;
   appearance: AppearanceName;
   /** `undefined` keeps default portal routing; `null` holds portals until the host exists. */
   portalContainer: HTMLElement | null | undefined;
   /** The scope root's `tokens` as inline custom properties, re-declared wherever `theme` is. */
   tokenStyle: CSSProperties | undefined;
+  inheritRoot?: RefObject<HTMLElement | null>;
 }
 
 export const ThemeScopeContext = createContext<ThemeScope | null>(null);
@@ -34,7 +35,7 @@ export function useThemeScope(): ThemeScope | null {
  * same theme, dropped for another (they were derived for the enclosing one) or for `null`.
  */
 export function carriedTokenStyle(parent: ThemeScope | null, theme: ThemeName | null): CSSProperties | undefined {
-  return parent && parent.theme === theme ? parent.tokenStyle : undefined;
+  return theme !== null && parent && parent.theme === theme ? parent.tokenStyle : undefined;
 }
 
 /** Inline `style` for a scope element: carried tokens first, the consumer's own `style` last. */
@@ -80,7 +81,7 @@ export function AppearanceScope({
   children?: ReactNode;
 }) {
   const parent = useContext(ThemeScopeContext);
-  const resolvedTheme = theme ?? parent?.theme ?? 'dark';
+  const resolvedTheme = theme ?? parent?.theme ?? null;
   const tokenStyle = carriedTokenStyle(parent, resolvedTheme);
   const scope = useMemo<ThemeScope>(
     () => ({ theme: resolvedTheme, appearance, portalContainer: parent?.portalContainer, tokenStyle }),
@@ -92,17 +93,19 @@ export function AppearanceScope({
   return <ThemeScopeContext.Provider value={unchanged ? parent : scope}>{children}</ThemeScopeContext.Provider>;
 }
 
-/** Re-applies the nearest scope (theme, appearance and tokens) around portaled content. */
+/** Keeps the nearest scope around portaled content; local inherited hosts use the DOM cascade. */
 export function ThemeBoundary({ children }: { children?: ReactNode }) {
   const scope = useThemeScope();
   if (!scope) return children;
+  const inheritHost = Boolean(scope.portalContainer && scope.inheritRoot?.current?.contains(scope.portalContainer));
+  const declareTheme = !inheritHost && scope.theme !== null;
   return (
     <div
       data-ui="theme-boundary"
-      data-theme={scope.theme}
-      data-appearance={scope.appearance}
-      style={scope.tokenStyle}
-      css={[themeScopeStyle, boundaryStyle]}
+      data-theme={declareTheme ? scope.theme ?? undefined : undefined}
+      data-appearance={declareTheme ? scope.appearance : undefined}
+      style={inheritHost ? undefined : scope.tokenStyle}
+      css={[declareTheme && themeScopeStyle, boundaryStyle]}
     >
       {children}
     </div>

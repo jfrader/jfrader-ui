@@ -8,10 +8,10 @@ import type { ReactNode } from 'react';
 import { FloatingPortal } from '@floating-ui/react';
 import { ThemeBoundary, useThemeScope } from '../styling/theme-scope';
 
-export function OverlayPortal({ children }: { children?: ReactNode }) {
+export function OverlayPortal({ children, preserveTabOrder = true }: { children?: ReactNode; preserveTabOrder?: boolean }) {
   const scope = useThemeScope();
   return (
-    <FloatingPortal root={scope?.portalContainer}>
+    <FloatingPortal root={scope?.portalContainer} preserveTabOrder={preserveTabOrder}>
       <ThemeBoundary>{children}</ThemeBoundary>
     </FloatingPortal>
   );

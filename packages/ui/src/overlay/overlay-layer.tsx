@@ -4,7 +4,7 @@
 // The first layer creates the tree; nested layers join it through React context, across portals.
 // Overlays that do not take part render inside `IsolatedOverlay`, so the
 // enclosing layer's tree and node never change their roles, list navigation or focus handling.
-import { useMemo, type KeyboardEvent, type ReactNode } from 'react';
+import { useLayoutEffect, useMemo, type KeyboardEvent, type ReactNode } from 'react';
 import {
   FloatingNode,
   FloatingTree,
@@ -17,6 +17,7 @@ import {
   type UseDismissProps,
 } from '@floating-ui/react';
 import { getDeepestNode } from '@floating-ui/react/utils';
+import { registerOpenLayer } from './use-child-escape';
 
 /**
  * `container`: a layer whose content holds focus and may host other layers (Popover,
@@ -57,10 +58,30 @@ function useTopmostEscape(context: LayerContext, enabled: boolean): ElementProps
   }, [enabled, tree, nodeId]);
 }
 
+/** Extra policy for one layer; a custom predicate narrows the default outside-press behavior. */
+export interface LayerDismissOptions {
+  /** Turns dismissal off for this layer, for example while its control is disabled. */
+  enabled?: boolean;
+  /** Keep the layer open for presses this predicate rejects. */
+  outsidePress?: UseDismissProps['outsidePress'];
+}
+
 /** Escape and outside-press dismissal for one layer; pass the result into `useInteractions`. */
-export function useLayerDismiss(context: LayerContext, kind: LayerKind): ElementProps[] {
-  const topmostEscape = useTopmostEscape(context, kind === 'container');
-  const dismiss = useDismiss(context, LAYER_DISMISS[kind]);
+export function useLayerDismiss(
+  context: LayerContext,
+  kind: LayerKind,
+  options: LayerDismissOptions = {},
+): ElementProps[] {
+  const floating = context.elements.floating;
+  useLayoutEffect(() => {
+    if (context.open && floating) return registerOpenLayer(floating);
+  }, [context.open, floating]);
+  const topmostEscape = useTopmostEscape(context, kind === 'container' && options.enabled !== false);
+  const dismiss = useDismiss(context, {
+    ...LAYER_DISMISS[kind],
+    ...(options.enabled === undefined ? {} : { enabled: options.enabled }),
+    ...(options.outsidePress === undefined ? {} : { outsidePress: options.outsidePress }),
+  });
   return [topmostEscape, dismiss];
 }
 

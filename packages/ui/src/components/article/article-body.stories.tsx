@@ -1,5 +1,6 @@
 import { createRef, memo, type ComponentPropsWithRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { requireNonEmpty } from '../../testing/assertion-preconditions';
 import { expect } from 'storybook/test';
 import { Article } from './index';
 import { ArticleList } from '../article-list';
@@ -141,7 +142,9 @@ export const BodyFact: Story = {
   },
   play: async ({ canvasElement }) => {
     const view = canvasElement.ownerDocument.defaultView!;
-    for (const element of canvasElement.querySelectorAll('aside h2, aside ul, aside li')) {
+    const parts = requireNonEmpty(canvasElement.querySelectorAll('aside h2, aside ul, aside li'), 'Fact box parts');
+    await expect(parts).toHaveLength(4);
+    for (const element of parts) {
       await expect(view.getComputedStyle(element).margin).toBe('0px');
     }
     await expect(view.getComputedStyle(canvasElement.querySelector('ul')!).padding).toBe('0px');
@@ -239,7 +242,9 @@ export const BodySplit: Story = {
     await expect(cells).toHaveLength(2);
     await expect(cells[0]).toHaveTextContent('Before');
     await expect(cells[1]).toHaveTextContent('After');
-    for (const paragraph of canvasElement.querySelectorAll('[data-ui~="article-body-cell"] p')) await expect(canvasElement.ownerDocument.defaultView!.getComputedStyle(paragraph).margin).toBe('0px');
+    const paragraphs = requireNonEmpty(canvasElement.querySelectorAll('[data-ui~="article-body-cell"] p'), 'Split paragraphs');
+    await expect(paragraphs).toHaveLength(4);
+    for (const paragraph of paragraphs) await expect(canvasElement.ownerDocument.defaultView!.getComputedStyle(paragraph).margin).toBe('0px');
     const first = cells[0]!.getBoundingClientRect(); const second = cells[1]!.getBoundingClientRect();
     if (canvasElement.ownerDocument.defaultView!.innerWidth >= 640) await expect(Math.abs(first.width - second.width)).toBeLessThan(1);
     else await expect(second.top).toBeGreaterThan(first.top);

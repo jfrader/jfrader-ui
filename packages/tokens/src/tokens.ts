@@ -200,6 +200,10 @@ export const base = {
     gameCardLg: '112px',
     gameCardXl: '160px',
     gameCardPerspective: '28rem',
+    // GalleryEditor's default minimum tile width per density, and the empty gallery's drop target height.
+    galleryEditorTile: '12rem',
+    galleryEditorTileCompact: '8rem',
+    galleryEditorEmptyUpload: '10rem',
     // Layer inline size at which DialogStack's auto variant switches from sheet to centered dialog.
     dialogStackBreakpoint: '640px',
     // How much of each parent panel shows above the active one.

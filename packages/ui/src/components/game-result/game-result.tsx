@@ -1,5 +1,6 @@
-import { withoutSx } from '../../styling/sx';
 'use client';
+
+import { withoutSx } from '../../styling/sx';
 
 // Presentational end-of-match panel. Exposes `outcome` (`'won' | 'lost' | 'draw'`) as data.
 // Sets `data-outcome` and `data-tone` (success | danger | neutral) for styling; consumers own
@@ -10,7 +11,7 @@ import { withoutSx } from '../../styling/sx';
 import type { ComponentPropsWithRef, ComponentType, ReactNode } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { css, type Interpolation, type SerializedStyles, type Theme } from '../../styling/css';
-import { FORCED_COLORS, REDUCED_MOTION } from '../../styling/media';
+import { FORCED_COLORS } from '../../styling/media';
 import type { SxProps } from '../../styling/sx';
 import { isRenderable } from '../../utils/renderable';
 import { CardRoot, type GameCardRootProps, type GameCardRootCustomization, type GameCardRootSlotProps } from '../game-card/game-card-root';

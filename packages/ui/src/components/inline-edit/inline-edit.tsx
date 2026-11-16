@@ -31,6 +31,7 @@ import {
   type ComponentPropsWithRef,
   type CompositionEvent,
   type FocusEvent,
+  type InputHTMLAttributes,
   type KeyboardEvent,
   type MouseEvent,
   type ReactNode,
@@ -81,9 +82,9 @@ export interface InlineEditMessages {
 
 type ActionPart = 'save' | 'cancel' | 'retry';
 
-export type InlineEditSlotProps = Omit<FieldParts<InlineEditAnatomy>, 'control' | ActionPart> & {
-  /** Input or textarea control receiving draft edits. Renders an `input` by default, or a `textarea` when `multiline` is true. */
-  control?: FieldElementProps<'input'> | FieldElementProps<'textarea'>;
+export type InlineEditSlotProps<M extends boolean = false> = Omit<FieldParts<InlineEditAnatomy>, 'control' | ActionPart> & {
+  /** Supplies input props by default, or textarea props when `multiline` is true. */
+  control?: FieldElementProps<M extends true ? 'textarea' : 'input'>;
   /** Save Button. Size, variant and the accessible name stay component-owned. */
   save?: ButtonProps;
   /** Cancel Button. Size, variant and the accessible name stay component-owned. */
@@ -92,11 +93,11 @@ export type InlineEditSlotProps = Omit<FieldParts<InlineEditAnatomy>, 'control' 
   retry?: ButtonProps;
 };
 
-/** Native editor attributes and handlers. The component sets value, editability and placeholder. */
-export interface InlineEditControlProps extends Omit<
-  TextareaHTMLAttributes<ControlElement>,
+/** Native input attributes by default, or textarea attributes when `multiline` is true. Value, editability and placeholder stay component-owned. */
+export type InlineEditControlProps<M extends boolean = false> = Omit<
+  M extends true ? TextareaHTMLAttributes<HTMLTextAreaElement> : InputHTMLAttributes<HTMLInputElement>,
   'value' | 'defaultValue' | 'children' | 'disabled' | 'readOnly' | 'placeholder' | 'cols' | 'dangerouslySetInnerHTML'
-> {}
+>;
 
 type InlineEditAnatomy = {
   /** Outer container wrapping the inline edit field. */
@@ -126,9 +127,9 @@ type InlineEditAnatomy = {
   /** Screen-reader live region announcing save status. */
   status: 'span';
 };
-export type InlineEditSlots = Omit<FieldSlots<InlineEditAnatomy>, 'control' | ActionPart> & {
-  /** Input or textarea control receiving draft edits. Renders an `input` by default, or a `textarea` when `multiline` is true. */
-  control?: ComponentType<ComponentPropsWithRef<'input'> | ComponentPropsWithRef<'textarea'>>;
+export type InlineEditSlots<M extends boolean = false> = Omit<FieldSlots<InlineEditAnatomy>, 'control' | ActionPart> & {
+  /** Replaces the input by default, or the textarea when `multiline` is true. */
+  control?: ComponentType<ComponentPropsWithRef<M extends true ? 'textarea' : 'input'>>;
   /** Replaces the Save Button; forwards the Button props and ref it receives. */
   save?: ComponentType<ButtonProps>;
   /** Replaces the Cancel Button; forwards the Button props and ref it receives. */
@@ -137,7 +138,7 @@ export type InlineEditSlots = Omit<FieldSlots<InlineEditAnatomy>, 'control' | Ac
   retry?: ComponentType<ButtonProps>;
 };
 
-export interface InlineEditProps
+export interface InlineEditProps<M extends boolean = false>
   extends Omit<ComponentPropsWithRef<'div'>, 'children' | 'defaultValue' | 'onChange'>, SxProps {
   /** Saved value shown by the trigger, not the draft. */
   value?: string;
@@ -162,8 +163,8 @@ export interface InlineEditProps
   validate?: (next: string) => string | null | undefined;
   /** Turns the draft into the saved value. Defaults to the draft as typed. */
   normalize?: (draft: string) => string;
-  /** Edits in a textarea; Shift+Enter inserts a newline. */
-  multiline?: boolean;
+  /** Edits in a textarea and types control slots, attributes and refs accordingly; Shift+Enter inserts a newline. Defaults to an input. */
+  multiline?: M;
   /** Chooses title or body typography. Defaults to `title`. */
   variant?: InlineEditVariant;
   /** Sets one block size, Button's, for the value, the single-line editor and its actions. Defaults to `md`. */
@@ -182,10 +183,10 @@ export interface InlineEditProps
   description?: ReactNode;
   /** External error; while present it marks the editor invalid and blocks saving. */
   error?: ReactNode;
-  /** Adds native editor attributes and handlers; value, editability and placeholder stay component-owned. */
-  controlProps?: InlineEditControlProps;
-  /** The editor element, or null when not editing. */
-  controlRef?: Ref<ControlElement>;
+  /** Adds input attributes by default, or textarea attributes when `multiline` is true; value, editability and placeholder stay component-owned. */
+  controlProps?: InlineEditControlProps<M>;
+  /** Receives the input by default, or the textarea when `multiline` is true; null when not editing. */
+  controlRef?: Ref<M extends true ? HTMLTextAreaElement : HTMLInputElement>;
   /** Overrides English action labels, keyboard instructions and save announcements. */
   messages?: Partial<InlineEditMessages>;
   /** Replaces the trigger's decorative pencil icon. */
@@ -195,11 +196,11 @@ export interface InlineEditProps
   /** Replaces the Cancel Button's decorative cross icon. */
   cancelIcon?: ReactNode;
   /** Replace the wrapper div; `slots.root` takes precedence. */
-  component?: InlineEditSlots['root'];
-  /** Replace generated parts with components that forward props and ref. */
-  slots?: InlineEditSlots;
-  /** Supplies attributes, refs and `sx` to generated parts. */
-  slotProps?: InlineEditSlotProps;
+  component?: InlineEditSlots<M>['root'];
+  /** Replaces generated parts; the control receives input props by default, or textarea props when `multiline` is true. */
+  slots?: InlineEditSlots<M>;
+  /** Supplies attributes, refs and `sx`; control props follow the element selected by `multiline`. */
+  slotProps?: InlineEditSlotProps<M>;
 }
 
 type FocusIntent = 'select' | 'end' | 'trigger';
@@ -436,7 +437,7 @@ function InlineEditAction({ component: Action = Button, partProps: part, classNa
   );
 }
 
-export function InlineEdit({
+export function InlineEdit<M extends boolean = false>({
   ref,
   value,
   defaultValue = '',
@@ -448,7 +449,7 @@ export function InlineEdit({
   label,
   validate,
   normalize = identity,
-  multiline = false,
+  multiline,
   variant = 'title',
   size = 'md',
   disabled = false,
@@ -458,7 +459,7 @@ export function InlineEdit({
   inputPlaceholder,
   description,
   error,
-  controlProps,
+  controlProps: controlPropsProp,
   controlRef,
   messages: messagesProp,
   editIcon = pencilGlyph,
@@ -471,7 +472,9 @@ export function InlineEdit({
   sx,
   onBlur,
   ...rest
-}: InlineEditProps) {
+}: InlineEditProps<M>) {
+  // Both render branches share handlers; the public contract correlates their concrete element with M.
+  const controlProps: TextareaHTMLAttributes<ControlElement> | undefined = controlPropsProp;
   const text: InlineEditMessages = { ...DEFAULT_MESSAGES, ...messagesProp };
   const [committedState, requestValue] = useControlledState(value, defaultValue, onValueChange);
   const committed = committedState ?? '';
@@ -839,7 +842,7 @@ export function InlineEdit({
             id={instructionsId}
             styles={visuallyHiddenStyle}
           >
-            {text.instructions({ multiline })}
+            {text.instructions({ multiline: multiline ?? false })}
           </FieldSlot>
           <FieldSlot
             element="div"
@@ -852,6 +855,7 @@ export function InlineEdit({
               <FieldSlot
                 element="textarea"
                 component={slots?.control}
+                // Runtime branching cannot narrow M's conditional control props inside a generic body.
                 slotProps={slotProps?.control as FieldElementProps<'textarea'>}
                 rows={3}
                 {...controlAttributes}
@@ -861,6 +865,7 @@ export function InlineEdit({
               <FieldSlot
                 element="input"
                 component={slots?.control}
+                // Runtime branching cannot narrow M's conditional control props inside a generic body.
                 slotProps={slotProps?.control as FieldElementProps<'input'>}
                 type="text"
                 {...inputAttributes}

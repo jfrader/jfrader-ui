@@ -2,9 +2,7 @@
 // generated custom properties; these numbers come from the same token object, so changing a token
 // moves both and no component writes its own literal.
 import { base } from '@jfrader/tokens';
-
-// Bundlers replace `process.env.NODE_ENV` in consumer builds; library mode leaves it in place.
-declare const process: { env: { NODE_ENV?: string } };
+import { devError, isDev } from '../utils/dev';
 
 /**
  * Parses a `120ms` token into a number. A token that is missing or stops being milliseconds resolves
@@ -16,8 +14,8 @@ export function resolveMotionDurationMs(name: string, value: unknown): number {
   const parsed = typeof value === 'string' ? Number.parseFloat(value) : Number.NaN;
   if (Number.isFinite(parsed) && typeof value === 'string' && value.trim().endsWith('ms')) return parsed;
 
-  if (process.env.NODE_ENV !== 'production') {
-    console.error(
+  if (isDev) {
+    devError(
       `@jfrader/ui: motion duration "${name}" must be a token in ms, received ${JSON.stringify(value)}; using 0.`,
     );
   }

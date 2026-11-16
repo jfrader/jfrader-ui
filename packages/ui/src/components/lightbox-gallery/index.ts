@@ -5,4 +5,4 @@ export type {
   LightboxGalleryProps,
   LightboxGallerySlotProps,
   LightboxGallerySlots,
-} from './lightbox-gallery';
+} from './lightbox-gallery.types';

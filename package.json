@@ -15,8 +15,11 @@
     "og:image": "pnpm generate && pnpm --filter @jfrader/storybook og:image",
     "test": "pnpm generate && pnpm --filter @jfrader/storybook test",
     "typecheck": "pnpm generate && pnpm -r typecheck",
+    "lint": "oxlint -c .oxlintrc.json --deny-warnings .",
+    "lint:fix": "oxlint -c .oxlintrc.json --fix .",
     "verify:exports": "node scripts/verify-exports.mjs",
     "verify:slots": "node --test scripts/verify-slot-wiring.test.mjs && node scripts/verify-slot-wiring.mjs",
+    "verify:types": "node scripts/verify-dts-specifiers.mjs",
     "verify:icons": "pnpm --filter @jfrader/icons exec tsx --test scripts/verify.test.ts && pnpm --filter @jfrader/icons exec tsx scripts/verify.ts",
     "verify:docs": "pnpm --filter @jfrader/storybook verify:docs",
     "verify:api": "pnpm --filter @jfrader/storybook verify:api",
@@ -29,6 +32,7 @@
     ]
   },
   "devDependencies": {
+    "oxlint": "1.93.0",
     "typescript": "^7.0.2",
     "typescript-compiler": "npm:typescript@5.9.3"
   }

@@ -3,6 +3,7 @@ import { createRoot, hydrateRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import { renderToString, renderToStaticMarkup } from 'react-dom/server';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { requireNonEmpty } from '../../testing/assertion-preconditions';
 import { expect, fn, waitFor, within } from 'storybook/test';
 import { PERSON_ART_COLORS } from '@jfrader/tokens';
 import { vars } from '@jfrader/tokens/vars';
@@ -438,7 +439,9 @@ const kits: PersonAvatarKit[] = PERSON_SHIRT_PATTERNS.map((shirtPattern, index) 
     ] as const) {
       await expect(new Set(patternKits.map(kit => kit[key]))).toEqual(new Set(patterns));
     }
-    for (const [index, svg] of Array.from(canvasElement.querySelectorAll('svg')).entries()) {
+    const avatars = requireNonEmpty(canvasElement.querySelectorAll('svg'), 'Patterned avatars');
+    await expect(avatars).toHaveLength(patternKits.length);
+    for (const [index, svg] of avatars.entries()) {
       const kit = patternKits[index]!;
       await expect(svg.querySelector('[fill="currentColor"]')).toBeNull();
       for (const fill of [kit.shirt, kit.shorts, kit.socks, kit.accent]) {
@@ -541,7 +544,9 @@ export const Decorative: Story = {
   </Flex>,
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).queryByRole('img')).toBeNull();
-    for (const svg of canvasElement.querySelectorAll('svg')) {
+    const avatars = requireNonEmpty(canvasElement.querySelectorAll('svg'), 'Decorative avatars');
+    await expect(avatars).toHaveLength(5);
+    for (const svg of avatars) {
       await expect(svg).toHaveAttribute('aria-hidden', 'true');
       await expect(svg).not.toHaveAttribute('role');
       await expect(svg).not.toHaveAttribute('aria-label');
@@ -609,7 +614,9 @@ export const Keyboard: Story = {
     await expect(canvas.getByRole('button', { name: 'After' })).toHaveFocus();
     await userEvent.tab({ shift: true });
     await expect(canvas.getByRole('button', { name: 'Before' })).toHaveFocus();
-    for (const svg of canvasElement.querySelectorAll('svg')) await expect(svg).not.toHaveAttribute('tabindex');
+    const avatars = requireNonEmpty(canvasElement.querySelectorAll('svg'), 'Keyboard avatars');
+    await expect(avatars).toHaveLength(2);
+    for (const svg of avatars) await expect(svg).not.toHaveAttribute('tabindex');
   },
 };
 
