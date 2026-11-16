@@ -373,6 +373,10 @@ Shared assertions in `src/testing/`, reused before writing a local copy:
   `pnpm test` includes the guard and its deliberately invalid browser fixtures. Run
   `pnpm --filter @jfrader/storybook verify:design` for the scoped family suite; no dev server is needed.
 
+- `settle.ts`: `settleLayout` waits for fonts and two frames; `settleAnimations` finishes every finite
+  transition or animation and then settles layout. The Vitest setup calls it before the design audit,
+  and a story calls it before any sample that must read a settled frame. Never a sleep.
+
 - [motion-assertions.ts](packages/ui/src/testing/motion-assertions.ts):
   `settleMotion`, `expectEntranceMotion`, `expectRetainedExit`.
   `settleMotion` excludes infinite animations.

@@ -26,6 +26,7 @@ import { fitBoardContent, GAME_TABLE_LIMITS, type BoardMeasurements } from './fi
 import { regionSize } from './use-board-measurements';
 import { validateSlots } from './table-slots';
 import { expectInside, expectNoOverlap, expectMirroredDirection } from '../../testing/geometry-assertions';
+import { settleLayout } from '../../testing/settle';
 
 type CaseName = 'portraitShort' | 'portrait' | 'wide' | 'square' | 'squareWide' | 'wideLarge';
 type ViewportSize = { width: number; height: number };
@@ -413,6 +414,7 @@ export default function Example() {
     )))}
   </Matrix>,
   play: async ({ canvasElement }) => {
+    await settleLayout(canvasElement.ownerDocument);
     const frames = canvasElement.querySelectorAll<HTMLElement>('[data-aspect-width]');
     await expect(frames).toHaveLength(ASPECT_CASES.length * ASPECT_MODES.length);
     for (const frame of frames) {

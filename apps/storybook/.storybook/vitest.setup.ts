@@ -2,6 +2,7 @@ import { configure, getConfig } from 'storybook/test';
 import { beforeAll, beforeEach, afterEach, expect, inject } from 'vitest';
 import { cdp } from 'vitest/browser';
 import { auditDesign } from '../../../packages/ui/src/testing/design-assertions';
+import { settleAnimations } from '../../../packages/ui/src/testing/settle';
 
 type EventWrapper = ReturnType<typeof getConfig>['eventWrapper'];
 
@@ -55,7 +56,10 @@ function guardEventWrapperReentrancy() {
 
 beforeAll(guardEventWrapperReentrancy);
 
-afterEach(() => {
+afterEach(async () => {
+  // Settle finite transitions and layout before the design audit and the accessibility gate run,
+  // so neither samples a half-finished frame under load.
+  await settleAnimations(document);
   const leakedSx = document.querySelector('[sx]');
   if (leakedSx) throw new Error(`Unconsumed sx attribute on ${leakedSx.outerHTML}`);
   const failures = auditDesign(document);

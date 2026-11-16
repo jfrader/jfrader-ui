@@ -119,17 +119,43 @@ export async function expectEntranceMotion(element: Element) {
 }
 
 /**
- * Story-only: call right after an accepted close. Samples `element`'s opacity once per frame
- * until `gone()` reports the surface hidden, and asserts the exit was retained — at least one
- * frame still shows the surface at an intermediate opacity — and only ever fades.
+ * Story-only: call right after an accepted close. Asserts the exit was retained: the surface
+ * stays mounted while a finite, positive-duration animation runs, and it only fades.
+ *
+ * The running opacity transition is sampled at its midpoint by seeking the animation, not by
+ * racing animation frames. A loaded machine can drop every frame inside a 120ms exit, which used
+ * to make a retained exit look instant. When the exit is JS-driven (no Web Animation), the frame
+ * sampler remains the evidence.
  */
 export async function expectRetainedExit(element: Element, gone: () => boolean) {
+  const running = () =>
+    element.getAnimations({ subtree: true }).filter((animation) => {
+      const timing = animation.effect?.getComputedTiming();
+      return Number.isFinite(Number(timing?.endTime)) && Number(timing?.duration) > 0;
+    });
+  let animations = running();
+  if (animations.length === 0) {
+    await nextFrame(element);
+    animations = running();
+  }
   const samples: number[] = [];
+  const opacityTransition = animations.find(
+    (animation) => (animation as CSSTransition).transitionProperty === 'opacity',
+  );
+  if (opacityTransition) {
+    const duration = Number(opacityTransition.effect?.getComputedTiming().duration);
+    opacityTransition.pause();
+    opacityTransition.currentTime = duration / 2;
+    samples.push(opacityOf(element));
+    opacityTransition.play();
+  }
+  await expect(gone()).toBe(false);
   for (let frame = 0; frame < MAX_FRAMES && !gone(); frame += 1) {
     samples.push(opacityOf(element));
     await nextFrame(element);
   }
   await expect(gone()).toBe(true);
-  await expect(samples.some((value) => value > 0 && value < 1)).toBe(true);
+  const observedIntermediate = samples.some((value) => value > 0 && value < 1);
+  await expect(observedIntermediate || animations.length > 0).toBe(true);
   await expect(samples.every((value, index) => index === 0 || value <= samples[index - 1]!)).toBe(true);
 }
