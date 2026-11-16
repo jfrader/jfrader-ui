@@ -76,7 +76,7 @@ export function useLayerDismiss(
   useLayoutEffect(() => {
     if (context.open && floating) return registerOpenLayer(floating);
   }, [context.open, floating]);
-  const topmostEscape = useTopmostEscape(context, kind === 'container');
+  const topmostEscape = useTopmostEscape(context, kind === 'container' && options.enabled !== false);
   const dismiss = useDismiss(context, {
     ...LAYER_DISMISS[kind],
     ...(options.enabled === undefined ? {} : { enabled: options.enabled }),
