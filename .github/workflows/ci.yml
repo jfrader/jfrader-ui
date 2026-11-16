@@ -40,10 +40,12 @@ jobs:
       - run: pnpm verify:api
       - run: pnpm verify:docs
       - run: node scripts/release-tooling.test.mjs
+      - run: node --test scripts/dts-specifiers.test.mjs
       - run: pnpm build
       - run: pnpm --filter @jfrader/storybook test:browser
       - run: pnpm --filter @jfrader/tokens build
       - run: pnpm --filter @jfrader/styling build
       - run: pnpm --filter @jfrader/icons build
       - run: pnpm --filter @jfrader/ui build
+      - run: node scripts/verify-dts-specifiers.mjs
       - run: pnpm --filter @jfrader/storybook verify:docs:layout
