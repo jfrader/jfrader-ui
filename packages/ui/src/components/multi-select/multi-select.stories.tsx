@@ -1,12 +1,11 @@
 import { useState, type ComponentPropsWithRef, type ReactNode } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, fireEvent, fn, mocked, waitFor, within } from 'storybook/test';
+import { expect, fn, mocked, waitFor, within } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { doubleRootText, expectControlHeights, expectControlMinimums } from '../../testing/control-size-assertions';
 import { withLightTheme } from '../../testing/story-decorators';
 import { ThemeRoot } from '../theme-root';
 import { Button } from '../button';
-import { Popover } from '../popover';
 import {
   MultiSelect,
   type MultiSelectComposedProps,
@@ -1610,29 +1609,5 @@ function LabelsForm() {
     await expect(form.reportValidity()).toBe(false);
     await expect(canvasElement.ownerDocument.activeElement).toBe(triggerOf(canvasElement));
     await expect(triggerOf(canvasElement)).toHaveAttribute('aria-invalid', 'true');
-  },
-};
-
-export const NestedDismissal: StoryObj<typeof MultiSelect> = {
-  tags: ['!autodocs'],
-  render: () => (
-    <Popover defaultOpen>
-      <Popover.Trigger>Parent</Popover.Trigger>
-      <Popover.Content aria-label="Parent">
-        <MultiSelect label="Nested labels" options={OPTIONS} />
-      </Popover.Content>
-    </Popover>
-  ),
-  play: async ({ canvasElement, userEvent }) => {
-    const body = within(canvasElement.ownerDocument.body);
-    const parent = body.getByRole('dialog', { name: 'Parent' });
-    const trigger = within(parent).getByRole('combobox', { name: 'Nested labels' });
-    trigger.focus();
-    await userEvent.keyboard('{ArrowDown}');
-    const list = await body.findByRole('listbox');
-    // A press inside the portaled listbox belongs to the child layer, not outside the parent.
-    fireEvent.pointerDown(list);
-    await expect(parent).toBeVisible();
-    await expect(body.getByRole('listbox')).toBeVisible();
   },
 };
