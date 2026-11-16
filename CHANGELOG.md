@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- Published declaration files use explicit relative specifiers, so `@jfrader/ui`, `@jfrader/icons`, `@jfrader/styling` and `@jfrader/tokens` resolve under `moduleResolution: "node16"` and `"nodenext"`. Wildcard re-exports keep their names, and `skipLibCheck: false` no longer reports TS2834 in the published types.
 - A `Popover.Content` that a consumer focuses itself now tabs into its own first control, instead of skipping the panel and moving focus to the next element on the page.
 - `MultiSelect` joins the shared overlay dismissal tree, so a popup opened inside another overlay closes alone and a press inside it no longer dismisses the parent.
 - `InputGroup` and `MentionInput` take their control heights and typography from the shared control-size scale, matching `TextField` at every size.

@@ -13,6 +13,7 @@ Start Storybook with `pnpm dev` and open each story at `http://localhost:6006`.
 | `pnpm lint` | Check hook order, the styling seam, `any`, dead bindings, and console diagnostics outside `src/utils/dev.ts`. CI runs it after typecheck. |
 | `pnpm test` | Generate tokens and run Storybook play tests in headless Chromium. The axe gate fails the run on violations in the `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22a`, `wcag22aa`, and `best-practice` rules (`a11y.test: 'error'`). |
 | `pnpm --filter @jfrader/storybook exec vitest run --project=storybook --project=storybook-touch --maxWorkers=2 <story-file>` | One story file against the same axe gate. |
+| `pnpm verify:types` | Built declaration files resolve under `moduleResolution: "node16"` and `"nodenext"`: every relative specifier carries an explicit JavaScript extension. Run after the package builds. |
 | `pnpm verify:exports` | Every public component folder has a subpath export, and every source export target exists. It does not validate built artifacts or root-index coverage. |
 
 `scripts/verify-exports.mjs` is the source check; it is not a Storybook test. `scripts/flip-exports.mjs
