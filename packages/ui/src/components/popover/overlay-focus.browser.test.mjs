@@ -156,3 +156,18 @@ for (const height of [479, 480, 481]) for (const theme of ['light', 'dark']) for
     }, theme);
   });
 }
+
+test('a focused panel tabs into its own first control', async () => {
+  await withStory('compact-focused', { width: 390, height: 844 }, async page => {
+    const trigger = page.getByRole('button', { name: 'Account', exact: true });
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    const panel = page.locator('[data-ui="popover"]');
+    await panel.waitFor();
+    await settle(page);
+    assert.ok(await panel.evaluate(element => element === document.activeElement), 'the panel owns focus after opening');
+    await page.keyboard.press('Tab');
+    await settle(page);
+    assert.equal(await page.evaluate(() => document.activeElement?.textContent), 'Profile');
+  });
+});

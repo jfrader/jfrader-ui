@@ -41,6 +41,14 @@ export function useFloatingTabOrder(context: FloatingContext, { enabled = true, 
       const index = content.findIndex((element) => element === active);
       if (inside && index !== -1 && (event.shiftKey ? index > 0 : index < content.length - 1)) return;
 
+      // A consumer can focus the surface itself (a panel announced as a dialog). Tab then
+      // enters its first control instead of skipping the whole panel and leaving the layer.
+      if (inside && index === -1 && !event.shiftKey && content.length) {
+        event.preventDefault();
+        content[0]!.focus();
+        return;
+      }
+
       if (event.shiftKey) {
         if (inside) {
           event.preventDefault();

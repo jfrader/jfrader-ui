@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useEffect, useRef, useState } from 'react';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../styling/styled';
 import { Button } from '../button';
@@ -79,4 +80,28 @@ export const DatesSpanish: Story = {
   render: () => <DateExample locale="es" messages={{
     apply: 'Aplicar', cancel: 'Cancelar', empty: 'Sin fechas', start: 'Inicio', end: 'Fin', summary: ({ range }) => range,
   }} />,
+};
+
+/** A consumer that focuses the panel itself, then expects Tab to enter its own controls. */
+export const CompactFocused: Story = {
+  render: function FocusedPanel() {
+    const [open, setOpen] = useState(false);
+    const panel = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+      if (!open) return;
+      const frame = requestAnimationFrame(() => panel.current?.focus());
+      return () => cancelAnimationFrame(frame);
+    }, [open]);
+    return (
+      <Frame>
+        <Popover open={open} onOpenChange={setOpen}>
+          <Popover.Trigger>Account</Popover.Trigger>
+          <Popover.Content ref={panel} tabIndex={-1} aria-label="Account actions">
+            <Actions><Button>Profile</Button><Button>Sign out</Button></Actions>
+          </Popover.Content>
+        </Popover>
+        <Button>After</Button>
+      </Frame>
+    );
+  },
 };
