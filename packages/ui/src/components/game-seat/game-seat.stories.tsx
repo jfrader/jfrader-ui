@@ -48,7 +48,7 @@ Updating remainingMs crosses half (50%), quarter (25%) and ending (zero); a jump
 
 ### Keyboard and accessibility
 
-The seat is a named group, not an interactive widget, and adds no focus target or keyboard bindings. The timer ring and shorthand hand are decorative. Supply localized time text, visible offline status and a labeled hidden hand when its count needs announcing. Announce turn changes or milestones, not ticks. Mark decorative avatars aria-hidden to avoid repeating the player's name.`,
+The seat is a named group, not an interactive widget, and adds no focus target or keyboard bindings. The timer ring and shorthand fan are decorative. Pass handLabel with the consumer-localized hand count for assistive tech, or supply a labeled hidden hand through hand for custom markup. Supply localized time text and visible offline status. Announce turn changes or milestones, not ticks. Mark decorative avatars aria-hidden to avoid repeating the player's name.`,
     source: { language: 'tsx', code: `import { Badge, PersonAvatar } from '@jfrader/ui';
 import { GameSeat } from '@jfrader/ui/game-seat';
 
@@ -60,6 +60,19 @@ import { GameSeat } from '@jfrader/ui/game-seat';
 } satisfies Meta<typeof GameSeat>;
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+/** Hidden hand count exposed to assistive tech without replacing the decorative fan. */
+export const HandCountLabel: Story = {
+  name: 'Accessible hand count',
+  args: { handLabel: '3 hidden cards' },
+  play: async ({ canvas }) => {
+    const seat = canvas.getByRole('group', { name: 'Alex' });
+    const label = canvas.getByText('3 hidden cards');
+    await expect(label).toHaveAttribute('data-ui', 'game-seat-hand-label');
+    await expect(seat.contains(label)).toBe(true);
+    await expect(label.closest('[aria-hidden="true"]')).toBeNull();
+  },
+};
 
 async function expectSeatContainment(seat: HTMLElement) {
   const bounds = seat.getBoundingClientRect();
