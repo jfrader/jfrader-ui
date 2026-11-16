@@ -62,7 +62,9 @@ These are the rules that repeatedly caught real defects in this repo's review cy
   the contrast script pattern (oklch→sRGB math), never by eye. Text contrast ≥ 4.5:1 for normal text in
   **both** themes.
 - **Targets ≥ 24×24 px** (WCAG 2.5.8 AA, with exceptions); library policy: our interactive controls
-  stay at 32px+ on the main axis, icon-only controls never below 24px.
+  stay at 32px+ on the main axis, icon-only controls never below 24px. On coarse pointers, controls on
+  the shared size scale, Button, and modal close buttons reach `size.touch` (44px) through
+  `controlTouchTargetStyles` or `touchTargetStyle`.
 - **Reduced motion is honored**: transitions/animation get a `prefers-reduced-motion: reduce`
   override; lifecycle behavior (open/close/focus) must still complete.
 - **RTL**: logical properties everywhere (`paddingInline`, `insetInlineStart`, `marginBlockEnd`);
@@ -335,7 +337,7 @@ Shared styling modules in `src/styling/`, reused before writing a local copy:
   PhotoGrid: `ChromeAction` (ghost icon Button with a `focusVisibleOnly` tooltip, optional
   `aria-pressed`; unportaled inside a modal dialog, `portaled` elsewhere), the stroke glyphs and the
   thumbnail-strip styles.
-- `trigger-style`: overlay trigger button (Dialog, Popover, Menu).
+- `trigger-style`: overlay trigger button (Dialog, Drawer, BottomSheet, DialogStack, Popover, Menu), sized as an `md` control.
 - `listbox-style`: popup surface, item, and option fragments (Menu, Select, Combobox, CommandPalette, PhoneInput).
 - `input-control`: text-input control skin (TextField, Textarea, SearchField, TagInput, MentionInput, PasswordField, NumberField, MoneyInput, PhoneInput, InlineEdit, InputGroup, LinkUnfurl).
 - `choice-control`: root, row, and hidden-input fragments (Checkbox, Switch, RadioGroup.Radio).
@@ -353,10 +355,10 @@ Repository paths:
 | Avatar/artwork | [Avatar](packages/ui/src/components/avatar/avatar.tsx) owns identity/presence; [PersonAvatar](packages/ui/src/components/person-avatar/person-avatar.tsx) calls [appearance](packages/ui/src/components/person-avatar/appearance.ts) and [kit](packages/ui/src/components/person-avatar/kit.ts) resolvers, then [PersonArt](packages/ui/src/components/person-avatar/person-art.tsx). Internal [kit art](packages/ui/src/components/person-avatar/art/kit-art.tsx) and [staff art](packages/ui/src/components/person-avatar/art/staff-art.tsx) depend downward on kit data/tokens, never the shell. [Scene](packages/ui/src/components/scene/scene.tsx) owns independent scene generation. | AvatarGroup delegates member identity to Avatar; artwork stays ordinary content. |
 | Surface/panels/disclosures | [SurfaceRoot](packages/ui/src/components/surface/surface-root.tsx) owns material and appearance. | ExpandableCard still uses raisedSurface directly; disclosure/measurement remains its own responsibility. |
 | Native modal shells | [useNativeDialog](packages/ui/src/overlay/use-native-dialog.ts) owns native lifecycle; SurfaceRoot owns panel material. | Dialog, Drawer, BottomSheet, and DialogStack retain distinct host behavior. Shared panel types currently live in Drawer. |
-| Selection collections | [collection-registry](packages/ui/src/utils/collection-registry.ts) owns registration; [OverlayLayer](packages/ui/src/overlay/overlay-layer.tsx) owns dismissal-tree membership. | MultiSelect still uses IsolatedOverlay. Select-only, editable-text, and multi-value state remain distinct. |
+| Selection collections | [collection-registry](packages/ui/src/utils/collection-registry.ts) owns registration; [OverlayLayer](packages/ui/src/overlay/overlay-layer.tsx) owns dismissal-tree membership. | MultiSelect joins the tree. Select-only, editable-text, and multi-value state remain distinct. |
 | Tabs/value choices | [roving-focus](packages/ui/src/utils/roving-focus.ts) owns shared focus helpers. | Tabs owns panels/activation; SegmentedControl owns value choice. Indicators remain family-local. |
 | Field anatomy | [FieldRoot](packages/ui/src/components/field/field-anatomy.tsx) owns labeled anatomy; adopter list below. | Each control retains its native target and edit/commit axes. |
-| Control sizes | [control-size](packages/ui/src/styling/control-size.ts) owns single-line block sizes, typography, fixed-height styles, and coarse-pointer block minimums. | Button, TextField, NumberField, standard MoneyInput, SegmentedControl, Select, MultiSelect, PasswordField, SearchField, PhoneInput, TagInput, DateRangePicker, ColorPicker, LocaleSwitcher, TimePicker, CopyButton, ButtonGroup, ChipGroup, SplitButton, InputGroup, and MentionInput adopt the scale; Combobox inherits it through TextField. Textarea uses twice the minimum; prominent MoneyInput retains its taller layout. Wrapping chips, tags, labels, and grouped actions may grow. Square checkbox/radio controls, range inputs, and popup options use their own target geometry. |
+| Control sizes | [control-size](packages/ui/src/styling/control-size.ts) owns single-line block sizes, typography, fixed-height styles, and coarse-pointer block minimums. | Button, TextField, NumberField, standard MoneyInput, SegmentedControl, Select, MultiSelect, PasswordField, SearchField, PhoneInput, TagInput, DateRangePicker, ColorPicker, LocaleSwitcher, TimePicker, CopyButton, ButtonGroup, ChipGroup, SplitButton, InputGroup, MentionInput, and the overlay triggers in `trigger-style` adopt the scale; Combobox inherits it through TextField. Textarea uses twice the minimum; prominent MoneyInput retains its taller layout. Wrapping chips, tags, labels, and grouped actions may grow. Square checkbox/radio controls, range inputs, and popup options use their own target geometry. |
 | Viewer chrome | [viewer-chrome](packages/ui/src/components/viewer-chrome/viewer-chrome.tsx) owns LightboxGallery/PhotoGrid actions, glyphs, and thumbnail styles. | Modal versus portaled tooltip ownership remains with the host. |
 
 ### Shared story assertions

@@ -93,18 +93,8 @@ async function emulateStoryMedia(features: { name: string; value: string }[]) {
   await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 }
 
-function needsTouchPointer(name: string) {
-  return /^Touch table (320|390|768)$/.test(name)
-    || name === 'Touch control sizes'
-    || name === 'MoneyInput touch sizes'
-    || name === 'NumberField touch sizes'
-    || name.endsWith(' touch targets');
-}
-
-beforeEach(async (context) => {
-  const { task } = context;
+beforeEach(async ({ task }) => {
   const touchInput = inject('touchInput');
-  if (needsTouchPointer(task.name) !== touchInput) context.skip();
   expect(window.matchMedia('(pointer: coarse)').matches).toBe(touchInput);
   expect(window.matchMedia('(hover: hover)').matches).toBe(!touchInput);
   const preference = storyMediaPreferences[task.name];
