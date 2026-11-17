@@ -631,6 +631,24 @@ function DateRangePickerLayer({
       requestOpenChange(next);
     },
   });
+  // A viewport resize can push the anchor itself off screen; the surface then has nowhere honest
+  // to sit, so it dismisses and the next open anchors to wherever the trigger now is.
+  useEffect(() => {
+    if (!open) return;
+    let timer = 0;
+    const onResize = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        const node = refs.domReference.current;
+        if (!node) return;
+        const rect = node.getBoundingClientRect();
+        if (rect.bottom < 0 || rect.top > window.innerHeight) requestOpenChange(false);
+      }, 0);
+    };
+    window.addEventListener('resize', onResize);
+    return () => { window.removeEventListener('resize', onResize); window.clearTimeout(timer); };
+  }, [open, refs, requestOpenChange]);
+
 
   // A rejected controlled close keeps the dialog open, so focus stays inside it.
   useEffect(() => {

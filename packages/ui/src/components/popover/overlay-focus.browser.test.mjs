@@ -171,3 +171,13 @@ test('a focused panel tabs into its own first control', async () => {
     assert.equal(await page.evaluate(() => document.activeElement?.textContent), 'Profile');
   });
 });
+
+test('a resize that pushes the trigger off screen dismisses the date panel', async () => {
+  await withStory('dates', { width: 1280, height: 720 }, async page => {
+    await page.getByRole('button', { name: /^Report period/ }).click();
+    const dialog = page.locator('[data-ui="date-range-picker-content"]');
+    await dialog.waitFor();
+    await page.setViewportSize({ width: 844, height: 200 });
+    await dialog.waitFor({ state: 'detached' });
+  });
+});
