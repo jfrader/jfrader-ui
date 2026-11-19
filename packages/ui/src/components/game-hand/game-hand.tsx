@@ -307,7 +307,7 @@ function GameHandHidden({
   const seat = useOptionalGameTableSeat();
   const registry = useFlightRegistry();
   playerKey ??= seat?.player?.key ?? seat?.slot.key;
-  if (registry?.treeOwned && playerKey === undefined) warnFlight('GameHand.Hidden needs playerKey outside GameTable.Seat.');
+  if (registry && playerKey === undefined) warnFlight('GameHand.Hidden needs playerKey outside GameTable.Seat.');
   const { artSet, cardArtSets } = useDeckArt({ artSet: explicitArtSet, cardArtSets: explicitCardArtSets });
   const layout = buildOpponentHiddenHandLayout({
     geometry: polar ?? STANDALONE_POLAR,

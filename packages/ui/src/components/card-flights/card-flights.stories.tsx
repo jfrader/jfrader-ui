@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Component, StrictMode, useRef, useState, type ReactNode } from 'react';
+import { StrictMode, useRef, useState, type ReactNode } from 'react';
 import { expect, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../index';
@@ -11,9 +11,9 @@ import { GameCardStack } from '../game-card-stack';
 import { GameTable } from '../game-table';
 import { Surface } from '../surface';
 import { ThemeRoot } from '../theme-root';
-import { CardFlights, useBoardFlights, useCardFlightOrigin, useCardFlightStatus, type PlayingCard } from './index';
+import { CardFlights, useCardFlightOrigin, useCardFlightStatus, type PlayingCard } from './index';
 import { FlightProvider, useFlights } from '../flights';
-import { measureCardBox } from './geometry';
+import { measureFlightBox } from './geometry';
 
 const STAGE_MAX_INLINE_SIZE = 640;
 const BOARD_MAX_INLINE_SIZE = 480;
@@ -258,9 +258,9 @@ export const ComposedBoard: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Play selected' }));
     await expect(canvasElement.querySelector('[data-played-key]')).toBeNull();
     await landed(canvasElement);
-    const rivalOrigin = measureCardBox(required([...canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-hand-hidden-card"]')].at(-1)));
+    const rivalOrigin = measureFlightBox(required([...canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-hand-hidden-card"]')].at(-1)));
     await userEvent.click(hand);
-    const origin = measureCardBox(hand);
+    const origin = measureFlightBox(hand);
     await userEvent.click(canvas.getByRole('button', { name: 'Play selected' }));
     await expect(flights(canvasElement)).toHaveLength(2);
     const own = required(flights(canvasElement).find((node) => node.dataset.flightTarget === 'played:play-ace'));
@@ -268,8 +268,8 @@ export const ComposedBoard: Story = {
     const effect = required(own.getAnimations()[0]?.effect);
     if (!(effect instanceof KeyframeEffect)) throw new Error('Missing travel effect');
     const pose = new DOMMatrixReadOnly(String(effect.getKeyframes()[0]?.transform));
-    await expect(pose.e).toBeCloseTo(origin.cx - measureCardBox(destination).width / 2, 2);
-    await expect(pose.f).toBeCloseTo(origin.cy - measureCardBox(destination).height / 2, 2);
+    await expect(pose.e).toBeCloseTo(origin.cx - measureFlightBox(destination).width / 2, 2);
+    await expect(pose.f).toBeCloseTo(origin.cy - measureFlightBox(destination).height / 2, 2);
     const rival = required(flights(canvasElement).find((node) => node.dataset.flightTarget === 'played:reply-ace'));
     const rivalEffect = required(rival.getAnimations()[0]?.effect);
     if (!(rivalEffect instanceof KeyframeEffect)) throw new Error('Missing rival travel effect');
@@ -399,7 +399,7 @@ export function CustomBoard() {
   play: async ({ canvas, canvasElement, userEvent }) => {
     // Move the board after mount, as scrolling a docs page does, so a mount-time measurement goes stale.
     canvasElement.style.paddingBlockStart = '120px';
-    const origin = measureCardBox(required(canvasElement.querySelector<HTMLElement>('[data-hand-card="custom"]')));
+    const origin = measureFlightBox(required(canvasElement.querySelector<HTMLElement>('[data-hand-card="custom"]')));
     await userEvent.click(canvas.getByRole('button', { name: 'Play card' }));
     await expect(flights(canvasElement)).toHaveLength(1);
     const flight = required(flights(canvasElement)[0]);
@@ -412,7 +412,7 @@ export function CustomBoard() {
     await expect(pose.f).toBeCloseTo(origin.cy - parseFloat(flight.style.height) / 2, 2);
     await landed(canvasElement);
     // The hand and play slots sit side by side, so the flight travels at least one card width.
-    const destination = measureCardBox(required(canvasElement.querySelector<HTMLElement>('[data-played-key="custom"]')));
+    const destination = measureFlightBox(required(canvasElement.querySelector<HTMLElement>('[data-played-key="custom"]')));
     await expect(Math.abs(destination.cx - origin.cx)).toBeGreaterThan(origin.width);
   },
 };
@@ -545,7 +545,7 @@ export const CustomOrigin: Story = {
 export const DeckAndUnmount: Story = {
   tags: ['!autodocs'], render: () => <StrictMode><FlightProvider><DeckProbe /></FlightProvider></StrictMode>, beforeEach: () => { mockMotion(); },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    const deck = measureCardBox(required(canvasElement.querySelector<HTMLElement>('[data-ui="card-flights-deck"]')));
+    const deck = measureFlightBox(required(canvasElement.querySelector<HTMLElement>('[data-ui="card-flights-deck"]')));
     await userEvent.click(canvas.getByRole('button', { name: 'Deal custom' }));
     await expect(flights(canvasElement)).toHaveLength(2);
     const flight = required(flights(canvasElement)[0]);
@@ -571,18 +571,6 @@ export const TwoTables: Story = {
   tags: ['!autodocs'], render: () => <CardFlights><Board><GameTable places={2} seats={seats} /><GameTable places={2} seats={seats} /></Board></CardFlights>,
   beforeEach: () => { spyOn(console, 'warn').mockImplementation(() => {}); },
   play: async () => { await expect(console.warn).toHaveBeenCalledWith('CardFlights supports one GameTable per board.'); },
-};
-
-class LegacyBoundary extends Component<{ children: ReactNode }, { error: string }> {
-  state = { error: '' };
-  static getDerivedStateFromError(error: Error) { return { error: error.message }; }
-  render() { return this.state.error ? <StatusOutput>{this.state.error}</StatusOutput> : this.props.children; }
-}
-function MixedEngine() { useBoardFlights({ hand: [], plays: [], handKey: 0 }); return null; }
-export const LegacyConflict: Story = {
-  tags: ['!autodocs'], render: () => <LegacyBoundary><CardFlights><MixedEngine /></CardFlights></LegacyBoundary>,
-  beforeEach: () => { spyOn(console, 'error').mockImplementation(() => {}); },
-  play: async ({ canvas }) => { await expect(canvas.getByText('Do not mix legacy flight hooks with CardFlights. Render the card tree instead.')).toBeVisible(); },
 };
 
 let reduceMotionNow = () => {};

@@ -11,8 +11,7 @@ import { PersonAvatar } from '../person-avatar';
 import { Button } from '../button';
 import { CARD_BACK_PATTERNS, GameCard } from '../game-card';
 import { DeckProvider } from '../deck';
-import { CardFlightsProvider, measureCardBox, useCardFlights } from '../card-flights';
-import { motionDurationMs } from '../../styling/motion-timings';
+import { CardFlights, useCardFlightStatus } from '../card-flights';
 import { ThemeRoot } from '../theme-root';
 import {
   GameTable as Table, useGameTableSeat, buildAlternatingSlots, buildTableOrderSlots,
@@ -41,7 +40,6 @@ const docsStage = {
   blockSize: DOCS_STAGE_BLOCK_SIZE, marginInline: 'auto',
 };
 const DocsStage = styled.div(docsStage);
-const DocsFlightsStage = styled(CardFlightsProvider)(docsStage);
 /** `fill` sizes the table by its container; `viewport` pins it to `args.viewport`. */
 type ExampleFit = 'viewport' | 'fill';
 function ExampleStage({ fit, viewport, children }: { fit?: ExampleFit; viewport: ViewportSize; children: ReactNode }) {
@@ -5346,34 +5344,22 @@ const POKER_BOARD = [
 ] as const;
 
 function PokerTable() {
-  // Low-level escape hatch: the board is not a hand or a seat pile, so this story launches its own
-  // flight. It measures the endpoints it owns through refs; a board composition uses useBoardFlights.
-  const deckRef = useRef<HTMLDivElement>(null);
-  const boardRefs = useRef(new Map<string, HTMLDivElement>());
-  const { launch, landingTargets } = useCardFlights();
+  const [deal, setDeal] = useState(0);
+  const { busy } = useCardFlightStatus();
   return <Table places={6} teamCount={1} seats={generalSeats(6, 1)} seatPlacement="auto">
     <Table.Header>Texas Hold'em · 10 / 20</Table.Header>
     <Table.Seat><PokerSeat /></Table.Seat>
     <Table.Center><BoardCenter>
       <PotRow>
-        <PokerPot /><div ref={deckRef} data-community-deck><GameCard size="sm" label="Deck" /></div>
+        <PokerPot /><CardFlights.Deck data-community-deck><GameCard size="sm" label="Deck" /></CardFlights.Deck>
       </PotRow>
       <CardsRow>
-        {POKER_BOARD.map((card) => <div key={card.id} data-community-card={card.id} ref={(node) => {
-          if (node) boardRefs.current.set(card.id, node); else boardRefs.current.delete(card.id);
-        }}><GameCard size="sm" value={card.value} label={card.label} /></div>)}
+        {POKER_BOARD.map((card) => <CardFlights.Target key={card.id} kind="board" cardId={`${deal}:${card.id}`} data-community-card={card.id}>
+          <GameCard size="sm" value={card.value} label={card.label} />
+        </CardFlights.Target>)}
       </CardsRow>
     </BoardCenter></Table.Center>
-    <Table.Dock><Button disabled={landingTargets.size > 0} onClick={() => {
-      const deck = deckRef.current;
-      if (!deck) return;
-      const from = measureCardBox(deck);
-      launch(POKER_BOARD.flatMap((card, index) => {
-        const destination = boardRefs.current.get(card.id);
-        return destination ? [{ card, target: `community:${card.id}`, destination, from, to: measureCardBox(destination), face: 'reveal' as const,
-          durationMs: motionDurationMs.cardDeal, delayMs: index * motionDurationMs.cardDealStagger }] : [];
-      }));
-    }}>Deal board</Button></Table.Dock>
+    <Table.Dock><Button disabled={busy} onClick={() => setDeal((value) => value + 1)}>Deal board</Button></Table.Dock>
   </Table>;
 }
 
@@ -5384,7 +5370,7 @@ function PokerSeat() {
 
 function PokerFixture() {
   return <DeckProvider default="french">
-    <DocsFlightsStage><PokerTable /></DocsFlightsStage>
+    <CardFlights><DocsStage><PokerTable /></DocsStage></CardFlights>
   </DeckProvider>;
 }
 
@@ -5395,11 +5381,11 @@ export const PokerCommunityBoard: Story = {
     a11y: { test: 'error' },
     docs: {
       description: { story: 'Six free-for-all seats, a pot, and a five-card community board. Press Deal board to fly the cards from the deck into the center.' },
-      source: { language: 'tsx', code: `import { useRef } from 'react';
+      source: { language: 'tsx', code: `import { useState } from 'react';
 import { Button, styled } from '@jfrader/ui';
 import { vars } from '@jfrader/tokens/vars';
 import { DeckProvider } from '@jfrader/ui/deck';
-import { CardFlightsProvider, measureCardBox, useCardFlights } from '@jfrader/ui/card-flights';
+import { CardFlights, useCardFlightStatus } from '@jfrader/ui/card-flights';
 import { GameCard } from '@jfrader/ui/game-card';
 import { GameChipStack } from '@jfrader/ui/game-chip-stack';
 import { GameTable, useGameTableSeat, type SeatLike } from '@jfrader/ui/game-table';
@@ -5472,34 +5458,8 @@ function PokerSeat() {
 }
 
 function TexasHoldemTable() {
-  const deckRef = useRef<HTMLDivElement>(null);
-  const cardRefs = useRef(new Map<string, HTMLDivElement>());
-  const { launch, landingTargets } = useCardFlights();
-
-  const handleDeal = () => {
-    const deck = deckRef.current;
-    if (!deck) return;
-    const from = measureCardBox(deck);
-
-    launch(
-      communityCards.flatMap((card, index) => {
-        const destination = cardRefs.current.get(card.id);
-        if (!destination) return [];
-        return [
-          {
-            card,
-            target: \`community:\${card.id}\`,
-            destination,
-            from,
-            to: measureCardBox(destination),
-            face: 'reveal' as const,
-            durationMs: 300,
-            delayMs: index * 60,
-          },
-        ];
-      }),
-    );
-  };
+  const [deal, setDeal] = useState(0);
+  const { busy } = useCardFlightStatus();
 
   return (
     <GameTable places={6} teamCount={1} seats={players} seatPlacement="auto">
@@ -5511,27 +5471,25 @@ function TexasHoldemTable() {
         <BoardCenter>
           <PotRow>
             <PokerPot />
-            <div ref={deckRef}>
+            <CardFlights.Deck>
               <GameCard size="sm" label="Deck" />
-            </div>
+            </CardFlights.Deck>
           </PotRow>
           <CardsRow>
             {communityCards.map((card) => (
-              <div
+              <CardFlights.Target
                 key={card.id}
-                ref={(node) => {
-                  if (node) cardRefs.current.set(card.id, node);
-                  else cardRefs.current.delete(card.id);
-                }}
+                kind="board"
+                cardId={\`\${deal}:\${card.id}\`}
               >
                 <GameCard size="sm" value={card.value} label={card.label} />
-              </div>
+              </CardFlights.Target>
             ))}
           </CardsRow>
         </BoardCenter>
       </GameTable.Center>
       <GameTable.Dock>
-        <Button disabled={landingTargets.size > 0} onClick={handleDeal}>
+        <Button disabled={busy} onClick={() => setDeal((value) => value + 1)}>
           Deal board
         </Button>
       </GameTable.Dock>
@@ -5542,11 +5500,11 @@ function TexasHoldemTable() {
 export default function Example() {
   return (
     <DeckProvider default="french">
-      <CardFlightsProvider>
+      <CardFlights>
         <Frame>
           <TexasHoldemTable />
         </Frame>
-      </CardFlightsProvider>
+      </CardFlights>
     </DeckProvider>
   );
 }` },
@@ -5579,7 +5537,7 @@ export default function Example() {
     const deal = within(first).getByRole('button', { name: 'Deal board' });
     await userEvent.click(deal);
     await expect(deal).toBeDisabled();
-    await expect(canvasElement.ownerDocument.querySelectorAll('[data-ui="card-flight"][data-flight-target^="community:"]')).toHaveLength(5);
+    await expect(canvasElement.ownerDocument.querySelectorAll('[data-ui="card-flight"][data-flight-target^="board:"]')).toHaveLength(5);
     await waitFor(() => expect(canvasElement.ownerDocument.querySelectorAll('[data-ui="card-flight"]')).toHaveLength(0));
     await expect(deal).toBeEnabled();
     for (const card of first.querySelectorAll<HTMLElement>('[data-community-card]')) {

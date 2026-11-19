@@ -75,19 +75,9 @@ export interface LightboxGalleryLabels {
   close: string;
   previous: string;
   next: string;
-  /** @deprecated No longer rendered: double-click the image, or use `zoomIn` and `reset`. Removed in the next major. */
-  zoom: string;
   zoomIn: string;
   zoomOut: string;
   reset: string;
-  /** @deprecated No longer rendered: drag the zoomed image or press the arrow keys. Removed in the next major. */
-  panLeft: string;
-  /** @deprecated No longer rendered: drag the zoomed image or press the arrow keys. Removed in the next major. */
-  panRight: string;
-  /** @deprecated No longer rendered: drag the zoomed image or press the arrow keys. Removed in the next major. */
-  panUp: string;
-  /** @deprecated No longer rendered: drag the zoomed image or press the arrow keys. Removed in the next major. */
-  panDown: string;
   empty: string;
   unavailable: string;
   imageUnavailable: string;

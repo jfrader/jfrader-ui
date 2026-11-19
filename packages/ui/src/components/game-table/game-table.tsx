@@ -270,7 +270,7 @@ export function GameTable<T extends SeatLike>({
   useLayoutEffect(() => {
     const node = surfaceRef.current;
     if (!flightRegistry || !node) return;
-    if (flightRegistry.treeOwned && flightRegistry.tables.size > 0 && !flightRegistry.tables.has(node)) warnFlight('CardFlights supports one GameTable per board.');
+    if (flightRegistry.tables.size > 0 && !flightRegistry.tables.has(node)) warnFlight('CardFlights supports one GameTable per board.');
     flightRegistry.tables.set(node, { node, seats: slots.map((slot) => ({ key: slot.player?.key ?? slot.key, isMe: slot.player?.isMe })) });
     flightRegistry.notify();
     return () => { flightRegistry.tables.delete(node); flightRegistry.notify(); };

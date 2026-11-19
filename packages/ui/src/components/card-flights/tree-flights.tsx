@@ -7,10 +7,10 @@ import { CardRoot, type GameCardRootCustomization, type GameCardRootSlotProps } 
 import { motionDurationMs } from '../../styling/motion-timings';
 import { CARD_FRAME } from '../game-card/card-frame';
 import { useOptionalGameTableSeat } from '../game-table/game-table';
-import { CardFlightsProvider, type CardFlightSpec } from './card-flights';
-import { TreeOwnedContext, useFlightActions, useCardFlightStatus } from './flight-context';
+import { FlightEngine, type FlightSpec } from './flight-engine';
+import { useFlightActions, useCardFlightStatus } from './flight-context';
 import { useFlightRegistry, warnFlight, type TreeFlightNode } from './flight-registry';
-import { dealSequence, FLIGHT_GEOMETRY, measureCardBox, type CardBox } from './geometry';
+import { dealSequence, FLIGHT_GEOMETRY, measureFlightBox, type CardBox } from './geometry';
 import type { CardFlightEvent, FlightId, FlightOutcome } from '../flights/types';
 import { useFlightSurface } from '../flights/flight-provider';
 
@@ -29,7 +29,7 @@ function deckOrigin(nodes: readonly SnapshotNode[], table?: { node: HTMLElement 
   const deck = nodes.find((entry) => entry.role === 'deck');
   if (deck) return deck.box;
   if (!table) return undefined;
-  const box = measureCardBox(table.node);
+  const box = measureFlightBox(table.node);
   const width = box.width * FLIGHT_GEOMETRY.deckWidthRatio;
   return { ...box, width, height: width * CARD_FRAME.ratio, rotate: 0 };
 }
@@ -87,7 +87,7 @@ function TreeEngine({ forehand }: Omit<CardFlightsProps, 'children'>) {
         live.some((entry, index) => entry.node !== previousNodes[index]);
       if (previous.current && !nodeSetChanged && !unseen.length) return;
       measuredNodes.current = live.map((entry) => entry.node);
-      const nodes = live.map((entry) => ({ ...entry, box: measureCardBox(entry.node) }));
+      const nodes = live.map((entry) => ({ ...entry, box: measureFlightBox(entry.node) }));
       const baseline = previous.current;
       previous.current = { nodes };
       if ((!baseline || resync) && !requestedDeal) return;
@@ -98,7 +98,7 @@ function TreeEngine({ forehand }: Omit<CardFlightsProps, 'children'>) {
       const table = registry.tables.values().next().value;
       const ownSeat = table?.seats.find((seat) => seat.isMe)?.key;
       const seatKey = (entry: TreeFlightNode) => entry.seatKey ?? ownSeat ?? '';
-      const specs: CardFlightSpec[] = [];
+      const specs: FlightSpec[] = [];
       if (requestedDeal) {
         actions.reset();
         const from = deckOrigin(nodes, table);
@@ -236,9 +236,9 @@ function BusyReporter({ onBusyChange }: Pick<CardFlightsProps, 'onBusyChange'>) 
 
 /** Animate the committed card tree. First render and resync snapshots appear in place. */
 export function CardFlights({ children, forehand, onBusyChange }: CardFlightsProps) {
-  return <TreeOwnedContext value><CardFlightsProvider headless>{children}
+  return <FlightEngine>{children}
     <TreeEngine forehand={forehand} /><BusyReporter onBusyChange={onBusyChange} />
-  </CardFlightsProvider></TreeOwnedContext>;
+  </FlightEngine>;
 }
 CardFlights.displayName = 'CardFlights';
 CardFlights.Deck = CardFlightsDeck;

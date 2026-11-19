@@ -8,9 +8,9 @@ composed modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **176**; public callable parts: **188**.
-- Families exposing `slots.root`: **122**; remaining without a family-level root slot: **54** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **134**; remaining without family-level interior slots: **42** (includes components without generated anatomy).
+- Public callable families: **175**; public callable parts: **188**.
+- Families exposing `slots.root`: **121**; remaining without a family-level root slot: **54** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **134**; remaining without family-level interior slots: **41** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -107,7 +107,6 @@ panel material. The section has no background, border or radius to migrate.
 | [CardFlights](../packages/ui/src/components/card-flights/tree-flights.tsx) | — | — | — | — | — | `Deck`, `Target` |
 | [CardFlights.Deck](../packages/ui/src/components/card-flights/tree-flights.tsx) | yes | `root` | `root` | — | — | — |
 | [CardFlights.Target](../packages/ui/src/components/card-flights/tree-flights.tsx) | yes | `root` | `root` | — | — | — |
-| [CardFlightsProvider](../packages/ui/src/components/card-flights/card-flights.tsx) | yes | `root` | `root` | — | — | — |
 | [CardStack](../packages/ui/src/components/card-stack/card-stack.tsx) | — | `card`, `content`, `controls`, `empty`, `emptyResetButton`, `hint`, `leftButton`, `leftStamp`, `resetButton`, `rightButton`, `rightStamp`, `stage`, `status`, `undoButton` | `card`, `content`, `controls`, `empty`, `emptyResetButton`, `hint`, `leftButton`, `leftStamp`, `resetButton`, `rightButton`, `rightStamp`, `stage`, `status`, `undoButton` | — | — | — |
 | [Carousel](../packages/ui/src/components/carousel/carousel.tsx) | — | `controls`, `empty`, `indicator`, `nextButton`, `previousButton`, `rotationButton`, `slide`, `status`, `tabList`, `track`, `viewport` | `controls`, `empty`, `indicator`, `nextButton`, `previousButton`, `rotationButton`, `slide`, `status`, `tabList`, `track`, `viewport` | — | — | — |
 | [ChatMessage](../packages/ui/src/components/chat-message/chat-message.tsx) | yes | `article`, `attachments`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `root`, `time` | `article`, `attachments`, `avatar`, `bubble`, `reactions`, `receipt`, `retryButton`, `root`, `time` | — | — | — |
