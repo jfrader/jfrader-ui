@@ -1,10 +1,24 @@
 # Changelog
 
-## Unreleased
+## 1.0.0 - 2026-11-19
+
+`1.0.0` freezes the public API of `@jfrader/tokens`, `@jfrader/styling`, `@jfrader/icons`, and `@jfrader/ui`. Future breaking changes require a major release; additive APIs remain minor releases, and fixes remain patches. This release removes no deprecated APIs.
+
+### Breaking pre-1.0
+
+Consumers upgrading from `0.x` should review these changes from the `0.25` through `0.29` releases, plus the earlier "Breaking pre-1.0" entries below for their starting version.
+
+- In `0.25.0`, `ButtonGroup` replaces `collapseLabels` with `overflow="collapse-labels" | "menu" | "none"`. Use `overflow="collapse-labels"` for the previous behavior.
+- `ChipGroup` and `ToggleGroup` infer their value union from `options`, and their single-mode callbacks include the `''` clear. Computed `string` or `string[]` values can use an explicit type argument, for example `<ChipGroup<string>>`. The `SegmentedControl` shorthand also carries its inferred value into `onOptionIntent`.
+- `InlineEdit` correlates its control slot, `controlProps`, and `controlRef` with `multiline`. Textarea-only attributes require `multiline`; the default control accepts input attributes.
+- `Popover.Content` now dismisses when focus leaves the panel and trigger, without returning focus. Use `closeOnFocusOut={false}` to retain the previous behavior.
 
 ### Added
 
 - `Popover.Content closeOnFocusOut={false}` keeps the panel open when focus leaves. By default, leaving the panel and trigger now dismisses it without returning focus.
+- `ContextMenu closeOnScroll={false}` keeps the menu open when another panel scrolls. The default remains `true`.
+- `ThemeRoot appearance="inherit"` keeps the enclosing palette for local overlay hosts. Roots without this option still default to dark.
+- `GameSeat handLabel` supplies an accessible description of the public hand count while the hidden fan stays decorative.
 
 ### Fixed
 
@@ -17,6 +31,9 @@
 - `UserMenu.Identity` wraps long names and email addresses, including at enlarged text sizes.
 - Desktop `UserMenu` and `Popover` preserve keyboard entry and exit without hidden, tabbable focus guards.
 - `DateRangePicker` uses viewport-relative positioning and keeps focused controls in its scroll viewport when the panel resizes.
+- `NumberField`, `TreeView`, `Select`, and `TimePicker` keep controls usable with large interaction targets and enlarged text. Select popups stay within the available height.
+- Native `Drawer` and `Dialog` shells leave Escape dismissal to the owning overlay, shared form controls settle their values after native form reset, and `Select.Empty` preserves listbox semantics.
+- `Menu` and its composed action menus preserve keyboard navigation without hidden, tabbable focus guards.
 
 ### Changed
 
