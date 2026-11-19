@@ -48,7 +48,7 @@ test('rejects Games barrel imports including aliases, types and namespaces, not 
     "import { GameCard as Card } from '@jfrader/ui';",
     "import type { Deck } from '@jfrader/ui';",
     "import * as UI from '@jfrader/ui';",
-    "import { useBoardFlights } from '@jfrader/ui';",
+    "import { useCardFlightStatus } from '@jfrader/ui';",
   ]) assert.match(checkGames(gameStory(sourceCode(code))).join('\n'), /not the barrel/);
   assert.deepEqual(checkGames(gameStory(sourceCode("import { Button } from '@jfrader/ui'; import { GameCard } from '@jfrader/ui/game-card';"))), []);
 });

@@ -6,10 +6,10 @@ let workbench;
 before(async () => { workbench = await createBrowserWorkbench(); });
 after(async () => workbench?.close());
 
-async function openDocsWithSections(page, id, sections) {
-  await page.goto(`${workbench.baseURL}/iframe.html?id=${id}--default&viewMode=story`);
+async function openDocsWithSections(page, [storyId, docsId], sections) {
+  await page.goto(`${workbench.baseURL}/iframe.html?id=${storyId}&viewMode=story`);
   await page.waitForFunction(() => window.__STORYBOOK_PREVIEW__?.currentRender?.phase === 'finished');
-  await page.evaluate(async ({ id, sections }) => {
+  await page.evaluate(async ({ docsId, sections }) => {
     const preview = window.__STORYBOOK_PREVIEW__;
     const store = preview.storyStoreValue;
     const prepareMeta = store.preparedMetaFromCSFFile.bind(store);
@@ -20,8 +20,8 @@ async function openDocsWithSections(page, id, sections) {
       else docs.sections = sections;
       return { ...meta, parameters: { ...meta.parameters, docs } };
     };
-    await preview.onSetCurrentStory({ storyId: `${id}--docs`, viewMode: 'docs' });
-  }, { id, sections });
+    await preview.onSetCurrentStory({ storyId: docsId, viewMode: 'docs' });
+  }, { docsId, sections });
   await page.locator('.docs-story').first().waitFor();
 }
 
@@ -40,7 +40,7 @@ test('a featured-only first section has no empty heading', async () => {
 test('unknown story names do not break the docs page', async () => {
   const page = await workbench.browser.newPage();
   try {
-    await openDocsWithSections(page, 'data-filtertoolbar', [
+    await openDocsWithSections(page, ['data-filtertoolbar--default', 'data-filtertoolbar--docs'], [
       { title: 'Featured', stories: ['Default'] },
       { title: 'Missing', stories: ['MisspelledStory'] },
       { title: 'Filters', stories: ['Composed'] },
@@ -64,7 +64,7 @@ test('empty sections use the same fallback as absent sections', async () => {
   for (const sections of [null, []]) {
     const page = await workbench.browser.newPage();
     try {
-      await openDocsWithSections(page, 'showcase-paymentflow', sections);
+      await openDocsWithSections(page, ['showcase-paymentflow--default', 'showcase-paymentflow--docs'], sections);
       await page.locator('h2').filter({ hasText: /^Stories$/ }).waitFor();
       examples.push(await page.locator('.docs-story').evaluateAll((elements) => elements.map((element) => element.querySelector('[id^="story--"]')?.id)));
     } finally {
@@ -76,7 +76,7 @@ test('empty sections use the same fallback as absent sections', async () => {
 });
 
 test('partial sections keep every unlisted example after the curated groups', async () => {
-  for (const id of ['inputs-button', 'data-filtertoolbar']) {
+  for (const id of [['inputs-button--default', 'inputs-button--docs'], ['data-filtertoolbar--default', 'data-filtertoolbar--docs']]) {
     const examples = [];
     for (const sections of [null, [{ title: 'Featured', stories: ['Default'] }]]) {
       const page = await workbench.browser.newPage();

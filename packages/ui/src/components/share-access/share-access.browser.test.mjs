@@ -11,8 +11,8 @@ test('sharing previews fit desktop, tablet, and phone viewports', async () => {
     const context = await workbench.browser.newContext({ viewport, reducedMotion: 'reduce' });
     try {
       const page = await context.newPage();
-      for (const story of ['default', 'light', 'link-access', 'rtl']) {
-        await page.goto(`${workbench.baseURL}/iframe.html?id=actions-shareaccess--${story}&viewMode=story`);
+      for (const story of ['actions-shareaccess--default', 'actions-shareaccess--light', 'actions-shareaccess--link-access', 'actions-shareaccess--rtl']) {
+        await page.goto(`${workbench.baseURL}/iframe.html?id=${story}&viewMode=story`);
         const root = page.locator('[data-ui="share-access"]');
         await root.waitFor();
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${story}: preview overflow at ${viewport.width}px`);

@@ -1,28 +1,90 @@
 # Changelog
 
-## Unreleased
+## 1.0.0 - 2026-11-19
 
-### Added
+`1.0.0` freezes the public API of `@jfrader/tokens`, `@jfrader/styling`, `@jfrader/icons`, and `@jfrader/ui`. Future breaking changes require a major release.
 
-- `Popover.Content closeOnFocusOut={false}` keeps the panel open when focus leaves. By default, leaving the panel and trigger now dismisses it without returning focus.
+### Breaking pre-1.0
+
+Consumers upgrading from `0.x` should review the removals below and the "Breaking pre-1.0" entries for their starting version. The latest migration notes are in [0.29.1](#0291---2026-11-16) and [0.29.0](#0290---2026-11-15).
+
+- In `0.25.0`, `ButtonGroup` replaces `collapseLabels` with `overflow="collapse-labels" | "menu" | "none"`. Use `overflow="collapse-labels"` for the previous behavior.
+
+### Removed
+
+The deprecated exports and label keys below are no longer public API.
+
+#### `card-flights`
+
+- `CardFlightsProvider`: use `CardFlights` and `useFlights()` for snapshot resyncs.
+- `useCardFlights`: use `CardFlights` and `useCardFlightStatus()`.
+- `CardFlightsProviderProps`: use `CardFlightsProps`.
+- `CardFlightsSlots` and `CardFlightsSlotProps`: use DOM-less `CardFlights` with a native wrapper.
+- `CardFlightSpec`: render `CardFlights.Target`.
+- `useBoardFlights` and `useDealFlights`: wrap the surface in `FlightProvider` and call `useFlights().deal()`.
+- `usePlayedCardFlights`: render `CardFlights` around the board.
+- `BoardFlightsOptions` and `DealFlightsOptions`: use `CardFlightsProps`.
+- `BoardFlightsResult`: use `useCardFlightStatus()`.
+- `DealFlightPlayer`: render `GameTable` seats.
+- `FlightCard`: use `PlayingCard` and `CardFlights.Target` artwork.
+- `PlayedCardFlightsOptions`: use `CardFlights` around the board.
+- `PlayedFlightCard`: use `GameCardStack`'s `PlayedCard`.
+- `CARD_FLIGHT_ATTRIBUTES`: render stock parts or `CardFlights.Target`.
+- `flightTarget` and `measureCardBox`: register `CardFlights.Target`.
+
+#### `photo-grid`
+
+- `PhotoGridLabels.larger` and `PhotoGridLabels.smaller`: use `columns` to name each density toggle.
+
+#### `lightbox-gallery`
+
+- `LightboxGalleryLabels.zoom`: use `zoomIn` and `reset`, or double-click the image.
+- `LightboxGalleryLabels.panLeft`, `LightboxGalleryLabels.panRight`, `LightboxGalleryLabels.panUp`, and `LightboxGalleryLabels.panDown`: drag the zoomed image or press the arrow keys.
+
+## 0.29.2 - 2026-11-16
 
 ### Fixed
 
 - `DateRangePicker` dismisses when a viewport resize pushes its trigger off screen, instead of staying anchored outside the window.
 - Published declaration files use explicit relative specifiers, so `@jfrader/ui`, `@jfrader/icons`, `@jfrader/styling` and `@jfrader/tokens` resolve under `moduleResolution: "node16"` and `"nodenext"`. Wildcard re-exports keep their names, and `skipLibCheck: false` no longer reports TS2834 in the published types.
+
+## 0.29.1 - 2026-11-16
+
+### Breaking pre-1.0
+
+- `ChipGroup` and `ToggleGroup` infer their value union from `options`, and their single-mode callbacks include the `''` clear. Computed `string` or `string[]` values can use an explicit type argument, for example `<ChipGroup<string>>`. The `SegmentedControl` shorthand also carries its inferred value into `onOptionIntent`.
+- `InlineEdit` correlates its control slot, `controlProps`, and `controlRef` with `multiline`. Textarea-only attributes require `multiline`; the default control accepts input attributes.
+
+### Added
+
+- `GameSeat handLabel` supplies an accessible description of the public hand count while the hidden fan stays decorative.
+
+### Fixed
+
 - A `Popover.Content` that a consumer focuses itself now tabs into its own first control, instead of skipping the panel and moving focus to the next element on the page.
 - `MultiSelect` joins the shared overlay dismissal tree, so a popup opened inside another overlay closes alone and a press inside it no longer dismisses the parent.
 - `InputGroup` and `MentionInput` take their control heights and typography from the shared control-size scale, matching `TextField` at every size.
 - On coarse pointers, overlay triggers (Dialog, Drawer, BottomSheet, DialogStack, Popover, Menu, Tooltip, HoverCard, ContextMenu, and CommandPalette) reach the 44px `size.touch` height, and the Dialog, Drawer, BottomSheet, and DialogStack close buttons, the BottomSheet handle, and DialogStack Back reach 44×44px. Fine-pointer sizes are unchanged.
+- Disabling layer dismissal also disables its topmost Escape handler.
+
+### Changed
+
+- New named public types: `DeckArtProviderProps`, `DatePickerSlotProps`, `TooltipSlotProps`, and one props type per `GameTable` part.
+
+## 0.29.0 - 2026-11-15
+
+### Breaking pre-1.0
+
+- `Popover.Content` now dismisses when focus leaves the panel and trigger, without returning focus. Use `closeOnFocusOut={false}` to retain the previous behavior.
+
+### Fixed
+
 - `UserMenu.Identity` wraps long names and email addresses, including at enlarged text sizes.
 - Desktop `UserMenu` and `Popover` preserve keyboard entry and exit without hidden, tabbable focus guards.
 - `DateRangePicker` uses viewport-relative positioning and keeps focused controls in its scroll viewport when the panel resizes.
 
 ### Changed
 
-- `ChipGroup`, `ToggleGroup` and the `SegmentedControl` shorthand infer their value union from `options`, and single-mode callbacks include the `''` clear. A computed `string` or `string[]` value can opt out with an explicit type argument, for example `<ChipGroup<string>>`.
-- `InlineEdit` correlates its control slot, `controlProps` and `controlRef` with `multiline`. The default control props are input attributes, so textarea-only attributes require `multiline`.
-- New named public types: `DeckArtProviderProps`, `DatePickerSlotProps`, `TooltipSlotProps`, and one props type per `GameTable` part.
 - Development-only diagnostics route through one `devWarn`/`devError` seam in `src/utils/dev.ts`. Production builds no longer emit them, and development output is unchanged.
 - Hook-using source modules declare their client boundary, matching the `'use client'` banner on published chunks.
 
@@ -579,7 +641,7 @@ First published build of the icon system. Same content as 0.19.0, which stayed i
 - `Deck`, `defineDeck` and `DeckProvider`: declare a card set — suits, ranks, per-card face art and a back — and register it by id. The built-in Spanish and French decks are two instances of the same API (`spanishDeck`, `frenchDeck`), and a partial set degrades to the printed face instead of an empty card.
 - `Pattern`: decorative SVG tiles (`stripes`, `diagonal`, `checks`, `dots`, `waves`, `chevron`) with continuous tile edges, token inks, tile sizes and scaling, including custom flipped-card artwork. Forced colors hides the pattern and preserves the enclosing surface and border.
 - `GameHand`: card fans with keyboard selection and an explicit play action, plus count-only hidden opponent hands.
-- `CardFlightsProvider` deals and plays cards between measured board slots, with themed overlays, interruptible flights and immediate reduced-motion landing.
+- The legacy card-flight provider deals and plays cards between measured board slots, with themed overlays, interruptible flights and immediate reduced-motion landing.
 - `GameCardStack`: keep played cards grouped per player, inspect a pile with the keyboard and spread revealed hands. `GameCardStack.Pile` renders one player's pile where you place it — including inside a GameTable play region — while the root keeps a measured grid for standalone use. Supports any card limit, RTL and reduced motion. Replaces `TrickStacks`, which is gone.
 - `GameTable` renders one measured play region per place through `renderPlay(slot, index, geometry)`: the inward ring where a player's played cards belong, sharing the seat's direction and never overlapping seats, neighbours or the centre.
 - `GameTable` takes any seat count from 2 up and a `teamCount` for round-robin teams (default 2, `1` for free-for-all), with per-team capacity validation and seat teams named in the error. `GameTable`'s `center` is the measured community region — Hold'em board, pot or deck — and the poker example composes six seats, a five-card board and a dealt board through the existing flight API.
@@ -631,7 +693,7 @@ First published build of the icon system. Same content as 0.19.0, which stayed i
 - The docs front consumes `@jfrader/storybook-docs@0.9.2`: the sidebar paints its whole column instead of stopping where the sticky list ends, so a long page no longer shows the page background under the menu.
 - The Games pages document the component, not its history: migration notes and test narration are gone, technical stories are named for the state they show (or keep out of the docs), each page opens with a full composition and the short usage comes first. Stories and assertions are unchanged.
 - Card-flight fixes from the independent review: changing `resyncKey` now cancels the flights in progress and restores their destinations before the new baseline, `GameSeat`'s `handCount` shorthand registers with its seat so a composed rival hand receives deal flights and play origins, a flight's back resolves against the same deck as its front, and `GameHand`, `GameCardStack` and the flight frame combine `data-ui` identity tokens instead of overwriting them.
-- `CardFlights` composes a board with one hook: `useBoardFlights({ hand, handKey, plays, foregroundIdx, seats })` deals a new hand and flies accepted plays, and returns `{ landing, reset }`. `GameHand`, `GameHand.Hidden`, `GameCardStack.Pile` and `GameTable` register their nodes inside the provider, so a composition never looks up the DOM and never builds a separate player list; each play is identified by the id your app gives it. The deal/play hooks and the marker attributes stay as the low-level escape hatch.
+- The legacy board-flight hook deals a new hand and flies accepted plays, and returns `{ landing, reset }`. `GameHand`, `GameHand.Hidden`, `GameCardStack.Pile` and `GameTable` register their nodes inside the provider, so a composition never looks up the DOM and never builds a separate player list; each play is identified by the id your app gives it. The legacy deal/play hooks and marker attributes provide the low-level escape hatch.
 - The `GameSeat` turn ring re-samples the clock when its duration changes and schedules its milestones from the current time, so a callback added late cannot fire `ending` past a deadline that already passed. Deck registration and lookup use a `Map`, so `constructor`, `toString` and `__proto__` raise `UnknownDeckError` like any unknown id instead of reaching through the prototype.
 - `ButtonGroup`, `RadioCards` and `ScrollArea` document why their highlight, ring and thumb anchors stay physical (`left`/`top`): they follow measured `DOMRect` and `scrollLeft` offsets, which are physical in RTL too. No visual change.
 - `GameResult` closes a match without shipping the celebration: an outcome as data (`won | lost | draw`) with consumer copy in its slots, slots for eyebrow, title, summary, reward, actions and the consumer's own effect, and the recipe for a deterministic celebration with a reduced-motion branch documented instead of baked in.
@@ -640,7 +702,7 @@ First published build of the icon system. Same content as 0.19.0, which stayed i
 - `Deck.faces` nests the artwork map by suit and rank (`{ oros: { 1: <AsDeOros /> } }`) instead of the concatenated `'oros-1'` key, so ids containing the separator can no longer collide. A partial map keeps degrading per card: artwork, then the printed mark and glyph, then raw text.
 - `GameHand` no longer throws focus away when it becomes unavailable: the cards and the confirmation carry `aria-disabled` and keep their place in the tab order, with activation blocked in the handler. This also drops the native `disabled` attribute that sent focus to `body` while a card was in flight.
 - `GameSeat`: one player's place at a table — avatar, name, badges, points, hidden hand and chat as slots, with `component` / `slots.root` / `slotProps` for the parts. `turn={{ deadline, durationMs, now }}` draws a CSS-animated turn ring in a single write per turn (no interval, no per-tick render) and reports `half`, `quarter`, `extended` and `ending` milestones for consumer cues. Import it from `@jfrader/ui/game-seat`.
-- `CardFlightsProvider` owns its board scope: it renders the wrapper itself (with `component`, `slots.root`, `slotProps.root`, `className`, `sx` and `ref`) instead of asking the consumer for a `div` and a `scopeRef`. Passing `scopeRef` still points the scope at a consumer-owned element and skips the wrapper. The CardFlights documentation lists one entry again: the flight regression stories live with the component, marked out of the docs.
+- The legacy flight provider owns its board scope: it renders the wrapper itself (with `component`, `slots.root`, `slotProps.root`, `className`, `sx` and `ref`) instead of asking the consumer for a `div` and a `scopeRef`. Passing `scopeRef` still points the scope at a consumer-owned element and skips the wrapper. The CardFlights documentation lists one entry again: the flight regression stories live with the component, marked out of the docs.
 - **Breaking for `@jfrader/ui@0.8.x`:** game components and `Scene` are opt-in subpaths now — the package root no longer re-exports `game-table`, `game-card-stack`, `game-card`, `game-hand`, `flip-game-card`, `card-flights` or `scene`. Import them as `@jfrader/ui/game-table` and friends; the subpath exports themselves are unchanged.
 - Card-flight destinations are explicit ids: a play whose id no longer matched a rendered pile used to skip its flight in silence, and two plays could collide when their player or card keys contained hyphens. The regression story fails when the destination link is broken or the old concatenation is restored.
 - The Spanish `FlipGameCard` example keeps a Spanish back: the inherited back used to come from the default deck while the front was Spanish. Missing back names now raise `MissingBackLabelError` instead of silently leaving the card unnamed.

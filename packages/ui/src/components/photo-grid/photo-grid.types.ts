@@ -124,10 +124,6 @@ export interface PhotoGridLabels {
   clearOption: string;
   soldOut: string;
   inspect: string;
-  /** @deprecated No longer rendered: each density step is a toggle named by `columns`. Removed in the next major. */
-  larger: string;
-  /** @deprecated No longer rendered: each density step is a toggle named by `columns`. Removed in the next major. */
-  smaller: string;
   density: string;
   empty: string;
   unavailable: string;

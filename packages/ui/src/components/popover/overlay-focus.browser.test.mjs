@@ -74,7 +74,12 @@ async function withStory(story, viewport, run, theme = 'light') {
   const context = await workbench.browser.newContext({ viewport, reducedMotion: 'reduce' });
   try {
     const page = await context.newPage();
-    await page.goto(`${workbench.baseURL}/iframe.html?id=surfaces-overlay-focus-regressions--${story}&viewMode=story&embed=true`);
+    const stories = {
+      owner: 'surfaces-overlay-focus-regressions--owner', compact: 'surfaces-overlay-focus-regressions--compact',
+      dates: 'surfaces-overlay-focus-regressions--dates', 'dates-spanish': 'surfaces-overlay-focus-regressions--dates-spanish',
+      'compact-focused': 'surfaces-overlay-focus-regressions--compact-focused',
+    };
+    await page.goto(`${workbench.baseURL}/iframe.html?id=${stories[story]}&viewMode=story&embed=true`);
     await page.locator('#storybook-root button').first().waitFor();
     await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme);
     await run(page);

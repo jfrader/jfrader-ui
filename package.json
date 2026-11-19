@@ -23,7 +23,7 @@
     "verify:icons": "pnpm --filter @jfrader/icons exec tsx --test scripts/verify.test.ts && pnpm --filter @jfrader/icons exec tsx scripts/verify.ts",
     "verify:docs": "pnpm --filter @jfrader/storybook verify:docs",
     "verify:api": "pnpm --filter @jfrader/storybook verify:api",
-    "docs:build": "node scripts/build-docs.mjs"
+    "docs:build": "node --test scripts/verify-browser-stories.test.mjs && node scripts/build-docs.mjs"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

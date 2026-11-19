@@ -8,8 +8,7 @@ export interface CardBox {
   rotate: number;
 }
 
-/** @deprecated Register CardFlights.Target instead. Removed in the next major release. */
-export function measureCardBox(element: HTMLElement): CardBox {
+export function measureFlightBox(element: HTMLElement): CardBox {
   const rect = element.getBoundingClientRect();
   const view = element.ownerDocument.defaultView;
   let rotate = 0;
@@ -28,20 +27,6 @@ export function measureCardBox(element: HTMLElement): CardBox {
     height: (element.offsetHeight || rect.height) * scale, rotate,
   };
 }
-
-// GameTable supplies the surface; GameHand emits card IDs, Hidden emits playerKey + index; GameCardStack owns data-played-key.
-/** @deprecated Render stock parts or CardFlights.Target instead. Removed in the next major release. */
-export const CARD_FLIGHT_ATTRIBUTES = {
-  surface: 'data-game-surface', handCard: 'data-hand-card', hiddenCard: 'data-seat-hidden-card',
-  hiddenCardIndex: 'data-seat-hidden-card-index', playedCard: 'data-played-key',
-} as const;
-
-/** @deprecated Render CardFlights.Target instead. Removed in the next major release. */
-export const flightTarget = {
-  hand: (cardKey: string) => `hand:${cardKey}`,
-  seatCard: (playerKey: string, cardIdx: number) => `seat:${playerKey}:${cardIdx}`,
-  played: (playedKey: string) => `played:${playedKey}`,
-};
 
 export const FLIGHT_GEOMETRY = {
   maxLiftPx: 120, liftRatio: 0.32, peakScale: 1.14, perspectivePx: CARD_PERSPECTIVE.flightPx,

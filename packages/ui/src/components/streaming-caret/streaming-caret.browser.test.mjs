@@ -14,8 +14,8 @@ test('forced colors keep every caret size visible with reduced motion', async ()
   });
   try {
     const page = await context.newPage();
-    for (const story of ['default', 'small', 'large']) {
-      await page.goto(`${workbench.baseURL}/iframe.html?id=feedback-streamingcaret--${story}&viewMode=story`);
+    for (const story of ['feedback-streamingcaret--default', 'feedback-streamingcaret--small', 'feedback-streamingcaret--large']) {
+      await page.goto(`${workbench.baseURL}/iframe.html?id=${story}&viewMode=story`);
       const caret = page.locator('[data-ui="streaming-caret"]');
       await caret.waitFor();
       const paint = await caret.evaluate((element) => {

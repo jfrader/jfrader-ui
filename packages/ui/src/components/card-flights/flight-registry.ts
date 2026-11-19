@@ -2,15 +2,11 @@
 
 import { createContext, useContext } from 'react';
 import { isDev, devWarn } from '../../utils/dev';
-import { measureCardBox, type CardBox } from './geometry';
 import type { GameCardValue } from '../game-card';
 import type { ReactNode } from 'react';
 
 export function warnFlight(message: string) {
   if (isDev) devWarn(message);
-}
-export function assertLegacyFlightEngine(treeOwned: boolean | undefined) {
-  if (treeOwned && isDev) throw new Error('Do not mix legacy flight hooks with CardFlights. Render the card tree instead.');
 }
 
 /** Stable card identity shared by hands and play destinations. */
@@ -28,13 +24,12 @@ export interface TreeFlightNode {
 }
 
 export interface FlightSeat { key: string; isMe?: boolean }
-export interface FlightNode { node: HTMLElement; box?: CardBox }
+export interface FlightNode { node: HTMLElement }
 export interface FlightTable { node: HTMLElement; seats: readonly FlightSeat[] }
 
 export function createFlightRegistry() {
   const listeners = new Set<() => void>();
   return {
-    treeOwned: false,
     tree: new Map<HTMLElement, TreeFlightNode>(),
     notify: () => listeners.forEach((listener) => listener()),
     subscribe: (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; },
@@ -55,7 +50,6 @@ export function registerFlightNode<K>(nodes: Map<K, FlightNode> | undefined, key
   entries.set(node, entry);
   nodes.set(key, entry);
   return () => {
-    entry.box = measureCardBox(node);
     if (nodes.get(key) === entry) nodes.delete(key);
   };
 }

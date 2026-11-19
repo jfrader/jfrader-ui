@@ -146,9 +146,9 @@ test('speaking moves the whole volume at steady output while idle and listening 
   const context = await workbench.browser.newContext({ reducedMotion: 'no-preference' });
   try {
     const spans = {};
-    for (const state of ['default-idle', 'listening', 'speaking']) {
+    for (const [state, story] of [['default-idle', 'media-voiceorb--default-idle'], ['listening', 'media-voiceorb--listening'], ['speaking', 'media-voiceorb--speaking']]) {
       const page = await context.newPage();
-      await page.goto(`${workbench.baseURL}/iframe.html?id=media-voiceorb--${state}&viewMode=story`);
+      await page.goto(`${workbench.baseURL}/iframe.html?id=${story}&viewMode=story`);
       await page.getByRole('img').waitFor();
       spans[state] = await page.evaluate(async () => {
         const drawing = document.querySelector('[data-ui="voice-orb-visual"] canvas').getContext('2d');

@@ -11,7 +11,7 @@ const source = "parameters: { docs: { source: { code: `import { ThemeRoot } from
 
 test('providers and null children require authored meta Usage, including inherited autodocs', () => {
   for (const metadata of [
-    'component: DeckProvider', 'component: CardFlightsProvider', 'component: ThemeRoot',
+    'component: DeckProvider', 'component: FlightProvider', 'component: ThemeRoot',
     'component: UI.DeckProvider', 'component: DialogStack, args: { children: null }',
   ]) {
     assert.equal(checkUsage(story(metadata)).length, 1);

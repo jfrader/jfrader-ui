@@ -267,8 +267,8 @@ test('ordinary Select keeps its sticky list adjacent in a short viewport and gro
 });
 
 test('composed Select actions and callback history wrap without losing their full text', async () => {
-  for (const story of ['composed', 'controlled']) for (const enlarged of [false, true]) {
-    await withStory(`inputs-select--${story}`, async page => {
+  for (const story of ['inputs-select--composed', 'inputs-select--controlled']) for (const enlarged of [false, true]) {
+    await withStory(story, async page => {
       if (enlarged) await doubleText(page);
       await assertViewportText(page);
       const trigger = page.getByRole('combobox', { name: 'Fruit', exact: true });
@@ -277,7 +277,7 @@ test('composed Select actions and callback history wrap without losing their ful
       await trigger.press('End');
       await trigger.press('Enter');
       assert.equal(await trigger.textContent(), 'Cherry');
-      if (story === 'controlled') assert.equal(await page.getByLabel('Callback order').textContent(), 'open:true,value:cherry,open:false');
+      if (story === 'inputs-select--controlled') assert.equal(await page.getByLabel('Callback order').textContent(), 'open:true,value:cherry,open:false');
       await assertViewportText(page);
       await page.getByRole('button', { name: 'After', exact: true }).click();
       assert.ok(await page.getByRole('button', { name: 'After', exact: true }).evaluate(element => document.activeElement === element));
@@ -314,9 +314,9 @@ test('ordinary Select respects a smaller composed authored maximum and enlarged 
   }, { width: 844, height: 390 });
 });
 
-for (const story of ['long-list', 'viewport-edge']) {
+for (const story of ['inputs-select--long-list', 'inputs-select--viewport-edge']) {
   test(`ordinary Select at ${story} keeps first and last options adjacent and reachable`, async () => {
-    await withStory(`inputs-select--${story}`, async page => {
+    await withStory(story, async page => {
       const trigger = page.getByRole('combobox');
       await trigger.click();
       await page.getByRole('listbox').waitFor();
@@ -427,7 +427,7 @@ for (const { presentation, enlarged } of [
   { presentation: 'list', enlarged: true },
 ]) {
   test(`TimePicker ${presentation} retains adjacent bounds and canonical selection after actual ancestor wheel${enlarged ? ' with 200% RTL text' : ''}`, async () => {
-    await withStory(`inputs-timepicker--ancestor-scroll${presentation === 'dial' ? '-dial' : ''}`, async page => {
+    await withStory(presentation === 'dial' ? 'inputs-timepicker--ancestor-scroll-dial' : 'inputs-timepicker--ancestor-scroll', async page => {
       const host = page.getByTestId('time-scroll-host');
       const trigger = page.getByRole('combobox', { name: 'Scroll time' });
       if (enlarged) {
@@ -542,7 +542,7 @@ test('TimePicker portrait dial retains virtual focus, keyboard selection and poi
 
 for (const rejected of [false, true]) {
   test(`dynamic empty Select preserves slot content, registry navigation, and ${rejected ? 'rejected' : 'accepted'} payload`, async () => {
-    await withStory(`inputs-select--${rejected ? 'rejected-empty' : 'dynamic-empty'}`, async page => {
+    await withStory(rejected ? 'inputs-select--rejected-empty' : 'inputs-select--dynamic-empty', async page => {
       const trigger = page.getByRole('combobox', { name: 'Dynamic workspace' });
       const list = page.getByRole('listbox', { name: 'Dynamic workspace' });
       const empty = page.getByTestId('forwarded-empty');
@@ -639,7 +639,8 @@ test('native Dialog deepest child precedes popover and parent; focus and backwar
 
 for (const mode of ['child-escape-rejected', 'parent-escape-rejected', 'child-escape-cancel-veto']) {
   test(`native Dialog keeps ${mode} truthful across trusted Escape requests`, async () => {
-    await withStory(`surfaces-dialog--${mode}`, async page => {
+    const stories = { 'child-escape-rejected': 'surfaces-dialog--child-escape-rejected', 'parent-escape-rejected': 'surfaces-dialog--parent-escape-rejected', 'child-escape-cancel-veto': 'surfaces-dialog--child-escape-cancel-veto' };
+    await withStory(stories[mode], async page => {
       await page.getByRole('button', { name: 'Open child Escape dialog' }).click();
       const dialog = page.getByRole('dialog', { name: 'Child Escape dialog' });
       const trigger = dialog.getByRole('combobox', { name: 'Fruit', exact: true });
@@ -705,7 +706,7 @@ test('native Dialog leaves composition Escape to its input before ordinary child
 
 for (const contained of [false, true]) {
   test(`DialogStack ${contained ? 'contained' : 'native'} pops only after its child trusted Escape`, async () => {
-    await withStory(`surfaces-dialogstack--nested-popover${contained ? '-contained' : ''}`, async page => {
+    await withStory(contained ? 'surfaces-dialogstack--nested-popover-contained' : 'surfaces-dialogstack--nested-popover', async page => {
       const opener = page.getByRole('button', { name: 'Settings', exact: true });
       await opener.click();
       const shell = page.getByRole('dialog', { name: 'Settings', exact: true });
@@ -850,7 +851,7 @@ test('a retained controlled-open Select inside a closed native dialog cannot vet
 
 for (const branch of ['hidden-branch-child', 'outer-alone']) {
   test(`${branch} permits outer trusted Escape and normal focus return`, async () => {
-    await withStory(`surfaces-dialog--${branch}-escape`, async page => {
+    await withStory(branch === 'hidden-branch-child' ? 'surfaces-dialog--hidden-branch-child-escape' : 'surfaces-dialog--outer-alone-escape', async page => {
       await observeRetainedNativeEvents(page);
       const outer = page.locator('dialog[data-escape-owner="outer"]');
       await page.waitForFunction(() => document.querySelector('dialog[data-escape-owner="outer"]')?.open);
@@ -1066,7 +1067,7 @@ for (const { child, width, enlarged } of [
   { child: true, width: 320, enlarged: true },
 ]) {
   test(`native Drawer ${child ? 'ignores a retained hidden child' : 'alone accepts closure'} after trusted Escape${enlarged ? ' at 320px with 200% text' : ''}`, async () => {
-    await withStory(`surfaces-drawer--${child ? 'hidden-native-owner' : 'native-owner-alone'}`, async page => {
+    await withStory(child ? 'surfaces-drawer--hidden-native-owner' : 'surfaces-drawer--native-owner-alone', async page => {
       await observeRetainedNativeEvents(page);
       const opener = page.getByRole('button', { name: 'Open owner drawer', exact: true });
       await settleCss(page);

@@ -17,10 +17,9 @@ test('booking and game previews keep their controls inside narrow viewports', as
         ['showcase-bookingpill--docs', 'booking-pill'],
         ['showcase-controlcenter--default', 'control-center'],
         ['showcase-controlcenter--docs', 'control-center'],
-        ['games-cardflights--deal-and-play', 'game-table'],
         ['games-cardflights--composed-board', 'game-table'],
-        ['games-cardflights--every-card-deals', 'game-table'],
-        ['games-cardflights--spanish-flight-back', 'card-flight'],
+        ['games-cardflights--large-hand', 'game-table'],
+        ['games-cardflights--spanish-back', 'card-flights-target'],
         ['games-flipgamecard--sizes', 'flip-game-card'],
       ]) {
         await page.goto(`${workbench.baseURL}/iframe.html?id=${story}&viewMode=${story.endsWith('--docs') ? 'docs' : 'story'}`);

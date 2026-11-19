@@ -227,7 +227,7 @@ export const ArtSetsAndRegistrations: Story = {
       flushSync(() => root.render(render()));
       await expect(measurements).not.toHaveBeenCalled();
       flushSync(() => root.render(null));
-      await expect(measurements).toHaveBeenCalledTimes(7);
+      await expect(measurements).not.toHaveBeenCalled();
       await expect(registry.hand.size).toBe(0);
       await expect(registry.played.size).toBe(0);
       await expect(registry.hidden.size).toBe(0);

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Component, StrictMode, useRef, useState, type ReactNode } from 'react';
+import { StrictMode, useRef, useState, type ReactNode } from 'react';
 import { expect, spyOn, waitFor } from 'storybook/test';
 import { vars } from '@jfrader/tokens/vars';
 import { styled } from '../../index';
@@ -11,9 +11,9 @@ import { GameCardStack } from '../game-card-stack';
 import { GameTable } from '../game-table';
 import { Surface } from '../surface';
 import { ThemeRoot } from '../theme-root';
-import { CardFlights, useBoardFlights, useCardFlightOrigin, useCardFlightStatus, type PlayingCard } from './index';
+import { CardFlights, useCardFlightOrigin, useCardFlightStatus, type PlayingCard } from './index';
 import { FlightProvider, useFlights } from '../flights';
-import { measureCardBox } from './geometry';
+import { measureFlightBox } from './geometry';
 
 const STAGE_MAX_INLINE_SIZE = 640;
 const BOARD_MAX_INLINE_SIZE = 480;
@@ -66,15 +66,15 @@ function QueueExample() {
 /** `compact` shows the docs controls; `full` adds the resync and burst controls the regression stories drive. */
 type ControlMode = 'compact' | 'full';
 
-function MatchTree({ plays, controls, onPlay, onBurst, onDeal, onResync, onClear }: {
-  plays: Play[]; controls: ControlMode; onPlay: (card: GameHandCard) => void; onBurst: () => void; onDeal: () => void; onResync: () => void; onClear: () => void;
+function MatchTree({ plays, controls, handCards = cards, onPlay, onBurst, onDeal, onResync, onClear }: {
+  plays: Play[]; controls: ControlMode; handCards?: GameHandCard[]; onPlay: (card: GameHandCard) => void; onBurst: () => void; onDeal: () => void; onResync: () => void; onClear: () => void;
 }) {
   const own = plays.filter((play) => play.playerKey === 'own');
   const rival = plays.filter((play) => play.playerKey === 'rival');
   return <>
     <Board><GameTable places={2} seats={seats}>
-      <GameTable.Seat slotKey="rival"><GameHand.Hidden count={cards.length - rival.length} label="Rival hand" /></GameTable.Seat>
-      <GameTable.Dock><ResponsiveHand cards={cards.filter((card) => !own.some((play) => play.cardId === card.id))}
+      <GameTable.Seat slotKey="rival"><GameHand.Hidden count={handCards.length - rival.length} label="Rival hand" /></GameTable.Seat>
+      <GameTable.Dock><ResponsiveHand cards={handCards.filter((card) => !own.some((play) => play.cardId === card.id))}
         ><GameHand.Confirm onPlay={onPlay}>Play selected</GameHand.Confirm></ResponsiveHand></GameTable.Dock>
       {seats.map((seat) => <GameTable.Play key={seat.key} slotKey={seat.key}>
         <GameCardStack.Pile playerKey={seat.key} label={`${seat.key} pile`} visible={3} cards={plays.filter((play) => play.playerKey === seat.key)} />
@@ -89,8 +89,8 @@ function MatchTree({ plays, controls, onPlay, onBurst, onDeal, onResync, onClear
 function Match(props: Parameters<typeof MatchSurface>[0]) {
   return <FlightProvider><MatchSurface {...props} /></FlightProvider>;
 }
-function MatchSurface({ theme = 'dark', below = false, rtl = false, controls = 'compact' }: {
-  theme?: 'dark' | 'light'; below?: boolean; rtl?: boolean; controls?: ControlMode;
+function MatchSurface({ theme = 'dark', below = false, rtl = false, controls = 'compact', handCards = cards }: {
+  theme?: 'dark' | 'light'; below?: boolean; rtl?: boolean; controls?: ControlMode; handCards?: GameHandCard[];
 }) {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   const flights = useFlights();
@@ -100,13 +100,13 @@ function MatchSurface({ theme = 'dark', below = false, rtl = false, controls = '
     { ...card, id: `reply-${card.id}`, cardId: `rival-${card.id}`, playerKey: 'rival' }]);
   return <div ref={setHost} dir={rtl ? 'rtl' : undefined}><ThemeRoot theme={theme} portalContainer={host}><DemoTheme>
     <CardFlights forehand="rival">
-      {below ? <BelowState controls={controls} /> : <MatchTree plays={plays} controls={controls} onPlay={accept}
+      {below ? <BelowState controls={controls} /> : <MatchTree plays={plays} controls={controls} handCards={handCards} onPlay={accept}
         onDeal={() => { setPlays([]); flights.deal(); }} onResync={() => {
           flights.resync();
-          const card = required(cards.at(-1));
+          const card = required(handCards.at(-1));
           setPlays([{ ...card, id: 'server-four', cardId: card.id, playerKey: 'own' }]);
         }} onClear={() => setPlays([])}
-        onBurst={() => setPlays(cards.map((card) => ({ ...card, id: `play-${card.id}`, cardId: card.id, playerKey: 'own' })))} />}
+        onBurst={() => setPlays(handCards.map((card) => ({ ...card, id: `play-${card.id}`, cardId: card.id, playerKey: 'own' })))} />}
     </CardFlights>
   </DemoTheme></ThemeRoot></div>;
 }
@@ -258,9 +258,9 @@ export const ComposedBoard: Story = {
     await userEvent.click(canvas.getByRole('button', { name: 'Play selected' }));
     await expect(canvasElement.querySelector('[data-played-key]')).toBeNull();
     await landed(canvasElement);
-    const rivalOrigin = measureCardBox(required([...canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-hand-hidden-card"]')].at(-1)));
+    const rivalOrigin = measureFlightBox(required([...canvasElement.querySelectorAll<HTMLElement>('[data-ui="game-hand-hidden-card"]')].at(-1)));
     await userEvent.click(hand);
-    const origin = measureCardBox(hand);
+    const origin = measureFlightBox(hand);
     await userEvent.click(canvas.getByRole('button', { name: 'Play selected' }));
     await expect(flights(canvasElement)).toHaveLength(2);
     const own = required(flights(canvasElement).find((node) => node.dataset.flightTarget === 'played:play-ace'));
@@ -268,8 +268,8 @@ export const ComposedBoard: Story = {
     const effect = required(own.getAnimations()[0]?.effect);
     if (!(effect instanceof KeyframeEffect)) throw new Error('Missing travel effect');
     const pose = new DOMMatrixReadOnly(String(effect.getKeyframes()[0]?.transform));
-    await expect(pose.e).toBeCloseTo(origin.cx - measureCardBox(destination).width / 2, 2);
-    await expect(pose.f).toBeCloseTo(origin.cy - measureCardBox(destination).height / 2, 2);
+    await expect(pose.e).toBeCloseTo(origin.cx - measureFlightBox(destination).width / 2, 2);
+    await expect(pose.f).toBeCloseTo(origin.cy - measureFlightBox(destination).height / 2, 2);
     const rival = required(flights(canvasElement).find((node) => node.dataset.flightTarget === 'played:reply-ace'));
     const rivalEffect = required(rival.getAnimations()[0]?.effect);
     if (!(rivalEffect instanceof KeyframeEffect)) throw new Error('Missing rival travel effect');
@@ -279,6 +279,30 @@ export const ComposedBoard: Story = {
     await landed(canvasElement);
     await expect(canvas.getByLabelText('Flight status')).toHaveTextContent('Ready');
   },
+};
+
+const largeHand = [...cards,
+  { id: 'five', label: 'Five of spades', value: { deck: 'french', suit: 'spades', rank: 5 } },
+  { id: 'six', label: 'Six of spades', value: { deck: 'french', suit: 'spades', rank: 6 } },
+] satisfies GameHandCard[];
+
+export const LargeHand: Story = {
+  tags: ['!autodocs'], render: () => <Match handCards={largeHand} />,
+};
+
+function SpanishBackExample() {
+  const flights = useFlights();
+  const back = <GameCard size="sm" label="Spanish back" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} face="back" />;
+  return <CardFlights>
+    <CustomBoard>
+      <CardFlights.Target kind="hand" cardId="spanish" face="down" back={back}>{back}</CardFlights.Target>
+    </CustomBoard>
+    <Controls><Button onClick={() => flights.deal()}>Deal Spanish card</Button><Status /></Controls>
+  </CardFlights>;
+}
+
+export const SpanishBack: Story = {
+  tags: ['!autodocs'], render: () => <FlightProvider><SpanishBackExample /></FlightProvider>,
 };
 
 /** Play into a custom node without a GameCardStack. */
@@ -399,7 +423,7 @@ export function CustomBoard() {
   play: async ({ canvas, canvasElement, userEvent }) => {
     // Move the board after mount, as scrolling a docs page does, so a mount-time measurement goes stale.
     canvasElement.style.paddingBlockStart = '120px';
-    const origin = measureCardBox(required(canvasElement.querySelector<HTMLElement>('[data-hand-card="custom"]')));
+    const origin = measureFlightBox(required(canvasElement.querySelector<HTMLElement>('[data-hand-card="custom"]')));
     await userEvent.click(canvas.getByRole('button', { name: 'Play card' }));
     await expect(flights(canvasElement)).toHaveLength(1);
     const flight = required(flights(canvasElement)[0]);
@@ -412,7 +436,7 @@ export function CustomBoard() {
     await expect(pose.f).toBeCloseTo(origin.cy - parseFloat(flight.style.height) / 2, 2);
     await landed(canvasElement);
     // The hand and play slots sit side by side, so the flight travels at least one card width.
-    const destination = measureCardBox(required(canvasElement.querySelector<HTMLElement>('[data-played-key="custom"]')));
+    const destination = measureFlightBox(required(canvasElement.querySelector<HTMLElement>('[data-played-key="custom"]')));
     await expect(Math.abs(destination.cx - origin.cx)).toBeGreaterThan(origin.width);
   },
 };
@@ -545,7 +569,7 @@ export const CustomOrigin: Story = {
 export const DeckAndUnmount: Story = {
   tags: ['!autodocs'], render: () => <StrictMode><FlightProvider><DeckProbe /></FlightProvider></StrictMode>, beforeEach: () => { mockMotion(); },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    const deck = measureCardBox(required(canvasElement.querySelector<HTMLElement>('[data-ui="card-flights-deck"]')));
+    const deck = measureFlightBox(required(canvasElement.querySelector<HTMLElement>('[data-ui="card-flights-deck"]')));
     await userEvent.click(canvas.getByRole('button', { name: 'Deal custom' }));
     await expect(flights(canvasElement)).toHaveLength(2);
     const flight = required(flights(canvasElement)[0]);
@@ -571,18 +595,6 @@ export const TwoTables: Story = {
   tags: ['!autodocs'], render: () => <CardFlights><Board><GameTable places={2} seats={seats} /><GameTable places={2} seats={seats} /></Board></CardFlights>,
   beforeEach: () => { spyOn(console, 'warn').mockImplementation(() => {}); },
   play: async () => { await expect(console.warn).toHaveBeenCalledWith('CardFlights supports one GameTable per board.'); },
-};
-
-class LegacyBoundary extends Component<{ children: ReactNode }, { error: string }> {
-  state = { error: '' };
-  static getDerivedStateFromError(error: Error) { return { error: error.message }; }
-  render() { return this.state.error ? <StatusOutput>{this.state.error}</StatusOutput> : this.props.children; }
-}
-function MixedEngine() { useBoardFlights({ hand: [], plays: [], handKey: 0 }); return null; }
-export const LegacyConflict: Story = {
-  tags: ['!autodocs'], render: () => <LegacyBoundary><CardFlights><MixedEngine /></CardFlights></LegacyBoundary>,
-  beforeEach: () => { spyOn(console, 'error').mockImplementation(() => {}); },
-  play: async ({ canvas }) => { await expect(canvas.getByText('Do not mix legacy flight hooks with CardFlights. Render the card tree instead.')).toBeVisible(); },
 };
 
 let reduceMotionNow = () => {};

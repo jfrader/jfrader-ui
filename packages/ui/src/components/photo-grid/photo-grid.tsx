@@ -127,8 +127,6 @@ const defaultLabels: PhotoGridLabels = {
   clearOption: 'Clear size',
   soldOut: 'Sold out',
   inspect: 'Inspect photo',
-  larger: 'Larger thumbnails',
-  smaller: 'Smaller thumbnails',
   density: 'Thumbnail size',
   empty: 'No photos',
   unavailable: 'Photo unavailable',
