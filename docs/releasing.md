@@ -7,8 +7,8 @@
 
 All four packages carry the same version. From `1.0.0`, a breaking change requires a major release
 and a "Breaking" section in the changelog. Deprecate the API first, with its replacement and removal
-plan. Additive APIs are minor releases. Fixes are patches. Reset minor and patch to zero for a major
-release, and reset patch to zero for a minor release.
+plan. Remove deprecated APIs at the next major release. Additive APIs are minor releases. Fixes are
+patches. Reset minor and patch to zero for a major release, and reset patch to zero for a minor release.
 
 ## Publish a release
 
@@ -45,33 +45,13 @@ version fails the release.
 To re-run a release without re-tagging:
 
 ```sh
-gh workflow run publish.yml --repo jfrader/jfrader-ui --ref v0.18.0
+gh workflow run publish.yml --repo jfrader/jfrader-ui --ref vX.Y.Z
 ```
 
 ## Authentication
 
 npmjs authenticates through each package's trusted publisher for `jfrader/jfrader-ui` →
-`.github/workflows/publish.yml`. `@jfrader/tokens` and `@jfrader/ui` are already configured.
-
-`@jfrader/styling` and `@jfrader/icons` are newer than that setup, so their **first** version has to
-be published by hand: npmjs only lets you attach a trusted publisher to a package that already exists.
-Until that is done, the workflow's publish step fails for those two names, and because `@jfrader/ui`
-depends on both, a release cannot complete without them.
-
-Bootstrap, once per new package, from a clean `master` at the release commit:
-
-```sh
-pnpm install && pnpm generate
-pnpm --filter @jfrader/styling build && pnpm --filter @jfrader/icons build
-
-cd packages/styling && npm publish --access=public --ignore-scripts
-cd ../icons     && npm publish --access=public --ignore-scripts
-```
-
-Then, on npmjs, add the trusted publisher to both packages (repository `jfrader/jfrader-ui`, workflow
-`publish.yml`). From that point the workflow owns them: re-running the release accepts an artifact that
-already exists at the same version, so the hand-published tarballs and the workflow's tarballs are the
-same release as long as the commit and the build are the same.
+`.github/workflows/publish.yml`. All four packages publish through that workflow without an npm token.
 
 GitHub Packages needs no bootstrap; it uses the workflow's scoped `GITHUB_TOKEN`, and the first
 publication of each package is private until it is switched to public in the package settings.
