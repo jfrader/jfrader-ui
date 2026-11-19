@@ -11,12 +11,12 @@ test('radial previews and long fallback menus fit desktop, tablet, and phone vie
     const context = await workbench.browser.newContext({ viewport, reducedMotion: 'reduce' });
     try {
       const page = await context.newPage();
-      for (const story of ['default', 'light', 'long-action-list']) {
-        await page.goto(`${workbench.baseURL}/iframe.html?id=showcase-radialmenu--${story}&viewMode=story`);
+      for (const story of ['showcase-radialmenu--default', 'showcase-radialmenu--light', 'showcase-radialmenu--long-action-list']) {
+        await page.goto(`${workbench.baseURL}/iframe.html?id=${story}&viewMode=story`);
         const trigger = page.getByRole('button', { name: 'Note actions' });
         await trigger.waitFor();
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${story}: preview overflow at ${viewport.width}px`);
-        if (story !== 'long-action-list') await trigger.press('ArrowDown');
+        if (story !== 'showcase-radialmenu--long-action-list') await trigger.press('ArrowDown');
         const menu = page.getByRole('menu');
         await menu.waitFor();
         const bounds = await menu.boundingBox();

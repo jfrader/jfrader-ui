@@ -23,6 +23,7 @@ const published = path.join(storybookApp, 'storybook-static');
 // (DOCS_BUILD=1) builds it once under /storybook/ and adds the docs front. Never build it twice.
 if (process.env.DOCS_BUILD !== '1') {
   run('pnpm', ['exec', 'storybook', 'build'], storybookApp);
+  run('node', ['scripts/verify-browser-stories.mjs', path.join(published, 'index.json')], repoRoot);
   process.exit(0);
 }
 
@@ -31,6 +32,7 @@ if (process.env.DOCS_BUILD !== '1') {
 run('pnpm', ['exec', 'storybook', 'build', '--output-dir', 'storybook-static/storybook'], storybookApp, {
   STORYBOOK_BASE: '/storybook/',
 });
+run('node', ['scripts/verify-browser-stories.mjs', path.join(published, 'storybook/index.json')], repoRoot);
 
 // 3. Copy the docs front to the root. The publish directory must not keep the workbench's top-level
 //    build output, or its index.html and iframe would sit beside the docs.

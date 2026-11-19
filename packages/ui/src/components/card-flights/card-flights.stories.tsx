@@ -66,15 +66,15 @@ function QueueExample() {
 /** `compact` shows the docs controls; `full` adds the resync and burst controls the regression stories drive. */
 type ControlMode = 'compact' | 'full';
 
-function MatchTree({ plays, controls, onPlay, onBurst, onDeal, onResync, onClear }: {
-  plays: Play[]; controls: ControlMode; onPlay: (card: GameHandCard) => void; onBurst: () => void; onDeal: () => void; onResync: () => void; onClear: () => void;
+function MatchTree({ plays, controls, handCards = cards, onPlay, onBurst, onDeal, onResync, onClear }: {
+  plays: Play[]; controls: ControlMode; handCards?: GameHandCard[]; onPlay: (card: GameHandCard) => void; onBurst: () => void; onDeal: () => void; onResync: () => void; onClear: () => void;
 }) {
   const own = plays.filter((play) => play.playerKey === 'own');
   const rival = plays.filter((play) => play.playerKey === 'rival');
   return <>
     <Board><GameTable places={2} seats={seats}>
-      <GameTable.Seat slotKey="rival"><GameHand.Hidden count={cards.length - rival.length} label="Rival hand" /></GameTable.Seat>
-      <GameTable.Dock><ResponsiveHand cards={cards.filter((card) => !own.some((play) => play.cardId === card.id))}
+      <GameTable.Seat slotKey="rival"><GameHand.Hidden count={handCards.length - rival.length} label="Rival hand" /></GameTable.Seat>
+      <GameTable.Dock><ResponsiveHand cards={handCards.filter((card) => !own.some((play) => play.cardId === card.id))}
         ><GameHand.Confirm onPlay={onPlay}>Play selected</GameHand.Confirm></ResponsiveHand></GameTable.Dock>
       {seats.map((seat) => <GameTable.Play key={seat.key} slotKey={seat.key}>
         <GameCardStack.Pile playerKey={seat.key} label={`${seat.key} pile`} visible={3} cards={plays.filter((play) => play.playerKey === seat.key)} />
@@ -89,8 +89,8 @@ function MatchTree({ plays, controls, onPlay, onBurst, onDeal, onResync, onClear
 function Match(props: Parameters<typeof MatchSurface>[0]) {
   return <FlightProvider><MatchSurface {...props} /></FlightProvider>;
 }
-function MatchSurface({ theme = 'dark', below = false, rtl = false, controls = 'compact' }: {
-  theme?: 'dark' | 'light'; below?: boolean; rtl?: boolean; controls?: ControlMode;
+function MatchSurface({ theme = 'dark', below = false, rtl = false, controls = 'compact', handCards = cards }: {
+  theme?: 'dark' | 'light'; below?: boolean; rtl?: boolean; controls?: ControlMode; handCards?: GameHandCard[];
 }) {
   const [host, setHost] = useState<HTMLDivElement | null>(null);
   const flights = useFlights();
@@ -100,13 +100,13 @@ function MatchSurface({ theme = 'dark', below = false, rtl = false, controls = '
     { ...card, id: `reply-${card.id}`, cardId: `rival-${card.id}`, playerKey: 'rival' }]);
   return <div ref={setHost} dir={rtl ? 'rtl' : undefined}><ThemeRoot theme={theme} portalContainer={host}><DemoTheme>
     <CardFlights forehand="rival">
-      {below ? <BelowState controls={controls} /> : <MatchTree plays={plays} controls={controls} onPlay={accept}
+      {below ? <BelowState controls={controls} /> : <MatchTree plays={plays} controls={controls} handCards={handCards} onPlay={accept}
         onDeal={() => { setPlays([]); flights.deal(); }} onResync={() => {
           flights.resync();
-          const card = required(cards.at(-1));
+          const card = required(handCards.at(-1));
           setPlays([{ ...card, id: 'server-four', cardId: card.id, playerKey: 'own' }]);
         }} onClear={() => setPlays([])}
-        onBurst={() => setPlays(cards.map((card) => ({ ...card, id: `play-${card.id}`, cardId: card.id, playerKey: 'own' })))} />}
+        onBurst={() => setPlays(handCards.map((card) => ({ ...card, id: `play-${card.id}`, cardId: card.id, playerKey: 'own' })))} />}
     </CardFlights>
   </DemoTheme></ThemeRoot></div>;
 }
@@ -279,6 +279,30 @@ export const ComposedBoard: Story = {
     await landed(canvasElement);
     await expect(canvas.getByLabelText('Flight status')).toHaveTextContent('Ready');
   },
+};
+
+const largeHand = [...cards,
+  { id: 'five', label: 'Five of spades', value: { deck: 'french', suit: 'spades', rank: 5 } },
+  { id: 'six', label: 'Six of spades', value: { deck: 'french', suit: 'spades', rank: 6 } },
+] satisfies GameHandCard[];
+
+export const LargeHand: Story = {
+  tags: ['!autodocs'], render: () => <Match handCards={largeHand} />,
+};
+
+function SpanishBackExample() {
+  const flights = useFlights();
+  const back = <GameCard size="sm" label="Spanish back" value={{ deck: 'spanish', suit: 'oros', rank: 1 }} face="back" />;
+  return <CardFlights>
+    <CustomBoard>
+      <CardFlights.Target kind="hand" cardId="spanish" face="down" back={back}>{back}</CardFlights.Target>
+    </CustomBoard>
+    <Controls><Button onClick={() => flights.deal()}>Deal Spanish card</Button><Status /></Controls>
+  </CardFlights>;
+}
+
+export const SpanishBack: Story = {
+  tags: ['!autodocs'], render: () => <FlightProvider><SpanishBackExample /></FlightProvider>,
 };
 
 /** Play into a custom node without a GameCardStack. */
