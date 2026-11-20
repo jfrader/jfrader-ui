@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import {
   autoUpdate,
   flip,
@@ -110,6 +110,13 @@ export function useOverlayFloating<Reference extends ReferenceType = HTMLButtonE
         onPositionUpdate();
       }),
   });
+
+  // `elements.reference` seeds the first position. The option is not reactive on its
+  // own, so a step that moves to another target must register the new element.
+  useLayoutEffect(() => {
+    if (reference === undefined) return;
+    floating.refs.setReference((reference ?? null) as Reference | null);
+  }, [reference, floating.refs]);
 
   const anchor = floating.elements.domReference;
   useEffect(() => {
