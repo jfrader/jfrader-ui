@@ -8,9 +8,9 @@ composed modes still apply. A Panel root seam is listed on the Panel, not credit
 
 ## Counts
 
-- Public callable families: **176**; public callable parts: **188**.
-- Families exposing `slots.root`: **122**; remaining without a family-level root slot: **54** (includes DOM-less providers).
-- Families exposing any non-root replacement slot: **134**; remaining without family-level interior slots: **42** (includes components without generated anatomy).
+- Public callable families: **177**; public callable parts: **188**.
+- Families exposing `slots.root`: **122**; remaining without a family-level root slot: **55** (includes DOM-less providers).
+- Families exposing any non-root replacement slot: **135**; remaining without family-level interior slots: **42** (includes components without generated anatomy).
 - Rows with styling-only `slotProps` keys: **3**.
 
 Counts describe API exposure, not completed migration or tested adopters. Native dialog shells remain
@@ -381,6 +381,7 @@ panel material. The section has no background, border or radius to migrate.
 | [Tooltip](../packages/ui/src/components/tooltip/tooltip.tsx) | — | `content`, `trigger` | `content`, `trigger` | — | — | `Content`, `Trigger` |
 | [Tooltip.Content](../packages/ui/src/components/tooltip/tooltip.tsx) | — | — | — | — | — | — |
 | [Tooltip.Trigger](../packages/ui/src/components/tooltip/tooltip.tsx) | — | — | — | — | — | — |
+| [Tour](../packages/ui/src/components/tour/tour.tsx) | yes | `popover` | `popover` | — | — | — |
 | [TreeView](../packages/ui/src/components/tree-view/tree-view.tsx) | — | `disclosure`, `group`, `icon`, `label`, `row`, `status`, `tree` | `disclosure`, `group`, `icon`, `label`, `row`, `status`, `tree` | — | — | — |
 | [TrucoTable](../packages/ui/src/components/truco-table/truco-table.tsx) | yes | `actions`, `root`, `seat` | `actions`, `root`, `seat` | — | `tableProps` | — |
 | [TypewriterTerminal](../packages/ui/src/components/typewriter-terminal/typewriter-terminal.tsx) | yes | `caption`, `controls`, `copyButton`, `header`, `playButton`, `replayButton`, `root`, `screen`, `scrubber`, `status`, `transcript` | `caption`, `controls`, `copyButton`, `header`, `playButton`, `replayButton`, `root`, `screen`, `scrubber`, `status`, `transcript` | — | — | — |

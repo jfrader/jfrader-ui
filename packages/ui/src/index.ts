@@ -127,6 +127,7 @@ export * from './components/toast';
 export * from './components/toast-stack';
 export * from './components/toggle-group';
 export * from './components/tooltip';
+export * from './components/tour';
 export * from './components/tree-view';
 export * from './components/typewriter-terminal';
 export * from './components/usage-meter';

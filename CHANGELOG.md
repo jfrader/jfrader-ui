@@ -4,6 +4,8 @@
 
 ### Added
 
+- `Tour` anchors a short, non-modal sequence of steps to controls outside its own DOM. It supports controlled or uncontrolled open and step state, selector, element or callback targets, a highlight ring, Escape dismissal, a centered fallback when a target never appears, and a live step announcement.
+
 - `Popover.Content closeOnFocusOut={false}` keeps the panel open when focus leaves. By default, leaving the panel and trigger now dismisses it without returning focus.
 
 ### Fixed

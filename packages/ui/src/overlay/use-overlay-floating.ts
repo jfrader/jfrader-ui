@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import {
   autoUpdate,
   flip,
@@ -14,6 +14,7 @@ import {
   type UseFloatingReturn,
 } from '@floating-ui/react';
 import { getDeepestNode } from '@floating-ui/react/utils';
+import { useLatestCallback } from '../utils/use-latest-callback';
 
 /** Gap between the trigger and the floating surface, in px (matches `space[2]`). */
 export const ANCHOR_GAP = 8;
@@ -40,6 +41,13 @@ export interface OverlayFloatingOptions {
   /** Disable viewport flip and shift for geometry owned by the consumer. */
   collision?: 'shift' | 'none';
   shiftCrossAxis?: boolean;
+  /**
+   * Explicit anchor for an overlay without a trigger, such as a tour step. When omitted,
+   * the overlay uses the element registered through `refs.setReference`.
+   */
+  reference?: Element | null;
+  /** Called after each positioning pass, for chrome that tracks the anchor. */
+  onUpdate?: () => void;
 }
 
 export interface OverlayAvailableSize {
@@ -67,9 +75,12 @@ export function useOverlayFloating<Reference extends ReferenceType = HTMLButtonE
   transform,
   collision = 'shift',
   shiftCrossAxis = true,
+  reference,
+  onUpdate,
 }: OverlayFloatingOptions): UseFloatingReturn<Reference> {
   const tree = useFloatingTree();
   const childOwnsPointerRef = useRef(false);
+  const onPositionUpdate = useLatestCallback(onUpdate);
   const detectOverflow = { padding: VIEWPORT_PADDING, ...(boundary ? { boundary } : {}) };
   const floating = useFloating<Reference>({
     open,
@@ -81,6 +92,7 @@ export function useOverlayFloating<Reference extends ReferenceType = HTMLButtonE
     nodeId,
     strategy,
     transform,
+    elements: reference ? { reference } : undefined,
     middleware: [
       offset(gap),
       collision === 'shift' && flip(detectOverflow),
@@ -92,13 +104,24 @@ export function useOverlayFloating<Reference extends ReferenceType = HTMLButtonE
             onAvailableSize({ width: availableWidth, height: availableHeight }),
         }),
     ],
-    whileElementsMounted: autoUpdate,
+    whileElementsMounted: (referenceEl, floatingEl, update) =>
+      autoUpdate(referenceEl, floatingEl, () => {
+        update();
+        onPositionUpdate();
+      }),
   });
 
-  const reference = floating.elements.domReference;
+  // `elements.reference` seeds the first position. The option is not reactive on its
+  // own, so a step that moves to another target must register the new element.
+  useLayoutEffect(() => {
+    if (reference === undefined) return;
+    floating.refs.setReference((reference ?? null) as Reference | null);
+  }, [reference, floating.refs]);
+
+  const anchor = floating.elements.domReference;
   useEffect(() => {
-    if (!open || !tree || nodeId === undefined || !reference) return;
-    const doc = reference.ownerDocument;
+    if (!open || !tree || nodeId === undefined || !anchor) return;
+    const doc = anchor.ownerDocument;
     const onPointerDown = () => {
       const topmost = getDeepestNode(tree.nodesRef.current, nodeId);
       childOwnsPointerRef.current = Boolean(topmost && topmost.id !== nodeId);
@@ -115,7 +138,7 @@ export function useOverlayFloating<Reference extends ReferenceType = HTMLButtonE
       doc.removeEventListener('pointercancel', reset, true);
       doc.removeEventListener('keydown', reset, true);
     };
-  }, [open, tree, nodeId, reference]);
+  }, [open, tree, nodeId, anchor]);
 
   return floating;
 }
