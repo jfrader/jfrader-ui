@@ -60,3 +60,7 @@ From-scratch React component system. Emotion for styling, CSS custom properties 
 
 Components consume semantic --ui-* variables through @jfrader/tokens/vars. No raw colors outside
 packages/tokens.
+
+## Skills
+
+- Consumer rules for an app using the library: skills/jfrader-ui/SKILL.md
