@@ -10,6 +10,7 @@
 
 ### Fixed
 
+- `Drawer` keeps the scrim token on its native backdrop while the panel slides; the backdrop color is no longer replaced when the presence opacity is composed.
 - `DateRangePicker` dismisses when a viewport resize pushes its trigger off screen, instead of staying anchored outside the window.
 - Published declaration files use explicit relative specifiers, so `@jfrader/ui`, `@jfrader/icons`, `@jfrader/styling` and `@jfrader/tokens` resolve under `moduleResolution: "node16"` and `"nodenext"`. Wildcard re-exports keep their names, and `skipLibCheck: false` no longer reports TS2834 in the published types.
 - A `Popover.Content` that a consumer focuses itself now tabs into its own first control, instead of skipping the panel and moving focus to the next element on the page.

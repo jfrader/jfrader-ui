@@ -250,8 +250,7 @@ const SAFE_AREA = {
   bottom: 'env(safe-area-inset-bottom, 0px)',
 } as const;
 
-const dialogStyle = css({
-  ...modalShellReset,
+const dialogStyle = css(modalShellReset, {
   boxSizing: 'border-box',
   position: 'fixed',
   inset: 0,
