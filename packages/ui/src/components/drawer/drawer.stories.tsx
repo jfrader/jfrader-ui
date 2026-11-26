@@ -1159,6 +1159,26 @@ export const BackdropScrimConsumerSx: Story = {
   },
 };
 
+/** A scoped ThemeRoot token override reaches the shell's backdrop. */
+export const BackdropScrimScopedToken: Story = {
+  tags: ['!autodocs'],
+  render: () => (
+    <ThemeRoot tokens={{ color: { scrim: 'rgb(10, 20, 30)' } }}>
+      <DrawerExample />
+    </ThemeRoot>
+  ),
+  play: async ({ canvasElement, userEvent }) => {
+    const { dialog: dialogElement, trigger } = await openDrawer({ canvasElement, userEvent });
+    const dialog = dialogElement as HTMLDialogElement;
+    const view = dialog.ownerDocument.defaultView!;
+    await expect(resolveScrim(dialog)).toBe('rgb(10, 20, 30)');
+    await expect(view.getComputedStyle(dialog, '::backdrop').backgroundColor).toBe('rgb(10, 20, 30)');
+    const close = within(dialog).getAllByRole('button', { name: 'Close' })[0]!;
+    await userEvent.click(close);
+    await expectClosed(canvasElement, trigger);
+  },
+};
+
 export const ReopenDuringExit: Story = {
   parameters: { docs: { source: { language: 'tsx', code: `import { Drawer, TextField } from '@jfrader/ui';
 
