@@ -314,6 +314,55 @@ function isMonotonic(values: number[], direction: 1 | -1) {
   return values.every((value, index) => index === 0 || (value - values[index - 1]!) * direction >= -0.01);
 }
 
+/** Resolve the scrim token in the dialog shell's own scope, outside the panel. */
+function resolveScrim(dialog: HTMLDialogElement) {
+  const doc = dialog.ownerDocument;
+  const probe = doc.createElement('div');
+  probe.style.backgroundColor = 'var(--ui-color-scrim)';
+  probe.style.position = 'absolute';
+  probe.style.inlineSize = '0';
+  probe.style.blockSize = '0';
+  probe.style.pointerEvents = 'none';
+  probe.setAttribute('aria-hidden', 'true');
+  dialog.append(probe);
+  const resolved = doc.defaultView!.getComputedStyle(probe).backgroundColor;
+  probe.remove();
+  return resolved;
+}
+
+interface BackdropFrame {
+  open: boolean;
+  color: string;
+  opacity: string;
+}
+
+/** One backdrop reading per animation frame; the native backdrop paints only while open. */
+async function sampleBackdropFrames(
+  dialog: HTMLDialogElement,
+  start: () => void,
+  done: (frame: BackdropFrame) => boolean,
+) {
+  const view = dialog.ownerDocument.defaultView!;
+  const read = (): BackdropFrame => ({
+    open: dialog.open,
+    color: view.getComputedStyle(dialog, '::backdrop').backgroundColor,
+    opacity: view.getComputedStyle(dialog, '::backdrop').opacity,
+  });
+  const frames: BackdropFrame[] = [];
+  const startedAt = view.performance.now();
+  start();
+  await new Promise<void>((resolve) => {
+    const tick = () => {
+      const frame = read();
+      frames.push(frame);
+      if (done(frame) || view.performance.now() - startedAt > 2000) resolve();
+      else view.requestAnimationFrame(tick);
+    };
+    view.requestAnimationFrame(tick);
+  });
+  return frames;
+}
+
 async function openDrawer({ canvasElement, userEvent }: Pick<StoryContext<DrawerComposedProps>, 'canvasElement' | 'userEvent'>) {
   const canvas = within(canvasElement);
   const trigger = canvas.getByRole('button', { name: TRIGGER });
@@ -1069,6 +1118,27 @@ export const SlideMotionBottom: Story = {
     </Drawer.Panel>
   </Drawer.Content>
 </Drawer>` } } },
+};
+
+/** The native backdrop keeps the shell's scrim token while presence changes its opacity. */
+export const BackdropScrim: Story = {
+  render: () => <DrawerExample />,
+  play: async ({ canvasElement, userEvent }) => {
+    const { dialog: dialogElement, trigger } = await openDrawer({ canvasElement, userEvent });
+    const dialog = dialogElement as HTMLDialogElement;
+    const view = dialog.ownerDocument.defaultView!;
+    const scrim = resolveScrim(dialog);
+    await expect(view.getComputedStyle(dialog, '::backdrop').backgroundColor).toBe(scrim);
+    await expect(view.getComputedStyle(dialog, '::backdrop').opacity).toBe('1');
+
+    const close = within(dialog).getAllByRole('button', { name: 'Close' })[0]!;
+    const frames = await sampleBackdropFrames(dialog, () => close.click(), (frame) => !frame.open);
+    const retained = frames.filter((frame) => frame.open);
+    await expect(retained.length).toBeGreaterThan(1);
+    await expect(retained.every((frame) => frame.color === scrim)).toBe(true);
+    await expect(new Set(retained.map((frame) => frame.opacity)).size).toBeGreaterThan(1);
+    await expectClosed(canvasElement, trigger);
+  },
 };
 
 export const ReopenDuringExit: Story = {
@@ -2770,6 +2840,7 @@ export const ReducedMotion: Story = {
       await expect(dialog).toHaveAttribute('open');
       await expect(panel.style.translate).toBe('');
       await expect(dialog.style.getPropertyValue('--drawer-presence')).toBe('');
+      await expect(win.getComputedStyle(dialog, '::backdrop').backgroundColor).toBe(resolveScrim(dialog));
     } finally {
       reduced.mockRestore();
     }
