@@ -30,7 +30,7 @@ const meta = {
 - A rejected controlled request never changes the committed display, ARIA value, form data, or the next repeat step. Empty values differ from zero.
 - Commits clamp to \`min\`/\`max\` and snap to the \`step\` grid anchored at \`min\`. Ties round toward positive infinity. An off-grid committed amount steps to the next grid line in the requested direction.
 - Stepping from empty starts at zero clamped to the range, then moves one step. Externally supplied out-of-range amounts are shown invalid without changing them.
-- Bounds and values must be finite, within Number.MAX_SAFE_INTEGER, and use at most 12 fraction digits. Steps must be positive. Invalid configuration throws \`NumberFieldConfigError\`.
+- Bounds, \`step\`, and \`largeStep\` must be finite, within Number.MAX_SAFE_INTEGER, and use at most 12 fraction digits. Steps must be positive. Committed values may carry more than 12 fraction digits; the display rounds to 12 while ARIA and form data keep the exact number. Invalid configuration throws \`NumberFieldConfigError\`.
 
 ### Keyboard and accessibility
 
@@ -167,6 +167,106 @@ export const ScientificStep: Story = {
     await userEvent.keyboard('{ArrowUp}{ArrowUp}{ArrowUp}');
     await expect(input).toHaveAttribute('aria-valuenow', '0.0000003');
     await expect(input).toHaveValue('0.0000003');
+  },
+};
+
+export const LongCommittedDecimals: Story = {
+  name: 'Long committed decimals',
+  args: {
+    label: 'Position',
+    value: 1.23456789012345,
+    min: 0,
+    max: 10,
+    step: 0.1,
+    locale: 'en-US',
+    name: 'position',
+    onValueChange: fn(),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A committed value may carry more than twelve fraction digits. The display rounds to twelve, while ARIA and form data keep the exact committed number.',
+      },
+      source: {
+        language: 'tsx',
+        code: `import { NumberField } from '@jfrader/ui';
+
+<NumberField
+  label="Position"
+  value={1.23456789012345}
+  min={0}
+  max={10}
+  step={0.1}
+  name="position"
+  locale="en-US"
+/>`,
+      },
+    },
+  },
+  render: (args) => (
+    <form>
+      <NumberField {...args} />
+    </form>
+  ),
+  play: async ({ canvasElement, args }) => {
+    const input = within(canvasElement).getByRole('spinbutton', { name: 'Position' });
+    await expect(input).toHaveValue('1.234567890123');
+    await expect(input).toHaveAttribute('aria-valuenow', '1.23456789012345');
+    await expect(input).toHaveAttribute('aria-valuetext', '1.234567890123');
+    const form = canvasElement.querySelector('form')!;
+    await expect(new FormData(form).get('position')).toBe('1.23456789012345');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+export const LongCommittedDecimalsFormatOptions: Story = {
+  name: 'Long committed decimals with format options',
+  args: {
+    label: 'Position',
+    value: 1.23456789012345,
+    min: 0,
+    max: 10,
+    step: 0.1,
+    locale: 'en-US',
+    formatOptions: { maximumFractionDigits: 2 },
+    onValueChange: fn(),
+  },
+  render: (args) => <NumberField {...args} />,
+  play: async ({ canvasElement, args }) => {
+    const input = within(canvasElement).getByRole('spinbutton', { name: 'Position' });
+    await expect(input).toHaveValue('1.23');
+    await expect(input).toHaveAttribute('aria-valuenow', '1.23456789012345');
+    await expect(args.onValueChange).not.toHaveBeenCalled();
+  },
+};
+
+export const LongDraftedAmount: Story = {
+  name: 'Long drafted amount',
+  args: {
+    label: 'Position',
+    defaultValue: 1.23456789012345,
+    min: 0,
+    max: 10,
+    step: 0.1,
+    locale: 'en-US',
+    name: 'position',
+    onValueChange: fn(),
+  },
+  render: (args) => <NumberField {...args} />,
+  play: async ({ canvasElement, userEvent, args }) => {
+    const input = within(canvasElement).getByRole('spinbutton', { name: 'Position' });
+    await expect(input).toHaveValue('1.234567890123');
+    await userEvent.clear(input);
+    await userEvent.type(input, '1.23456789012345');
+    await expect(input).toHaveValue('1.23456789012345');
+    await userEvent.keyboard('{Enter}');
+    await expect(input).toHaveValue('1.2');
+    await expect(input).toHaveAttribute('aria-valuenow', '1.2');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(1.2);
+    await userEvent.tab();
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
 export const Negative: Story = {
@@ -695,6 +795,9 @@ export const Configuration: Story = {
     }
     const fractional = createNumberFieldValue({ ...valid, step: 0.07, largeStep: undefined });
     await expect(fractional.largeStep).toBe(0.7);
+    const long = createNumberFieldValue({ ...valid, value: 1.23456789012345 });
+    await expect(long.format(1.23456789012345)).toBe('1.234567890123');
+    await expect(long.serialize(1.23456789012345)).toBe('1.23456789012345');
   },
 };
 

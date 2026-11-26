@@ -36,9 +36,9 @@ export type NumberFieldSlots = FieldSlots<Anatomy>;
 export type NumberFieldSlotProps = FieldParts<Anatomy>;
 export interface NumberFieldProps extends Omit<ComponentPropsWithRef<'input'>,
   'type' | 'size' | 'value' | 'defaultValue' | 'min' | 'max' | 'step' | 'children' | 'prefix'>, SxProps {
-  /** Committed amount. `null` is empty; `undefined` selects uncontrolled state. */
+  /** Committed amount. `null` is empty; `undefined` selects uncontrolled state. More than twelve fraction digits are accepted; display rounds to twelve while ARIA and form values stay exact. */
   value?: number | null;
-  /** Initial uncontrolled amount. Defaults to `0`. */
+  /** Initial uncontrolled amount. Defaults to `0`. More than twelve fraction digits are accepted; display rounds to twelve while ARIA and form values stay exact. */
   defaultValue?: number | null;
   /** Receives changed commit requests, not partial typing. */
   onValueChange?: (value: number | null) => void;

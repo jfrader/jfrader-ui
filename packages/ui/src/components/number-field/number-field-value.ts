@@ -18,10 +18,10 @@ export class NumberFieldConfigError extends Error {
   }
 }
 
-function validateNumber(name: string, value: number) {
+function validateNumber(name: string, value: number, limitFractionDigits = true) {
   if (!Number.isFinite(value) || Math.abs(value) > Number.MAX_SAFE_INTEGER)
     throw new NumberFieldConfigError(`${name} must be finite with magnitude at most Number.MAX_SAFE_INTEGER.`);
-  if (new Exact(value).decimalPlaces() > MAX_FRACTION_DIGITS)
+  if (limitFractionDigits && new Exact(value).decimalPlaces() > MAX_FRACTION_DIGITS)
     throw new NumberFieldConfigError(`${name} supports at most ${MAX_FRACTION_DIGITS} fraction digits.`);
 }
 
@@ -38,14 +38,20 @@ export function createNumberFieldValue({
   formatOptions?: NumberFieldFormatOptions;
 }) {
   const largeStep = configuredLargeStep ?? new Exact(step).mul(LARGE_STEP_MULTIPLIER).toNumber();
-  for (const [name, number] of Object.entries({ min, max, step, largeStep, value, defaultValue })) {
+  for (const [name, number] of Object.entries({ min, max, step, largeStep })) {
     if (number !== null && number !== undefined) validateNumber(name, number);
+  }
+  for (const [name, number] of Object.entries({ value, defaultValue })) {
+    if (number !== null && number !== undefined) validateNumber(name, number, false);
   }
   if (min > max) throw new NumberFieldConfigError('min must not exceed max.');
   if (step <= 0 || largeStep <= 0) throw new NumberFieldConfigError('step and largeStep must be positive.');
   const precision = Math.max(...[step, min, max].map((number) => new Exact(number).decimalPlaces()));
   const options: Intl.NumberFormatOptions = {
-    maximumFractionDigits: Math.max(precision, value == null ? 0 : new Exact(value).decimalPlaces()),
+    maximumFractionDigits: Math.max(
+      precision,
+      value == null ? 0 : Math.min(MAX_FRACTION_DIGITS, new Exact(value).decimalPlaces()),
+    ),
     ...formatOptions,
   };
   if (options.style && options.style !== 'decimal' && options.style !== 'unit')
