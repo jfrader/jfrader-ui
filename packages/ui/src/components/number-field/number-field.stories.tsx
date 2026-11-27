@@ -30,7 +30,7 @@ const meta = {
 - A rejected controlled request never changes the committed display, ARIA value, form data, or the next repeat step. Empty values differ from zero.
 - Commits clamp to \`min\`/\`max\` and snap to the \`step\` grid anchored at \`min\`. Ties round toward positive infinity. An off-grid committed amount steps to the next grid line in the requested direction.
 - Stepping from empty starts at zero clamped to the range, then moves one step. Externally supplied out-of-range amounts are shown invalid without changing them.
-- Bounds, \`step\`, and \`largeStep\` must be finite, within Number.MAX_SAFE_INTEGER, and use at most 12 fraction digits. Steps must be positive. Committed values may carry more than 12 fraction digits; the display rounds to 12 while ARIA and form data keep the exact number. Invalid configuration throws \`NumberFieldConfigError\`.
+- Bounds, \`step\`, and \`largeStep\` must be finite, within \`Number.MAX_SAFE_INTEGER\`, and use at most 12 fraction digits. Steps must be positive. Committed values may carry more than 12 fraction digits; the display rounds to 12 while ARIA and form data keep the exact number. Invalid configuration throws \`NumberFieldConfigError\`.
 
 ### Keyboard and accessibility
 
@@ -186,7 +186,7 @@ export const LongCommittedDecimals: Story = {
     docs: {
       description: {
         story:
-          'A committed value may carry more than twelve fraction digits. The display rounds to twelve, while ARIA and form data keep the exact committed number.',
+          'A committed value may carry more than 12 fraction digits. The display rounds to 12, while ARIA and form data keep the exact committed number.',
       },
       source: {
         language: 'tsx',
@@ -269,6 +269,67 @@ export const LongDraftedAmount: Story = {
     await expect(args.onValueChange).toHaveBeenCalledTimes(1);
   },
 };
+export const LongCommittedDecimalsStep: Story = {
+  name: 'Step from long committed decimals',
+  args: {
+    label: 'Position',
+    value: 1.23456789012345,
+    min: 0,
+    max: 10,
+    step: 0.1,
+    locale: 'en-US',
+    name: 'position',
+    onValueChange: fn(),
+  },
+  render: (args) => <form><NumberField {...args} /></form>,
+  play: async ({ canvasElement, userEvent, args }) => {
+    const input = within(canvasElement).getByRole('spinbutton', { name: 'Position' });
+    const form = canvasElement.querySelector('form')!;
+    await userEvent.click(input);
+    await userEvent.keyboard('{ArrowUp}');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(1.3);
+    await expect(input).toHaveValue('1.234567890123');
+    await expect(input).toHaveAttribute('aria-valuenow', '1.23456789012345');
+    await expect(new FormData(form).get('position')).toBe('1.23456789012345');
+    await userEvent.keyboard('{ArrowDown}');
+    await expect(args.onValueChange).toHaveBeenLastCalledWith(1.2);
+    await expect(input).toHaveValue('1.234567890123');
+    await expect(input).toHaveAttribute('aria-valuenow', '1.23456789012345');
+    await expect(new FormData(form).get('position')).toBe('1.23456789012345');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(2);
+  },
+};
+
+export const LongDefaultReset: Story = {
+  name: 'Reset a long default',
+  args: {
+    label: 'Position',
+    defaultValue: 1.23456789012345,
+    min: 0,
+    max: 10,
+    step: 0.1,
+    locale: 'en-US',
+    onValueChange: fn(),
+  },
+  render: (args) => <ResetForm {...args} />,
+  play: async ({ canvasElement, userEvent, args }) => {
+    const input = within(canvasElement).getByRole('spinbutton', { name: 'Position' });
+    const form = canvasElement.querySelector('form')!;
+    await expect(input).toHaveValue('1.234567890123');
+    await expect(new FormData(form).get('seats')).toBe('1.23456789012345');
+    await userEvent.clear(input);
+    await userEvent.type(input, '2');
+    await userEvent.keyboard('{Enter}');
+    await expect(input).toHaveValue('2');
+    await expect(new FormData(form).get('seats')).toBe('2');
+    await userEvent.click(within(canvasElement).getByRole('button', { name: 'Reset' }));
+    await expect(input).toHaveValue('1.234567890123');
+    await expect(input).toHaveAttribute('aria-valuenow', '1.23456789012345');
+    await expect(new FormData(form).get('seats')).toBe('1.23456789012345');
+    await expect(args.onValueChange).toHaveBeenCalledTimes(1);
+  },
+};
+
 export const Negative: Story = {
   args: { min: -1, max: 1, step: 0.1, defaultValue: -0.3 },
   play: async ({ canvasElement, userEvent }) => {
@@ -798,6 +859,9 @@ export const Configuration: Story = {
     const long = createNumberFieldValue({ ...valid, value: 1.23456789012345 });
     await expect(long.format(1.23456789012345)).toBe('1.234567890123');
     await expect(long.serialize(1.23456789012345)).toBe('1.23456789012345');
+    const float = createNumberFieldValue({ ...valid, value: 0.1 + 0.2 });
+    await expect(float.format(0.1 + 0.2)).toBe('0.3');
+    await expect(float.serialize(0.1 + 0.2)).toBe('0.30000000000000004');
   },
 };
 
