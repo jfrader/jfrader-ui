@@ -398,7 +398,7 @@ test('publish reports a changed member on an integrity mismatch', (t) => {
 test('publish reports added and removed members on an integrity mismatch', (t) => {
   const added = mismatch(t, { 'extra.js': 'published extra' });
   assert.match(added.stderr, /added: package\/extra\.js/);
-  const removed = mismatch(t, {}, { localExtra: true });
+  const removed = mismatch(t, { 'index.js': 'export {};' }, { localExtra: true });
   assert.match(removed.stderr, /removed: package\/extra\.js/);
 });
 
