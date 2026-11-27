@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -284,4 +285,132 @@ syncBuiltinESMExports();`);
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /attempted to restore/);
   assert.equal(readFileSync(manifestPath, 'utf8'), before);
+});
+
+const dependencyManifest = (dir, order) => {
+  flipFixture(dir);
+  const manifestPath = path.join(dir, 'packages/icons/package.json');
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+  manifest.version = '1.0.0';
+  const map = (keys) => Object.fromEntries(keys.map((key) => [key, '1.0.0']));
+  manifest.dependencies = map(order);
+  manifest.devDependencies = map([...order].reverse());
+  manifest.peerDependencies = map([order[1], order[0], order[2]]);
+  manifest.optionalDependencies = map([order[2], order[1], order[0]]);
+  writeFileSync(manifestPath, JSON.stringify(manifest));
+  return { manifestPath, exportsOrder: Object.keys(manifest.exports) };
+};
+
+test('flip canonicalizes dependency maps and preserves export order', (t) => {
+  const left = fixture(t);
+  const right = fixture(t);
+  const leftManifest = dependencyManifest(left, ['z-package', 'a-package', 'm-package']);
+  const rightManifest = dependencyManifest(right, ['m-package', 'z-package', 'a-package']);
+  assert.equal(flip(left, 'src', '--package', 'icons').status, 0);
+  assert.equal(flip(right, 'src', '--package', 'icons').status, 0);
+  const leftText = readFileSync(leftManifest.manifestPath, 'utf8');
+  const rightText = readFileSync(rightManifest.manifestPath, 'utf8');
+  assert.equal(leftText, rightText);
+  const canonical = JSON.parse(leftText);
+  for (const field of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
+    assert.deepEqual(Object.keys(canonical[field]), ['a-package', 'm-package', 'z-package']);
+    assert.deepEqual(Object.values(canonical[field]), ['1.0.0', '1.0.0', '1.0.0']);
+  }
+  assert.deepEqual(Object.keys(canonical.exports), leftManifest.exportsOrder);
+});
+
+test('pnpm packs canonicalized dependency permutations identically', (t) => {
+  const left = fixture(t);
+  const right = fixture(t);
+  dependencyManifest(left, ['z-package', 'a-package', 'm-package']);
+  dependencyManifest(right, ['m-package', 'z-package', 'a-package']);
+  assert.equal(flip(left, 'src', '--package', 'icons').status, 0);
+  assert.equal(flip(right, 'src', '--package', 'icons').status, 0);
+  const pack = (dir, name) => {
+    const out = path.join(dir, name);
+    mkdirSync(out);
+    execFileSync('pnpm', ['pack', '--pack-destination', out], {
+      cwd: path.join(dir, 'packages/icons'),
+      encoding: 'utf8',
+    });
+    const tarball = readdirSync(out).find((file) => file.endsWith('.tgz'));
+    assert.ok(tarball, 'pnpm pack produced a tarball');
+    return path.join(out, tarball);
+  };
+  const digest = (file) => createHash('sha512').update(readFileSync(file)).digest('base64');
+  const leftPack = pack(left, 'pack-left');
+  const rightPack = pack(right, 'pack-right');
+  assert.equal(digest(leftPack), digest(rightPack));
+  assert.equal(digest(pack(left, 'pack-left-repeat')), digest(leftPack));
+});
+
+const archiveFixture = (dir, name, files, extraTarArgs = []) => {
+  const root = path.join(dir, name);
+  mkdirSync(path.join(root, 'package'), { recursive: true });
+  for (const [file, content] of Object.entries(files)) {
+    const target = path.join(root, 'package', file);
+    mkdirSync(path.dirname(target), { recursive: true });
+    writeFileSync(target, content);
+  }
+  const tarball = path.join(dir, `${name}.tgz`);
+  execFileSync('tar', ['-czf', tarball, ...extraTarArgs, '-C', root, 'package']);
+  return tarball;
+};
+
+const publishedNpm = (dir, tarball, { fail = false } = {}) => {
+  writeFileSync(path.join(dir, 'npm'), `#!/usr/bin/env node
+import { copyFileSync } from 'node:fs';
+import { join } from 'node:path';
+const args = process.argv.slice(2);
+if (args[0] === 'view') { console.log(JSON.stringify('sha512-other')); process.exit(0); }
+if (args[0] === 'pack') {
+${fail ? "  console.error('pack failed'); process.exit(1);" : `  const destination = args[args.indexOf('--pack-destination') + 1];
+  copyFileSync(${JSON.stringify(tarball)}, join(destination, 'published.tgz'));
+  process.exit(0);`}
+}
+process.exit(99);
+`, { mode: 0o755 });
+  writeFileSync(path.join(dir, 'package.json'), '{"type":"module"}');
+};
+
+const mismatch = (t, publishedFiles, { localExtra = false, fail = false, extraTarArgs = [] } = {}) => {
+  const dir = fixture(t);
+  const manifest = packed(dir);
+  if (localExtra) {
+    writeFileSync(path.join(dir, 'package', 'extra.js'), 'local extra');
+    execFileSync('tar', ['-czf', path.join(dir, 'artifact.tgz'), '-C', dir, 'package']);
+  }
+  const published = archiveFixture(dir, 'published', {
+    'package.json': JSON.stringify(manifest),
+    ...publishedFiles,
+  }, extraTarArgs);
+  publishedNpm(dir, published, { fail });
+  return publish(dir);
+};
+
+test('publish reports a changed member on an integrity mismatch', (t) => {
+  const result = mismatch(t, { 'index.js': 'export const changed = true;' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /different integrity/);
+  assert.match(result.stderr, /changed: package\/index\.js/);
+});
+
+test('publish reports added and removed members on an integrity mismatch', (t) => {
+  const added = mismatch(t, { 'extra.js': 'published extra' });
+  assert.match(added.stderr, /added: package\/extra\.js/);
+  const removed = mismatch(t, {}, { localExtra: true });
+  assert.match(removed.stderr, /removed: package\/extra\.js/);
+});
+
+test('publish reports archive-only differences', (t) => {
+  const result = mismatch(t, { 'index.js': 'export {};' }, { extraTarArgs: ['--mtime=@0'] });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /archive members are identical/);
+});
+
+test('publish reports member comparison unavailable without hiding the integrity failure', (t) => {
+  const result = mismatch(t, {}, { fail: true });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /different integrity/);
+  assert.match(result.stderr, /member comparison unavailable/);
 });

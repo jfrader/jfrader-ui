@@ -62,6 +62,21 @@ const packages = [
 
 const targetsOf = (entry) => (typeof entry === 'string' ? [entry] : Object.values(entry));
 
+const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies'];
+
+// Only dependency-name maps are canonicalized. Export condition order and arrays stay as authored.
+const canonicalManifest = (manifest) => {
+  const canonical = { ...manifest };
+  for (const field of DEPENDENCY_FIELDS) {
+    const map = canonical[field];
+    if (!map || typeof map !== 'object' || Array.isArray(map)) continue;
+    canonical[field] = Object.fromEntries(
+      Object.entries(map).sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0)),
+    );
+  }
+  return canonical;
+};
+
 const inline = (entry) =>
   typeof entry === 'string'
     ? JSON.stringify(entry)
@@ -69,11 +84,12 @@ const inline = (entry) =>
 
 // Standard 2-space JSON with one line per export, matching the checked-in package.json files.
 const serialize = (manifest) => {
-  const exportsBlock = Object.entries(manifest.exports)
+  const canonical = canonicalManifest(manifest);
+  const exportsBlock = Object.entries(canonical.exports)
     .map(([subpath, entry]) => `    ${JSON.stringify(subpath)}: ${inline(entry)}`)
     .join(',\n');
   const placeholder = '__FLIP_EXPORTS__';
-  return `${JSON.stringify({ ...manifest, exports: placeholder }, null, 2).replace(
+  return `${JSON.stringify({ ...canonical, exports: placeholder }, null, 2).replace(
     JSON.stringify(placeholder),
     () => `{\n${exportsBlock}\n  }`,
   )}\n`;

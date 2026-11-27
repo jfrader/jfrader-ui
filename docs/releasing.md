@@ -24,6 +24,14 @@ are correct, and the commit is on `master`. It then runs typecheck, tests, `veri
 packs each one once with `pnpm pack`, so `workspace:*` becomes the released version. It uploads those
 exact four tarballs as the `release-tarballs` workflow artifact.
 
+`scripts/flip-exports.mjs` canonicalizes the four dependency maps (`dependencies`, `devDependencies`,
+`peerDependencies`, `optionalDependencies`) when it switches the manifest layout. Keep those maps in
+that order in the checked-in manifests; unchanged content and toolchain then produce the same tarball
+integrity. Do not sort export conditions or arrays, and never accept a semantically equal archive with
+different bytes. On an integrity mismatch, `scripts/publish-registry.mjs` names added, removed, or
+changed archive members, or reports that the published archive could not be compared; the mismatch
+stays fatal.
+
 After `pack` succeeds, `publish-npmjs` and `publish-github-packages` independently download that artifact
 and verify or publish it to their registry in dependency order: tokens → styling → icons → ui. Neither
 publish job builds or packs again, and neither depends on the other. A failure or timeout in one still

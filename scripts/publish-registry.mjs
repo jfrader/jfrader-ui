@@ -2,7 +2,9 @@
 
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { promisify } from "node:util";
 import { setTimeout as delay } from "node:timers/promises";
 import { matchesGlob } from "node:path";
@@ -57,6 +59,13 @@ const npm = (args) =>
     maxBuffer: 4 * 1024 * 1024,
   });
 
+const npmPack = (args) =>
+  execFileAsync("npm", args, {
+    env: process.env,
+    maxBuffer: 4 * 1024 * 1024,
+    timeout: 120_000,
+  });
+
 const readPublishedIntegrity = async () => {
   try {
     const { stdout } = await npm([
@@ -75,17 +84,107 @@ const readPublishedIntegrity = async () => {
   }
 };
 
-const assertSameArtifact = (integrity) => {
-  if (integrity !== expectedIntegrity) {
-    throw new Error(
-      `${packageSpec} already exists at ${registry} with a different integrity`,
-    );
+const MAX_DIAGNOSTIC_MEMBERS = 20;
+const summarize = (label, members) =>
+  members.length === 0
+    ? undefined
+    : `${label}: ${members.slice(0, MAX_DIAGNOSTIC_MEMBERS).join(', ')}${members.length > MAX_DIAGNOSTIC_MEMBERS ? `, and ${members.length - MAX_DIAGNOSTIC_MEMBERS} more` : ''}`;
+
+const downloadPublished = async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), 'jfrader-published-'));
+  try {
+    await npmPack([
+      'pack',
+      packageSpec,
+      '--ignore-scripts',
+      '--pack-destination',
+      dir,
+      `--registry=${registry}`,
+    ]);
+    const tarballs = (await readdir(dir)).filter((name) => name.endsWith('.tgz'));
+    if (tarballs.length !== 1) throw new Error(`npm pack produced ${tarballs.length} tarballs`);
+    return { dir, tarball: path.join(dir, tarballs[0]) };
+  } catch (error) {
+    await rm(dir, { recursive: true, force: true });
+    throw error;
   }
+};
+
+const archiveMembers = async (tarball) => {
+  const { stdout } = await execFileAsync('tar', ['-tzf', tarball], { maxBuffer: 16 * 1024 * 1024 });
+  const members = stdout.split('\n').map((line) => line.trim()).filter((line) => line && !line.endsWith('/'));
+  for (const member of members) {
+    if (member.startsWith('/') || member.split('/').includes('..')) {
+      throw new Error(`archive member ${JSON.stringify(member)} is not a safe relative path`);
+    }
+  }
+  return members;
+};
+
+const fileDigest = async (dir, relative) =>
+  createHash('sha256').update(await readFile(path.join(dir, relative))).digest('hex');
+
+const compareArchives = async (local, published) => {
+  const [localMembers, publishedMembers] = await Promise.all([archiveMembers(local), archiveMembers(published)]);
+  const [localDir, publishedDir] = await Promise.all([
+    mkdtemp(path.join(tmpdir(), 'jfrader-local-')),
+    mkdtemp(path.join(tmpdir(), 'jfrader-published-compare-')),
+  ]);
+  try {
+    await Promise.all([
+      execFileAsync('tar', ['-xzf', local, '-C', localDir], { maxBuffer: 16 * 1024 * 1024 }),
+      execFileAsync('tar', ['-xzf', published, '-C', publishedDir], { maxBuffer: 16 * 1024 * 1024 }),
+    ]);
+    const localSet = new Set(localMembers);
+    const publishedSet = new Set(publishedMembers);
+    const added = publishedMembers.filter((member) => !localSet.has(member));
+    const removed = localMembers.filter((member) => !publishedSet.has(member));
+    const changed = [];
+    for (const member of localMembers) {
+      if (!publishedSet.has(member)) continue;
+      const [left, right] = await Promise.all([
+        fileDigest(localDir, member),
+        fileDigest(publishedDir, member),
+      ]);
+      if (left !== right) changed.push(member);
+    }
+    const detail = [
+      summarize('added', added),
+      summarize('removed', removed),
+      summarize('changed', changed),
+    ].filter(Boolean);
+    return detail.length > 0
+      ? detail.join('\n')
+      : 'archive members are identical; the tarball bytes differ (metadata or compression)';
+  } finally {
+    await Promise.all([
+      rm(localDir, { recursive: true, force: true }),
+      rm(publishedDir, { recursive: true, force: true }),
+    ]);
+  }
+};
+
+const assertSameArtifact = async (integrity) => {
+  if (integrity === expectedIntegrity) return;
+  let detail = '';
+  try {
+    const published = await downloadPublished();
+    try {
+      detail = await compareArchives(artifact, published.tarball);
+    } finally {
+      await rm(published.dir, { recursive: true, force: true });
+    }
+  } catch (error) {
+    detail = `member comparison unavailable: ${error instanceof Error ? error.message : String(error)}`;
+  }
+  throw new Error(
+    `${packageSpec} already exists at ${registry} with a different integrity\n${detail}`,
+  );
 };
 
 const existingIntegrity = await readPublishedIntegrity();
 if (existingIntegrity) {
-  assertSameArtifact(existingIntegrity);
+  await assertSameArtifact(existingIntegrity);
   console.log(`${packageSpec} already has the verified artifact at ${registry}`);
   process.exit(0);
 }
@@ -103,7 +202,7 @@ process.stderr.write(stderr);
 for (let attempt = 0; attempt < 90; attempt += 1) {
   const integrity = await readPublishedIntegrity();
   if (integrity) {
-    assertSameArtifact(integrity);
+    await assertSameArtifact(integrity);
     console.log(`verified ${packageSpec} at ${registry}`);
     process.exit(0);
   }
