@@ -10,6 +10,7 @@
 
 ### Fixed
 
+- `NumberField` accepts committed values with more than 12 fraction digits; the display rounds to 12 while ARIA and form values keep the exact number.
 - `Drawer` keeps the scrim token on its native backdrop while the panel slides; the backdrop color is no longer replaced when the presence opacity is composed.
 - `DateRangePicker` dismisses when a viewport resize pushes its trigger off screen, instead of staying anchored outside the window.
 - Published declaration files use explicit relative specifiers, so `@jfrader/ui`, `@jfrader/icons`, `@jfrader/styling` and `@jfrader/tokens` resolve under `moduleResolution: "node16"` and `"nodenext"`. Wildcard re-exports keep their names, and `skipLibCheck: false` no longer reports TS2834 in the published types.

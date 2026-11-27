@@ -36,9 +36,9 @@ export type NumberFieldSlots = FieldSlots<Anatomy>;
 export type NumberFieldSlotProps = FieldParts<Anatomy>;
 export interface NumberFieldProps extends Omit<ComponentPropsWithRef<'input'>,
   'type' | 'size' | 'value' | 'defaultValue' | 'min' | 'max' | 'step' | 'children' | 'prefix'>, SxProps {
-  /** Committed amount. `null` is empty; `undefined` selects uncontrolled state. */
+  /** Committed amount. `null` is empty; `undefined` selects uncontrolled state. More than 12 fraction digits are accepted; display rounds to 12 while ARIA and form values stay exact. */
   value?: number | null;
-  /** Initial uncontrolled amount. Defaults to `0`. */
+  /** Initial uncontrolled amount. Defaults to `0`. More than 12 fraction digits are accepted; display rounds to 12 while ARIA and form values stay exact. */
   defaultValue?: number | null;
   /** Receives changed commit requests, not partial typing. */
   onValueChange?: (value: number | null) => void;
@@ -60,7 +60,7 @@ export interface NumberFieldProps extends Omit<ComponentPropsWithRef<'input'>,
   size?: NumberFieldSize;
   /** Sets the locale for parsing and formatting. Defaults to the runtime locale. */
   locale?: Intl.LocalesArgument;
-  /** Customizes decimal or unit formatting. Fraction digits above twelve throw `NumberFieldConfigError`. */
+  /** Customizes decimal or unit formatting. Fraction digits above 12 throw `NumberFieldConfigError`. */
   formatOptions?: NumberFieldFormatOptions;
   /** Shows decorative content before the amount, optionally derived from the committed value. */
   prefix?: ReactNode | ((value: number | null) => ReactNode);
